@@ -1,5 +1,5 @@
 ---
-description: 个人工具工作空间 — stock-ai 与 sidestore-infra
+description: 个人工具 monorepo — stock-ai、sidestore-infra、substore-clash
 alwaysApply: true
 ---
 
@@ -17,7 +17,7 @@ alwaysApply: true
 
 - 项目已物理迁入本工作空间；`~/sidestore-infra` 与 `~/dev/yolo/stock-ai` 仅为兼容符号链接
 - launchd、Docker 使用 `sidestore-infra/` 下的真实路径
-- stock-ai 的 git 在 `stock-ai/.git` 内操作
+- **单一 git 仓库**在 `tools-workspace` 根目录；勿在子目录保留嵌套 `.git`
 
 ## Agent 工作流
 

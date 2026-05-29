@@ -42,7 +42,7 @@
 | clash-gen 健康检查 | http://127.0.0.1:8787/health |
 | Sub-Store 管理 | `http://127.0.0.1:3001/?api=http://127.0.0.1:3001/<SUB_STORE_FRONTEND_BACKEND_PATH>` |
 
-在 Clash Verge / Mihomo Party 中选择 **Clash Meta** 内核；外网用 `8883` 订阅，仅本机调试可用 `127.0.0.1:8787`。
+在 Clash Verge / Mihomo Party / **ClashMi** 中选择 **Clash Meta** 内核；外网用 `8883` 订阅，仅本机调试可用 `127.0.0.1:8787`。ClashMi 须使用显式 `proxies` 策略组（已适配，勿用仅 `include-all` 的写法）。
 
 ### 机场源订阅（仅服务端 `.env`，勿写入客户端）
 

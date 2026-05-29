@@ -1,0 +1,63 @@
+---
+description: Jellyfin 迅雷/Alist 剧集增量导入与元数据修复（含 TV staging、MetaShark 防误匹配）
+globs:
+  - "**/jellyfin-stack/**"
+  - "**/docker/jellyfin-stack/**"
+alwaysApply: false
+---
+
+# Jellyfin 迅雷剧集导入（Memory）
+
+完整流程见 skill：
+
+- 迅雷/夸克：`~/docker/jellyfin-stack/.cursor/skills/jellyfin-xunlei-tv-import/SKILL.md`
+- **NAS/sd_1（琅琊榜、绝命毒师、NAS-影音）**：`~/docker/jellyfin-stack/.cursor/skills/jellyfin-nas-smb-staging/SKILL.md`（含踩坑表与导入顺序）
+
+## NAS-影音 关键结论（勿与迅雷库混用）
+
+1. 库 PathInfos **仅** `/media/nas-tv`、`/media/sd-tv`、`/media/sd-movies`；**禁止** `.mblink` 指向 `/media/nas/电视剧`（会 duplicate 剧名、99+）。
+2. 新增 sd 季：`sd-tv-staging.list` 四段 → bind → **扫库等到集数齐** → **`BB_SEASON=N fix-bb-s01.sh`**（否则出现「未知季」）。
+3. 清幽灵条目：停服 + sqlite 删 `/media/nas/%` 且非 `nas-tv`；勿对 NAS 真路径勾选删磁盘。
+
+## 迅雷/夸克 关键结论
+
+1. **TV 库 PathInfo 必须是 `/media/tv`**，单部剧通过 bind mount 出现在 `/media/tv/<剧名>/`；不要把 PathInfo 指到 `/media/xunlei/<剧名>`（会被识别成电影）。
+2. **NAS-TV 库（人世间/琅琊榜）**：`jellyfin/config/nas-tv-staging.list` 一行 `NAS相对路径|库内剧名`；重启后 entrypoint 自动 bind mount，失败跑 `restore-nas-tv-staging.sh` 或 `verify-playback.sh`。
+3. **播放持久化（必做）**：每次 import/fix 后确认 `jellyfin/config/tv-staging.list` 含剧名；容器 restart 后 bind mount 会丢 → entrypoint 读 list 恢复；失败则 `restore-tv-staging.sh`；验收 `docker exec jellyfin ls /media/tv/<剧名>`。**勿用改 PathInfo 到 xunlei 来修播放。**
+4. **外网播放**：SenPlayer 地址必须 `https://alist.yoloworld.site:8883/jellyfin`；Caddy 需映射 `8883:443`；Jellyfin 需 `extra_hosts: alist.yoloworld.site:host-gateway`。
+5. **404 播放**：先查 `docker logs jellyfin` 是否 `Could not find file` → NAS-TV staging，不是反代问题。
+6. **FFmpeg `not one of 0,1,3,4`**：HTTP 405/406/416 等，优先 Direct Play；避免错误转码/HLS 分片 URL。
+7. **本地元数据路径** = `jellyfin/config/metadata/local/<剧名>/`，NFO 文件名必须与视频 stem 一致。
+8. **MetaShark 误匹配时**：临时 `EnableInternetProviders=false` → 写 NFO（含 `lockdata` + 正确 TMDB ID）→ Jellyfin API **POST** 更新 item（不要只靠 Refresh）→ 再处理 People/海报。
+9. **图片上传** Jellyfin API 需 **base64** body，`Content-Type: image/jpeg`（raw bytes 会 500）。
+10. **演职员** 从 TMDB season/episode credits 构建 `People` 数组 POST；series 卡司优先用 S1 credits 排序。
+11. **海报**：series=`poster.jpg`，season=`seasonNN-poster.jpg`，episode=`<stem>-thumb.jpg`；TMDB `poster_path` / `still_path`。
+
+## 常用命令
+
+```bash
+# 清空显示、保留 local NFO
+bash ~/docker/jellyfin-stack/scripts/clear-jellyfin-display.sh
+
+# 导入一部（--search 搜云盘文件夹）
+bash ~/docker/jellyfin-stack/scripts/import-show.sh --replace-paths --search "关键词"
+
+# 毒枭墨西哥一键修复
+bash ~/docker/jellyfin-stack/scripts/fix-narcos.sh
+
+# 重启后无法播放：恢复 /media/tv bind mount
+bash ~/docker/jellyfin-stack/scripts/restore-tv-staging.sh
+
+# NAS 剧集库 404：恢复 /media/nas-tv bind mount + 全链路巡检
+bash ~/docker/jellyfin-stack/scripts/restore-nas-tv-staging.sh
+bash ~/docker/jellyfin-stack/scripts/verify-playback.sh
+
+# 更新 Jellyfin 镜像/entrypoint 后
+bash ~/docker/jellyfin-stack/scripts/update.sh
+```
+
+## 环境
+
+- Stack: `~/docker/jellyfin-stack`，库名 `迅雷-影音`
+- 凭据: `JELLYFIN_*` in stack `.env`；`TMDB_API_KEY` in `~/sidestore-infra/.env`
+- 案例：毒枭 → TMDB **80968**（墨西哥），不是 63351（哥伦比亚）

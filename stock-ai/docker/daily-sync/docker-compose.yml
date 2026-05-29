@@ -1,0 +1,26 @@
+# 工作日 17:00 同步 Tushare 日线到 MySQL
+#
+#   cd stock-ai/docker/daily-sync
+#   docker compose up -d --build
+#
+# 立即跑一次（不等待 cron）：
+#   docker compose run --rm stock-daily-sync ./run_sync_daily.sh
+
+services:
+  stock-daily-sync:
+    build:
+      context: ../..
+      dockerfile: docker/daily-sync/Dockerfile
+    container_name: stock-daily-sync
+    restart: unless-stopped
+    env_file:
+      - ../../.env
+    environment:
+      TZ: Asia/Shanghai
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - ../../logs:/app/logs
+      - ../../run_sync_daily.sh:/app/run_sync_daily.sh:ro
+      - ./crontab:/etc/cron.d/stock-daily-sync:ro
+      - ./entrypoint.sh:/entrypoint.sh:ro

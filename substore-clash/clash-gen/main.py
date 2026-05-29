@@ -6,6 +6,7 @@ from __future__ import annotations
 import base64
 import json
 import os
+import re
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -20,6 +21,25 @@ RULE_PROVIDERS = yaml.safe_load((BASE_DIR / "rule_providers.yaml").read_text(enc
 RULES_ORDER = yaml.safe_load((BASE_DIR / "rules_order.yaml").read_text(encoding="utf-8"))
 
 USER_AGENT = "clash-verge/v2.0.0"
+
+# 与 Loyalsoldier clash-rules 的 rule-providers 一一对应（reject 用内置 REJECT）
+LOYAL_GROUP_NAMES = (
+    "applications",
+    "private",
+    "icloud",
+    "apple",
+    "google",
+    "direct",
+    "gfw",
+    "tld-not-cn",
+    "lancidr",
+    "cncidr",
+    "telegramcidr",
+)
+# 默认走代理/可选节点的类别（其余规则组默认 DIRECT 优先）
+LOYAL_PROXY_FRIENDLY = frozenset(
+    {"google", "telegramcidr", "gfw", "tld-not-cn"}
+)
 
 
 def _split_pipe(value: str) -> list[str]:
@@ -39,7 +59,9 @@ def _fetch_subscription(url: str, timeout: int = 60) -> str:
 
 def _decode_if_base64(text: str) -> str:
     stripped = text.strip()
-    if stripped.startswith(("proxies:", "mixed-port:", "{", "[")):
+    if stripped.startswith(
+        ("proxies:", "mixed-port:", "port:", "socks-port:", "{", "[")
+    ):
         return text
     if _looks_like_share_links(stripped):
         return stripped
@@ -133,10 +155,46 @@ def _extract_proxies(raw: str) -> list[dict[str, Any]]:
     if not doc:
         return []
     if isinstance(doc, dict) and "proxies" in doc:
-        return list(doc["proxies"])
+        return [_normalize_proxy(p) for p in doc["proxies"] if isinstance(p, dict)]
     if isinstance(doc, list):
-        return doc
+        return [_normalize_proxy(p) for p in doc if isinstance(p, dict)]
     return []
+
+
+def _normalize_proxy(proxy: dict[str, Any]) -> dict[str, Any]:
+    """Normalize a single outbound; ensure required fields for ClashMi / mihomo."""
+    drop = {"proxy-groups", "rules", "rule-providers", "dns", "mixed-port", "socks-port", "redir-port"}
+    out = {k: v for k, v in proxy.items() if k not in drop and v is not None}
+    if "name" in out:
+        out["name"] = str(out["name"]).strip()
+
+    ptype = str(out.get("type", "")).lower()
+    if "port" in out:
+        try:
+            out["port"] = int(out["port"])
+        except (TypeError, ValueError):
+            pass
+
+    defaults: dict[str, dict[str, Any]] = {
+        "trojan": {"port": 443, "udp": True},
+        "ss": {"port": 443},
+        "vmess": {"port": 443, "alterId": 0},
+        "vless": {"port": 443},
+    }
+    for key, val in defaults.get(ptype, {"port": 443}).items():
+        out.setdefault(key, val)
+
+    if not out.get("port"):
+        out["port"] = 443
+    if ptype == "trojan" and not out.get("sni") and out.get("server"):
+        out.setdefault("sni", out["server"])
+
+    return out
+
+
+def _filter_names(names: list[str], pattern: str) -> list[str]:
+    rx = re.compile(pattern)
+    return [n for n in names if rx.search(n)]
 
 
 def _prefix_proxy_names(proxies: list[dict[str, Any]], label: str) -> list[dict[str, Any]]:
@@ -166,6 +224,43 @@ def _proxy_names(proxies: list[dict[str, Any]]) -> list[str]:
     return [str(p["name"]) for p in proxies if p.get("name")]
 
 
+# 不纳入配置的商业/游戏线路（节点名匹配即丢弃）
+EXCLUDED_NODE_PATTERN = re.compile(r"商务|游戏")
+
+
+def _exclude_unwanted_proxies(proxies: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        p
+        for p in proxies
+        if not EXCLUDED_NODE_PATTERN.search(str(p.get("name", "")))
+    ]
+
+
+def _select_group(
+    name: str, proxies: list[str], *, default: str | None = None
+) -> dict[str, Any]:
+    group: dict[str, Any] = {"name": name, "type": "select", "proxies": proxies}
+    if default and default in proxies:
+        group["default"] = default
+    elif proxies:
+        group["default"] = proxies[0]
+    return group
+
+
+def _build_loyal_policy_groups() -> list[dict[str, Any]]:
+    """Loyalsoldier 同名策略组；禁止组间互相引用，避免 loop is detected。"""
+    groups: list[dict[str, Any]] = []
+    for name in LOYAL_GROUP_NAMES:
+        if name in LOYAL_PROXY_FRIENDLY:
+            proxies = ["自动选择", "ChatGPT", "DIRECT"]
+            default = "自动选择"
+        else:
+            proxies = ["DIRECT", "自动选择"]
+            default = "DIRECT"
+        groups.append(_select_group(name, proxies, default=default))
+    return groups
+
+
 def build_profile(
     subscription_urls: list[str],
     source_labels: list[str],
@@ -184,65 +279,95 @@ def build_profile(
             all_proxies.extend(_prefix_proxy_names(chunk, label))
 
     all_proxies = _dedupe_proxies(all_proxies)
+    all_proxies = _exclude_unwanted_proxies(all_proxies)
     names = _proxy_names(all_proxies)
     if not names:
         raise ValueError("no proxies parsed — check SUBSCRIPTION_URLS or SUBSTORE_COLLECTION_URL")
 
-    chatgpt_filter = "(?i)chatgpt"
+    chatgpt_nodes = _filter_names(names, r"(?i)chatgpt")
+    chatgpt_group = (
+        ["自动选择", "DIRECT", *chatgpt_nodes]
+        if chatgpt_nodes
+        else ["自动选择", "DIRECT"]
+    )
 
-    profile: dict[str, Any] = {
+    url_test_common = {
+        "url": "http://www.gstatic.com/generate_204",
+        "interval": 300,
+        "tolerance": 50,
+        "lazy": True,
+    }
+
+    # 默认走测速组；手动可改选下方 chatgpt 节点（避免默认锁死「爆满」节点）
+    chatgpt_default = "自动选择"
+
+    config: dict[str, Any] = {
         "mixed-port": 7890,
         "allow-lan": False,
         "mode": "rule",
         "log-level": "info",
         "ipv6": False,
         "external-controller": "127.0.0.1:9090",
-        "unified-delay": True,
-        "tcp-concurrent": True,
+        "profile": {
+            "store-selected": True,
+            "store-fake-ip": True,
+        },
         "dns": {
             "enable": True,
-            "listen": "0.0.0.0:1053",
             "ipv6": False,
             "enhanced-mode": "fake-ip",
             "fake-ip-range": "198.18.0.1/16",
-            "use-hosts": True,
             "default-nameserver": ["223.5.5.5", "119.29.29.29"],
-            "nameserver": ["https://223.5.5.5/dns-query", "https://dns.alidns.com/dns-query"],
-            "fallback": ["https://1.1.1.1/dns-query", "https://dns.google/dns-query"],
+            "nameserver": ["223.5.5.5", "119.29.29.29"],
+            "fallback": ["1.1.1.1", "8.8.8.8"],
             "fallback-filter": {"geoip": True, "geoip-code": "CN"},
         },
         "proxies": all_proxies,
         "proxy-groups": [
             {
-                "name": "ChatGPT",
-                "type": "select",
-                "include-all": True,
-                "filter": chatgpt_filter,
-            },
-            {
-                "name": "AI-优选",
-                "type": "select",
-                "include-all": True,
-                "filter": "(?i)chatgpt|claude|gpt|ai",
-            },
-            {
                 "name": "自动选择",
                 "type": "url-test",
-                "url": "http://www.gstatic.com/generate_204",
-                "interval": 300,
-                "tolerance": 50,
+                **url_test_common,
                 "proxies": names,
             },
-            {
-                "name": "PROXY",
-                "type": "select",
-                "proxies": ["自动选择", "ChatGPT", "AI-优选", "DIRECT", *names],
-            },
+            _select_group("ChatGPT", chatgpt_group, default=chatgpt_default),
+            *_build_loyal_policy_groups(),
+            _select_group(
+                "PROXY",
+                ["自动选择", "ChatGPT", "DIRECT"],
+                default="自动选择",
+            ),
+            _select_group(
+                "GLOBAL",
+                ["PROXY", "自动选择", "ChatGPT", "DIRECT"],
+                default="PROXY",
+            ),
         ],
         "rule-providers": RULE_PROVIDERS["rule-providers"],
         "rules": RULES_ORDER["rules"],
     }
-    return profile
+    return config
+
+
+def _dump_yaml(profile: dict[str, Any]) -> str:
+    """YAML safe for ClashMi / Mihomo (explicit proxies on every group)."""
+
+    class Dumper(yaml.SafeDumper):
+        pass
+
+    def _str_repr(dumper: yaml.SafeDumper, value: str) -> Any:
+        if value.startswith("(?i)") or (":" in value and "%" in value):
+            return dumper.represent_scalar("tag:yaml.org,2002:str", value, style="'")
+        return dumper.represent_scalar("tag:yaml.org,2002:str", value)
+
+    Dumper.add_representer(str, _str_repr)
+    return yaml.dump(
+        profile,
+        Dumper=Dumper,
+        allow_unicode=True,
+        default_flow_style=False,
+        sort_keys=False,
+    )
 
 
 def generate_yaml() -> str:
@@ -256,12 +381,7 @@ def generate_yaml() -> str:
         )
 
     profile = build_profile(urls, labels, substore_url=substore)
-    return yaml.dump(
-        profile,
-        allow_unicode=True,
-        default_flow_style=False,
-        sort_keys=False,
-    )
+    return _dump_yaml(profile)
 
 
 class Handler(BaseHTTPRequestHandler):

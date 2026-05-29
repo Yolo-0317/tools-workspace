@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.user.aliyun-ddns</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/yolo/dev/yolo/tools-workspace/sidestore-infra/scripts/run-ddns.sh</string>
+    </array>
+    <key>StandardOutPath</key>
+    <string>/Users/yolo/dev/yolo/tools-workspace/sidestore-infra/logs/ddns.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/yolo/dev/yolo/tools-workspace/sidestore-infra/logs/ddns.log</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StartInterval</key>
+    <integer>300</integer>
+    <key>StandardOutPath</key>
+    <string>/Users/yolo/dev/yolo/tools-workspace/sidestore-infra/logs/launchd-ddns.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/yolo/dev/yolo/tools-workspace/sidestore-infra/logs/launchd-ddns.err.log</string>
+</dict>
+</plist>

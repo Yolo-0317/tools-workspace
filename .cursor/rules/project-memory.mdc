@@ -26,6 +26,12 @@ alwaysApply: false
 - **Pitfall/Error**: `sidestore-infra` 原在 `$HOME/sidestore-infra`，launchd plist 与脚本含绝对路径；直接移动会破坏自启动。
 - **Solution/Rule**: 真实目录为 `tools-workspace/sidestore-infra`；`~/sidestore-infra` 与 `~/dev/yolo/stock-ai` 保留为符号链接。更新 launchd 后执行 `sidestore-infra/scripts/install-launchd.sh`。
 
+### 2026-05-29 tools-workspace 单仓库 monorepo
+
+- **Context**: 远程只维护一个 `tools-workspace` 仓库，归档独立 `stock-ai` remote。
+- **Pitfall/Error**: 根 `.gitignore` 的 `/stock-ai` 与嵌套 `stock-ai/.git` 会导致子项目不进父仓库。
+- **Solution/Rule**: 移除子目录 `.git` 后在根目录 `git add stock-ai/ sidestore-infra/`；各子项目 `.env`、`certs/` 仍不提交。
+
 ### 2026-05-29 Superpowers 工作空间安装
 
 - **Context**: 在 tools-workspace 启用 Superpowers 开发工作流。

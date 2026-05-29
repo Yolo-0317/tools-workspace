@@ -1,0 +1,14 @@
+---
+description: investment-agent 子项目规范（在 stock-ai 根目录打开时生效）
+globs: investment-agent/**
+alwaysApply: false
+---
+
+# investment-agent 子项目
+
+当编辑 `investment-agent/` 下的文件时，遵循以下约定：
+
+- 投资相关对话先读 `investment-agent/MEMORY.md` 和 `investment-agent/持仓执行卡.md`
+- 持仓数据见 `investment-agent/holdings.csv`（软链接到 `holdings/current.csv`）
+- 行情/选股脚本在 stock-ai 根目录的 `scripts/`，不在 investment-agent 内重复实现
+- 完整 Agent 规范见 `investment-agent/.cursor/rules/agent.mdc`

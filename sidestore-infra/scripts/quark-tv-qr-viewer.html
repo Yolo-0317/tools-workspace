@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quark TV 二维码查看器</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+    textarea { width: 100%; min-height: 160px; font: 12px/1.4 monospace; }
+    button { margin-top: 0.75rem; padding: 0.5rem 1rem; cursor: pointer; }
+    #out { margin-top: 1.5rem; text-align: center; }
+    img { max-width: 460px; width: 100%; image-rendering: pixelated; border: 1px solid #ccc; }
+    .hint { color: #666; font-size: 14px; margin-top: 1rem; }
+    .err { color: #b00020; }
+  </style>
+</head>
+<body>
+  <h1>Quark TV 二维码查看器</h1>
+  <p>把 AList 报错整段粘贴到下面，点「显示二维码」。AList 管理页不会渲染 HTML，用这个本地页面临时查看。</p>
+  <textarea id="raw" placeholder="粘贴 Failed init storage: need verify: ..."></textarea>
+  <br />
+  <button id="go">显示二维码</button>
+  <div id="out"></div>
+  <p class="hint">若仍扫不出：这是 AList / 夸克 TV 驱动的已知问题（二维码数据损坏或 MIME 类型错误）。Jellyfin 场景建议改用「夸克网盘 + Cookie」。</p>
+  <script>
+    function extractB64(text) {
+      const m = text.match(/base64,([A-Za-z0-9+/=]+)/);
+      return m ? m[1] : null;
+    }
+    document.getElementById('go').onclick = () => {
+      const text = document.getElementById('raw').value;
+      const b64 = extractB64(text);
+      const out = document.getElementById('out');
+      if (!b64) {
+        out.innerHTML = '<p class="err">未找到 base64 二维码数据</p>';
+        return;
+      }
+      // AList 标成 jpeg，实际是 png
+      out.innerHTML = `
+        <p>请用夸克 App 扫一扫（约 2 分钟内有效）</p>
+        <img alt="quark tv qr" src="data:image/png;base64,${b64}" />
+        <p class="hint">扫码后在 AList 存储里立刻：禁用 → 启用</p>
+      `;
+    };
+  </script>
+</body>
+</html>

@@ -1,17 +1,29 @@
 # tools-workspace
 
-个人工具 monorepo：A 股数据、SideStore 基础设施、Clash 订阅等。子项目 `stock-ai`、`sidestore-infra` 有**独立 git**，本仓库只跟踪工作空间壳层与共享脚本。
+个人工具 **monorepo**（单一 git 仓库）：A 股数据、SideStore 基础设施、Clash 订阅、Docker 自启脚本等。
 
-| 项目 | 说明 | 路径 | Git |
-|------|------|------|-----|
-| [stock-ai](./stock-ai) | A 股数据、选股、Tushare MCP、投资 agent | `stock-ai/` | 独立仓库 |
-| [sidestore-infra](./sidestore-infra) | SideStore / Caddy / DDNS / 证书 | `sidestore-infra/` | 独立仓库 |
-| [substore-clash](./substore-clash) | Sub-Store + Clash 订阅生成 | `substore-clash/` | 本仓库 |
+| 目录 | 说明 |
+|------|------|
+| [stock-ai](./stock-ai) | A 股数据、选股、Tushare MCP、投资 agent、日线 Docker 定时同步 |
+| [sidestore-infra](./sidestore-infra) | SideStore / Caddy / DDNS / 证书 |
+| [substore-clash](./substore-clash) | Sub-Store + Clash 订阅生成 |
+
+## 克隆与配置
+
+```bash
+git clone <你的 tools-workspace 远程地址>
+cd tools-workspace
+
+# 各子项目复制环境变量模板（勿提交真实 .env）
+cp stock-ai/.env.example stock-ai/.env
+cp sidestore-infra/.env.example sidestore-infra/.env   # 若有
+cp substore-clash/.env.example substore-clash/.env
+```
 
 ## Agent 工作流
 
 - **Superpowers**：设计 / TDD / 计划（`/add-plugin superpowers`）
-- **Hermes**：十步循环 + `project-memory.mdc` 等记忆文件
+- **Hermes**：十步循环 + `.cursor/rules/project-memory.mdc` 等
 
 详见 [AGENTS.md](./AGENTS.md)。
 
@@ -20,40 +32,26 @@
 ```bash
 cursor /Users/yolo/dev/yolo/tools-workspace
 # 或多根工作区
-cursor /Users/yolo/dev/yolo/tools-workspace/tools-workspace.code-workspace
+cursor tools-workspace.code-workspace
 ```
 
 ## Docker 开机自启
 
-登录 macOS 后自动启动 Docker，并拉起常用 compose 栈：
-
 ```bash
-./scripts/install-docker-launchd.sh   # Docker Desktop AutoStart + launchd
-./scripts/docker-autostart.sh         # 手动幂等 compose up -d
+./scripts/install-docker-launchd.sh
+./scripts/docker-autostart.sh   # 手动幂等 compose up -d
 ```
 
-日志：`logs/docker-autostart.log`。各 compose 内服务建议 `restart: unless-stopped`。
-
-**本脚本会拉起的栈**（路径见 `scripts/docker-autostart.sh`）：
-
-| 栈 | 说明 |
-|----|------|
-| `~/dev/docker/mysql` | 宿主机 MySQL（stock-ai 等依赖） |
-| `~/docker/jellyfin-stack` | Jellyfin + 媒资 |
-| `sidestore-infra` | SideStore / Caddy |
-| `substore-clash` | 订阅与 Sub-Store |
-| `stock-ai/docker/daily-sync` | 工作日 17:00 Tushare 日线同步 |
-| `stock-ai/stock_analysis` | 分析前后端 |
+日志：`logs/docker-autostart.log`。`scripts/docker-autostart.sh` 会拉起 MySQL、Jellyfin、sidestore、substore-clash、stock-ai 日线同步等栈。
 
 ## 常用命令
 
-### stock-ai（在子仓库内操作）
+### stock-ai
 
 ```bash
 cd stock-ai
-cp .env.example .env   # 填写 TUSHARE_TOKEN、MYSQL_URL
 ./run_sync_daily.sh
-# 或 Docker 定时：见 stock-ai/docker/daily-sync/README.md
+# Docker 定时：stock-ai/docker/daily-sync/README.md
 ```
 
 ### sidestore-infra
@@ -61,44 +59,39 @@ cp .env.example .env   # 填写 TUSHARE_TOKEN、MYSQL_URL
 ```bash
 cd sidestore-infra
 ./scripts/setup.sh
-./scripts/healthcheck.sh
 docker compose --env-file .env ps
 ```
 
 ### substore-clash
 
-```bash
-cd substore-clash
-cp .env.example .env
-docker compose --env-file .env up -d --build
-```
-
-说明与 URL 见 [substore-clash/README.md](./substore-clash/README.md)。
+见 [substore-clash/README.md](./substore-clash/README.md)。
 
 ## 目录结构
 
 ```
-tools-workspace/
-├── README.md
-├── AGENTS.md
-├── scripts/                 # docker-autostart、install-docker-launchd
-├── launchd/                 # com.user.docker-stacks.plist
-├── substore-clash/          # Clash 订阅（git 跟踪）
-├── .cursor/rules/           # Hermes、Superpowers、记忆
-├── stock-ai/                # → 独立 git（本仓库 .gitignore）
-└── sidestore-infra/         # → 独立 git（本仓库 .gitignore）
+tools-workspace/          # 本仓库根（唯一 git remote）
+├── stock-ai/
+├── sidestore-infra/
+├── substore-clash/
+├── scripts/              # 工作空间级 Docker 自启
+├── launchd/
+└── .cursor/rules/
 ```
 
 ## 兼容路径
 
-旧路径保留符号链接，避免外部脚本中断：
-
 - `~/dev/yolo/stock-ai` → `tools-workspace/stock-ai`
 - `~/sidestore-infra` → `tools-workspace/sidestore-infra`
 
-新配置请统一使用 `tools-workspace/` 下路径。
-
 ## 安全说明
 
-- **勿提交** `.env`、密钥、证书私钥；仓库内仅保留 `.env.example` 占位。
-- `stock-ai`、`sidestore-infra` 请在各自仓库内单独 `git push`。
+- **勿提交** `.env`、证书私钥、机场订阅 URL、持仓与 agent 记忆目录。
+- 原独立仓库 `stock-ai` 可归档；新变更只提交本 monorepo。
+
+## 创建远程仓库（首次）
+
+```bash
+cd tools-workspace
+gh repo create tools-workspace --private --source=. --remote=origin
+git push -u origin master   # 或 main，与本地分支一致即可
+```

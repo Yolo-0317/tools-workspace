@@ -1,0 +1,7 @@
+.env
+.env.secrets
+!.env.example
+certs/
+logs/
+anisette/data/
+.venv/

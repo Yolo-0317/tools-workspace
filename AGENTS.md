@@ -1,6 +1,6 @@
 # tools-workspace — Agent 指南
 
-个人工具工作空间：`stock-ai`（A 股数据 / MCP）+ `sidestore-infra`（SideStore / Docker）。
+个人工具 **monorepo**（单一 git）：`stock-ai`（A 股 / MCP）+ `sidestore-infra`（SideStore / Docker）+ `substore-clash` 等。
 
 ## 已安装能力
 

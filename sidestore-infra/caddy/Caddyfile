@@ -1,0 +1,105 @@
+{
+	# 证书由 acme.sh + 阿里云 DNS 签发，不走 80/443 HTTP 验证
+	auto_https off
+}
+
+https://ani.yoloworld.site {
+	tls /etc/caddy/certs/fullchain.cer /etc/caddy/certs/key.key
+	encode gzip
+	reverse_proxy anisette:6969 {
+		transport http {
+			read_timeout 60s
+		}
+	}
+	header {
+		-Server
+		X-Content-Type-Options nosniff
+	}
+}
+
+https://config.yoloworld.site {
+	tls /etc/caddy/certs/fullchain.cer /etc/caddy/certs/key.key
+	encode gzip
+	handle /servers.json {
+		root * /srv
+		header Cache-Control "no-cache, no-store, must-revalidate"
+		file_server
+	}
+	handle {
+		respond 404
+	}
+}
+
+https://alist.yoloworld.site {
+	tls /etc/caddy/certs/fullchain.cer /etc/caddy/certs/key.key
+	@jellyfin path /jellyfin /jellyfin/*
+	handle @jellyfin {
+		reverse_proxy host.docker.internal:8096 {
+			flush_interval -1
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+	# WebDAV 不要 gzip，避免 Infuse 播放异常
+	@webdav path /dav /dav/*
+	handle @webdav {
+		reverse_proxy host.docker.internal:5244 {
+			transport http {
+				read_timeout 300s
+				write_timeout 300s
+			}
+		}
+	}
+	handle {
+		reverse_proxy host.docker.internal:5244 {
+			transport http {
+				read_timeout 300s
+				write_timeout 300s
+			}
+		}
+	}
+	header {
+		-Server
+		X-Content-Type-Options nosniff
+	}
+}
+
+https://sub.yoloworld.site {
+	tls /etc/caddy/certs/fullchain.cer /etc/caddy/certs/key.key
+	encode gzip
+
+	handle /sub-store/* {
+		uri strip_prefix /sub-store
+		reverse_proxy host.docker.internal:3001 {
+			transport http {
+				read_timeout 120s
+			}
+		}
+	}
+
+	handle /clash.yaml {
+		reverse_proxy host.docker.internal:8787 {
+			transport http {
+				read_timeout 120s
+			}
+		}
+		header Cache-Control "no-cache, no-store, must-revalidate"
+	}
+
+	handle / {
+		redir https://{host}:8883/clash.yaml permanent
+	}
+
+	handle {
+		respond 404
+	}
+	header {
+		-Server
+		X-Content-Type-Options nosniff
+	}
+}

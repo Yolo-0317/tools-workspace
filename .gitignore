@@ -2,6 +2,32 @@
 *.log
 logs/
 
-# 子项目各自管理（独立 git）
-/stock-ai
-/sidestore-infra
+# 环境变量与密钥（各子目录 .env 亦勿提交）
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# sidestore-infra
+sidestore-infra/.env.secrets
+sidestore-infra/certs/
+sidestore-infra/logs/
+sidestore-infra/anisette/data/
+sidestore-infra/.venv/
+
+# stock-ai（详见 stock-ai/.gitignore，此处补关键项）
+stock-ai/.env
+stock-ai/.venv/
+stock-ai/output/
+stock-ai/logs/
+stock-ai/.playwright-cli/
+stock-ai/jupyter/
+stock-ai/holdings/
+stock-ai/investment-agent/memory/
+stock-ai/investment-agent/reports/
+stock-ai/investment-agent/holdings.csv
+stock-ai/*.bak
+
+# substore-clash
+substore-clash/.env
+substore-clash/data/
