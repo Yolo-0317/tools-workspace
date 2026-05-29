@@ -1,0 +1,6 @@
+.DS_Store
+*.log
+
+# 子项目是符号链接，不纳入本仓库
+/stock-ai
+/sidestore-infra

@@ -1,0 +1,25 @@
+---
+description: 个人工具工作空间 — 统一操作 stock-ai 与 sidestore-infra
+alwaysApply: true
+---
+
+# tools-workspace
+
+本目录是个人工具工作空间根目录，包含两个子项目（均为符号链接）：
+
+- **stock-ai** → `/Users/yolo/dev/yolo/stock-ai` — A 股数据、选股、Tushare MCP、investment-agent
+- **sidestore-infra** → `/Users/yolo/sidestore-infra` — SideStore、Caddy、阿里云 DDNS、证书、Docker Compose
+
+## 工作方式
+
+- 在本根目录下通过 `stock-ai/` 和 `sidestore-infra/` 访问两个项目
+- **不要移动** sidestore-infra 的实际路径（`$HOME/sidestore-infra`），launchd 和脚本依赖该位置
+- stock-ai 的 git 操作在 `stock-ai/` 内进行
+- 跨项目任务（如 DDNS 脚本对比）可在此根目录协调，但修改仍写入各自真实路径
+
+## 技术栈速览
+
+| 项目 | 语言/运行时 | 关键入口 |
+|------|-------------|----------|
+| stock-ai | Python 3.9+ / uv | `scripts/`, `tushare_mcp.py`, `investment-agent/` |
+| sidestore-infra | Docker / bash / Python | `docker-compose.yml`, `scripts/setup.sh`, `caddy/` |
