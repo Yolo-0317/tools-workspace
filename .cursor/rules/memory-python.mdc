@@ -1,0 +1,24 @@
+---
+description: stock-ai 子项目记忆 — Python / 数据 / 选股
+globs: stock-ai/**/*
+alwaysApply: false
+---
+
+# Memory: stock-ai (Python)
+
+Hermes Step 3：处理 `stock-ai/` 内代码时与本文件、`project-memory.mdc` 一并检索。
+
+## 关键路径
+
+- 共享库：`stock_ai/`（bootstrap、logging、notify、symbols）
+- 策略核心：`core_v2/`、`core_v3/`
+- 脚本：`scripts/sync|selection|analysis|monitor|backtest|tools|archive/`
+- MCP：`tushare_mcp.py`；Cursor MCP 配置见 `~/.cursor/mcp.json`
+
+## 记忆条目
+
+### 2026-05-29 脚本 import 规则
+
+- **Context**: 从 `scripts/` 子目录运行入库、选股脚本。
+- **Pitfall/Error**: `from _bootstrap import` 在 `scripts/sync/` 下找不到模块。
+- **Solution/Rule**: 使用 `from scripts._bootstrap import ensure_repo_root_on_path`，再 `ensure_repo_root_on_path()`。AkShare 数据在 `core_v2.fetch_akshare_data`，勿引用已删除的 `scripts.fetch_akshare_data`。

@@ -1,0 +1,29 @@
+---
+description: sidestore-infra 子项目记忆 — Docker / launchd / DDNS
+globs: sidestore-infra/**/*
+alwaysApply: false
+---
+
+# Memory: sidestore-infra
+
+Hermes Step 3：处理 `sidestore-infra/` 时与本文件、`project-memory.mdc` 一并检索。
+
+## 关键路径
+
+- 真实目录：`tools-workspace/sidestore-infra/`（`~/sidestore-infra` 为兼容符号链接）
+- 入口：`docker-compose.yml`、`scripts/setup.sh`、`scripts/healthcheck.sh`
+- launchd：`launchd/*.plist` → `scripts/install-launchd.sh` 安装到 `~/Library/LaunchAgents/`
+
+## 记忆条目
+
+### 2026-05-29 迁移后路径
+
+- **Context**: 基础设施目录迁入 tools-workspace。
+- **Pitfall/Error**: 旧 plist 仍指向 `$HOME/sidestore-infra` 时若删除符号链接会导致 launchd 失败。
+- **Solution/Rule**: 脚本默认 `SIDESTORE_HOME` 按 `scripts/` 位置自解析；改 plist 后必须重跑 `scripts/install-launchd.sh`。勿在未确认的情况下删除 `~/sidestore-infra` 符号链接。
+
+### 2026-05-29 sub.yoloworld.site Caddy 反代
+
+- **Context**: `substore-clash` 通过 sidestore Caddy 对外提供 Clash 订阅与 Sub-Store UI。
+- **Pitfall/Error**: Caddy 在 Docker 内须用 `host.docker.internal:8787` / `:3001` 访问宿主机绑定的服务；DDNS 须用 `scripts/run-ddns.sh` 加载 `.env` 才会包含 `sub`。
+- **Solution/Rule**: `caddy/Caddyfile` 已增 `https://sub.yoloworld.site`；`DDNS_SUBDOMAINS` 含 `sub`。外网订阅 **`https://sub.yoloworld.site:8883/clash.yaml`**（`EXTERNAL_HTTPS_PORT=8883`，无 443 映射）。Sub-Store UI 同样带 `:8883`。

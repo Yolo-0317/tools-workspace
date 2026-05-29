@@ -1,0 +1,39 @@
+# 合并到 sidestore-infra/caddy/Caddyfile（需证书目录已有 fullchain.cer / key.key）
+# 并在 .env 的 DDNS_SUBDOMAINS 追加 sub
+
+https://sub.yoloworld.site {
+	tls /etc/caddy/certs/fullchain.cer /etc/caddy/certs/key.key
+	encode gzip
+
+	# Sub-Store 管理界面（建议仅自己使用，可再加 basicauth）
+	handle /sub-store/* {
+		uri strip_prefix /sub-store
+		reverse_proxy host.docker.internal:3001 {
+			transport http {
+				read_timeout 120s
+			}
+		}
+	}
+
+	# Mihomo / Clash Verge 订阅地址
+	handle /clash.yaml {
+		reverse_proxy host.docker.internal:8787 {
+			transport http {
+				read_timeout 120s
+			}
+		}
+		header Cache-Control "no-cache, no-store, must-revalidate"
+	}
+
+	handle / {
+		redir https://{host}:8883/clash.yaml permanent
+	}
+
+	handle {
+		respond 404
+	}
+	header {
+		-Server
+		X-Content-Type-Options nosniff
+	}
+}

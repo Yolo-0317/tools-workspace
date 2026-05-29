@@ -1,0 +1,20 @@
+# Loyalsoldier 白名单模式 + OpenAI/Claude 优先走专用策略组
+# https://github.com/Loyalsoldier/clash-rules#白名单模式-rules-配置方式推荐
+
+rules:
+  - RULE-SET,applications,DIRECT
+  - RULE-SET,private,DIRECT
+  - RULE-SET,reject,REJECT
+  - RULE-SET,icloud,DIRECT
+  - RULE-SET,apple,DIRECT
+  - RULE-SET,OpenAI,ChatGPT
+  - RULE-SET,Claude,AI-优选
+  - RULE-SET,google,PROXY
+  - RULE-SET,proxy,PROXY
+  - RULE-SET,direct,DIRECT
+  - RULE-SET,lancidr,DIRECT,no-resolve
+  - RULE-SET,cncidr,DIRECT,no-resolve
+  - RULE-SET,telegramcidr,PROXY
+  - GEOIP,LAN,DIRECT,no-resolve
+  - GEOIP,CN,DIRECT,no-resolve
+  - MATCH,PROXY

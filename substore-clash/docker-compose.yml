@@ -1,0 +1,40 @@
+services:
+  sub-store:
+    image: xream/sub-store:latest
+    container_name: substore-clash-store
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3001"
+    volumes:
+      - ./data/sub-store:/opt/app/data
+    environment:
+      SUB_STORE_FRONTEND_BACKEND_PATH: ${SUB_STORE_FRONTEND_BACKEND_PATH:?set in .env}
+      SUB_STORE_FRONTEND_HOST: 0.0.0.0
+      SUB_STORE_FRONTEND_PORT: 3001
+      SUB_STORE_DATA_BASE_PATH: /opt/app/data
+      TZ: ${TZ:-Asia/Shanghai}
+    networks:
+      - substore_clash_net
+
+  clash-gen:
+    build: ./clash-gen
+    container_name: substore-clash-gen
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${CLASH_GEN_PORT:-8787}:8787"
+    environment:
+      SUBSCRIPTION_URLS: ${SUBSCRIPTION_URLS:-}
+      SUBSTORE_COLLECTION_URL: ${SUBSTORE_COLLECTION_URL:-}
+      SUB_SOURCE_LABELS: ${SUB_SOURCE_LABELS:-西部世界|一元机场}
+      CLASH_SUB_TOKEN: ${CLASH_SUB_TOKEN:-}
+      CLASH_GEN_PORT: 8787
+      CLASH_GEN_HOST: 0.0.0.0
+      TZ: ${TZ:-Asia/Shanghai}
+    depends_on:
+      - sub-store
+    networks:
+      - substore_clash_net
+
+networks:
+  substore_clash_net:
+    driver: bridge

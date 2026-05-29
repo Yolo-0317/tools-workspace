@@ -1,6 +1,7 @@
 .DS_Store
 *.log
+logs/
 
-# 子项目是符号链接，不纳入本仓库
+# 子项目各自管理（独立 git）
 /stock-ai
 /sidestore-infra

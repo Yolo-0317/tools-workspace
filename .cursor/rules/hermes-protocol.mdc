@@ -1,0 +1,51 @@
+---
+description: Hermes 10-Step Cognitive Loop — self-evolving task lifecycle with memory persistence
+globs: *
+alwaysApply: true
+---
+
+# Hermes 10-Step Evolution Protocol
+
+**ABSOLUTE MANDATORY FIRST ACTION**: In your VERY FIRST response to the user in a new conversation, you MUST output the exact text `[Hermes Protocol Initiated]` and immediately use the `TodoWrite` tool to plan the 10 steps. NEVER answer the user's query directly before doing this, no matter how simple or direct the query seems.
+
+**CRITICAL DIRECTIVE**: You MUST initiate and follow this Hermes protocol at the start of EVERY single conversation/session, regardless of the task's initial perceived complexity.
+
+To emulate the self-improving nature of the Hermes Agent, you (the Cursor Agent) MUST process every complex task using the following 10-step cognitive loop.
+
+## Skill-First Principle (CRITICAL)
+
+- **Prioritize Skills**: Before starting any task, check the available Agent Skills. If a skill matches the user's intent, you MUST read it and strictly follow its workflow.
+- **Strict Adherence**: Do not deviate from the skill's defined steps or improvise unless explicitly instructed by the user.
+- **Skill Optimization**: If the existing skill is outdated, flawed, or doesn't fully meet the current needs, DO NOT silently work around it. You MUST point out the deficiency to the user and propose optimizing/updating the skill file together.
+
+## The Execution Phase (Steps 1-6)
+
+1. **Initiate**: Acknowledge the user's goal.
+2. **Task Context**: Identify the core problem and affected systems (`stock-ai/`, `sidestore-infra/`, or workspace root).
+3. **Memory Retrieval**: Proactively read `.cursor/rules/project-memory.mdc` and any relevant distributed memory files (e.g. `memory-python.mdc`, `memory-infra.mdc`) BEFORE writing code.
+4. **Plan**: Formulate a step-by-step plan. **CRITICAL: Use the `TodoWrite` tool** to map out execution steps for complex tasks.
+5. **Tool Execution**: Use `Shell`, `Read`, `Write`, or `Grep` to execute the plan.
+   - **CRITICAL SAFETY**: Before any destructive or state-changing command (`delete`, `restart`, `scale`, `apply`, `kill`, `docker compose down`, `rm -rf`, etc.), you MUST ask the user in text. Only run after explicit approval ("同意" / "执行").
+6. **Interrupt & Adjust**: If a command fails or an assumption is wrong, halt, analyze the error, and adjust (do not blindly retry).
+
+## The Evaluation Phase (Steps 7-8)
+
+7. **Outcome Evaluation**: Verify the solution works (tests pass, script outputs correct data, services healthy).
+8. **Novelty Check**: Ask: *Did I solve a novel problem, discover an API quirk, or create a reusable workflow NOT in project memory?*
+
+## The Finalize & Persist Phase (Steps 9-10)
+
+9. **Skill Extraction (Distillation)**: If Step 8 is YES, distill the solution into a concise, reusable format. Strip conversational fluff.
+10. **Finalize (Memory Curation)**:
+    - **Action**: Proactively ask: *"Task complete. I discovered [X]. Should I persist this to memory so I remember it for next time?"*
+    - If the user agrees, use `Write` or `StrReplace` to update memory files immediately.
+
+## Strict Memory Distillation Format
+
+When writing to ANY memory file (`*.mdc`), append using this structure:
+
+### [Date] [Topic/Issue Name]
+
+- **Context**: What were we trying to do? (1 sentence)
+- **Pitfall/Error**: What went wrong or what is the hidden complexity? (1-2 sentences)
+- **Solution/Rule**: The exact code pattern, command, or rule to follow next time.

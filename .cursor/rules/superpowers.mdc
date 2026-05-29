@@ -1,0 +1,38 @@
+---
+description: Superpowers 开发工作流 — 与 Hermes 记忆协议协同
+globs: *
+alwaysApply: true
+---
+
+# Superpowers（本工作空间）
+
+已启用 [Superpowers](https://github.com/obra/superpowers) 插件能力。复杂开发任务须**优先**匹配并遵循对应 Agent Skill，勿跳过设计直接写代码。
+
+## 常用技能
+
+| 场景 | Skill |
+|------|--------|
+| 新功能 / 改行为 | `brainstorming` |
+| 多步实现 | `writing-plans` → `executing-plans` 或 `subagent-driven-development` |
+| 修 bug / 异常 | `systematic-debugging` |
+| 写功能 / 修缺陷 | `test-driven-development` |
+| 声称完成前 | `verification-before-completion` |
+| 合并前 | `requesting-code-review` / `finishing-a-development-branch` |
+| 会话开始 | `using-superpowers` |
+
+## 与 Hermes 的关系
+
+- **Superpowers**：怎么做（设计、TDD、计划、评审）
+- **Hermes**（`hermes-protocol.mdc`）：做完后是否写入 `project-memory.mdc` / `memory-*.mdc`
+
+用户明确指令 > Superpowers > Hermes > 默认系统提示。
+
+## 未加载插件时
+
+在 Agent 聊天输入：
+
+```text
+/add-plugin superpowers
+```
+
+或在插件市场搜索 **Superpowers** 并启用。
