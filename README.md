@@ -5,6 +5,7 @@
 | 目录 | 说明 |
 |------|------|
 | [stock-ai](./stock-ai) | A 股数据、选股、Tushare MCP、投资 agent、日线 Docker 定时同步 |
+| [wechat-cursor-acp](./wechat-cursor-acp) | 微信 ↔ Cursor CLI；每日选股战报推送 |
 | [sidestore-infra](./sidestore-infra) | SideStore / Caddy / DDNS / 证书 |
 | [substore-clash](./substore-clash) | Sub-Store + Clash 订阅生成 |
 
@@ -35,14 +36,16 @@ cursor /Users/yolo/dev/yolo/tools-workspace
 cursor tools-workspace.code-workspace
 ```
 
-## Docker 开机自启
+## 登录自启（launchd）
 
 ```bash
-./scripts/install-docker-launchd.sh
-./scripts/docker-autostart.sh   # 手动幂等 compose up -d
+./scripts/install-docker-launchd.sh              # Docker compose 栈
+./wechat-cursor-acp/scripts/install-launchd.sh   # 微信 ↔ Cursor CLI 桥
+./scripts/docker-autostart.sh                    # 手动幂等 compose up -d
 ```
 
-日志：`logs/docker-autostart.log`。`scripts/docker-autostart.sh` 会拉起 MySQL、Jellyfin、sidestore、substore-clash、stock-ai 日线同步等栈。
+- Docker 日志：`logs/docker-autostart.log`
+- 微信桥日志：`wechat-cursor-acp/logs/launchd-autostart.{out,err}.log`（需已扫码保存 token）
 
 ## 常用命令
 

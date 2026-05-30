@@ -12,6 +12,7 @@ alwaysApply: true
 | stock-ai | `stock-ai/` | A 股数据、Tushare MCP、investment-agent |
 | sidestore-infra | `sidestore-infra/` | SideStore、Caddy、阿里云 DDNS、证书 |
 | substore-clash | `substore-clash/` | Sub-Store 订阅合并 → Mihomo/Clash 配置 |
+| wechat-cursor-acp | `wechat-cursor-acp/` | 微信 ↔ Cursor CLI（wechat-acp + agent acp） |
 
 ## 注意
 

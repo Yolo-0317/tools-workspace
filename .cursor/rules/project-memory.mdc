@@ -49,3 +49,15 @@ alwaysApply: false
 - **Context**: 在 `substore-clash/` 合并西部世界、一元机场订阅，生成带 blackmatrix7 规则的 Clash Meta 配置；计划域名 `sub.yoloworld.site`（Caddy 片段见 `substore-clash/caddy/Caddyfile.snippet`）。
 - **Pitfall/Error**: Sub-Store 只出节点无规则；OpenAI 须单独策略组且节点名须含 `chatgpt`，否则 `ChatGPT` 组为空。订阅 URL 含 token，勿提交 git。
 - **Solution/Rule**: 真实链接写在 `substore-clash/.env` 的 `SUBSCRIPTION_URLS`（`西部世界|一元机场` 标签对应 `SUB_SOURCE_LABELS`）。启动：`cd substore-clash && docker compose up -d --build`。客户端订阅：`http://127.0.0.1:8787/clash.yaml` 或外网 `https://sub.yoloworld.site:8883/clash.yaml`（`EXTERNAL_HTTPS_PORT=8883`，勿省略端口）。OpenAI 规则 → 策略组 `ChatGPT`（`filter: "(?i)chatgpt"`）。机场源：西部世界 `xb1821.com/rss/...`；一元机场 `sub3.smallstrawberry.com/...`（完整 URL 仅 `.env`）。
+
+### 2026-05-29 substore-clash Stash 导入兼容
+
+- **Context**: Stash（iOS/macOS）从 `clash.yaml` 订阅 URL 导入配置失败。
+- **Pitfall/Error**: 机场订阅含占位节点（`0.0.0.0` / `127.0.0.x`、流量/官网 banner）；一元机场部分节点用 `network: xhttp`；VLESS 带 `alterId`/`cipher`；Mihomo 策略组顶层 `default` 字段与 Stash 语义冲突。外网 `8883` 超时则是端口映射/DNS 问题，与 YAML 无关。
+- **Solution/Rule**: `clash-gen/main.py` 已过滤占位节点、剔除 xhttp、清理 VLESS 无效字段、去掉 select 组 `default`（默认项放 `proxies` 首位）。改后重建：`cd substore-clash && docker compose up -d --build clash-gen`。Stash 订阅：同 WiFi 用 **`https://sub.yoloworld.site:8443/clash.yaml`**；外网/蜂窝用 **`https://sub.yoloworld.site:8883/clash.yaml`**（须路由器映射 8883→Mac）。iPhone 不能访问 Mac 的 `127.0.0.1:8787`。
+
+### 2026-05-29 sub.yoloworld.site TLS 证书缺 SAN
+
+- **Context**: Stash 从 `https://sub.yoloworld.site:8883/clash.yaml` 下载失败（非 YAML 内容问题）。
+- **Pitfall/Error**: `sidestore-infra/certs/fullchain.cer` 仅含 ani/config/alist/www，**无 `sub.yoloworld.site`**；HTTPS 握手被客户端拒绝。`DDNS_SUBDOMAINS` 含 `sub` 不等于证书已覆盖。
+- **Solution/Rule**: `scripts/issue-certs.sh` 已加入 `-d sub.${DOMAIN}`；重签：`cd sidestore-infra && bash scripts/issue-certs.sh && docker compose restart caddy`。验证：`curl --resolve sub.yoloworld.site:8443:127.0.0.1 https://sub.yoloworld.site:8443/clash.yaml | head -1` 应返回 `mixed-port:`。

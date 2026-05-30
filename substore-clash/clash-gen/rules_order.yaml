@@ -18,4 +18,4 @@ rules:
   - RULE-SET,telegramcidr,telegramcidr
   - GEOIP,LAN,DIRECT
   - GEOIP,CN,DIRECT
-  - MATCH,PROXY
+  - MATCH,自动选择

@@ -55,6 +55,14 @@ else
   FAIL=1
 fi
 
+SUB_DOMAIN="${SUB_SUBDOMAIN:-sub}.${DOMAIN:-yoloworld.site}"
+if curl -sf --max-time 15 --resolve "${SUB_DOMAIN}:${INTERNAL_PORT}:127.0.0.1" "https://${SUB_DOMAIN}:${INTERNAL_PORT}/clash.yaml" | grep -q 'mixed-port:'; then
+  echo "OK  clash.yaml HTTPS 内网 :${INTERNAL_PORT}"
+else
+  echo "FAIL clash.yaml HTTPS 内网 :${INTERNAL_PORT} (检查证书 SAN 是否含 ${SUB_DOMAIN})"
+  FAIL=1
+fi
+
 if curl -sfk --max-time 8 "$ANI_URL" 2>/dev/null | grep -q 'X-Apple-I-MD'; then
   echo "OK  anisette HTTPS 公网 :${EXTERNAL_PORT}"
 else

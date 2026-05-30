@@ -29,6 +29,8 @@ services:
       CLASH_SUB_TOKEN: ${CLASH_SUB_TOKEN:-}
       CLASH_GEN_PORT: 8787
       CLASH_GEN_HOST: 0.0.0.0
+      # 后台拉取 SUBSCRIPTION_URLS 并更新缓存（秒）；0=每次请求现拉
+      SUBSCRIPTION_REFRESH_SECONDS: ${SUBSCRIPTION_REFRESH_SECONDS:-21600}
       TZ: ${TZ:-Asia/Shanghai}
     depends_on:
       - sub-store
