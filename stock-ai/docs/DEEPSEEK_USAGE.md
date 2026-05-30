@@ -1,18 +1,39 @@
 # DeepSeek AI 交易信号使用指南
 
-> **2026-05 更新**：API 调用已统一到 `scripts/tools/deepseek_client.py`；能力总览见 **[CAPABILITIES.md](CAPABILITIES.md)**。
+> **2026-05 更新**：调用已统一到 `scripts/tools/deepseek_client.py`；能力总览见 **[CAPABILITIES.md](CAPABILITIES.md)**。
 
-## API 封装与模型
+## 后端切换（DeepSeek API ↔ Cursor auto）
+
+在 `stock-ai/.env` 设置：
+
+```bash
+# 默认：DeepSeek API
+LLM_BACKEND=deepseek
+DEEPSEEK_API_KEY=sk-...
+
+# 改用 Cursor 订阅（与微信桥相同的 agent login）
+LLM_BACKEND=cursor
+CURSOR_AGENT_MODEL=auto
+```
+
+| 入口 | 函数 | deepseek 默认 | cursor |
+|------|------|---------------|--------|
+| MCP / 持仓 prompt | `call_deepseek_prompt()` | `deepseek-v4-flash` | `auto` |
+| 战报 / SOP messages | `call_deepseek()` | `deepseek-v4-flash` | `auto` |
+
+Cursor 模式：`agent --print --mode ask --trust`，工作区默认 `investment-agent`。无需 `DEEPSEEK_API_KEY`，但单次较慢、不宜高并发 SOP。
+
+## API 封装与模型（LLM_BACKEND=deepseek 时）
 
 | 入口 | 函数 | 默认模型 | 环境变量 |
 |------|------|----------|----------|
 | MCP / 持仓 prompt | `call_deepseek_prompt()` | `deepseek-v4-flash` | `DEEPSEEK_MCP_MODEL` |
-| 战报 / SOP messages | `call_deepseek()` | `deepseek-chat` | `DEEPSEEK_MODEL` |
+| 战报 / SOP messages | `call_deepseek()` | `deepseek-v4-flash` | `DEEPSEEK_MODEL` |
 
 MCP 内 `_call_deepseek_api()` 已委托至 `call_deepseek_prompt()`。  
 个股分析会自动注入决策上下文（`decision_context.py` + 持仓执行卡 + `trading-strategies.md`）。
 
-可调环境变量：`DEEPSEEK_API_KEY`（必需）、`DEEPSEEK_MAX_TOKENS`、`DEEPSEEK_RETRIES`、`DEEPSEEK_CONTINUE_ON_LENGTH`、`DEEPSEEK_TIMEOUT_SECONDS` 等。
+DeepSeek 环境变量：`DEEPSEEK_API_KEY`（deepseek 模式必需）、`DEEPSEEK_MAX_TOKENS`、`DEEPSEEK_RETRIES` 等。
 
 ---
 
@@ -157,8 +178,8 @@ uv run python tests/manual/test_t_signal.py
 
 ### 温度与模型
 
-- MCP / 持仓类：调用 `call_deepseek_prompt(..., temperature=0.3)`，模型 `DEEPSEEK_MCP_MODEL`（默认 `deepseek-v4-flash`）
-- 战报 / SOP 类：调用 `call_deepseek(..., temperature=0.3~0.5)`，模型 `DEEPSEEK_MODEL`（默认 `deepseek-chat`）
+- MCP / 持仓类：调用 `call_deepseek_prompt(..., temperature=0.3)`，模型 `deepseek-v4-flash`
+- 战报 / SOP 类：调用 `call_deepseek(..., temperature=0.3~0.5)`，模型 `deepseek-v4-flash`
 
 `temperature` 建议 **0.0–0.3** 用于交易信号；0.7+ 不适合决策。
 

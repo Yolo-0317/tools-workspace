@@ -105,7 +105,7 @@
 ### 重要项目路径
 - **能力总览**：`../docs/CAPABILITIES.md`
 - **stock-ai 根**：`/Users/yolo/dev/yolo/tools-workspace/stock-ai`
-- **DeepSeek**：`scripts/tools/deepseek_client.py`（MCP 用 `deepseek-v4-flash`，战报/SOP 用 `deepseek-chat`）
+- **DeepSeek**：`scripts/tools/deepseek_client.py`（统一 `deepseek-v4-flash`）
 - **MCP 服务**：`tushare_mcp.py`（见 CAPABILITIES 附录 / `docs/CURSOR_MCP_SETUP.md`）
 - **持仓执行卡（权威）**：`持仓执行卡.md`
 - **微信桥接**：`../../wechat-cursor-acp`（wechat-acp，非 QClaw 主通道）

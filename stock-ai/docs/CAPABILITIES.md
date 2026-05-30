@@ -169,18 +169,23 @@ push_selection_wechat.sh
 
 ---
 
-## 7. DeepSeek 调用
+## 7. LLM 调用（DeepSeek API 或 Cursor auto）
 
-统一封装：`scripts/tools/deepseek_client.py`
+统一封装：`scripts/tools/deepseek_client.py`（Cursor 实现见 `cursor_agent_client.py`）
 
-| 函数 | 默认模型 | 环境变量 | 典型调用方 |
-|------|----------|----------|------------|
-| `call_deepseek(messages=…)` | `deepseek-chat` | `DEEPSEEK_MODEL` | 战报、SOP 汇总、选股简评 |
-| `call_deepseek_prompt(prompt=…)` | `deepseek-v4-flash` | `DEEPSEEK_MCP_MODEL` | MCP、持仓深度分析 |
+| `LLM_BACKEND` | 说明 | 前置 |
+|---------------|------|------|
+| `deepseek`（**默认**） | DeepSeek API | `DEEPSEEK_API_KEY` |
+| `cursor` | Cursor CLI `agent --model auto` | `agent login`，走订阅额度 |
 
-公共环境变量：`DEEPSEEK_API_KEY`（必需）、`DEEPSEEK_MAX_TOKENS`、`DEEPSEEK_RETRIES`、`DEEPSEEK_CONTINUE_ON_LENGTH` 等。
+| 函数 | deepseek 默认模型 | cursor 模型 | 典型调用方 |
+|------|-------------------|-------------|------------|
+| `call_deepseek(messages=…)` | `deepseek-v4-flash`（`DEEPSEEK_MODEL`） | `auto`（`CURSOR_AGENT_MODEL`） | 战报、SOP 汇总 |
+| `call_deepseek_prompt(…)` | `deepseek-v4-flash`（`DEEPSEEK_MCP_MODEL`） | 同上 | MCP、持仓分析 |
 
-MCP 工具（Cursor）：`tushare_mcp.py` — `deepseek_trade_signal`、`deepseek_intraday_t_signal`、盘前/盘后分析等。详见 [DEEPSEEK_USAGE.md](DEEPSEEK_USAGE.md)。
+Cursor 相关：`CURSOR_AGENT_WORKSPACE`（默认 `investment-agent`）、`CURSOR_AGENT_MODE=ask`（只读问答）、`CURSOR_AGENT_TIMEOUT_SECONDS`（默认 300）。
+
+MCP 工具：`tushare_mcp.py` — `deepseek_trade_signal` 等。详见 [DEEPSEEK_USAGE.md](DEEPSEEK_USAGE.md)。
 
 ---
 

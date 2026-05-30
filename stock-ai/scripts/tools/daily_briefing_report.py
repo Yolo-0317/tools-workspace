@@ -16,7 +16,7 @@ from scripts._bootstrap import ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
 
-from scripts.tools.deepseek_client import call_deepseek
+from scripts.tools.deepseek_client import call_deepseek, is_llm_configured
 from scripts.tools.fetch_eastmoney_macro_news import MacroNewsItem, fetch_macro_news, format_report
 from scripts.tools.holdings_context import load_full_decision_context
 from scripts.tools.market_session import MarketSession, detect_market_session
@@ -347,7 +347,7 @@ def build_daily_briefing(slot: str, *, news_limit: int = 8, with_ai: bool = True
 
     ai_block = ""
     if with_ai:
-        if os.getenv("DEEPSEEK_API_KEY"):
+        if is_llm_configured():
             try:
                 card = _resolve_holdings_card()
                 _, holdings_context = load_full_decision_context(
@@ -363,7 +363,7 @@ def build_daily_briefing(slot: str, *, news_limit: int = 8, with_ai: bool = True
             except Exception as exc:  # noqa: BLE001
                 ai_block = f"【AI 综合解读】\n（生成失败：{exc}）"
         else:
-            ai_block = "【AI 综合解读】\n（跳过：未配置 DEEPSEEK_API_KEY）"
+            ai_block = "【AI 综合解读】\n（跳过：未配置 LLM；设置 DEEPSEEK_API_KEY 或 LLM_BACKEND=cursor + agent login）"
 
     parts = [*header, ""]
     if ai_block:

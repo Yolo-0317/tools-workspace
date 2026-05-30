@@ -624,7 +624,7 @@ Playwright 采集 → 输出初步报告 → 调用 DeepSeek 十一维分析 →
 输出格式：Markdown，简洁专业，每个维度用表格或要点列出。"""
 
    payload = json.dumps({
-       "model": "deepseek-chat",
+       "model": "deepseek-v4-flash",
        "messages": [
            {"role": "system", "content": system_prompt},
            {"role": "user", "content": f"股票代码：{code}\n\n【东财F10数据】\n{report}\n\n【新浪实时数据】\n{sina_data}"}

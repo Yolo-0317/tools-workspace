@@ -17,6 +17,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
+from scripts.tools.deepseek_client import is_llm_configured
 from scripts.tools.holdings_context import load_full_decision_context
 
 TOP_N = 5
@@ -79,8 +80,8 @@ def _format_report(
 
 
 def _run_ai_review(csv_path: Path, holdings_context: str) -> str:
-    if not os.getenv("DEEPSEEK_API_KEY"):
-        return "🤖 DeepSeek 审查 + 持仓建议\n（跳过：未配置 DEEPSEEK_API_KEY）"
+    if not is_llm_configured():
+        return "🤖 DeepSeek 审查 + 持仓建议\n（跳过：未配置 LLM；DEEPSEEK_API_KEY 或 LLM_BACKEND=cursor）"
     try:
         from scripts.analysis.ai_review_combined_top5 import review_combined_top5
 
@@ -103,8 +104,8 @@ def _run_sop_review(
     sop_workers: int,
     deepseek_workers: int,
 ) -> str:
-    if not os.getenv("DEEPSEEK_API_KEY"):
-        return "🔬 东财 SOP + 投资决策\n（跳过：未配置 DEEPSEEK_API_KEY）"
+    if not is_llm_configured():
+        return "🔬 东财 SOP + 投资决策\n（跳过：未配置 LLM；DEEPSEEK_API_KEY 或 LLM_BACKEND=cursor）"
     try:
         from scripts.analysis.sop_review_top5_concurrent import review_top5_sop_concurrent
 

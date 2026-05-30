@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DeepSeek Chat API 统一封装（messages / prompt 两种入口）。"""
+"""LLM 统一封装：DeepSeek API 或 Cursor CLI（agent --model auto）。"""
 
 from __future__ import annotations
 
@@ -8,10 +8,27 @@ import time
 
 import requests
 
-DEFAULT_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
-MCP_MODEL = os.getenv("DEEPSEEK_MCP_MODEL", "deepseek-v4-flash")
+from scripts.tools.cursor_agent_client import (
+    call_cursor_agent,
+    cursor_agent_available,
+    messages_to_prompt,
+)
+
+DEFAULT_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
+MCP_MODEL = os.getenv("DEEPSEEK_MCP_MODEL", os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash"))
 DEFAULT_URL = "https://api.deepseek.com/v1/chat/completions"
 RETRYABLE_STATUS = {408, 429, 500, 502, 503, 504}
+
+
+def llm_backend() -> str:
+    """deepseek | cursor"""
+    return os.getenv("LLM_BACKEND", "deepseek").strip().lower()
+
+
+def is_llm_configured() -> bool:
+    if llm_backend() == "cursor":
+        return cursor_agent_available()
+    return bool(os.getenv("DEEPSEEK_API_KEY"))
 
 
 def _env_int(name: str, default: int) -> int:
@@ -35,6 +52,10 @@ def _api_key() -> str:
     return api_key
 
 
+def _cursor_model(explicit: str | None) -> str:
+    return explicit or os.getenv("CURSOR_AGENT_MODEL", "auto")
+
+
 def call_deepseek(
     messages: list[dict[str, str]],
     *,
@@ -45,6 +66,14 @@ def call_deepseek(
     timeout: tuple[float, float] | None = None,
 ) -> str:
     """Chat Completions（messages 列表）。"""
+    if llm_backend() == "cursor":
+        _ = temperature, max_tokens, timeout  # Cursor CLI 不支持细粒度采样参数
+        return call_cursor_agent(
+            messages_to_prompt(messages),
+            model=_cursor_model(model),
+            max_retries=max_retries,
+        )
+
     max_retries = max_retries if max_retries is not None else _env_int("DEEPSEEK_RETRIES", 3)
     connect_timeout = _env_float("DEEPSEEK_CONNECT_TIMEOUT_SECONDS", 10)
     read_timeout = _env_float("DEEPSEEK_TIMEOUT_SECONDS", 120)
@@ -87,7 +116,32 @@ def call_deepseek_prompt(
     model: str | None = None,
     continue_on_length: bool | None = None,
 ) -> str:
-    """单条 user prompt（MCP / 持仓分析沿用；支持 length 自动续写）。"""
+    """单条 user prompt（MCP / 持仓分析沿用；DeepSeek 支持 length 自动续写）。"""
+    messages: list[dict[str, str]] = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": prompt},
+    ]
+
+    if llm_backend() == "cursor":
+        content = call_cursor_agent(
+            messages_to_prompt(messages),
+            model=_cursor_model(model),
+        )
+        if continue_on_length is False:
+            return content
+        # Cursor 无 finish_reason；若明显截断可再续写一次
+        if len(content) >= _env_int("CURSOR_AGENT_CONTINUE_MIN_CHARS", 3500):
+            cont = call_cursor_agent(
+                messages_to_prompt(
+                    messages
+                    + [{"role": "assistant", "content": content}]
+                    + [{"role": "user", "content": "请从上次中断处继续输出，保持相同格式，不要重复前文。"}]
+                ),
+                model=_cursor_model(model),
+            )
+            content = (content.rstrip() + "\n" + cont.lstrip()).strip()
+        return content
+
     max_tokens = max_tokens if max_tokens is not None else _env_int("DEEPSEEK_MAX_TOKENS", 1600)
     if continue_on_length is None:
         continue_on_length = str(os.getenv("DEEPSEEK_CONTINUE_ON_LENGTH") or "true").lower() in (
@@ -98,10 +152,6 @@ def call_deepseek_prompt(
             "on",
         )
 
-    messages: list[dict[str, str]] = [
-        {"role": "system", "content": system},
-        {"role": "user", "content": prompt},
-    ]
     content, finish = _request_raw(
         messages,
         temperature=temperature,

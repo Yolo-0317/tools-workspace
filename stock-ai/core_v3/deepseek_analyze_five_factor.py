@@ -293,9 +293,12 @@ def main():
     parser.add_argument("--temperature", type=float, default=0.3, help="DeepSeek 温度参数，默认 0.3")
     args = parser.parse_args()
 
-    api_key = os.getenv("DEEPSEEK_API_KEY")
-    if not api_key:
-        raise RuntimeError("未检测到 DEEPSEEK_API_KEY，请先在 .env 或环境变量中配置")
+    from scripts.tools.deepseek_client import is_llm_configured
+
+    if not is_llm_configured():
+        raise RuntimeError(
+            "未检测到 LLM 配置：请设置 DEEPSEEK_API_KEY，或 LLM_BACKEND=cursor 且已 agent login"
+        )
 
     if args.csv:
         csv_path = Path(args.csv).expanduser().resolve()

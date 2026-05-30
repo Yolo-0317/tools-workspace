@@ -38,7 +38,8 @@
 | 脚本 | 说明 |
 |------|------|
 | `tools/fetch_eastmoney_macro_news.py` | Playwright 抓取东财 7×24 宏观财经快讯 |
-| `tools/deepseek_client.py` | DeepSeek 统一封装（`call_deepseek` / `call_deepseek_prompt`） |
+| `tools/deepseek_client.py` | LLM 统一封装（DeepSeek API 或 `LLM_BACKEND=cursor` → `agent --model auto`） |
+| `tools/cursor_agent_client.py` | Cursor CLI 非交互调用（战报/SOP/MCP 共用） |
 | `tools/ensure_daily_bars.py` | 检测 MySQL 日线是否落后，17:00 后期望日缺失则 Tushare 补同步 |
 | `tools/holdings_context.py` | 持仓执行卡 + trading-strategies 决策上下文 |
 | `tools/wechat_format.py` | 战报 AI 解读 / SOP 摘要微信排版 |
