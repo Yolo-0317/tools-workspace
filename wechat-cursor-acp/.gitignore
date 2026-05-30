@@ -1,0 +1,4 @@
+.env
+*.log
+logs/
+config/wechat-acp.runtime.json

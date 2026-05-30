@@ -1,0 +1,18 @@
+{
+  "agent": {
+    "preset": "cursor",
+    "showDiffs": false
+  },
+  "agents": {
+    "cursor": {
+      "label": "Cursor CLI (agent acp)",
+      "description": "Cursor subscription via local agent binary",
+      "command": "agent",
+      "args": ["--model", "composer-2.5", "acp"]
+    }
+  },
+  "session": {
+    "idleTimeoutMs": 86400000,
+    "maxConcurrentUsers": 10
+  }
+}

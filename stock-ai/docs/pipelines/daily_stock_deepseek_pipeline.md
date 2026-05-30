@@ -79,7 +79,34 @@ uv run python scripts/ai_review_top5.py output/stock_selection_ma5_20260108.csv 
 
 报告：与 CSV 同目录，`{csv 主名}_ai_review.md`。
 
-### C. 五因子专用：九维逐股 DeepSeek（与 core_v3 默认闭环）
+### C. Top5 并发东财 SOP + DeepSeek 投资决策（推荐盘后深度分析）
+
+对综合选股 Top5 **并发**执行：Playwright 东财 8 维度采集 → MySQL 技术面补全 → DeepSeek 逐股终审 → 汇总微信摘要。
+
+```bash
+# 单独跑（默认取最新 stock_selection_combined_*.csv）
+uv run python -m scripts.analysis.sop_review_top5_concurrent --top 5
+
+# 选股 + SOP 一步完成
+uv run python -m scripts.selection.daily_selection_report --with-sop --sop-only
+
+# 定时任务：在 run_selection_daily.sh 前设置
+ENABLE_SOP_TOP5=1 ./run_selection_daily.sh
+```
+
+| 参数 | 默认 | 说明 |
+|------|------|------|
+| `--top` | 5 | 分析前几名 |
+| `--sop-workers` | 3 | Playwright 并发（每只约 50s） |
+| `--deepseek-workers` | 3 | DeepSeek API 并发 |
+
+输出：
+- `output/sop_preliminary/YYYYMMDD/{code}_初步报告_SOP版.md`
+- `output/stock_selection_combined_YYYYMMDD_sop_review.md`
+
+耗时约 **2~4 分钟**（Top5、workers=3）。
+
+### D. 五因子专用：九维逐股 DeepSeek（与 core_v3 默认闭环）
 
 读取最新 `output/stock_selection_five_factor_*.csv`（也可用 `--csv 路径` 指定），对**前 N 只**逐股调用 DeepSeek。**默认 `--top 5`**（与脚本一致）；试跑省 API 可改为 `--top 2` 等。更多参数：`uv run python core_v3/deepseek_analyze_five_factor.py --help`。
 
@@ -97,7 +124,7 @@ uv run python core_v3/deepseek_analyze_five_factor.py --top 2
 
 输出：`output/deepseek_v3_five_factor_review_*.md` 与同名 `.json`。
 
-### D. 其它全维度 / 持仓整合
+### E. 其它全维度 / 持仓整合
 
 按需使用 `scripts/run_deepseek_final_analysis.py`、`scripts/analyze_holdings_v2.py` 等（非每日最小路径）。
 

@@ -164,9 +164,28 @@ df = pro.daily(start_date='20260424', end_date='20260425')
 
 | 工具 | 用途 | 适用场景 | 不适用场景 |
 |------|------|---------|-----------|
-| **ProSearch**（online-search skill） | 关键词搜索新闻/事件/实时信息 | 查"为什么涨/跌"、事件原因、今日新闻 | 查个股财务/筹码数据 |
-| **opencli browser**（浏览器自动化） | JS渲染页面数据抓取 | 个股行情、财务数据、筹码分布、机构持仓 | 快速查新闻/事件 |
+| **东财宏观快讯**（`fetch_eastmoney_macro_news.py`） | Playwright 抓取 7×24 财经快讯 | 每日宏观早报、定时推送 | 个股财务/筹码数据 |
+| **ProSearch**（online-search skill） | 关键词搜索新闻/事件/实时信息 | 查"为什么涨/跌"、事件原因补充 | 查个股财务/筹码数据 |
+| **opencli browser**（浏览器自动化） | JS渲染页面数据抓取 | 个股行情、财务数据、筹码分布、机构持仓 | 批量宏观快讯（用脚本） |
 | **东财API**（curl） | 轻量级实时行情 | 指数/个股实时价格、每日战报 | 需要财务/基本面数据 |
+
+### 东财宏观财经快讯 / 每日战报（Playwright）
+
+```bash
+cd ../  # stock-ai 根目录
+
+# 完整战报（与 QClaw daily_briefing 定时任务一致，含 DeepSeek 解读）
+FETCH_ONLY=1 ./push_daily_briefing_wechat.sh 09:00
+./push_daily_briefing_wechat.sh 15:00
+
+# 首次/重装后：把 QClaw 4 个 daily_briefing 任务切到新脚本
+./scripts/install-daily-briefing-cron.sh
+
+# 仅东财快讯
+uv run python -m scripts.tools.fetch_eastmoney_macro_news --limit 15
+```
+
+数据源：`https://kuaixun.eastmoney.com/`（主）+ 腾讯行情（大盘/国际/持仓）
 
 ### ProSearch（在线搜索）
 
@@ -194,10 +213,10 @@ curl -s "https://push2.eastmoney.com/api/qt/list.np/get?fltt=2&secids=1.600995,0
 ```
 
 ### 工具选用原则
-- **永远不要说"AI没有实时数据"**，主动尝试搜索/API获取
-- **事件/原因类问题**（为什么涨/跌？）→ ProSearch搜索
-- **个股基本面数据**（财务/筹码/机构）→ opencli浏览器
-- **快速价格查询**（每日战报）→ 东财API curl
+- **宏观财经早报** → `fetch_eastmoney_macro_news.py`（东财 Playwright）
+- **事件/原因类问题**（为什么涨/跌？）→ ProSearch 搜索（补充）
+- **个股基本面数据**（财务/筹码/机构）→ opencli 浏览器
+- **快速价格查询**（每日战报）→ 东财 API curl
 
 ### ⚠️ 教训（2026-05-14）
 - ❌ 不要说"AI没有实时行情数据，建议用户自行查看"

@@ -28,6 +28,19 @@
 
 `monitor/monitor_stocks_v2.py`、`monitor/monitor_intraday_signals.py`
 
+| 脚本 | 说明 |
+|------|------|
+| `monitor/monitor_holdings_alerts.py` | 持仓执行卡条件监控 → 微信 |
+| `../push_holdings_monitor.sh` | 交易时段每 5 分钟（launchd） |
+
 ## backtest / tools / archive
 
 回测脚本、校验工具、已归档的一次性脚本。
+
+| 脚本 | 说明 |
+|------|------|
+| `tools/fetch_eastmoney_macro_news.py` | Playwright 抓取东财 7×24 宏观财经快讯 |
+| `tools/deepseek_client.py` | DeepSeek Chat API 封装 |
+| `tools/daily_briefing_report.py` | 每日战报（数据抓取 + DeepSeek 解读） |
+| `tools/patch_qclaw_daily_briefing_jobs.py` | 同步 QClaw daily_briefing 定时任务 |
+| `tools/wechat_acp_push_text.py` | 微信文本推送（wechat-acp） |

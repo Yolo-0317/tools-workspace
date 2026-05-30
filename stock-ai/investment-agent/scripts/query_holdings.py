@@ -2,7 +2,23 @@
 """持仓行情查询脚本 - 从持仓执行卡读取股票列表，动态查询实时行情"""
 import urllib.request, re, os, sys
 
-HOLDINGS_FILE = os.path.expanduser("~/.qclaw/workspace/持仓执行卡.md")
+DEFAULT_HOLDINGS = os.path.expanduser("~/.qclaw/workspace/持仓执行卡.md")
+AGENT_HOLDINGS = os.path.expanduser(
+    "~/dev/yolo/tools-workspace/stock-ai/investment-agent/持仓执行卡.md"
+)
+
+
+def _resolve_holdings_file() -> str:
+    if "HOLDINGS_CARD" in os.environ and os.environ["HOLDINGS_CARD"]:
+        return os.environ["HOLDINGS_CARD"]
+    if os.path.exists(DEFAULT_HOLDINGS):
+        return DEFAULT_HOLDINGS
+    if os.path.exists(AGENT_HOLDINGS):
+        return AGENT_HOLDINGS
+    return DEFAULT_HOLDINGS
+
+
+HOLDINGS_FILE = _resolve_holdings_file()
 
 def parse_holdings(filepath):
     """从持仓执行卡解析股票代码和名称"""
