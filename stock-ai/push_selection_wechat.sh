@@ -13,6 +13,7 @@ WECHAT_PUSH_BACKEND="${WECHAT_PUSH_BACKEND:-wechat-acp}"
 cd "$ROOT"
 export PYTHONPATH="${ROOT}${PYTHONPATH:+:$PYTHONPATH}"
 export STOCK_AI_ROOT="${ROOT}"
+export PATH="${HOME}/.local/bin:${HOME}/.nvm/versions/node/v24.14.1/bin:${PATH}"
 mkdir -p output logs
 
 if [ -f .env ]; then

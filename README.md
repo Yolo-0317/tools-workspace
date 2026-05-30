@@ -107,6 +107,7 @@ launchd：`com.user.sidestore-infra`、`com.user.sidestore-certs`、`com.user.al
 | `com.user.docker-stacks` | `./scripts/install-docker-launchd.sh` | 登录后 Docker compose 幂等 `up -d` |
 | `com.user.wechat-cursor-acp` | `wechat-cursor-acp/scripts/install-launchd.sh` | 微信桥自启 |
 | `com.user.stock-holdings-monitor` | `stock-ai/scripts/install-holdings-monitor-launchd.sh` | 持仓监控每 5 分钟 |
+| `com.user.stock-ai-daily-briefing` | `stock-ai/scripts/install-daily-briefing-launchd.sh` | 战报 09/12/15/20 点 |
 | `com.user.stock-ai-daily-selection` | `stock-ai/scripts/install-daily-selection-launchd.sh` | 每日选股 17:30 |
 | `com.user.stock-watch-reminder-*` | `stock-ai/scripts/install-stock-watch-reminder-launchd.sh` | 一次性个股提醒 |
 
@@ -164,6 +165,7 @@ cursor tools-workspace.code-workspace
 # 登录自启（首次）
 ./scripts/install-docker-launchd.sh
 ./wechat-cursor-acp/scripts/install-launchd.sh
+./stock-ai/scripts/install-daily-briefing-launchd.sh
 ./stock-ai/scripts/install-holdings-monitor-launchd.sh
 ./stock-ai/scripts/install-daily-selection-launchd.sh
 

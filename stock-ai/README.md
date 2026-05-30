@@ -126,19 +126,17 @@ REPORT_ONLY=1 ./push_selection_wechat.sh       # 仅推送已有 output/daily_se
 
 请在 QClaw 中**关闭** cron `daily_stock_selection_17:30`，避免与 launchd 重复推送。
 
-## 每日战报（09/12/15/20 点 · QClaw cron）
-
-四个 `daily_briefing_*` 定时任务已切换为东财 Playwright 抓取（替代 ProSearch）：
+## 每日战报（09 / 12 / 15 / 20 点 · launchd）
 
 ```bash
-./scripts/install-daily-briefing-cron.sh          # 同步 QClaw jobs.json（重装/恢复时用）
-FETCH_ONLY=1 ./push_daily_briefing_wechat.sh 09:00  # 手动试跑
+./scripts/install-daily-briefing-launchd.sh   # 安装 launchd（替代 QClaw cron）
+FETCH_ONLY=1 ./push_daily_briefing_wechat.sh 09:00  # 手动试跑（不推微信）
 ./push_daily_briefing_wechat.sh 15:00             # 生成 + 推微信
 ```
 
-战报内容：DeepSeek AI 综合解读 + 大盘 + 东财7×24（地缘/国内财经）+ 国际商品/美股 + 持仓行情。
+战报内容：DeepSeek AI 综合解读 + 大盘 + 东财 7×24（地缘/国内财经）+ 国际商品/美股 + 持仓行情。非交易日自动标注「休市简报」。
 
-需配置 `stock-ai/.env` 中的 `DEEPSEEK_API_KEY`（与东财 SOP 相同）。跳过 AI：`--no-ai`。
+需配置 `stock-ai/.env` 中的 `DEEPSEEK_API_KEY`。跳过 AI：`daily_briefing_report.py --no-ai`。
 
 ## 选股策略（盘后运行）
 
