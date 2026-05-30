@@ -11,7 +11,7 @@ This is the default and unified entrypoint for daily stock-analysis tasks.
 
 ## Quick workflow
 
-1. Confirm the task type: data update, daily screening, strategy comparison, AI review, holdings-aware next-day plan, backtest, or single-stock diagnosis.
+1. Confirm the task type: data update, daily screening, strategy comparison, AI review, holdings-aware next-day plan, or single-stock diagnosis.
 2. Read `references/project-map.md` once if you need the project layout or prerequisites.
 3. Read `references/strategy-playbook.md` when you need strategy selection, command recipes, or result interpretation.
 4. If the task depends on the user's current positions, load `holdings/current.csv` from the workspace.
@@ -147,15 +147,12 @@ For sizing suggestions, keep them proportional to the stated portfolio size inst
 
 Do not present this as certainty; frame it as a next-day watchlist and action plan with risk notes.
 
-### Backtesting / retrospective analysis
+### Selection performance check (optional)
 
-Use dedicated backtest scripts instead of inventing ad hoc loops:
+If the user asks to compare recent picks vs actual moves:
 
-- `backtest_combined_strategy.py`
-- `backtest_bottom_breakout.py`
-- `backtest_recent_week.py`
-- `verify_selection_performance.py`
-- `compare_daily_selection.py`
+- `scripts/tools/verify_selection_performance.py`
+- `scripts/tools/compare_daily_selection.py`
 
 ### Single-stock diagnosis
 

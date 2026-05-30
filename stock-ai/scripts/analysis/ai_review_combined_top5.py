@@ -20,6 +20,7 @@ from dotenv import load_dotenv
 
 from scripts.tools.deepseek_client import call_deepseek
 from scripts.tools.holdings_context import load_full_decision_context
+from scripts.tools.wechat_format import format_sop_wechat_summary
 
 
 def _build_stock_rows(df: pd.DataFrame) -> list[dict]:
@@ -92,12 +93,23 @@ def review_combined_top5(
 请输出两部分，严格按格式：
 
 ===WECHAT===
-（微信推送，总字数不超过 1200 字）
-1) 🤖 DeepSeek Top{len(stocks)} 简评（每只 2 行）
-2) 📋 结合持仓操作建议（四类：持有观察/反弹减仓/候选新开仓/暂不操作）
-3) 📐 操盘逻辑校验（列出本次实际应用的 5-8 条关键规则，如「-5%硬止损」「P1广州发展8.3清仓」「单股≤30%」）
-4) 💡 明日优先动作（1-2 句，必须对齐 P0~P4 计划）
-禁止 markdown 表格
+（微信推送，总字数不超过 1200 字；小节之间空一行；禁止 **加粗** 与 markdown 表格）
+
+1) 🤖 DeepSeek Top{len(stocks)} 简评
+
+【代码 名称 · 分XX · 结论】
+理由 + 条件（每只一块，块间空一行）
+
+2) 📋 结合持仓操作建议
+· 持有观察 / 反弹减仓 / 候选新开仓 / 暂不操作（分项，每条一行）
+
+3) 📐 操盘逻辑校验
+· 规则一
+· 规则二
+（5-8 条，每条一行）
+
+4) 💡 明日优先动作
+· 对齐 P0～P4 的 1-2 条要点
 
 ===REPORT===
 （完整 Markdown，说明每条建议引用了哪些操盘逻辑条目）
@@ -122,7 +134,7 @@ def review_combined_top5(
         parts = content.split("===REPORT===", 1)
         wechat_part = parts[0].split("===WECHAT===", 1)[-1].strip()
         report_body = parts[1].strip() if len(parts) > 1 else content
-        wechat = wechat_part
+        wechat = format_sop_wechat_summary(wechat_part)
 
     report_path: str | None = None
     if save_report:

@@ -1,5 +1,7 @@
 # tushare-mcp
 
+> **能力总览**：[docs/CAPABILITIES.md](docs/CAPABILITIES.md) · **文档索引**：[docs/README.md](docs/README.md)
+
 ## 数据入库（MySQL）
 
 本目录提供三类数据入库方案：
@@ -114,7 +116,7 @@ uv run python scripts/sync/poll_eastmoney_intraday_snapshot_to_mysql.py --codes 
 
 ## 每日综合选股 + 收盘甄选战报（17:30 · launchd）
 
-工作日 **17:30** 自动运行：**综合选股 Top5 → 东财 SOP 八维分析 → DeepSeek 投资决策 → 收盘甄选战报 → 微信**（需已登录 [wechat-cursor-acp](../wechat-cursor-acp)）：
+工作日 **17:30** 自动运行：**日线补缺 → 综合选股 Top5 → 东财 SOP → DeepSeek → 次日监控 → 收盘甄选战报 → 微信**（需已登录 [wechat-cursor-acp](../wechat-cursor-acp)）：
 
 ```bash
 ./scripts/install-daily-selection-launchd.sh   # 安装 launchd
@@ -139,68 +141,32 @@ FETCH_ONLY=1 ./push_daily_briefing_wechat.sh 15:00  # 仅生成不推送
 
 战报内容：DeepSeek AI 综合解读 + 大盘 + 东财 7×24 + 国际 + 持仓。非交易日自动标注「休市简报」。
 
-## 选股策略（盘后运行）
+## 选股策略（盘后 / 研究）
 
-基于日线数据的选股策略，每日收盘后运行，筛选符合条件的强势股。
-
-### 策略一：量价齐升突破选股 🚀
-
-**特点**：捕捉放量突破的股票，适合短线波段
-
-- ✅ 量价齐升（放量突破）
-- ✅ 多头排列（MA5 > MA20 > MA60）
-- ✅ 防止追高（近5日涨幅<20%）
-- ✅ 按量比排序（主力活跃度）
+17:30 默认 **综合选股**；其它单策略条件见 [docs/SELECTION_STRATEGIES.md](docs/SELECTION_STRATEGIES.md)。
 
 ```bash
-# 使用最新交易日数据
+# 综合选股（与 17:30 相同）
+uv run python core_v2/stock_selection_combined.py
+
+# 单策略示例
 uv run python scripts/selection/stock_selection.py
-
-# 指定历史日期
-uv run python scripts/selection/stock_selection.py --date 20260107
-```
-
-**输出**：`output/stock_selection_YYYYMMDD.csv`
-
-### 策略二：沿MA5上行回调买入 📈
-
-**特点**：寻找刚好回踩MA5准备反弹的股票，买点精准
-
-- ✅ 今日回踩MA5（乖离率-2%~+1%）
-- ✅ 今日收阳线（尾盘拉起）
-- ✅ 近期强势（近5日至少3天在MA5上方）
-- ✅ MA5向上（趋势明确）
-- ✅ 按乖离率排序（越接近MA5越好）
-
-```bash
-# 使用最新交易日数据
 uv run python scripts/selection/stock_selection_ma5.py
-
-# 指定历史日期
-uv run python scripts/selection/stock_selection_ma5.py --date 20260107
+uv run python core_v3/stock_selection_five_factor_mysql.py
 ```
 
-**输出**：`output/stock_selection_ma5_YYYYMMDD.csv`
+输出目录：`output/stock_selection_*.csv`
 
-**策略对比**：
-- **策略一**：找启动点，适合追涨，短线操作
-- **策略二**：找买点，适合低吸，波段持有
+## 盘中监控（持仓 + 选股池 → 微信）
 
-## 盘中盯盘监控（信号输出 + 可选飞书）
-
-盯盘脚本会按你在脚本里配置的标的列表轮询信号，并输出到控制台与日志；当启用飞书且信号为"可执行信号"时才会推送（例如做T模式只推送"立即买入/立即卖出"，观望/暂不操作只记日志不推送）。
+交易时段 **9:30–11:30 / 13:00–15:00** 每 5 分钟检查；**触发才推微信**（wechat-acp）。
 
 ```bash
-# 方式 A：直接运行
-uv run python scripts/monitor/monitor_intraday_signals.py
+./scripts/install-holdings-monitor-launchd.sh
+uv run python -m scripts.monitor.monitor_holdings_alerts --force --push   # 试跑
 ```
 
-也可以用启动器脚本（里面可以直接写死环境变量）：
-
-```bash
-# 方式 B：使用启动器
-bash run_monitor.sh
-```
+规则：`investment-agent/config/holdings_alerts.json` + `selection_watch_alerts.json`（17:30 生成）。详见 [docs/CAPABILITIES.md](docs/CAPABILITIES.md) §5。
 
 ## 盘前总结（开盘前）
 

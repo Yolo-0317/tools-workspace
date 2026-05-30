@@ -8,7 +8,7 @@
 
 | 目录 | 能力摘要 | 详细文档 |
 |------|----------|----------|
-| [stock-ai](./stock-ai) | 行情入库、选股、回测、MCP、盘中/持仓监控、战报推送 | [stock-ai/README.md](./stock-ai/README.md) |
+| [stock-ai](./stock-ai) | 行情入库、选股、MCP、持仓监控、战报推送 | [stock-ai/README.md](./stock-ai/README.md) |
 | [investment-agent](./stock-ai/investment-agent) | 持仓执行卡、投资助手 Agent、OpenCLI 东财 SOP | [investment-agent/README.md](./stock-ai/investment-agent/README.md) |
 | [wechat-cursor-acp](./wechat-cursor-acp) | 微信私聊 ↔ Cursor CLI（`agent acp`） | [wechat-cursor-acp/README.md](./wechat-cursor-acp/README.md) |
 | [sidestore-infra](./sidestore-infra) | SideStore、Caddy、阿里云 DDNS、Let's Encrypt | [sidestore-infra/scripts/setup.sh](./sidestore-infra/scripts/setup.sh) |
@@ -36,8 +36,7 @@
 | **多策略选股** | 量价突破、MA5 回踩、底部突破、长期核心等，`scripts/selection/` |
 | **每日综合选股** | Top5 东财 SOP + 收盘甄选战报，17:30 launchd 推送微信 |
 | **东财 SOP 采集** | Playwright / OpenCLI 八维度个股数据，`scripts/analysis/eastmoney_sop_extract.py` |
-| **盘前/午盘/盘后** | `run_premarket_analysis.py` 等分析脚本 |
-| **回测** | `scripts/backtest/` |
+| **盘前/午盘/盘后** | `run_premarket_analysis.py` 等分析脚本（手动，非 launchd） |
 
 ### 监控与推送（微信 via wechat-acp）
 
@@ -48,7 +47,6 @@
 | `push_selection_wechat.sh` | 工作日 **17:30** | Top5 东财 SOP → 收盘甄选战报 → 次日监控规则 |
 | `push_macro_news_wechat.sh` | 按需 | 东财 7×24 宏观快讯 |
 | `push_stock_watch_reminder_wechat.sh` | 一次性 / 按需 | 个股关注提醒 |
-| `monitor_intraday_signals.py` | 常驻 / cron | 盘中买卖信号（可选飞书） |
 
 ### investment-agent
 
@@ -111,7 +109,7 @@ launchd：`com.user.sidestore-infra`、`com.user.sidestore-certs`、`com.user.al
 | `com.user.stock-ai-daily-selection` | `stock-ai/scripts/install-daily-selection-launchd.sh` | 每日选股 17:30 |
 | `com.user.stock-watch-reminder-*` | `stock-ai/scripts/install-stock-watch-reminder-launchd.sh` | 一次性个股提醒 |
 
-Docker 自启栈（`scripts/docker-autostart.sh`）：MySQL、Jellyfin、sidestore-infra、substore-clash、stock-ai 日线同步、stock_analysis。
+Docker 自启栈（`scripts/docker-autostart.sh`）：MySQL、Jellyfin、sidestore-infra、substore-clash、stock-ai 日线同步。
 
 日志：
 

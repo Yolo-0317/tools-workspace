@@ -24,6 +24,7 @@ from scripts.analysis.eastmoney_sop_extract import _extract_worker
 from scripts.tools.deepseek_client import call_deepseek
 from scripts.tools.holdings_context import load_full_decision_context
 from scripts.tools.sop_watch_parse import SopWatchMeta, parse_sop_review_text
+from scripts.tools.wechat_format import format_sop_wechat_summary
 
 SOP_JSON_LATEST = ROOT / "output" / "sop_review_latest.json"
 
@@ -177,12 +178,25 @@ def _deepseek_summary(
 ## 决策上下文
 {holdings_context}
 
-请输出微信推送摘要（≤1000字），格式：
+请输出微信推送摘要（≤1000字），严格格式（小节之间空一行，禁止 **加粗**，禁止 markdown 表格）：
+
 ===WECHAT===
-1) 📊 Top{len(per_stock)} SOP 投资决策（每只 1-2 行：结论+关键条件）
-2) 📋 结合持仓：明日优先动作（对齐 P0~P4）
-3) ⚠️ 今日最大风险（1-2 句）
-禁止 markdown 表格。"""
+1) 📊 Top{len(per_stock)} SOP 投资决策
+
+【代码 名称 · 分XX · 结论】
+理由：一句
+条件：止损/支撑/操作条件（如有）
+
+（每只股票一块，块与块之间空一行）
+
+2) 📋 结合持仓：明日优先动作
+· P0～P4 各一句（单独一行）
+· 总仓位一句
+
+3) ⚠️ 今日最大风险
+· 风险一
+· 风险二
+"""
 
     content = call_deepseek(
         [
@@ -194,8 +208,10 @@ def _deepseek_summary(
         timeout=(10, 180),
     )
     if "===WECHAT===" in content:
-        return content.split("===WECHAT===", 1)[-1].strip()
-    return content.strip()
+        raw = content.split("===WECHAT===", 1)[-1].strip()
+    else:
+        raw = content.strip()
+    return format_sop_wechat_summary(raw)
 
 
 def review_top5_sop_concurrent(
@@ -225,7 +241,7 @@ def review_top5_sop_concurrent(
     mysql_url = os.environ.get("MYSQL_URL", "").replace("host.docker.internal", "127.0.0.1")
     context = holdings_context.strip() or "（无决策上下文）"
     if holdings_codes is None:
-        holdings_codes, _, _ = load_full_decision_context()
+        holdings_codes, _ = load_full_decision_context()
 
     # 阶段 1：并发 Playwright 采集
     print(f"🔍 并发 SOP 采集 Top{len(codes)}（workers={sop_workers}）...", file=sys.stderr)

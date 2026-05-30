@@ -53,7 +53,6 @@ main() {
 
   # stock-ai
   compose_up "$HOME/dev/yolo/tools-workspace/stock-ai/docker/daily-sync"
-  compose_up "$HOME/dev/yolo/tools-workspace/stock-ai/stock_analysis"
 
   log "===== docker-autostart 完成 ====="
 }

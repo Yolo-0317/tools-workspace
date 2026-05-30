@@ -1,8 +1,0 @@
-fastapi
-uvicorn
-pandas
-sqlalchemy
-mysql-connector-python
-requests
-python-dotenv
-tushare

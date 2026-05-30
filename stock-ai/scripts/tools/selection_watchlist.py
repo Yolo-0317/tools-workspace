@@ -22,6 +22,7 @@ AGENT_ROOT = ROOT / "investment-agent"
 WATCH_FILE = AGENT_ROOT / "config" / "selection_watch_alerts.json"
 ARTIFACT_JSON = OUTPUT_DIR / "daily_selection_top5.json"
 ARTIFACT_FULL = OUTPUT_DIR / "daily_selection_full_latest.txt"
+ARTIFACT_AI = OUTPUT_DIR / "daily_selection_ai_latest.txt"
 SOP_JSON_LATEST = OUTPUT_DIR / "sop_review_latest.json"
 TOP_N = 5
 TZ = ZoneInfo("Asia/Shanghai")
@@ -163,8 +164,8 @@ def format_briefing_section(
     for i, p in enumerate(picks, 1):
         held = " 📌已持仓" if p.in_holdings else ""
         lines.append(
-            f"{i}. {p.name}({p.code}){held} | {p.label} | 分{p.score:.0f} | "
-            f"{p.close:.2f} ({p.change_pct:+.2f}%) | {p.action}"
+            f"{i}. {p.name}({p.code}){held}\n"
+            f"   {p.label} · 分{p.score:.0f} · {p.close:.2f} ({p.change_pct:+.2f}%) · {p.action}"
         )
         if p.in_holdings:
             continue
@@ -192,7 +193,7 @@ def format_briefing_section(
             lines.append(f"   次日监控：涨>5%不追；回调≤{dip}元观察区")
 
     if ai_excerpt.strip():
-        lines.extend(["", "【选股 SOP / AI 摘要】", ai_excerpt.strip()])
+        lines.extend(["", "── SOP / AI 投资决策 ──", "", ai_excerpt.strip(), ""])
     watch_count = len([p for p in picks if not p.in_holdings and p.code in worthy])
     if use_sop:
         monitor_note = (
@@ -208,16 +209,20 @@ def format_briefing_section(
 
 
 def load_ai_excerpt() -> str:
-    """读取 17:30 选股输出的完整 DeepSeek / SOP 简评（不截断）。"""
+    """读取选股 SOP / DeepSeek 微信摘要（优先干净产物，不含运行日志）。"""
+    from scripts.tools.wechat_format import extract_sop_ai_section, format_sop_wechat_summary
+
+    if ARTIFACT_AI.exists():
+        text = ARTIFACT_AI.read_text(encoding="utf-8").strip()
+        if text:
+            return format_sop_wechat_summary(text)
+
     for path in (ARTIFACT_FULL, OUTPUT_DIR / "daily_selection_push_latest.txt"):
         if not path.exists():
             continue
-        text = path.read_text(encoding="utf-8")
-        if "🤖 DeepSeek" in text or "🔬 东财 SOP" in text:
-            start = text.find("🤖")
-            if start < 0:
-                start = text.find("🔬")
-            return text[start:].strip()
+        extracted = extract_sop_ai_section(path.read_text(encoding="utf-8"))
+        if extracted:
+            return extracted
     return ""
 
 
@@ -408,9 +413,21 @@ def load_active_selection_rules(
         return []
     data = json.loads(watch_file.read_text(encoding="utf-8"))
     watch_date = data.get("watch_date")
-    if watch_date != today.isoformat():
-        return []
-    return list(data.get("rules") or [])
+    rules: list[dict] = []
+    for rule in data.get("rules") or []:
+        if rule.get("persistent"):
+            rules.append(rule)
+        elif watch_date == today.isoformat():
+            rules.append(rule)
+    return rules
+
+
+def export_ai_artifact(ai_text: str) -> None:
+    """保存选股 AI/SOP 微信摘要（供战报引用，不含 stderr 日志）。"""
+    from scripts.tools.wechat_format import format_sop_wechat_summary
+
+    ARTIFACT_AI.parent.mkdir(parents=True, exist_ok=True)
+    ARTIFACT_AI.write_text(format_sop_wechat_summary(ai_text.strip()) + "\n", encoding="utf-8")
 
 
 def export_artifact_from_text(full_text: str) -> None:

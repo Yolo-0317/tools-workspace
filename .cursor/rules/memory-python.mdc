@@ -12,7 +12,7 @@ Hermes Step 3：处理 `stock-ai/` 内代码时与本文件、`project-memory.md
 
 - 共享库：`stock_ai/`（bootstrap、logging、notify、symbols）
 - 策略核心：`core_v2/`、`core_v3/`
-- 脚本：`scripts/sync|selection|analysis|monitor|backtest|tools|archive/`
+- 脚本：`scripts/sync|selection|analysis|monitor|tools/`
 - MCP：`tushare_mcp.py`；Cursor MCP 配置见 `~/.cursor/mcp.json`
 
 ## 记忆条目

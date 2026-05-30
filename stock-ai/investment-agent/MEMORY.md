@@ -1,6 +1,6 @@
 # MEMORY.md - 长期记忆
 
-> 最后更新：2026-05-30（持仓策略全面对齐）
+> 最后更新：2026-05-30（文档索引 + CAPABILITIES 对齐）
 
 ---
 
@@ -74,8 +74,9 @@
 - **中国核电 (601985)**：10 派 1.80 元，股权登记日 2026-06-25，红利发放日 2026-07-02，900 股→约 162 元
 
 ### 策略层级
-- **权威**：`investment-agent/持仓执行卡.md` + `config/holdings_alerts.json`
-- **通用**：`~/.qclaw/workspace/memory/trading-strategies.md`（冲突以执行卡为准）
+- **权威**：`持仓执行卡.md` + `config/holdings_alerts.json`
+- **通用**：`memory/trading-strategies.md`（`~/.qclaw/workspace/memory/` 为兼容副本；冲突以执行卡为准）
+- **能力文档**：`../docs/CAPABILITIES.md`
 
 ---
 
@@ -85,16 +86,16 @@
 | 工具 | 路径/版本 | 用途 |
 |------|-----------|------|
 | **opencli browser** | v1.7.3，`/Users/yolo/.nvm/versions/node/v24.14.1/bin/opencli` | 个股深度分析首选（东财页面） |
-| **Tushare API** | Token已配置 | 批量选股/历史回测/实时行情 |
+| **Tushare API** | 环境变量 `TUSHARE_TOKEN`（勿写入本文件） | 批量选股/历史回测 |
 | **MySQL** | Docker容器，`stock_data.stock_daily` | 本地历史行情数据库 |
 | **EasyOCR** | python3 + torch 2.8.0 | 截图文字识别（持仓截图） |
 | **DeepSeek API** | 环境变量 `DEEPSEEK_API_KEY` | 股票深度分析（11维度框架） |
 
 ### 数据获取优先级
 1. **opencli browser**（东财页面）→ 个股深度分析首选
-2. **Tushare API** → 批量/实时行情，Key: `c939432a7e051c71fdfabe24d917ef308116e78c4c559132d0bef75f`
-3. **MySQL本地库** → 历史数据
-4. **Playwright东财** → JS渲染超时，备用
+2. **MySQL 本地库** → 历史日线（`stock_daily`）
+3. **Tushare API** → 全市场同步 / 补数（`TUSHARE_TOKEN` 见 `.env`）
+4. **Playwright 东财** → 宏观快讯、SOP 采集
 
 ### 股票分析硬性流程
 - 即使之前分析过，每次必须重新用 opencli browser 采集完整数据
@@ -102,9 +103,12 @@
 - 东财URL：沪市 `sh`、深市 `sz` 前缀
 
 ### 重要项目路径
-- Stock-AI：`/Users/yolo/dev/yolo/tools-workspace/stock-ai/tushare_mcp.py`，DeepSeek函数 `_call_deepseek_api()` 在第669-783行，模型已升级为 `deepseek-v4-flash`（第729行）
-- 持仓执行卡（权威）：`investment-agent/持仓执行卡.md`；QClaw 副本 `~/.qclaw/workspace/持仓执行卡.md` 须同步
-- 复盘日志：`~/.qclaw/workspace/复盘日志.md`
+- **能力总览**：`../docs/CAPABILITIES.md`
+- **stock-ai 根**：`/Users/yolo/dev/yolo/tools-workspace/stock-ai`
+- **DeepSeek**：`scripts/tools/deepseek_client.py`（MCP 用 `deepseek-v4-flash`，战报/SOP 用 `deepseek-chat`）
+- **MCP 服务**：`tushare_mcp.py`（见 CAPABILITIES 附录 / `docs/CURSOR_MCP_SETUP.md`）
+- **持仓执行卡（权威）**：`持仓执行卡.md`
+- **微信桥接**：`../../wechat-cursor-acp`（wechat-acp，非 QClaw 主通道）
 
 ---
 
@@ -127,6 +131,8 @@
 | `stock-analysis-framework.md` | 股票深度分析框架 v1.0（8模块完整模板） |
 | `持仓执行卡.md` | 当前持仓与 P0～P4 执行条件（权威来源） |
 | `config/holdings_alerts.json` | 盘中价位监控（与执行卡同步） |
+| `config/selection_watch_alerts.json` | 选股次日监控（17:30 自动生成） |
+| `../docs/CAPABILITIES.md` | 系统能力总览 |
 | `复盘日志.md` | 每日复盘记录 |
 | `600873_深度分析_SOP版.md` | 梅花生物完整分析 |
 | `600995_深度分析_DeepSeek版.md` | 南网储能完整分析 |
@@ -158,6 +164,8 @@
 | 日期 | 更新内容 |
 |------|---------|
 | 2026-04-24 | 新建股票深度分析框架（8模块版本），包含技术6指标+资金流+形态+BOLL+操作矩阵 |
+| 2026-05-30 | 清理 docs 遗留 14 篇；合并为 SELECTION_STRATEGIES + DEEPSEEK 做T 节 |
+| 2026-05-30 | 文档：`docs/CAPABILITIES.md` + `docs/README.md`；MEMORY 去敏感 token |
 | 2026-05-30 | 持仓执行卡 / MEMORY / 监控规则 / trading-strategies 全面对齐 P0～P4 |
 | 2026-05-27 | 精简战报定时任务，清理 MEMORY.md 重复章节，设置分红/止损提醒 |
 

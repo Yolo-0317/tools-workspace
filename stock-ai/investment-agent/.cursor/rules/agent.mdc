@@ -48,6 +48,7 @@ alwaysApply: true
 
 ## 工具路径
 
+- 能力总览：`../docs/CAPABILITIES.md`
 - OpenCLI Browser: `$HOME/.nvm/versions/node/v24.14.1/bin/opencli`
 - stock-ai 项目根: `../`（相对本目录）
 - MySQL 行情: 通过 `stock-ai` 的 `MYSQL_URL` 环境变量

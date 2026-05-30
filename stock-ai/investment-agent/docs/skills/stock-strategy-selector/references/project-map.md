@@ -47,15 +47,13 @@
 - `scripts/ai_review_top5.py`
 - `scripts/analyze_stock.py`
 - `scripts/analyze_holdings.py`
-- `scripts/check_why_not_selected.py`
+- `scripts/tools/check_why_not_selected.py`
+- `scripts/tools/debug_signal.py`
 
-### Backtests / verification
+### Verification (optional)
 
-- `scripts/backtest_combined_strategy.py`
-- `scripts/backtest_bottom_breakout.py`
-- `scripts/backtest_recent_week.py`
-- `scripts/compare_daily_selection.py`
-- `scripts/verify_selection_performance.py`
+- `scripts/tools/verify_selection_performance.py`
+- `scripts/tools/compare_daily_selection.py`
 
 ## Common command pattern
 

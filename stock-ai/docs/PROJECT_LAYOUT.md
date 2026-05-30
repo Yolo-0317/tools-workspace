@@ -12,23 +12,21 @@ stock-ai/
 │   ├── sync/              # 数据同步入库
 │   ├── selection/         # 选股
 │   ├── analysis/          # 持仓分析、盘前/盘中/盘后
-│   ├── monitor/           # 盘中监控与信号
-│   ├── backtest/          # 回测
-│   ├── tools/             # 校验、转换等工具
-│   └── archive/           # 一次性 / 历史脚本
+│   ├── monitor/           # 持仓 + 选股池监控
+│   └── tools/             # 校验、推送、战报等工具
 ├── tests/manual/          # 手动测试脚本
-├── docs/                  # 文档
+├── docs/                  # 文档（**CAPABILITIES.md** 为能力总览）
 ├── sql/                   # 建表 SQL
 ├── output/                # 选股/分析输出（gitignore）
 ├── logs/                  # 运行日志（gitignore）
 ├── investment-agent/      # 投资 Agent 工作区
-└── stock_analysis/        # 前后端实验子项目
 ```
 
 ## 常用入口
 
-| 用途 | 命令 |
+| 用途 | 命令 / 文档 |
 |------|------|
+| **能力总览** | [docs/CAPABILITIES.md](../docs/CAPABILITIES.md) |
 | Tushare 日线同步 | `uv run python scripts/sync/sync_tushare_daily_to_mysql.py` |
 | 五因子选股 | `uv run python core_v3/stock_selection_five_factor_mysql.py` |
 | 综合选股 (v2) | `uv run python core_v2/stock_selection_combined.py` |

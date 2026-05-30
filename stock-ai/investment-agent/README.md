@@ -9,7 +9,7 @@ investment-agent/
 ├── .cursor/rules/       # Cursor Agent 行为规范
 ├── memory/              # 每日记忆日志 + trading-strategies.md（策略正式副本）
 ├── config/              # holdings_alerts.json（持仓监控）；selection_watch_alerts 为运行时生成
-├── scripts/             # 止损监控、持仓查询等
+├── scripts/             # 持仓查询、qclaw 同步等
 ├── reports/             # 历史分析报告
 ├── docs/skills/         # 从 QClaw 复制的技能文档（参考用）
 ├── MEMORY.md            # 长期记忆
@@ -22,6 +22,7 @@ investment-agent/
 
 | 资源 | 路径 |
 |------|------|
+| **能力总览** | `../docs/CAPABILITIES.md` |
 | 行情数据 / MySQL 同步 | `../scripts/` |
 | 持仓 CSV | `../holdings/current.csv` |
 | 选股输出 | `../output/` |
@@ -43,8 +44,6 @@ agent login
 cd ../../wechat-cursor-acp && cp -n .env.example .env && ./scripts/start.sh
 ```
 
-旧入口 `./scripts/start-wechat-acp.sh` 仍会转发到新项目。
-
 ## 从 QClaw 同步最新记忆
 
 ```bash
@@ -59,13 +58,6 @@ cd ../../wechat-cursor-acp && cp -n .env.example .env && ./scripts/start.sh
 cd ../  # stock-ai 根目录
 ./push_selection_wechat.sh
 # 或 launchd: ../launchd/com.user.stock-ai-daily-selection.plist
-```
-
-**梅花生物止损监控**（交易日 09:31，已由统一持仓监控覆盖）：
-
-```bash
-# crontab 示例
-31 9 * * 1-5 cd /Users/yolo/dev/yolo/tools-workspace/stock-ai/investment-agent && python3 scripts/check_meihua_stop_loss.py
 ```
 
 **持仓盘中监控**（交易时段每 5 分钟，触发才推微信）：

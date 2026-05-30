@@ -2,6 +2,8 @@
 
 脚本按职责分子目录。根目录仅保留 `_bootstrap.py` 与少量**兼容入口**（如 `sync_tushare_daily_to_mysql.py`）。
 
+完整能力地图见 **[docs/CAPABILITIES.md](../docs/CAPABILITIES.md)**。
+
 ## sync — 数据入库
 
 | 脚本 | 说明 |
@@ -26,16 +28,12 @@
 
 ## monitor — 监控
 
-`monitor/monitor_stocks_v2.py`、`monitor/monitor_intraday_signals.py`
-
 | 脚本 | 说明 |
 |------|------|
-| `monitor/monitor_holdings_alerts.py` | 持仓执行卡条件监控 → 微信 |
-| `../push_holdings_monitor.sh` | 交易时段每 5 分钟（launchd） |
+| `monitor/monitor_holdings_alerts.py` | 持仓 + 选股池条件监控 → 微信（launchd 每 5 分钟） |
+| `../push_holdings_monitor.sh` | launchd 入口 |
 
-## backtest / tools / archive
-
-回测脚本、校验工具、已归档的一次性脚本。
+## tools
 
 | 脚本 | 说明 |
 |------|------|
@@ -43,6 +41,10 @@
 | `tools/deepseek_client.py` | DeepSeek 统一封装（`call_deepseek` / `call_deepseek_prompt`） |
 | `tools/ensure_daily_bars.py` | 检测 MySQL 日线是否落后，17:00 后期望日缺失则 Tushare 补同步 |
 | `tools/holdings_context.py` | 持仓执行卡 + trading-strategies 决策上下文 |
+| `tools/wechat_format.py` | 战报 AI 解读 / SOP 摘要微信排版 |
+| `tools/decision_context.py` | 决策上下文注入（执行卡 + 策略） |
+| `tools/position_sizing.py` | 换仓 / 试探仓执行表 |
+| `tools/sop_watch_parse.py` | SOP 终审标签解析（DECISION 优先） |
 | `tools/daily_briefing_report.py` | 每日战报（数据抓取 + DeepSeek 解读） |
 | `tools/patch_qclaw_daily_briefing_jobs.py` | 同步 QClaw daily_briefing 定时任务 |
 | `tools/wechat_acp_push_text.py` | 微信文本推送（wechat-acp） |

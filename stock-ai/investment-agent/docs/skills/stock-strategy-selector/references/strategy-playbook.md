@@ -142,18 +142,15 @@ If the user has stated a portfolio size, use it for sizing language. Current kno
 
 Keep this practical. The goal is not a long essay; it is a next-day checklist.
 
-### 6) Backtesting and retrospective validation
+### 6) Selection performance check (optional)
 
-For “回测一下”, “看看最近一周表现”, “验证策略有效性”, prefer built-in scripts:
+If the user asks to validate recent screening results:
 
 ```bash
 cd /Users/yolo/dev/yolo/tools-workspace/stock-ai
-uv run python scripts/backtest_combined_strategy.py
-uv run python scripts/backtest_recent_week.py
-uv run python scripts/verify_selection_performance.py
+uv run python -m scripts.tools.verify_selection_performance
+uv run python -m scripts.tools.compare_daily_selection
 ```
-
-Do not hand-roll a fragile ad hoc backtest unless the user asks for a custom metric.
 
 ## Compare strategies
 

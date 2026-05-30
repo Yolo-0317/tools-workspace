@@ -169,25 +169,11 @@ df = pro.daily(start_date='20260424', end_date='20260425')
 | **opencli browser**（浏览器自动化） | JS渲染页面数据抓取 | 个股行情、财务数据、筹码分布、机构持仓 | 批量宏观快讯（用脚本） |
 | **东财API**（curl） | 轻量级实时行情 | 指数/个股实时价格、每日战报 | 需要财务/基本面数据 |
 
-### 东财宏观财经快讯 / 每日战报（Playwright）
+### 东财宏观财经快讯 / 每日战报
 
-```bash
-cd ../  # stock-ai 根目录
+**命令与 launchd 调度** → [`../docs/CAPABILITIES.md`](../docs/CAPABILITIES.md) §2、§4。
 
-# 完整战报（launchd：09/12/15/20；收盘甄选战报并入 17:30 选股任务）
-FETCH_ONLY=1 ./push_daily_briefing_wechat.sh 09:00
-./push_selection_wechat.sh                    # 选股 Top5 + 收盘甄选战报
-./push_daily_briefing_wechat.sh 15:00
-
-# 首次/重装后
-./scripts/install-daily-briefing-launchd.sh
-./scripts/install-daily-selection-launchd.sh
-
-# 仅东财快讯
-uv run python -m scripts.tools.fetch_eastmoney_macro_news --limit 15
-```
-
-数据源：`https://kuaixun.eastmoney.com/`（主）+ 腾讯行情（大盘/国际/持仓）
+本机备忘：东财快讯 `uv run python -m scripts.tools.fetch_eastmoney_macro_news --limit 15`；数据源 `kuaixun.eastmoney.com` + 腾讯行情。
 
 ### ProSearch（在线搜索）
 

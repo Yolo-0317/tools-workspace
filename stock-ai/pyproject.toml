@@ -18,8 +18,3 @@ dependencies = [
 
 [tool.uv]
 managed = true
-
-[tool.uv.workspace]
-members = [
-    "stock_analysis/backend",
-]

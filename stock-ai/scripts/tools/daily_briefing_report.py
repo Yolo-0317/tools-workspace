@@ -20,6 +20,7 @@ from scripts.tools.deepseek_client import call_deepseek
 from scripts.tools.fetch_eastmoney_macro_news import MacroNewsItem, fetch_macro_news, format_report
 from scripts.tools.holdings_context import load_full_decision_context
 from scripts.tools.market_session import MarketSession, detect_market_session
+from scripts.tools.wechat_format import format_ai_interpretation
 
 ROOT = Path(__file__).resolve().parents[2]
 AGENT_ROOT = ROOT / "investment-agent"
@@ -277,24 +278,41 @@ def summarize_briefing_with_deepseek(
 
 时段提示：{hint}
 
-请输出微信战报用的「AI 综合解读」，要求：
-1. 以「【AI 综合解读】」开头，全中文，2-3 段，总字数 ≤600 字
-2. 第 1 段：若 A 股休市或非交易时段，首句必须点明「上一交易日（具体日期）收盘」或「今日休市」；再写大盘/地缘/原油/美股
-3. 第 2 段：国内财经要闻精华（3-5 条合并叙述，快讯可称「最新」）
-4. 第 3 段：结合持仓与纪律给出条件化关注点（禁止绝对买卖指令；严禁补仓梅花生物；严禁满仓新开仓；严禁追高等红线必须遵守）
-5. 若战报含「今日选股 Top5」，须单独用 1-2 句概括次日重点观察标的（区分已持仓与观察池）
-6. 禁止 markdown 表格，禁止英文；禁止把上一交易日收盘行情说成「今日盘中/今日收盘」"""
+请输出微信战报用的「AI 综合解读」，严格按下列格式（每个小节标题单独一行，小节之间必须空一行，禁止大段文字堆砌）：
+
+【AI 综合解读】
+
+📊 大盘与外围
+（2-3 句：休市/收盘日期 + 指数 + 地缘/原油/美股）
+
+📰 国内要闻
+· 要点一（一句）
+· 要点二
+· 要点三
+
+📋 持仓关注点
+· P0 梅花生物：条件化一句
+· P1 广州发展：条件化一句
+· P2/P3/P4：各一句（无则省略）
+（每条必须单独一行，禁止合并成段落）
+
+👀 选股观察（仅当战报含 Top5 时输出）
+· 代码 名称：结论 + 关键价位/条件（每只一行）
+
+要求：
+1. 总字数 ≤600 字；全中文；禁止 markdown 表格与 **加粗**
+2. 若 A 股休市或非交易时段，📊 首句必须点明「上一交易日（日期）收盘」或「今日休市」
+3. 禁止绝对买卖指令；严禁补仓梅花生物、满仓新开仓、追高等红线
+4. 禁止把上一交易日收盘行情说成「今日盘中/今日收盘」"""
 
     content = call_deepseek(
         [
-            {"role": "system", "content": "你是 A 股投资助手，输出简洁务实，全中文。"},
+            {"role": "system", "content": "你是 A 股投资助手，输出简洁务实，全中文，善用空行分段。"},
             {"role": "user", "content": prompt},
         ],
         max_tokens=900,
     )
-    if not content.startswith("【AI 综合解读】"):
-        content = f"【AI 综合解读】\n{content}"
-    return content
+    return format_ai_interpretation(content)
 
 
 def build_daily_briefing(slot: str, *, news_limit: int = 8, with_ai: bool = True) -> str:
@@ -349,7 +367,7 @@ def build_daily_briefing(slot: str, *, news_limit: int = 8, with_ai: bool = True
 
     parts = [*header, ""]
     if ai_block:
-        parts.extend([ai_block, "", "---", ""])
+        parts.extend([ai_block, "", "────────────", ""])
     parts.extend(raw_sections)
     return "\n".join(parts)
 

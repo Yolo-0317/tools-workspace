@@ -167,18 +167,20 @@ def main() -> int:
     sections = [_format_report(csv_path, trade_date, holdings_codes, names), ""]
 
     if args.no_sop:
-        sections.append(_run_ai_review(csv_path, decision_context))
+        ai_block = _run_ai_review(csv_path, decision_context)
     else:
-        sections.append(
-            _run_sop_review(
-                csv_path,
-                decision_context,
-                holdings_codes,
-                sop_workers=args.sop_workers,
-                deepseek_workers=args.deepseek_workers,
-            )
+        ai_block = _run_sop_review(
+            csv_path,
+            decision_context,
+            holdings_codes,
+            sop_workers=args.sop_workers,
+            deepseek_workers=args.deepseek_workers,
         )
+    sections.append(ai_block)
 
+    from scripts.tools.selection_watchlist import export_ai_artifact
+
+    export_ai_artifact(ai_block)
     print("\n".join(sections))
     return 0
 

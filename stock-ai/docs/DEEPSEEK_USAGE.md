@@ -1,5 +1,21 @@
 # DeepSeek AI 交易信号使用指南
 
+> **2026-05 更新**：API 调用已统一到 `scripts/tools/deepseek_client.py`；能力总览见 **[CAPABILITIES.md](CAPABILITIES.md)**。
+
+## API 封装与模型
+
+| 入口 | 函数 | 默认模型 | 环境变量 |
+|------|------|----------|----------|
+| MCP / 持仓 prompt | `call_deepseek_prompt()` | `deepseek-v4-flash` | `DEEPSEEK_MCP_MODEL` |
+| 战报 / SOP messages | `call_deepseek()` | `deepseek-chat` | `DEEPSEEK_MODEL` |
+
+MCP 内 `_call_deepseek_api()` 已委托至 `call_deepseek_prompt()`。  
+个股分析会自动注入决策上下文（`decision_context.py` + 持仓执行卡 + `trading-strategies.md`）。
+
+可调环境变量：`DEEPSEEK_API_KEY`（必需）、`DEEPSEEK_MAX_TOKENS`、`DEEPSEEK_RETRIES`、`DEEPSEEK_CONTINUE_ON_LENGTH`、`DEEPSEEK_TIMEOUT_SECONDS` 等。
+
+---
+
 ## 功能概述
 
 `deepseek_trade_signal()` 是一个基于 DeepSeek AI 的交易信号分析工具，它：
@@ -86,29 +102,7 @@ uv run python tests/manual/test_deepseek_signal.py
 ✅ 规则策略与 AI 信号一致！置信度更高
 ```
 
-### 方式 2：集成到盯盘脚本（实盘使用）
-
-在 `monitor_intraday_signals.py` 配置区启用 DeepSeek：
-
-```python
-def main() -> int:
-    # =========================
-    # 配置区
-    # =========================
-    codes = ["159218", "159840"]
-    interval = 60.0
-    enable_feishu = True
-    enable_deepseek = True  # 👈 启用 DeepSeek AI
-    deepseek_on_strong_signal_only = True  # 👈 仅在买入/卖出时调用 AI（节省成本）
-```
-
-运行监控：
-
-```bash
-uv run python scripts/monitor_intraday_signals.py
-```
-
-### 方式 3：作为 MCP 工具调用（Claude Desktop 等）
+### 方式 2：作为 MCP 工具调用（Cursor / Claude Desktop）
 
 在 Claude Desktop 的 MCP 配置中，`deepseek_trade_signal` 会作为工具暴露：
 
@@ -128,31 +122,51 @@ uv run python scripts/monitor_intraday_signals.py
 }
 ```
 
-然后在 Claude 对话中：
+然后在 Cursor 对话中：
+
 ```
-请用 deepseek_trade_signal 分析 159218 的交易信号
+请用 deepseek_trade_signal 分析 600995 的交易信号
 ```
+
+---
+
+## 盘中做 T（`deepseek_intraday_t_signal`）
+
+专注**日内波段**，与 `deepseek_trade_signal`（趋势 MA5/MA20）互补。
+
+| 对比 | `deepseek_trade_signal` | `deepseek_intraday_t_signal` |
+|------|-------------------------|------------------------------|
+| 周期 | 数天～数周 | 分钟～小时 |
+| 信号 | 买入 / 卖出 / 观望 | 做T买 / 做T卖 / 加减仓 / 不动 |
+| 持仓 | 可选 | 建议传 `position_cost`、`position_ratio`（0～1） |
+
+**信号含义**：做T买入（回调支撑低吸）、做T卖出（拉升压力高抛）、加仓、减仓、持仓不动。
+
+**测试**：
+
+```bash
+cd stock-ai
+uv run python tests/manual/test_t_signal.py
+```
+
+**注意**：做 T 仍须遵守持仓执行卡红线（禁追高、禁满仓新开仓等）；MCP 输出已注入决策上下文。
+
+---
 
 ## 配置选项
 
-### 温度参数（temperature）
+### 温度与模型
 
-在 `tushare_mcp.py` 的 `_call_deepseek_api()` 函数中调整：
+- MCP / 持仓类：调用 `call_deepseek_prompt(..., temperature=0.3)`，模型 `DEEPSEEK_MCP_MODEL`（默认 `deepseek-v4-flash`）
+- 战报 / SOP 类：调用 `call_deepseek(..., temperature=0.3~0.5)`，模型 `DEEPSEEK_MODEL`（默认 `deepseek-chat`）
 
-```python
-# temperature: 0.0-1.0
-# - 0.0-0.3: 确定性高，适合交易信号（推荐 0.3）
-# - 0.7-1.0: 创造性高，不适合交易决策
-ai_response = _call_deepseek_api(prompt, temperature=0.3)
-```
+`temperature` 建议 **0.0–0.3** 用于交易信号；0.7+ 不适合决策。
 
-### 提示词优化
+### 提示词与决策上下文
 
-在 `tushare_mcp.py` 的 `_build_deepseek_prompt()` 函数中自定义：
-
-- 增加更多技术指标（RSI、MACD、布林带等）
-- 添加行业/板块/大盘环境上下文
-- 调整分析侧重点（趋势 vs 回归 vs 波段）
+- MCP 内 `_build_deepseek_prompt()` 可扩展技术指标
+- 所有 MCP 个股 DeepSeek 分析经 `_maybe_inject_decision_context()` 注入执行卡 + 策略（`SKIP_DECISION_CONTEXT=1` 可跳过）
+- 脚本侧：`from scripts.tools.decision_context import inject_decision_context`
 
 ## 成本估算
 
@@ -165,14 +179,14 @@ DeepSeek API 定价（参考官网最新）：
 - 输出: ~300 tokens（信号 + 理由）
 - 成本: ~$0.0003/次（约 ¥0.002）
 
-每分钟盯 2 个标的，每天交易时段 4 小时：
+每分钟盯 2 个标的（若用 MCP 手动轮询），每天交易时段 4 小时：
 - 调用次数: 2 标的 × 60 分钟/小时 × 4 小时 = 480 次/天
 - 日成本: ~$0.14（约 ¥1）
 
 **节省成本技巧**：
-1. 设置 `deepseek_on_strong_signal_only=True`（仅在买入/卖出时调用）
-2. 增加轮询间隔（如 2-5 分钟）
-3. 只在关键时段（开盘/收盘前）高频调用
+1. 盘中按需调用 MCP `deepseek_trade_signal`，勿高频轮询
+2. 持仓条件监控用 `monitor_holdings_alerts`（规则触发，无 DeepSeek 轮询）
+3. 只在关键时段（开盘/收盘前）主动问 MCP
 
 ## 注意事项
 
@@ -185,10 +199,7 @@ DeepSeek API 定价（参考官网最新）：
 
 ### 2. API 调用失败处理
 
-脚本已内置异常处理：
-- API 超时/失败不会影响规则策略信号
-- 错误信息会打印到控制台（可选发飞书）
-- 下一轮轮询会自动重试
+脚本已内置异常处理：API 超时/失败不影响规则策略信号；下一轮轮询自动重试。
 
 ### 3. 数据延迟
 
@@ -247,13 +258,7 @@ A:
 
 ### Q: 可以用其他大模型吗？
 
-A: 可以。修改 `_call_deepseek_api()` 函数，替换成：
-- OpenAI GPT-4
-- Claude API
-- 阿里通义千问
-- 百度文心一言
-
-只需调整 API endpoint 和请求格式即可。
+A: 修改 `scripts/tools/deepseek_client.py` 中的模型与 endpoint，或设置 `DEEPSEEK_MODEL` / `DEEPSEEK_MCP_MODEL` 环境变量（需 API 兼容 OpenAI Chat Completions 格式）。
 
 ## 支持
 
