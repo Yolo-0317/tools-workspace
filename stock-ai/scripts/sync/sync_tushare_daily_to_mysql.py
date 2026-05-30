@@ -158,6 +158,7 @@ def get_mysql_engine():
         print("请在 .env 文件中设置：MYSQL_URL=mysql+pymysql://user:pass@host/db")
         sys.exit(1)
 
+    mysql_url = mysql_url.replace("host.docker.internal", "127.0.0.1")
     return create_engine(mysql_url, pool_pre_ping=True, pool_recycle=3600)
 
 

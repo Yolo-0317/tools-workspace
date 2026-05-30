@@ -16,41 +16,10 @@ for _p in (ROOT, ROOT / "core_v2"):
         sys.path.insert(0, _s)
 
 import pandas as pd
-import requests
 from dotenv import load_dotenv
 
+from scripts.tools.deepseek_client import call_deepseek
 from scripts.tools.holdings_context import load_full_decision_context
-
-
-def _call_deepseek(messages: list, max_retries: int = 3) -> str:
-    api_key = os.getenv("DEEPSEEK_API_KEY")
-    if not api_key:
-        raise ValueError("DEEPSEEK_API_KEY 未设置")
-
-    url = "https://api.deepseek.com/v1/chat/completions"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
-    payload = {
-        "model": "deepseek-chat",
-        "messages": messages,
-        "temperature": 0.5,
-        "max_tokens": 3000,
-    }
-
-    last_err: Exception | None = None
-    for attempt in range(max_retries):
-        try:
-            resp = requests.post(url, headers=headers, json=payload, timeout=120)
-            if resp.status_code == 200:
-                return resp.json()["choices"][0]["message"]["content"]
-            last_err = RuntimeError(f"HTTP {resp.status_code}: {resp.text[:200]}")
-        except Exception as exc:  # noqa: BLE001
-            last_err = exc
-        if attempt < max_retries - 1:
-            continue
-    raise RuntimeError(str(last_err))
 
 
 def _build_stock_rows(df: pd.DataFrame) -> list[dict]:
@@ -134,14 +103,17 @@ def review_combined_top5(
 （完整 Markdown，说明每条建议引用了哪些操盘逻辑条目）
 """
 
-    content = _call_deepseek(
+    content = call_deepseek(
         [
             {
                 "role": "system",
                 "content": "专业、客观、简洁。这是决策支持，不是投资建议。",
             },
             {"role": "user", "content": prompt},
-        ]
+        ],
+        temperature=0.5,
+        max_tokens=3000,
+        timeout=(10, 120),
     )
 
     wechat = content

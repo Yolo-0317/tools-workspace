@@ -32,4 +32,7 @@ echo "开始综合选股 + SOP..."
 echo "时间：$(date '+%Y-%m-%d %H:%M:%S')"
 echo "=========================================="
 
+echo "检查 MySQL 日线是否落后（Tushare 通常 17:00 后较稳）..."
+uv run python -m scripts.tools.ensure_daily_bars --sync-if-stale
+
 uv run python -m scripts.selection.daily_selection_report $SOP_ARGS 2>&1 | tee "logs/selection_daily_$(date '+%Y%m%d').log"

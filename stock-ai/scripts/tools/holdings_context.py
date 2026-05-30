@@ -8,11 +8,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 QCLAW_WORKSPACE = Path.home() / ".qclaw/workspace"
-AGENT_HOLDINGS = (
-    Path(__file__).resolve().parents[2] / "investment-agent" / "持仓执行卡.md"
-)
+AGENT_ROOT = Path(__file__).resolve().parents[2] / "investment-agent"
+AGENT_HOLDINGS = AGENT_ROOT / "持仓执行卡.md"
 DEFAULT_HOLDINGS = QCLAW_WORKSPACE / "持仓执行卡.md"
-TRADING_RULES_FILE = QCLAW_WORKSPACE / "memory/trading-strategies.md"
+TRADING_RULES_CANDIDATES = (
+    AGENT_ROOT / "memory" / "trading-strategies.md",
+    QCLAW_WORKSPACE / "memory" / "trading-strategies.md",
+)
 
 
 @dataclass
@@ -107,11 +109,20 @@ def load_holdings_card(path: Path | None = None) -> tuple[set[str], list[Holding
     return codes, holdings, "\n".join(parts)
 
 
+def resolve_trading_rules_path(path: Path | None = None) -> Path | None:
+    if path is not None:
+        return path if path.exists() else None
+    for candidate in TRADING_RULES_CANDIDATES:
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def load_trading_rules(path: Path | None = None) -> str:
-    path = path or TRADING_RULES_FILE
-    if not path.exists():
+    resolved = resolve_trading_rules_path(path)
+    if resolved is None:
         return "（未找到 memory/trading-strategies.md）"
-    return path.read_text(encoding="utf-8").strip()
+    return resolved.read_text(encoding="utf-8").strip()
 
 
 def load_full_decision_context(

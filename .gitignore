@@ -23,8 +23,10 @@ stock-ai/logs/
 stock-ai/.playwright-cli/
 stock-ai/jupyter/
 stock-ai/holdings/
-stock-ai/investment-agent/memory/
+stock-ai/investment-agent/memory/*
+!stock-ai/investment-agent/memory/trading-strategies.md
 stock-ai/investment-agent/reports/
+stock-ai/investment-agent/config/selection_watch_alerts.json
 stock-ai/investment-agent/holdings.csv
 stock-ai/*.bak
 

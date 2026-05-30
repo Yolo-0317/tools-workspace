@@ -17,41 +17,15 @@ for _p in (ROOT, ROOT / "core_v2"):
         sys.path.insert(0, _s)
 
 import pandas as pd
-import requests
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
 from scripts.analysis.eastmoney_sop_extract import _extract_worker
+from scripts.tools.deepseek_client import call_deepseek
 from scripts.tools.holdings_context import load_full_decision_context
 from scripts.tools.sop_watch_parse import SopWatchMeta, parse_sop_review_text
 
 SOP_JSON_LATEST = ROOT / "output" / "sop_review_latest.json"
-
-
-def _call_deepseek(messages: list, max_retries: int = 3) -> str:
-    api_key = os.getenv("DEEPSEEK_API_KEY")
-    if not api_key:
-        raise ValueError("DEEPSEEK_API_KEY 未设置")
-
-    url = "https://api.deepseek.com/v1/chat/completions"
-    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
-    payload = {
-        "model": "deepseek-chat",
-        "messages": messages,
-        "temperature": 0.3,
-        "max_tokens": 3500,
-    }
-
-    last_err: Exception | None = None
-    for attempt in range(max_retries):
-        try:
-            resp = requests.post(url, headers=headers, json=payload, timeout=180)
-            if resp.status_code == 200:
-                return resp.json()["choices"][0]["message"]["content"]
-            last_err = RuntimeError(f"HTTP {resp.status_code}: {resp.text[:200]}")
-        except Exception as exc:  # noqa: BLE001
-            last_err = exc
-    raise RuntimeError(str(last_err))
 
 
 def _to_full_code(code: str) -> str:
@@ -174,11 +148,14 @@ WATCH: 是|否 | DECISION: 买入观察|暂不操作|持有|减仓 | SUPPORT: 7.
 
 全中文，禁止 markdown 表格。"""
 
-    content = _call_deepseek(
+    content = call_deepseek(
         [
             {"role": "system", "content": "专业、客观、简洁。结合持仓与操盘红线给出条件式建议。"},
             {"role": "user", "content": prompt},
-        ]
+        ],
+        temperature=0.3,
+        max_tokens=3500,
+        timeout=(10, 180),
     )
     return code, content
 
@@ -207,11 +184,14 @@ def _deepseek_summary(
 3) ⚠️ 今日最大风险（1-2 句）
 禁止 markdown 表格。"""
 
-    content = _call_deepseek(
+    content = call_deepseek(
         [
             {"role": "system", "content": "简洁务实，全中文。"},
             {"role": "user", "content": prompt},
-        ]
+        ],
+        temperature=0.3,
+        max_tokens=3500,
+        timeout=(10, 180),
     )
     if "===WECHAT===" in content:
         return content.split("===WECHAT===", 1)[-1].strip()

@@ -29,7 +29,8 @@ ensure_repo_root_on_path()
 
 from dotenv import load_dotenv
 import pandas as pd
-import requests
+
+from scripts.tools.deepseek_client import call_deepseek
 
 # 加载环境变量
 env_path = Path(__file__).resolve().parents[1] / ".env"
@@ -97,65 +98,18 @@ def get_stock_info_from_eastmoney(ts_code) -> dict:
 
 
 def call_deepseek_api(messages: list, max_retries: int = 3) -> str:
-    """调用DeepSeek API进行分析（带重试机制）"""
-    api_key = os.getenv('DEEPSEEK_API_KEY')
-    if not api_key:
-        raise ValueError("❌ 环境变量 DEEPSEEK_API_KEY 未设置")
-    
-    url = "https://api.deepseek.com/v1/chat/completions"
-    
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}"
-    }
-    
-    data = {
-        "model": "deepseek-chat",
-        "messages": messages,
-        "temperature": 0.7,
-        "max_tokens": 4000
-    }
-    
+    """调用 DeepSeek API 进行分析（带重试机制）。"""
     print("🤖 正在调用DeepSeek AI分析...")
     print("💡 提示：AI深度分析可能需要1-2分钟，请耐心等待...")
-    
-    # 重试机制
-    for attempt in range(max_retries):
-        try:
-            response = requests.post(url, headers=headers, json=data, timeout=120)
-            
-            if response.status_code == 200:
-                result = response.json()
-                content = result['choices'][0]['message']['content']
-                print("✅ AI分析完成")
-                return content
-            else:
-                error_msg = f"API调用失败: {response.status_code} - {response.text}"
-                if attempt < max_retries - 1:
-                    print(f"⚠️ {error_msg}，正在重试（{attempt + 1}/{max_retries}）...")
-                    continue
-                else:
-                    raise Exception(error_msg)
-        
-        except requests.exceptions.Timeout:
-            if attempt < max_retries - 1:
-                print(f"⚠️ API调用超时，正在重试（{attempt + 1}/{max_retries}）...")
-                print("   提示：网络可能较慢，请耐心等待...")
-                continue
-            else:
-                raise Exception(f"API调用超时（已重试{max_retries}次）。可能原因：\n"
-                              "  1. 网络连接不稳定\n"
-                              "  2. DeepSeek服务器响应慢\n"
-                              "  建议：稍后再试或检查网络连接")
-        
-        except Exception as e:
-            if attempt < max_retries - 1:
-                print(f"⚠️ 发生错误：{e}，正在重试（{attempt + 1}/{max_retries}）...")
-                continue
-            else:
-                raise
-    
-    raise Exception("API调用失败（已达到最大重试次数）")
+    content = call_deepseek(
+        messages,
+        max_retries=max_retries,
+        temperature=0.7,
+        max_tokens=4000,
+        timeout=(10, 120),
+    )
+    print("✅ AI分析完成")
+    return content
 
 
 def analyze_top5_with_ai(top5_df: pd.DataFrame, eastmoney_data: list) -> str:

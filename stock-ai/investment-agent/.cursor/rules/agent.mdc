@@ -32,7 +32,7 @@ alwaysApply: true
 ## 策略层级
 
 - **权威来源**：`持仓执行卡.md` P0～P4 + `config/holdings_alerts.json`
-- **通用纪律**：`~/.qclaw/workspace/memory/trading-strategies.md`（冲突以执行卡为准）
+- **通用纪律**：`memory/trading-strategies.md`（qclaw 副本作 fallback；冲突以执行卡为准）
 
 ## 股票分析流程
 

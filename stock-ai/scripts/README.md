@@ -40,7 +40,9 @@
 | 脚本 | 说明 |
 |------|------|
 | `tools/fetch_eastmoney_macro_news.py` | Playwright 抓取东财 7×24 宏观财经快讯 |
-| `tools/deepseek_client.py` | DeepSeek Chat API 封装 |
+| `tools/deepseek_client.py` | DeepSeek 统一封装（`call_deepseek` / `call_deepseek_prompt`） |
+| `tools/ensure_daily_bars.py` | 检测 MySQL 日线是否落后，17:00 后期望日缺失则 Tushare 补同步 |
+| `tools/holdings_context.py` | 持仓执行卡 + trading-strategies 决策上下文 |
 | `tools/daily_briefing_report.py` | 每日战报（数据抓取 + DeepSeek 解读） |
 | `tools/patch_qclaw_daily_briefing_jobs.py` | 同步 QClaw daily_briefing 定时任务 |
 | `tools/wechat_acp_push_text.py` | 微信文本推送（wechat-acp） |

@@ -7,7 +7,8 @@
 ```
 investment-agent/
 ├── .cursor/rules/       # Cursor Agent 行为规范
-├── memory/              # 每日记忆日志
+├── memory/              # 每日记忆日志 + trading-strategies.md（策略正式副本）
+├── config/              # holdings_alerts.json（持仓监控）；selection_watch_alerts 为运行时生成
 ├── scripts/             # 止损监控、持仓查询等
 ├── reports/             # 历史分析报告
 ├── docs/skills/         # 从 QClaw 复制的技能文档（参考用）
@@ -52,7 +53,15 @@ cd ../../wechat-cursor-acp && cp -n .env.example .env && ./scripts/start.sh
 
 ## 定时任务（可选，独立于 QClaw）
 
-梅花生物止损监控（交易日 09:31，已由统一持仓监控覆盖）：
+**17:30 收盘甄选**（选股 → SOP → 日线补同步 → 次日监控 → 战报微信）：
+
+```bash
+cd ../  # stock-ai 根目录
+./push_selection_wechat.sh
+# 或 launchd: ../launchd/com.user.stock-ai-daily-selection.plist
+```
+
+**梅花生物止损监控**（交易日 09:31，已由统一持仓监控覆盖）：
 
 ```bash
 # crontab 示例
