@@ -174,12 +174,14 @@ df = pro.daily(start_date='20260424', end_date='20260425')
 ```bash
 cd ../  # stock-ai 根目录
 
-# 完整战报（与 QClaw daily_briefing 定时任务一致，含 DeepSeek 解读）
+# 完整战报（launchd：09/12/15/20；收盘甄选战报并入 17:30 选股任务）
 FETCH_ONLY=1 ./push_daily_briefing_wechat.sh 09:00
+./push_selection_wechat.sh                    # 选股 Top5 + 收盘甄选战报
 ./push_daily_briefing_wechat.sh 15:00
 
-# 首次/重装后：把 QClaw 4 个 daily_briefing 任务切到新脚本
-./scripts/install-daily-briefing-cron.sh
+# 首次/重装后
+./scripts/install-daily-briefing-launchd.sh
+./scripts/install-daily-selection-launchd.sh
 
 # 仅东财快讯
 uv run python -m scripts.tools.fetch_eastmoney_macro_news --limit 15

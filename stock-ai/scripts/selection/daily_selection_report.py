@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run combined stock selection and print a WeChat-friendly Top5 + holdings summary."""
+"""Run combined stock selection and print a WeChat-friendly Top5 + SOP summary."""
 
 from __future__ import annotations
 
@@ -96,21 +96,30 @@ def _run_ai_review(csv_path: Path, holdings_context: str) -> str:
         return f"🤖 DeepSeek 审查 + 持仓建议\n（失败：{exc}）"
 
 
-def _run_sop_review(csv_path: Path, holdings_context: str, sop_workers: int, deepseek_workers: int) -> str:
+def _run_sop_review(
+    csv_path: Path,
+    holdings_context: str,
+    holdings_codes: set[str],
+    sop_workers: int,
+    deepseek_workers: int,
+) -> str:
     if not os.getenv("DEEPSEEK_API_KEY"):
         return "🔬 东财 SOP + 投资决策\n（跳过：未配置 DEEPSEEK_API_KEY）"
     try:
         from scripts.analysis.sop_review_top5_concurrent import review_top5_sop_concurrent
 
-        wechat, report_path = review_top5_sop_concurrent(
+        wechat, report_path, watch_metas = review_top5_sop_concurrent(
             csv_path,
             top_n=TOP_N,
             sop_workers=sop_workers,
             deepseek_workers=deepseek_workers,
             holdings_context=holdings_context,
+            holdings_codes=holdings_codes,
         )
         if report_path:
             print(f"📄 SOP 投资决策报告: {report_path}", file=sys.stderr)
+        n_watch = sum(1 for m in watch_metas if m.watch_worthy and not m.in_holdings)
+        print(f"👀 SOP 值得关注（非持仓）: {n_watch} 只 → 次日 5 分钟监控", file=sys.stderr)
         return f"🔬 东财 SOP Top{TOP_N} 投资决策\n\n{wechat}"
     except Exception as exc:  # noqa: BLE001
         return f"🔬 东财 SOP + 投资决策\n（失败：{exc}）"
@@ -119,19 +128,14 @@ def _run_sop_review(csv_path: Path, holdings_context: str, sop_workers: int, dee
 def main() -> int:
     import argparse
 
-    parser = argparse.ArgumentParser(description="综合选股 + Top5 报告")
+    parser = argparse.ArgumentParser(description="综合选股 + Top5 SOP 报告")
     parser.add_argument(
-        "--with-sop",
+        "--no-sop",
         action="store_true",
-        help="对 Top5 并发执行东财 SOP 采集 + DeepSeek 投资决策（较慢，约 2-4 分钟）",
+        help="跳过东财 SOP（改用轻量 DeepSeek 简评，不推荐）",
     )
     parser.add_argument("--sop-workers", type=int, default=3, help="Playwright 并发数")
     parser.add_argument("--deepseek-workers", type=int, default=3, help="DeepSeek 并发数")
-    parser.add_argument(
-        "--sop-only",
-        action="store_true",
-        help="仅跑 SOP 投资决策（跳过轻量 AI 审查，需配合 --with-sop）",
-    )
     args = parser.parse_args()
 
     load_dotenv(ROOT / ".env")
@@ -162,17 +166,18 @@ def main() -> int:
 
     sections = [_format_report(csv_path, trade_date, holdings_codes, names), ""]
 
-    if args.with_sop:
+    if args.no_sop:
+        sections.append(_run_ai_review(csv_path, decision_context))
+    else:
         sections.append(
             _run_sop_review(
                 csv_path,
                 decision_context,
+                holdings_codes,
                 sop_workers=args.sop_workers,
                 deepseek_workers=args.deepseek_workers,
             )
         )
-    elif not args.sop_only:
-        sections.append(_run_ai_review(csv_path, decision_context))
 
     print("\n".join(sections))
     return 0

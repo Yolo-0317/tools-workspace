@@ -33,6 +33,8 @@ SLOT_TITLES = {
     "09:00": "盘中战报",
     "12:00": "午间战报",
     "15:00": "收盘战报",
+    "17:30": "收盘甄选战报",
+    "18:00": "收盘甄选战报",
     "20:00": "晚间战报",
 }
 
@@ -40,8 +42,13 @@ SLOT_HINTS = {
     "09:00": "早盘阶段，侧重隔夜消息与开盘预期。",
     "12:00": "午间休市，侧重上午盘面与午后关注点。",
     "15:00": "A股收盘，侧重全天走势复盘与持仓表现。",
+    "17:30": "收盘后阶段：必须结合「五、今日选股 Top5」给出次日观察要点；非持仓标的仅条件化关注，严禁追高与满仓新开仓。",
+    "18:00": "收盘后阶段：必须结合「五、今日选股 Top5」给出次日观察要点；非持仓标的仅条件化关注，严禁追高与满仓新开仓。",
     "20:00": "晚间时段，侧重外盘动向与次日关注点。",
 }
+
+# 含 Top5 选股段的战报时段（17:30 与选股任务合并推送；18:00 保留供手动补发）
+SELECTION_BRIEFING_SLOTS = frozenset({"17:30", "18:00"})
 
 GEOPOLITICS_KEYWORDS = ("伊朗", "美伊", "特朗普", "霍尔木兹", "以军", "中东", "制裁", "停火")
 
@@ -165,18 +172,60 @@ def fetch_holdings_lines() -> list[str]:
     return output.splitlines() or ["持仓数据为空"]
 
 
+def _build_selection_section() -> list[str]:
+    from scripts.tools.selection_watchlist import (
+        enrich_pick_names,
+        format_briefing_section,
+        load_ai_excerpt,
+        load_sop_reviews,
+        load_top_picks,
+        next_trading_day,
+        sync_watch_alerts,
+    )
+
+    try:
+        sync_watch_alerts()
+        trade_date, picks = load_top_picks()
+        picks = enrich_pick_names(picks)
+        watch_date = next_trading_day(trade_date)
+        return format_briefing_section(
+            picks,
+            trade_date=trade_date,
+            watch_date=watch_date,
+            ai_excerpt=load_ai_excerpt(),
+            sop_reviews=load_sop_reviews(),
+        )
+    except Exception as exc:  # noqa: BLE001
+        return [
+            "五、今日选股 Top5（收盘后）· 次日观察",
+            "",
+            f"- 暂无可用选股结果（{exc}）",
+            "- 请确认 17:30 选股任务已运行",
+        ]
+
+
 def _build_raw_sections(
     *,
     session: MarketSession,
     geo_news: list[MacroNewsItem],
     domestic_news: list[MacroNewsItem],
     news_limit: int,
+    slot: str = "",
 ) -> list[str]:
     holdings_lines = fetch_holdings_lines()
     if session.is_stale_a_share_quote:
         holdings_lines = [session.header_note(), *holdings_lines]
 
-    return [
+    holdings_title = "六、持仓个股（最新）"
+    if session.is_stale_a_share_quote and session.quote_trade_date:
+        holdings_title = f"六、持仓个股（{session.format_trade_date()} 收盘）"
+    if slot not in SELECTION_BRIEFING_SLOTS:
+        holdings_title = holdings_title.replace("六、", "五、", 1)
+        tip_no = "六"
+    else:
+        tip_no = "七"
+
+    sections = [
         session.market_section_title(),
         *fetch_market_indices(),
         "",
@@ -187,14 +236,23 @@ def _build_raw_sections(
         "四、国际市场（最新）",
         *fetch_international_markets(),
         "",
-        session.holdings_section_title(),
-        *holdings_lines,
-        "",
-        "六、提示",
-        session.header_note() + "。",
-        "快讯为东财7×24实时；以上供决策参考，非投资建议。",
-        "来源：https://kuaixun.eastmoney.com/",
     ]
+
+    if slot in SELECTION_BRIEFING_SLOTS:
+        sections.extend([*_build_selection_section(), ""])
+
+    sections.extend(
+        [
+            holdings_title,
+            *holdings_lines,
+            "",
+            f"{tip_no}、提示",
+            session.header_note() + "。",
+            "快讯为东财7×24实时；以上供决策参考，非投资建议。",
+            "来源：https://kuaixun.eastmoney.com/",
+        ]
+    )
+    return sections
 
 
 def summarize_briefing_with_deepseek(
@@ -224,7 +282,8 @@ def summarize_briefing_with_deepseek(
 2. 第 1 段：若 A 股休市或非交易时段，首句必须点明「上一交易日（具体日期）收盘」或「今日休市」；再写大盘/地缘/原油/美股
 3. 第 2 段：国内财经要闻精华（3-5 条合并叙述，快讯可称「最新」）
 4. 第 3 段：结合持仓与纪律给出条件化关注点（禁止绝对买卖指令；严禁补仓梅花生物；严禁满仓新开仓；严禁追高等红线必须遵守）
-5. 禁止 markdown 表格，禁止英文；禁止把上一交易日收盘行情说成「今日盘中/今日收盘」"""
+5. 若战报含「今日选股 Top5」，须单独用 1-2 句概括次日重点观察标的（区分已持仓与观察池）
+6. 禁止 markdown 表格，禁止英文；禁止把上一交易日收盘行情说成「今日盘中/今日收盘」"""
 
     content = call_deepseek(
         [
@@ -258,6 +317,7 @@ def build_daily_briefing(slot: str, *, news_limit: int = 8, with_ai: bool = True
         geo_news=geo_news,
         domestic_news=domestic_news,
         news_limit=news_limit,
+        slot=slot,
     )
     raw_report = "\n".join(raw_sections)
 

@@ -21,6 +21,7 @@ from scripts.tools.fetch_eastmoney_quotes import EastmoneyQuote, fetch_quotes
 ROOT = Path(__file__).resolve().parents[2]
 AGENT_ROOT = ROOT / "investment-agent"
 DEFAULT_RULES = AGENT_ROOT / "config" / "holdings_alerts.json"
+SELECTION_RULES = AGENT_ROOT / "config" / "selection_watch_alerts.json"
 STATE_DIR = ROOT / "output" / "monitor_state"
 TZ = ZoneInfo("Asia/Shanghai")
 
@@ -60,6 +61,14 @@ def fetch_holdings_quotes(codes: list[str]) -> dict[str, Quote]:
 def _load_rules(path: Path) -> list[dict]:
     data = json.loads(path.read_text(encoding="utf-8"))
     return list(data.get("rules") or [])
+
+
+def _load_all_rules() -> list[dict]:
+    from scripts.tools.selection_watchlist import load_active_selection_rules
+
+    rules = _load_rules(DEFAULT_RULES)
+    rules.extend(load_active_selection_rules(SELECTION_RULES))
+    return rules
 
 
 def _state_file(day: date) -> Path:
@@ -136,7 +145,10 @@ def run_once(*, rules_path: Path, push: bool, repeat: bool, force: bool) -> int:
         print(f"非交易时段，跳过 ({now.strftime('%Y-%m-%d %H:%M')})")
         return 0
 
-    rules = _load_rules(rules_path)
+    if rules_path.resolve() == DEFAULT_RULES.resolve():
+        rules = _load_all_rules()
+    else:
+        rules = _load_rules(rules_path)
     codes = sorted({str(r["code"]).zfill(6) for r in rules})
     try:
         quotes = fetch_holdings_quotes(codes)
@@ -160,7 +172,7 @@ def run_once(*, rules_path: Path, push: bool, repeat: bool, force: bool) -> int:
         return 0
 
     body = "\n\n".join(msg for _, msg in alerts)
-    header = f"【持仓监控】{now.strftime('%H:%M:%S')}\n"
+    header = f"【盘中监控】{now.strftime('%H:%M:%S')}\n"
     full = header + body
     print(full)
 

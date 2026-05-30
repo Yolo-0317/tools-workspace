@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 安装每日战报 launchd（09/12/15/20 点 → wechat-acp 推送）
+# 安装每日战报 launchd（09/12/15/20 点 → wechat-acp；收盘甄选战报已并入 17:30 选股任务）
 # 替代已停用的 QClaw daily_briefing_* cron 任务
 set -euo pipefail
 
@@ -22,7 +22,8 @@ launchctl bootout "gui/$(id -u)" "${DST}" 2>/dev/null || true
 launchctl bootstrap "gui/$(id -u)" "${DST}"
 
 echo "已加载 launchd: ${DST}"
-echo "调度: 每天 09:00 / 12:00 / 15:00 / 20:00（slot 由脚本按当前时刻自动识别）"
+echo "调度: 每天 09:00 / 12:00 / 15:00 / 20:00"
+echo "收盘甄选战报: 工作日 17:30 由 push_selection_wechat.sh 合并推送"
 echo "脚本: ${ROOT}/push_daily_briefing_wechat.sh"
 echo "日志: ${ROOT}/logs/launchd-daily-briefing.{out,err}.log"
 echo ""

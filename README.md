@@ -34,7 +34,7 @@
 | 能力 | 说明 |
 |------|------|
 | **多策略选股** | 量价突破、MA5 回踩、底部突破、长期核心等，`scripts/selection/` |
-| **每日综合选股** | Top5 + DeepSeek 简评，17:30 launchd 推送微信 |
+| **每日综合选股** | Top5 东财 SOP + 收盘甄选战报，17:30 launchd 推送微信 |
 | **东财 SOP 采集** | Playwright / OpenCLI 八维度个股数据，`scripts/analysis/eastmoney_sop_extract.py` |
 | **盘前/午盘/盘后** | `run_premarket_analysis.py` 等分析脚本 |
 | **回测** | `scripts/backtest/` |
@@ -43,9 +43,9 @@
 
 | 脚本 / 任务 | 频率 | 内容 |
 |-------------|------|------|
-| `push_holdings_monitor.sh` | 交易时段每 **5 分钟** | 持仓执行卡条件监控（OpenCLI 东财现价 → 触发推微信） |
-| `push_daily_briefing_wechat.sh` | **09 / 12 / 15 / 20** 点 | 大盘 + 东财快讯 + 国际 + 持仓 + DeepSeek 解读 |
-| `push_selection_wechat.sh` | 工作日 **17:30** | 每日选股 Top5 + AI 简评 |
+| `push_holdings_monitor.sh` | 交易时段每 **5 分钟** | 持仓 + SOP 选股池条件监控（OpenCLI 东财现价 → 触发推微信） |
+| `push_daily_briefing_wechat.sh` | **09 / 12 / 15 / 20** 点 | 大盘 + 快讯 + 持仓 + DeepSeek |
+| `push_selection_wechat.sh` | 工作日 **17:30** | Top5 东财 SOP → 收盘甄选战报 → 次日监控规则 |
 | `push_macro_news_wechat.sh` | 按需 | 东财 7×24 宏观快讯 |
 | `push_stock_watch_reminder_wechat.sh` | 一次性 / 按需 | 个股关注提醒 |
 | `monitor_intraday_signals.py` | 常驻 / cron | 盘中买卖信号（可选飞书） |

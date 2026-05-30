@@ -112,31 +112,32 @@ MYSQL_URL="mysql+pymysql://user:pass@localhost:3306/stock_data" \
 uv run python scripts/sync/poll_eastmoney_intraday_snapshot_to_mysql.py --codes 159218,159840 --once
 ```
 
-## 每日综合选股 + 微信推送
+## 每日综合选股 + 收盘甄选战报（17:30 · launchd）
 
-工作日 **17:30** 自动运行（需已登录 [wechat-cursor-acp](../wechat-cursor-acp)）：
+工作日 **17:30** 自动运行：**综合选股 Top5 → 东财 SOP 八维分析 → DeepSeek 投资决策 → 收盘甄选战报 → 微信**（需已登录 [wechat-cursor-acp](../wechat-cursor-acp)）：
 
 ```bash
 ./scripts/install-daily-selection-launchd.sh   # 安装 launchd
-./push_selection_wechat.sh                     # 手动：选股 + DeepSeek 简评 + 推送
-REPORT_ONLY=1 ./push_selection_wechat.sh       # 仅推送已有 output/daily_selection_push_latest.txt
+./push_selection_wechat.sh                     # 手动：完整 17:30 流程
+REPORT_ONLY=1 ./push_selection_wechat.sh       # 跳过选股/SOP，重生成战报并推送
+FETCH_ONLY=1 ./push_daily_briefing_wechat.sh 17:30
+DISABLE_SOP_TOP5=1 ./push_selection_wechat.sh  # 紧急跳过 SOP（改用轻量简评）
 ```
 
-默认 `WECHAT_PUSH_BACKEND=wechat-acp`（直连 iLink，不走 Cursor Agent）。若仍用 QClaw 微信账号：`WECHAT_PUSH_BACKEND=qclaw`。
+- **SOP 值得关注**（非持仓、`WATCH: 是` / 买入观察）→ 写入 `selection_watch_alerts.json`，**次日交易时段 5 分钟监控**（支撑/止损/目标/禁追高）
+- 快速跳过 SOP：环境变量 `DISABLE_SOP_TOP5=1`（不推荐）
 
-请在 QClaw 中**关闭** cron `daily_stock_selection_17:30`，避免与 launchd 重复推送。
+默认 `WECHAT_PUSH_BACKEND=wechat-acp`。请在 QClaw 中关闭 cron `daily_stock_selection_17:30`，避免重复推送。
 
 ## 每日战报（09 / 12 / 15 / 20 点 · launchd）
 
 ```bash
 ./scripts/install-daily-briefing-launchd.sh   # 安装 launchd（替代 QClaw cron）
-FETCH_ONLY=1 ./push_daily_briefing_wechat.sh 09:00  # 手动试跑（不推微信）
+FETCH_ONLY=1 ./push_daily_briefing_wechat.sh 15:00  # 仅生成不推送
 ./push_daily_briefing_wechat.sh 15:00             # 生成 + 推微信
 ```
 
-战报内容：DeepSeek AI 综合解读 + 大盘 + 东财 7×24（地缘/国内财经）+ 国际商品/美股 + 持仓行情。非交易日自动标注「休市简报」。
-
-需配置 `stock-ai/.env` 中的 `DEEPSEEK_API_KEY`。跳过 AI：`daily_briefing_report.py --no-ai`。
+战报内容：DeepSeek AI 综合解读 + 大盘 + 东财 7×24 + 国际 + 持仓。非交易日自动标注「休市简报」。
 
 ## 选股策略（盘后运行）
 

@@ -1,5 +1,5 @@
 #!/bin/sh
-# 综合选股 + 微信摘要（供 QClaw cron 调用）
+# 综合选股 + Top5 东财 SOP（供 17:30 收盘甄选战报调用）
 set -eu
 set -o pipefail
 
@@ -19,14 +19,16 @@ fi
 
 export MYSQL_URL="${MYSQL_URL//host.docker.internal/127.0.0.1}"
 
-SOP_ARGS=""
-if [ "${ENABLE_SOP_TOP5:-0}" = "1" ]; then
-  SOP_ARGS="--with-sop --sop-only --sop-workers ${SOP_WORKERS:-3} --deepseek-workers ${DEEPSEEK_WORKERS:-3}"
-  echo "东财 SOP 并发分析已启用（workers=${SOP_WORKERS:-3}）"
+SOP_ARGS="--sop-workers ${SOP_WORKERS:-3} --deepseek-workers ${DEEPSEEK_WORKERS:-3}"
+if [ "${DISABLE_SOP_TOP5:-0}" = "1" ]; then
+  SOP_ARGS="--no-sop"
+  echo "⚠️ 已禁用东财 SOP（DISABLE_SOP_TOP5=1），改用轻量 DeepSeek 简评"
+else
+  echo "东财 SOP 并发分析（Top5 → 战报 → 次日监控）workers=${SOP_WORKERS:-3}"
 fi
 
 echo "=========================================="
-echo "开始综合选股..."
+echo "开始综合选股 + SOP..."
 echo "时间：$(date '+%Y-%m-%d %H:%M:%S')"
 echo "=========================================="
 

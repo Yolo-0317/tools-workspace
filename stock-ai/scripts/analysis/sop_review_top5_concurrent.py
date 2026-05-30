@@ -23,6 +23,9 @@ from sqlalchemy import create_engine, text
 
 from scripts.analysis.eastmoney_sop_extract import _extract_worker
 from scripts.tools.holdings_context import load_full_decision_context
+from scripts.tools.sop_watch_parse import SopWatchMeta, parse_sop_review_text
+
+SOP_JSON_LATEST = ROOT / "output" / "sop_review_latest.json"
 
 
 def _call_deepseek(messages: list, max_retries: int = 3) -> str:
@@ -115,6 +118,26 @@ def _build_stock_meta(row: pd.Series) -> dict:
     }
 
 
+def _load_names(codes: list[str], mysql_url: str) -> dict[str, str]:
+    if not mysql_url or not codes:
+        return {}
+    placeholders = ", ".join(f":c{i}" for i in range(len(codes)))
+    params = {f"c{i}": c for i, c in enumerate(codes)}
+    names: dict[str, str] = {}
+    try:
+        engine = create_engine(mysql_url)
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(f"SELECT ts_code, name FROM stock_basic WHERE ts_code IN ({placeholders})"),
+                params,
+            ).fetchall()
+        for row in rows:
+            names[str(row.ts_code).split(".")[0].zfill(6)] = row.name
+    except Exception:
+        pass
+    return names
+
+
 def _deepseek_single_review(
     meta: dict,
     preliminary_path: str,
@@ -144,6 +167,10 @@ def _deepseek_single_review(
 3. 支撑/压力/止损/目标位
 4. **投资决策**：买入观察 / 持有 / 减仓 / 暂不操作（必须说明是否违反不追高、仓位限制等红线）
 5. 主要风险（3 条以内）
+
+6. **最后一行**必须输出机器可读标签（格式固定，勿加 markdown）：
+WATCH: 是|否 | DECISION: 买入观察|暂不操作|持有|减仓 | SUPPORT: 7.38,7.26 | STOP: 7.10 | TARGET: 8.50,9.00
+（值得关注填 WATCH: 是；支撑/止损/目标无则填 -）
 
 全中文，禁止 markdown 表格。"""
 
@@ -198,9 +225,10 @@ def review_top5_sop_concurrent(
     sop_workers: int = 3,
     deepseek_workers: int = 3,
     holdings_context: str = "",
+    holdings_codes: set[str] | None = None,
     save_report: bool = True,
-) -> tuple[str, str | None]:
-    """并发 SOP 采集 + DeepSeek 分析，返回 (微信摘要, 报告路径)。"""
+) -> tuple[str, str | None, list[SopWatchMeta]]:
+    """并发 SOP 采集 + DeepSeek 分析，返回 (微信摘要, 报告路径, 结构化监控元数据)。"""
     csv_path = Path(csv_path)
     df = pd.read_csv(csv_path, encoding="utf-8-sig")
     if df.empty:
@@ -216,6 +244,8 @@ def review_top5_sop_concurrent(
 
     mysql_url = os.environ.get("MYSQL_URL", "").replace("host.docker.internal", "127.0.0.1")
     context = holdings_context.strip() or "（无决策上下文）"
+    if holdings_codes is None:
+        holdings_codes, _, _ = load_full_decision_context()
 
     # 阶段 1：并发 Playwright 采集
     print(f"🔍 并发 SOP 采集 Top{len(codes)}（workers={sop_workers}）...", file=sys.stderr)
@@ -257,6 +287,21 @@ def review_top5_sop_concurrent(
     for meta in metas:
         per_stock_reviews.append((meta, review_map.get(meta["代码"], "（无分析结果）")))
 
+    watch_metas: list[SopWatchMeta] = []
+    names_map = _load_names([m["代码"] for m in metas], mysql_url)
+    for meta, review in per_stock_reviews:
+        code = meta["代码"]
+        parsed = parse_sop_review_text(
+            code,
+            review,
+            name=names_map.get(code, code),
+            score=float(meta.get("总分", 0)),
+        )
+        parsed.in_holdings = code in holdings_codes
+        if parsed.in_holdings:
+            parsed.watch_worthy = False
+        watch_metas.append(parsed)
+
     # 阶段 3：汇总微信摘要
     wechat = _deepseek_summary(per_stock_reviews, context, trade_date)
 
@@ -296,7 +341,19 @@ def review_top5_sop_concurrent(
         Path(report_path).write_text("\n".join(lines), encoding="utf-8")
         print(f"📄 SOP 投资决策报告: {report_path}", file=sys.stderr)
 
-    return wechat, report_path
+    sop_payload = {
+        "version": 1,
+        "trade_date": trade_date,
+        "csv": csv_path.name,
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "wechat_summary": wechat,
+        "reviews": [m.to_dict() for m in watch_metas],
+    }
+    SOP_JSON_LATEST.parent.mkdir(parents=True, exist_ok=True)
+    SOP_JSON_LATEST.write_text(json.dumps(sop_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"📋 SOP 监控元数据: {SOP_JSON_LATEST}", file=sys.stderr)
+
+    return wechat, report_path, watch_metas
 
 
 def main() -> int:
@@ -321,7 +378,7 @@ def main() -> int:
         csv_path = files[-1]
 
     _, decision_context = load_full_decision_context()
-    wechat, report_path = review_top5_sop_concurrent(
+    wechat, report_path, _watch_metas = review_top5_sop_concurrent(
         csv_path,
         top_n=args.top,
         sop_workers=args.sop_workers,
