@@ -145,7 +145,11 @@ def run_analysis():
         
         print(f"  🧠 DeepSeek 综合决策中...")
         try:
-            final_report = _call_deepseek_api(combined_prompt, temperature=0.3)
+            from scripts.tools.decision_context import inject_decision_context
+
+            final_report = _call_deepseek_api(
+                inject_decision_context(combined_prompt), temperature=0.3
+            )
             reports.append({
                 'row': row,
                 'final_report': final_report,

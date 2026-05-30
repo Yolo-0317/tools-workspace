@@ -12,6 +12,7 @@ TAG_RE = re.compile(
 )
 
 WATCH_DECISIONS = frozenset({"买入观察", "观察买入", "小仓埋伏"})
+SKIP_DECISIONS = frozenset({"暂不操作", "放弃", "拒绝", "持有", "减仓"})
 
 
 @dataclass
@@ -47,28 +48,58 @@ def _parse_single_price(raw: str) -> float | None:
     return prices[0] if prices else None
 
 
+def _normalize_decision(decision: str) -> str:
+    text = (decision or "").strip().strip("*")
+    for sep in ("（", "(", "：", ":", "—", "-"):
+        if sep in text:
+            text = text.split(sep, 1)[0].strip()
+    return text
+
+
+def _decision_implies_watch(decision: str) -> bool | None:
+    """DECISION 优先于 WATCH 标签。返回 None 表示无法从决策判定。"""
+    norm = _normalize_decision(decision)
+    if not norm:
+        return None
+    if norm in SKIP_DECISIONS or any(sk in norm for sk in SKIP_DECISIONS):
+        return False
+    if norm in WATCH_DECISIONS:
+        return True
+    for watch in WATCH_DECISIONS:
+        if watch in norm:
+            return True
+    return None
+
+
+def _finalize_watch(meta: SopWatchMeta, *, tag_watch: bool | None = None) -> SopWatchMeta:
+    meta.decision = _normalize_decision(meta.decision)
+    implied = _decision_implies_watch(meta.decision)
+    if implied is not None:
+        meta.watch_worthy = implied
+    elif tag_watch is not None:
+        meta.watch_worthy = tag_watch
+    else:
+        meta.watch_worthy = False
+    return meta
+
+
 def parse_sop_review_text(code: str, review: str, *, name: str = "", score: float = 0.0) -> SopWatchMeta:
     meta = SopWatchMeta(code=code, name=name, score=score)
     match = TAG_RE.search(review)
     if match:
-        meta.watch_worthy = match.group(1).strip() == "是"
+        tag_watch = match.group(1).strip() == "是"
         meta.decision = match.group(2).strip()
         meta.support = _parse_prices(match.group(3))
         meta.stop = _parse_single_price(match.group(4))
         meta.targets = _parse_prices(match.group(5))
-        return meta
+        return _finalize_watch(meta, tag_watch=tag_watch)
 
     decision_match = re.search(
-        r"投资决策[：:]\s*\**([^*\n（(]+)",
+        r"投资决策[：:]\s*\**([^*\n]+)",
         review,
     )
     if decision_match:
         meta.decision = decision_match.group(1).strip().strip("*")
-
-    if any(k in review for k in WATCH_DECISIONS):
-        meta.watch_worthy = True
-    if "暂不操作" in meta.decision or "暂不操作" in review[-800:]:
-        meta.watch_worthy = False
 
     stop_match = re.search(r"止损位[：:]\s*\**([\d.]+)", review)
     if stop_match:
@@ -87,7 +118,24 @@ def parse_sop_review_text(code: str, review: str, *, name: str = "", score: floa
         target_block = review[start : start + 160]
     meta.targets = _parse_prices(target_block)
 
-    if meta.decision in WATCH_DECISIONS:
-        meta.watch_worthy = True
+    return _finalize_watch(meta, tag_watch=None)
 
-    return meta
+
+def reparse_watch_meta(meta_dict: dict) -> dict:
+    """从已存 JSON 条目重算 watch_worthy（不重跑 SOP）。"""
+    meta = SopWatchMeta(
+        code=str(meta_dict.get("code", "")).zfill(6),
+        name=str(meta_dict.get("name") or ""),
+        score=float(meta_dict.get("score") or 0),
+        decision=str(meta_dict.get("decision") or ""),
+        support=list(meta_dict.get("support") or []),
+        stop=meta_dict.get("stop"),
+        targets=list(meta_dict.get("targets") or []),
+        in_holdings=bool(meta_dict.get("in_holdings")),
+    )
+    if meta.stop is not None:
+        meta.stop = float(meta.stop)
+    finalized = _finalize_watch(meta, tag_watch=bool(meta_dict.get("watch_worthy")))
+    if finalized.in_holdings:
+        finalized.watch_worthy = False
+    return finalized.to_dict()

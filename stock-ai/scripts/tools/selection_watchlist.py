@@ -221,12 +221,19 @@ def load_ai_excerpt() -> str:
     return ""
 
 
-def load_sop_reviews(path: Path | None = None) -> list[dict]:
+def load_sop_reviews(path: Path | None = None, *, refresh: bool = True) -> list[dict]:
     path = path or SOP_JSON_LATEST
     if not path.exists():
         return []
     data = json.loads(path.read_text(encoding="utf-8"))
-    return list(data.get("reviews") or [])
+    from scripts.tools.sop_watch_parse import reparse_watch_meta
+
+    raw = list(data.get("reviews") or [])
+    reviews = [reparse_watch_meta(r) for r in raw]
+    if refresh and reviews != raw:
+        data["reviews"] = reviews
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return reviews
 
 
 def _sop_watch_map(reviews: list[dict]) -> dict[str, dict]:

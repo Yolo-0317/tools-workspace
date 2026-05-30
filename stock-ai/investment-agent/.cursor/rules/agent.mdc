@@ -37,9 +37,14 @@ alwaysApply: true
 ## 股票分析流程
 
 1. 先读 `持仓执行卡.md`，确认是否在持仓中
-2. 个股深度分析参考 `docs/skills/eastmoney-browser-sop/SKILL.md`
-3. 批量选股 / 回测 / 数据同步使用父目录 `stock-ai/scripts/`
-4. 周期股注意估值陷阱：利润下行时 PE 可能越跌越高
+2. **所有脚本 / MCP / 对话中的个股分析**必须注入决策上下文：
+   - Python：`from scripts.tools.decision_context import inject_decision_context`
+   - 或 `load_full_decision_context()`（`scripts/tools/holdings_context.py`）
+   - 含：`trading-strategies.md` + 持仓执行卡 P0～P4
+3. 试探仓 / 换仓执行表：`uv run python -m scripts.tools.position_sizing`（或代码内 `build_swap_probe_plan`）
+4. 个股深度分析参考 `docs/skills/eastmoney-browser-sop/SKILL.md`
+5. 批量选股 / 回测 / 数据同步使用父目录 `stock-ai/scripts/`
+6. 周期股注意估值陷阱：利润下行时 PE 可能越跌越高
 
 ## 工具路径
 

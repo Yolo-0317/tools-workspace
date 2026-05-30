@@ -265,6 +265,10 @@ def analyze_top5_with_ai(top5_df: pd.DataFrame, eastmoney_data: list) -> str:
 
 请用专业、客观的语言分析，给出实用的操作建议。"""
 
+    from scripts.tools.decision_context import inject_decision_context
+
+    prompt = inject_decision_context(prompt)
+
     messages = [
         {"role": "system", "content": "你是一个专业的股票分析师，擅长技术分析和风险控制。"},
         {"role": "user", "content": prompt}

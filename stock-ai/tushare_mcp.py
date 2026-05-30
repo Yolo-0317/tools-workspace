@@ -780,6 +780,23 @@ def _call_deepseek_api(prompt: str, temperature: float = 0.3) -> str:
     return content
 
 
+def _maybe_inject_decision_context(prompt: str) -> str:
+    """为个股 DeepSeek 分析注入操盘策略 + 持仓执行卡（可通过 SKIP_DECISION_CONTEXT=1 跳过）。"""
+    if str(os.getenv("SKIP_DECISION_CONTEXT") or "").lower() in ("1", "true", "yes"):
+        return prompt
+    try:
+        root = Path(__file__).resolve().parent
+        import sys
+
+        if str(root) not in sys.path:
+            sys.path.insert(0, str(root))
+        from scripts.tools.decision_context import inject_decision_context
+
+        return inject_decision_context(prompt)
+    except Exception:
+        return prompt
+
+
 def _build_deepseek_prompt(code: str, hist_df: pd.DataFrame, latest_data: dict) -> str:
     """
     构建喂给 DeepSeek 的 prompt。
@@ -977,7 +994,7 @@ def deepseek_trade_signal(code: str, mysql_url: Optional[str] = None):
         prompt = _build_deepseek_prompt(code=code6, hist_df=df, latest_data=latest_data)
 
         # 5) 调用 DeepSeek API
-        ai_response = _call_deepseek_api(prompt, temperature=0.3)
+        ai_response = _call_deepseek_api(_maybe_inject_decision_context(prompt), temperature=0.3)
 
         # 6) 解析 AI 返回
         parsed = _parse_deepseek_response(ai_response)
@@ -1200,7 +1217,7 @@ def deepseek_intraday_t_signal(
         )
 
         # 6) 调用 DeepSeek API
-        ai_response = _call_deepseek_api(prompt, temperature=0.2)  # 温度更低，更确定性
+        ai_response = _call_deepseek_api(_maybe_inject_decision_context(prompt), temperature=0.2)  # 温度更低，更确定性
 
         # 7) 解析 AI 返回
         parsed = _parse_intraday_t_response(ai_response)
@@ -1668,7 +1685,7 @@ def deepseek_premarket_analysis(
         prompt = _build_premarket_prompt(code, hist_df, latest, position_info)
 
         # 3. 调用 DeepSeek API
-        analysis = _call_deepseek_api(prompt)
+        analysis = _call_deepseek_api(_maybe_inject_decision_context(prompt))
         if not analysis:
             return "❌ 盘前分析失败: DeepSeek API 调用失败"
 
@@ -1776,7 +1793,7 @@ def deepseek_aftermarket_analysis(
         )
 
         # 4. 调用 DeepSeek API
-        analysis = _call_deepseek_api(prompt)
+        analysis = _call_deepseek_api(_maybe_inject_decision_context(prompt))
         if not analysis:
             return "❌ 盘后分析失败: DeepSeek API 调用失败"
 

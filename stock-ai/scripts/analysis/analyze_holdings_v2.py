@@ -109,7 +109,11 @@ def analyze_holdings_v2(csv_path):
         
         print(f"  🧠 DeepSeek 综合决策中...")
         try:
-            final_report = _call_deepseek_api(combined_prompt, temperature=0.2)
+            from scripts.tools.decision_context import inject_decision_context
+
+            final_report = _call_deepseek_api(
+                inject_decision_context(combined_prompt), temperature=0.2
+            )
             reports.append({
                 'full_code': full_code,
                 'name': name,
