@@ -45,23 +45,8 @@ https://alist.yoloworld.site {
 			header_up X-Forwarded-For {remote_host}
 		}
 	}
-	# WebDAV 不要 gzip，避免 Infuse 播放异常
-	@webdav path /dav /dav/*
-	handle @webdav {
-		reverse_proxy host.docker.internal:5244 {
-			transport http {
-				read_timeout 300s
-				write_timeout 300s
-			}
-		}
-	}
 	handle {
-		reverse_proxy host.docker.internal:5244 {
-			transport http {
-				read_timeout 300s
-				write_timeout 300s
-			}
-		}
+		redir /jellyfin permanent
 	}
 	header {
 		-Server
@@ -97,6 +82,26 @@ https://sub.yoloworld.site {
 
 	handle {
 		respond 404
+	}
+	header {
+		-Server
+		X-Content-Type-Options nosniff
+	}
+}
+
+https://hub.yoloworld.site {
+	tls /etc/caddy/certs/fullchain.cer /etc/caddy/certs/key.key
+	import home-hub.auth
+	encode gzip
+	reverse_proxy host.docker.internal:8780 {
+		flush_interval -1
+		transport http {
+			read_timeout 0
+			write_timeout 0
+		}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-Host {host}
+		header_up X-Forwarded-For {remote_host}
 	}
 	header {
 		-Server

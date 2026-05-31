@@ -245,7 +245,11 @@ def load_all_monitor_rules(*, today: date | None = None) -> list[dict]:
     today = today or date.today()
     engine = get_engine()
     holdings = load_alert_rules(source="holdings", engine=engine)
+    for rule in holdings:
+        rule["source"] = "holdings"
     selection = load_active_selection_rules(today=today, engine=engine)
+    for rule in selection:
+        rule["source"] = "selection"
     return holdings + selection
 
 
@@ -538,6 +542,61 @@ def save_selection_daily_results(
             )
             n += 1
     return n
+
+
+def list_selection_trade_dates(
+    *,
+    strategy: str = "combined",
+    engine: Engine | None = None,
+) -> list[date]:
+    engine = engine or get_engine()
+    if engine is None:
+        return []
+    strat = (strategy or "combined").strip() or "combined"
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    """
+                    SELECT DISTINCT trade_date
+                    FROM selection_daily_results
+                    WHERE strategy = :s
+                    ORDER BY trade_date DESC
+                    """
+                ),
+                {"s": strat},
+            ).fetchall()
+    except Exception:
+        return []
+    out: list[date] = []
+    for row in rows:
+        val = row.trade_date
+        if isinstance(val, date):
+            out.append(val)
+        else:
+            out.append(datetime.fromisoformat(str(val)[:10]).date())
+    return out
+
+
+def list_selection_strategies(*, engine: Engine | None = None) -> list[str]:
+    engine = engine or get_engine()
+    if engine is None:
+        return ["combined"]
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    """
+                    SELECT DISTINCT strategy
+                    FROM selection_daily_results
+                    ORDER BY strategy
+                    """
+                )
+            ).fetchall()
+    except Exception:
+        return ["combined"]
+    out = [str(r[0]) for r in rows if r[0]]
+    return out or ["combined"]
 
 
 def latest_selection_trade_date(

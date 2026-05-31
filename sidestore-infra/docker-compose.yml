@@ -31,6 +31,7 @@ services:
       - "${EXTERNAL_HTTPS_PORT:-8883}:443"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy/home-hub.auth:/etc/caddy/home-hub.auth:ro
       - ./certs:/etc/caddy/certs:ro
       - ./public:/srv:ro
     networks:

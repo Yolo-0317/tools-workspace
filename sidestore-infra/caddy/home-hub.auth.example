@@ -1,0 +1,6 @@
+# 由 scripts/setup-home-hub-auth.sh 生成；复制本文件为 home-hub.auth 并填入 hash
+# 生成命令: ./scripts/setup-home-hub-auth.sh
+basicauth /* {
+	# HUB_BASIC_AUTH_USER HUB_BASIC_AUTH_HASH
+	hub $2a$14$REPLACE_WITH_caddy_hash-password
+}

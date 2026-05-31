@@ -67,3 +67,9 @@ alwaysApply: false
 - **Context**: 完成 MySQL 持仓/选股入库与 OpenCLI 战报/SOP 迁移后，删除仍引用东财 HTTP、Playwright、AkShare 的旧脚本，避免 Agent 误调。
 - **Pitfall/Error**: 文档与 `~/.codex/skills/stock-strategy-selector` 仍指向 `ingest_eastmoney_*`、`ai_review_top5.py` 等已删入口；`analyze_holdings_v2 --csv` 与 CSV 兜底易与 `portfolio_positions` 双轨混淆。
 - **Solution/Rule**: **日线**仅 `scripts/sync/sync_tushare_daily_to_mysql.py` + `ensure_daily_bars`；**实时/SOP/战报**仅 `scripts/tools/fetch_eastmoney_quotes.py`（OpenCLI）；**选股结果** MySQL `selection_daily_results`；**持仓** MySQL `portfolio_positions`；**看板历史** `portfolio_*_daily` + `sop_review_*`（`dashboard_data.py`）。细节见 `memory-python.mdc` §2026-05-31。
+
+### 2026-05-31 home-hub 看板 + 聊天
+
+- **Context**: `tools-workspace/home-hub` — Vue3 看板 + Cursor 聊天；公网 `hub.yoloworld.site`（Caddy Basic Auth）。
+- **Pitfall/Error**: 聊天初版用 `cursor-sdk` 需 API Key；与 wechat-acp 的 `agent login` 不一致。浏览器页面测试勿用 Playwright 替代 OpenCLI。
+- **Solution/Rule**: 聊天仅 **Cursor CLI** `agent -p --model auto --force --stream-json` + `agent login`；已移除 cursor-sdk/API Key。页面验证用 OpenCLI。见 `home-hub/TOOLS.md`。

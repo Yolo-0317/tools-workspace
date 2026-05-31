@@ -2,6 +2,8 @@
 .env.secrets
 !.env.example
 certs/
+caddy/home-hub.auth
+!caddy/home-hub.auth.example
 logs/
 anisette/data/
 .venv/

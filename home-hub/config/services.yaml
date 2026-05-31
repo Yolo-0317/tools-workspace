@@ -1,0 +1,156 @@
+# Home Hub 本地服务目录（凭据只写 env 变量名，不写明文）
+# 端口以本机 docker ps / lsof 为准（2026-05-31 核对）
+domains:
+  base: yoloworld.site
+  external_https_port: 8883
+  internal_https_port: 8443
+
+categories:
+  - id: stock
+    name: 投资链路
+    items:
+      - id: mysql
+        name: MySQL stock_data
+        description: 行情 + 持仓 + 选股 + 看板快照
+        local_url: http://127.0.0.1:3306
+        docker_container: mysql8
+        compose_dir: ~/dev/yolo/tools-workspace/stock-mysql
+        health:
+          type: tcp
+          host: 127.0.0.1
+          port: 3306
+        credentials_env:
+          - MYSQL_USER
+          - MYSQL_PASSWORD
+          - MYSQL_ROOT_PASSWORD
+
+      - id: home-hub
+        name: Home Hub
+        description: 本看板 + Cursor 聊天（生产 launchd 8780，开发后端 8781 / 前端 5173）
+        local_url: http://127.0.0.1:8780
+        dev_url: http://127.0.0.1:5173
+        public_url: https://hub.yoloworld.site:8883
+        health:
+          type: http
+          url: http://127.0.0.1:8780/api/health
+        credentials_env:
+          - HUB_API_TOKEN
+          - HUB_BASIC_AUTH_USER
+          - HUB_BASIC_AUTH_PASSWORD
+
+      - id: stock-analysis
+        name: Stock Analysis（旧 Web UI）
+        description: 独立分析栈 frontend + backend + redis
+        local_url: http://127.0.0.1:3301
+        docker_container: stock-analysis-frontend
+        compose_dir: ~/dev/yolo/stock-ai/stock_analysis
+        health:
+          type: http
+          url: http://127.0.0.1:3301/
+        credentials_env: []
+
+      - id: wechat-acp
+        name: 微信 ↔ Cursor
+        description: wechat-cursor-acp / agent acp（无固定 HTTP 端口，看 launchd）
+        compose_dir: ~/dev/yolo/tools-workspace/wechat-cursor-acp
+        doc: wechat-cursor-acp/README.md
+        health:
+          type: process
+          match: wechat-acp
+        credentials_env:
+          - WECHAT_ACP_INSTANCE
+
+  - id: media
+    name: 媒体
+    items:
+      - id: jellyfin
+        name: Jellyfin
+        description: NAS-影音 / 儿童库；外网经 Caddy 反代（alist 子域仅 /jellyfin，已弃用 WebDAV）
+        local_url: http://127.0.0.1:8096/jellyfin
+        public_url: https://alist.yoloworld.site:8883/jellyfin
+        docker_container: jellyfin
+        compose_dir: ~/docker/jellyfin-stack
+        health:
+          type: http
+          url: http://127.0.0.1:8096/health
+        credentials_env:
+          - JELLYFIN_USER
+          - JELLYFIN_PASS
+          - NAS_HOST
+          - NAS_USER
+          - NAS_PASS
+
+      - id: mihomo
+        name: Clash / Mihomo（Verge）
+        description: Jellyfin 代理链本地 SOCKS/HTTP
+        local_url: http://127.0.0.1:10888
+        health:
+          type: tcp
+          host: 127.0.0.1
+          port: 10888
+
+  - id: infra
+    name: 基础设施
+    items:
+      - id: caddy
+        name: Caddy (sidestore-infra)
+        description: HTTPS 反代 + 证书；内网 8443 / 外网 8883 均映射容器 443
+        local_url: https://127.0.0.1:8443
+        public_note: 外网 https://*.{base}:8883
+        docker_container: sidestore-caddy
+        compose_dir: ~/dev/yolo/tools-workspace/sidestore-infra
+        health:
+          type: tcp
+          host: 127.0.0.1
+          port: 8443
+        health_note: 8443/8883 均映射容器 443；HTTPS 需带正确子域 SNI
+
+      - id: substore
+        name: Sub-Store
+        local_url: http://127.0.0.1:3001
+        public_url: https://sub.yoloworld.site:8883/sub-store/
+        docker_container: substore-clash-store
+        compose_dir: ~/dev/yolo/tools-workspace/substore-clash
+        health:
+          type: tcp
+          host: 127.0.0.1
+          port: 3001
+
+      - id: clash-gen
+        name: Clash 订阅生成
+        local_url: http://127.0.0.1:8787/clash.yaml
+        public_url: https://sub.yoloworld.site:8883/clash.yaml
+        docker_container: substore-clash-gen
+        health:
+          type: http
+          url: http://127.0.0.1:8787/clash.yaml
+
+      - id: anisette
+        name: Anisette (SideStore)
+        local_url: http://127.0.0.1:6969
+        public_url: https://ani.yoloworld.site:8883
+        docker_container: sidestore-anisette
+        health:
+          type: tcp
+          host: 127.0.0.1
+          port: 6969
+
+jellyfin:
+  stack_dir: ~/docker/jellyfin-stack
+  staging_lists:
+    - file: jellyfin/config/nas-tv-staging.list
+      library: NAS-影音
+      staging_prefix: /media/nas-tv
+      format: nas-tv
+    - file: jellyfin/config/sd-tv-staging.list
+      library: NAS-影音
+      staging_prefix: /media/sd-tv
+      format: sd-tv
+    - file: jellyfin/config/sd-movies-staging.list
+      library: NAS-影音
+      staging_prefix: /media/sd-movies
+      format: nas-tv
+    - file: jellyfin/config/nas-kids-staging.list
+      library: 儿童-影音
+      staging_prefix: /media/nas-kids
+      format: nas-tv
