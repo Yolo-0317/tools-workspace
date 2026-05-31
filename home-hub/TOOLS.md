@@ -6,7 +6,7 @@
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v24.14.1/bin:$PATH"
-opencli browser open "http://127.0.0.1:5173/"
+opencli browser open "http://127.0.0.1:8780/"
 opencli browser wait time 4
 opencli browser state
 opencli browser screenshot output/test.png
@@ -25,9 +25,10 @@ opencli browser close
 
 前置：`agent status` 显示已登录。
 
-## 开发服务
+## 服务（单实例 :8780）
 
 ```bash
-./scripts/dev.sh                    # 后端 :8781（热重载）
-cd frontend && npm run dev          # 前端 :5173 → 代理到 :8781
+./scripts/install-launchd.sh   # 首次：登录自启
+./scripts/restart.sh --build   # 改代码后：构建前端 + 重启
+curl -s http://127.0.0.1:8780/api/health
 ```

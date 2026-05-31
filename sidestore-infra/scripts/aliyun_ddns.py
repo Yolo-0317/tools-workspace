@@ -109,12 +109,18 @@ def main() -> int:
 
     print(f"域名: {DOMAIN_NAME}")
     print(f"子域名: {', '.join(SUB_DOMAINS)}")
-    print("正在获取公网 IP...")
-    ip = get_public_ip()
-    if not ip:
-        print("无法获取公网 IP")
-        return 1
-    print(f"当前公网 IP: {ip}")
+    override = os.environ.get("DDNS_PUBLIC_IP", "").strip()
+    if override:
+        ip = override
+        print(f"使用 DDNS_PUBLIC_IP 固定公网 IP: {ip}")
+    else:
+        print("正在获取公网 IP...")
+        ip = get_public_ip()
+        if not ip:
+            print("无法获取公网 IP")
+            return 1
+        print(f"当前公网 IP: {ip}")
+        print("提示: 仅在路由器 WAN 下跑 DDNS；热点会写错 IP。可设 DDNS_PUBLIC_IP=家里公网 IP")
 
     client = AcsClient(ACCESS_KEY_ID, ACCESS_KEY_SECRET, REGION)
     ok = True

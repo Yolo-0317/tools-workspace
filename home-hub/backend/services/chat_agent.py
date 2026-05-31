@@ -37,7 +37,7 @@ class ChatAgentService:
         }
 
     async def drop_agent(self, session_id: str) -> None:
-        return
+        chat_store.clear_cursor_agent_id(session_id)
 
     async def stream_reply(
         self, session_id: str, user_text: str
@@ -70,86 +70,124 @@ class ChatAgentService:
             return
 
         chat_store.add_message(session_id, "user", user_text)
-        cursor_session = session.get("cursor_agent_id")
+        resume_ids: list[str | None] = [session.get("cursor_agent_id")]
+        if resume_ids[0]:
+            resume_ids.append(None)
 
         try:
             async with agent_lock.acquire(f"web:{session_id}"):
-                yield _sse("status", {"phase": "thinking"})
-
                 assistant_parts: list[str] = []
-                final_session: str | None = cursor_session
+                final_session: str | None = resume_ids[0]
+                last_error: str | None = None
+                last_error_code: str | None = None
 
-                async for event in agent_cli.stream_agent_prompt(
-                    user_text,
-                    session_id=cursor_session,
-                ):
-                    kind = event.get("kind")
-                    if kind == "init":
-                        sid = event.get("session_id")
-                        if sid and sid != cursor_session:
-                            chat_store.set_cursor_agent_id(session_id, sid)
-                            final_session = sid
-                        continue
-                    if kind == "thinking_delta":
-                        yield _sse("thinking_delta", {"text": event.get("text", "")})
-                        continue
-                    if kind == "text_delta":
-                        chunk = event.get("text", "")
-                        assistant_parts.append(chunk)
-                        yield _sse("text_delta", {"text": chunk})
-                        continue
-                    if kind == "result":
-                        if event.get("session_id"):
-                            final_session = event["session_id"]
-                            chat_store.set_cursor_agent_id(session_id, final_session)
-                        result_text = str(event.get("text") or "").strip()
-                        joined = "".join(assistant_parts).strip()
-                        if result_text and not joined:
-                            assistant_parts.append(result_text)
-                            yield _sse("text_delta", {"text": result_text})
-                        elif result_text and joined and result_text != joined:
-                            if result_text.startswith(joined):
-                                suffix = result_text[len(joined) :]
-                                if suffix:
-                                    assistant_parts.append(suffix)
-                                    yield _sse("text_delta", {"text": suffix})
-                            elif len(result_text) > len(joined):
-                                assistant_parts.append(result_text)
-                                yield _sse("text_delta", {"text": result_text})
-                        if event.get("is_error"):
-                            yield _sse(
-                                "error",
-                                {
-                                    "message": result_text or "Agent 执行失败",
-                                    "code": "agent_error",
-                                },
-                            )
-                        continue
-                    if kind == "error":
+                for attempt_idx, resume_id in enumerate(resume_ids):
+                    if attempt_idx > 0:
+                        chat_store.clear_cursor_agent_id(session_id)
+                        final_session = None
+                        assistant_parts.clear()
+                        last_error = None
+                        last_error_code = None
                         yield _sse(
-                            "error",
+                            "status",
                             {
-                                "message": event.get("message", "未知错误"),
-                                "code": "agent_error",
+                                "phase": "retry",
+                                "message": "会话异常，正在新建 Agent 会话重试…",
                             },
                         )
+
+                    yield _sse("status", {"phase": "thinking"})
+
+                    async for event in agent_cli.stream_agent_prompt(
+                        user_text,
+                        session_id=resume_id,
+                    ):
+                        kind = event.get("kind")
+                        if kind == "init":
+                            sid = event.get("session_id")
+                            if sid:
+                                chat_store.set_cursor_agent_id(session_id, sid)
+                                final_session = sid
+                            continue
+                        if kind == "thinking_delta":
+                            yield _sse(
+                                "thinking_delta", {"text": event.get("text", "")}
+                            )
+                            continue
+                        if kind == "text_delta":
+                            chunk = event.get("text", "")
+                            assistant_parts.append(chunk)
+                            yield _sse("text_delta", {"text": chunk})
+                            continue
+                        if kind == "result":
+                            if event.get("session_id"):
+                                final_session = event["session_id"]
+                                chat_store.set_cursor_agent_id(session_id, final_session)
+                            result_text = str(event.get("text") or "").strip()
+                            if event.get("is_error"):
+                                msg = result_text or "Agent 执行失败"
+                                last_error = msg
+                                last_error_code = "agent_error"
+                                yield _sse(
+                                    "error",
+                                    {"message": msg, "code": "agent_error"},
+                                )
+                                continue
+                            joined = "".join(assistant_parts).strip()
+                            if result_text and not joined:
+                                assistant_parts.append(result_text)
+                                yield _sse("text_delta", {"text": result_text})
+                            elif result_text and joined and result_text != joined:
+                                if result_text.startswith(joined):
+                                    suffix = result_text[len(joined) :]
+                                    if suffix:
+                                        assistant_parts.append(suffix)
+                                        yield _sse("text_delta", {"text": suffix})
+                                elif len(result_text) > len(joined):
+                                    assistant_parts.append(result_text)
+                                    yield _sse("text_delta", {"text": result_text})
+                            continue
+                        if kind == "error":
+                            msg = str(event.get("message") or "未知错误")
+                            last_error = msg
+                            last_error_code = "agent_error"
+                            yield _sse(
+                                "error",
+                                {"message": msg, "code": "agent_error"},
+                            )
+
+                    if assistant_parts or not last_error:
+                        break
 
                 full_text = "".join(assistant_parts).strip()
                 if full_text:
                     chat_store.add_message(session_id, "assistant", full_text)
 
+                if full_text:
+                    status = "success"
+                elif last_error:
+                    status = "error"
+                else:
+                    status = "empty"
+
                 yield _sse(
                     "done",
                     {
-                        "status": "success" if full_text else "empty",
+                        "status": status,
                         "session_id": final_session,
                         "text": full_text,
+                        "error": last_error,
+                        "code": last_error_code,
                     },
                 )
         except AgentBusyError as exc:
-            yield _sse("error", {"message": str(exc), "code": "agent_busy"})
+            msg = str(exc)
+            yield _sse("error", {"message": msg, "code": "agent_busy"})
+            yield _sse("done", {"status": "error", "error": msg, "code": "agent_busy"})
         except Exception as exc:  # noqa: BLE001
-            yield _sse("error", {"message": str(exc), "code": "internal"})
+            msg = str(exc)
+            yield _sse("error", {"message": msg, "code": "internal"})
+            yield _sse("done", {"status": "error", "error": msg, "code": "internal"})
 
 
 def _sse(event: str, data: dict[str, Any]) -> str:

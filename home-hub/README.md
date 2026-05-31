@@ -1,6 +1,6 @@
 # Home Hub
 
-个人运维与投资看板：**Vue 3** 前端 + FastAPI 后端。
+个人运维与投资看板：**Vue 3** 前端 + FastAPI 后端，**单服务** `127.0.0.1:8780`（launchd 登录自启）。
 
 ## 模块
 
@@ -20,15 +20,21 @@
 cd home-hub
 cp .env.example .env   # 本机 agent login 即可，无需 API Key
 
-# 开发（与 launchd 生产 :8780 并行）
-./scripts/dev.sh
-cd frontend && npm install && npm run dev   # :5173
-
-# 生产
-cd frontend && npm run build
-./scripts/start.sh                          # :8780
-./scripts/install-launchd.sh                # 登录自启
+cd frontend && npm install && npm run build
+./scripts/install-launchd.sh    # 登录自启，仅 :8780
 ```
+
+改前端或后端后：
+
+```bash
+./scripts/restart.sh --build   # 构建 + 重启
+# 或仅重启
+./scripts/restart.sh
+```
+
+未装 launchd 时前台启动：`./scripts/start.sh`（同样 :8780）。
+
+访问：**http://127.0.0.1:8780**
 
 ## 公网 HTTPS
 
@@ -49,7 +55,7 @@ cd frontend && npm run build
 
 3. 访问：`https://hub.yoloworld.site:8883`（外网端口见 sidestore `.env`）
 
-home-hub 仅监听 `127.0.0.1:8780`，由 Caddy 反代 + 认证。
+由 Caddy 反代 `127.0.0.1:8780` + Basic Auth。
 
 ## API
 
@@ -60,4 +66,4 @@ home-hub 仅监听 `127.0.0.1:8780`，由 Caddy 反代 + 认证。
 详见 [docs/chat-design.md](docs/chat-design.md)、[TOOLS.md](TOOLS.md)
 
 **聊天**：本机 `agent login` 后可用（与 wechat-acp 相同，模型 `auto`）。  
-**页面测试**：一律用 OpenCLI（见 TOOLS.md）。
+**页面测试**：一律用 OpenCLI（见 TOOLS.md），打开 `http://127.0.0.1:8780`。

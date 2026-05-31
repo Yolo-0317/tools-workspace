@@ -6,7 +6,7 @@ import {
   fetchSelectionStrategies,
 } from '../api/dashboard'
 import type { SelectionHistory } from '../types/dashboard'
-import { selAction, selCode, selName, selPct, selScore } from '../utils/selection'
+import { selAction, selCode, selName, selPct, selScore, sopName } from '../utils/selection'
 
 const strategies = ref<string[]>(['combined'])
 const strategy = ref('combined')
@@ -122,7 +122,7 @@ onMounted(init)
             <tr>
               <td>{{ item.rank_no }}</td>
               <td>{{ item.code ?? item.ts_code }}</td>
-              <td>{{ item.name }}</td>
+              <td>{{ sopName(item) }}</td>
               <td>{{ item.decision }}</td>
               <td>{{ item.score }}</td>
               <td>

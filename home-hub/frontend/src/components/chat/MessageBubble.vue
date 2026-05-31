@@ -8,7 +8,7 @@ defineProps<{
 
 <template>
   <article class="bubble" :class="role">
-    <header>{{ role === 'user' ? '你' : '助手' }}</header>
+    <header>{{ role === 'user' ? '你' : role === 'system' ? '系统' : '助手' }}</header>
     <p class="content">{{ content }}<span v-if="streaming" class="cursor">▍</span></p>
   </article>
 </template>
@@ -26,6 +26,18 @@ defineProps<{
   align-self: flex-end;
   background: #1a2740;
   border-color: #2f4570;
+}
+
+.bubble.system {
+  align-self: stretch;
+  max-width: 100%;
+  background: #261010;
+  border-color: #6b2a2a;
+  color: #ffb4b4;
+}
+
+.bubble.system header {
+  color: #ff8f8f;
 }
 
 .bubble.assistant {

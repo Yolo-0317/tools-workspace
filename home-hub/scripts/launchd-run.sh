@@ -24,7 +24,7 @@ fi
 
 mkdir -p logs data
 
-echo "[$(date '+%F %T')] home-hub launchd 启动 ${HOST}:${PORT}" >&2
+echo "[$(date '+%F %T')] home-hub 启动 ${HOST}:${PORT}" >&2
 exec uv run uvicorn backend.main:app \
   --host "${HOST}" \
   --port "${PORT}" \

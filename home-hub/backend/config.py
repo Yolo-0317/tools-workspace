@@ -34,6 +34,7 @@ class Settings:
 
     chat_rate_limit: int = int(os.getenv("HUB_CHAT_RATE_LIMIT", "10"))
     session_idle_hours: int = int(os.getenv("HUB_SESSION_IDLE_HOURS", "24"))
+    agent_run_timeout: int = int(os.getenv("HUB_AGENT_RUN_TIMEOUT", "120"))
 
     stock_ai_root: Path = Path(
         os.getenv("STOCK_AI_ROOT", str(ROOT.parent / "stock-ai"))

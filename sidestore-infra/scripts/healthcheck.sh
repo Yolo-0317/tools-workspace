@@ -63,6 +63,19 @@ else
   FAIL=1
 fi
 
+HUB_DOMAIN="${HUB_SUBDOMAIN:-hub}.${DOMAIN:-yoloworld.site}"
+if curl -sf --max-time 8 --resolve "${HUB_DOMAIN}:${INTERNAL_PORT}:127.0.0.1" "https://${HUB_DOMAIN}:${INTERNAL_PORT}/api/health" | grep -q '"ok"'; then
+  echo "OK  home-hub HTTPS 内网 :${INTERNAL_PORT} (401 无 Basic Auth 时改用 -k 测 Caddy)"
+else
+  code=$(curl -sk --max-time 8 -o /dev/null -w "%{http_code}" --resolve "${HUB_DOMAIN}:${INTERNAL_PORT}:127.0.0.1" "https://${HUB_DOMAIN}:${INTERNAL_PORT}/api/health" || echo 000)
+  if [[ "$code" == "401" ]]; then
+    echo "OK  home-hub HTTPS 内网 :${INTERNAL_PORT} (401=需 Basic Auth，Caddy 正常)"
+  else
+    echo "FAIL home-hub HTTPS 内网 :${INTERNAL_PORT} (http=${code}；检查 8780 与 Caddy 反代)"
+    FAIL=1
+  fi
+fi
+
 if curl -sfk --max-time 8 "$ANI_URL" 2>/dev/null | grep -q 'X-Apple-I-MD'; then
   echo "OK  anisette HTTPS 公网 :${EXTERNAL_PORT}"
 else

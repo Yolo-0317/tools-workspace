@@ -460,8 +460,282 @@ def _parse_selection_trade_date(value: date | str) -> date:
     return datetime.fromisoformat(str(value)[:10]).date()
 
 
+def _code6(code: str) -> str:
+    return str(code).split(".")[0].zfill(6)
+
+
+def _to_ts_code(code: str) -> str:
+    code_str = _code6(code)
+    if code_str.startswith(("60", "68")):
+        return f"{code_str}.SH"
+    return f"{code_str}.SZ"
+
+
+_STOCK_NAME_CACHE: dict[str, str] | None = None
+_NAME_CACHE_FILE = STOCK_AI / "output" / "cache" / "stock_name_map.json"
+_OPENCLI_NAME_LOOKUP_LIMIT = 128
+_MARKET_NAME_CACHE_MIN = 500
+_BULK_WARM_ATTEMPTED = False
+
+
+def _has_cjk(text: str) -> bool:
+    return bool(re.search(r"[\u4e00-\u9fff]", text))
+
+
+def _name_needs_enrich(name: str, code: str) -> bool:
+    n = (name or "").strip()
+    if not n or n == code:
+        return True
+    if n.isdigit() and len(n) == 6:
+        return True
+    return not _has_cjk(n)
+
+
+def _read_disk_name_cache() -> dict[str, str]:
+    if not _NAME_CACHE_FILE.is_file():
+        return {}
+    try:
+        data = json.loads(_NAME_CACHE_FILE.read_text(encoding="utf-8"))
+        if isinstance(data, dict):
+            return {
+                _code6(k): str(v).strip()
+                for k, v in data.items()
+                if _has_cjk(str(v))
+            }
+    except Exception:
+        pass
+    return {}
+
+
+def _write_disk_name_cache(extra: dict[str, str]) -> None:
+    if not extra:
+        return
+    merged = _read_disk_name_cache()
+    for code, cn in extra.items():
+        c = _code6(code)
+        if cn and _has_cjk(cn):
+            merged[c] = cn.strip()
+    _NAME_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _NAME_CACHE_FILE.write_text(
+        json.dumps(merged, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _fetch_eastmoney_market_name_cache(*, force: bool = False) -> dict[str, str]:
+    """东财 clist 全市场代码→名称，写入本地缓存（Tushare 不可用时的主来源）。"""
+    cache = _read_disk_name_cache()
+    if len(cache) >= _MARKET_NAME_CACHE_MIN and not force:
+        return cache
+    try:
+        import requests
+    except ImportError:
+        return cache
+
+    fs = "m:1+t:2,m:1+t:23,m:0+t:6,m:0+t:80,m:0+t:81,m:0+t:82,m:0+t:83"
+    session = requests.Session()
+    session.headers.update({"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"})
+    merged = dict(cache)
+    pn = 1
+    pz = 500
+    while pn <= 80:
+        try:
+            resp = session.get(
+                "https://push2.eastmoney.com/api/qt/clist/get",
+                params={"pn": pn, "pz": pz, "fs": fs, "fields": "f12,f14"},
+                timeout=30,
+            )
+            resp.raise_for_status()
+            payload = resp.json()
+        except Exception:
+            break
+        block = (payload.get("data") or {}).get("diff") or []
+        if not block:
+            break
+        for item in block:
+            if not isinstance(item, dict):
+                continue
+            code = _code6(str(item.get("f12") or ""))
+            name = str(item.get("f14") or "").strip()
+            if code and name and _has_cjk(name):
+                merged[code] = name
+        total = int((payload.get("data") or {}).get("total") or 0)
+        if pn * pz >= total:
+            break
+        pn += 1
+    if len(merged) > len(cache):
+        _write_disk_name_cache(merged)
+    global _STOCK_NAME_CACHE
+    _STOCK_NAME_CACHE = None
+    return merged
+
+
+def ensure_market_name_cache(*, force: bool = False) -> int:
+    """预热代码→中文名缓存；返回缓存条目数。"""
+    _load_dotenv()
+    _fetch_tushare_name_cache(refresh=force)
+    cache = _fetch_eastmoney_market_name_cache(force=force)
+    return len(cache)
+
+
+def _fetch_opencli_names(codes: list[str]) -> dict[str, str]:
+    if not codes:
+        return {}
+    try:
+        from scripts.tools.fetch_eastmoney_quotes import fetch_quotes_opencli
+
+        quotes = fetch_quotes_opencli(codes, close_browser=True)
+    except Exception:
+        return {}
+    out: dict[str, str] = {}
+    for code, quote in quotes.items():
+        cn = (quote.name or "").strip()
+        c = _code6(code)
+        if cn and _has_cjk(cn) and cn != c:
+            out[c] = cn
+    return out
+
+
+def _fetch_tushare_name_cache(*, refresh: bool = False) -> dict[str, str]:
+    global _STOCK_NAME_CACHE
+    if _STOCK_NAME_CACHE is not None and not refresh:
+        return _STOCK_NAME_CACHE
+    _load_dotenv()
+    cache: dict[str, str] = dict(_read_disk_name_cache())
+    token = os.getenv("TUSHARE_TOKEN", "").strip()
+    if token:
+        try:
+            import tushare as ts
+
+            ts.set_token(token)
+            pro = ts.pro_api()
+            df = pro.stock_basic(exchange="", list_status="L", fields="ts_code,name")
+            for _, row in df.iterrows():
+                ts_code = str(row.ts_code)
+                cn = str(row.name).strip()
+                if not cn:
+                    continue
+                cache[ts_code] = cn
+                cache[_code6(ts_code)] = cn
+            _write_disk_name_cache(cache)
+        except Exception:
+            pass
+    _STOCK_NAME_CACHE = cache
+    return cache
+
+
+def load_stock_names_by_codes(
+    codes: list[str],
+    *,
+    engine: Engine | None = None,
+) -> dict[str, str]:
+    """6 位代码 → 中文名（持仓 → 本地缓存 → Tushare/东财全市场 → OpenCLI 补缺）。"""
+    normalized: list[str] = []
+    for raw in codes:
+        code = _code6(raw)
+        if re.fullmatch(r"\d{6}", code) and code not in normalized:
+            normalized.append(code)
+    if not normalized:
+        return {}
+
+    global _BULK_WARM_ATTEMPTED
+    if not _BULK_WARM_ATTEMPTED and len(_read_disk_name_cache()) < _MARKET_NAME_CACHE_MIN:
+        _BULK_WARM_ATTEMPTED = True
+        ensure_market_name_cache()
+
+    out: dict[str, str] = {}
+    engine = engine or get_engine()
+    if engine is not None:
+        placeholders = ", ".join(f":c{i}" for i in range(len(normalized)))
+        params = {f"c{i}": c for i, c in enumerate(normalized)}
+        try:
+            with engine.connect() as conn:
+                rows = conn.execute(
+                    text(
+                        f"SELECT ts_code, name FROM portfolio_positions "
+                        f"WHERE is_active = 1 AND ts_code IN ({placeholders})"
+                    ),
+                    params,
+                ).fetchall()
+            for row in rows:
+                code = _code6(row.ts_code)
+                cn = str(row.name or "").strip()
+                if cn and _has_cjk(cn):
+                    out[code] = cn
+        except Exception:
+            pass
+
+    try:
+        from stock_ai.symbols import CODE_NAMES
+
+        for code in normalized:
+            if code in out:
+                continue
+            cn = (CODE_NAMES.get(code) or "").strip()
+            if cn and _has_cjk(cn):
+                out[code] = cn
+    except Exception:
+        pass
+
+    tushare_names = _fetch_tushare_name_cache()
+    for code in normalized:
+        if code in out:
+            continue
+        cn = tushare_names.get(code) or tushare_names.get(_to_ts_code(code), "")
+        if cn:
+            out[code] = cn
+
+    missing = [c for c in normalized if c not in out]
+    if missing and len(missing) <= _OPENCLI_NAME_LOOKUP_LIMIT:
+        opencli = _fetch_opencli_names(missing)
+        out.update(opencli)
+        _write_disk_name_cache(opencli)
+    return out
+
+
+def enrich_sop_review_bundle(
+    bundle: dict[str, Any] | None,
+    *,
+    names: dict[str, str] | None = None,
+) -> dict[str, Any] | None:
+    if not bundle or not bundle.get("items"):
+        return bundle
+    items = bundle["items"]
+    if names is None:
+        codes = [_code6(str(it.get("ts_code", ""))) for it in items]
+        names = load_stock_names_by_codes(codes)
+    for item in items:
+        code = _code6(str(item.get("ts_code", item.get("code", ""))))
+        item["code"] = code
+        cur = str(item.get("name") or "").strip()
+        cn = (names or {}).get(code, "")
+        if cn and _name_needs_enrich(cur, code):
+            item["name"] = cn
+    return bundle
+
+
+def enrich_selection_row_names(
+    rows: list[dict[str, Any]],
+    *,
+    names: dict[str, str] | None = None,
+    engine: Engine | None = None,
+) -> list[dict[str, Any]]:
+    if not rows:
+        return rows
+    if names is None:
+        codes = [_selection_row_code(r) for r in rows]
+        names = load_stock_names_by_codes(codes, engine=engine)
+    for row in rows:
+        code = _selection_row_code(row)
+        cur = str(row.get("名称") or row.get("name") or "").strip()
+        cn = (names or {}).get(code, "")
+        if cn and _name_needs_enrich(cur, code):
+            row["名称"] = cn
+    return rows
+
+
 def _selection_row_code(row: dict[str, Any]) -> str:
-    return str(row.get("代码", "")).split(".")[0].zfill(6)
+    return _code6(str(row.get("代码", row.get("code", ""))))
 
 
 def _json_safe_value(value: Any) -> Any:
@@ -501,6 +775,8 @@ def save_selection_daily_results(
 
     td = _parse_selection_trade_date(trade_date)
     strat = (strategy or "combined").strip() or "combined"
+    if rows:
+        enrich_selection_row_names(rows, engine=engine)
     with engine.begin() as conn:
         conn.execute(
             text(
@@ -680,7 +956,7 @@ def load_selection_daily_results(
             raw = json.loads(raw)
         if isinstance(raw, dict):
             out.append(raw)
-    return resolved, out
+    return resolved, enrich_selection_row_names(out, engine=engine)
 
 
 def _snapshot_date(value: date | str | None = None) -> date:
@@ -1019,10 +1295,11 @@ def load_sop_review_bundle(
             ),
             {"d": td_val.isoformat(), "s": strat},
         ).fetchall()
-    return {
+    bundle = {
         "header": dict(header._mapping),
         "items": [dict(r._mapping) for r in items],
     }
+    return enrich_sop_review_bundle(bundle)
 
 
 def _json_list_field(value: Any) -> list:

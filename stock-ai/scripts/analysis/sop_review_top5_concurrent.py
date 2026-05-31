@@ -18,8 +18,6 @@ for _p in (ROOT, ROOT / "core_v2"):
 
 import pandas as pd
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, text
-
 from scripts.analysis.eastmoney_sop_extract import extract_and_save_batch
 from scripts.tools.fetch_eastmoney_quotes import fetch_technical_summary_opencli
 from scripts.tools.deepseek_client import call_deepseek
@@ -62,23 +60,10 @@ def _build_stock_meta(row: pd.Series) -> dict:
 
 
 def _load_names(codes: list[str], mysql_url: str) -> dict[str, str]:
-    if not mysql_url or not codes:
-        return {}
-    placeholders = ", ".join(f":c{i}" for i in range(len(codes)))
-    params = {f"c{i}": c for i, c in enumerate(codes)}
-    names: dict[str, str] = {}
-    try:
-        engine = create_engine(mysql_url)
-        with engine.connect() as conn:
-            rows = conn.execute(
-                text(f"SELECT ts_code, name FROM stock_basic WHERE ts_code IN ({placeholders})"),
-                params,
-            ).fetchall()
-        for row in rows:
-            names[str(row.ts_code).split(".")[0].zfill(6)] = row.name
-    except Exception:
-        pass
-    return names
+    del mysql_url  # 保留签名兼容；名称由 portfolio_db（Tushare/持仓）解析
+    from scripts.tools.portfolio_db import load_stock_names_by_codes
+
+    return load_stock_names_by_codes(codes)
 
 
 def _deepseek_single_review(
@@ -251,6 +236,15 @@ def review_top5_sop_concurrent(
 
     watch_metas: list[SopWatchMeta] = []
     names_map = _load_names([m["代码"] for m in metas], mysql_url)
+    try:
+        from scripts.tools.fetch_eastmoney_quotes import fetch_quotes_opencli
+
+        for c, quote in fetch_quotes_opencli(codes, close_browser=True).items():
+            cn = (quote.name or "").strip()
+            if cn and cn != c:
+                names_map[c] = cn
+    except Exception:
+        pass
     for meta, review in per_stock_reviews:
         code = meta["代码"]
         parsed = parse_sop_review_text(
@@ -326,7 +320,7 @@ def review_top5_sop_concurrent(
                 {
                     "rank_no": rank,
                     "code": code,
-                    "name": (parsed.name if parsed else code),
+                    "name": names_map.get(code) or (parsed.name if parsed else code),
                     "score": float(meta.get("总分", 0)),
                     "decision": parsed.decision if parsed else "",
                     "watch_worthy": parsed.watch_worthy if parsed else False,

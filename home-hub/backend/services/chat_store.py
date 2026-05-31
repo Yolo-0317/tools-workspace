@@ -113,6 +113,16 @@ def set_cursor_agent_id(session_id: str, agent_id: str) -> None:
         db.commit()
 
 
+def clear_cursor_agent_id(session_id: str) -> None:
+    with Session(_engine) as db:
+        row = db.get(ChatSession, session_id)
+        if not row:
+            return
+        row.cursor_agent_id = None
+        row.updated_at = _utcnow()
+        db.commit()
+
+
 def add_message(session_id: str, role: str, content: str) -> dict[str, Any]:
     now = _utcnow()
     row = ChatMessage(

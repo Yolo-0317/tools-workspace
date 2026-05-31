@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import {
   fetchJellyfinMappings,
   fetchServicesCatalog,
   healthClass,
   healthLabel,
 } from '../api/services'
-import type { JellyfinMappings, ServiceCategory } from '../types/services'
+import type { JellyfinMappings, ServiceCategory, ServiceItem } from '../types/services'
 
 const categories = ref<ServiceCategory[]>([])
 const domains = ref<Record<string, unknown>>({})
@@ -15,6 +15,50 @@ const jellyfin = ref<JellyfinMappings | null>(null)
 const error = ref('')
 const loading = ref(true)
 const showJellyfin = ref(false)
+const showDocker = ref(true)
+const dockerFilter = ref('')
+
+/** catalog docker_container → service display name */
+const catalogByContainer = computed(() => {
+  const map = new Map<string, ServiceItem>()
+  for (const cat of categories.value) {
+    for (const item of cat.items) {
+      if (item.docker_container) {
+        map.set(item.docker_container, item)
+      }
+    }
+  }
+  return map
+})
+
+const dockerKnown = computed(() => {
+  const out: Array<{ name: string; container: string; up: boolean }> = []
+  for (const [container, item] of catalogByContainer.value) {
+    out.push({
+      name: item.name,
+      container,
+      up: dockerRunning.value.includes(container),
+    })
+  }
+  return out.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
+})
+
+const dockerOther = computed(() => {
+  const known = new Set(catalogByContainer.value.keys())
+  return dockerRunning.value
+    .filter((c) => !known.has(c))
+    .sort((a, b) => a.localeCompare(b))
+})
+
+const dockerFilteredOther = computed(() => {
+  const q = dockerFilter.value.trim().toLowerCase()
+  if (!q) return dockerOther.value
+  return dockerOther.value.filter((c) => c.toLowerCase().includes(q))
+})
+
+const dockerCatalogUp = computed(
+  () => dockerKnown.value.filter((x) => x.up).length,
+)
 
 async function load() {
   loading.value = true
@@ -139,9 +183,86 @@ onMounted(load)
       </template>
     </section>
 
-    <section class="block">
-      <h2>Docker 运行中（{{ dockerRunning.length }}）</h2>
-      <p class="mono wrap">{{ dockerRunning.join(', ') || '—' }}</p>
+    <section class="block docker-block">
+      <div class="block-head">
+        <div class="docker-title">
+          <h2>Docker</h2>
+          <span class="docker-count">{{ dockerRunning.length }} 个运行中</span>
+        </div>
+        <button type="button" class="toggle" @click="showDocker = !showDocker">
+          {{ showDocker ? '收起' : '展开' }}
+        </button>
+      </div>
+
+      <template v-if="showDocker">
+        <p v-if="!dockerRunning.length" class="hint">当前无运行中的容器</p>
+        <template v-else>
+          <div class="docker-stats">
+            <span class="stat">
+              <span class="stat-dot up" />
+              目录已登记 {{ dockerCatalogUp }}/{{ dockerKnown.length }}
+            </span>
+            <span v-if="dockerOther.length" class="stat muted">
+              其它 {{ dockerOther.length }}
+            </span>
+            <button
+              type="button"
+              class="copy"
+              @click="copyText(dockerRunning.join('\n'))"
+            >
+              复制全部
+            </button>
+          </div>
+
+          <div v-if="dockerKnown.length" class="docker-group">
+            <h3 class="docker-group-title">已登记服务</h3>
+            <ul class="docker-chips">
+              <li
+                v-for="row in dockerKnown"
+                :key="row.container"
+                class="chip"
+                :class="row.up ? 'chip-up' : 'chip-down'"
+              >
+                <span class="chip-name">{{ row.name }}</span>
+                <span class="chip-container mono">{{ row.container }}</span>
+                <span class="chip-status">{{ row.up ? '运行中' : '未运行' }}</span>
+              </li>
+            </ul>
+          </div>
+
+          <div v-if="dockerOther.length" class="docker-group">
+            <div class="docker-group-head">
+              <h3 class="docker-group-title">其它容器</h3>
+              <input
+                v-if="dockerOther.length > 6"
+                v-model="dockerFilter"
+                type="search"
+                class="docker-search"
+                placeholder="筛选容器名…"
+                autocomplete="off"
+              />
+            </div>
+            <ul v-if="dockerFilteredOther.length" class="docker-chips docker-chips-other">
+              <li
+                v-for="name in dockerFilteredOther"
+                :key="name"
+                class="chip chip-other"
+              >
+                <span class="chip-container mono">{{ name }}</span>
+                <button
+                  type="button"
+                  class="copy chip-copy"
+                  title="复制容器名"
+                  @click="copyText(name)"
+                >
+                  复制
+                </button>
+              </li>
+            </ul>
+            <p v-else class="hint">无匹配「{{ dockerFilter }}」的容器</p>
+          </div>
+        </template>
+      </template>
     </section>
   </div>
 </template>
@@ -318,10 +439,183 @@ th {
   font-size: 11px;
 }
 
-.wrap {
-  word-break: break-all;
+.docker-block .block-head {
+  margin-bottom: 10px;
+}
+
+.docker-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.docker-title h2 {
+  margin: 0;
+}
+
+.docker-count {
+  font-size: 12px;
+  color: #7dffb2;
+  background: #10261c;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+.docker-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin-bottom: 14px;
   font-size: 12px;
   color: #8b9cb3;
+}
+
+.stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stat.muted {
+  color: #6b7d94;
+}
+
+.stat-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.stat-dot.up {
+  background: #7dffb2;
+  box-shadow: 0 0 6px #7dffb266;
+}
+
+.docker-group {
+  margin-bottom: 16px;
+}
+
+.docker-group:last-child {
+  margin-bottom: 0;
+}
+
+.docker-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.docker-group-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8b9cb3;
+  letter-spacing: 0.02em;
+}
+
+.docker-search {
+  flex: 1;
+  max-width: 200px;
+  min-width: 120px;
+  padding: 5px 10px;
+  font-size: 12px;
+  border: 1px solid #314158;
+  border-radius: 8px;
+  background: #0b1016;
+  color: #dbe7ff;
+}
+
+.docker-search::placeholder {
+  color: #6b7d94;
+}
+
+.docker-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.docker-chips-other {
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+}
+
+.chip {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 2px 8px;
+  align-items: start;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #243041;
+  background: #121820;
+}
+
+.chip-up {
+  border-color: #1e3d2e;
+  background: linear-gradient(135deg, #121820 0%, #0f1a14 100%);
+}
+
+.chip-down {
+  border-color: #3d1e1e;
+  opacity: 0.85;
+}
+
+.chip-other {
+  grid-template-columns: 1fr auto;
+  grid-template-rows: 1fr;
+  align-items: center;
+  background: #0f1419;
+}
+
+.chip-name {
+  grid-column: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: #e7ecf3;
+}
+
+.chip-container {
+  grid-column: 1;
+  font-size: 11px;
+  color: #6b7d94;
+  word-break: break-all;
+}
+
+.chip-other .chip-container {
+  color: #8b9cb3;
+}
+
+.chip-status {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.chip-up .chip-status {
+  background: #10261c;
+  color: #7dffb2;
+}
+
+.chip-down .chip-status {
+  background: #261010;
+  color: #ff8f8f;
+}
+
+.chip-copy {
+  margin: 0;
 }
 
 .hint {

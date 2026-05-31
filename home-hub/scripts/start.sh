@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 生产模式启动（无 reload）
+# 前台启动单服务（无 reload；常驻请用 install-launchd.sh）
 set -eu
 set -o pipefail
 

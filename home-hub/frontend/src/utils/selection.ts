@@ -8,6 +8,16 @@ export function selName(row: Record<string, unknown>): string {
   return String(row['名称'] ?? row.name ?? '—')
 }
 
+/** SOP 审查条目：优先中文名，避免展示 6 位代码占位 */
+export function sopName(item: Record<string, unknown>): string {
+  const code = String(item.code ?? item.ts_code ?? '')
+    .split('.')[0]
+    .padStart(6, '0')
+  const name = String(item.name ?? '').trim()
+  if (name && name !== code && !/^\d{6}$/.test(name)) return name
+  return selName(item)
+}
+
 export function selScore(row: Record<string, unknown>): string | number {
   const v = row['总分'] ?? row.score ?? row.total_score
   return v === null || v === undefined ? '—' : (v as string | number)

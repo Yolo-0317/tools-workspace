@@ -26,9 +26,8 @@ categories:
 
       - id: home-hub
         name: Home Hub
-        description: 本看板 + Cursor 聊天（生产 launchd 8780，开发后端 8781 / 前端 5173）
+        description: 本看板 + Cursor 聊天（launchd 单服务 :8780）
         local_url: http://127.0.0.1:8780
-        dev_url: http://127.0.0.1:5173
         public_url: https://hub.yoloworld.site:8883
         health:
           type: http
@@ -37,17 +36,6 @@ categories:
           - HUB_API_TOKEN
           - HUB_BASIC_AUTH_USER
           - HUB_BASIC_AUTH_PASSWORD
-
-      - id: stock-analysis
-        name: Stock Analysis（旧 Web UI）
-        description: 独立分析栈 frontend + backend + redis
-        local_url: http://127.0.0.1:3301
-        docker_container: stock-analysis-frontend
-        compose_dir: ~/dev/yolo/stock-ai/stock_analysis
-        health:
-          type: http
-          url: http://127.0.0.1:3301/
-        credentials_env: []
 
       - id: wechat-acp
         name: 微信 ↔ Cursor
@@ -79,15 +67,6 @@ categories:
           - NAS_HOST
           - NAS_USER
           - NAS_PASS
-
-      - id: mihomo
-        name: Clash / Mihomo（Verge）
-        description: Jellyfin 代理链本地 SOCKS/HTTP
-        local_url: http://127.0.0.1:10888
-        health:
-          type: tcp
-          host: 127.0.0.1
-          port: 10888
 
   - id: infra
     name: 基础设施

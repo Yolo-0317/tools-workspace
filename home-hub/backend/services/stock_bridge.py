@@ -225,10 +225,18 @@ def load_selection_history(
         load_holding_codes,
         load_selection_daily_results,
         load_sop_review_bundle,
+        load_stock_names_by_codes,
+        enrich_sop_review_bundle,
     )
 
     td, rows = load_selection_daily_results(trade_date, strategy=strategy)
     sop = load_sop_review_bundle(trade_date, strategy=strategy)
+    if sop and sop.get("items"):
+        codes = [
+            str(it.get("ts_code") or it.get("code") or "").split(".")[0].zfill(6)
+            for it in sop["items"]
+        ]
+        enrich_sop_review_bundle(sop, names=load_stock_names_by_codes(codes))
     holdings = sorted(load_holding_codes())
     return {
         "strategy": strategy,

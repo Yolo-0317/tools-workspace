@@ -24,6 +24,11 @@ const errorText = ref('')
 const health = ref<ChatHealth | null>(null)
 const abortRef = ref<AbortController | null>(null)
 
+function formatStreamError(message: string, code?: string): string {
+  if (code === 'agent_busy') return message
+  return `错误：${message}`
+}
+
 const activeSession = computed(() =>
   sessions.value.find((s) => s.id === activeId.value) ?? null,
 )
@@ -61,6 +66,17 @@ async function onDelete(sessionId: string) {
   }
 }
 
+function pushErrorBubble(message: string) {
+  if (!activeId.value || !message.trim()) return
+  messages.value.push({
+    id: `err-${Date.now()}`,
+    session_id: activeId.value,
+    role: 'system',
+    content: message,
+    created_at: new Date().toISOString(),
+  })
+}
+
 async function send() {
   const text = draft.value.trim()
   if (!text || !activeId.value || streaming.value) return
@@ -82,13 +98,22 @@ async function send() {
 
   const controller = new AbortController()
   abortRef.value = controller
+  const sessionId = activeId.value
+  let pendingError: { message: string; code?: string } | null = null
 
   try {
     await streamMessage(
-      activeId.value,
+      sessionId,
       text,
       {
-        onStatus: () => {
+        onStatus: (data) => {
+          const phase = String(data.phase ?? '')
+          if (phase === 'retry') {
+            statusText.value = String(
+              data.message ?? '会话异常，正在新建 Agent 会话重试…',
+            )
+            return
+          }
           statusText.value = 'Agent 思考中…'
         },
         onTextDelta: (chunk) => {
@@ -101,22 +126,42 @@ async function send() {
         onToolStart: (data) => {
           statusText.value = `调用工具：${String(data.tool ?? 'tool')}`
         },
-        onDone: async () => {
-          if (streamText.value.trim()) {
-            messages.value.push({
-              id: `stream-${Date.now()}`,
-              session_id: activeId.value!,
-              role: 'assistant',
-              content: streamText.value,
-              created_at: new Date().toISOString(),
-            })
+        onDone: async (data) => {
+          const streamed = streamText.value.trim()
+          const finalText = streamed || String(data.text ?? '').trim()
+
+          if (!streamed && finalText) {
+            streamText.value = finalText
           }
+
+          const doneError = String(data.error ?? '').trim()
+          const doneCode = String(data.code ?? pendingError?.code ?? '')
+          const doneStatus = String(data.status ?? '')
+
+          if (doneError) {
+            errorText.value = formatStreamError(doneError, doneCode || undefined)
+            pushErrorBubble(errorText.value)
+          } else if (pendingError) {
+            errorText.value = formatStreamError(
+              pendingError.message,
+              pendingError.code,
+            )
+            pushErrorBubble(errorText.value)
+          } else if (doneStatus === 'empty' && !finalText) {
+            errorText.value =
+              'Agent 未返回内容（可能超时、MCP 连接失败，或 agent 被其他会话占用）'
+            pushErrorBubble(errorText.value)
+          }
+
           streamText.value = ''
           statusText.value = ''
+          pendingError = null
+          await loadMessages(sessionId)
           await refreshSessions()
         },
         onError: (msg, code) => {
-          errorText.value = code === 'agent_busy' ? msg : `错误：${msg}`
+          pendingError = { message: msg, code }
+          errorText.value = formatStreamError(msg, code)
           statusText.value = ''
         },
       },
@@ -125,6 +170,9 @@ async function send() {
   } finally {
     streaming.value = false
     abortRef.value = null
+    if (sessionId) {
+      await loadMessages(sessionId)
+    }
   }
 }
 

@@ -8,7 +8,7 @@ LABEL="com.user.home-hub"
 SRC="${WORKSPACE}/launchd/${LABEL}.plist"
 DST="${AGENTS_DIR}/${LABEL}.plist"
 
-chmod +x "${ROOT}/scripts/home-hub-autostart.sh" "${ROOT}/scripts/launchd-run.sh" "${ROOT}/scripts/start.sh" "${ROOT}/scripts/dev.sh"
+chmod +x "${ROOT}/scripts/home-hub-autostart.sh" "${ROOT}/scripts/launchd-run.sh" "${ROOT}/scripts/start.sh" "${ROOT}/scripts/restart.sh"
 mkdir -p "${ROOT}/logs" "${AGENTS_DIR}"
 
 if [[ ! -f "${SRC}" ]]; then
