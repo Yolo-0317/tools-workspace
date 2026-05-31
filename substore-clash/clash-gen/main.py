@@ -290,16 +290,22 @@ _UNSUPPORTED_NETWORKS = frozenset({"xhttp"})
 # Stash 文档推荐 HTTP；gstatic 204 用于 url-test 组级探测
 STASH_BENCHMARK_URL = "http://www.apple.com"
 URL_TEST_URL = "http://www.gstatic.com/generate_204"
-# 分区 url-test：Stash iOS 对单组 50+ 节点常不在启动时跑完测速
-AUTO_REGIONS: tuple[tuple[str, str], ...] = (
-    ("自动选择-港", r"香港|HK|沪港"),
-    ("自动选择-日", r"日本|JP"),
-    ("自动选择-美", r"美国|US"),
-    ("自动选择-台", r"台湾|TW"),
-)
 AUTO_SELECT_NAME = "自动选择"
-# Stash iOS 单组测速上限（过多节点启动时不跑完）
-AUTO_REGION_NODE_LIMIT = 10
+# 单组 url-test 节点上限（过多时按空闲/均衡优先截断）
+AUTO_SELECT_NODE_LIMIT = 80
+
+
+def _auto_select_members(names: list[str]) -> list[str]:
+    """All nodes in one url-test group, load-balance labels first."""
+    return sorted(names, key=_node_benchmark_priority)[:AUTO_SELECT_NODE_LIMIT]
+
+
+def _build_auto_select_groups(names: list[str]) -> list[dict[str, Any]]:
+    """Single url-test 自动选择 (all regional nodes, no 自动选择-x subgroups)."""
+    members = _auto_select_members(names)
+    if not members:
+        members = list(names)
+    return [_url_test_group(AUTO_SELECT_NAME, members)]
 
 
 def _node_benchmark_priority(name: str) -> tuple[int, str]:
@@ -328,7 +334,7 @@ def _select_group(name: str, proxies: list[str]) -> dict[str, Any]:
     """Select group; preferred option must be first (Stash rejects top-level `default`)."""
     group: dict[str, Any] = {"name": name, "type": "select", "proxies": proxies}
     # Stash：含 url-test 子组时加 interval，触发递归测速
-    if AUTO_SELECT_NAME in proxies or any(p.startswith("自动选择-") for p in proxies):
+    if AUTO_SELECT_NAME in proxies:
         group["interval"] = 120
     return group
 
@@ -349,42 +355,6 @@ def _url_test_group(
         group["lazy"] = True
         group["interval"] = 300
     return group
-
-
-def _build_auto_select_groups(names: list[str]) -> list[dict[str, Any]]:
-    """Tier-1 regional url-test + tier-2 自动选择 (Stash recurses into child groups)."""
-    groups: list[dict[str, Any]] = []
-    region_group_names: list[str] = []
-    assigned: set[str] = set()
-
-    for region_name, pattern in AUTO_REGIONS:
-        region_nodes = sorted(
-            [n for n in names if re.search(pattern, n, re.I)],
-            key=_node_benchmark_priority,
-        )[:AUTO_REGION_NODE_LIMIT]
-        if not region_nodes:
-            continue
-        region_group_names.append(region_name)
-        assigned.update(region_nodes)
-        groups.append(_url_test_group(region_name, region_nodes))
-
-    others = [n for n in names if n not in assigned]
-    if others:
-        others = sorted(others, key=_node_benchmark_priority)[:AUTO_REGION_NODE_LIMIT]
-        region_group_names.append("自动选择-其他")
-        groups.append(_url_test_group("自动选择-其他", others))
-
-    if not region_group_names:
-        return [_url_test_group(AUTO_SELECT_NAME, names)]
-
-    if len(region_group_names) == 1:
-        # 单区节点：扁平 url-test，避免多余嵌套
-        only = groups[0]
-        only["name"] = AUTO_SELECT_NAME
-        return [only]
-
-    groups.append(_url_test_group(AUTO_SELECT_NAME, region_group_names))
-    return groups
 
 
 def _build_loyal_policy_groups() -> list[dict[str, Any]]:

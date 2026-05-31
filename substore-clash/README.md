@@ -134,7 +134,7 @@ echo "/$(openssl rand -hex 12)"
 | OpenAI | **ChatGPT** |
 | Claude | AI-优选 |
 | google / proxy / telegramcidr | PROXY |
-| 未命中 | **自动选择**（分区 url-test，Stash 启动后递归测速） |
+| 未命中 | **自动选择**（单组 url-test，含各区域节点） |
 
 规则 CDN（客户端运行时拉取）示例：
 
