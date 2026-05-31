@@ -1,0 +1,26 @@
+# 统一调度栈（替代 docker/daily-sync 单独容器）
+#
+#   cd stock-ai/docker/scheduler
+#   docker compose up -d --build
+#
+# 前置：本机 host-jobs 已启动（launchd com.user.stock-ai-host-jobs）
+#       ./scripts/install-stock-ai-scheduler.sh
+
+services:
+  stock-ai-scheduler:
+    build:
+      context: ../..
+      dockerfile: docker/scheduler/Dockerfile
+    container_name: stock-ai-scheduler
+    restart: unless-stopped
+    env_file:
+      - ../../.env
+    environment:
+      TZ: Asia/Shanghai
+      HOST_JOB_HOST: host.docker.internal
+      HOST_JOB_PORT: ${HOST_JOB_PORT:-9876}
+      HOST_JOB_TOKEN: ${HOST_JOB_TOKEN:-}
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - ../../logs:/app/logs

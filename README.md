@@ -99,24 +99,29 @@ launchd：`com.user.sidestore-infra`、`com.user.sidestore-certs`、`com.user.al
 
 ---
 
-## 自动化（launchd）
+## 自动化（launchd + Docker 调度）
+
+投资定时任务见 [stock-ai/docs/SCHEDULING.md](stock-ai/docs/SCHEDULING.md)。
 
 | 标签 | 安装方式 | 作用 |
 |------|----------|------|
 | `com.user.docker-stacks` | `./scripts/install-docker-launchd.sh` | 登录后 Docker compose 幂等 `up -d` |
+| `com.user.stock-ai-host-jobs` | `stock-ai/scripts/install-stock-ai-scheduler.sh` | 本机任务 API（scheduler 触发 OpenCLI/微信） |
+| `stock-ai-scheduler`（Docker） | 同上 | cron：sync / 选股 / 战报 / 监控 |
 | `com.user.wechat-cursor-acp` | `wechat-cursor-acp/scripts/install-launchd.sh` | 微信桥自启 |
-| `com.user.stock-holdings-monitor` | `stock-ai/scripts/install-holdings-monitor-launchd.sh` | 持仓监控每 5 分钟 |
-| `com.user.stock-ai-daily-briefing` | `stock-ai/scripts/install-daily-briefing-launchd.sh` | 战报 09/12/15/20 点 |
-| `com.user.stock-ai-daily-selection` | `stock-ai/scripts/install-daily-selection-launchd.sh` | 每日选股 17:30 |
+| `com.user.home-hub` | `home-hub/scripts/install-launchd.sh` | 投资看板 |
 | `com.user.stock-watch-reminder-*` | `stock-ai/scripts/install-stock-watch-reminder-launchd.sh` | 一次性个股提醒 |
 
-Docker 自启栈（`scripts/docker-autostart.sh`）：MySQL、Jellyfin、sidestore-infra、substore-clash、stock-ai 日线同步。
+**已停用（回滚用）**：`stock-ai-daily-selection` / `daily-briefing` / `holdings-monitor` launchd → 改由 scheduler 触发。
+
+Docker 自启栈（`scripts/docker-autostart.sh`）：MySQL、Jellyfin、sidestore-infra、substore-clash、**stock-ai-scheduler**。
 
 日志：
 
+- 调度总览：`stock-ai/docs/SCHEDULING.md` §5
 - Docker：`logs/docker-autostart.log`
 - 微信桥：`wechat-cursor-acp/logs/launchd-autostart.{out,err}.log`
-- 持仓监控：`stock-ai/logs/launchd-holdings-monitor.{out,err}.log`
+- host-jobs：`stock-ai/logs/launchd-host-jobs.{out,err}.log`、`host-job-*.log`
 
 ---
 
@@ -164,9 +169,8 @@ cursor tools-workspace.code-workspace
 # 登录自启（首次）
 ./scripts/install-docker-launchd.sh
 ./wechat-cursor-acp/scripts/install-launchd.sh
-./stock-ai/scripts/install-daily-briefing-launchd.sh
-./stock-ai/scripts/install-holdings-monitor-launchd.sh
-./stock-ai/scripts/install-daily-selection-launchd.sh
+./stock-ai/scripts/install-stock-ai-scheduler.sh
+./home-hub/scripts/install-launchd.sh   # 可选
 
 # stock-ai
 cd stock-ai && ./run_sync_daily.sh

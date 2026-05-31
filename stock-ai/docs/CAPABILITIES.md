@@ -65,16 +65,24 @@ Agent 排查「是否漏接 DB/OpenCLI」时，先对号入座；**只有第一�
 
 ---
 
-## 2. 定时任务（launchd）
+## 2. 定时任务（统一调度）
 
-| Label | 安装脚本 | 调度 | 入口 | 说明 |
-|-------|----------|------|------|------|
-| `com.user.stock-ai-daily-selection` | `scripts/install-daily-selection-launchd.sh` | 周一至五 **17:30** | `push_selection_wechat.sh` | 选股 + SOP + 日线补缺 + 次日监控 + **收盘甄选战报** → 微信 |
-| `com.user.stock-ai-daily-briefing` | `scripts/install-daily-briefing-launchd.sh` | 每天 **09/12/15/20:00** | `push_daily_briefing_wechat.sh` | 盘中/收盘/晚间战报 → 微信 |
-| `com.user.stock-holdings-monitor` | `scripts/install-holdings-monitor-launchd.sh` | 每 **5 分钟** | `push_holdings_monitor.sh` | 脚本内仅 **9:30–11:30 / 13:00–15:00** 生效；触发才推微信 |
-| `com.user.stock-watch-reminder-*` | `scripts/install-stock-watch-reminder-launchd.sh` | 一次性 | `push_stock_watch_reminder_wechat.sh` | 特定日期提醒（按需） |
+> **权威文档**：[docs/SCHEDULING.md](SCHEDULING.md) — 设计原因、架构图、安装、日志、回滚。
 
-Plist 源文件：`tools-workspace/launchd/`。
+**生产（2026-05-31 起）**：Docker `stock-ai-scheduler` 管 cron；OpenCLI/微信任务经本机 `host-jobs`（`:9876`）执行。
+
+| 任务 | 调度 | 执行位置 | 入口 |
+|------|------|----------|------|
+| Tushare 日线同步 | 工作日 **17:00** | scheduler **容器内** | `run_sync_daily.sh` |
+| 选股 + SOP + 战报 | 工作日 **17:30** | 本机 host-jobs | `push_selection_wechat.sh` |
+| 每日战报 | **09 / 12 / 15 / 20:00** | 本机 | `push_daily_briefing_wechat.sh` |
+| 持仓 + 选股池监控 | 工作日 **每 5 分钟** | 本机 | `push_holdings_monitor.sh`（9:30–11:30 / 13:00–15:00 生效） |
+
+**安装**：`./scripts/install-stock-ai-scheduler.sh`（会停用旧 launchd 三个 plist，移除 `stock-daily-sync`）。
+
+**仍用 launchd（非 cron）**：`com.user.stock-ai-host-jobs`、`docker-stacks`、`home-hub`、`wechat-cursor-acp`、DDNS/证书等 — 见 SCHEDULING.md §7。
+
+**旧 launchd 安装脚本**（仅回滚）：`install-daily-selection-launchd.sh`、`install-daily-briefing-launchd.sh`、`install-holdings-monitor-launchd.sh`。
 
 **手动试跑**
 
@@ -189,7 +197,7 @@ push_selection_wechat.sh
 | 缺失自动补同步 | `scripts/tools/ensure_daily_bars.py` | 17:30 选股前；期望日规则见脚本 |
 | 执行卡 → 持仓/监控 | `scripts/tools/sync_portfolio_from_card.py` | `portfolio_positions` / `portfolio_account` / `alert_rules` |
 | 实时行情 / SOP | `scripts/tools/fetch_eastmoney_quotes.py` | OpenCLI；东财 HTTP 入库脚本已移除 |
-| Docker 定时同步 | `docker/daily-sync/` | 工作日 17:00（可选） |
+| Docker 统一调度 | `docker/scheduler/` | sync 17:00 + 选股/战报/监控 cron；见 [SCHEDULING.md](SCHEDULING.md) |
 
 详见 [TUSHARE_SYNC_GUIDE.md](TUSHARE_SYNC_GUIDE.md)。
 

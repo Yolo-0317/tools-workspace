@@ -160,17 +160,17 @@ uv run python -m scripts.tools.ensure_daily_bars --sync-if-stale
 
 ## 5. 定时任务
 
-**当前生产使用 launchd**（非 cron）：
+**当前生产**：Docker `stock-ai-scheduler` + 本机 `host-jobs`。详见 [SCHEDULING.md](../SCHEDULING.md)。
 
-| 任务 | 安装 |
-|------|------|
-| 17:30 选股 + 战报 | `scripts/install-daily-selection-launchd.sh` |
-| 09/12/15/20 战报 | `scripts/install-daily-briefing-launchd.sh` |
-| 盘中监控 | `scripts/install-holdings-monitor-launchd.sh` |
+| 任务 | 安装 / 说明 |
+|------|-------------|
+| 统一调度 | `./scripts/install-stock-ai-scheduler.sh` |
+| 17:30 选股 + 战报 | scheduler 17:30 → host-jobs `/run/selection` |
+| 09/12/15/20 战报 | scheduler → `/run/briefing` |
+| 盘中监控 | scheduler */5 → `/run/monitor` |
+| 17:00 Tushare sync | scheduler 容器内 `run_sync_daily.sh` |
 
-详见 [CAPABILITIES.md](../CAPABILITIES.md) §2。
-
-可选：`docker/daily-sync` 工作日 17:00 Tushare 同步。
+回滚旧 launchd：见 SCHEDULING.md §4。
 
 ---
 

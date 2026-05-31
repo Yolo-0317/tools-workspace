@@ -1,48 +1,32 @@
-# 日线同步定时任务（Docker）
+# 日线同步定时任务（已合并）
 
-工作日 **17:00（Asia/Shanghai）** 自动执行 `run_sync_daily.sh`，按日期批量拉取最近 **7** 天全市场日线写入 MySQL。
+> **已废弃独立部署**。Tushare 17:00 同步现由 **`docker/scheduler`** 统一调度。  
+> 请改用：[../scheduler/README.md](../scheduler/README.md) 或 `./scripts/install-stock-ai-scheduler.sh`。
 
-## 前置条件
+---
 
-1. 在 `stock-ai/.env` 中配置：
+## 迁移说明
 
-   ```bash
-   TUSHARE_TOKEN=你的token
-   MYSQL_URL=mysql+pymysql://用户:密码@主机:3306/库名
-   ```
+| 旧 | 新 |
+|----|-----|
+| `stock-daily-sync` 容器 | `stock-ai-scheduler` 容器内 17:00 cron |
+| `docker/daily-sync/docker compose up` | `docker/scheduler/docker compose up` |
+| 仅 sync | sync + 选股/战报/监控触发 |
 
-2. **MySQL 在宿主机时**：容器内不能使用 `127.0.0.1`，请将 `MYSQL_URL` 主机改为 `host.docker.internal`（macOS / Docker Desktop 已在本 compose 中配置 `extra_hosts`）。
+本目录 Dockerfile / compose **保留兼容**，新环境勿再引用。
 
-3. 本机已安装 Docker Compose v2。
+---
 
-## 启动
+## 历史：独立 daily-sync 用法
+
+工作日 **17:00（Asia/Shanghai）** 执行 `run_sync_daily.sh`。
 
 ```bash
+# 不推荐 — 仅回滚或对照
 cd stock-ai/docker/daily-sync
 docker compose up -d --build
-```
-
-查看日志：
-
-```bash
 docker compose logs -f stock-daily-sync
 tail -f ../../logs/sync_daily.log
 ```
 
-## 手动执行一次
-
-```bash
-docker compose run --rm stock-daily-sync ./run_sync_daily.sh
-```
-
-## 停止
-
-```bash
-docker compose down
-```
-
-## 说明
-
-- 调度器：[supercronic](https://github.com/aptible/supercronic)，cron 表达式见 `crontab`（周一～周五 17:00）。
-- 非交易日当天 Tushare 无数据时会跳过，属正常情况。
-- 修改调度时间：编辑 `crontab` 后 `docker compose up -d --build`。
+*最后更新：2026-05-31*

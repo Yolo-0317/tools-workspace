@@ -62,7 +62,7 @@ uv run python -m scripts.tools.ensure_daily_bars --sync-if-stale
 
 ### 自动化建议
 
-可以配置 launchd 每日自动更新（见 `scripts/install-daily-selection-launchd.sh` 与 `./run_sync_daily.sh`）。
+可以配置统一调度每日自动更新（见 `scripts/install-stock-ai-scheduler.sh` 与 [docs/SCHEDULING.md](../../../docs/SCHEDULING.md)）。
 
 ---
 

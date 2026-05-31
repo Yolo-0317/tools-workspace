@@ -1,6 +1,6 @@
 # tushare-mcp
 
-> **能力总览**：[docs/CAPABILITIES.md](docs/CAPABILITIES.md) · **文档索引**：[docs/README.md](docs/README.md)
+> **能力总览**：[docs/CAPABILITIES.md](docs/CAPABILITIES.md) · **文档索引**：[docs/README.md](docs/README.md) · **统一调度**：[docs/SCHEDULING.md](docs/SCHEDULING.md)
 
 ## 数据入库（MySQL）
 
@@ -50,9 +50,8 @@ uv run python scripts/sync_tushare_daily_to_mysql.py --mode by_date --days 7
 # 5. 日常更新（本机）
 ./run_sync_daily.sh
 
-# 6. Docker 定时（工作日 17:00，MySQL 在宿主机时用 host.docker.internal）
-# 见 docker/daily-sync/README.md
-cd docker/daily-sync && docker compose up -d --build
+# 6. Docker 统一调度（sync 17:00 + 选股/战报/监控，见 docs/SCHEDULING.md）
+./scripts/install-stock-ai-scheduler.sh
 ```
 
 **优势：**
@@ -60,16 +59,17 @@ cd docker/daily-sync && docker compose up -d --build
 - 按日期批量拉取，效率极高
 - 立即可用，无需等待
 
-## 每日综合选股 + 收盘甄选战报（17:30 · launchd）
+## 每日综合选股 + 收盘甄选战报（17:30 · scheduler → host-jobs）
 
-工作日 **17:30** 自动运行：**日线补缺 → 综合选股 Top5 → 东财 SOP → DeepSeek → 次日监控 → 收盘甄选战报 → 微信**（需已登录 [wechat-cursor-acp](../wechat-cursor-acp)）：
+工作日 **17:30** 由 Docker scheduler 触发本机 host-jobs：**日线补缺 → 综合选股 Top5 → 东财 SOP → DeepSeek → 次日监控 → 收盘甄选战报 → 微信**（需已登录 [wechat-cursor-acp](../wechat-cursor-acp)）：
 
 ```bash
-./scripts/install-daily-selection-launchd.sh   # 安装 launchd
-./push_selection_wechat.sh                     # 手动：完整 17:30 流程
+./scripts/install-stock-ai-scheduler.sh          # 安装统一调度（含 17:30）
+curl -s -X POST http://127.0.0.1:9876/run/selection -H 'Content-Type: application/json' -d '{}'  # 手动
+./push_selection_wechat.sh                       # 或直接跑脚本
 REPORT_ONLY=1 ./push_selection_wechat.sh       # 跳过选股/SOP，重生成战报并推送
 FETCH_ONLY=1 ./push_daily_briefing_wechat.sh 17:30
-DISABLE_SOP_TOP5=1 ./push_selection_wechat.sh  # 紧急跳过 SOP（改用轻量简评）
+DISABLE_SOP_TOP5=1 ./push_selection_wechat.sh    # 紧急跳过 SOP（改用轻量简评）
 ```
 
 - **SOP 值得关注**（非持仓、`WATCH: 是` / 买入观察）→ 写入 MySQL `selection_watch_picks` + `alert_rules`，**次日交易时段 5 分钟监控**（支撑/止损/目标/禁追高）
@@ -77,12 +77,13 @@ DISABLE_SOP_TOP5=1 ./push_selection_wechat.sh  # 紧急跳过 SOP（改用轻量
 
 默认 `WECHAT_PUSH_BACKEND=wechat-acp`。请在 QClaw 中关闭 cron `daily_stock_selection_17:30`，避免重复推送。
 
-## 每日战报（09 / 12 / 15 / 20 点 · launchd）
+## 每日战报（09 / 12 / 15 / 20 点 · scheduler → host-jobs）
 
 ```bash
-./scripts/install-daily-briefing-launchd.sh   # 安装 launchd（替代 QClaw cron）
-FETCH_ONLY=1 ./push_daily_briefing_wechat.sh 15:00  # 仅生成不推送
-./push_daily_briefing_wechat.sh 15:00             # 生成 + 推微信
+./scripts/install-stock-ai-scheduler.sh        # 与选股/监控一并安装
+curl -s -X POST http://127.0.0.1:9876/run/briefing -H 'Content-Type: application/json' -d '{"slot":"15:00"}'
+FETCH_ONLY=1 ./push_daily_briefing_wechat.sh 15:00
+./push_daily_briefing_wechat.sh 15:00
 ```
 
 战报内容：DeepSeek AI 综合解读 + 大盘 + 东财 7×24 + 国际 + 持仓。非交易日自动标注「休市简报」。
@@ -108,8 +109,9 @@ uv run python core_v3/stock_selection_five_factor_mysql.py
 交易时段 **9:30–11:30 / 13:00–15:00** 每 5 分钟检查；**触发才推微信**（wechat-acp）。
 
 ```bash
-./scripts/install-holdings-monitor-launchd.sh
-uv run python -m scripts.monitor.monitor_holdings_alerts --force --push   # 试跑
+./scripts/install-stock-ai-scheduler.sh
+curl -s -X POST http://127.0.0.1:9876/run/monitor -H 'Content-Type: application/json' -d '{}'
+uv run python -m scripts.monitor.monitor_holdings_alerts --force --push
 ```
 
 规则：MySQL `alert_rules`（持仓由 `sync_portfolio_from_card` 同步；选股由 17:30 `--sync` 写入）。详见 [docs/CAPABILITIES.md](docs/CAPABILITIES.md) §5。

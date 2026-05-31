@@ -1,6 +1,7 @@
 # stock-ai 文档索引
 
-> **生产环境唯一入口**：[CAPABILITIES.md](CAPABILITIES.md) — 定时任务、17:30、DeepSeek、监控、配置。
+> **生产环境唯一入口**：[CAPABILITIES.md](CAPABILITIES.md) — 定时任务、17:30、DeepSeek、监控、配置。  
+> **统一调度设计**：[SCHEDULING.md](SCHEDULING.md) — Docker scheduler + host-jobs 架构与运维。
 
 ---
 
@@ -8,7 +9,8 @@
 
 | 文档 | 用途 |
 |------|------|
-| [CAPABILITIES.md](CAPABILITIES.md) | **能力总览**（launchd、链路、工具、配置） |
+| [CAPABILITIES.md](CAPABILITIES.md) | **能力总览**（链路、工具、配置） |
+| [SCHEDULING.md](SCHEDULING.md) | **统一调度**（Docker scheduler + host-jobs） |
 | [../README.md](../README.md) | 快速开始：同步、选股、推送命令 |
 | [PROJECT_LAYOUT.md](PROJECT_LAYOUT.md) | 目录结构 |
 | [pipelines/daily_stock_deepseek_pipeline.md](pipelines/daily_stock_deepseek_pipeline.md) | 手动盘后：日线 → 选股 → DeepSeek |
@@ -35,8 +37,8 @@
 
 ## 维护约定
 
-1. 新增自动化能力 → 先更新 **CAPABILITIES.md**，再视需要更新 README / pipeline。
+1. 新增自动化能力 → 先更新 **CAPABILITIES.md** 与 **SCHEDULING.md**，再视需要更新 README / pipeline。
 2. 新增 `docs/*.md` → 在本索引「在用」中登记。
 3. 过时文档直接删除或合并进在用文档，避免「遗留」堆积。
 
-*最后更新：2026-05-30*
+*最后更新：2026-05-31*

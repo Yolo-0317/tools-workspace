@@ -69,7 +69,7 @@ uv run python -m scripts.tools.sync_portfolio_from_card
 
 ```bash
 cd ../  # stock-ai 根目录
-./scripts/install-holdings-monitor-launchd.sh
+盘中监控由 Docker scheduler 经 host-jobs 触发；安装见 `stock-ai/scripts/install-stock-ai-scheduler.sh` 与 [docs/SCHEDULING.md](../docs/SCHEDULING.md)。
 uv run python -m scripts.monitor.monitor_holdings_alerts --force   # 试跑
 ```
 

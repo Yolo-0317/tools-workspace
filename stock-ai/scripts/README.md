@@ -29,8 +29,18 @@
 
 | 脚本 | 说明 |
 |------|------|
-| `monitor/monitor_holdings_alerts.py` | 持仓 + 选股池条件监控 → 微信（launchd 每 5 分钟） |
-| `../push_holdings_monitor.sh` | launchd 入口 |
+| `monitor/monitor_holdings_alerts.py` | 持仓 + 选股池条件监控 → 微信（scheduler 每 5 分钟经 host-jobs） |
+| `../push_holdings_monitor.sh` | host-jobs / 手动入口 |
+
+## scheduler — 统一调度
+
+| 脚本 | 说明 |
+|------|------|
+| `scheduler/host_job_server.py` | 本机 HTTP 任务执行器（`:9876`） |
+| `scheduler/start-host-jobs.sh` | launchd 入口 |
+| `../install-stock-ai-scheduler.sh` | 安装 scheduler + host-jobs |
+
+详见 [docs/SCHEDULING.md](../docs/SCHEDULING.md)。
 
 ## tools
 

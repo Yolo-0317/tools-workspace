@@ -51,8 +51,8 @@ main() {
   compose_up "$HOME/dev/yolo/tools-workspace/sidestore-infra" "--env-file .env"
   compose_up "$HOME/dev/yolo/tools-workspace/substore-clash" "--env-file .env"
 
-  # stock-ai
-  compose_up "$HOME/dev/yolo/tools-workspace/stock-ai/docker/daily-sync"
+  # stock-ai 统一调度（含原 daily-sync Tushare cron）
+  compose_up "$HOME/dev/yolo/tools-workspace/stock-ai/docker/scheduler" "--env-file ../../.env"
 
   log "===== docker-autostart 完成 ====="
 }

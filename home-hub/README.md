@@ -10,7 +10,7 @@
 | 持仓 | `/portfolio` | 执行卡 sync + 每日快照 |
 | 选股 | `/selection` | `selection_daily_results` + SOP |
 | 监控 | `/monitor` | `alert_rules` + 触发状态 |
-| 任务 | `/jobs` | `launchd/*.plist` |
+| 任务 | `/jobs` | launchd plist（含 host-jobs；Docker scheduler cron 见 [stock-ai/docs/SCHEDULING.md](../stock-ai/docs/SCHEDULING.md)） |
 | **服务** | `/services` | 本地服务目录 + 健康探针 + Jellyfin 映射 |
 | 聊天 | `/chat` | Cursor CLI（`agent login`，同 wechat-acp） |
 

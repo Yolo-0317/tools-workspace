@@ -1,10 +1,9 @@
-# 工作日 17:00 同步 Tushare 日线到 MySQL
+# Tushare 日线 → MySQL（已合并至 docker/scheduler/，本目录保留兼容）
 #
-#   cd stock-ai/docker/daily-sync
-#   docker compose up -d --build
-#
-# 立即跑一次（不等待 cron）：
-#   docker compose run --rm stock-daily-sync ./run_sync_daily.sh
+# 请改用：
+#   cd ../scheduler && docker compose up -d --build
+# 或：
+#   ./scripts/install-stock-ai-scheduler.sh
 
 services:
   stock-daily-sync:

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.user.stock-ai-host-jobs</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/yolo/dev/yolo/tools-workspace/stock-ai/scripts/scheduler/start-host-jobs.sh</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/yolo/dev/yolo/tools-workspace/stock-ai</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/Users/yolo/dev/yolo/tools-workspace/stock-ai/logs/launchd-host-jobs.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/yolo/dev/yolo/tools-workspace/stock-ai/logs/launchd-host-jobs.err.log</string>
+</dict>
+</plist>

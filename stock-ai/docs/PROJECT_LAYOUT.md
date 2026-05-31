@@ -30,7 +30,7 @@ stock-ai/
 | Tushare 日线同步 | `uv run python scripts/sync/sync_tushare_daily_to_mysql.py` |
 | 五因子选股 | `uv run python core_v3/stock_selection_five_factor_mysql.py` |
 | 综合选股 (v2) | `uv run python core_v2/stock_selection_combined.py` |
-| 定时同步 | `./run_sync_daily.sh` 或 `docker/daily-sync`（工作日 17:00） |
+| 定时同步 | `./run_sync_daily.sh` 或 `docker/scheduler`（工作日 17:00，见 [SCHEDULING.md](SCHEDULING.md)） |
 
 旧路径 `scripts/sync_tushare_daily_to_mysql.py` 仍保留兼容包装，会转发到 `scripts/sync/`。
 
