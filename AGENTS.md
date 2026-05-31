@@ -40,7 +40,7 @@
 |------|------|
 | `stock-ai/` | `stock-ai/docs/PROJECT_LAYOUT.md` |
 | `wechat-cursor-acp/` | `wechat-cursor-acp/README.md` — 微信桥接 Cursor CLI |
-| `sidestore-infra/` | `sidestore-infra/scripts/setup.sh` |
+| `sidestore-infra/` | `sidestore-infra/README.md` |
 | `substore-clash/` | `substore-clash/README.md` — Sub-Store + Mihomo 订阅生成 |
 | `~/docker/jellyfin-stack` | `.cursor/skills/jellyfin/SKILL.md`（NAS / 迅雷 / 夸克 三库） |
 

@@ -11,7 +11,7 @@
 | [stock-ai](./stock-ai) | 行情入库、选股、MCP、持仓监控、战报推送 | [stock-ai/README.md](./stock-ai/README.md) |
 | [investment-agent](./stock-ai/investment-agent) | 持仓执行卡、投资助手 Agent、OpenCLI 东财 SOP | [investment-agent/README.md](./stock-ai/investment-agent/README.md) |
 | [wechat-cursor-acp](./wechat-cursor-acp) | 微信私聊 ↔ Cursor CLI（`agent acp`） | [wechat-cursor-acp/README.md](./wechat-cursor-acp/README.md) |
-| [sidestore-infra](./sidestore-infra) | SideStore、Caddy、阿里云 DDNS、Let's Encrypt | [sidestore-infra/scripts/setup.sh](./sidestore-infra/scripts/setup.sh) |
+| [sidestore-infra](./sidestore-infra) | SideStore、Caddy、阿里云 DDNS、Let's Encrypt | [sidestore-infra/README.md](./sidestore-infra/README.md) |
 | [substore-clash](./substore-clash) | 双机场订阅合并 → Mihomo/Stash/Verge 配置 | [substore-clash/README.md](./substore-clash/README.md) |
 
 工作空间外（Docker 自启会拉起，非本 repo 子目录）：`~/docker/jellyfin-stack`（Jellyfin NAS/迅雷/夸克）。
