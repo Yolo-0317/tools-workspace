@@ -33,13 +33,10 @@ mcp_server.log
 # Jupyter local venv (large)
 jupyter/.venv/
 
-# Agent 本地记忆 / 持仓 / 报告（勿提交）
+# Agent 本地记忆 / 报告（勿提交）
 investment-agent/memory/*
 !investment-agent/memory/trading-strategies.md
 investment-agent/reports/
-investment-agent/holdings.csv
-investment-agent/config/selection_watch_alerts.json
-holdings/
 
 # 兼容备份
 *.bak

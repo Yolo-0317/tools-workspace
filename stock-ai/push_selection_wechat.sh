@@ -26,13 +26,21 @@ if [ "${REPORT_ONLY:-0}" != "1" ]; then
   echo "=========================================="
   ./run_selection_daily.sh 2>&1 | tee "$FULL"
 else
-  if [ ! -s "$FULL" ] && ! ls "${ROOT}"/output/stock_selection_combined_*.csv >/dev/null 2>&1; then
-    echo "❌ REPORT_ONLY=1 但无选股产物（$FULL 或 stock_selection_combined_*.csv）" >&2
-    exit 1
+  if ! uv run python -c "
+from scripts.tools.selection_results import resolve_selection_df
+_, df, _ = resolve_selection_df()
+raise SystemExit(0 if len(df) > 0 else 1)
+" 2>/dev/null; then
+    if [ ! -s "$FULL" ] && ! ls "${ROOT}"/output/stock_selection_combined_*.csv >/dev/null 2>&1; then
+      echo "❌ REPORT_ONLY=1 但无选股产物（MySQL selection_daily_results / $FULL / CSV）" >&2
+      exit 1
+    fi
   fi
   echo "REPORT_ONLY=1：跳过选股，仅生成并推送收盘甄选战报"
 fi
 
 uv run python -m scripts.tools.selection_watchlist --sync || true
+
+"${ROOT}/scripts/tools/run_portfolio_snapshot.sh" eod
 
 exec "${ROOT}/push_daily_briefing_wechat.sh" 17:30

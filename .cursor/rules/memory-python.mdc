@@ -21,4 +21,31 @@ Hermes Step 3：处理 `stock-ai/` 内代码时与本文件、`project-memory.md
 
 - **Context**: 从 `scripts/` 子目录运行入库、选股脚本。
 - **Pitfall/Error**: `from _bootstrap import` 在 `scripts/sync/` 下找不到模块。
-- **Solution/Rule**: 使用 `from scripts._bootstrap import ensure_repo_root_on_path`，再 `ensure_repo_root_on_path()`。AkShare 数据在 `core_v2.fetch_akshare_data`，勿引用已删除的 `scripts.fetch_akshare_data`。
+- **Solution/Rule**: 使用 `from scripts._bootstrap import ensure_repo_root_on_path`，再 `ensure_repo_root_on_path()`。OpenCLI SOP 数据在 `core_v2.fetch_opencli_sop`（`fetch_akshare_data` 仅为兼容别名）。
+
+### 2026-05-30 弃用脚本删除与数据分层
+
+- **Context**: 用户确认「已弃用的就删除」，在 DB + OpenCLI 主链路落地后清理遗留入口。
+- **Pitfall/Error**: 东财 `push2`/HTTP 入库、Playwright 基本面、AkShare 校验、CSV 持仓分析等脚本与文档并存，Agent 或 cron 可能误跑旧路径；`stock_ai/http_direct.py` 仅被已删 sync 脚本引用。
+- **Solution/Rule**:
+  - **已删**：`scripts/sync/ingest_eastmoney_*`、`poll_eastmoney_*`；`core_v2/sync_capital_flow.py`、`get_fundamental_playwright.py`；`scripts/analysis/{analyze_holdings,fetch_fundamentals_only,ai_review_top5,run_deepseek_*}.py`；`scripts/tools/{verify_data,compare_daily_selection}.py`；`stock_ai/http_direct.py`；Playwright/AkShare 手动测试。
+  - **保留主入口**：日线 `sync/sync_tushare_daily_to_mysql.py`；OpenCLI `tools/fetch_eastmoney_quotes.py`；选股写/读 `selection_daily_results`（`portfolio_db` + `selection_results.py`）；持仓 `portfolio_positions`；审查 `ai_review_combined_top5.py`、`sop_review_top5_concurrent.py`；持仓 DeepSeek `analyze_holdings_v2.py`（仅 DB）。
+  - **文档**：`README.md`、`CAPABILITIES.md`、`docs/pipelines/daily_stock_deepseek_pipeline.md`、`investment-agent/docs/skills/stock-strategy-selector/` 与 `~/.codex/skills/stock-strategy-selector/` 已同步；勿再文档化东财 HTTP 入库方案。
+
+### 2026-05-30 选股入库 strategy 分桶 + 三项收尾
+
+- **Context**: 五因子入库、`REPORT_ONLY` 查 MySQL、重命名 `fetch_akshare_data` → `fetch_opencli_sop`。
+- **Pitfall/Error**: 原 `save_selection_daily_results` 按 `trade_date` 整表 DELETE，五因子与综合选股同日会互相覆盖；`REPORT_ONLY=1` 只查 CSV。
+- **Solution/Rule**: 表加 `strategy` 列（迁移 `stock-mysql/sql/004_selection_results_strategy.sql`）；写入规则 = **同日 + 同 strategy 先删后插**（覆盖），不同 strategy/日期并存。读默认 `strategy=combined`；五因子读/写 `five_factor`（`deepseek_analyze_five_factor.py` 已 MySQL 优先）。模块：`core_v2/fetch_opencli_sop.py`（`fetch_akshare_data.py` 仅兼容别名）。
+
+### 2026-05-30 数据分层四档（DB / OpenCLI / 文件 / 旁路）
+
+- **Context**: 整体审计后用户追问「设计如此（不进 DB / 不用 OpenCLI）」指什么，需持久化以免 Agent 误判为遗漏。
+- **Pitfall/Error**: 把 Markdown 执行卡、MCP Tushare 直查、LLM 层、微信推送、五因子 CSV、output 报告当成「应接 DB/OpenCLI 但未接」；或把 OpenCLI 实时行情当成「应入库」。
+- **Solution/Rule**: 四档对照表见 `stock-ai/docs/CAPABILITIES.md` §1「数据分层四档」。**① 主链路**=生产自动化；**②**=OpenCLI 不落库；**③**=DB 主源 + 文件备份/桥接；**④**=纪律 md、Tushare ad-hoc、DeepSeek、wechat-acp、研究脚本与 output 交付物。
+
+### 2026-05-31 看板每日快照 + SOP 落库
+
+- **Context**: 用户要做看板，需保留每日持仓/SOP 历史而非仅当前态。
+- **Pitfall/Error**: `portfolio_positions` 只有最新；`sop_review_latest.json` 单文件覆盖。
+- **Solution/Rule**: 迁移 `005_dashboard_snapshots.sql` → `portfolio_account_daily`、`portfolio_positions_daily`、`sop_review_daily`、`sop_review_items`。快照 slot：`midday`（15:00 战报后）、`eod`（17:30）、`sync`（改卡）。失败写 `logs/snapshot_alerts.log`，不阻断主流程。遗留表 `006_drop_legacy_eastmoney_tables.sql` 删除 capital_flow / intraday / orderbook。

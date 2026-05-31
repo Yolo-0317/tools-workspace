@@ -19,7 +19,6 @@ ensure_repo_root_on_path()
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT_DIR = ROOT / "output"
 AGENT_ROOT = ROOT / "investment-agent"
-WATCH_FILE = AGENT_ROOT / "config" / "selection_watch_alerts.json"
 ARTIFACT_JSON = OUTPUT_DIR / "daily_selection_top5.json"
 ARTIFACT_FULL = OUTPUT_DIR / "daily_selection_full_latest.txt"
 ARTIFACT_AI = OUTPUT_DIR / "daily_selection_ai_latest.txt"
@@ -48,16 +47,15 @@ def next_trading_day(d: date) -> date:
 
 
 def parse_trade_date_from_csv(path: Path) -> date:
-    m = re.search(r"(\d{8})$", path.stem)
-    if not m:
-        return datetime.now(TZ).date()
-    return datetime.strptime(m.group(1), "%Y%m%d").date()
+    from scripts.tools.selection_results import parse_trade_date_from_csv as _parse
+
+    return _parse(path)
 
 
 def find_latest_selection_csv(output_dir: Path | None = None) -> Path | None:
-    output_dir = output_dir or OUTPUT_DIR
-    files = sorted(output_dir.glob("stock_selection_combined_*.csv"))
-    return files[-1] if files else None
+    from scripts.tools.selection_results import find_latest_selection_csv as _find
+
+    return _find(output_dir)
 
 
 def load_top_picks(
@@ -65,25 +63,26 @@ def load_top_picks(
     *,
     top_n: int = TOP_N,
     holdings_codes: set[str] | None = None,
+    trade_date: date | None = None,
 ) -> tuple[date, list[SelectionPick]]:
-    from scripts.tools.holdings_context import load_holdings_card
+    from scripts.tools.selection_results import resolve_selection_df
 
-    path = csv_path or find_latest_selection_csv()
-    if path is None or not path.exists():
-        raise FileNotFoundError("未找到 stock_selection_combined_*.csv")
-
-    import pandas as pd
-
-    df = pd.read_csv(path, encoding="utf-8-sig")
+    td, df, _source = resolve_selection_df(
+        trade_date=trade_date,
+        csv_path=csv_path,
+    )
     if df.empty:
-        raise ValueError("选股 CSV 为空")
-    if "总分" in df.columns:
-        df = df.sort_values(by=["总分", "标签数", "成交额(万)"], ascending=False)
+        raise ValueError("选股结果为空")
 
     if holdings_codes is None:
-        holdings_codes, _, _ = load_holdings_card()
+        from scripts.tools.portfolio_db import load_holding_codes
 
-    trade_date = parse_trade_date_from_csv(path)
+        holdings_codes = load_holding_codes()
+        if not holdings_codes:
+            from scripts.tools.holdings_context import load_holdings_card
+
+            holdings_codes, _, _ = load_holdings_card()
+
     picks: list[SelectionPick] = []
     for _, row in df.head(top_n).iterrows():
         code = str(row["代码"]).split(".")[0].zfill(6)
@@ -99,7 +98,7 @@ def load_top_picks(
                 in_holdings=code in holdings_codes,
             )
         )
-    return trade_date, picks
+    return td, picks
 
 
 def _load_names(codes: list[str]) -> dict[str, str]:
@@ -227,11 +226,21 @@ def load_ai_excerpt() -> str:
 
 
 def load_sop_reviews(path: Path | None = None, *, refresh: bool = True) -> list[dict]:
+    """SOP 监控元数据：MySQL 优先，JSON 兜底。"""
+    from scripts.tools.portfolio_db import load_sop_reviews_for_watch
+    from scripts.tools.sop_watch_parse import reparse_watch_meta
+
+    try:
+        db_reviews = load_sop_reviews_for_watch()
+        if db_reviews:
+            return [reparse_watch_meta(r) for r in db_reviews]
+    except Exception:
+        pass
+
     path = path or SOP_JSON_LATEST
     if not path.exists():
         return []
     data = json.loads(path.read_text(encoding="utf-8"))
-    from scripts.tools.sop_watch_parse import reparse_watch_meta
 
     raw = list(data.get("reviews") or [])
     reviews = [reparse_watch_meta(r) for r in raw]
@@ -363,12 +372,16 @@ def build_watch_rules(
 def sync_watch_alerts(
     csv_path: Path | None = None,
     *,
-    watch_file: Path = WATCH_FILE,
+    trade_date: date | None = None,
 ) -> dict:
-    from scripts.tools.holdings_context import load_holdings_card
+    from scripts.tools.portfolio_db import load_holding_codes, sync_selection_payload
 
-    holdings_codes, _, _ = load_holdings_card()
-    trade_date, picks = load_top_picks(csv_path, holdings_codes=holdings_codes)
+    holdings_codes = load_holding_codes()
+    if not holdings_codes:
+        from scripts.tools.holdings_context import load_holdings_card
+
+        holdings_codes, _, _ = load_holdings_card()
+    trade_date, picks = load_top_picks(csv_path, holdings_codes=holdings_codes, trade_date=trade_date)
     picks = enrich_pick_names(picks)
     sop_reviews = load_sop_reviews()
     worthy = _sop_watch_map(sop_reviews)
@@ -389,8 +402,8 @@ def sync_watch_alerts(
         "sop_reviews": sop_reviews,
         "rules": build_watch_rules(picks, watch_date=watch_date, sop_reviews=sop_reviews),
     }
-    watch_file.parent.mkdir(parents=True, exist_ok=True)
-    watch_file.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    db_stats = sync_selection_payload(payload)
+    payload["db_sync"] = db_stats
 
     artifact = {
         "trade_date": trade_date.isoformat(),
@@ -404,22 +417,13 @@ def sync_watch_alerts(
 
 
 def load_active_selection_rules(
-    watch_file: Path = WATCH_FILE,
     *,
     today: date | None = None,
 ) -> list[dict]:
     today = today or datetime.now(TZ).date()
-    if not watch_file.exists():
-        return []
-    data = json.loads(watch_file.read_text(encoding="utf-8"))
-    watch_date = data.get("watch_date")
-    rules: list[dict] = []
-    for rule in data.get("rules") or []:
-        if rule.get("persistent"):
-            rules.append(rule)
-        elif watch_date == today.isoformat():
-            rules.append(rule)
-    return rules
+    from scripts.tools.portfolio_db import load_active_selection_rules as load_db_rules
+
+    return load_db_rules(today=today)
 
 
 def export_ai_artifact(ai_text: str) -> None:
@@ -437,16 +441,20 @@ def export_artifact_from_text(full_text: str) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="选股 Top5 战报/监控工具")
-    parser.add_argument("--sync", action="store_true", help="从最新 CSV 同步次日监控规则")
-    parser.add_argument("--csv", type=Path, default=None)
+    parser.add_argument("--sync", action="store_true", help="从最新选股结果同步次日监控规则")
+    parser.add_argument("--csv", type=Path, default=None, help="[可选] 指定 CSV，默认 MySQL 优先")
+    parser.add_argument("--trade-date", default=None, help="YYYYMMDD，默认最新交易日")
     args = parser.parse_args()
 
     if not args.sync:
         parser.print_help()
         return 0
 
+    from scripts.tools.selection_results import parse_trade_date
+
     try:
-        payload = sync_watch_alerts(args.csv)
+        td = parse_trade_date(args.trade_date) if args.trade_date else None
+        payload = sync_watch_alerts(args.csv, trade_date=td)
     except Exception as exc:  # noqa: BLE001
         print(f"❌ 同步失败: {exc}", file=sys.stderr)
         return 1
@@ -454,10 +462,11 @@ def main() -> int:
     n_rules = len(payload.get("rules") or [])
     n_watch = len(payload.get("watch_codes") or [])
     print(
-        f"✅ 选股监控已更新 watch_date={payload['watch_date']} "
+        f"✅ 选股监控已写入 MySQL watch_date={payload['watch_date']} "
         f"watch={n_watch} rules={n_rules} sop={'是' if payload.get('sop_available') else '否'}"
     )
-    print(f"   文件: {WATCH_FILE}")
+    print(f"   DB: picks={payload.get('db_sync', {}).get('selection_watch_picks', 0)} "
+          f"rules={payload.get('db_sync', {}).get('alert_rules', 0)}")
     return 0
 
 

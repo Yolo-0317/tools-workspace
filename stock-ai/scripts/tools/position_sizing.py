@@ -58,6 +58,16 @@ def _parse_money(text: str) -> float:
 
 
 def load_account_snapshot(holdings_path: Path | None = None) -> AccountSnapshot:
+    from scripts.tools.portfolio_db import load_account
+
+    acct = load_account()
+    if acct and acct.total_assets is not None:
+        return AccountSnapshot(
+            acct.total_assets or 0.0,
+            acct.available_cash or 0.0,
+            (acct.position_ratio or 0.0) * 100,
+        )
+
     path = holdings_path or AGENT_HOLDINGS
     if not path.exists():
         return AccountSnapshot(0.0, 0.0, 0.0)

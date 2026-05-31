@@ -10,7 +10,7 @@ description: 东方财富专业股票分析 SOP - 通过浏览器自动化采集
 > 1. **读取持仓执行卡**：`/Users/yolo/.qclaw/workspace/持仓执行卡.md`
 > 2. 若分析标的在持仓中，调取其关联的计划/状态
 > 3. **全程带着持仓上下文分析**，不脱离用户实际情况
-> 4. **【浏览器优先】数据采集优先用 opencli browser**，备用 Tushare API > MySQL本地库 > Playwright东财
+> 4. **【OpenCLI 唯一入口】东财数据采集只用 OpenCLI Browser**（`fetch_eastmoney_quotes.py` / `eastmoney_sop_extract.py`）；历史日线读 MySQL；批量历史可用 Tushare API
 
 ### OpenCLI Browser 优先调用规范
 
@@ -30,10 +30,9 @@ opencli browser state
 4. Chrome未检测到 → 重开Chrome或 `opencli browser open` 触发
 
 数据源优先级（调用顺序）：
-1. **opencli browser 东财页面**（最全，优先）
-2. **Tushare API**（实时行情，最稳）
-3. **MySQL本地库**（历史K线，已调通）
-4. **Playwright东方财富**（headless模式，需浏览器）
+1. **OpenCLI 东财页面**（现价 / SOP / 快讯 / 指数，唯一实时入口）
+2. **MySQL 本地库**（历史 K 线 `stock_daily`、持仓、选股结果）
+3. **Tushare API**（批量历史 / 全市场日线，非盘中现价）
 
 ## 持仓上下文文件
 
@@ -159,36 +158,23 @@ opencli browser state
 
 ### ⚠️ 重要：采集工具选择
 
-**禁止使用 `browser` 工具**（存在 SSRF 限制）  
-**必须使用 Playwright 脚本**（可以打开任何网站，获取动态加载数据）
+**禁止使用 HTTP/API 直联东财**；**禁止使用 Playwright**（已废弃）。  
+**必须使用 OpenCLI**（`stock-ai/scripts/tools/fetch_eastmoney_quotes.py`）。
 
 ### 第一阶段：基础数据采集
 
-**⚠️ 推荐使用 OpenCLI 版本（无需安装 Playwright 依赖）**
+```bash
+cd stock-ai
+# 单股 SOP → output/sop_preliminary/<date>/
+uv run python scripts/analysis/eastmoney_sop_extract.py <6位代码> output/sop_preliminary/manual
 
-1. **使用 OpenCLI 浏览器（推荐）**
-   ```bash
-   cd /Users/yolo/.qclaw/workspace/skills/eastmoney-browser-sop/scripts
-   python3 extract_stock_data_opencli.py <股票代码>
-   ```
+# Top5 批量（选股结果默认 MySQL，见 selection_daily_results）
+uv run python -m scripts.analysis.sop_review_top5_concurrent --top 5
+```
 
-2. **使用 Playwright（备选）**
-   ```bash
-   cd /Users/yolo/.qclaw/workspace/skills/eastmoney-browser-sop/scripts
-   python3 extract_stock_data.py <股票代码>
-   ```
+OpenCLI 路径：`$HOME/.nvm/versions/node/v24.14.1/bin/opencli`
 
-**OpenCLI vs Playwright 对比：**
-
-| 特性 | OpenCLI | Playwright |
-|------|---------|------------|
-| 依赖安装 | 无需额外依赖 | 需安装 playwright + chromium |
-| 浏览器 | 复用已登录 Chrome | 启动独立浏览器 |
-| 速度 | 较快 | 较慢 |
-| 稳定性 | 高 | 中 |
-| 推荐度 | ⭐⭐⭐ | ⭐⭐ |
-
-2. **脚本自动执行以下步骤**：
+**采集步骤（OpenCLI 自动执行）**：
    - 打开行情页：`https://quote.eastmoney.com/{prefix}{code}.html`
    - 等待加载（2~3秒）
    - 采集基本面数据（`.brief_info_c` 选择器）
@@ -379,79 +365,56 @@ opencli browser state
 
 ## 5. 使用方式
 
-### 快速采集单只股票（完整分析）
+### 快速采集单只股票（完整 SOP）
 
 ```bash
-# 方式1：直接运行 Playwright 脚本
-cd /Users/yolo/.qclaw/workspace/skills/eastmoney-browser-sop/scripts
-python3 extract_stock_data.py 000883
-
-# 输出：
-# ✅ 报告已保存到: /Users/yolo/.qclaw/workspace/000883_初步报告_SOP版.md
+cd stock-ai
+uv run python scripts/analysis/eastmoney_sop_extract.py 000883 output/sop_preliminary/manual
 ```
 
-### 脚本工作流程
+输出目录：`output/sop_preliminary/<YYYYMMDD>/000883/`（含 8 维度 Markdown 片段）
+
+### OpenCLI 工作流程
 
 ```
-1. 启动 Playwright 浏览器
+1. opencli browser open 东财行情页
    ↓
-2. 打开行情页 (https://quote.eastmoney.com/sz000883.html)
+2. 采集基本面、资金面、委比/委差（页面 eval）
    ↓
-3. 等待加载 + 采集基本面、资金面、委比/委差
+3. 依次打开 F10：财务 / 消息 / 研报 / 板块 / 盈利预测
    ↓
-4. 打开 F10 财务分析页 (#/cwfx)
+4. 写入 sop_preliminary 目录
    ↓
-5. 打开消息面页 (#/zxgg)
-   ↓
-6. 打开研报面页 (#/yjbg)
-   ↓
-7. 打开所属板块页 (#/hxtc)
-   ↓
-8. 打开盈利预测页 (#/ylyc)
-   ↓
-9. 生成初步报告 (Markdown 格式)
-   ↓
-10. 保存到文件
+5. （可选）调用 DeepSeek 十一维分析 → 最终报告
 ```
 
-### 脚本采集的 8 个维度
+### 采集的 8 个维度
 
-| 维度 | 采集内容 | 选择器/页面 |
-|------|---------|-----------|
-| 基本面 | 价格、成交、估值 | `.brief_info_c` |
-| 资金面 | 主力流向、成交分布 | `.zjl_charts` |
+| 维度 | 采集内容 | 页面 |
+|------|---------|------|
+| 基本面 | 价格、成交、估值 | 行情页 `.brief_info_c` |
+| 资金面 | 主力流向 | 行情页 / 资金页 |
 | 委比/委差 | 买卖盘档位 | `.sider_quote_price2` |
-| 财务面 | 财务报表、盈利能力 | F10 #/cwfx |
-| 消息面 | 资讯、公告、摘要 | F10 #/zxgg |
-| 研报面 | 研究报告、评级 | F10 #/yjbg |
-| 所属板块 | 行业分类、概念题材 | F10 #/hxtc |
-| 盈利预测 | 评级统计、机构预测 | F10 #/ylyc |
+| 财务面 | 财务报表 | F10 `#/cwfx` |
+| 消息面 | 资讯、公告 | F10 `#/zxgg` |
+| 研报面 | 研究报告 | F10 `#/yjbg` |
+| 所属板块 | 行业、概念 | F10 `#/hxtc` |
+| 盈利预测 | 机构预测 | F10 `#/ylyc` |
 
-### 快速采集（仅基础数据）
-
-```bash
-# 如果只需要基本面数据，可以修改脚本，注释掉 F10 页面采集
-# 但推荐采集完整数据
-```
-
-### 批量采集
+### 批量采集 Top5（选股后）
 
 ```bash
-# 创建脚本 batch_extract.sh
-for code in 000883 600873 600995 600098; do
-  python3 extract_stock_data.py $code
-done
+cd stock-ai
+# 选股结果默认读 MySQL selection_daily_results
+uv run python -m scripts.analysis.sop_review_top5_concurrent --top 5
 ```
 
-### 输出文件位置
+### Python API（脚本 / MCP 内调用）
 
-```
-/Users/yolo/.qclaw/workspace/{code}_初步报告_SOP版.md
+```python
+from scripts.tools.fetch_eastmoney_quotes import fetch_full_sop_data
 
-示例：
-- /Users/yolo/.qclaw/workspace/000883_初步报告_SOP版.md
-- /Users/yolo/.qclaw/workspace/600873_初步报告_SOP版.md
-- /Users/yolo/.qclaw/workspace/600995_初步报告_SOP版.md
+snap = fetch_full_sop_data("600873")  # dict，含 8 维度文本
 ```
 
 ---
@@ -463,7 +426,7 @@ done
 ### 执行流程
 
 ```
-Playwright 采集 → 输出初步报告 → 调用 DeepSeek 十一维分析 → 输出最终报告
+OpenCLI SOP 采集 → 输出初步报告 → 调用 DeepSeek 十一维分析 → 输出最终报告
 ```
 
 ### ⚠️ 估值体系升级说明（重要！）
@@ -502,145 +465,29 @@ Playwright 采集 → 输出初步报告 → 调用 DeepSeek 十一维分析 →
 
 ### 步骤说明
 
-1. **采集数据**：使用 Playwright 脚本采集各维度数据
+1. **采集数据（OpenCLI）**
    ```bash
-   python3 extract_stock_data.py 000883
+   cd stock-ai
+   uv run python scripts/analysis/eastmoney_sop_extract.py 000883 output/sop_preliminary/manual
    ```
+   或代码内：`fetch_full_sop_data("000883")`
 
-2. **补充新浪实时数据**：获取收盘价/换手率/量比等行情数据
-   ```bash
-   python3 -c "
-   import urllib.request, re
-   url = 'https://hq.sinajs.cn/list=sh000883'
-   req = urllib.request.Request(url, headers={'Referer':'https://finance.sina.com.cn','User-Agent':'Mozilla/5.0'})
-   with urllib.request.urlopen(req, timeout=8) as r:
-       raw = r.read().decode('gbk', errors='replace')
-   m = re.search(r'\"([^\"]+)\"', raw)
-   if m:
-       f = m.group(1).split(',')
-       prev,curr = float(f[2]),float(f[3])
-       chg = (curr-prev)/prev*100
-       print(f'收盘:{curr} 昨收:{prev} 今开:{f[1]} 最高:{f[4]} 最低:{f[5]} 涨跌幅:{chg:+.2f}% 成交额:{float(f[9])/1e8:.2f}亿 换手:{f[38]}% 量比:{f[48]}')
-   "
-   ```
+2. **技术面补充**：`fetch_technical_summary_opencli(code)` / OpenCLI 日 K（`fetch_kline_rows_opencli`）
 
-3. **输出初步报告**：脚本自动生成初步分析报告
-   - 文件：`/Users/yolo/.qclaw/workspace/{code}_初步报告_SOP版.md`
+3. **输出初步报告**：`output/sop_preliminary/<date>/<code>/` 下各维度 Markdown
 
-4. **调用 DeepSeek 十一维分析**：
+4. **调用 DeepSeek 十一维分析**（项目内统一客户端）：
    ```python
-   import json, urllib.request
+   from scripts.tools.deepseek_client import call_deepseek
 
-   DEEPSEEK_API_KEY = # 从 /Users/yolo/dev/yolo/tools-workspace/stock-ai/.env 读取
-
-   # 读取初步报告（取前6000字符避免token超限）
-   with open(f'/Users/yolo/.qclaw/workspace/{code}_初步报告_SOP版.md') as f:
-       report = f.read()[:6000]
-
-   system_prompt = """你是专业A股分析师，擅长电力/能源/科技板块分析。
-请严格按照以下十一个维度对股票进行深度分析，每个维度必须有实质性内容，不得跳过。
-
-【前置必做】拿到数据后先判断行业类型：
-- 电力/公用事业（看PB、股息率）
-- 光伏/制造业（看PS、毛利率趋势，PE仅供参考）
-- 储能/科技成长（看PEG，增速是否匹配PE）
-- 消费/食品（看连续ROE稳定性）
-- 周期股（完全不看PE，看PB底部区间）
-- 金融（看PB，结合资产质量）
-
-然后对号入座选择估值指标。
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-十一个维度分析要求：
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-1. 技术面：价格、涨跌幅、换手率、量比、均线排列、MACD/KDJ状态、支撑位/压力位/止损位/目标位
-
-2. 资金面：主力净流入、超大单/大单/中单/小单结构、融资融券、北向资金、龙虎榜
-
-3. 消息面：近期公告、概念板块、新闻舆情、催化剂等级（一级=年报季报/二级=政策文件/三级=市场消息）
-
-4. 基本面：营收/净利润/扣非增速、ROE（⚠️重点：连续5年ROE是否>15%？）、毛利率、净利率、主营结构
-
-5. 财务面：资产负债率（⚠️重点：是否<60%？重资产<70%）、每股净资产、经营现金流（⚠️重点：经营现金流 > 净利润才健康）、分红记录（⚠️重点：连续分红几年？股息率是否>2%？）、财务健康度
-
-6. 估值面【行业分类判断】：
-   ① 先写出行业类型判断及依据
-   ② 再列出正确指标（行业不同指标不同）
-   ③ 计算PEG = PE ÷ 净利润增速（%），并说明含义
-   ④ 综合估值结论：低估/合理/高估
-
-7. 成长性【新增】：
-   ① 连续3年营收增速表格
-   ② 连续3年净利润增速表格
-   ③ 扣非净利润 vs 归母净利润对比（是否靠非经常损益扮靓？）
-   ④ 增速趋势判断：加速增长/稳定增长/增速放缓/负增长
-   ⑤ 【价值陷阱识别】：若PE很低但增速也为负或放缓 → 明确标注"⚠️价值陷阱风险"
-
-8. 周期定位【新增】：
-   ① 公司/行业处于哪个周期阶段：底部/复苏/顶部/下行
-   ② 核心产品价格走势判断（结合消息面）
-   ③ 产能利用率、库存周期位置
-   ④ 不同周期位置的估值方法（底部用PB，复苏用PE，顶部不看PE）
-
-9. 情绪面：换手率、委比、股东户数变化、融资盘情绪、市场关注度
-
-10. 宏观面：行业景气度、政策环境、赛道判断、宏观驱动因素
-
-11. 筹码面：股东户数趋势、机构持仓比例、筹码集中度、平均成本、获利盘比例
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-最后输出内容（必须完整）：
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-① 综合评分（1-10分）
-
-② 【多维健康度评分】（格式必须如下）：
-   | 指标 | 数值 | 达标标准 | 是否达标 |
-   |------|------|---------|---------|
-   | ROE（近3年均值） | X% | 连续>15% | ✅/⚠️/❌ |
-   | 净利润增长（近3年） | X% | 持续正增长 | ✅/⚠️/❌ |
-   | 资产负债率 | X% | <60%（重资产<70%） | ✅/⚠️/❌ |
-   | 股息率 | X% | >2% | ✅/⚠️/❌ |
-   | PEG（估值/增速比） | X.X | <1低估/1-2合理/>2高估 | ✅/⚠️/❌ |
-   | 经营现金流 vs 净利润 | 正/负 | 应为正值 | ✅/⚠️/❌ |
-
-③ 周期位置与估值方法说明（一句话）
-
-④ 【价值陷阱评估】（若PE低但增速差 → 明确提示）
-
-⑤ 分层操作策略（激进型/稳健型/保守型）
-   ⚠️ 必须结合成本区数据给出具体价位
-   ⚠️ 操作策略必须结合行业周期：
-     - 周期底部：敢于逆向布局，忍受短期浮亏
-     - 周期顶部：及时止盈，不恋战
-     - 周期中部：跟随趋势，止损保护
-
-⑥ 核心风险提示（3条，每条不超过20字）
-
-⑦ 一句话结论
-   ⚠️ 必须包含：当前价相对成本区的位置 + 估值合理性 + 周期定位
-
-输出格式：Markdown，简洁专业，每个维度用表格或要点列出。"""
-
-   payload = json.dumps({
-       "model": "deepseek-v4-flash",
-       "messages": [
-           {"role": "system", "content": system_prompt},
-           {"role": "user", "content": f"股票代码：{code}\n\n【东财F10数据】\n{report}\n\n【新浪实时数据】\n{sina_data}"}
-       ],
-       "max_tokens": 3500
-   }).encode('utf-8')
-
-   req = urllib.request.Request(
-       "https://api.deepseek.com/chat/completions",
-       data=payload,
-       headers={"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"}
-   )
-   with urllib.request.urlopen(req, timeout=60) as r:
-       result = json.loads(r.read().decode('utf-8'))
-   print(result['choices'][0]['message']['content'])
+   with open("output/sop_preliminary/.../000883_基本面.md") as f:
+       sop_text = f.read()[:6000]
+   analysis = call_deepseek([
+       {"role": "system", "content": system_prompt},
+       {"role": "user", "content": f"股票 000883\n\n{sop_text}"},
+   ])
    ```
+   批量 Top5 已封装：`uv run python -m scripts.analysis.sop_review_top5_concurrent --top 5`
 
 5. **输出最终报告**：展示给用户
 
@@ -649,7 +496,7 @@ Playwright 采集 → 输出初步报告 → 调用 DeepSeek 十一维分析 →
 最终报告结构：
 ```
 # 📊 [股票名称]（[代码]）深度分析报告
-**分析时间**：[时间] | **数据来源**：东财Playwright + 新浪实时 + DeepSeek
+**分析时间**：[时间] | **数据来源**：东财 OpenCLI SOP + DeepSeek
 
 ## 行业类型判断：[判断类型] | 周期定位：[底部/复苏/顶部/下行]
 
@@ -689,141 +536,18 @@ Playwright 采集 → 输出初步报告 → 调用 DeepSeek 十一维分析 →
 
 ---
 
-## 7. Playwright 脚本详解
+## 7. OpenCLI 采集入口（stock-ai）
 
-### 脚本位置
-```
-/Users/yolo/.qclaw/workspace/skills/eastmoney-browser-sop/scripts/extract_stock_data.py
-```
+| 场景 | 命令 / 模块 |
+|------|-------------|
+| 单股 8 维度 SOP | `scripts/analysis/eastmoney_sop_extract.py` |
+| 批量 Top5 SOP | `scripts/analysis/sop_review_top5_concurrent.py` |
+| 现价 / 指数 / 快讯 | `scripts/tools/fetch_eastmoney_quotes.py` |
+| Python API | `fetch_full_sop_data()` / `fetch_quotes()` |
 
-### 脚本功能
+**数据来源标注**：`eastmoney-opencli` 或 `eastmoney-opencli-sop`
 
-| 功能 | 说明 |
-|------|------|
-| 自动判断交易所 | 根据股票代码自动判断沪市(sh)或深市(sz) |
-| 打开行情页 | 采集基本面、资金面、委比/委差数据 |
-| 打开 F10 页面 | 采集财务、消息、研报、板块、盈利预测数据 |
-| 智能等待 | 等待页面加载完成（2~3秒） |
-| 生成报告 | 自动生成 Markdown 格式的初步报告 |
-| 保存文件 | 报告保存到 `/Users/yolo/.qclaw/workspace/{code}_初步报告_SOP版.md` |
-
-### 脚本使用
-
-```bash
-# 基本用法
-python3 extract_stock_data.py <股票代码>
-
-# 示例
-python3 extract_stock_data.py 000883    # 湖北能源
-python3 extract_stock_data.py 600873    # 梅花生物
-python3 extract_stock_data.py 600995    # 南网储能
-python3 extract_stock_data.py 600098    # 广州发展
-```
-
-### 脚本输出
-
-```
-# 控制台输出
-# 000883 初步分析报告（SOP 版）
-
-**采集时间**: 2026-03-27 15:32:52  
-**股票代码**: 000883  
-**数据来源**: Playwright 实时采集
-
-## 一、基本面（3.1 行情页）
-...
-
-✅ 报告已保存到: /Users/yolo/.qclaw/workspace/000883_初步报告_SOP版.md
-```
-
-### 脚本工作原理
-
-```python
-# 1. 启动 Playwright 浏览器（可见模式）
-with sync_playwright() as p:
-    browser = p.chromium.launch(
-        headless=False,  # 可见模式，方便手动处理验证码
-        executable_path="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-        args=['--disable-blink-features=AutomationControlled']
-    )
-    page = browser.new_page()
-
-# 2. 打开行情页
-page.goto(f"https://quote.eastmoney.com/{prefix_lower}{code}.html", timeout=15000)
-page.wait_for_selector(".brief_info_c", timeout=10000)
-page.wait_for_timeout(1500)
-
-# 3. 采集数据
-brief_info = page.evaluate('document.querySelector(".brief_info_c")?.innerText')
-zjl_charts = page.evaluate('document.querySelector(".zjl_charts")?.innerText')
-sider_quote = page.evaluate('document.querySelector(".sider_quote_price2")?.innerText')
-
-# 4. 打开 F10 页面采集财务、消息、研报等数据
-for name, path in pages_to_fetch.items():
-    page.goto(f10_base + path, timeout=15000)
-    page.wait_for_selector("#app", timeout=10000)
-    text = page.evaluate('document.querySelector("#app")?.innerText || ""')
-    results[name] = text
-
-# 5. 生成报告
-generate_report(code, results)
-```
-
-### 脚本依赖
-
-```bash
-# 需要安装 Playwright
-pip install playwright
-
-# 首次运行需要下载浏览器驱动
-playwright install chromium
-```
-
-### 脚本配置
-
-```python
-# 浏览器配置（macOS）
-executable_path="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-headless=False  # 可见模式，用户可处理验证码
-
-# 超时设置
-timeout=15000  # 15秒
-
-# 等待时间
-page.wait_for_timeout(1500)  # 1.5秒
-page.wait_for_timeout(2500)  # 2.5秒（F10 页面）
-```
-
-### 处理验证码
-
-当浏览器以**可见模式**运行时，如果遇到验证码：
-1. 浏览器会自动弹出并停在验证码页面
-2. 用户手动拖拽完成验证
-3. 验证通过后脚本继续自动执行
-
-> ⚠️ 如果需要长时间停留等待用户操作，可以修改 `page.wait_for_timeout()` 的值来增加等待时间。
-
-### 常见问题
-
-| 问题 | 解决方案 |
-|------|---------|
-| 页面加载超时 | 增加 timeout 值（如 20000） |
-| 数据为空 | 检查选择器是否正确，或增加等待时间 |
-| 浏览器启动失败 | 检查 Chrome 路径是否正确 |
-| 内容过长被截断 | 脚本默认截断到 5000 字符，可修改 `max_len` 参数 |
-
-### 修改脚本
-
-如需修改脚本，编辑以下文件：
-```
-/Users/yolo/.qclaw/workspace/skills/eastmoney-browser-sop/scripts/extract_stock_data.py
-```
-
-常见修改：
-- 修改超时时间：`timeout=15000` → `timeout=20000`
-- 修改等待时间：`page.wait_for_timeout(1500)` → `page.wait_for_timeout(3000)`
-- 修改截断长度：`max_len = 5000` → `max_len = 10000`
-- 添加新的选择器：在 `results` 字典中添加新的采集项
+> 实现代码：`stock-ai/scripts/tools/fetch_eastmoney_quotes.py`、`scripts/analysis/eastmoney_sop_extract.py`
 
 ---
 
@@ -831,7 +555,7 @@ page.wait_for_timeout(2500)  # 2.5秒（F10 页面）
 
 ### 采集规则
 
-1. **必须使用 Playwright**：禁止使用 `browser` 工具（存在 SSRF 限制）
+1. **必须使用 OpenCLI**：禁止 Playwright / 东财 HTTP API 直联
 2. **数据时间统一**：标题中明确数据采集时间
 3. **复制到其他股票时只改**：代码、URL前缀（sh/sz）、F10 code参数
 4. **采集步骤、字段来源、判定口径保持不变**
@@ -843,33 +567,23 @@ page.wait_for_timeout(2500)  # 2.5秒（F10 页面）
 ```
 1. 用户请求分析某只股票
    ↓
-2. 运行 Playwright 脚本采集数据
-   python3 extract_stock_data.py <code>
+2. OpenCLI SOP 采集（eastmoney_sop_extract 或 fetch_full_sop_data）
    ↓
-3. 脚本输出初步报告
-   /Users/yolo/.qclaw/workspace/{code}_初步报告_SOP版.md
+3. 输出初步报告 / sop_preliminary 目录
    ↓
 4. 展示初步报告给用户
    ↓
-5. 执行成本区分析（见第10节）
-   - 调用新浪K线接口获取近250日日K数据
-   - 统计各价格区间成交量分布
-   - 计算套牢比例、获利比例、筹码峰
-   - 与持仓成本对比，判断成本区位置
+5. 成本区分析（可选，见第10节）
    ↓
-6. 调用 DeepSeek 十一维分析（注入成本区数据）
-   - 将成本区分析结果作为【筹码成本区数据】传入 user_content
-   - DeepSeek 必须在筹码面和操作建议中引用成本区数据
+6. 调用 DeepSeek 十一维分析
    ↓
-7. 展示最终报告给用户
-   ↓
-8. 读取持仓文件，结合持仓+成本区给出操作建议（见第9节+第10节）
+7. 展示最终报告；结合 MySQL 持仓与执行卡给出操作建议
 ```
 
 ### 质量检查清单
 
 - ✅ 初步报告包含 8 个维度的数据
-- ✅ 数据来源标注为"Playwright 实时采集"
+- ✅ 数据来源标注为「OpenCLI 实时采集」
 - ✅ 所有数据都有时间戳
 - ✅ 缺失数据标记为"未获取"
 - ✅ 初步报告格式规范（Markdown）

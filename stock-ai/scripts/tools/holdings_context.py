@@ -29,13 +29,6 @@ class Holding:
     action: str
 
 
-def _cell(line: str, idx: int) -> str:
-    parts = [p.strip() for p in line.split("|")]
-    if len(parts) <= idx:
-        return ""
-    return parts[idx].strip("* ")
-
-
 def _extract_section(text: str, heading_prefix: str) -> str:
     lines: list[str] = []
     capturing = False
@@ -51,60 +44,77 @@ def _extract_section(text: str, heading_prefix: str) -> str:
     return "\n".join(lines).strip()
 
 
+def _load_holdings_from_db() -> tuple[set[str], list[Holding]] | None:
+    from scripts.tools.portfolio_db import load_latest_closes, load_positions
+
+    positions = load_positions()
+    if not positions:
+        return None
+
+    closes = load_latest_closes([p.code for p in positions])
+    codes: set[str] = set()
+    holdings: list[Holding] = []
+    for p in positions:
+        codes.add(p.code)
+        price_f = closes.get(p.code)
+        price = f"{price_f:.3f}" if price_f is not None else "—"
+        if price_f is not None and p.cost and p.shares:
+            pnl_amt = (price_f - p.cost) * p.shares
+            pnl_pct = (price_f / p.cost - 1) * 100 if p.cost else 0
+            pnl = f"{pnl_amt:+.0f}({pnl_pct:+.1f}%)"
+        else:
+            pnl = "—"
+        holdings.append(
+            Holding(
+                name=p.name,
+                code=p.code,
+                shares=str(p.shares),
+                cost=f"{p.cost:.3f}",
+                price=price,
+                pnl=pnl,
+                status=p.status,
+                action=p.action,
+            )
+        )
+    return codes, holdings
+
+
 def load_holdings_card(path: Path | None = None) -> tuple[set[str], list[Holding], str]:
     if path is None:
         path = AGENT_HOLDINGS if AGENT_HOLDINGS.exists() else DEFAULT_HOLDINGS
-    codes: set[str] = set()
-    holdings: list[Holding] = []
-    if not path.exists():
-        return codes, holdings, "（未找到持仓执行卡）"
 
-    text = path.read_text(encoding="utf-8")
-    in_table = False
-    for line in text.splitlines():
-        if line.startswith("| 股票 | 代码 |"):
-            in_table = True
-            continue
-        if in_table:
-            if not line.startswith("|"):
-                break
-            if line.startswith("|------"):
-                continue
-            code = _cell(line, 2)
-            if not re.fullmatch(r"\d{6}", code):
-                continue
-            codes.add(code)
-            holdings.append(
-                Holding(
-                    name=_cell(line, 1),
-                    code=code,
-                    shares=_cell(line, 3),
-                    cost=_cell(line, 4),
-                    price=_cell(line, 5),
-                    pnl=_cell(line, 7),
-                    status=_cell(line, 8),
-                    action=_cell(line, 9),
-                )
-            )
+    text = path.read_text(encoding="utf-8") if path.exists() else ""
+    db_result = _load_holdings_from_db()
+    if db_result is None:
+        hint = (
+            "（MySQL 无持仓。请先运行："
+            "uv run python -m scripts.tools.sync_portfolio_from_card）"
+        )
+        if text:
+            plans = _extract_section(text, "## 进行中计划")
+            red = _extract_section(text, "## 禁止规则")
+            extra = "\n\n".join(s for s in (plans, red) if s)
+            return set(), [], hint + ("\n\n" + extra if extra else "")
+        return set(), [], hint
 
-    parts: list[str] = ["## 当前持仓快照"]
+    codes, holdings = db_result
+    parts: list[str] = ["## 当前持仓快照（MySQL，源：持仓执行卡）"]
     for h in holdings:
+        action_hint = f" | 建议: {h.action}" if h.action else ""
         parts.append(
             f"- {h.name}({h.code}) {h.shares}股 成本{h.cost} 现价{h.price} "
-            f"盈亏{h.pnl} | 卡片建议: {h.action}"
+            f"盈亏{h.pnl}{action_hint}"
         )
 
-    for line in text.splitlines():
-        if line.startswith("- **可用资金**") or line.startswith("- **仓位**"):
-            parts.append(line.lstrip("- "))
+    if text:
+        for line in text.splitlines():
+            if line.startswith("- **可用资金**") or line.startswith("- **仓位**"):
+                parts.append(line.lstrip("- "))
 
-    for title in ("## 进行中计划", "## 禁止规则", "## 仓位控制"):
-        section = _extract_section(text, title)
-        if section:
-            parts.extend(["", section])
-
-    if len(parts) <= 1:
-        return codes, holdings, "（持仓执行卡无有效内容）"
+        for title in ("## 进行中计划", "## 禁止规则", "## 仓位控制"):
+            section = _extract_section(text, title)
+            if section:
+                parts.extend(["", section])
 
     return codes, holdings, "\n".join(parts)
 

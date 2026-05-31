@@ -4,7 +4,7 @@
 
 ## 数据入库（MySQL）
 
-本目录提供三类数据入库方案：
+本目录提供两类数据能力：**Tushare 日线入库** + **OpenCLI 实时行情/SOP**。
 
 ### 方案 1：Tushare 全量日线同步（推荐✨）
 
@@ -22,13 +22,13 @@
 - [Tushare 同步指南](docs/TUSHARE_SYNC_GUIDE.md)
 - [无需 stock_basic 说明](docs/NO_STOCK_BASIC_GUIDE.md)
 
-### 方案 2：东财接口（快速补齐特定股票）
+### 实时行情与 SOP（OpenCLI）
 
-**适用场景**：只需要少数几只股票的数据，或作为 Tushare 的补充
+**适用场景**：盘中现价、战报指数、SOP 多维数据、宏观快讯
 
-- **历史日线补齐**：`scripts/sync/ingest_eastmoney_daily_to_mysql.py`
-- **盘中增量更新**：`scripts/sync/poll_eastmoney_intraday_to_mysql.py`
-- **盘中快照**：`scripts/sync/poll_eastmoney_intraday_snapshot_to_mysql.py`
+- **统一入口**：`scripts/tools/fetch_eastmoney_quotes.py`（OpenCLI 浏览器）
+- **宏观快讯**：`scripts/tools/fetch_eastmoney_macro_news.py`
+- **日线历史**：仍用方案 1 Tushare → MySQL；盘中信号用 OpenCLI 现价 + MySQL 历史均线
 
 #### 快速开始（方案 1：Tushare，推荐）
 
@@ -60,60 +60,6 @@ cd docker/daily-sync && docker compose up -d --build
 - 按日期批量拉取，效率极高
 - 立即可用，无需等待
 
-#### 方案 2 使用方法（东财接口）
-
-##### 1) 建表
-
-执行 `sql/create_stock_daily_table.sql` 创建 `stock_daily`（主键：`(ts_code, trade_date)`）。
-
-##### 2) 先补历史（一次性）
-
-使用东财接口拉取最近 N 条日线并入库：
-
-```bash
-MYSQL_URL="mysql+pymysql://user:pass@localhost:3306/stock_data" \
-uv run python scripts/sync/ingest_eastmoney_daily_to_mysql.py
-```
-
-你也可以改脚本里的 `CODES` 或自行扩展参数化（当前脚本示例默认包含 `159218/159840`）。
-
-##### 3) 盘中每分钟更新（常驻）
-
-盘中东财“最新一根日线”会动态变化，本脚本会对同一天做 upsert，便于 `intraday_trade_signal` 使用 MySQL 历史做更稳定的盘中分析：
-
-```bash
-MYSQL_URL="mysql+pymysql://user:pass@localhost:3306/stock_data" \
-uv run python scripts/sync/poll_eastmoney_intraday_to_mysql.py --codes 159218,159840 --interval 60
-```
-
-如果你想用 `cron`，可以用单次模式：
-
-```bash
-MYSQL_URL="mysql+pymysql://user:pass@localhost:3306/stock_data" \
-uv run python scripts/sync/poll_eastmoney_intraday_to_mysql.py --codes 159218,159840 --once
-```
-
-##### 4) 盘中快照表（方案 A：每分钟留痕）
-
-如果你希望保留盘中轨迹（而不是不断覆盖 `stock_daily` 当天数据），可以建表并启动快照轮询：
-
-- 建表：`sql/create_stock_intraday_snapshot_table.sql`
-- 脚本：`scripts/sync/poll_eastmoney_intraday_snapshot_to_mysql.py`
-
-常驻轮询：
-
-```bash
-MYSQL_URL="mysql+pymysql://user:pass@localhost:3306/stock_data" \
-uv run python scripts/sync/poll_eastmoney_intraday_snapshot_to_mysql.py --codes 159218,159840 --interval 60
-```
-
-cron 单次：
-
-```bash
-MYSQL_URL="mysql+pymysql://user:pass@localhost:3306/stock_data" \
-uv run python scripts/sync/poll_eastmoney_intraday_snapshot_to_mysql.py --codes 159218,159840 --once
-```
-
 ## 每日综合选股 + 收盘甄选战报（17:30 · launchd）
 
 工作日 **17:30** 自动运行：**日线补缺 → 综合选股 Top5 → 东财 SOP → DeepSeek → 次日监控 → 收盘甄选战报 → 微信**（需已登录 [wechat-cursor-acp](../wechat-cursor-acp)）：
@@ -126,7 +72,7 @@ FETCH_ONLY=1 ./push_daily_briefing_wechat.sh 17:30
 DISABLE_SOP_TOP5=1 ./push_selection_wechat.sh  # 紧急跳过 SOP（改用轻量简评）
 ```
 
-- **SOP 值得关注**（非持仓、`WATCH: 是` / 买入观察）→ 写入 `selection_watch_alerts.json`，**次日交易时段 5 分钟监控**（支撑/止损/目标/禁追高）
+- **SOP 值得关注**（非持仓、`WATCH: 是` / 买入观察）→ 写入 MySQL `selection_watch_picks` + `alert_rules`，**次日交易时段 5 分钟监控**（支撑/止损/目标/禁追高）
 - 快速跳过 SOP：环境变量 `DISABLE_SOP_TOP5=1`（不推荐）
 
 默认 `WECHAT_PUSH_BACKEND=wechat-acp`。请在 QClaw 中关闭 cron `daily_stock_selection_17:30`，避免重复推送。
@@ -166,7 +112,13 @@ uv run python core_v3/stock_selection_five_factor_mysql.py
 uv run python -m scripts.monitor.monitor_holdings_alerts --force --push   # 试跑
 ```
 
-规则：`investment-agent/config/holdings_alerts.json` + `selection_watch_alerts.json`（17:30 生成）。详见 [docs/CAPABILITIES.md](docs/CAPABILITIES.md) §5。
+规则：MySQL `alert_rules`（持仓由 `sync_portfolio_from_card` 同步；选股由 17:30 `--sync` 写入）。详见 [docs/CAPABILITIES.md](docs/CAPABILITIES.md) §5。
+
+**改执行卡后**：
+
+```bash
+uv run python -m scripts.tools.sync_portfolio_from_card
+```
 
 ## 盘前总结（开盘前）
 

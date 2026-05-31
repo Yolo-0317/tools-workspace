@@ -30,30 +30,28 @@
 
 ### Data sync / ingestion
 
-- `scripts/sync_tushare_daily_to_mysql.py`
-- `scripts/ingest_eastmoney_daily_to_mysql.py`
-- `scripts/poll_eastmoney_intraday_to_mysql.py`
-- `scripts/poll_eastmoney_intraday_snapshot_to_mysql.py`
+- `scripts/sync/sync_tushare_daily_to_mysql.py`
+- `scripts/tools/ensure_daily_bars.py`
+- `scripts/tools/fetch_eastmoney_quotes.py` — OpenCLI quotes / SOP / indices
 
 ### Screening
 
-- `scripts/stock_selection.py` — volume-price breakout
-- `scripts/stock_selection_ma5.py` — MA5 pullback
-- `scripts/stock_selection_bottom_breakout.py` — bottom breakout variant
-- `scripts/stock_selection_combined.py` — multi-pattern combined ranking
+- `core_v2/stock_selection_combined.py` — multi-pattern combined ranking
+- `scripts/selection/stock_selection.py` — volume-price breakout
+- `scripts/selection/stock_selection_ma5.py` — MA5 pullback
+- `scripts/selection/stock_selection_bottom_breakout.py` — bottom breakout variant
 
 ### Review / analysis
 
-- `scripts/ai_review_top5.py`
-- `scripts/analyze_stock.py`
-- `scripts/analyze_holdings.py`
+- `scripts/analysis/ai_review_combined_top5.py`
+- `scripts/analysis/sop_review_top5_concurrent.py`
+- `scripts/analysis/analyze_holdings_v2.py`
 - `scripts/tools/check_why_not_selected.py`
 - `scripts/tools/debug_signal.py`
 
 ### Verification (optional)
 
 - `scripts/tools/verify_selection_performance.py`
-- `scripts/tools/compare_daily_selection.py`
 
 ## Common command pattern
 

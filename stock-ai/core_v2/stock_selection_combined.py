@@ -15,7 +15,7 @@ from pathlib import Path
 import pandas as pd
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
-from fetch_akshare_data import get_market_sentiment, get_stock_fundamental
+from fetch_opencli_sop import get_market_sentiment, get_stock_fundamental
 
 # 添加项目根目录到 Python 路径
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -119,16 +119,6 @@ def main(target_date=None):
     df_all = pd.read_sql(text(query), engine)
     print(f"✓ 已加载 {len(df_all)} 条记录")
 
-    # --- 新增：加载资金流向数据 ---
-    df_flow = pd.DataFrame()
-    try:
-        flow_query = f"SELECT ts_code, big_net, big_pct FROM capital_flow WHERE trade_date = '{end_date}'"
-        df_flow = pd.read_sql(text(flow_query), engine)
-        if not df_flow.empty:
-            print(f"✓ 已加载 {len(df_flow)} 条资金流向记录")
-    except Exception as e:
-        print(f"⚠️ 未能加载资金流向数据 (可能表不存在或今日无数据): {e}")
-
     # 尝试获取个股所属行业信息（如果存在）
     industry_map = {}
     try:
@@ -136,7 +126,7 @@ def main(target_date=None):
         df_basic = pd.read_sql(text(basic_query), engine)
         industry_map = dict(zip(df_basic['ts_code'], df_basic['industry']))
     except:
-        print("⚠️ 未能从数据库获取行业信息，将尝试通过 AkShare 获取...")
+        print("⚠️ 未能从数据库获取行业信息，将跳过行业过滤…")
 
     results = []
     for ts_code, group in df_all.groupby('ts_code'):
@@ -233,32 +223,10 @@ def main(target_date=None):
                 close_today >= ma20):
                 is_ambush = True
 
-        # --- 策略5: 主力异动 (Institutional Surge) ---
+        # --- 策略5: 主力异动（已弃用 capital_flow 表；资金面改 OpenCLI SOP） ---
         is_surge = False
         big_net = 0
         big_pct = 0
-        if not df_flow.empty:
-            # 匹配 6 位代码
-            code_6 = ts_code.split('.')[0]
-            flow_item = df_flow[df_flow['ts_code'] == code_6]
-            if not flow_item.empty:
-                big_net = flow_item.iloc[0]['big_net']
-                big_pct = flow_item.iloc[0]['big_pct']
-                
-                # 选股条件：
-                # 1. 超大单净流入 > 2亿 (20000万)
-                # 2. 超大单净占比 > 6%
-                # 3. 当日涨幅 > 2%
-                # 4. 成交额 > 5亿 (50000万)
-                # 5. 股价在MA20上方
-                # 6. 近20日涨幅 < 60%
-                
-                prev_20d_chg = (close_today - group['close'].iloc[-20]) / group['close'].iloc[-20] * 100 if len(group) >= 20 else 0
-                
-                if (big_net > 20000 and big_pct > 6 and 
-                    latest['pct_chg'] > 2 and amount_today > 50000 and 
-                    close_today > ma20 and prev_20d_chg < 60):
-                    is_surge = True
 
         # 记录结果 + 评分
         if is_breakout or is_three_up or is_pullback or is_ambush or is_surge:
@@ -412,6 +380,14 @@ def main(target_date=None):
     
     output_path = output_dir / f"stock_selection_combined_{trade_date}.csv"
     res_df.to_csv(str(output_path), index=False, encoding='utf-8-sig')
+
+    try:
+        from scripts.tools.portfolio_db import save_selection_daily_results
+
+        db_n = save_selection_daily_results(trade_date, results)
+        print(f"💾 MySQL selection_daily_results: {db_n} 条")
+    except Exception as exc:  # noqa: BLE001
+        print(f"⚠️ MySQL 入库失败: {exc}")
     
     print("\n" + "="*50)
     print(f"✅ 综合选股完成！共筛选出 {len(res_df)} 只股票")

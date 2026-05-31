@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 import os
 import sys
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -44,9 +44,10 @@ def _build_stock_rows(df: pd.DataFrame) -> list[dict]:
 
 
 def review_combined_top5(
-    csv_path: str | Path,
+    csv_path: str | Path | None = None,
     top_n: int = 5,
     *,
+    trade_date: date | str | None = None,
     holdings_context: str = "",
     save_report: bool = True,
 ) -> tuple[str, str | None]:
@@ -54,15 +55,15 @@ def review_combined_top5(
 
     holdings_context should be the full decision pack from load_full_decision_context().
     """
-    csv_path = Path(csv_path)
-    df = pd.read_csv(csv_path, encoding="utf-8-sig")
-    if df.empty:
-        raise ValueError("选股 CSV 为空")
+    from scripts.tools.selection_results import resolve_selection_df, trade_date_to_str
 
-    if "总分" in df.columns:
-        df = df.sort_values(by=["总分", "标签数", "成交额(万)"], ascending=False)
+    td, df, source = resolve_selection_df(trade_date=trade_date, csv_path=csv_path)
+    if df.empty:
+        raise ValueError("选股结果为空")
+
     top = df.head(top_n).copy()
     stocks = _build_stock_rows(top)
+    trade_date_str = trade_date_to_str(td)
 
     context_block = holdings_context.strip() or "（无决策上下文）"
     prompt = f"""你是 A 股技术面分析师。以下 {len(stocks)} 只股票来自「综合选股」Top{len(stocks)}。
@@ -138,11 +139,13 @@ def review_combined_top5(
 
     report_path: str | None = None
     if save_report:
-        report_path = str(csv_path.with_name(f"{csv_path.stem}_ai_review.md"))
+        report_path = str(
+            ROOT / "output" / f"stock_selection_combined_{trade_date_str}_ai_review.md"
+        )
         header = (
             f"# 综合选股 DeepSeek AI 审查\n\n"
             f"**生成时间**：{datetime.now():%Y-%m-%d %H:%M:%S}  \n"
-            f"**数据来源**：{csv_path.name}  \n\n---\n\n"
+            f"**数据来源**：{source}  \n\n---\n\n"
         )
         Path(report_path).write_text(header + report_body, encoding="utf-8")
 
@@ -154,7 +157,8 @@ def main() -> int:
     import argparse
 
     parser = argparse.ArgumentParser(description="综合选股 DeepSeek Top5 审查")
-    parser.add_argument("csv_file", help="选股结果 CSV")
+    parser.add_argument("csv_file", nargs="?", help="[可选] 选股 CSV，默认 MySQL 优先")
+    parser.add_argument("--trade-date", default=None, help="YYYYMMDD，默认最新交易日")
     parser.add_argument("--top", type=int, default=5)
     parser.add_argument("--wechat-only", action="store_true")
     parser.add_argument(
@@ -164,11 +168,15 @@ def main() -> int:
     args = parser.parse_args()
 
     from scripts.tools.holdings_context import load_full_decision_context
+    from scripts.tools.selection_results import parse_trade_date
 
     _, decision_context = load_full_decision_context(Path(args.holdings_file))
+    td = parse_trade_date(args.trade_date) if args.trade_date else None
+    csv_path = Path(args.csv_file) if args.csv_file else None
     wechat, report_path = review_combined_top5(
-        args.csv_file,
+        csv_path,
         args.top,
+        trade_date=td,
         holdings_context=decision_context,
     )
     if args.wechat_only:

@@ -11,7 +11,7 @@ alwaysApply: true
 
 1. 读取 `MEMORY.md` 和 `持仓执行卡.md`
 2. 读取 `memory/` 下今日和昨日的日志（`YYYY-MM-DD.md`）
-3. 需要持仓数据时，读取 `holdings.csv`（链到 `stock-ai/holdings/current.csv`）
+3. 需要持仓数据时，读 MySQL `portfolio_positions`（改执行卡后运行 `sync_portfolio_from_card` 同步）
 
 ## 输出规范
 
@@ -31,7 +31,7 @@ alwaysApply: true
 
 ## 策略层级
 
-- **权威来源**：`持仓执行卡.md` P0～P4 + `config/holdings_alerts.json`
+- **权威来源**：`持仓执行卡.md` P0～P4 → 同步至 MySQL `alert_rules`（`sync_portfolio_from_card`）
 - **通用纪律**：`memory/trading-strategies.md`（qclaw 副本作 fallback；冲突以执行卡为准）
 
 ## 股票分析流程
@@ -49,6 +49,7 @@ alwaysApply: true
 ## 工具路径
 
 - 能力总览：`../docs/CAPABILITIES.md`
-- OpenCLI Browser: `$HOME/.nvm/versions/node/v24.14.1/bin/opencli`
+- **东财数据采集（唯一入口）**：OpenCLI → `scripts/tools/fetch_eastmoney_quotes.py`
+- OpenCLI: `$HOME/.nvm/versions/node/v24.14.1/bin/opencli`
 - stock-ai 项目根: `../`（相对本目录）
-- MySQL 行情: 通过 `stock-ai` 的 `MYSQL_URL` 环境变量
+- MySQL：仅持仓/监控/选股池（`portfolio_*`、`alert_rules`），**行情不走 MySQL/API 直联**

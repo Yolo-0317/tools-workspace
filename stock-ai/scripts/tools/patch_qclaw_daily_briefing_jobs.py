@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""将 QClaw daily_briefing 定时任务切换为东财 Playwright 战报脚本。"""
+"""将 QClaw daily_briefing 定时任务切换为东财 OpenCLI 战报脚本。"""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ def _build_message(slot: str) -> str:
         f"1. 仅运行：bash {PUSH_SCRIPT} {slot}\n"
         "2. 将脚本 stdout 原样作为回复（成功时含「已推送」，失败时含错误原因）。\n"
         "3. 禁止调用 message 工具，禁止回复 NO_REPLY 或 HEARTBEAT_OK。\n"
-        "4. 禁止自行搜索新闻或改写战报逻辑；宏观财经已由东财 Playwright 脚本抓取。"
+        "4. 禁止自行搜索新闻或改写战报逻辑；宏观财经已由东财 OpenCLI 脚本抓取。"
     )
 
 
@@ -48,7 +48,7 @@ def main() -> int:
         if not slot:
             continue
         job.setdefault("payload", {})["message"] = _build_message(slot)
-        job["description"] = f"每日战报（{slot}，东财 Playwright + 大盘/持仓）"
+        job["description"] = f"每日战报（{slot}，东财 OpenCLI + 大盘/持仓）"
         updated += 1
 
     if updated == 0:

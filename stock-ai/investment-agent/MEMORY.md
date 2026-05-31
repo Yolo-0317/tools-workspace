@@ -15,7 +15,7 @@
 
 ## 💰 持仓档案（最新：2026-05-30 东财截图）
 
-> 完整执行条件见 `持仓执行卡.md`；盘中监控见 `config/holdings_alerts.json`
+> 完整执行条件见 `持仓执行卡.md`；盘中监控见 MySQL `alert_rules`
 
 ### 股票持仓
 
@@ -74,7 +74,7 @@
 - **中国核电 (601985)**：10 派 1.80 元，股权登记日 2026-06-25，红利发放日 2026-07-02，900 股→约 162 元
 
 ### 策略层级
-- **权威**：`持仓执行卡.md` + `config/holdings_alerts.json`
+- **权威**：`持仓执行卡.md` → MySQL（`sync_portfolio_from_card`）
 - **通用**：`memory/trading-strategies.md`（`~/.qclaw/workspace/memory/` 为兼容副本；冲突以执行卡为准）
 - **能力文档**：`../docs/CAPABILITIES.md`
 
@@ -92,10 +92,11 @@
 | **DeepSeek API** | 环境变量 `DEEPSEEK_API_KEY` | 股票深度分析（11维度框架） |
 
 ### 数据获取优先级
-1. **opencli browser**（东财页面）→ 个股深度分析首选
-2. **MySQL 本地库** → 历史日线（`stock_daily`）
+1. **OpenCLI 东财** → 现价 / SOP / 快讯 / 指数（唯一实时入口）
+2. **MySQL 本地库** → 历史日线、持仓、选股结果
 3. **Tushare API** → 全市场同步 / 补数（`TUSHARE_TOKEN` 见 `.env`）
-4. **Playwright 东财** → 宏观快讯、SOP 采集
+
+> 四档分层（主链路 / OpenCLI 不落库 / 文件桥接 / 旁路不进 DB 不用 OpenCLI）：`../docs/CAPABILITIES.md` §1。
 
 ### 股票分析硬性流程
 - 即使之前分析过，每次必须重新用 opencli browser 采集完整数据
@@ -130,8 +131,8 @@
 |------|------|
 | `stock-analysis-framework.md` | 股票深度分析框架 v1.0（8模块完整模板） |
 | `持仓执行卡.md` | 当前持仓与 P0～P4 执行条件（权威来源） |
-| `config/holdings_alerts.json` | 盘中价位监控（与执行卡同步） |
-| `config/selection_watch_alerts.json` | 选股次日监控（17:30 自动生成） |
+| MySQL `alert_rules` | 盘中价位监控（由执行卡 P0～P4 同步） |
+| MySQL `selection_watch_picks` | 选股次日监控（17:30 `--sync` 写入） |
 | `../docs/CAPABILITIES.md` | 系统能力总览 |
 | `复盘日志.md` | 每日复盘记录 |
 | `600873_深度分析_SOP版.md` | 梅花生物完整分析 |

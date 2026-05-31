@@ -43,8 +43,8 @@ main() {
   log "===== docker-autostart 开始 ====="
   wait_for_docker
 
-  # 独立 MySQL（stock-ai 等依赖宿主机 3306）
-  compose_up "$HOME/dev/docker/mysql"
+  # MySQL（stock-ai 行情 + 持仓等业务表）
+  compose_up "$HOME/dev/yolo/tools-workspace/stock-mysql" "--env-file .env"
 
   # 媒体 / 基础设施
   compose_up "$HOME/docker/jellyfin-stack"

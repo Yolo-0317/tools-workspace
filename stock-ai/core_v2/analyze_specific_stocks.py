@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from tushare_mcp import deepseek_trade_signal, _call_deepseek_api
-from fetch_akshare_data import (
+from fetch_opencli_sop import (
     get_stock_fundamental, 
     get_market_sentiment, 
     get_stock_fund_flow, 
@@ -56,7 +56,7 @@ def analyze_specific_stocks(codes):
         ## 1. 股票基础
         - 代码: {full_code} | 名称: {fundamental.get('名称', 'N/A')} | 行业: {fundamental.get('行业', 'N/A')}
 
-        ## 2. 资金流向 (AkShare)
+        ## 2. 资金流向 (OpenCLI SOP)
         - 主力净流入: {fund_flow.get('今日主力净流入', 'N/A')}
         - 超大单/大单: {fund_flow.get('今日超大单净流入', 'N/A')} / {fund_flow.get('今日大单净流入', 'N/A')}
         - 净流入占比: {fund_flow.get('主力净流入占比', 'N/A')}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""从东方财富网页抓取宏观/7×24 财经快讯（Playwright）。"""
+"""从东方财富网页抓取宏观/7×24 财经快讯（OpenCLI Browser）。"""
 
 from __future__ import annotations
 
@@ -108,35 +108,11 @@ def _normalize_items(raw_items: list[dict], *, default_source: str) -> list[Macr
 
 
 def fetch_macro_news(*, limit: int = 15, include_home: bool = True) -> list[MacroNewsItem]:
-    from playwright.sync_api import sync_playwright
+    from scripts.tools.fetch_eastmoney_quotes import fetch_macro_news_opencli
 
-    if not Path(CHROME_PATH).exists():
-        raise RuntimeError(f"未找到 Chrome: {CHROME_PATH}")
-
-    items: list[MacroNewsItem] = []
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True, executable_path=CHROME_PATH)
-        page = browser.new_page()
-
-        page.goto(KUAIXUN_URL, timeout=25000, wait_until="domcontentloaded")
-        page.wait_for_timeout(3500)
-        kuaixun_raw = page.evaluate(EXTRACT_KUAIXUN_JS)
-        items.extend(_normalize_items(kuaixun_raw, default_source="kuaixun"))
-
-        if include_home:
-            page.goto(HOME_URL, timeout=25000, wait_until="domcontentloaded")
-            page.wait_for_timeout(2500)
-            home_raw = page.evaluate(EXTRACT_HOME_JS)
-            home_items = _normalize_items(home_raw, default_source="home")
-            existing = {x.href for x in items}
-            for item in home_items:
-                if item.href not in existing:
-                    items.append(item)
-                    existing.add(item.href)
-
-        browser.close()
-
-    return items[:limit]
+    _ = include_home  # 首页要闻后续可扩展 OpenCLI
+    raw_items = fetch_macro_news_opencli(limit=limit)
+    return _normalize_items(raw_items, default_source="kuaixun")
 
 
 def format_report(items: list[MacroNewsItem], *, fetched_at: datetime | None = None) -> str:

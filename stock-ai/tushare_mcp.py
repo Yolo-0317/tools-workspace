@@ -77,105 +77,39 @@ def _get_eastmoney_secid(code: str) -> str:
     raise ValueError(f"无法识别证券代码的市场类型: {code}")
 
 
+def _opencli_fetch_kline_daily(code: str, limit: int = 120) -> list[list[str]]:
+    """OpenCLI 浏览器上下文 JSONP 拉取东财日 K（禁止 Python HTTP 直联）。"""
+    from scripts.tools.fetch_eastmoney_quotes import fetch_kline_rows_opencli
+
+    return fetch_kline_rows_opencli(code, limit=limit, close_browser=True)
+
+
 def _eastmoney_fetch_kline_daily(code: str, limit: int = 120) -> list[list[str]]:
-    """
-    从东财拉取日线 K 线列表（用于“实时/准实时”分析）。
+    return _opencli_fetch_kline_daily(code=code, limit=limit)
 
-    返回格式：
-    - 每一行是拆分后的字段数组（字符串），第 0 位为 'YYYY-MM-DD'
-    - 常见字段：日期, 今开, 收盘/当前, 最高, 最低, 成交量, 成交额, ... , 换手率(第 10 位)
-    """
-    secid = _get_eastmoney_secid(code)
-    url = "https://push2his.eastmoney.com/api/qt/stock/kline/get"
-    params = {
-        # cb 为 JSONP 包装名，任意字符串即可
-        "cb": f"jQuery3510_{int(time.time() * 1000)}",
-        "secid": secid,
-        "ut": "fa5fd1943c7b386f172d6893dbfba10b",
-        "fields1": "f1,f2,f3,f4,f5,f6",
-        "fields2": "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61",
-        "klt": "101",  # 日线
-        "fqt": "0",  # 不复权（与MySQL中的Tushare数据保持一致）
-        "end": "20500101",
-        "lmt": str(limit),
-        "_": str(int(time.time() * 1000)),
-    }
 
-    req = urllib.request.Request(
-        url + "?" + urllib.parse.urlencode(params),
-        headers={
-            "User-Agent": (
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/136.0.0.0 Safari/537.36"
-            ),
-            "Host": "push2his.eastmoney.com",
-        },
-        method="GET",
-    )
-
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        text = resp.read().decode("utf-8", errors="replace")
-
-    # 注意：这里是解析 JSONP 包装，正则不需要写成双反斜杠
-    match = re.search(r"jQuery\d+_\d+\((.*)\);?", text)
-    if not match:
-        raise ValueError("无法解析东财 JSONP 响应")
-
-    payload = json.loads(match.group(1))
-    if not payload or "data" not in payload or "klines" not in payload["data"]:
-        raise ValueError("东财行情数据缺失")
-
-    klines = payload["data"]["klines"] or []
-    return [line.split(",") for line in klines]
+def _opencli_load_close_history(code6: str, limit: int = 120) -> pd.DataFrame:
+    rows = _opencli_fetch_kline_daily(code6, limit=limit)
+    if not rows:
+        return pd.DataFrame(columns=["trade_date", "close"])
+    dates, closes = [], []
+    for r in rows:
+        if len(r) < 3:
+            continue
+        try:
+            dates.append(pd.to_datetime(r[0]))
+            closes.append(float(r[2]))
+        except Exception:
+            continue
+    return pd.DataFrame({"trade_date": dates, "close": closes})
 
 
 def _mysql_load_close_history(
     code6: str, limit: int = 120, mysql_url: str | None = None
 ) -> pd.DataFrame:
-    """
-    从 MySQL 的 stock_daily 表读取历史收盘价（用于盘中分析基线）。
-
-    说明：
-    - 表结构来自 create_stock_daily_table.sql
-    - 默认使用环境变量 MYSQL_URL；也可显式传 mysql_url
-    - 返回字段：trade_date（datetime64）、close（float）
-    """
-    url = mysql_url or os.getenv("MYSQL_URL")
-    if not url:
-        raise ValueError("未配置 MYSQL_URL，无法从 MySQL 读取历史数据。")
-
-    # 延迟导入，避免在未安装依赖时影响其他 MCP 工具
-    from sqlalchemy import create_engine, text  # type: ignore
-
-    engine = create_engine(url, pool_pre_ping=True)
-    # MySQL 的 LIMIT 参数化在部分驱动上不稳定，这里用 int 拼接更稳（code 使用参数绑定防注入）
-    limit_int = int(limit)
-    # 使用子查询：先降序取最新limit条，再升序排序返回
-    sql = text(
-        f"""
-        SELECT trade_date, close
-        FROM (
-        SELECT trade_date, close
-        FROM stock_daily
-        WHERE ts_code = :code
-            ORDER BY trade_date DESC
-        LIMIT {limit_int}
-        ) AS recent
-        ORDER BY trade_date ASC
-        """
-    )
-
-    with engine.connect() as conn:
-        df = pd.read_sql(sql, conn, params={"code": code6})
-
-    if df.empty:
-        return df
-
-    df["trade_date"] = pd.to_datetime(df["trade_date"])
-    df["close"] = pd.to_numeric(df["close"], errors="coerce")
-    df = df.dropna(subset=["trade_date", "close"])
-    return df
+    """兼容旧名：改走 OpenCLI 东财 K 线。"""
+    _ = mysql_url
+    return _opencli_load_close_history(code6=code6, limit=limit)
 
 
 def _get_daily_like_data(
@@ -394,13 +328,11 @@ def analyze_and_suggest(stock_code: str):
 @mcp.tool()
 def realtime_trade_signal(code: str, trade_date: Optional[str] = None):
     """
-    基于东财“日线级”K 线做实时买入/卖出信号分析（MA5/MA20 策略）。
+    基于 OpenCLI 东财日 K 做实时买入/卖出信号分析（MA5/MA20 策略）。
 
     说明：
     - 适用：A 股/ETF（例如 000592、159218 等）
-    - trade_date：
-      - 不传：使用东财返回的最新一根日线（通常为最近交易日，盘中会动态变化）
-      - 传入：YYYYMMDD，例如 '20251225'
+    - 数据：OpenCLI 浏览器上下文采集东财 K 线
     """
     try:
         rows = _eastmoney_fetch_kline_daily(code=code, limit=120)
@@ -540,11 +472,11 @@ def realtime_trade_signal(code: str, trade_date: Optional[str] = None):
 @mcp.tool()
 def intraday_trade_signal(code: str, mysql_url: Optional[str] = None):
     """
-    盘中买卖信号（结合 MySQL 历史 + 东财盘中最新价）。
+    盘中买卖信号（OpenCLI 东财 K 线 + 行情页盘中价）。
 
     数据来源：
-    - 历史：MySQL `stock_daily`（ts_code 为 6 位数字）
-    - 盘中：东财日线 K 线接口最新一根（盘中会动态变化）
+    - 历史收盘：OpenCLI 东财日 K（浏览器 JSONP）
+    - 盘中：OpenCLI quote.eastmoney.com 最新价
 
     信号逻辑：
     - 以 MA5/MA20 为主（与 analyze_and_suggest 保持一致的均线策略）
@@ -562,13 +494,14 @@ def intraday_trade_signal(code: str, mysql_url: Optional[str] = None):
         if hist.empty:
             return f"未在 MySQL 中找到 {code6} 的历史数据，请先入库后再分析。"
 
-        # 2) 取东财最新一根（日线级，盘中动态）
-        rows = _eastmoney_fetch_kline_daily(code=code, limit=120)
-        if not rows:
-            return "未查询到东财行情数据，请检查证券代码。"
-        latest = rows[-1]
+        # 2) OpenCLI SOP 盘中最新价（替代东财 push2 API）
+        from scripts.tools.fetch_eastmoney_quotes import fetch_opencli_latest_kline_row
+
+        latest = fetch_opencli_latest_kline_row(code)
+        if not latest:
+            return "未通过 OpenCLI 获取到东财行情，请检查 opencli 与网络。"
         if len(latest) < 7:
-            return "东财行情数据解析失败，请稍后重试。"
+            return "东财 SOP 行情数据解析失败，请稍后重试。"
 
         rt_date = latest[0]  # YYYY-MM-DD
         rt_open = float(latest[1])
@@ -817,13 +750,14 @@ def deepseek_trade_signal(code: str, mysql_url: Optional[str] = None):
         if hist.empty:
             return f"未在 MySQL 中找到 {code6} 的历史数据，请先入库后再分析。"
 
-        # 2) 取东财最新一根（日线级，盘中动态）
-        rows = _eastmoney_fetch_kline_daily(code=code, limit=120)
-        if not rows:
-            return "未查询到东财行情数据，请检查证券代码。"
-        latest = rows[-1]
+        # 2) OpenCLI SOP 盘中最新价（替代东财 push2 API）
+        from scripts.tools.fetch_eastmoney_quotes import fetch_opencli_latest_kline_row
+
+        latest = fetch_opencli_latest_kline_row(code)
+        if not latest:
+            return "未通过 OpenCLI 获取到东财行情，请检查 opencli 与网络。"
         if len(latest) < 7:
-            return "东财行情数据解析失败，请稍后重试。"
+            return "东财 SOP 行情数据解析失败，请稍后重试。"
 
         rt_date = latest[0]  # YYYY-MM-DD
         rt_open = float(latest[1])
@@ -981,13 +915,14 @@ def deepseek_intraday_t_signal(
         if hist.empty:
             return f"未在 MySQL 中找到 {code6} 的历史数据，请先入库后再分析。"
 
-        # 2) 取东财最新一根（日线级，盘中动态）
-        rows = _eastmoney_fetch_kline_daily(code=code, limit=120)
-        if not rows:
-            return "未查询到东财行情数据，请检查证券代码。"
-        latest = rows[-1]
+        # 2) OpenCLI SOP 盘中最新价（替代东财 push2 API）
+        from scripts.tools.fetch_eastmoney_quotes import fetch_opencli_latest_kline_row
+
+        latest = fetch_opencli_latest_kline_row(code)
+        if not latest:
+            return "未通过 OpenCLI 获取到东财行情，请检查 opencli 与网络。"
         if len(latest) < 7:
-            return "东财行情数据解析失败，请稍后重试。"
+            return "东财 SOP 行情数据解析失败，请稍后重试。"
 
         rt_date = latest[0]  # YYYY-MM-DD
         rt_open = float(latest[1])
@@ -1033,44 +968,8 @@ def deepseek_intraday_t_signal(
         y_close = float(prev_row["close"])
         pct_chg = (rt_close - y_close) / y_close * 100 if y_close else None
 
-        # 4) 读取今天的分钟线数据（如果有）
-        intraday_bars = []
-        try:
-            from sqlalchemy import create_engine, text
-
-            # 获取 MySQL URL
-            MYSQL_URL = mysql_url or os.getenv("MYSQL_URL")
-            if not MYSQL_URL:
-                raise ValueError("未配置 MYSQL_URL")
-
-            # 创建数据库引擎
-            engine = create_engine(MYSQL_URL)
-
-            with engine.connect() as conn:
-                sql = text(
-                    """
-                    SELECT bar_time, open, high, low, close, vol, pct_chg
-                    FROM stock_intraday_snapshot
-                    WHERE ts_code = :code AND DATE(bar_time) = :date
-                    ORDER BY bar_time
-                """
-                )
-                result = conn.execute(sql, {"code": code6, "date": rt_date})
-                for row in result:
-                    intraday_bars.append(
-                        {
-                            "time": row[0].strftime("%H:%M"),
-                            "open": float(row[1]),
-                            "high": float(row[2]),
-                            "low": float(row[3]),
-                            "close": float(row[4]),
-                            "vol": int(row[5]),
-                            "pct_chg": float(row[6]) if row[6] else 0,
-                        }
-                    )
-        except Exception as e:
-            # 读取失败不影响主流程，只是没有分钟线数据而已
-            intraday_bars = []
+        # 4) 分钟线（legacy stock_intraday_snapshot 已移除，暂不提供）
+        intraday_bars: list = []
 
         # 5) 计算盘中关键位置
         # 日内振幅
@@ -1641,14 +1540,8 @@ def deepseek_aftermarket_analysis(
         """
         df = pd.read_sql(query, engine)
 
-        # 2. 读取今日分钟线数据
-        intraday_query = f"""
-            SELECT bar_time, open, high, low, close, vol, pct_chg
-            FROM stock_intraday_snapshot
-            WHERE ts_code = '{code_6}' AND DATE(bar_time) = CURDATE()
-            ORDER BY bar_time ASC
-        """
-        intraday_df = pd.read_sql(intraday_query, engine)
+        # 2. 分钟线（legacy stock_intraday_snapshot 已移除）
+        intraday_df = pd.DataFrame()
         engine.dispose()
 
         if df.empty:

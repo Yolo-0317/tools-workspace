@@ -14,21 +14,52 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from tushare_mcp import deepseek_trade_signal, _call_deepseek_api
-from core_v2.fetch_akshare_data import (
-    get_stock_fundamental, 
-    get_market_sentiment, 
-    get_stock_fund_flow, 
-    get_stock_news
+from core_v2.fetch_opencli_sop import (
+    get_stock_fundamental,
+    get_market_sentiment,
+    get_stock_fund_flow,
+    get_stock_news,
+    prefetch_sop_snapshots,
+    clear_sop_cache,
 )
 
-def analyze_holdings_v2(csv_path):
-    print(f"🚀 开始持仓全维度分析: {csv_path}...")
-    
-    if not os.path.exists(csv_path):
-        print(f"❌ 找不到文件: {csv_path}")
-        return
+def _holdings_df_from_db():
+    from scripts.tools.portfolio_db import load_latest_closes, load_positions
 
-    df_holdings = pd.read_csv(csv_path)
+    positions = load_positions()
+    if not positions:
+        return None
+    closes = load_latest_closes([p.code for p in positions])
+    rows = []
+    for p in positions:
+        price = closes.get(p.code)
+        if price is not None and p.cost:
+            pnl_pct = (price / p.cost - 1) * 100
+            pnl_str = f"{pnl_pct:+.1f}%"
+            current = price
+        else:
+            pnl_str = "N/A"
+            current = price if price is not None else 0
+        rows.append(
+            {
+                "证券代码": p.code,
+                "证券名称": p.name,
+                "持仓": p.shares,
+                "成本价": p.cost,
+                "当前价": current,
+                "盈亏比例": pnl_str,
+                "证券数量": p.shares,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def analyze_holdings_v2():
+    print("🚀 开始持仓全维度分析（MySQL portfolio_positions）...")
+    df_holdings = _holdings_df_from_db()
+    if df_holdings is None or df_holdings.empty:
+        print("❌ MySQL 无持仓。请先 sync_portfolio_from_card")
+        return
     if df_holdings.empty:
         print("❌ 持仓文件为空")
         return
@@ -36,7 +67,16 @@ def analyze_holdings_v2(csv_path):
     # 1. 获取大盘情绪
     print("📊 获取大盘情绪...")
     market_sentiment = get_market_sentiment()
-    
+
+    stock_codes = [
+        str(row["证券代码"]).zfill(6)
+        for _, row in df_holdings.iterrows()
+        if not str(row["证券代码"]).zfill(6).startswith(("15", "51", "58"))
+    ]
+    if stock_codes:
+        print(f"🌐 OpenCLI SOP 批量预取 {len(stock_codes)} 只持仓基本面/资金面...")
+        prefetch_sop_snapshots(stock_codes)
+
     reports = []
     # 过滤掉 ETF (代码长度通常不是 6 位，或者以 15, 51, 58 开头且不是股票)
     # 这里简单处理，只分析 6 位数字代码的股票
@@ -77,20 +117,19 @@ def analyze_holdings_v2(csv_path):
         - 成本价: {row['成本价']} | 当前价: {row['当前价']}
         - 盈亏比例: {row['盈亏比例']} | 持仓数量: {row['证券数量']}
 
-        ## 2. 资金流向 (AkShare)
-        - 主力净流入: {fund_flow.get('今日主力净流入', 'N/A')}
-        - 净流入占比: {fund_flow.get('主力净流入占比', 'N/A')}
+        ## 2. 资金流向 (OpenCLI SOP)
+        - 主力净流入: {fund_flow.get('main_net_inflow', 'N/A')}
 
         ## 3. 舆情新闻 (最近 3 条)
-        {chr(10).join(['- ' + n for n in news[:3]]) if news else '暂无重大新闻'}
+        {chr(10).join(['- ' + str(n) for n in news[:3]]) if news else '暂无重大新闻'}
 
         ## 4. 基本面指标
-        - PE(动): {fundamental.get('市盈率-动态', 'N/A')} | ROE: {fundamental.get('ROE', 'N/A')}%
-        - 行业: {fundamental.get('行业', 'N/A')} | 市值: {fundamental.get('总市值', 'N/A')}
+        - PE(动): {fundamental.get('pe_ttm', 'N/A')} | PB: {fundamental.get('pb', 'N/A')}
+        - 市值: {fundamental.get('total_mv', 'N/A')} | 换手: {fundamental.get('turnover_rate', 'N/A')}
 
         ## 5. 大盘背景
-        - 指数: {market_sentiment.get('上证指数', 'N/A')}
-        - 涨跌分布: {market_sentiment.get('涨跌分布', 'N/A')}
+        - 上证: {market_sentiment.get('indices', {}).get('shanghai', {})}
+        - 涨跌家数: {market_sentiment.get('breadth', 'N/A')}
 
         ## 6. 技术面趋势分析 (基于历史日线)
         {tech_report}
@@ -150,4 +189,4 @@ def analyze_holdings_v2(csv_path):
     print(f"\n✨ 持仓分析完成！报告已保存至: {output_md}")
 
 if __name__ == "__main__":
-    analyze_holdings_v2("output/holdings.csv")
+    analyze_holdings_v2()

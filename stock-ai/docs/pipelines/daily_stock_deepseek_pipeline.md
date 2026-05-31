@@ -53,7 +53,7 @@ Tushare 当日收盘数据一般 **17:00 后**较稳定。本机 `host.docker.in
 | 场景 | 命令 | 典型输出 |
 |------|------|----------|
 | **综合选股（17:30 默认）** | `uv run python core_v2/stock_selection_combined.py` | `stock_selection_combined_YYYYMMDD.csv` |
-| 五因子（core_v3） | `uv run python core_v3/stock_selection_five_factor_mysql.py` | `stock_selection_five_factor_*.csv` |
+| 五因子（core_v3） | `uv run python core_v3/stock_selection_five_factor_mysql.py` | MySQL `strategy=five_factor` + CSV 备份 |
 | 筑底突破 | `uv run python scripts/selection/stock_selection_bottom_breakout.py` | `stock_selection_bottom_breakout_*.csv` |
 | MA5 回踩 | `uv run python scripts/selection/stock_selection_ma5.py` | `stock_selection_ma5_*.csv` |
 
@@ -65,13 +65,13 @@ Tushare 当日收盘数据一般 **17:00 后**较稳定。本机 `host.docker.in
 
 均需 `DEEPSEEK_API_KEY`。决策上下文见 `scripts/tools/decision_context.py`。
 
-### A. 最新综合 CSV + 逐股 MCP 风格（Top 5）
+### A. 最新综合选股 + 合并 DeepSeek 报告（Top 5）
 
 ```bash
-uv run python scripts/analysis/run_deepseek_recommendations.py
+uv run python scripts/analysis/ai_review_combined_top5.py --top 5
 ```
 
-输出：`output/deepseek_analysis_日期.md`。
+不传 CSV 时从 MySQL `selection_daily_results` 读最新一批。输出：微信摘要 + `{csv 主名}_ai_review.md`。
 
 ### B. 任意 CSV + 合并一篇 DeepSeek 报告
 
@@ -99,7 +99,7 @@ DISABLE_SOP_TOP5=1 ./run_selection_daily.sh
 | 参数 | 默认 | 说明 |
 |------|------|------|
 | `--top` | 5 | 分析前几名 |
-| `--sop-workers` | 3 | Playwright 并发 |
+| `--sop-workers` | 1 | OpenCLI 单会话（已弃用并发） |
 | `--deepseek-workers` | 3 | DeepSeek 并发 |
 
 输出：
@@ -118,14 +118,17 @@ uv run python core_v3/deepseek_analyze_five_factor.py
 uv run python core_v3/deepseek_analyze_five_factor.py --top 2   # 控费试跑
 ```
 
+默认从 MySQL `selection_daily_results`（`strategy=five_factor`）读取；无库数据时回退 `output/stock_selection_five_factor_*.csv`。
+
 输出：`output/deepseek_v3_five_factor_review_*.md` / `.json`。
 
-### E. 持仓 / 全维度整合
+### E. 持仓全维度整合
 
 ```bash
 uv run python scripts/analysis/analyze_holdings_v2.py
-uv run python scripts/analysis/run_deepseek_final_analysis.py
 ```
+
+从 MySQL `portfolio_positions` 读持仓；需先 `uv run python -m scripts.tools.sync_portfolio_from_card`。
 
 ---
 

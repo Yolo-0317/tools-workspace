@@ -601,6 +601,21 @@ def main(target_date: Optional[str] = None, min_score: float = DEFAULT_MIN_SCORE
         return
 
     paths = save_outputs(result, trade_date)
+
+    repo_root = Path(__file__).resolve().parents[1]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    try:
+        from scripts.tools.portfolio_db import save_selection_daily_results
+
+        rows = result.to_dict(orient="records")
+        db_n = save_selection_daily_results(
+            trade_date, rows, strategy="five_factor"
+        )
+        print(f"💾 MySQL selection_daily_results (five_factor): {db_n} 条")
+    except Exception as exc:  # noqa: BLE001
+        print(f"⚠️ MySQL 入库失败: {exc}")
+
     print("\n" + "=" * 60)
     print(f"✅ 五因子选股完成，候选数量：{len(result)}")
     print(f"📄 技术中间文件：{paths['technical']}")

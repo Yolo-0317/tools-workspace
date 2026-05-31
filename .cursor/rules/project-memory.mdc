@@ -61,3 +61,9 @@ alwaysApply: false
 - **Context**: Stash 从 `https://sub.yoloworld.site:8883/clash.yaml` 下载失败（非 YAML 内容问题）。
 - **Pitfall/Error**: `sidestore-infra/certs/fullchain.cer` 仅含 ani/config/alist/www，**无 `sub.yoloworld.site`**；HTTPS 握手被客户端拒绝。`DDNS_SUBDOMAINS` 含 `sub` 不等于证书已覆盖。
 - **Solution/Rule**: `scripts/issue-certs.sh` 已加入 `-d sub.${DOMAIN}`；重签：`cd sidestore-infra && bash scripts/issue-certs.sh && docker compose restart caddy`。验证：`curl --resolve sub.yoloworld.site:8443:127.0.0.1 https://sub.yoloworld.site:8443/clash.yaml | head -1` 应返回 `mixed-port:`。
+
+### 2026-05-30 stock-ai 弃用脚本清理（DB + OpenCLI 主链路）
+
+- **Context**: 完成 MySQL 持仓/选股入库与 OpenCLI 战报/SOP 迁移后，删除仍引用东财 HTTP、Playwright、AkShare 的旧脚本，避免 Agent 误调。
+- **Pitfall/Error**: 文档与 `~/.codex/skills/stock-strategy-selector` 仍指向 `ingest_eastmoney_*`、`ai_review_top5.py` 等已删入口；`analyze_holdings_v2 --csv` 与 CSV 兜底易与 `portfolio_positions` 双轨混淆。
+- **Solution/Rule**: **日线**仅 `scripts/sync/sync_tushare_daily_to_mysql.py` + `ensure_daily_bars`；**实时/SOP/战报**仅 `scripts/tools/fetch_eastmoney_quotes.py`（OpenCLI）；**选股结果** MySQL `selection_daily_results`；**持仓** MySQL `portfolio_positions`；**看板历史** `portfolio_*_daily` + `sop_review_*`（`dashboard_data.py`）。细节见 `memory-python.mdc` §2026-05-31。

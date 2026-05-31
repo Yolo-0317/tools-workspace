@@ -6,8 +6,8 @@ from __future__ import annotations
 import json
 import os
 import sys
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
-from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import date, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -20,7 +20,8 @@ import pandas as pd
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
-from scripts.analysis.eastmoney_sop_extract import _extract_worker
+from scripts.analysis.eastmoney_sop_extract import extract_and_save_batch
+from scripts.tools.fetch_eastmoney_quotes import fetch_technical_summary_opencli
 from scripts.tools.deepseek_client import call_deepseek
 from scripts.tools.holdings_context import load_full_decision_context
 from scripts.tools.sop_watch_parse import SopWatchMeta, parse_sop_review_text
@@ -36,43 +37,10 @@ def _to_full_code(code: str) -> str:
     return f"{code_str}.SZ"
 
 
-def _technical_supplement(code: str, mysql_url: str) -> str:
-    """从 MySQL 补充均线/量能，弥补行情页盘后为空。"""
-    code6 = str(code).split(".")[0].zfill(6)
+def _technical_supplement(code: str) -> str:
+    """OpenCLI 东财 K 线补充均线/量能。"""
     try:
-        engine = create_engine(mysql_url)
-        with engine.connect() as conn:
-            rows = conn.execute(
-                text(
-                    """
-                    SELECT trade_date, close, pct_chg, vol, amount
-                    FROM stock_daily
-                    WHERE ts_code = :code
-                    ORDER BY trade_date DESC
-                    LIMIT 60
-                    """
-                ),
-                {"code": code6},
-            ).fetchall()
-        if not rows:
-            return "（MySQL 无历史数据）"
-
-        df = pd.DataFrame(rows, columns=["trade_date", "close", "pct_chg", "vol", "amount"])
-        df = df.sort_values("trade_date")
-        closes = df["close"].astype(float)
-        vols = df["vol"].astype(float)
-        latest = df.iloc[-1]
-        ma5 = closes.tail(5).mean()
-        ma20 = closes.tail(20).mean()
-        ma60 = closes.tail(60).mean()
-        vol20 = vols.tail(20).mean()
-        vol_ratio = float(latest["vol"]) / vol20 if vol20 else 0
-
-        return (
-            f"收盘 {float(latest['close']):.2f}元 ({float(latest['pct_chg']):+.2f}%) | "
-            f"MA5={ma5:.2f} MA20={ma20:.2f} MA60={ma60:.2f} | "
-            f"量比(相对20日均量)={vol_ratio:.2f}x | 交易日={latest['trade_date']}"
-        )
+        return fetch_technical_summary_opencli(code, limit=60)
     except Exception as exc:  # noqa: BLE001
         return f"（技术面补充失败: {exc}）"
 
@@ -215,9 +183,10 @@ def _deepseek_summary(
 
 
 def review_top5_sop_concurrent(
-    csv_path: str | Path,
+    csv_path: str | Path | None = None,
     *,
     top_n: int = 5,
+    trade_date: date | str | None = None,
     sop_workers: int = 3,
     deepseek_workers: int = 3,
     holdings_context: str = "",
@@ -225,40 +194,37 @@ def review_top5_sop_concurrent(
     save_report: bool = True,
 ) -> tuple[str, str | None, list[SopWatchMeta]]:
     """并发 SOP 采集 + DeepSeek 分析，返回 (微信摘要, 报告路径, 结构化监控元数据)。"""
-    csv_path = Path(csv_path)
-    df = pd.read_csv(csv_path, encoding="utf-8-sig")
+    from scripts.tools.selection_results import resolve_selection_df, trade_date_to_str
+
+    td, df, source = resolve_selection_df(trade_date=trade_date, csv_path=csv_path)
     if df.empty:
-        raise ValueError("选股 CSV 为空")
-    if "总分" in df.columns:
-        df = df.sort_values(by=["总分", "标签数", "成交额(万)"], ascending=False)
+        raise ValueError("选股结果为空")
 
     top = df.head(top_n).copy()
     codes = [str(c).split(".")[0].zfill(6) for c in top["代码"].astype(str)]
-    trade_date = csv_path.stem.replace("stock_selection_combined_", "")
-    sop_dir = ROOT / "output" / "sop_preliminary" / trade_date
+    trade_date_str = trade_date_to_str(td)
+    sop_dir = ROOT / "output" / "sop_preliminary" / trade_date_str
     sop_dir.mkdir(parents=True, exist_ok=True)
+    print(f"📂 选股数据源: {source}", file=sys.stderr)
 
     mysql_url = os.environ.get("MYSQL_URL", "").replace("host.docker.internal", "127.0.0.1")
     context = holdings_context.strip() or "（无决策上下文）"
     if holdings_codes is None:
         holdings_codes, _ = load_full_decision_context()
 
-    # 阶段 1：并发 Playwright 采集
-    print(f"🔍 并发 SOP 采集 Top{len(codes)}（workers={sop_workers}）...", file=sys.stderr)
+    # 阶段 1：OpenCLI 单会话顺序 SOP 采集（Top N）
+    print(f"🔍 OpenCLI SOP 采集 Top{len(codes)}...", file=sys.stderr)
     preliminary_map: dict[str, str] = {}
     errors: dict[str, str] = {}
 
-    worker_args = [(c, str(sop_dir)) for c in codes]
-    with ProcessPoolExecutor(max_workers=sop_workers) as pool:
-        futures = {pool.submit(_extract_worker, a): a[0] for a in worker_args}
-        for fut in as_completed(futures):
-            code, path, err = fut.result()
-            if err:
-                errors[code] = err
-                print(f"  ❌ {code} SOP 失败: {err}", file=sys.stderr)
-            else:
-                preliminary_map[code] = path
-                print(f"  ✅ {code} -> {path}", file=sys.stderr)
+    try:
+        preliminary_map = extract_and_save_batch(codes, sop_dir)
+        for code, path in preliminary_map.items():
+            print(f"  ✅ {code} -> {path}", file=sys.stderr)
+    except Exception as exc:  # noqa: BLE001
+        for c in codes:
+            errors[c] = str(exc)
+        print(f"  ❌ SOP 批量采集失败: {exc}", file=sys.stderr)
 
     # 阶段 2：并发 DeepSeek 逐股分析
     metas = [_build_stock_meta(row) for _, row in top.iterrows()]
@@ -268,7 +234,7 @@ def review_top5_sop_concurrent(
         code = meta["代码"]
         if code not in preliminary_map:
             return code, f"（SOP 采集失败：{errors.get(code, '未知错误')}）"
-        tech = _technical_supplement(code, mysql_url) if mysql_url else "（未配置 MYSQL_URL）"
+        tech = _technical_supplement(code)
         return _deepseek_single_review(meta, preliminary_map[code], tech, context)
 
     print(f"🤖 并发 DeepSeek 分析（workers={deepseek_workers}）...", file=sys.stderr)
@@ -299,17 +265,17 @@ def review_top5_sop_concurrent(
         watch_metas.append(parsed)
 
     # 阶段 3：汇总微信摘要
-    wechat = _deepseek_summary(per_stock_reviews, context, trade_date)
+    wechat = _deepseek_summary(per_stock_reviews, context, trade_date_str)
 
     report_path: str | None = None
     if save_report:
-        report_path = str(csv_path.with_name(f"{csv_path.stem}_sop_review.md"))
+        report_path = str(ROOT / "output" / f"stock_selection_combined_{trade_date_str}_sop_review.md")
         lines = [
             f"# 综合选股 Top{top_n} 东财 SOP + DeepSeek 投资决策",
             "",
             f"**生成时间**：{datetime.now():%Y-%m-%d %H:%M:%S}  ",
-            f"**数据来源**：{csv_path.name}  ",
-            f"**SOP 并发数**：{sop_workers} | **DeepSeek 并发数**：{deepseek_workers}",
+            f"**数据来源**：{source}  ",
+            f"**SOP**：OpenCLI 单会话 | **DeepSeek 并发数**：{deepseek_workers}",
             "",
             "---",
             "",
@@ -339,8 +305,8 @@ def review_top5_sop_concurrent(
 
     sop_payload = {
         "version": 1,
-        "trade_date": trade_date,
-        "csv": csv_path.name,
+        "trade_date": trade_date_str,
+        "source": source,
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "wechat_summary": wechat,
         "reviews": [m.to_dict() for m in watch_metas],
@@ -348,6 +314,49 @@ def review_top5_sop_concurrent(
     SOP_JSON_LATEST.parent.mkdir(parents=True, exist_ok=True)
     SOP_JSON_LATEST.write_text(json.dumps(sop_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"📋 SOP 监控元数据: {SOP_JSON_LATEST}", file=sys.stderr)
+
+    try:
+        from scripts.tools.portfolio_db import save_sop_review_daily
+
+        db_items: list[dict] = []
+        for rank, (meta, review) in enumerate(per_stock_reviews, 1):
+            code = meta["代码"]
+            parsed = next((m for m in watch_metas if m.code == code), None)
+            db_items.append(
+                {
+                    "rank_no": rank,
+                    "code": code,
+                    "name": (parsed.name if parsed else code),
+                    "score": float(meta.get("总分", 0)),
+                    "decision": parsed.decision if parsed else "",
+                    "watch_worthy": parsed.watch_worthy if parsed else False,
+                    "close_price": float(meta.get("收盘价", 0)),
+                    "change_pct": float(meta.get("涨幅%", 0)),
+                    "strategy_label": str(meta.get("策略标签", "")),
+                    "action_hint": str(meta.get("建议动作", "")),
+                    "support": parsed.support if parsed else [],
+                    "stop": parsed.stop if parsed else None,
+                    "targets": parsed.targets if parsed else [],
+                    "in_holdings": parsed.in_holdings if parsed else False,
+                    "review_md": review,
+                    "raw_json": parsed.to_dict() if parsed else {},
+                }
+            )
+        sop_db = save_sop_review_daily(
+            trade_date_str,
+            strategy="combined",
+            selection_source=source,
+            generated_at=sop_payload["generated_at"],
+            wechat_summary=wechat,
+            report_path=report_path,
+            items=db_items,
+        )
+        print(
+            f"💾 MySQL sop_review_daily: {sop_db['trade_date']} items={sop_db['items']}",
+            file=sys.stderr,
+        )
+    except Exception as exc:  # noqa: BLE001
+        print(f"⚠️ SOP MySQL 入库失败: {exc}", file=sys.stderr)
 
     return wechat, report_path, watch_metas
 
@@ -357,26 +366,24 @@ def main() -> int:
     import argparse
 
     parser = argparse.ArgumentParser(description="Top N 并发东财 SOP + DeepSeek 投资决策")
-    parser.add_argument("csv_file", nargs="?", help="选股 CSV（默认取最新 combined）")
+    parser.add_argument("csv_file", nargs="?", help="[可选] 选股 CSV，默认 MySQL 优先")
+    parser.add_argument("--trade-date", default=None, help="YYYYMMDD，默认最新交易日")
     parser.add_argument("--top", type=int, default=5)
-    parser.add_argument("--sop-workers", type=int, default=3, help="Playwright 并发数")
+    parser.add_argument("--sop-workers", type=int, default=1, help="已弃用：OpenCLI 单会话顺序采集")
     parser.add_argument("--deepseek-workers", type=int, default=3, help="DeepSeek API 并发数")
     parser.add_argument("--wechat-only", action="store_true")
     args = parser.parse_args()
 
-    if args.csv_file:
-        csv_path = Path(args.csv_file)
-    else:
-        files = sorted((ROOT / "output").glob("stock_selection_combined_*.csv"))
-        if not files:
-            print("❌ 未找到 output/stock_selection_combined_*.csv")
-            return 1
-        csv_path = files[-1]
+    from scripts.tools.selection_results import parse_trade_date
+
+    td = parse_trade_date(args.trade_date) if args.trade_date else None
+    csv_path = Path(args.csv_file) if args.csv_file else None
 
     _, decision_context = load_full_decision_context()
     wechat, report_path, _watch_metas = review_top5_sop_concurrent(
         csv_path,
         top_n=args.top,
+        trade_date=td,
         sop_workers=args.sop_workers,
         deepseek_workers=args.deepseek_workers,
         holdings_context=decision_context,

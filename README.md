@@ -13,6 +13,7 @@
 | [wechat-cursor-acp](./wechat-cursor-acp) | 微信私聊 ↔ Cursor CLI（`agent acp`） | [wechat-cursor-acp/README.md](./wechat-cursor-acp/README.md) |
 | [sidestore-infra](./sidestore-infra) | SideStore、Caddy、阿里云 DDNS、Let's Encrypt | [sidestore-infra/README.md](./sidestore-infra/README.md) |
 | [substore-clash](./substore-clash) | 双机场订阅合并 → Mihomo/Stash/Verge 配置 | [substore-clash/README.md](./substore-clash/README.md) |
+| [stock-mysql](./stock-mysql) | MySQL 8：行情 + 持仓/监控等业务表 | [stock-mysql/README.md](./stock-mysql/README.md) |
 
 工作空间外（Docker 自启会拉起，非本 repo 子目录）：`~/docker/jellyfin-stack`（Jellyfin NAS/迅雷/夸克）。
 
@@ -50,8 +51,8 @@
 
 ### investment-agent
 
-- **持仓执行卡** `持仓执行卡.md`：P0～P4 操作纪律与价位
-- **监控规则** `config/holdings_alerts.json`：与执行卡同步
+- **持仓执行卡** `持仓执行卡.md`：P0～P4 操作纪律与价位（权威源）
+- **MySQL 持仓/监控**：`sync_portfolio_from_card` 同步至 `portfolio_*` / `alert_rules`
 - **长期记忆** `MEMORY.md`、`memory/YYYY-MM-DD.md`
 - **Agent 规范** `.cursor/rules/agent.mdc`（红线：禁补梅花、禁追高等）
 

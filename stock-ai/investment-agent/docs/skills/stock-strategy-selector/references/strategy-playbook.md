@@ -80,11 +80,11 @@ Typical output:
 
 ### 4) AI review after screening
 
-If the user wants commentary such as “帮我看看前 5 只哪个更值得关注”, use AI review only after a CSV exists:
+If the user wants commentary such as “帮我看看前 5 只哪个更值得关注”, use AI review after results exist in MySQL or CSV:
 
 ```bash
 cd /Users/yolo/dev/yolo/tools-workspace/stock-ai
-uv run python scripts/ai_review_top5.py output/stock_selection_combined_YYYYMMDD.csv --top 5
+uv run python scripts/analysis/ai_review_combined_top5.py --top 5
 ```
 
 Output:
@@ -101,7 +101,7 @@ If the user wants “明天怎么操作”, “结合我持仓给建议”, or �
 
 1. Latest screening CSV
 2. AI review markdown if available
-3. Workspace holdings file: `holdings/current.csv`
+3. Current holdings from MySQL (`portfolio_positions`) or `load_holdings_card()` after card sync
 4. Browser-based Eastmoney/news checks for the most relevant names
 
 Recommended sequence:
@@ -115,7 +115,7 @@ cd /Users/yolo/dev/yolo/tools-workspace/stock-ai
 uv run python scripts/stock_selection_combined.py
 
 # 3. optional AI review of the top candidates
-uv run python scripts/ai_review_top5.py output/stock_selection_combined_YYYYMMDD.csv --top 5
+uv run python scripts/analysis/ai_review_combined_top5.py --top 5
 ```
 
 Then compare the fresh candidates against the holdings list, and use browser-based Eastmoney pages to pull quick fundamentals/news context for:
@@ -149,7 +149,6 @@ If the user asks to validate recent screening results:
 ```bash
 cd /Users/yolo/dev/yolo/tools-workspace/stock-ai
 uv run python -m scripts.tools.verify_selection_performance
-uv run python -m scripts.tools.compare_daily_selection
 ```
 
 ## Compare strategies
@@ -210,7 +209,7 @@ uv run python scripts/analyze_stock.py
 
 ```bash
 cd /Users/yolo/dev/yolo/tools-workspace/stock-ai
-uv run python scripts/analyze_holdings.py
+uv run python scripts/analysis/analyze_holdings_v2.py
 ```
 
 ## Safety / quality bar

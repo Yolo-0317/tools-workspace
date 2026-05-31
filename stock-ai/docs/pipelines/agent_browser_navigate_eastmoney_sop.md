@@ -108,7 +108,7 @@
 
 打开页面 `https://emweb.securities.eastmoney.com/pc_hsf10/pages/index.html?type=web&code=SH600873&color=b#/zxgg`
 选择器：由于是 SPA 页面，建议直接提取 `#app` 内部的文本，或者使用更宽泛的 `body`。
-（或者在 Playwright 脚本中，等待 `.news-list` 或类似具体列表元素加载完成后，直接提取整个页面的 `inner_text` 交给大模型分析）。
+（OpenCLI 在浏览器上下文中等待 `#app` 加载后，用 `eval` 提取 `innerText` 交给大模型分析）。
 获取相关资讯、相关公告以及资讯摘要。
 
 ### 3.6 研报面

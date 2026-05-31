@@ -4,7 +4,7 @@
 对 core_v3 五因子选股结果进行逐股 DeepSeek 分析。
 
 默认行为：
-1) 自动读取 output/stock_selection_five_factor_*.csv 最新文件
+1) 优先读 MySQL selection_daily_results（strategy=five_factor），CSV 兜底
 2) 取前 N 只股票（按总分排序）
 3) 逐股调用 DeepSeek 生成分析
 4) 输出 Markdown + JSON 报告
@@ -90,6 +90,23 @@ def load_prompt_config() -> Tuple[str, float]:
     return prompt, threshold
 
 
+def resolve_five_factor_df(
+    *,
+    csv_path: Path | str | None = None,
+    trade_date: str | None = None,
+) -> tuple[pd.DataFrame, str, str]:
+    """返回 (DataFrame, YYYYMMDD, 来源标识)。MySQL 优先。"""
+    from scripts.tools.selection_results import resolve_selection_df, trade_date_to_str
+
+    td, df, source = resolve_selection_df(
+        trade_date=trade_date,
+        csv_path=csv_path,
+        strategy="five_factor",
+    )
+    date_str = trade_date_to_str(td)
+    return df, date_str, source
+
+
 def latest_five_factor_file() -> Tuple[Optional[Path], Optional[str]]:
     files = glob.glob(str(REPO_ROOT / "output" / "stock_selection_five_factor_*.csv"))
     if not files:
@@ -120,9 +137,9 @@ def detect_columns(df: pd.DataFrame) -> Dict[str, str]:
                 mapping[key] = c
                 break
     if not mapping["code"]:
-        raise ValueError("CSV 中未找到股票代码列（如 `代码`）")
+        raise ValueError("数据中未找到股票代码列（如 `代码`）")
     if not mapping["score"]:
-        raise ValueError("CSV 中未找到评分列（如 `总分`）")
+        raise ValueError("数据中未找到评分列（如 `总分`）")
     return mapping
 
 
@@ -282,7 +299,13 @@ def main():
     prompt_template, tech_threshold = load_prompt_config()
 
     parser = argparse.ArgumentParser(description="DeepSeek 逐股分析 core_v3 五因子选股结果")
-    parser.add_argument("--csv", type=str, default="", help="指定输入 CSV 路径")
+    parser.add_argument("--csv", type=str, default="", help="[可选] 指定输入 CSV，默认 MySQL 优先")
+    parser.add_argument(
+        "--trade-date",
+        type=str,
+        default="",
+        help="YYYYMMDD，默认 MySQL/CSV 最新一批",
+    )
     parser.add_argument("--top", type=int, default=5, help="分析前 N 只，默认 5")
     parser.add_argument(
         "--min-score",
@@ -300,26 +323,28 @@ def main():
             "未检测到 LLM 配置：请设置 DEEPSEEK_API_KEY，或 LLM_BACKEND=cursor 且已 agent login"
         )
 
+    trade_date = args.trade_date.strip() or None
     if args.csv:
         csv_path = Path(args.csv).expanduser().resolve()
-        date_str = datetime.now().strftime("%Y%m%d")
+        df, date_str, source = resolve_five_factor_df(csv_path=csv_path, trade_date=trade_date)
+        input_label = str(csv_path)
     else:
-        latest, date_str = latest_five_factor_file()
-        if not latest:
-            raise FileNotFoundError("未找到 output/stock_selection_five_factor_*.csv，请先运行选股脚本")
-        csv_path = latest
+        df, date_str, source = resolve_five_factor_df(trade_date=trade_date)
+        input_label = source
 
     print("=" * 80)
     print("🚀 DeepSeek 五因子逐股分析启动")
     print("=" * 80)
-    print(f"输入文件: {csv_path}")
+    print(f"数据来源: {input_label}")
+    print(f"交易日期: {date_str}")
     print(f"Top N: {args.top}")
     print(f"最低分阈值: {args.min_score}")
     print(f"Temperature: {args.temperature}")
 
-    df = pd.read_csv(csv_path, encoding="utf-8-sig")
     if df.empty:
-        raise RuntimeError("输入 CSV 为空")
+        raise RuntimeError(
+            "五因子选股结果为空。请先运行 core_v3/stock_selection_five_factor_mysql.py"
+        )
 
     results = analyze_stocks(
         df=df,

@@ -14,7 +14,7 @@ This is the default and unified entrypoint for daily stock-analysis tasks.
 1. Confirm the task type: data update, daily screening, strategy comparison, AI review, holdings-aware next-day plan, or single-stock diagnosis.
 2. Read `references/project-map.md` once if you need the project layout or prerequisites.
 3. Read `references/strategy-playbook.md` when you need strategy selection, command recipes, or result interpretation.
-4. If the task depends on the user's current positions, load `holdings/current.csv` from the workspace.
+4. If the task depends on the user's current positions, load from MySQL via `scripts/tools/portfolio_db.py` (`load_positions` / `load_holding_codes`), or run `sync_portfolio_from_card` if the execution card was just updated.
 5. Prefer the wrapper script `scripts/run_stock_ai.sh` for common tasks.
 6. Report results in plain language, with the exact output file path when a script generates artifacts.
 
@@ -38,10 +38,9 @@ This is the default and unified entrypoint for daily stock-analysis tasks.
 
 | 脚本 | 功能 | 数据源 |
 |------|------|--------|
-| `scripts/sync_tushare_daily_to_mysql.py` | 同步日线数据到 MySQL | Tushare |
-| `scripts/ingest_eastmoney_daily_to_mysql.py` | 东方财富日线数据入库 | 东方财富 |
-| `scripts/poll_eastmoney_intraday_to_mysql.py` | 日内数据实时入库 | 东方财富 |
-| `scripts/poll_eastmoney_intraday_snapshot_to_mysql.py` | 日内快照入库 | 东方财富 |
+| `scripts/sync/sync_tushare_daily_to_mysql.py` | 同步日线数据到 MySQL | Tushare |
+| `scripts/tools/fetch_eastmoney_quotes.py` | 实时现价、K 线、SOP、战报指数 | OpenCLI（东财页面） |
+| `scripts/tools/fetch_eastmoney_macro_news.py` | 宏观财经快讯 | OpenCLI |
 
 ### 使用方式
 
@@ -49,13 +48,10 @@ This is the default and unified entrypoint for daily stock-analysis tasks.
 cd /Users/yolo/dev/yolo/tools-workspace/stock-ai
 
 # 同步 Tushare 日线数据
-uv run python scripts/sync_tushare_daily_to_mysql.py
+uv run python scripts/sync/sync_tushare_daily_to_mysql.py --mode by_date --days 7
 
-# 同步东方财富日线数据
-uv run python scripts/ingest_eastmoney_daily_to_mysql.py
-
-# 实时日内数据（盘中使用）
-uv run python scripts/poll_eastmoney_intraday_to_mysql.py
+# 检测落后并自动补同步（17:30 自动化已内置）
+uv run python -m scripts.tools.ensure_daily_bars --sync-if-stale
 ```
 
 ### 前置条件
@@ -66,12 +62,7 @@ uv run python scripts/poll_eastmoney_intraday_to_mysql.py
 
 ### 自动化建议
 
-可以配置 cron 每日自动更新：
-
-```bash
-# 每个交易日 18:00 更新日线数据
-0 18 * * 1-5 cd /Users/yolo/dev/yolo/tools-workspace/stock-ai && uv run python scripts/ingest_eastmoney_daily_to_mysql.py >> logs/sync.log 2>&1
-```
+可以配置 launchd 每日自动更新（见 `scripts/install-daily-selection-launchd.sh` 与 `./run_sync_daily.sh`）。
 
 ---
 
@@ -93,8 +84,7 @@ Hard daily rules (merged from `daily-strategy-selection`):
 
 - Confirm target trade date from MySQL `stock_daily` first.
 - Sync missing daily data only when target date is not already present.
-- Run capital-flow sync when available; do not fail whole run on partial Eastmoney page errors if enough rows land.
-- For combined workflow, run from `/Users/yolo/dev/yolo/tools-workspace/stock-ai/core_v2` if import-path issues appear.
+- Run combined workflow from `core_v2/stock_selection_combined.py` if import-path issues appear.
 - Do a browser-based Eastmoney second pass (names/news/funds/finance/basic info) before final advice.
 - Do not present raw CSV directly as final recommendation; output keep/observe/drop style interpretation.
 
@@ -108,7 +98,7 @@ Run two or more strategy scripts and compare:
 
 ### AI review
 
-Use `ai_review_top5.py` only after a screening CSV already exists and `DEEPSEEK_API_KEY` is available.
+Use `scripts/analysis/ai_review_combined_top5.py` after screening results land in MySQL or CSV, with `DEEPSEEK_API_KEY` available.
 
 During AI review, use browser-based Eastmoney/news enrichment when stronger recommendation context is needed.
 
@@ -122,7 +112,7 @@ Treat enrichment as context, not a replacement for technical screening. Synthesi
 
 ### Holdings-aware next-day plan
 
-After screening or AI review, compare the candidate list with `holdings/current.csv`.
+After screening or AI review, compare the candidate list with current holdings from MySQL (`portfolio_db.load_holding_codes()` or `holdings_context.load_holdings_card()`).
 
 Use this workflow when the user asks for 次日操作建议, 持仓去留, 明天怎么操作, 调仓建议, or a plan that combines fresh picks with current positions.
 
@@ -136,7 +126,7 @@ Output should separate stocks into a few plain-language buckets:
 Base the recommendation on:
 
 - whether the stock is already in holdings
-- current cost basis and quantity from `holdings/current.csv`
+- current cost basis and quantity from MySQL `portfolio_positions` (synced from `investment-agent/持仓执行卡.md`)
 - total portfolio size when known (user provided: about 5w RMB)
 - whether it appears in the latest strategy output
 - ranking / score / tags from the latest screening CSV
@@ -152,7 +142,6 @@ Do not present this as certainty; frame it as a next-day watchlist and action pl
 If the user asks to compare recent picks vs actual moves:
 
 - `scripts/tools/verify_selection_performance.py`
-- `scripts/tools/compare_daily_selection.py`
 
 ### Single-stock diagnosis
 

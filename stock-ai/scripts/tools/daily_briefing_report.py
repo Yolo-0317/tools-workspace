@@ -8,7 +8,6 @@ import os
 import re
 import subprocess
 import sys
-import urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -54,74 +53,50 @@ SELECTION_BRIEFING_SLOTS = frozenset({"17:30", "18:00"})
 GEOPOLITICS_KEYWORDS = ("伊朗", "美伊", "特朗普", "霍尔木兹", "以军", "中东", "制裁", "停火")
 
 
-def _http_get(url: str, *, encoding: str = "utf-8", timeout: int = 10) -> str:
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        raw = resp.read()
-    return raw.decode(encoding, errors="replace")
-
-
 def fetch_market_indices() -> list[str]:
-    codes = "sh000001,sz399001,sz399006,sh000300,sh000688"
+    from scripts.tools.fetch_eastmoney_quotes import fetch_domestic_market_opencli
+
     names = {
-        "sh000001": "上证指数",
-        "sz399001": "深证成指",
-        "sz399006": "创业板指",
-        "sh000300": "沪深300",
-        "sh000688": "科创50",
+        "000001": "上证指数",
+        "399001": "深证成指",
+        "399006": "创业板指",
+        "000300": "沪深300",
+        "000688": "科创50",
     }
-    url = f"https://qt.gtimg.cn/q={codes}"
+    lines: list[str] = []
     try:
-        content = _http_get(url, encoding="gbk")
+        snaps, breadth = fetch_domestic_market_opencli(list(names.keys()))
     except Exception as exc:  # noqa: BLE001
         return [f"大盘数据获取失败: {exc}"]
 
-    lines: list[str] = []
     for code, name in names.items():
-        match = re.search(rf'v_{re.escape(code)}="([^"]*)"', content)
-        if not match:
+        q = snaps.get(code)
+        if not q:
             lines.append(f"{name}: 获取失败")
             continue
-        parts = match.group(1).split("~")
-        if len(parts) > 32:
-            lines.append(f"{name}: {parts[3]} ({parts[31]}, {parts[32]}%)")
-        else:
-            lines.append(f"{name}: 数据格式异常")
+        lines.append(f"{name}: {q.price} ({q.change_amt:+.2f}, {q.change_pct:+.2f}%)")
+
+    try:
+        if breadth and isinstance(breadth.get("total"), dict):
+            t = breadth["total"]
+            lines.append(
+                f"全A涨跌：涨 {t['up']} / 跌 {t['down']} / 平 {t['flat']}"
+                f"（沪 {breadth['shanghai']['up']}/{breadth['shanghai']['down']}"
+                f" 深 {breadth['shenzhen']['up']}/{breadth['shenzhen']['down']}）"
+            )
+    except Exception:
+        pass
+
     return lines or ["大盘数据为空"]
 
 
 def fetch_international_markets() -> list[str]:
-    specs = [
-        ("hf_CL,hf_OIL", {"hf_CL": "WTI原油", "hf_OIL": "布伦特原油"}),
-        ("usDJI,usIXIC", {"usDJI": "道琼斯", "usIXIC": "纳斯达克"}),
-    ]
-    lines: list[str] = []
-    for codes, labels in specs:
-        url = f"https://qt.gtimg.cn/q={codes}"
-        try:
-            content = _http_get(url, encoding="gbk")
-        except Exception as exc:  # noqa: BLE001
-            lines.append(f"国际市场获取失败: {exc}")
-            continue
-        for key, label in labels.items():
-            match = re.search(rf'v_{re.escape(key)}="([^"]*)"', content)
-            if not match:
-                continue
-            parts = match.group(1).split("~")
-            if key.startswith("us") and len(parts) > 5:
-                price = parts[3]
-                change = pct = None
-                if "USD" in parts:
-                    idx = parts.index("USD")
-                    if idx >= 4:
-                        change, pct = parts[idx - 4], parts[idx - 3]
-                if change and pct:
-                    lines.append(f"{label}: {price} ({change}, {pct}%)")
-                else:
-                    lines.append(f"{label}: {price}")
-            elif len(parts) > 2:
-                lines.append(f"{label}: {parts[0]} ({parts[1]}%)")
-    return lines or ["国际市场数据为空"]
+    from scripts.tools.fetch_eastmoney_quotes import format_international_market_lines
+
+    try:
+        return format_international_market_lines()
+    except Exception as exc:  # noqa: BLE001
+        return [f"国际市场获取失败: {exc}"]
 
 
 def _pick_geopolitics(items: list[MacroNewsItem], limit: int = 5) -> list[MacroNewsItem]:
@@ -319,11 +294,7 @@ def build_daily_briefing(slot: str, *, news_limit: int = 8, with_ai: bool = True
     slot = slot if slot in SLOT_TITLES else datetime.now().strftime("%H:%M")
     now = datetime.now()
 
-    try:
-        index_content = _http_get("https://qt.gtimg.cn/q=sh000001", encoding="gbk")
-    except Exception:  # noqa: BLE001
-        index_content = ""
-    session = detect_market_session(index_quote_content=index_content)
+    session = detect_market_session(now=now)
     title = session.slot_title(slot)
 
     all_news = fetch_macro_news(limit=max(news_limit * 2, 16), include_home=True)

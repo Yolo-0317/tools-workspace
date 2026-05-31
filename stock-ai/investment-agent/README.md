@@ -8,13 +8,11 @@
 investment-agent/
 ├── .cursor/rules/       # Cursor Agent 行为规范
 ├── memory/              # 每日记忆日志 + trading-strategies.md（策略正式副本）
-├── config/              # holdings_alerts.json（持仓监控）；selection_watch_alerts 为运行时生成
-├── scripts/             # 持仓查询、qclaw 同步等
+├── scripts/             # qclaw 同步等
 ├── reports/             # 历史分析报告
 ├── docs/skills/         # 从 QClaw 复制的技能文档（参考用）
 ├── MEMORY.md            # 长期记忆
-├── 持仓执行卡.md         # 持仓与操作纪律
-├── holdings.csv         # → ../../holdings/current.csv（软链接）
+├── 持仓执行卡.md         # 持仓与操作纪律（权威源 → sync 到 MySQL）
 └── AGENTS.md / TOOLS.md # OpenClaw 时代的行为规范（保留参考）
 ```
 
@@ -24,7 +22,7 @@ investment-agent/
 |------|------|
 | **能力总览** | `../docs/CAPABILITIES.md` |
 | 行情数据 / MySQL 同步 | `../scripts/` |
-| 持仓 CSV | `../holdings/current.csv` |
+| 持仓 / 监控 | MySQL `portfolio_*` / `alert_rules`（`sync_portfolio_from_card`） |
 | 选股输出 | `../output/` |
 | DeepSeek 分析 | `../tushare_mcp.py` |
 
@@ -60,6 +58,13 @@ cd ../  # stock-ai 根目录
 # 或 launchd: ../launchd/com.user.stock-ai-daily-selection.plist
 ```
 
+**改执行卡后同步 MySQL**：
+
+```bash
+cd ../  # stock-ai 根目录
+uv run python -m scripts.tools.sync_portfolio_from_card
+```
+
 **持仓盘中监控**（交易时段每 5 分钟，触发才推微信）：
 
 ```bash
@@ -68,4 +73,4 @@ cd ../  # stock-ai 根目录
 uv run python -m scripts.monitor.monitor_holdings_alerts --force   # 试跑
 ```
 
-规则文件：`config/holdings_alerts.json`（与 `持仓执行卡.md` 同步）
+规则：MySQL `alert_rules`（由 `持仓执行卡.md` P0～P4 同步）

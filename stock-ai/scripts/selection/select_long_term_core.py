@@ -4,7 +4,7 @@
 长线底仓 + 短线做T 选股脚本 (v1.0)
 逻辑：
 1. 基础过滤：价格 5-50元，成交额 > 2亿 (活跃度保证)
-2. 基本面过滤 (通过 AkShare 实时补全)：ROE > 15%, PE < 15 (价值支撑)
+2. 基本面过滤 (通过 OpenCLI SOP 实时补全)：ROE > 15%, PE < 15 (价值支撑)
 3. 技术面过滤：股价在 MA20 之上，且趋势向上 (趋势保护)
 4. 股性过滤：日内平均振幅 > 3% (做T空间)
 """
@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 # 添加项目根目录到 Python 路径
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
-from core_v2.fetch_akshare_data import get_stock_fundamental
+from core_v2.fetch_opencli_sop import get_stock_fundamental
 
 load_dotenv()
 
@@ -70,7 +70,7 @@ def main():
     df_trending = df_active[df_active['ts_code'].isin(valid_codes)].copy()
     print(f"✓ 筛选出趋势向上标的 {len(df_trending)} 只")
 
-    # 3. 核心步骤：通过 AkShare 实时补全基本面数据 (ROE, PE)
+# 3. 核心步骤：通过 OpenCLI SOP 补全基本面数据 (ROE, PE)
     # 由于 API 调用频率限制，我们只分析前 50 只最活跃的
     top_n = 50
     df_target = df_trending.sort_values(by='amount', ascending=False).head(top_n)
@@ -81,7 +81,7 @@ def main():
     for _, row in tqdm(df_target.iterrows(), total=len(df_target)):
         code_6 = "".join(filter(str.isdigit, str(row['ts_code'])))[:6]
         try:
-            # 调用已有的 AkShare 封装函数
+            # 调用 OpenCLI SOP 封装函数
             fundamental = get_stock_fundamental(code_6)
             
             roe = fundamental.get('ROE')

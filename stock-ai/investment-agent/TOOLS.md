@@ -35,7 +35,7 @@ Things like:
 
 **本目录**：`/Users/yolo/dev/yolo/tools-workspace/stock-ai/investment-agent`
 **stock-ai 根目录**：`/Users/yolo/dev/yolo/tools-workspace/stock-ai`（行情脚本、MySQL、选股输出）
-**持仓 CSV**：`holdings.csv` → `../holdings/current.csv`
+**持仓 / 监控**：MySQL `portfolio_*` / `alert_rules`（改 `持仓执行卡.md` 后 `uv run python -m scripts.tools.sync_portfolio_from_card`）
 **QClaw 原工作区**：`~/.qclaw/workspace`（可用 `scripts/sync-from-qclaw.sh` 同步）
 
 ## OpenCLI Browser（浏览器自动化）
@@ -164,16 +164,25 @@ df = pro.daily(start_date='20260424', end_date='20260425')
 
 | 工具 | 用途 | 适用场景 | 不适用场景 |
 |------|------|---------|-----------|
-| **东财宏观快讯**（`fetch_eastmoney_macro_news.py`） | Playwright 抓取 7×24 财经快讯 | 每日宏观早报、定时推送 | 个股财务/筹码数据 |
+| **东财宏观快讯**（`fetch_eastmoney_macro_news.py`） | OpenCLI 抓取 7×24 财经快讯 | 每日宏观早报、定时推送 | 个股财务/筹码数据 |
 | **ProSearch**（online-search skill） | 关键词搜索新闻/事件/实时信息 | 查"为什么涨/跌"、事件原因补充 | 查个股财务/筹码数据 |
-| **opencli browser**（浏览器自动化） | JS渲染页面数据抓取 | 个股行情、财务数据、筹码分布、机构持仓 | 批量宏观快讯（用脚本） |
-| **东财API**（curl） | 轻量级实时行情 | 指数/个股实时价格、每日战报 | 需要财务/基本面数据 |
+| **opencli browser**（浏览器自动化） | 东财行情/K线/SOP/F10/快讯 | **所有东财数据采集（唯一入口）** | — |
 
 ### 东财宏观财经快讯 / 每日战报
 
 **命令与 launchd 调度** → [`../docs/CAPABILITIES.md`](../docs/CAPABILITIES.md) §2、§4。
 
-本机备忘：东财快讯 `uv run python -m scripts.tools.fetch_eastmoney_macro_news --limit 15`；数据源 `kuaixun.eastmoney.com` + 腾讯行情。
+本机备忘：东财快讯 `uv run python -m scripts.tools.fetch_eastmoney_macro_news --limit 15`；数据源 `kuaixun.eastmoney.com`（OpenCLI）。
+
+### 东财行情（OpenCLI，禁止 HTTP API 直联）
+
+```bash
+# 批量现价
+uv run python scripts/tools/fetch_eastmoney_quotes.py 600873 600995
+
+# 单股 SOP 8 维度
+uv run python scripts/analysis/eastmoney_sop_extract.py 600873 output/sop_preliminary/test
+```
 
 ### ProSearch（在线搜索）
 
@@ -190,18 +199,9 @@ node '<SCRIPT_PATH>/scripts/prosearch.cjs' --keyword="特朗普 访华 A股" --f
 node '<SCRIPT_PATH>/scripts/prosearch.cjs' --keyword="最新市场分析" --industry=news
 ```
 
-### 东财实时行情API（curl）
-
-```bash
-# 三大指数实时行情
-curl -s "https://push2.eastmoney.com/api/qt/list.np/get?fltt=2&secids=1.000001,0.399001,0.399006&fields=f2,f3,f4,f12,f14"
-
-# 个股实时行情（secids格式：1=沪市，0=深市）
-curl -s "https://push2.eastmoney.com/api/qt/list.np/get?fltt=2&secids=1.600995,0.003816,1.601985&fields=f2,f3,f4,f12,f14"
-```
-
 ### 工具选用原则
-- **宏观财经早报** → `fetch_eastmoney_macro_news.py`（东财 Playwright）
+- **宏观财经早报** → `fetch_eastmoney_macro_news.py`（OpenCLI）
+- **个股行情/K线/SOP** → `fetch_eastmoney_quotes.py`（OpenCLI）
 - **事件/原因类问题**（为什么涨/跌？）→ ProSearch 搜索（补充）
 - **个股基本面数据**（财务/筹码/机构）→ opencli 浏览器
 - **快速价格查询**（每日战报）→ 东财 API curl

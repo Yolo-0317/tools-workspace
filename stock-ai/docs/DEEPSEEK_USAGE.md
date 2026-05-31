@@ -71,7 +71,7 @@ export MYSQL_URL="mysql+pymysql://user:pass@localhost:3306/stock_data"
 
 ```bash
 # 先补齐历史日线
-uv run python scripts/ingest_eastmoney_daily_to_mysql.py --codes 159218,159840
+uv run python scripts/sync/sync_tushare_daily_to_mysql.py --mode by_date --days 30
 ```
 
 ## 使用方式

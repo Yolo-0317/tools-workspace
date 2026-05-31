@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from fetch_akshare_data import get_stock_fundamental
+from fetch_opencli_sop import get_stock_fundamental
 
 if __name__ == "__main__":
     code = "600873"

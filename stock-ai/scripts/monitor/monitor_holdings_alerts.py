@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""持仓盘中条件监控：读取 holdings_alerts.json，触发时推微信。"""
+"""持仓盘中条件监控：从 MySQL alert_rules 读取规则，触发时推微信。"""
 
 from __future__ import annotations
 
@@ -19,9 +19,6 @@ ensure_repo_root_on_path()
 from scripts.tools.fetch_eastmoney_quotes import EastmoneyQuote, fetch_quotes
 
 ROOT = Path(__file__).resolve().parents[2]
-AGENT_ROOT = ROOT / "investment-agent"
-DEFAULT_RULES = AGENT_ROOT / "config" / "holdings_alerts.json"
-SELECTION_RULES = AGENT_ROOT / "config" / "selection_watch_alerts.json"
 STATE_DIR = ROOT / "output" / "monitor_state"
 TZ = ZoneInfo("Asia/Shanghai")
 
@@ -58,17 +55,10 @@ def fetch_holdings_quotes(codes: list[str]) -> dict[str, Quote]:
     return {code: _to_quote(q) for code, q in em_quotes.items()}
 
 
-def _load_rules(path: Path) -> list[dict]:
-    data = json.loads(path.read_text(encoding="utf-8"))
-    return list(data.get("rules") or [])
-
-
 def _load_all_rules() -> list[dict]:
-    from scripts.tools.selection_watchlist import load_active_selection_rules
+    from scripts.tools.portfolio_db import load_all_monitor_rules
 
-    rules = _load_rules(DEFAULT_RULES)
-    rules.extend(load_active_selection_rules(SELECTION_RULES))
-    return rules
+    return load_all_monitor_rules(today=datetime.now(TZ).date())
 
 
 def _state_file(day: date) -> Path:
@@ -139,16 +129,17 @@ def push_wechat(text: str) -> None:
     send_wechat_acp_text(text)
 
 
-def run_once(*, rules_path: Path, push: bool, repeat: bool, force: bool) -> int:
+def run_once(*, push: bool, repeat: bool, force: bool) -> int:
     now = datetime.now(TZ)
     if not force and not _is_trading_time(now):
         print(f"非交易时段，跳过 ({now.strftime('%Y-%m-%d %H:%M')})")
         return 0
 
-    if rules_path.resolve() == DEFAULT_RULES.resolve():
-        rules = _load_all_rules()
-    else:
-        rules = _load_rules(rules_path)
+    rules = _load_all_rules()
+    if not rules:
+        print("❌ MySQL 无监控规则。请先运行 sync_portfolio_from_card", file=sys.stderr)
+        return 1
+
     codes = sorted({str(r["code"]).zfill(6) for r in rules})
     try:
         quotes = fetch_holdings_quotes(codes)
@@ -187,16 +178,11 @@ def run_once(*, rules_path: Path, push: bool, repeat: bool, force: bool) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="持仓盘中条件监控")
-    parser.add_argument("--rules", type=Path, default=DEFAULT_RULES)
+    parser = argparse.ArgumentParser(description="持仓盘中条件监控（MySQL alert_rules）")
     parser.add_argument("--push", action="store_true", help="触发时推微信")
     parser.add_argument("--repeat", action="store_true", help="允许同日重复推送同一规则")
     parser.add_argument("--force", action="store_true", help="忽略交易时段检查")
     args = parser.parse_args()
-
-    if not args.rules.exists():
-        print(f"❌ 规则文件不存在: {args.rules}", file=sys.stderr)
-        return 1
 
     if args.push:
         instance = os.getenv("WECHAT_ACP_INSTANCE", "tools-workspace")
@@ -205,12 +191,7 @@ def main() -> int:
             print(f"❌ 未找到 wechat-acp token: {token}", file=sys.stderr)
             return 1
 
-    return run_once(
-        rules_path=args.rules,
-        push=args.push,
-        repeat=args.repeat,
-        force=args.force,
-    )
+    return run_once(push=args.push, repeat=args.repeat, force=args.force)
 
 
 if __name__ == "__main__":

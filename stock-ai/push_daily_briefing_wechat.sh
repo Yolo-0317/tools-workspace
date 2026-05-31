@@ -1,5 +1,5 @@
 #!/bin/sh
-# 每日战报：东财 Playwright 宏观快讯 + 大盘/持仓 → 微信
+# 每日战报：东财 OpenCLI 宏观快讯 + 大盘/持仓 → 微信
 set -eu
 set -o pipefail
 
@@ -38,6 +38,10 @@ uv run python -m scripts.tools.daily_briefing_report \
 if [ ! -s "$OUT" ]; then
   echo "❌ 战报内容为空，生成可能失败" >&2
   exit 1
+fi
+
+if [ "$SLOT" = "15:00" ]; then
+  "${ROOT}/scripts/tools/run_portfolio_snapshot.sh" midday
 fi
 
 if [ "${FETCH_ONLY:-0}" = "1" ]; then

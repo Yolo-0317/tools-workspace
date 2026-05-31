@@ -17,6 +17,8 @@ import pandas as pd
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
+from datetime import date
+
 from scripts.tools.deepseek_client import is_llm_configured
 from scripts.tools.holdings_context import load_full_decision_context
 
@@ -50,12 +52,11 @@ def _load_names(engine, codes: list[str]) -> dict[str, str]:
 
 
 def _format_report(
-    csv_path: Path,
+    df: pd.DataFrame,
     trade_date: str,
     holdings_codes: set[str],
     names: dict[str, str],
 ) -> str:
-    df = pd.read_csv(csv_path)
     if "总分" in df.columns:
         df = df.sort_values(by=["总分", "标签数", "成交额(万)"], ascending=False)
 
@@ -79,15 +80,15 @@ def _format_report(
     return "\n".join(lines)
 
 
-def _run_ai_review(csv_path: Path, holdings_context: str) -> str:
+def _run_ai_review(trade_date: date, holdings_context: str) -> str:
     if not is_llm_configured():
         return "🤖 DeepSeek 审查 + 持仓建议\n（跳过：未配置 LLM；DEEPSEEK_API_KEY 或 LLM_BACKEND=cursor）"
     try:
         from scripts.analysis.ai_review_combined_top5 import review_combined_top5
 
         wechat, report_path = review_combined_top5(
-            csv_path,
             top_n=TOP_N,
+            trade_date=trade_date,
             holdings_context=holdings_context,
         )
         if report_path:
@@ -98,7 +99,7 @@ def _run_ai_review(csv_path: Path, holdings_context: str) -> str:
 
 
 def _run_sop_review(
-    csv_path: Path,
+    trade_date: date,
     holdings_context: str,
     holdings_codes: set[str],
     sop_workers: int,
@@ -110,8 +111,8 @@ def _run_sop_review(
         from scripts.analysis.sop_review_top5_concurrent import review_top5_sop_concurrent
 
         wechat, report_path, watch_metas = review_top5_sop_concurrent(
-            csv_path,
             top_n=TOP_N,
+            trade_date=trade_date,
             sop_workers=sop_workers,
             deepseek_workers=deepseek_workers,
             holdings_context=holdings_context,
@@ -135,7 +136,7 @@ def main() -> int:
         action="store_true",
         help="跳过东财 SOP（改用轻量 DeepSeek 简评，不推荐）",
     )
-    parser.add_argument("--sop-workers", type=int, default=3, help="Playwright 并发数")
+    parser.add_argument("--sop-workers", type=int, default=1, help="OpenCLI 单会话 SOP（参数保留兼容）")
     parser.add_argument("--deepseek-workers", type=int, default=3, help="DeepSeek 并发数")
     args = parser.parse_args()
 
@@ -150,28 +151,29 @@ def main() -> int:
 
     run_selection()
 
-    output_dir = ROOT / "output"
-    csv_files = sorted(output_dir.glob("stock_selection_combined_*.csv"))
-    if not csv_files:
-        print("❌ 选股完成但未找到输出 CSV")
+    from scripts.tools.selection_results import resolve_selection_df, trade_date_to_str
+
+    try:
+        trade_date, df, source = resolve_selection_df()
+    except FileNotFoundError as exc:
+        print(f"❌ {exc}")
         return 1
 
-    csv_path = csv_files[-1]
-    trade_date = csv_path.stem.replace("stock_selection_combined_", "")
+    trade_date_str = trade_date_to_str(trade_date)
+    print(f"📂 选股数据源: {source}", file=sys.stderr)
 
     holdings_codes, decision_context = load_full_decision_context()
-    df = pd.read_csv(csv_path)
     top_codes = [str(c).zfill(6) for c in df.head(TOP_N)["代码"].astype(str).tolist()]
     engine = create_engine(os.environ["MYSQL_URL"])
     names = _load_names(engine, top_codes)
 
-    sections = [_format_report(csv_path, trade_date, holdings_codes, names), ""]
+    sections = [_format_report(df, trade_date_str, holdings_codes, names), ""]
 
     if args.no_sop:
-        ai_block = _run_ai_review(csv_path, decision_context)
+        ai_block = _run_ai_review(trade_date, decision_context)
     else:
         ai_block = _run_sop_review(
-            csv_path,
+            trade_date,
             decision_context,
             holdings_codes,
             sop_workers=args.sop_workers,
