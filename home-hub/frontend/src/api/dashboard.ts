@@ -8,49 +8,36 @@ import type {
   PortfolioHistory,
   PositionRow,
   SelectionHistory,
+  SelectionKline,
 } from '../types/dashboard'
-
-const API_BASE = import.meta.env.VITE_API_BASE ?? ''
-const HUB_TOKEN = import.meta.env.VITE_HUB_TOKEN ?? ''
-
-function headers(): HeadersInit {
-  const h: Record<string, string> = {}
-  if (HUB_TOKEN) h['X-Hub-Token'] = HUB_TOKEN
-  return h
-}
-
-async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, { headers: headers() })
-  if (!res.ok) throw new Error(await res.text())
-  return res.json() as Promise<T>
-}
+import { apiJson } from './http'
 
 export function fetchDashboardSummary(slot = 'eod'): Promise<DashboardPayload> {
-  return getJson(`/api/dashboard/summary?slot=${encodeURIComponent(slot)}`)
+  return apiJson(`/api/dashboard/summary?slot=${encodeURIComponent(slot)}`)
 }
 
 export function fetchDiscipline() {
-  return getJson<DisciplinePayload>('/api/dashboard/discipline')
+  return apiJson<DisciplinePayload>('/api/dashboard/discipline')
 }
 
 export function fetchPortfolioHistory(days = 90, slot = 'eod') {
-  return getJson<PortfolioHistory>(
+  return apiJson<PortfolioHistory>(
     `/api/dashboard/portfolio/history?days=${days}&slot=${encodeURIComponent(slot)}`,
   )
 }
 
 export function fetchPortfolioSnapshot(date: string, slot = 'eod') {
-  return getJson<{ snapshot_date: string; positions: PositionRow[] }>(
+  return apiJson<{ snapshot_date: string; positions: PositionRow[] }>(
     `/api/dashboard/portfolio/snapshot?date=${encodeURIComponent(date)}&slot=${encodeURIComponent(slot)}`,
   )
 }
 
 export function fetchSelectionStrategies() {
-  return getJson<{ strategies: string[] }>('/api/dashboard/selection/strategies')
+  return apiJson<{ strategies: string[] }>('/api/dashboard/selection/strategies')
 }
 
 export function fetchPortfolioCurrent() {
-  return getJson<{
+  return apiJson<{
     account: Record<string, unknown>
     positions: Record<string, unknown>[]
     alert_rules: MonitorRule[]
@@ -58,38 +45,48 @@ export function fetchPortfolioCurrent() {
 }
 
 export function fetchMonitorRules() {
-  return getJson<{ rules: MonitorRule[] }>('/api/dashboard/monitor/rules')
+  return apiJson<{ rules: MonitorRule[] }>('/api/dashboard/monitor/rules')
 }
 
 export function fetchMonitorState(date?: string) {
   const q = date ? `?date=${encodeURIComponent(date)}` : ''
-  return getJson<MonitorState>(`/api/dashboard/monitor/state${q}`)
+  return apiJson<MonitorState>(`/api/dashboard/monitor/state${q}`)
 }
 
 export function fetchMonitorDates(limit = 90) {
-  return getJson<{ dates: MonitorHistoryDay[] }>(
+  return apiJson<{ dates: MonitorHistoryDay[] }>(
     `/api/dashboard/monitor/dates?limit=${limit}`,
   )
 }
 
 export function fetchSelectionDates(strategy = 'combined') {
-  return getJson<{ strategy: string; dates: string[] }>(
+  return apiJson<{ strategy: string; dates: string[] }>(
     `/api/dashboard/selection/dates?strategy=${encodeURIComponent(strategy)}`,
   )
 }
 
 export function fetchSelectionHistory(tradeDate: string, strategy = 'combined') {
-  return getJson<SelectionHistory>(
+  return apiJson<SelectionHistory>(
     `/api/dashboard/selection?trade_date=${encodeURIComponent(tradeDate)}&strategy=${encodeURIComponent(strategy)}`,
   )
 }
 
+export function fetchSelectionKline(
+  code: string,
+  tradeDate: string,
+  days = 60,
+) {
+  return apiJson<SelectionKline>(
+    `/api/dashboard/selection/kline?code=${encodeURIComponent(code)}&trade_date=${encodeURIComponent(tradeDate)}&days=${days}`,
+  )
+}
+
 export function fetchSnapshotAlerts(limit = 30) {
-  return getJson<{ lines: string[] }>(`/api/dashboard/alerts/snapshot?limit=${limit}`)
+  return apiJson<{ lines: string[] }>(`/api/dashboard/alerts/snapshot?limit=${limit}`)
 }
 
 export function fetchJobs() {
-  return getJson<{ jobs: LaunchdJob[] }>('/api/dashboard/jobs')
+  return apiJson<{ jobs: LaunchdJob[] }>('/api/dashboard/jobs')
 }
 
 export function fmtNum(v: unknown, digits = 2): string {

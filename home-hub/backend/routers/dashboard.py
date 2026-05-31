@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
-from backend.services import stock_bridge
+from backend.services import hub_auth, stock_bridge
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
@@ -89,13 +89,33 @@ async def selection_dates(strategy: str = "combined") -> dict[str, Any]:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
+@router.get("/selection/kline")
+async def selection_kline(
+    code: str,
+    trade_date: str,
+    days: int = 60,
+) -> dict[str, Any]:
+    try:
+        return stock_bridge.load_selection_kline(
+            code,
+            trade_date,
+            days=min(max(days, 5), 250),
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
 @router.get("/selection")
 async def selection_history(
+    request: Request,
     trade_date: str,
     strategy: str = "combined",
 ) -> dict[str, Any]:
     try:
-        return stock_bridge.load_selection_history(trade_date, strategy=strategy)
+        payload = stock_bridge.load_selection_history(trade_date, strategy=strategy)
+        if getattr(request.state, "hub_role", "admin") == "share":
+            return hub_auth.sanitize_selection_payload(payload)
+        return payload
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 

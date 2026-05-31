@@ -11,14 +11,16 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.config import ROOT, settings
-from backend.routers import chat, dashboard, services
-from backend.services import chat_store
+from backend.routers import auth, chat, dashboard, services
+from backend.services import chat_store, hub_auth, session_store
 from backend.services.chat_agent import chat_agent_service
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     chat_store.init_db()
+    session_store.init_db()
+    session_store.purge_expired()
     await chat_agent_service.startup()
     yield
     await chat_agent_service.shutdown()
@@ -35,16 +37,44 @@ app.add_middleware(
 )
 
 
-@app.middleware("http")
-async def optional_api_token(request: Request, call_next):
-    token = settings.api_token
-    if token and request.url.path.startswith("/api/"):
+def _resolve_request_identity(request: Request) -> tuple[str | None, str | None]:
+    """返回 (username, role)。"""
+    if settings.api_token:
         header = request.headers.get("X-Hub-Token", "")
-        if header != token:
-            return JSONResponse(status_code=401, content={"detail": "未授权"})
+        if header == settings.api_token:
+            return "api-token", "admin"
+
+    if not settings.require_auth:
+        return None, "admin"
+
+    token = request.cookies.get(hub_auth.SESSION_COOKIE, "")
+    session = session_store.get_session(token)
+    if not session:
+        return None, None
+    return session["username"], session["role"]
+
+
+@app.middleware("http")
+async def hub_session_auth(request: Request, call_next):
+    username, role = _resolve_request_identity(request)
+    request.state.hub_user = username
+    request.state.hub_role = role
+
+    path = request.url.path
+    if path.startswith("/api/"):
+        if not hub_auth.public_api_allowed(path):
+            if role is None:
+                return JSONResponse(status_code=401, content={"detail": "未登录"})
+            if role == "share" and not hub_auth.share_api_allowed(path, request.method):
+                return JSONResponse(
+                    status_code=403,
+                    content={"detail": "分享账号仅可查看选股数据"},
+                )
+
     return await call_next(request)
 
 
+app.include_router(auth.router)
 app.include_router(chat.router)
 app.include_router(dashboard.router)
 app.include_router(services.router)
@@ -56,6 +86,7 @@ FRONTEND_DIST = ROOT / "frontend" / "dist"
 async def health():
     return {
         "ok": True,
+        "auth_required": settings.require_auth,
         "chat": chat_agent_service.health(),
     }
 
@@ -69,5 +100,8 @@ if FRONTEND_DIST.is_dir():
             return JSONResponse(status_code=404, content={"detail": "Not Found"})
         index = FRONTEND_DIST / "index.html"
         if index.is_file():
-            return FileResponse(index)
+            return FileResponse(
+                index,
+                headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+            )
         return JSONResponse(status_code=404, content={"detail": "frontend not built"})

@@ -5,20 +5,33 @@ defineProps<{
   sessions: ChatSession[]
   activeId: string | null
   health: ChatHealth | null
+  compact?: boolean
 }>()
 
 const emit = defineEmits<{
   select: [id: string]
   new: []
   delete: [id: string]
+  close: []
 }>()
 </script>
 
 <template>
-  <aside class="sidebar">
+  <aside class="sidebar" :class="{ compact }">
     <div class="brand">
-      <strong>Home Hub</strong>
-      <button type="button" class="new-btn" @click="emit('new')">新对话</button>
+      <strong>{{ compact ? '对话列表' : 'Home Hub' }}</strong>
+      <div class="brand-actions">
+        <button type="button" class="new-btn" @click="emit('new')">新对话</button>
+        <button
+          v-if="compact"
+          type="button"
+          class="close-btn"
+          aria-label="关闭"
+          @click="emit('close')"
+        >
+          ×
+        </button>
+      </div>
     </div>
 
     <ul class="session-list">
@@ -53,17 +66,26 @@ const emit = defineEmits<{
 .sidebar {
   display: flex;
   flex-direction: column;
+  height: 100%;
+  min-height: 0;
   border-right: 1px solid #243041;
   background: #0b1016;
-  min-height: calc(100vh - 52px);
 }
 
 .brand {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   padding: 16px;
   border-bottom: 1px solid #243041;
+}
+
+.brand-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .new-btn {
@@ -74,6 +96,24 @@ const emit = defineEmits<{
   padding: 6px 10px;
   cursor: pointer;
   font-size: 12px;
+  white-space: nowrap;
+}
+
+.close-btn {
+  border: none;
+  background: transparent;
+  color: #8b9cb3;
+  font-size: 26px;
+  line-height: 1;
+  min-width: 36px;
+  min-height: 36px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.close-btn:hover {
+  background: #152033;
+  color: #dbe7ff;
 }
 
 .session-list {
@@ -81,7 +121,10 @@ const emit = defineEmits<{
   margin: 0;
   padding: 8px;
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .session-list li {
@@ -106,6 +149,7 @@ const emit = defineEmits<{
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .title {
@@ -124,16 +168,22 @@ const emit = defineEmits<{
   border: none;
   background: transparent;
   color: #7d8ea8;
-  font-size: 18px;
+  font-size: 20px;
+  line-height: 1;
   cursor: pointer;
-  padding: 0 8px;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 8px;
+  align-self: center;
 }
 
 .del-btn:hover {
   color: #ff8f8f;
+  background: rgba(255, 143, 143, 0.08);
 }
 
 .sidebar-foot {
+  flex-shrink: 0;
   padding: 12px 16px;
   border-top: 1px solid #243041;
   font-size: 11px;
@@ -142,5 +192,9 @@ const emit = defineEmits<{
 
 .sidebar-foot p {
   margin: 0 0 4px;
+}
+
+.sidebar.compact .brand {
+  padding-top: max(16px, env(safe-area-inset-top));
 }
 </style>

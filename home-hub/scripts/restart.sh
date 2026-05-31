@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 LABEL="com.user.home-hub"
-UID="$(id -u)"
+LAUNCHD_UID="$(id -u)"
 
 do_build() {
   echo "[restart] 构建前端…" >&2
@@ -21,8 +21,8 @@ case "${1:-}" in
     ;;
 esac
 
-if launchctl print "gui/${UID}/${LABEL}" &>/dev/null; then
-  launchctl kickstart -k "gui/${UID}/${LABEL}"
+if launchctl print "gui/${LAUNCHD_UID}/${LABEL}" &>/dev/null; then
+  launchctl kickstart -k "gui/${LAUNCHD_UID}/${LABEL}"
   echo "[restart] 已重启 ${LABEL} → http://127.0.0.1:${HUB_PORT:-8780}"
 else
   echo "[restart] launchd 未安装，执行: ./scripts/install-launchd.sh" >&2

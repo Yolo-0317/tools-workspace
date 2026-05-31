@@ -2,6 +2,15 @@
 
 个人运维与投资看板：**Vue 3** 前端 + FastAPI 后端，**单服务** `127.0.0.1:8780`（launchd 登录自启）。
 
+## 导航结构
+
+| 分组 | 页面 |
+|------|------|
+| **投资** | 总览、持仓、选股、监控 |
+| **系统** | 任务、服务、聊天 |
+
+H5 底部：**投资**（展开子菜单）｜**聊天**｜**更多**（任务、服务）。桌面顶栏：**投资** 下拉 + 任务 / 服务 / 聊天。
+
 ## 模块
 
 | 页面 | 路径 | 数据 |
@@ -45,17 +54,24 @@ cd frontend && npm install && npm run build
    ./scripts/issue-certs.sh
    ```
 
-2. **Basic Auth**  
+2. **登录账号**（在 `home-hub/.env` 配置，Caddy 仅反代不再做 Basic Auth）  
    ```bash
-   export HUB_BASIC_AUTH_USER=hub
-   export HUB_BASIC_AUTH_PASSWORD='你的强密码'
-   ./scripts/setup-home-hub-auth.sh
-   docker compose restart caddy
+   HUB_REQUIRE_AUTH=1
+   HUB_ADMIN_USER=admin
+   HUB_ADMIN_PASSWORD='管理员密码'
+   HUB_SHARE_USER=share
+   HUB_SHARE_PASSWORD='分享密码'
+   # 公网 HTTPS 建议开启 Secure Cookie
+   HUB_SESSION_COOKIE_SECURE=1
    ```
 
-3. 访问：`https://hub.yoloworld.site:8883`（外网端口见 sidestore `.env`）
+   改 `.env` 后：`cd home-hub && ./scripts/restart.sh`
 
-由 Caddy 反代 `127.0.0.1:8780` + Basic Auth。
+3. 访问 `https://hub.yoloworld.site:8883` → 登录页  
+   - **admin**：全部页面与 API  
+   - **share**：仅 `/selection`（选股 + K 线 + SOP，无持仓标记）
+
+由 Caddy 反代 `127.0.0.1:8780`；鉴权由 Home Hub 会话 Cookie 负责。
 
 ## API
 
@@ -65,5 +81,5 @@ cd frontend && npm install && npm run build
 
 详见 [docs/chat-design.md](docs/chat-design.md)、[TOOLS.md](TOOLS.md)
 
-**聊天**：本机 `agent login` 后可用（与 wechat-acp 相同，模型 `auto`）。  
+**聊天**：本机 `agent login` 后可用（`agent acp`，同 wechat-acp）。  
 **页面测试**：一律用 OpenCLI（见 TOOLS.md），打开 `http://127.0.0.1:8780`。

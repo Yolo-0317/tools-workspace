@@ -4,57 +4,46 @@ import type {
   ChatSession,
   StreamHandlers,
 } from '../types/chat'
-
-const API_BASE = import.meta.env.VITE_API_BASE ?? ''
-const HUB_TOKEN = import.meta.env.VITE_HUB_TOKEN ?? ''
-
-function headers(): HeadersInit {
-  const h: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Accept: 'text/event-stream',
-  }
-  if (HUB_TOKEN) h['X-Hub-Token'] = HUB_TOKEN
-  return h
-}
+import { apiFetch, apiHeaders } from './http'
 
 export async function fetchHealth(): Promise<ChatHealth> {
-  const res = await fetch(`${API_BASE}/api/chat/health`, { headers: headers() })
-  if (!res.ok) throw new Error(await res.text())
-  return res.json()
+  return apiFetch('/api/chat/health', { headers: apiHeaders({ Accept: 'application/json' }) }).then(
+    async (res) => {
+      if (!res.ok) throw new Error(await res.text())
+      return res.json()
+    },
+  )
 }
 
 export async function listSessions(): Promise<ChatSession[]> {
-  const res = await fetch(`${API_BASE}/api/chat/sessions`, { headers: headers() })
-  if (!res.ok) throw new Error(await res.text())
-  const data = await res.json()
+  const data = await apiFetch('/api/chat/sessions').then(async (res) => {
+    if (!res.ok) throw new Error(await res.text())
+    return res.json()
+  })
   return data.sessions as ChatSession[]
 }
 
 export async function createSession(title = '新对话'): Promise<ChatSession> {
-  const res = await fetch(`${API_BASE}/api/chat/sessions`, {
+  const data = await apiFetch('/api/chat/sessions', {
     method: 'POST',
-    headers: headers(),
     body: JSON.stringify({ title }),
+  }).then(async (res) => {
+    if (!res.ok) throw new Error(await res.text())
+    return res.json()
   })
-  if (!res.ok) throw new Error(await res.text())
-  const data = await res.json()
   return data.session as ChatSession
 }
 
 export async function deleteSession(sessionId: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/api/chat/sessions/${sessionId}`, {
-    method: 'DELETE',
-    headers: headers(),
-  })
+  const res = await apiFetch(`/api/chat/sessions/${sessionId}`, { method: 'DELETE' })
   if (!res.ok) throw new Error(await res.text())
 }
 
 export async function listMessages(sessionId: string): Promise<ChatMessage[]> {
-  const res = await fetch(`${API_BASE}/api/chat/sessions/${sessionId}/messages`, {
-    headers: headers(),
+  const data = await apiFetch(`/api/chat/sessions/${sessionId}/messages`).then(async (res) => {
+    if (!res.ok) throw new Error(await res.text())
+    return res.json()
   })
-  if (!res.ok) throw new Error(await res.text())
-  const data = await res.json()
   return data.messages as ChatMessage[]
 }
 
@@ -65,9 +54,9 @@ export async function streamMessage(
   handlers: StreamHandlers,
   signal?: AbortSignal,
 ): Promise<void> {
-  const res = await fetch(`${API_BASE}/api/chat/sessions/${sessionId}/messages`, {
+  const res = await apiFetch(`/api/chat/sessions/${sessionId}/messages`, {
     method: 'POST',
-    headers: headers(),
+    headers: apiHeaders({ Accept: 'text/event-stream' }),
     body: JSON.stringify({ content }),
     signal,
   })

@@ -959,6 +959,367 @@ def load_selection_daily_results(
     return resolved, enrich_selection_row_names(out, engine=engine)
 
 
+def _profile_row_from_dict(item: dict[str, Any]) -> dict[str, Any]:
+    code = str(item.get("ts_code") or item.get("code") or "").split(".")[0].zfill(6)
+    concepts = item.get("concepts")
+    if isinstance(concepts, str):
+        try:
+            concepts = json.loads(concepts)
+        except json.JSONDecodeError:
+            concepts = [c.strip() for c in concepts.split(",") if c.strip()]
+    if not isinstance(concepts, list):
+        concepts = []
+    return {
+        "code": code,
+        "name": (item.get("name") or "").strip() or None,
+        "industry": ((item.get("industry") or item.get("所属行业") or "").strip() or None)[:128]
+        if (item.get("industry") or item.get("所属行业"))
+        else None,
+        "concepts": [str(c).strip() for c in concepts if str(c).strip()],
+        "profile_text": (item.get("profile_text") or item.get("公司简介") or "").strip() or None,
+        "info_text": (item.get("info_text") or "").strip() or None,
+        "sectors_text": (item.get("sectors_text") or "").strip() or None,
+        "source": (item.get("source") or "eastmoney-opencli").strip() or "eastmoney-opencli",
+    }
+
+
+def upsert_stock_profiles(
+    profiles: list[dict[str, Any]],
+    *,
+    engine: Engine | None = None,
+) -> int:
+    engine = engine or get_engine()
+    if engine is None:
+        raise RuntimeError("未配置 MYSQL_URL，无法写入 stock_profile")
+    if not profiles:
+        return 0
+
+    n = 0
+    with engine.begin() as conn:
+        for raw in profiles:
+            row = _profile_row_from_dict(raw)
+            code = row["code"]
+            if not re.fullmatch(r"\d{6}", code):
+                continue
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO stock_profile
+                      (ts_code, name, industry, concepts, profile_text, info_text, sectors_text, source)
+                    VALUES
+                      (:code, :name, :industry, :concepts, :profile_text, :info_text, :sectors_text, :source)
+                    ON DUPLICATE KEY UPDATE
+                      name = VALUES(name),
+                      industry = COALESCE(VALUES(industry), industry),
+                      concepts = COALESCE(VALUES(concepts), concepts),
+                      profile_text = COALESCE(VALUES(profile_text), profile_text),
+                      info_text = COALESCE(VALUES(info_text), info_text),
+                      sectors_text = COALESCE(VALUES(sectors_text), sectors_text),
+                      source = VALUES(source),
+                      updated_at = CURRENT_TIMESTAMP
+                    """
+                ),
+                {
+                    "code": code,
+                    "name": row["name"],
+                    "industry": row["industry"],
+                    "concepts": json.dumps(row["concepts"], ensure_ascii=False)
+                    if row["concepts"]
+                    else None,
+                    "profile_text": row["profile_text"],
+                    "info_text": row["info_text"],
+                    "sectors_text": row["sectors_text"],
+                    "source": row["source"],
+                },
+            )
+            n += 1
+    return n
+
+
+def load_stock_profiles_by_codes(
+    codes: list[str],
+    *,
+    engine: Engine | None = None,
+) -> dict[str, dict[str, Any]]:
+    engine = engine or get_engine()
+    if engine is None or not codes:
+        return {}
+
+    uniq = [
+        str(c).split(".")[0].zfill(6)
+        for c in dict.fromkeys(str(c).split(".")[0].zfill(6) for c in codes)
+    ]
+    placeholders = ", ".join(f":c{i}" for i in range(len(uniq)))
+    params = {f"c{i}": c for i, c in enumerate(uniq)}
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    f"""
+                    SELECT ts_code, name, industry, concepts, profile_text, info_text, sectors_text, source, updated_at
+                    FROM stock_profile
+                    WHERE ts_code IN ({placeholders})
+                    """
+                ),
+                params,
+            ).fetchall()
+    except Exception:
+        return {}
+
+    out: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        code = str(row.ts_code).zfill(6)
+        concepts = row.concepts
+        if isinstance(concepts, str):
+            try:
+                concepts = json.loads(concepts)
+            except json.JSONDecodeError:
+                concepts = []
+        out[code] = {
+            "ts_code": code,
+            "name": row.name,
+            "industry": row.industry,
+            "concepts": concepts or [],
+            "profile_text": row.profile_text,
+            "info_text": row.info_text,
+            "sectors_text": row.sectors_text,
+            "source": row.source,
+            "updated_at": str(row.updated_at) if row.updated_at else None,
+        }
+    return out
+
+
+def merge_profile_fields_into_selection_row(
+    row: dict[str, Any],
+    profile: dict[str, Any],
+) -> dict[str, Any]:
+    merged = dict(row)
+    industry = profile.get("industry")
+    if industry:
+        merged["所属行业"] = industry
+    concepts = profile.get("concepts") or []
+    if concepts:
+        merged["概念板块"] = concepts
+        merged["概念板块文本"] = "、".join(str(c) for c in concepts)
+    profile_text = profile.get("profile_text")
+    if profile_text:
+        merged["公司简介"] = profile_text
+    if profile.get("name") and not merged.get("名称"):
+        merged["名称"] = profile["name"]
+    merged["档案来源"] = profile.get("source") or "eastmoney-opencli"
+    return merged
+
+
+def patch_selection_daily_profiles(
+    trade_date: date | str,
+    profiles_by_code: dict[str, dict[str, Any]],
+    *,
+    strategy: str = "combined",
+    engine: Engine | None = None,
+) -> int:
+    """将档案字段写回 selection_daily_results.raw_json（按 ts_code 匹配）。"""
+    engine = engine or get_engine()
+    if engine is None:
+        raise RuntimeError("未配置 MYSQL_URL，无法更新 selection_daily_results")
+    if not profiles_by_code:
+        return 0
+
+    td = _parse_selection_trade_date(trade_date)
+    strat = (strategy or "combined").strip() or "combined"
+    updated = 0
+    with engine.begin() as conn:
+        rows = conn.execute(
+            text(
+                """
+                SELECT ts_code, raw_json
+                FROM selection_daily_results
+                WHERE trade_date = :d AND strategy = :s
+                ORDER BY rank_no
+                """
+            ),
+            {"d": td.isoformat(), "s": strat},
+        ).fetchall()
+        for row in rows:
+            code = str(row.ts_code).zfill(6)
+            profile = profiles_by_code.get(code)
+            if not profile:
+                continue
+            raw = row.raw_json
+            if isinstance(raw, str):
+                raw = json.loads(raw)
+            if not isinstance(raw, dict):
+                continue
+            merged = merge_profile_fields_into_selection_row(raw, profile)
+            conn.execute(
+                text(
+                    """
+                    UPDATE selection_daily_results
+                    SET raw_json = :raw
+                    WHERE trade_date = :d AND strategy = :s AND ts_code = :code
+                    """
+                ),
+                {
+                    "raw": json.dumps(merged, ensure_ascii=False),
+                    "d": td.isoformat(),
+                    "s": strat,
+                    "code": code,
+                },
+            )
+            updated += 1
+    return updated
+
+
+def enrich_selection_profiles_for_date(
+    trade_date: date | str | None = None,
+    *,
+    strategy: str = "combined",
+    profiles_by_code: dict[str, dict[str, Any]] | None = None,
+    engine: Engine | None = None,
+) -> dict[str, Any]:
+    """upsert stock_profile + 回写当日 selection raw_json。"""
+    engine = engine or get_engine()
+    td, rows = load_selection_daily_results(trade_date, strategy=strategy, engine=engine)
+    if td is None or not rows:
+        return {"trade_date": None, "codes": [], "upserted": 0, "patched": 0}
+
+    if profiles_by_code is None:
+        return {
+            "trade_date": td.isoformat(),
+            "codes": [_selection_row_code(r) for r in rows],
+            "upserted": 0,
+            "patched": 0,
+            "error": "profiles_by_code required",
+        }
+
+    profile_rows = list(profiles_by_code.values())
+    upserted = upsert_stock_profiles(profile_rows, engine=engine)
+    patched = patch_selection_daily_profiles(td, profiles_by_code, strategy=strategy, engine=engine)
+    return {
+        "trade_date": td.isoformat(),
+        "codes": sorted(profiles_by_code.keys()),
+        "upserted": upserted,
+        "patched": patched,
+    }
+
+
+def _best_ts_code_for_daily(code6: str, *, engine: Engine) -> str:
+    """stock_daily 存在 6 位与 .SH/.SZ 两套 ts_code 时，取最新交易日更靠后的一套。"""
+    seen: set[str] = set()
+    candidates: list[str] = []
+    for cand in (code6, _to_ts_code(code6)):
+        if cand not in seen:
+            seen.add(cand)
+            candidates.append(cand)
+    best = code6
+    best_max: date | None = None
+    with engine.connect() as conn:
+        for cand in candidates:
+            mx = conn.execute(
+                text("SELECT MAX(trade_date) FROM stock_daily WHERE ts_code = :c"),
+                {"c": cand},
+            ).scalar()
+            if mx is None:
+                continue
+            if isinstance(mx, str):
+                mx_d = datetime.fromisoformat(mx[:10]).date()
+            elif isinstance(mx, date):
+                mx_d = mx
+            else:
+                mx_d = datetime.fromisoformat(str(mx)[:10]).date()
+            if best_max is None or mx_d > best_max:
+                best_max = mx_d
+                best = cand
+    return best
+
+
+def load_stock_daily_bars(
+    code: str,
+    *,
+    end_date: date | str | None = None,
+    limit: int = 60,
+    engine: Engine | None = None,
+) -> list[dict[str, Any]]:
+    """MySQL stock_daily 日线 K 线（按交易日升序）。"""
+    engine = engine or get_engine()
+    if engine is None:
+        return []
+
+    ts = _code6(code)
+    if not re.fullmatch(r"\d{6}", ts):
+        return []
+
+    n = max(5, min(int(limit), 250))
+    end_d = _parse_selection_trade_date(end_date) if end_date else None
+    ts_key = _best_ts_code_for_daily(ts, engine=engine)
+    sql = """
+        SELECT trade_date, open, high, low, close, pct_chg, vol, amount
+        FROM stock_daily
+        WHERE ts_code = :code
+    """
+    params: dict[str, Any] = {"code": ts_key, "n": n}
+    if end_d is not None:
+        sql += " AND trade_date <= :end"
+        params["end"] = end_d.isoformat()
+    sql += " ORDER BY trade_date DESC LIMIT :n"
+
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(text(sql), params).fetchall()
+    except Exception:
+        return []
+
+    bars: list[dict[str, Any]] = []
+    for row in reversed(rows):
+        td = row.trade_date
+        if isinstance(td, date):
+            td_str = td.isoformat()
+        else:
+            td_str = str(td)[:10]
+        bars.append(
+            {
+                "trade_date": td_str,
+                "open": float(row.open) if row.open is not None else None,
+                "high": float(row.high) if row.high is not None else None,
+                "low": float(row.low) if row.low is not None else None,
+                "close": float(row.close) if row.close is not None else None,
+                "pct_chg": float(row.pct_chg) if row.pct_chg is not None else None,
+                "vol": int(row.vol) if row.vol is not None else None,
+                "amount": float(row.amount) if row.amount is not None else None,
+            }
+        )
+    return bars
+
+
+def latest_stock_daily_trade_date(*, engine: Engine | None = None) -> date | None:
+    """stock_daily 全市场最新交易日。"""
+    engine = engine or get_engine()
+    if engine is None:
+        return None
+    try:
+        with engine.connect() as conn:
+            value = conn.execute(text("SELECT MAX(trade_date) FROM stock_daily")).scalar()
+    except Exception:
+        return None
+    if value is None:
+        return None
+    if isinstance(value, date):
+        return value
+    return datetime.fromisoformat(str(value)[:10]).date()
+
+
+def resolve_selection_kline_end_date(
+    selection_trade_date: date | str,
+    *,
+    engine: Engine | None = None,
+) -> date:
+    """选股 K 线截止日：至少覆盖选股日，并延伸至已同步的最新交易日。"""
+    sel_d = _parse_selection_trade_date(selection_trade_date)
+    latest = latest_stock_daily_trade_date(engine=engine)
+    if latest is not None and latest > sel_d:
+        return latest
+    return sel_d
+
+
 def _snapshot_date(value: date | str | None = None) -> date:
     if value is None:
         from zoneinfo import ZoneInfo

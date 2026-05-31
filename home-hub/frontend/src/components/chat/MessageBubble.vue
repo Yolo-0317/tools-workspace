@@ -22,6 +22,39 @@ defineProps<{
   background: #121820;
 }
 
+@media (max-width: 768px) {
+  .bubble {
+    max-width: 88%;
+    padding: 10px 12px;
+    border-radius: 16px;
+  }
+
+  .bubble.user header,
+  .bubble.assistant header {
+    display: none;
+  }
+
+  .bubble.user {
+    max-width: 84%;
+    border-bottom-right-radius: 6px;
+  }
+
+  .bubble.assistant {
+    max-width: 92%;
+    border-bottom-left-radius: 6px;
+  }
+
+  .bubble.system header {
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .content {
+    font-size: 15px;
+    line-height: 1.6;
+  }
+}
+
 .bubble.user {
   align-self: flex-end;
   background: #1a2740;

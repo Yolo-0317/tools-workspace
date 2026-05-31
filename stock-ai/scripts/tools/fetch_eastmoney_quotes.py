@@ -979,6 +979,223 @@ def fetch_technical_summary_opencli(code: str, *, limit: int = 60) -> str:
     return technical_summary_from_kline_rows(rows)
 
 
+@dataclass
+class SelectionProfileSnapshot:
+    code: str
+    name: str
+    industry: str | None
+    concepts: list[str]
+    profile_text: str
+    info_text: str
+    sectors_text: str
+
+
+def parse_industry_from_info(info_text: str) -> str | None:
+    for label in ("所属行业", "行业", "行业分类", "板块"):
+        value = _parse_label_value(info_text or "", label)
+        if value:
+            cleaned = re.split(r"[\s/|]+", value.strip())[0]
+            if cleaned and cleaned not in {"-", "--"}:
+                return cleaned
+    return None
+
+
+def parse_industry_from_sectors(sectors_text: str) -> str | None:
+    text = (sectors_text or "").strip()
+    if not text:
+        return None
+
+    highlight = text
+    start = text.find("题材亮点")
+    if start >= 0:
+        end_candidates = [
+            text.find("题材详情", start),
+            text.find("所属板块", start),
+            text.find("概念题材", start + 8),
+        ]
+        end = min((e for e in end_candidates if e > start), default=start + 600)
+        highlight = text[start:end]
+
+    m = re.search(r"行业背景\s*([^\n]+)", highlight)
+    if m:
+        raw = m.group(1).strip().strip("：:")
+        if 2 <= len(raw) <= 80:
+            first = raw.split(",")[0].strip()
+            if first and first not in {"-", "--"}:
+                return first
+
+    block_idx = text.find("所属板块")
+    if block_idx >= 0:
+        block = text[block_idx : block_idx + 240]
+        for level in ("三级", "二级", "一级"):
+            m2 = re.search(rf"{level}\s*\n\s*([^\n]+)", block)
+            if m2:
+                val = m2.group(1).strip()
+                if 2 <= len(val) <= 32 and val not in {"所属板块", "地区"}:
+                    return val
+    return None
+
+
+def parse_concepts_from_sectors(sectors_text: str) -> list[str]:
+    text = (sectors_text or "").strip()
+    if not text:
+        return []
+
+    concepts: list[str] = []
+    seen: set[str] = set()
+    noise = {
+        "概念题材",
+        "题材",
+        "题材亮点",
+        "题材详情",
+        "入选理由",
+        "人气龙头",
+        "所属板块",
+        "一级",
+        "二级",
+        "三级",
+        "地区",
+    }
+
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line in noise:
+            continue
+        m = re.match(r"^(.+?)\s+[-+]?\d+(?:\.\d+)?%$", line)
+        if not m:
+            continue
+        name = m.group(1).strip()
+        if len(name) < 2 or len(name) > 20:
+            continue
+        if name in seen or name in noise:
+            continue
+        if re.fullmatch(r"[\d.%]+", name):
+            continue
+        seen.add(name)
+        concepts.append(name)
+    return concepts[:24]
+
+
+def build_selection_profile_text(
+    info_text: str,
+    sectors_text: str,
+    *,
+    max_len: int = 900,
+) -> str:
+    parts: list[str] = []
+    text = sectors_text or ""
+
+    bg = re.search(r"行业背景\s*([^\n]+)", text)
+    if bg:
+        parts.append(f"行业背景：{bg.group(1).strip()}")
+
+    core = re.search(r"核心竞争力\s*([^\n]{10,260})", text)
+    if core:
+        parts.append(f"核心竞争力：{core.group(1).strip()}")
+
+    block_idx = text.find("所属板块")
+    if block_idx >= 0:
+        block = text[block_idx : block_idx + 280].strip()
+        if block:
+            parts.append(block)
+
+    reason = re.search(r"入选理由\s*\n+([^\n]{10,260})", text)
+    if reason:
+        parts.append(f"入选理由：{reason.group(1).strip()}")
+
+    if not parts and info_text:
+        parts.append(info_text.strip()[:400])
+
+    merged = "\n\n".join(parts).strip()
+    if len(merged) <= max_len:
+        return merged or ""
+    return merged[:max_len] + "\n\n...[已截断]..."
+
+
+def selection_profile_from_payload(
+    code: str,
+    *,
+    name: str,
+    info_text: str,
+    sectors_text: str,
+) -> SelectionProfileSnapshot:
+    c = code6(code)
+    industry = parse_industry_from_sectors(sectors_text) or parse_industry_from_info(info_text)
+    concepts = parse_concepts_from_sectors(sectors_text)
+    profile_text = build_selection_profile_text(info_text, sectors_text)
+    return SelectionProfileSnapshot(
+        code=c,
+        name=(name or c).strip() or c,
+        industry=industry,
+        concepts=concepts,
+        profile_text=profile_text,
+        info_text=info_text or "",
+        sectors_text=sectors_text or "",
+    )
+
+
+def fetch_selection_profiles_batch(
+    codes: list[str],
+    *,
+    wait_seconds: float = 2.0,
+    close_browser: bool = True,
+) -> dict[str, SelectionProfileSnapshot]:
+    """轻量档案：行情 brief_info + F10 所属板块（入选股 enrich，约 2 页/股）。"""
+    if not codes:
+        return {}
+
+    unique = [code6(c) for c in dict.fromkeys(code6(c) for c in codes)]
+    out: dict[str, SelectionProfileSnapshot] = {}
+    wait_arg = str(max(1, int(round(wait_seconds))))
+
+    _run_opencli(["browser", "close"], timeout=15)
+
+    for c in unique:
+        info_text = ""
+        sectors_text = ""
+        name = c
+        try:
+            _open_page(quote_url(c), label=c)
+            _run_opencli(["browser", "wait", "time", wait_arg], timeout=10)
+            raw = _eval_js(EXTRACT_QUOTE_JS)
+            payload = json.loads(raw) if raw else {}
+            name = (payload.get("name") or c).strip() or c
+            info_text = payload.get("infoText") or ""
+
+            _open_page(f10_url(c, "#/hxtc"), label=f"{c}-所属板块")
+            _run_opencli(["browser", "wait", "time", "3"], timeout=15)
+            app_raw = _eval_js(EXTRACT_F10_APP_JS, timeout=30)
+            try:
+                sectors_text = json.loads(app_raw) if app_raw else ""
+            except json.JSONDecodeError:
+                sectors_text = app_raw or ""
+            if not isinstance(sectors_text, str):
+                sectors_text = str(sectors_text)
+
+            out[c] = selection_profile_from_payload(
+                c,
+                name=name,
+                info_text=info_text,
+                sectors_text=_truncate(sectors_text, F10_MAX_LEN),
+            )
+        except Exception as exc:  # noqa: BLE001
+            out[c] = SelectionProfileSnapshot(
+                code=c,
+                name=name,
+                industry=parse_industry_from_info(info_text),
+                concepts=parse_concepts_from_sectors(sectors_text),
+                profile_text=build_selection_profile_text(info_text, sectors_text)
+                or f"获取失败: {exc}",
+                info_text=info_text,
+                sectors_text=sectors_text or f"获取失败: {exc}",
+            )
+
+    if close_browser:
+        _run_opencli(["browser", "close"], timeout=15)
+
+    return out
+
+
 if __name__ == "__main__":
     import sys
 

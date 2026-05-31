@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import {
   createSession,
   deleteSession,
@@ -11,6 +11,7 @@ import {
 import type { ChatHealth, ChatMessage, ChatSession } from '../types/chat'
 import ChatSidebar from '../components/chat/ChatSidebar.vue'
 import MessageBubble from '../components/chat/MessageBubble.vue'
+import { MOBILE_QUERY, useMediaQuery } from '../composables/useMediaQuery'
 
 const sessions = ref<ChatSession[]>([])
 const activeId = ref<string | null>(null)
@@ -23,6 +24,10 @@ const statusText = ref('')
 const errorText = ref('')
 const health = ref<ChatHealth | null>(null)
 const abortRef = ref<AbortController | null>(null)
+const messagesEl = ref<HTMLElement | null>(null)
+const sidebarOpen = ref(false)
+
+const isMobile = useMediaQuery(MOBILE_QUERY)
 
 function formatStreamError(message: string, code?: string): string {
   if (code === 'agent_busy') return message
@@ -32,6 +37,33 @@ function formatStreamError(message: string, code?: string): string {
 const activeSession = computed(() =>
   sessions.value.find((s) => s.id === activeId.value) ?? null,
 )
+
+const statusLabel = computed(() => {
+  if (health.value?.agent_lock?.busy) return '占用中'
+  if (health.value?.ready) return '已连接'
+  return '未就绪'
+})
+
+const statusClass = computed(() => {
+  if (health.value?.agent_lock?.busy) return 'busy'
+  if (health.value?.ready) return 'ok'
+  return 'warn'
+})
+
+function closeSidebar() {
+  sidebarOpen.value = false
+}
+
+function openSidebar() {
+  sidebarOpen.value = true
+}
+
+async function scrollMessagesToBottom(behavior: ScrollBehavior = 'smooth') {
+  await nextTick()
+  const el = messagesEl.value
+  if (!el) return
+  el.scrollTo({ top: el.scrollHeight, behavior })
+}
 
 async function refreshSessions(selectLatest = false) {
   sessions.value = await listSessions()
@@ -49,20 +81,40 @@ async function onNewSession() {
   await refreshSessions()
   activeId.value = session.id
   messages.value = []
+  closeSidebar()
 }
 
 async function onSelect(sessionId: string) {
   if (streaming.value) return
   activeId.value = sessionId
+  closeSidebar()
 }
 
 async function onDelete(sessionId: string) {
-  if (streaming.value) return
-  await deleteSession(sessionId)
-  await refreshSessions()
-  if (activeId.value === sessionId) {
-    activeId.value = sessions.value[0]?.id ?? null
-    messages.value = activeId.value ? await listMessages(activeId.value) : []
+  if (!window.confirm('确定删除此对话？删除后无法恢复。')) return
+
+  if (streaming.value && activeId.value === sessionId) {
+    abortRef.value?.abort()
+    streaming.value = false
+    streamText.value = ''
+    statusText.value = ''
+  }
+
+  errorText.value = ''
+  try {
+    await deleteSession(sessionId)
+    const wasActive = activeId.value === sessionId
+    await refreshSessions()
+    if (wasActive) {
+      if (sessions.value.length > 0) {
+        activeId.value = sessions.value[0].id
+      } else {
+        await onNewSession()
+      }
+    }
+  } catch (e) {
+    errorText.value = formatStreamError(e instanceof Error ? e.message : String(e))
+    await refreshSessions()
   }
 }
 
@@ -119,6 +171,7 @@ async function send() {
         onTextDelta: (chunk) => {
           streamText.value += chunk
           statusText.value = ''
+          scrollMessagesToBottom('auto')
         },
         onThinkingDelta: () => {
           statusText.value = 'Agent 思考中…'
@@ -170,8 +223,12 @@ async function send() {
   } finally {
     streaming.value = false
     abortRef.value = null
-    if (sessionId) {
-      await loadMessages(sessionId)
+    if (sessionId && sessions.value.some((s) => s.id === sessionId)) {
+      try {
+        await loadMessages(sessionId)
+      } catch {
+        /* 会话可能已被删除 */
+      }
     }
   }
 }
@@ -191,9 +248,21 @@ watch(activeId, async (id) => {
   loading.value = true
   try {
     await loadMessages(id)
+    await scrollMessagesToBottom('auto')
   } finally {
     loading.value = false
   }
+})
+
+watch(
+  () => messages.value.length,
+  () => {
+    scrollMessagesToBottom('auto')
+  },
+)
+
+watch(isMobile, (mobile) => {
+  if (!mobile) sidebarOpen.value = false
 })
 
 onMounted(async () => {
@@ -210,32 +279,69 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="layout">
-    <ChatSidebar
-      :sessions="sessions"
-      :active-id="activeId"
-      :health="health"
-      @select="onSelect"
-      @new="onNewSession"
-      @delete="onDelete"
+  <div
+    class="layout"
+    :class="{ mobile: isMobile, 'sidebar-open': sidebarOpen && isMobile }"
+  >
+    <div
+      v-if="isMobile && sidebarOpen"
+      class="sidebar-mask"
+      aria-hidden="true"
+      @click="closeSidebar"
     />
+
+    <aside class="sidebar-drawer" :class="{ open: !isMobile || sidebarOpen }">
+      <ChatSidebar
+        :sessions="sessions"
+        :active-id="activeId"
+        :health="health"
+        :compact="isMobile"
+        @select="onSelect"
+        @new="onNewSession"
+        @delete="onDelete"
+        @close="closeSidebar"
+      />
+    </aside>
 
     <main class="panel">
       <header class="panel-header">
-        <div>
-          <h1>{{ activeSession?.title ?? '投资助手' }}</h1>
-          <p class="meta">
-            {{ health?.model ?? '—' }}
-            · {{ health?.agent_cwd ?? '工作区未配置' }}
-          </p>
+        <div class="header-main">
+          <button
+            v-if="isMobile"
+            type="button"
+            class="icon-btn"
+            aria-label="打开对话列表"
+            @click="openSidebar"
+          >
+            ☰
+          </button>
+          <div class="title-block">
+            <h1>{{ activeSession?.title ?? '投资助手' }}</h1>
+            <p v-if="!isMobile" class="meta">
+              {{ health?.model ?? '—' }}
+              · {{ health?.agent_cwd ?? '工作区未配置' }}
+            </p>
+          </div>
         </div>
-        <span v-if="health?.agent_lock?.busy" class="badge busy">Agent 占用中</span>
-        <span v-else-if="health?.ready" class="badge ok">已连接</span>
-        <span v-else class="badge warn">未就绪</span>
+        <div class="header-actions">
+          <button
+            v-if="isMobile"
+            type="button"
+            class="icon-btn new-chat-btn"
+            aria-label="新对话"
+            @click="onNewSession"
+          >
+            ＋
+          </button>
+          <span class="badge" :class="statusClass">{{ statusLabel }}</span>
+        </div>
       </header>
 
-      <section class="messages">
+      <section ref="messagesEl" class="messages">
         <p v-if="loading" class="hint">加载历史…</p>
+        <p v-else-if="!messages.length && !streamText" class="empty-hint">
+          问我持仓、个股或今日计划
+        </p>
         <MessageBubble
           v-for="msg in messages"
           :key="msg.id"
@@ -248,15 +354,15 @@ onMounted(async () => {
           :content="streamText"
           streaming
         />
-        <p v-if="statusText" class="hint">{{ statusText }}</p>
+        <p v-if="statusText" class="hint status-hint">{{ statusText }}</p>
         <p v-if="errorText" class="error">{{ errorText }}</p>
       </section>
 
       <footer class="composer">
         <textarea
           v-model="draft"
-          rows="3"
-          placeholder="输入消息，Enter 发送，Shift+Enter 换行"
+          :rows="isMobile ? 2 : 3"
+          :placeholder="isMobile ? '输入问题…' : '输入消息，Enter 发送，Shift+Enter 换行'"
           :disabled="streaming || !activeId"
           @keydown="onKeydown"
         />
@@ -272,29 +378,59 @@ onMounted(async () => {
 .layout {
   display: grid;
   grid-template-columns: 280px 1fr;
-  min-height: calc(100vh - 52px);
+  height: 100%;
+  min-height: 0;
   background: #0f1419;
   color: #e7ecf3;
+}
+
+.sidebar-drawer {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.sidebar-mask {
+  display: none;
 }
 
 .panel {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
 }
 
 .panel-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   padding: 16px 20px;
   border-bottom: 1px solid #243041;
+  background: #0f1419;
+}
+
+.header-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.title-block {
+  min-width: 0;
 }
 
 .panel-header h1 {
   margin: 0;
   font-size: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .meta {
@@ -307,11 +443,37 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.icon-btn {
+  border: 1px solid #314158;
+  background: #121820;
+  color: #dbe7ff;
+  border-radius: 10px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.new-chat-btn {
+  font-size: 22px;
+  font-weight: 300;
+}
+
 .badge {
   font-size: 12px;
   padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid transparent;
+  white-space: nowrap;
 }
 
 .badge.ok {
@@ -334,16 +496,34 @@ onMounted(async () => {
 
 .messages {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.empty-hint {
+  margin: auto 0;
+  text-align: center;
+  color: #6b7c93;
+  font-size: 14px;
+  padding: 24px 12px;
 }
 
 .hint {
   color: #8b9cb3;
   font-size: 13px;
+}
+
+.status-hint {
+  align-self: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(21, 32, 51, 0.9);
 }
 
 .error {
@@ -352,11 +532,13 @@ onMounted(async () => {
 }
 
 .composer {
+  flex-shrink: 0;
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 12px;
   padding: 16px 20px 20px;
   border-top: 1px solid #243041;
+  background: #0f1419;
 }
 
 textarea {
@@ -394,6 +576,70 @@ button:disabled {
 @media (max-width: 768px) {
   .layout {
     grid-template-columns: 1fr;
+    position: relative;
+  }
+
+  .sidebar-drawer {
+    position: fixed;
+    z-index: 400;
+    top: 0;
+    left: 0;
+    bottom: calc(52px + env(safe-area-inset-bottom));
+    width: min(88vw, 320px);
+    transform: translateX(-105%);
+    transition: transform 0.22s ease;
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.35);
+  }
+
+  .sidebar-drawer.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-mask {
+    display: block;
+    position: fixed;
+    z-index: 390;
+    inset: 0;
+    bottom: calc(52px + env(safe-area-inset-bottom));
+    background: rgba(0, 0, 0, 0.48);
+  }
+
+  .panel-header {
+    padding: 10px 12px;
+  }
+
+  .panel-header h1 {
+    font-size: 16px;
+  }
+
+  .badge {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+
+  .messages {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .composer {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 10px 12px 12px;
+    background: #0b1016;
+  }
+
+  textarea {
+    min-height: 44px;
+    max-height: 120px;
+    font-size: 16px;
+    padding: 10px 12px;
+  }
+
+  .composer button {
+    width: 100%;
+    min-height: 44px;
+    align-self: stretch;
   }
 }
 </style>

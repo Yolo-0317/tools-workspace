@@ -116,4 +116,25 @@ li.info {
   color: #8b9cb3;
   font-size: 13px;
 }
+
+@media (max-width: 768px) {
+  .discipline {
+    padding: 12px;
+  }
+
+  h2 {
+    font-size: 13px;
+  }
+
+  li {
+    padding: 12px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .msg {
+    display: block;
+    margin-top: 4px;
+  }
+}
 </style>

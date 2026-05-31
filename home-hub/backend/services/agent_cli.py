@@ -1,4 +1,4 @@
-"""通过 Cursor CLI（agent login）驱动聊天，与 wechat-acp 相同。"""
+"""agent login 检测与 subprocess 环境；聊天已迁移至 agent_acp。"""
 
 from __future__ import annotations
 

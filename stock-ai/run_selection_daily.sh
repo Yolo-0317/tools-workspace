@@ -36,3 +36,8 @@ echo "检查 MySQL 日线是否落后（Tushare 通常 17:00 后较稳）..."
 uv run python -m scripts.tools.ensure_daily_bars --sync-if-stale
 
 uv run python -m scripts.selection.daily_selection_report $SOP_ARGS 2>&1 | tee "logs/selection_daily_$(date '+%Y%m%d').log"
+
+echo "OpenCLI 档案 enrich（入选股行业/概念）..."
+uv run python -m scripts.tools.enrich_selection_profiles --trade-date latest 2>&1 \
+  | tee -a "logs/selection_enrich_$(date '+%Y%m%d').log" \
+  || echo "⚠️ 档案 enrich 失败，不影响选股主流程"

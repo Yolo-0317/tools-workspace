@@ -106,6 +106,26 @@ export interface PortfolioHistory {
   dates: string[]
 }
 
+export interface DailyBar {
+  trade_date: string
+  open?: number | null
+  high?: number | null
+  low?: number | null
+  close?: number | null
+  pct_chg?: number | null
+  vol?: number | null
+  amount?: number | null
+}
+
+export interface SelectionKline {
+  code: string
+  trade_date: string
+  kline_end_date?: string
+  days: number
+  count: number
+  bars: DailyBar[]
+}
+
 export interface SelectionHistory {
   strategy: string
   trade_date: string

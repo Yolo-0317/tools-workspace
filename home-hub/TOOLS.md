@@ -17,11 +17,12 @@ opencli browser close
 
 ## 聊天后端
 
-与 [wechat-cursor-acp](../../wechat-cursor-acp/) 相同：
+与 [wechat-cursor-acp](../../wechat-cursor-acp/) 相同协议：
 
 - 认证：`agent login`
-- 命令：`agent -p --force --output-format stream-json --resume <session_id>`
+- 命令：`agent --model <model> acp`（ACP JSON-RPC over stdio）
 - 工作区：`HUB_AGENT_CWD` → `stock-ai/investment-agent`
+- 单轮超时：`HUB_ACP_PROMPT_TIMEOUT`（默认 600s）
 
 前置：`agent status` 显示已登录。
 

@@ -1,4 +1,4 @@
-"""聊天服务：Cursor CLI（agent login）+ SSE。"""
+"""聊天服务：Cursor CLI ACP（agent acp）+ SSE。"""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 from backend.config import settings
-from backend.services import agent_cli, chat_store
+from backend.services import agent_acp, chat_store
 from backend.services.agent_lock import AgentBusyError, agent_lock
 
 
@@ -15,24 +15,37 @@ class ChatAgentService:
     def __init__(self) -> None:
         self._login_ok = False
         self._login_detail = ""
+        self._acp_error = ""
 
     async def startup(self) -> None:
-        status = await agent_cli.check_agent_login()
+        status = await agent_acp.check_agent_login()
         self._login_ok = bool(status.get("logged_in"))
         self._login_detail = str(status.get("detail") or "")
+        if self._login_ok and agent_acp.agent_cli_available():
+            try:
+                await agent_acp.acp_bridge.start()
+                self._acp_error = ""
+            except Exception as exc:  # noqa: BLE001
+                self._acp_error = str(exc)
 
     async def shutdown(self) -> None:
-        return
+        await agent_acp.acp_bridge.stop()
 
     def health(self) -> dict[str, Any]:
+        acp_ready = agent_acp.acp_bridge.ready
         return {
-            "ready": self._login_ok and agent_cli.agent_cli_available(),
-            "backend": "agent_cli",
-            "auth": "agent login（同 wechat-acp）",
+            "ready": self._login_ok
+            and agent_acp.agent_cli_available()
+            and acp_ready
+            and not self._acp_error,
+            "backend": "agent_acp",
+            "auth": "agent login + agent acp（同 wechat-acp）",
             "model": settings.agent_model,
             "agent_cwd": str(settings.agent_cwd),
             "forward_thoughts": settings.forward_thoughts,
             "login_detail": self._login_detail,
+            "acp_ready": acp_ready,
+            "acp_error": self._acp_error or agent_acp.acp_bridge.start_error,
             "agent_lock": agent_lock.status(),
         }
 
@@ -51,7 +64,7 @@ class ChatAgentService:
             yield _sse("error", {"message": "会话不存在"})
             return
 
-        if not agent_cli.agent_cli_available():
+        if not agent_acp.agent_cli_available():
             yield _sse(
                 "error",
                 {"message": "未找到 Cursor CLI（agent）", "code": "no_agent_cli"},
@@ -68,6 +81,21 @@ class ChatAgentService:
                 },
             )
             return
+
+        if not agent_acp.acp_bridge.ready:
+            try:
+                await agent_acp.acp_bridge.start()
+                self._acp_error = ""
+            except Exception as exc:  # noqa: BLE001
+                self._acp_error = str(exc)
+                yield _sse(
+                    "error",
+                    {
+                        "message": f"ACP 启动失败：{exc}",
+                        "code": "acp_start_failed",
+                    },
+                )
+                return
 
         chat_store.add_message(session_id, "user", user_text)
         resume_ids: list[str | None] = [session.get("cursor_agent_id")]
@@ -98,7 +126,7 @@ class ChatAgentService:
 
                     yield _sse("status", {"phase": "thinking"})
 
-                    async for event in agent_cli.stream_agent_prompt(
+                    async for event in agent_acp.stream_acp_prompt(
                         user_text,
                         session_id=resume_id,
                     ):
@@ -119,45 +147,52 @@ class ChatAgentService:
                             assistant_parts.append(chunk)
                             yield _sse("text_delta", {"text": chunk})
                             continue
+                        if kind == "tool_start":
+                            yield _sse(
+                                "tool_start",
+                                {
+                                    "tool": event.get("tool", "tool"),
+                                    "tool_call_id": event.get("tool_call_id"),
+                                },
+                            )
+                            continue
+                        if kind == "tool_end":
+                            yield _sse(
+                                "tool_end",
+                                {
+                                    "tool": event.get("tool", "tool"),
+                                    "status": event.get("status"),
+                                },
+                            )
+                            continue
                         if kind == "result":
                             if event.get("session_id"):
                                 final_session = event["session_id"]
                                 chat_store.set_cursor_agent_id(session_id, final_session)
-                            result_text = str(event.get("text") or "").strip()
                             if event.get("is_error"):
-                                msg = result_text or "Agent 执行失败"
+                                msg = "Agent 执行未完成"
                                 last_error = msg
                                 last_error_code = "agent_error"
                                 yield _sse(
                                     "error",
                                     {"message": msg, "code": "agent_error"},
                                 )
-                                continue
-                            joined = "".join(assistant_parts).strip()
-                            if result_text and not joined:
-                                assistant_parts.append(result_text)
-                                yield _sse("text_delta", {"text": result_text})
-                            elif result_text and joined and result_text != joined:
-                                if result_text.startswith(joined):
-                                    suffix = result_text[len(joined) :]
-                                    if suffix:
-                                        assistant_parts.append(suffix)
-                                        yield _sse("text_delta", {"text": suffix})
-                                elif len(result_text) > len(joined):
-                                    assistant_parts.append(result_text)
-                                    yield _sse("text_delta", {"text": result_text})
                             continue
                         if kind == "error":
                             msg = str(event.get("message") or "未知错误")
+                            code = str(event.get("code") or "agent_error")
                             last_error = msg
-                            last_error_code = "agent_error"
-                            yield _sse(
-                                "error",
-                                {"message": msg, "code": "agent_error"},
-                            )
+                            last_error_code = code
+                            if code != "session_not_found":
+                                yield _sse(
+                                    "error",
+                                    {"message": msg, "code": code},
+                                )
 
                     if assistant_parts or not last_error:
                         break
+                    if last_error_code == "session_not_found" and attempt_idx == 0:
+                        continue
 
                 full_text = "".join(assistant_parts).strip()
                 if full_text:

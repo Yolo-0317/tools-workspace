@@ -226,10 +226,27 @@ def load_selection_history(
         load_selection_daily_results,
         load_sop_review_bundle,
         load_stock_names_by_codes,
+        load_stock_profiles_by_codes,
+        merge_profile_fields_into_selection_row,
         enrich_sop_review_bundle,
     )
 
     td, rows = load_selection_daily_results(trade_date, strategy=strategy)
+    if rows:
+        codes = [
+            str(r.get("代码") or r.get("ts_code") or "").split(".")[0].zfill(6)
+            for r in rows
+        ]
+        profiles = load_stock_profiles_by_codes(codes)
+        merged_rows: list[dict[str, Any]] = []
+        for row in rows:
+            code = str(row.get("代码") or row.get("ts_code") or "").split(".")[0].zfill(6)
+            prof = profiles.get(code)
+            if prof and (not row.get("所属行业") or not row.get("公司简介")):
+                merged_rows.append(merge_profile_fields_into_selection_row(row, prof))
+            else:
+                merged_rows.append(row)
+        rows = merged_rows
     sop = load_sop_review_bundle(trade_date, strategy=strategy)
     if sop and sop.get("items"):
         codes = [
@@ -245,6 +262,32 @@ def load_selection_history(
         "rows": rows,
         "sop_review": sop,
         "holding_codes": holdings,
+    }
+
+
+def load_selection_kline(
+    code: str,
+    trade_date: str,
+    *,
+    days: int = 60,
+) -> dict[str, Any]:
+    _ensure_stock_ai_path()
+    _load_stock_env()
+    from scripts.tools.portfolio_db import (
+        load_stock_daily_bars,
+        resolve_selection_kline_end_date,
+    )
+
+    sel_date = trade_date
+    end_date = resolve_selection_kline_end_date(trade_date)
+    bars = load_stock_daily_bars(code, end_date=end_date, limit=days)
+    return {
+        "code": str(code).split(".")[0].zfill(6),
+        "trade_date": sel_date,
+        "kline_end_date": end_date.isoformat(),
+        "days": days,
+        "count": len(bars),
+        "bars": bars,
     }
 
 

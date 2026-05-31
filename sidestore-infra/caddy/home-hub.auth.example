@@ -1,6 +1,9 @@
 # 由 scripts/setup-home-hub-auth.sh 生成；复制本文件为 home-hub.auth 并填入 hash
 # 生成命令: ./scripts/setup-home-hub-auth.sh
+# 环境变量:
+#   HUB_BASIC_AUTH_USER / HUB_BASIC_AUTH_PASSWORD        — 管理员（全功能）
+#   HUB_SHARE_BASIC_AUTH_USER / HUB_SHARE_BASIC_AUTH_PASSWORD — 分享（仅选股）
 basicauth /* {
-	# HUB_BASIC_AUTH_USER HUB_BASIC_AUTH_HASH
-	hub $2a$14$REPLACE_WITH_caddy_hash-password
+	# hub $2a$14$REPLACE_WITH_caddy_hash-password
+	# share $2a$14$REPLACE_WITH_share_hash
 }

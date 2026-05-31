@@ -91,7 +91,6 @@ https://sub.yoloworld.site {
 
 https://hub.yoloworld.site {
 	tls /etc/caddy/certs/fullchain.cer /etc/caddy/certs/key.key
-	import home-hub.auth
 	encode gzip
 	reverse_proxy host.docker.internal:8780 {
 		flush_interval -1

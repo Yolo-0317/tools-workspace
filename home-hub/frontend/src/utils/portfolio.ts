@@ -31,3 +31,21 @@ export function posPnlPct(p: PositionRow): number | null {
   const n = Number(v)
   return Number.isNaN(n) ? null : n
 }
+
+export function posStatus(p: PositionRow): string {
+  return String(p.status_note ?? p.status ?? '').trim()
+}
+
+export function posAction(p: PositionRow): string {
+  return String(p.action ?? p.action_note ?? '—').trim() || '—'
+}
+
+export type PositionStatusTone = 'good' | 'bad' | 'warn' | 'neutral'
+
+export function posStatusTone(p: PositionRow): PositionStatusTone {
+  const s = posStatus(p)
+  if (s.includes('深套') || s.includes('🔴')) return 'bad'
+  if (s.includes('盈利') || s.includes('✅')) return 'good'
+  if (s.includes('微亏') || s.includes('⚠️')) return 'warn'
+  return 'neutral'
+}

@@ -10,7 +10,7 @@
 |----|------|------|
 | 前端 | Vue 3 + Vite + TS | 会话列表、消息流、SSE 消费 |
 | 后端 | FastAPI | REST + SSE、限流、可选 Token |
-| Agent | **Cursor CLI** `agent -p`（`agent login`，同 wechat-acp） | 模型 `auto`，cwd 指向 investment-agent |
+| Agent | **Cursor CLI** `agent acp`（`agent login`，同 wechat-acp） | 模型 `HUB_AGENT_MODEL`，cwd 指向 investment-agent |
 | 存储 | SQLite `data/chat.db` | 会话 / 消息 / cursor_agent_id |
 
 ## 数据流
@@ -51,7 +51,7 @@ sequenceDiagram
 | 项 | 微信 wechat-acp | Web Chat |
 |----|-----------------|----------|
 | 传输 | 微信消息 | HTTPS + SSE |
-| Agent 进程 | wechat-acp 子进程 | home-hub 内 AsyncClient |
+| Agent 进程 | wechat-acp 子进程 `agent acp` | home-hub 长驻 `agent acp` + ACP client |
 | 并发 | 微信单用户 | **全局互斥锁**（与微信不能同时跑 Run） |
 | 会话 | wechat 会话 | SQLite + cursor_agent_id resume |
 

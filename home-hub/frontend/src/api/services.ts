@@ -1,24 +1,12 @@
 import type { JellyfinMappings, ServicesCatalog } from '../types/services'
-
-const API_BASE = import.meta.env.VITE_API_BASE ?? ''
-const HUB_TOKEN = import.meta.env.VITE_HUB_TOKEN ?? ''
-
-function headers(): HeadersInit {
-  const h: Record<string, string> = {}
-  if (HUB_TOKEN) h['X-Hub-Token'] = HUB_TOKEN
-  return h
-}
+import { apiJson } from './http'
 
 export async function fetchServicesCatalog(): Promise<ServicesCatalog> {
-  const res = await fetch(`${API_BASE}/api/services/catalog`, { headers: headers() })
-  if (!res.ok) throw new Error(await res.text())
-  return res.json()
+  return apiJson('/api/services/catalog')
 }
 
 export async function fetchJellyfinMappings(): Promise<JellyfinMappings> {
-  const res = await fetch(`${API_BASE}/api/services/jellyfin`, { headers: headers() })
-  if (!res.ok) throw new Error(await res.text())
-  return res.json()
+  return apiJson('/api/services/jellyfin')
 }
 
 export function healthLabel(status?: string): string {

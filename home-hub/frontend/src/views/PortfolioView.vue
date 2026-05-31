@@ -2,6 +2,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import DisciplinePanel from '../components/DisciplinePanel.vue'
 import MiniLineChart from '../components/MiniLineChart.vue'
+import PortfolioPositionCard from '../components/PortfolioPositionCard.vue'
+import { MOBILE_QUERY, useMediaQuery } from '../composables/useMediaQuery'
 import {
   fetchDashboardSummary,
   fetchDiscipline,
@@ -23,6 +25,8 @@ const discipline = ref<DisciplinePayload | null>(null)
 const error = ref('')
 const loading = ref(true)
 
+const isMobile = useMediaQuery(MOBILE_QUERY)
+
 const assetChart = computed(() =>
   series.value
     .filter((s) => s.total_assets != null)
@@ -34,6 +38,8 @@ const pnlChart = computed(() =>
     .filter((s) => s.holding_pnl != null)
     .map((s) => ({ x: String(s.snapshot_date), y: Number(s.holding_pnl) })),
 )
+
+const positionCount = computed(() => positions.value.length)
 
 async function loadSnapshot(date: string) {
   if (!date) return
@@ -81,8 +87,15 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="page">
-    <h1>持仓</h1>
+  <div class="page" :class="{ mobile: isMobile }">
+    <header class="head">
+      <h1>持仓</h1>
+      <p v-if="!loading && positionCount" class="sub">
+        {{ positionCount }} 只
+        <span v-if="selectedSnapDate"> · 快照 {{ selectedSnapDate }}</span>
+      </p>
+    </header>
+
     <p v-if="loading" class="hint">加载中…</p>
     <p v-if="error" class="error">{{ error }}</p>
 
@@ -93,95 +106,198 @@ onMounted(async () => {
       :position-ratio="discipline.position_ratio"
     />
 
-    <section v-if="account.total_assets != null" class="summary">
-      总资产 ¥{{ fmtNum(account.total_assets) }}
-      · 可用 {{ fmtNum(account.available_cash) }}
-      · 仓位 {{ fmtRatioPct(account.position_ratio) }}
+    <section v-if="account.total_assets != null" class="stats-grid">
+      <article class="stat-card highlight">
+        <span class="stat-label">总资产</span>
+        <span class="stat-value">¥{{ fmtNum(account.total_assets) }}</span>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">可用资金</span>
+        <span class="stat-value">¥{{ fmtNum(account.available_cash) }}</span>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">仓位</span>
+        <span class="stat-value">{{ fmtRatioPct(account.position_ratio) }}</span>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">证券市值</span>
+        <span class="stat-value">¥{{ fmtNum(account.market_value) }}</span>
+      </article>
     </section>
 
-    <div class="head">
-      <label v-if="snapshotDates.length">
-        快照日
-        <select v-model="selectedSnapDate">
+    <div v-if="snapshotDates.length" class="filter-bar">
+      <label class="filter-field filter-field-grow">
+        <span class="filter-label">快照日期</span>
+        <select v-model="selectedSnapDate" class="filter-select">
           <option v-for="d in snapshotDates" :key="d" :value="d">{{ d }}</option>
         </select>
       </label>
     </div>
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>代码</th>
-            <th>名称</th>
-            <th>股数</th>
-            <th>成本</th>
-            <th>现价</th>
-            <th>盈亏</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(p, i) in positions" :key="i">
-            <td>{{ posCode(p) }}</td>
-            <td>{{ p.name }}</td>
-            <td>{{ p.shares }}</td>
-            <td>{{ fmtNum(posCost(p)) }}</td>
-            <td>{{ fmtNum(posPrice(p)) }}</td>
-            <td :class="{ up: Number(posPnl(p)) > 0, down: Number(posPnl(p)) < 0 }">
-              {{ fmtNum(posPnl(p)) }}
-            </td>
-            <td class="action">{{ p.action ?? p.action_note ?? '—' }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <section v-if="positionCount" class="positions-section">
+      <h2 class="section-title">持仓明细</h2>
+
+      <div v-if="isMobile" class="mobile-list">
+        <PortfolioPositionCard
+          v-for="(p, i) in positions"
+          :key="`${posCode(p)}-${i}`"
+          :position="p"
+        />
+      </div>
+
+      <div v-else class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>代码</th>
+              <th>名称</th>
+              <th>股数</th>
+              <th>成本</th>
+              <th>现价</th>
+              <th>盈亏</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(p, i) in positions" :key="i">
+              <td>{{ posCode(p) }}</td>
+              <td>{{ p.name }}</td>
+              <td>{{ p.shares }}</td>
+              <td>{{ fmtNum(posCost(p)) }}</td>
+              <td>{{ fmtNum(posPrice(p)) }}</td>
+              <td :class="{ up: Number(posPnl(p)) > 0, down: Number(posPnl(p)) < 0 }">
+                {{ fmtNum(posPnl(p)) }}
+              </td>
+              <td class="action">{{ p.action ?? p.action_note ?? '—' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <p v-else-if="!loading && !error" class="hint">暂无持仓数据</p>
 
     <section v-if="assetChart.length >= 2" class="block">
       <h2>总资产趋势（{{ series.length }} 天）</h2>
-      <MiniLineChart :points="assetChart" />
+      <MiniLineChart :points="assetChart" label="总资产（元）" />
     </section>
 
     <section v-if="pnlChart.length >= 2" class="block">
       <h2>持仓浮盈趋势</h2>
-      <MiniLineChart :points="pnlChart" />
+      <MiniLineChart :points="pnlChart" label="浮盈（元）" />
     </section>
   </div>
 </template>
 
 <style scoped>
 .page h1 {
-  margin: 0 0 12px;
-}
-
-.disc-block {
-  margin-bottom: 16px;
-}
-
-.summary {
-  margin-bottom: 16px;
-  color: #8b9cb3;
-  font-size: 14px;
+  margin: 0;
+  font-size: 22px;
 }
 
 .head {
   margin-bottom: 12px;
 }
 
-.head label {
-  font-size: 13px;
+.sub {
+  margin: 4px 0 0;
   color: #8b9cb3;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  font-size: 13px;
 }
 
-select {
+.disc-block {
+  margin-bottom: 16px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  padding: 12px 14px;
+  border-radius: 12px;
   background: #121820;
+  border: 1px solid #243041;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.stat-card.highlight {
+  border-color: #1e3a5f;
+  background: linear-gradient(145deg, #121820 0%, #152238 100%);
+}
+
+.stat-label {
+  font-size: 11px;
+  color: #7d8da6;
+  letter-spacing: 0.04em;
+}
+
+.stat-value {
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.filter-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #121820;
+  border: 1px solid #243041;
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.filter-field-grow {
+  flex: 1;
+}
+
+.filter-label {
+  font-size: 11px;
+  color: #7d8da6;
+  letter-spacing: 0.04em;
+}
+
+.filter-select {
+  width: 100%;
+  background: #0f1419;
   color: #e7ecf3;
   border: 1px solid #243041;
   border-radius: 8px;
-  padding: 6px 10px;
+  padding: 10px 12px;
+  font-size: 15px;
+  min-height: 44px;
+}
+
+.positions-section {
+  margin-bottom: 20px;
+}
+
+.section-title {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #8b9cb3;
+  font-weight: 600;
+}
+
+.mobile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .table-wrap {
@@ -243,5 +359,64 @@ th {
 
 .error {
   color: #ff8f8f;
+}
+
+/* H5 */
+.page.mobile .head {
+  margin-bottom: 10px;
+}
+
+.page.mobile h1 {
+  font-size: 20px;
+}
+
+.page.mobile .stats-grid {
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.page.mobile .stat-card {
+  padding: 10px 12px;
+}
+
+.page.mobile .stat-value {
+  font-size: 16px;
+}
+
+.page.mobile .filter-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin-bottom: 14px;
+  padding: 10px;
+  background: rgba(18, 24, 32, 0.96);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.page.mobile .filter-select {
+  font-size: 16px;
+}
+
+.page.mobile .section-title {
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.page.mobile .block {
+  padding: 12px;
+  margin-top: 16px;
+}
+
+@media (min-width: 900px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .table-wrap {
+    display: none;
+  }
 }
 </style>
