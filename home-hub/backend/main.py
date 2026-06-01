@@ -10,19 +10,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
 from backend.config import ROOT, settings
-from backend.routers import auth, chat, dashboard, services
-from backend.services import chat_store, hub_auth, session_store
-from backend.services.chat_agent import chat_agent_service
+from backend.routers import auth, dashboard, services
+from backend.services import hub_auth, session_store
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    chat_store.init_db()
     session_store.init_db()
     session_store.purge_expired()
-    await chat_agent_service.startup()
     yield
-    await chat_agent_service.shutdown()
 
 
 app = FastAPI(title="Home Hub", lifespan=lifespan)
@@ -74,7 +70,6 @@ async def hub_session_auth(request: Request, call_next):
 
 
 app.include_router(auth.router)
-app.include_router(chat.router)
 app.include_router(dashboard.router)
 app.include_router(services.router)
 
@@ -103,7 +98,6 @@ async def health():
     return {
         "ok": True,
         "auth_required": settings.require_auth,
-        "chat": chat_agent_service.health(),
     }
 
 

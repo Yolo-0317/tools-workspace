@@ -23,7 +23,6 @@ const investLinks: NavLink[] = [
 const systemLinks: NavLink[] = [
   { to: '/jobs', label: '任务' },
   { to: '/services', label: '服务' },
-  { to: '/chat', label: '聊天' },
 ]
 
 const investRouteNames = new Set(['home', 'portfolio', 'selection', 'monitor'])
@@ -63,13 +62,7 @@ async function onLogout() {
 </script>
 
 <template>
-  <div
-    class="shell"
-    :class="{
-      'shell-chat': route.name === 'chat',
-      'shell-share': shareOnly,
-    }"
-  >
+  <div class="shell" :class="{ 'shell-share': shareOnly }">
     <header class="topbar">
       <div class="topbar-head">
         <div class="brand">{{ brand }}</div>
@@ -131,12 +124,6 @@ async function onLogout() {
   overflow: hidden;
   background: #0f1419;
   color: #e7ecf3;
-}
-
-.shell-chat .content {
-  padding: 0;
-  max-width: none;
-  overflow: hidden;
 }
 
 .topbar {

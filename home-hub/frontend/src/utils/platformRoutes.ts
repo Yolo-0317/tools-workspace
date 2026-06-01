@@ -8,11 +8,10 @@ export function isMobileRoutePath(path: string): boolean {
   return path === '/m' || path.startsWith('/m/')
 }
 
-/** 桌面路径 → H5 路径（聊天不进 H5） */
+/** 桌面路径 → H5 路径 */
 export function toMobileRoute(path: string): string {
   if (path === '/login') return path
   if (isMobileRoutePath(path)) return path
-  if (path === '/chat') return '/m'
   if (path === '/') return '/m'
   return `/m${path}`
 }

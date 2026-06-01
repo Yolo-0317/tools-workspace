@@ -51,3 +51,32 @@ body.has-pwa-banner:not(.h5-shell) #app {
   padding-top: calc(38px + env(safe-area-inset-top));
   box-sizing: border-box;
 }
+
+/* 深色主题滚动条（聊天消息区、侧栏、输入框等） */
+.hub-scrollbar {
+  color-scheme: dark;
+  scrollbar-width: thin;
+  scrollbar-color: #3d4f66 transparent;
+}
+
+.hub-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.hub-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.hub-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(61, 79, 102, 0.85);
+  border-radius: 3px;
+}
+
+.hub-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(74, 97, 120, 0.95);
+}
+
+.hub-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}

@@ -36,15 +36,11 @@ export function setupRouterGuards(router: Router) {
       return { path: defaultSelectionPath(mobileViewport), replace: true }
     }
 
-    if (mobileViewport && !mobileRoute && to.path !== '/chat') {
+    if (mobileViewport && !mobileRoute) {
       const target = toMobileRoute(to.path)
       if (target !== to.path) {
         return { path: target, query: to.query, hash: to.hash, replace: true }
       }
-    }
-
-    if (mobileViewport && to.path === '/chat') {
-      return { path: '/m', replace: true }
     }
 
     if (!mobileViewport && mobileRoute) {

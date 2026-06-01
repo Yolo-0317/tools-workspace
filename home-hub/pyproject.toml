@@ -1,7 +1,7 @@
 [project]
 name = "home-hub"
 version = "0.1.0"
-description = "个人运维与投资看板（Vue3 + FastAPI + Cursor Chat）"
+description = "个人运维与投资看板（Vue3 + FastAPI）"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -13,7 +13,6 @@ dependencies = [
     "pyyaml>=6.0.3",
     "requests>=2.34.2",
     "sqlalchemy>=2.0.50",
-    "sse-starlette>=3.4.4",
     "uvicorn>=0.48.0",
 ]
 

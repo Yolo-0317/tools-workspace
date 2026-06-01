@@ -32,20 +32,6 @@ class Settings:
     session_cookie_secure: bool = _truthy("HUB_SESSION_COOKIE_SECURE", "0")
     session_cookie_samesite: str = os.getenv("HUB_SESSION_COOKIE_SAMESITE", "lax").strip().lower()
 
-    agent_model: str = os.getenv("HUB_AGENT_MODEL", "auto")
-    agent_cwd: Path = Path(
-        os.getenv(
-            "HUB_AGENT_CWD",
-            str(ROOT.parent / "stock-ai" / "investment-agent"),
-        )
-    ).expanduser()
-    forward_thoughts: bool = _truthy("HUB_FORWARD_THOUGHTS")
-
-    chat_rate_limit: int = int(os.getenv("HUB_CHAT_RATE_LIMIT", "10"))
-    session_idle_hours: int = int(os.getenv("HUB_SESSION_IDLE_HOURS", "24"))
-    agent_run_timeout: int = int(os.getenv("HUB_AGENT_RUN_TIMEOUT", "120"))
-    agent_acp_prompt_timeout: int = int(os.getenv("HUB_ACP_PROMPT_TIMEOUT", "600"))
-
     stock_ai_root: Path = Path(
         os.getenv("STOCK_AI_ROOT", str(ROOT.parent / "stock-ai"))
     ).expanduser()
