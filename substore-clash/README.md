@@ -93,7 +93,7 @@
 | 策略组 | 类型 | 说明 |
 |--------|------|------|
 | **自动选择** | url-test | **单组**，含各区域节点；空闲 → 均衡 → 默认 → 爆满 排序，最多 80 个 |
-| **ChatGPT** | select | 节点名含 `chatgpt` + OpenAI 规则 |
+| **ChatGPT** | select | 仅含名称带 `ChatGPT解锁` 的节点（不含「自动选择」）；OpenAI 规则走本组 |
 | **PROXY** | select | 通用代理 |
 | **GLOBAL** | select | 全局 |
 | Loyalsoldier 组 | select | applications / google / direct / …（见规则表） |

@@ -43,6 +43,10 @@ VERGE_CHATGPT_RULES: tuple[str, ...] = (
     "DOMAIN-SUFFIX,oaiusercontent.com,ChatGPT",
     "DOMAIN-KEYWORD,openai,ChatGPT",
 )
+# ChatGPT 策略组：仅节点名含明确的 ChatGPT 解锁标注（避免误收仅含 chatgpt 字样的普通节点）
+CHATGPT_UNLOCK_NODE_RE = re.compile(
+    r"(?i)(?:chatgpt\s*解锁|chatgpt\s*unlock|解锁\s*chatgpt|unlock\s*chatgpt)"
+)
 
 # 与 Loyalsoldier clash-rules 的 rule-providers 一一对应（reject 用内置 REJECT）
 LOYAL_GROUP_NAMES = (
@@ -252,6 +256,17 @@ def _filter_names(names: list[str], pattern: str) -> list[str]:
     return [n for n in names if rx.search(n)]
 
 
+def _filter_chatgpt_unlock_names(names: list[str]) -> list[str]:
+    return [n for n in names if CHATGPT_UNLOCK_NODE_RE.search(n)]
+
+
+def _build_chatgpt_group_members(unlock_nodes: list[str]) -> list[str]:
+    """ChatGPT 组仅含解锁节点（不含自动选择）；首项为默认选中。"""
+    if not unlock_nodes:
+        return ["DIRECT"]
+    return sorted(unlock_nodes, key=_node_benchmark_priority)
+
+
 def _prefix_proxy_names(proxies: list[dict[str, Any]], label: str) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     for p in proxies:
@@ -392,12 +407,8 @@ def build_profile(
     if not names:
         raise ValueError("no proxies parsed — check SUBSCRIPTION_URLS or SUBSTORE_COLLECTION_URL")
 
-    chatgpt_nodes = _filter_names(names, r"(?i)chatgpt")
-    chatgpt_group = (
-        [AUTO_SELECT_NAME, "DIRECT", *chatgpt_nodes]
-        if chatgpt_nodes
-        else [AUTO_SELECT_NAME, "DIRECT"]
-    )
+    chatgpt_nodes = _filter_chatgpt_unlock_names(names)
+    chatgpt_group = _build_chatgpt_group_members(chatgpt_nodes)
 
     config = _base_profile_dict(all_proxies)
     config["proxy-groups"] = [
@@ -465,7 +476,7 @@ def build_profile_verge(
         raise ValueError("no proxies parsed — check SUBSCRIPTION_URLS or SUBSTORE_COLLECTION_URL")
 
     shortlist = sorted(names, key=_node_benchmark_priority)[:VERGE_NODE_LIMIT]
-    chatgpt_nodes = _filter_names(names, r"(?i)chatgpt")
+    chatgpt_nodes = _filter_chatgpt_unlock_names(names)
     include_names = list(dict.fromkeys([*shortlist, *chatgpt_nodes]))
     include_set = set(include_names)
     verge_proxies = []
@@ -475,11 +486,7 @@ def build_profile_verge(
         item = {k: v for k, v in p.items() if k not in ("benchmark-url", "benchmark-timeout")}
         verge_proxies.append(item)
     chatgpt_in_profile = [n for n in chatgpt_nodes if n in include_set]
-    chatgpt_group = (
-        [AUTO_SELECT_NAME, "DIRECT", *chatgpt_in_profile]
-        if chatgpt_in_profile
-        else [AUTO_SELECT_NAME, "DIRECT"]
-    )
+    chatgpt_group = _build_chatgpt_group_members(chatgpt_in_profile)
     config = _base_profile_dict(verge_proxies)
     config.pop("external-controller", None)
     config["proxy-groups"] = [

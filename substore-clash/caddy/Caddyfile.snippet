@@ -16,6 +16,15 @@ https://sub.yoloworld.site {
 	}
 
 	# Mihomo / Clash Verge 订阅地址
+	handle /clash-verge.yaml {
+		reverse_proxy host.docker.internal:8787 {
+			transport http {
+				read_timeout 120s
+			}
+		}
+		header Cache-Control "no-cache, no-store, must-revalidate"
+	}
+
 	handle /clash.yaml {
 		reverse_proxy host.docker.internal:8787 {
 			transport http {

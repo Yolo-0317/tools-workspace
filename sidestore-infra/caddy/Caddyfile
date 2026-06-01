@@ -67,6 +67,15 @@ https://sub.yoloworld.site {
 		}
 	}
 
+	handle /clash-verge.yaml {
+		reverse_proxy host.docker.internal:8787 {
+			transport http {
+				read_timeout 120s
+			}
+		}
+		header Cache-Control "no-cache, no-store, must-revalidate"
+	}
+
 	handle /clash.yaml {
 		reverse_proxy host.docker.internal:8787 {
 			transport http {
