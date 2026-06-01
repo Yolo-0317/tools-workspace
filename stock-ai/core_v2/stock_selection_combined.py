@@ -62,6 +62,48 @@ MIN_PRICE = 5
 MAX_PRICE = 20
 MIN_AMOUNT = 5000  # 万
 
+# 执行卡硬过滤（与 investment-agent/持仓执行卡 对齐）
+CHASE_PCT_MAX = 5.0          # 单日涨幅 >5% 不追高
+DROP_EXCLUDE_PCT = -7.0      # 大跌剔除
+LIMIT_DOWN_PCT = -9.5        # 接近跌停剔除
+HIGH_POSITION_PCT = 80.0     # 总仓位超过此值时不给买入类动作
+EXCLUDE_BJ = True            # 剔除北交所 92xxxx
+TOP5_MAX_PER_INDUSTRY = 2
+
+
+def _normalize_position_pct(ratio: float | None) -> float:
+    if ratio is None:
+        return 0.0
+    val = float(ratio)
+    return val * 100 if val <= 1.0 else val
+
+
+def _cap_action_for_redlines(action: str, pct_chg: float, account_position_pct: float) -> str:
+    buy_actions = {"强势关注", "观察买入", "小仓埋伏"}
+    if pct_chg > CHASE_PCT_MAX and action in buy_actions:
+        return "继续观察"
+    if account_position_pct > HIGH_POSITION_PCT and action in buy_actions:
+        return "继续观察"
+    return action
+
+
+def _position_suggestion(action: str, close_price: float) -> tuple[int, float, int]:
+    """返回 (position_ratio%, buy_shares, buy_amount_yuan)。"""
+    ratio_map = {
+        "强势关注": 0.20,
+        "观察买入": 0.15,
+        "继续观察": 0.08,
+        "小仓埋伏": 0.05,
+    }
+    position_ratio = ratio_map.get(action, 0.0)
+    total_capital = 100000
+    buy_amount_yuan = total_capital * position_ratio
+    buy_shares = 0
+    if close_price > 0 and buy_amount_yuan > 0:
+        buy_shares = int(buy_amount_yuan / close_price / 100) * 100
+    return int(position_ratio * 100), buy_shares, int(buy_shares * close_price)
+
+
 def get_db_engine():
     mysql_url = os.getenv("MYSQL_URL")
     return create_engine(mysql_url)
@@ -125,9 +167,28 @@ def main(target_date=None):
         basic_query = "SELECT ts_code, industry FROM stock_basic"
         df_basic = pd.read_sql(text(basic_query), engine)
         industry_map = dict(zip(df_basic['ts_code'], df_basic['industry']))
-    except:
+    except Exception:
         print("⚠️ 未能从数据库获取行业信息，将跳过行业过滤…")
 
+    holdings_codes: set[str] = set()
+    account_position_pct = 0.0
+    try:
+        from scripts.tools.portfolio_db import load_account, load_holding_codes
+
+        holdings_codes = load_holding_codes()
+        acct = load_account()
+        account_position_pct = _normalize_position_pct(
+            acct.position_ratio if acct else None
+        )
+        print(
+            f"📋 账户约束：持仓 {len(holdings_codes)} 只，"
+            f"仓位 {account_position_pct:.1f}%（>{HIGH_POSITION_PCT:.0f}% 不买）"
+        )
+    except Exception as exc:  # noqa: BLE001
+        print(f"⚠️ 未读取持仓/仓位（{exc}），跳过执行卡过滤")
+
+    excluded_crash = 0
+    excluded_bj = 0
     results = []
     for ts_code, group in df_all.groupby('ts_code'):
         group = group.sort_values('trade_date')
@@ -136,6 +197,15 @@ def main(target_date=None):
         latest = group.iloc[-1]
         close_today = latest['close']
         amount_today = latest['amount']
+        code_str = str(ts_code).split(".")[0].zfill(6)
+        pct_chg_today = float(latest['pct_chg'])
+
+        if EXCLUDE_BJ and code_str.startswith("92"):
+            excluded_bj += 1
+            continue
+        if pct_chg_today <= DROP_EXCLUDE_PCT or pct_chg_today <= LIMIT_DOWN_PCT:
+            excluded_crash += 1
+            continue
         
         # 基础过滤
         if not (MIN_PRICE <= close_today <= MAX_PRICE): continue
@@ -165,7 +235,9 @@ def main(target_date=None):
             
             if (box_width <= BOX_WIDTH_MAX and breakout_ratio >= 0 and 
                 dist_from_high <= DIST_FROM_250D_HIGH_MAX and dist_from_low <= DIST_FROM_250D_LOW_MAX and
-                ma5 > ma10 > ma20):
+                ma5 > ma10 > ma20 and
+                pct_chg_today > 0 and
+                close_today > float(latest['open'])):
                 is_breakout = True
 
         # --- 策略2: 低位放量三连阳 ---
@@ -197,7 +269,10 @@ def main(target_date=None):
             if (prev_20d_chg >= PULLBACK_PREV_STRENGTH and 
                 dist_to_ma20 <= PULLBACK_MA20_DIST and 
                 vol_ratio <= PULLBACK_VOL_DECREASE and
-                close_today >= ma20):
+                close_today >= ma20 and
+                close_today >= ma5 and
+                close_today > float(latest['open']) and
+                pct_chg_today > 0):
                 is_pullback = True
 
         # --- 策略4: 早埋伏（接近突破但未突破） ---
@@ -265,13 +340,15 @@ def main(target_date=None):
             if close_today >= ma20:
                 trend_score += 9
 
-            # 3) 动量分（0-20）
+            # 3) 动量分（0-20） + 5) 风险惩罚（0~-15）
+            risk_penalty = 0
             momentum_score = 0
-            pct_chg_today = latest['pct_chg']
-            if -2 <= pct_chg_today <= 6:
+            if -2 <= pct_chg_today <= CHASE_PCT_MAX:
                 momentum_score += 8
+            elif CHASE_PCT_MAX < pct_chg_today <= 6:
+                momentum_score += 2
             elif pct_chg_today > 6:
-                momentum_score += 4  # 过热降分
+                risk_penalty -= 4
 
             if len(group) >= 25:
                 prev_20d_chg_for_score = (group['close'].iloc[-1] - group['close'].iloc[-21]) / group['close'].iloc[-21] * 100
@@ -283,8 +360,6 @@ def main(target_date=None):
             # 4) 流动性分（0-10）
             liquidity_score = min(10, amount_today / 200000)  # 200亿成交额封顶
 
-            # 5) 风险惩罚（0~-15）
-            risk_penalty = 0
             if abs(pct_chg_today) > 8:
                 risk_penalty -= 6
             if len(group) >= 10:
@@ -292,7 +367,7 @@ def main(target_date=None):
                 if recent_vol > 5:
                     risk_penalty -= 5
 
-            # 6) 大盘调整 (新增)
+            # 6) 大盘调整
             total_score = max(0, min(100, round(signal_score + trend_score + momentum_score + liquidity_score + risk_penalty + market_score_adj, 1)))
 
             # 7) 板块调整 (新增)
@@ -323,24 +398,12 @@ def main(target_date=None):
             if is_ambush and not (is_breakout or is_three_up or is_pullback) and total_score >= 55:
                 action = "小仓埋伏"
 
-            # === 仓位建议逻辑 ===
-            # 假设总本金为 100,000 元，可根据实际情况调整
-            total_capital = 100000
-            position_ratio = 0
-            if action == "强势关注":
-                position_ratio = 0.20
-            elif action == "观察买入":
-                position_ratio = 0.15
-            elif action == "继续观察":
-                position_ratio = 0.08
-            elif action == "小仓埋伏":
-                position_ratio = 0.05
-            
-            buy_amount_yuan = total_capital * position_ratio
-            buy_shares = 0
-            if close_today > 0 and buy_amount_yuan > 0:
-                # A股买入需为100股的整数倍，向下取整
-                buy_shares = int(buy_amount_yuan / close_today / 100) * 100
+            if code_str in holdings_codes:
+                action = "持有" if action in ("强势关注", "观察买入", "小仓埋伏") else action
+            else:
+                action = _cap_action_for_redlines(action, pct_chg_today, account_position_pct)
+
+            _, buy_shares, buy_amount_yuan = _position_suggestion(action, close_today)
 
             results.append({
                 '代码': ts_code,
@@ -361,7 +424,7 @@ def main(target_date=None):
                 '所属行业': industry,
                 '建议动作': action,
                 '建议买入(股)': buy_shares,
-                '预计金额(元)': int(buy_shares * close_today),
+                '预计金额(元)': buy_amount_yuan,
                 '超大单净流入(万)': big_net,
                 '超大单占比%': big_pct
             })
@@ -369,6 +432,12 @@ def main(target_date=None):
     if not results:
         print("❌ 未筛选出符合任何策略的股票")
         return
+
+    if excluded_crash or excluded_bj:
+        print(
+            f"🛡️ 硬过滤剔除：大跌/跌停 {excluded_crash} 只，"
+            f"北交所 {excluded_bj} 只"
+        )
 
     res_df = pd.DataFrame(results).sort_values(by=['总分', '标签数', '成交额(万)'], ascending=False)
     

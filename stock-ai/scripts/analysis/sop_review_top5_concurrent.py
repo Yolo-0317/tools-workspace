@@ -186,13 +186,18 @@ def review_top5_sop_concurrent(
     save_report: bool = True,
 ) -> tuple[str, str | None, list[SopWatchMeta]]:
     """并发 SOP 采集 + DeepSeek 分析，返回 (微信摘要, 报告路径, 结构化监控元数据)。"""
-    from scripts.tools.selection_results import resolve_selection_df, trade_date_to_str
+    from scripts.tools.selection_results import resolve_selection_df, pick_selection_top, trade_date_to_str
 
     td, df, source = resolve_selection_df(trade_date=trade_date, csv_path=csv_path)
     if df.empty:
         raise ValueError("选股结果为空")
 
-    top = df.head(top_n).copy()
+    if holdings_codes is None:
+        holdings_codes, _ = load_full_decision_context()
+
+    top = pick_selection_top(df.head(top_n * 4), top_n, holdings_codes=holdings_codes)
+    if top.empty:
+        top = df.head(top_n).copy()
     codes = [str(c).split(".")[0].zfill(6) for c in top["代码"].astype(str)]
     trade_date_str = trade_date_to_str(td)
     sop_dir = ROOT / "output" / "sop_preliminary" / trade_date_str

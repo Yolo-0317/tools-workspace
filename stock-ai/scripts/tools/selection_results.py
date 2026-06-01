@@ -59,6 +59,45 @@ def sort_selection_df(df: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values(by=sort_cols, ascending=False)
 
 
+def pick_selection_top(
+    df: pd.DataFrame,
+    top_n: int = 5,
+    *,
+    holdings_codes: set[str] | None = None,
+    max_per_industry: int = 2,
+) -> pd.DataFrame:
+    """Top N：剔除持仓 + 同行业上限（执行卡 P0）。"""
+    if df.empty or top_n <= 0:
+        return df.iloc[0:0].copy()
+
+    holdings_codes = holdings_codes or set()
+    picked: list[int] = []
+    industry_count: dict[str, int] = {}
+
+    for idx, row in df.iterrows():
+        if len(picked) >= top_n:
+            break
+        code = str(row.get("代码", "")).split(".")[0].zfill(6)
+        if code in holdings_codes:
+            continue
+        raw_industry = row.get("所属行业")
+        if raw_industry is None or (isinstance(raw_industry, float) and pd.isna(raw_industry)):
+            industry_key = None
+        else:
+            industry_key = str(raw_industry).strip()
+            if industry_key in {"", "N/A", "nan", "-", "--"}:
+                industry_key = None
+        if industry_key is not None and industry_count.get(industry_key, 0) >= max_per_industry:
+            continue
+        picked.append(idx)
+        if industry_key is not None:
+            industry_count[industry_key] = industry_count.get(industry_key, 0) + 1
+
+    if not picked:
+        return df.iloc[0:0].copy()
+    return df.loc[picked].copy()
+
+
 def import_csv_to_db(csv_path: Path | str, *, strategy: str = "combined") -> int:
     """一次性将 CSV 导入 MySQL（供迁移或补录）。"""
     path = Path(csv_path)

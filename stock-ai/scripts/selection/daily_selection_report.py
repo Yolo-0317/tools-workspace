@@ -151,7 +151,7 @@ def main() -> int:
 
     run_selection()
 
-    from scripts.tools.selection_results import resolve_selection_df, trade_date_to_str
+    from scripts.tools.selection_results import resolve_selection_df, pick_selection_top, trade_date_to_str
 
     try:
         trade_date, df, source = resolve_selection_df()
@@ -163,11 +163,14 @@ def main() -> int:
     print(f"📂 选股数据源: {source}", file=sys.stderr)
 
     holdings_codes, decision_context = load_full_decision_context()
-    top_codes = [str(c).zfill(6) for c in df.head(TOP_N)["代码"].astype(str).tolist()]
+    top_df = pick_selection_top(df.head(TOP_N * 4), TOP_N, holdings_codes=holdings_codes)
+    if top_df.empty:
+        top_df = df.head(TOP_N)
+    top_codes = [str(c).zfill(6) for c in top_df.head(TOP_N)["代码"].astype(str).tolist()]
     engine = create_engine(os.environ["MYSQL_URL"])
     names = _load_names(engine, top_codes)
 
-    sections = [_format_report(df, trade_date_str, holdings_codes, names), ""]
+    sections = [_format_report(top_df, trade_date_str, holdings_codes, names), ""]
 
     if args.no_sop:
         ai_block = _run_ai_review(trade_date, decision_context)
