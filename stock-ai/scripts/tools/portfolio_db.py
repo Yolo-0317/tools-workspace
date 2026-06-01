@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
@@ -533,36 +534,45 @@ def _fetch_eastmoney_market_name_cache(*, force: bool = False) -> dict[str, str]
         return cache
 
     fs = "m:1+t:2,m:1+t:23,m:0+t:6,m:0+t:80,m:0+t:81,m:0+t:82,m:0+t:83"
+    prev_no_proxy = os.environ.get("NO_PROXY")
+    os.environ["NO_PROXY"] = "*"
     session = requests.Session()
+    session.trust_env = False
     session.headers.update({"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"})
     merged = dict(cache)
     pn = 1
     pz = 500
-    while pn <= 80:
-        try:
-            resp = session.get(
-                "https://push2.eastmoney.com/api/qt/clist/get",
-                params={"pn": pn, "pz": pz, "fs": fs, "fields": "f12,f14"},
-                timeout=30,
-            )
-            resp.raise_for_status()
-            payload = resp.json()
-        except Exception:
-            break
-        block = (payload.get("data") or {}).get("diff") or []
-        if not block:
-            break
-        for item in block:
-            if not isinstance(item, dict):
-                continue
-            code = _code6(str(item.get("f12") or ""))
-            name = str(item.get("f14") or "").strip()
-            if code and name and _has_cjk(name):
-                merged[code] = name
-        total = int((payload.get("data") or {}).get("total") or 0)
-        if pn * pz >= total:
-            break
-        pn += 1
+    try:
+        while pn <= 80:
+            try:
+                resp = session.get(
+                    "https://push2.eastmoney.com/api/qt/clist/get",
+                    params={"pn": pn, "pz": pz, "fs": fs, "fields": "f12,f14"},
+                    timeout=30,
+                )
+                resp.raise_for_status()
+                payload = resp.json()
+            except Exception:
+                break
+            block = (payload.get("data") or {}).get("diff") or []
+            if not block:
+                break
+            for item in block:
+                if not isinstance(item, dict):
+                    continue
+                code = _code6(str(item.get("f12") or ""))
+                name = str(item.get("f14") or "").strip()
+                if code and name and _has_cjk(name):
+                    merged[code] = name
+            total = int((payload.get("data") or {}).get("total") or 0)
+            if pn * pz >= total:
+                break
+            pn += 1
+    finally:
+        if prev_no_proxy is None:
+            os.environ.pop("NO_PROXY", None)
+        else:
+            os.environ["NO_PROXY"] = prev_no_proxy
     if len(merged) > len(cache):
         _write_disk_name_cache(merged)
     global _STOCK_NAME_CACHE
@@ -570,11 +580,45 @@ def _fetch_eastmoney_market_name_cache(*, force: bool = False) -> dict[str, str]
     return merged
 
 
+def _fetch_opencli_market_name_cache(*, force: bool = False) -> dict[str, str]:
+    """OpenCLI 东财 A 股列表 JSONP 分页（clist HTTP 不可用时的全量兜底）。"""
+    cache = _read_disk_name_cache()
+    if len(cache) >= _MARKET_NAME_CACHE_MIN and not force:
+        return cache
+    try:
+        from scripts.tools.fetch_eastmoney_quotes import fetch_market_names_opencli
+
+        print(
+            "⏳ OpenCLI 东财 A 股列表 DOM 翻页（约 6～8 分钟）…",
+            file=sys.stderr,
+        )
+        fetched = fetch_market_names_opencli(close_browser=True)
+    except Exception as exc:  # noqa: BLE001
+        print(f"⚠️ OpenCLI A 股列表失败: {exc}", file=sys.stderr)
+        return cache
+
+    merged = dict(cache)
+    merged.update(fetched)
+    if len(merged) > len(cache):
+        _write_disk_name_cache(merged)
+    global _STOCK_NAME_CACHE
+    _STOCK_NAME_CACHE = None
+    print(
+        f"✓ OpenCLI A 股列表: +{len(fetched)} 条，合计 {len(merged)} 条",
+        file=sys.stderr,
+    )
+    return merged
+
+
 def ensure_market_name_cache(*, force: bool = False) -> int:
-    """预热代码→中文名缓存；返回缓存条目数。"""
+    """预热代码→中文名缓存（东财 clist → OpenCLI A 股列表 → 逐股补缺）。"""
     _load_dotenv()
-    _fetch_tushare_name_cache(refresh=force)
-    cache = _fetch_eastmoney_market_name_cache(force=force)
+    _fetch_eastmoney_market_name_cache(force=force)
+    cache = _read_disk_name_cache()
+    if len(cache) < _MARKET_NAME_CACHE_MIN:
+        cache = _fetch_opencli_market_name_cache(force=force)
+    global _STOCK_NAME_CACHE
+    _STOCK_NAME_CACHE = cache
     return len(cache)
 
 
@@ -597,29 +641,12 @@ def _fetch_opencli_names(codes: list[str]) -> dict[str, str]:
 
 
 def _fetch_tushare_name_cache(*, refresh: bool = False) -> dict[str, str]:
+    """本地名称缓存（Tushare 仅有行情权限，不调用 stock_basic）。"""
     global _STOCK_NAME_CACHE
     if _STOCK_NAME_CACHE is not None and not refresh:
         return _STOCK_NAME_CACHE
     _load_dotenv()
     cache: dict[str, str] = dict(_read_disk_name_cache())
-    token = os.getenv("TUSHARE_TOKEN", "").strip()
-    if token:
-        try:
-            import tushare as ts
-
-            ts.set_token(token)
-            pro = ts.pro_api()
-            df = pro.stock_basic(exchange="", list_status="L", fields="ts_code,name")
-            for _, row in df.iterrows():
-                ts_code = str(row.ts_code)
-                cn = str(row.name).strip()
-                if not cn:
-                    continue
-                cache[ts_code] = cn
-                cache[_code6(ts_code)] = cn
-            _write_disk_name_cache(cache)
-        except Exception:
-            pass
     _STOCK_NAME_CACHE = cache
     return cache
 
@@ -629,7 +656,7 @@ def load_stock_names_by_codes(
     *,
     engine: Engine | None = None,
 ) -> dict[str, str]:
-    """6 位代码 → 中文名（持仓 → 本地缓存 → Tushare/东财全市场 → OpenCLI 补缺）。"""
+    """6 位代码 → 中文名（持仓 → 东财全市场缓存 → OpenCLI 补缺）。"""
     normalized: list[str] = []
     for raw in codes:
         code = _code6(raw)
@@ -1087,6 +1114,68 @@ def load_stock_profiles_by_codes(
             "updated_at": str(row.updated_at) if row.updated_at else None,
         }
     return out
+
+
+def load_industry_map(*, engine: Engine | None = None) -> dict[str, str]:
+    """6 位代码 / ts_code → 行业名（OpenCLI enrich 写入的 stock_profile）。"""
+    engine = engine or get_engine()
+    if engine is None:
+        return {}
+
+    out: dict[str, str] = {}
+
+    def _put(code: str, industry: str | None) -> None:
+        ind = (industry or "").strip()
+        if not ind or ind in {"N/A", "-", "--"}:
+            return
+        c6 = _code6(code)
+        out[c6] = ind
+        out[_to_ts_code(c6)] = ind
+
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    """
+                    SELECT ts_code, industry FROM stock_profile
+                    WHERE industry IS NOT NULL AND industry != ''
+                    """
+                )
+            ).fetchall()
+        for row in rows:
+            _put(str(row.ts_code), str(row.industry))
+    except Exception:
+        pass
+
+    return out
+
+
+def is_st_stock_name(name: str) -> bool:
+    """ST / *ST 名称识别。"""
+    n = (name or "").strip()
+    if not n:
+        return False
+    return bool(re.match(r"^\*?ST", n, re.IGNORECASE))
+
+
+def load_st_codes_from_names(name_map: dict[str, str] | None = None) -> set[str]:
+    """从代码→名称映射中提取 ST 代码集合。"""
+    if name_map is None:
+        name_map = _fetch_tushare_name_cache()
+    st: set[str] = set()
+    for code, name in name_map.items():
+        if not re.fullmatch(r"\d{6}", str(code)):
+            continue
+        if is_st_stock_name(str(name)):
+            st.add(str(code))
+    return st
+
+
+def load_st_codes(*, engine: Engine | None = None) -> set[str]:
+    """ST 代码：东财全市场名称缓存（OpenCLI enrich 前兜底）。"""
+    _ = engine
+    ensure_market_name_cache()
+    return load_st_codes_from_names(_read_disk_name_cache())
 
 
 def merge_profile_fields_into_selection_row(

@@ -30,25 +30,9 @@ def _fix_mysql_url(url: str) -> str:
 
 
 def _load_names(engine, codes: list[str]) -> dict[str, str]:
-    names: dict[str, str] = {}
-    if not codes:
-        return names
-    placeholders = ", ".join(f":c{i}" for i in range(len(codes)))
-    params = {f"c{i}": c for i, c in enumerate(codes)}
-    try:
-        with engine.connect() as conn:
-            rows = conn.execute(
-                text(
-                    f"SELECT ts_code, name FROM stock_basic WHERE ts_code IN ({placeholders})"
-                ),
-                params,
-            ).fetchall()
-        for row in rows:
-            code = str(row.ts_code).split(".")[0]
-            names[code] = row.name
-    except Exception:
-        pass
-    return names
+    from scripts.tools.portfolio_db import load_stock_names_by_codes
+
+    return load_stock_names_by_codes(codes, engine=engine)
 
 
 def _format_report(
@@ -163,7 +147,12 @@ def main() -> int:
     print(f"📂 选股数据源: {source}", file=sys.stderr)
 
     holdings_codes, decision_context = load_full_decision_context()
-    top_df = pick_selection_top(df.head(TOP_N * 4), TOP_N, holdings_codes=holdings_codes)
+    top_df = pick_selection_top(
+        df.head(TOP_N * 4),
+        TOP_N,
+        holdings_codes=holdings_codes,
+        max_per_industry=2,
+    )
     if top_df.empty:
         top_df = df.head(TOP_N)
     top_codes = [str(c).zfill(6) for c in top_df.head(TOP_N)["代码"].astype(str).tolist()]

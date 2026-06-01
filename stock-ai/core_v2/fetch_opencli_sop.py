@@ -169,6 +169,17 @@ def get_market_sentiment() -> dict[str, Any]:
         result["up_ratio"] = round(breadth["up"] / total, 4) if total else None
     else:
         result["涨跌分布"] = "N/A"
+        result["up_ratio"] = None
+
+    try:
+        from scripts.tools.fetch_eastmoney_quotes import fetch_hot_industry_sectors_opencli
+
+        hot = fetch_hot_industry_sectors_opencli(top_n=5, close_browser=True)
+        if hot:
+            result["热门板块"] = hot
+    except Exception:
+        result["热门板块"] = []
+
     return result
 
 

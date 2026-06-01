@@ -9,13 +9,14 @@
 """
 
 import os
+import re
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 import pandas as pd
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
-from fetch_opencli_sop import get_market_sentiment, get_stock_fundamental
+from fetch_opencli_sop import get_market_sentiment
 
 # 添加项目根目录到 Python 路径
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -104,8 +105,42 @@ def _position_suggestion(action: str, close_price: float) -> tuple[int, float, i
     return int(position_ratio * 100), buy_shares, int(buy_shares * close_price)
 
 
+def _resolve_industry(ts_code: str, industry_map: dict[str, str]) -> str:
+    code_str = str(ts_code).split(".")[0].zfill(6)
+    return industry_map.get(code_str) or industry_map.get(str(ts_code)) or "N/A"
+
+
+def _sector_matches(industry: str, hot_sectors: list[str]) -> bool:
+    if industry in {"", "N/A", "-", "--"} or not hot_sectors:
+        return False
+    return any(industry in s or s in industry for s in hot_sectors)
+
+
+def _market_score_from_sentiment(market_sentiment: dict | None) -> tuple[int, list[str]]:
+    """返回 (大盘调整分, 热门板块列表)。"""
+    if not market_sentiment:
+        return 0, []
+    hot_sectors = list(market_sentiment.get("热门板块") or [])
+    up_ratio = market_sentiment.get("up_ratio")
+    if up_ratio is None:
+        breadth = market_sentiment.get("breadth") or {}
+        if isinstance(breadth, dict):
+            total = int(breadth.get("up", 0)) + int(breadth.get("down", 0)) + int(
+                breadth.get("flat", 0)
+            )
+            if total > 0:
+                up_ratio = int(breadth.get("up", 0)) / total
+    adj = 0
+    if up_ratio is not None:
+        if up_ratio > 0.6:
+            adj = 5
+        elif up_ratio < 0.4:
+            adj = -5
+    return adj, hot_sectors
+
+
 def get_db_engine():
-    mysql_url = os.getenv("MYSQL_URL")
+    mysql_url = os.getenv("MYSQL_URL", "").replace("host.docker.internal", "127.0.0.1")
     return create_engine(mysql_url)
 
 def get_latest_trade_date(engine):
@@ -121,30 +156,30 @@ def main(target_date=None):
         trade_date = get_latest_trade_date(engine)
     print(f"🚀 开始综合选股扫描，基准日期：{trade_date}")
     
-    # 获取大盘情绪
-    print("📡 正在获取大盘实时情绪 (跳过以提高速度)...")
-    market_sentiment = None # get_market_sentiment()
+    skip_sentiment = os.getenv("SKIP_MARKET_SENTIMENT", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    market_sentiment = None
     market_score_adj = 0
-    hot_sectors = []
-    if market_sentiment:
-        # 获取热门板块列表
-        hot_sectors = market_sentiment.get("热门板块", [])
-        print(f"🔥 当前热门板块：{', '.join(hot_sectors[:3])}...")
-        
-        # 根据涨跌分布计算大盘分 (上涨家数 / (上涨+下跌))
+    hot_sectors: list[str] = []
+    if skip_sentiment:
+        print("📡 跳过大盘情绪（SKIP_MARKET_SENTIMENT=1）")
+    else:
+        print("📡 正在获取大盘实时情绪…")
         try:
-            dist = market_sentiment.get("涨跌分布", "")
-            if "上涨:" in dist and "下跌:" in dist:
-                up_cnt = int(dist.split("上涨:")[1].split(" |")[0])
-                down_cnt = int(dist.split("下跌:")[1].split(" |")[0])
-                if up_cnt + down_cnt > 0:
-                    up_ratio = up_cnt / (up_cnt + down_cnt)
-                    # 赚钱效应好(>60%)加分，差(<40%)扣分
-                    if up_ratio > 0.6: market_score_adj = 5
-                    elif up_ratio < 0.4: market_score_adj = -5
-                    print(f"📊 大盘赚钱效应：{round(up_ratio*100, 1)}%，风险调整：{market_score_adj}")
-        except:
-            pass
+            market_sentiment = get_market_sentiment()
+            market_score_adj, hot_sectors = _market_score_from_sentiment(market_sentiment)
+            if market_sentiment.get("up_ratio") is not None:
+                print(
+                    f"📊 大盘赚钱效应：{market_sentiment['up_ratio'] * 100:.1f}%，"
+                    f"风险调整：{market_score_adj}"
+                )
+            if hot_sectors:
+                print(f"🔥 当前热门板块：{', '.join(hot_sectors[:3])}…")
+        except Exception as exc:  # noqa: BLE001
+            print(f"⚠️ 大盘情绪获取失败（{exc}），跳过板块/大盘加分")
     
     # 获取1100天数据以支持3年大底计算
     end_date_obj = datetime.strptime(trade_date, "%Y%m%d")
@@ -161,14 +196,26 @@ def main(target_date=None):
     df_all = pd.read_sql(text(query), engine)
     print(f"✓ 已加载 {len(df_all)} 条记录")
 
-    # 尝试获取个股所属行业信息（如果存在）
-    industry_map = {}
+    industry_map: dict[str, str] = {}
     try:
-        basic_query = "SELECT ts_code, industry FROM stock_basic"
-        df_basic = pd.read_sql(text(basic_query), engine)
-        industry_map = dict(zip(df_basic['ts_code'], df_basic['industry']))
-    except Exception:
-        print("⚠️ 未能从数据库获取行业信息，将跳过行业过滤…")
+        from scripts.tools.portfolio_db import load_industry_map
+
+        industry_map = load_industry_map(engine=engine)
+        n_ind = len({k for k in industry_map if re.fullmatch(r"\d{6}", str(k))})
+        print(f"✓ 行业映射 {n_ind} 只（OpenCLI stock_profile）")
+    except Exception as exc:  # noqa: BLE001
+        print(f"⚠️ 未能加载行业映射（{exc}）")
+
+    st_codes: set[str] = set()
+    if EXCLUDE_ST:
+        try:
+            from scripts.tools.portfolio_db import ensure_market_name_cache, load_st_codes
+
+            ensure_market_name_cache()
+            st_codes = load_st_codes(engine=engine)
+            print(f"🛡️ ST 剔除：{len(st_codes)} 只")
+        except Exception as exc:  # noqa: BLE001
+            print(f"⚠️ ST 名单加载失败（{exc}）")
 
     holdings_codes: set[str] = set()
     account_position_pct = 0.0
@@ -189,6 +236,7 @@ def main(target_date=None):
 
     excluded_crash = 0
     excluded_bj = 0
+    excluded_st = 0
     results = []
     for ts_code, group in df_all.groupby('ts_code'):
         group = group.sort_values('trade_date')
@@ -200,6 +248,9 @@ def main(target_date=None):
         code_str = str(ts_code).split(".")[0].zfill(6)
         pct_chg_today = float(latest['pct_chg'])
 
+        if EXCLUDE_ST and code_str in st_codes:
+            excluded_st += 1
+            continue
         if EXCLUDE_BJ and code_str.startswith("92"):
             excluded_bj += 1
             continue
@@ -370,10 +421,10 @@ def main(target_date=None):
             # 6) 大盘调整
             total_score = max(0, min(100, round(signal_score + trend_score + momentum_score + liquidity_score + risk_penalty + market_score_adj, 1)))
 
-            # 7) 板块调整 (新增)
+            # 7) 板块调整
             sector_score_adj = 0
-            industry = industry_map.get(ts_code, 'N/A')
-            if industry != 'N/A' and any(industry in s for s in hot_sectors):
+            industry = _resolve_industry(str(ts_code), industry_map)
+            if _sector_matches(industry, hot_sectors):
                 sector_score_adj = 5
                 total_score = min(100, total_score + sector_score_adj)
 
@@ -433,10 +484,10 @@ def main(target_date=None):
         print("❌ 未筛选出符合任何策略的股票")
         return
 
-    if excluded_crash or excluded_bj:
+    if excluded_crash or excluded_bj or excluded_st:
         print(
             f"🛡️ 硬过滤剔除：大跌/跌停 {excluded_crash} 只，"
-            f"北交所 {excluded_bj} 只"
+            f"北交所 {excluded_bj} 只，ST {excluded_st} 只"
         )
 
     res_df = pd.DataFrame(results).sort_values(by=['总分', '标签数', '成交额(万)'], ascending=False)

@@ -102,28 +102,9 @@ def load_top_picks(
 
 
 def _load_names(codes: list[str]) -> dict[str, str]:
-    import os
+    from scripts.tools.portfolio_db import load_stock_names_by_codes
 
-    from sqlalchemy import create_engine, text
-
-    url = os.getenv("MYSQL_URL", "").replace("host.docker.internal", "127.0.0.1")
-    if not url:
-        return {}
-    placeholders = ", ".join(f":c{i}" for i in range(len(codes)))
-    params = {f"c{i}": c for i, c in enumerate(codes)}
-    names: dict[str, str] = {}
-    try:
-        engine = create_engine(url)
-        with engine.connect() as conn:
-            rows = conn.execute(
-                text(f"SELECT ts_code, name FROM stock_basic WHERE ts_code IN ({placeholders})"),
-                params,
-            ).fetchall()
-        for row in rows:
-            names[str(row.ts_code).split(".")[0].zfill(6)] = row.name
-    except Exception:
-        pass
-    return names
+    return load_stock_names_by_codes(codes)
 
 
 def enrich_pick_names(picks: list[SelectionPick]) -> list[SelectionPick]:

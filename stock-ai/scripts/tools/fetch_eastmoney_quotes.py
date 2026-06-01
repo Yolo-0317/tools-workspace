@@ -570,6 +570,301 @@ def fetch_macro_news_opencli(*, limit: int = 15, close_browser: bool = True) -> 
 
 
 BREADTH_PAGE_URL = "https://quote.eastmoney.com/zs000001.html"
+A_SHARE_LIST_URL = "https://quote.eastmoney.com/center/gridlist.html#hs_a_board"
+# 沪深京 A 股列表页 webguest clist（与页面 Network 一致）
+A_SHARE_CLIST_FS = (
+    "m:0+t:6+f:!2,m:0+t:80+f:!2,m:1+t:2+f:!2,"
+    "m:1+t:23+f:!2,m:0+t:81+s:262144+f:!2"
+)
+A_SHARE_CLIST_FIELDS = "f12,f14"
+A_SHARE_LIST_PAGE_SIZE = 20
+A_SHARE_JSONP_TIMEOUT_MS = 20000
+A_SHARE_CLIST_UT = "fa5fd1943c7b386f172d6893dbfba10b"
+A_SHARE_CLIST_WBP2U = "|0|0|0|web"
+
+INDUSTRY_BOARD_URL = "https://quote.eastmoney.com/center/gridlist.html#industry_board"
+
+
+def _has_cjk(text: str) -> bool:
+    return bool(re.search(r"[\u4e00-\u9fff]", text))
+
+
+def _jsonp_clist_page_js(pn: int, pz: int, *, fs: str, fields: str) -> str:
+    fs_json = json.dumps(fs, ensure_ascii=False)
+    wbp2u_json = json.dumps(A_SHARE_CLIST_WBP2U, ensure_ascii=False)
+    return f"""
+new Promise((resolve) => {{
+  const cb = "jQuery_oc_" + Date.now();
+  window[cb] = (data) => {{
+    try {{
+      const payload = (data && data.data) ? data.data : {{}};
+      const diff = payload.diff;
+      const list = Array.isArray(diff) ? diff : Object.values(diff || {{}});
+      const rows = list.map((x) => ({{
+        code: String(x.f12 || "").replace(/\\D/g, "").slice(-6).padStart(6, "0"),
+        name: String(x.f14 || "").trim(),
+      }})).filter((x) => /^\\d{{6}}$/.test(x.code) && x.name);
+      resolve(JSON.stringify({{ total: Number(payload.total) || 0, rows: rows }}));
+    }} catch (e) {{
+      resolve(JSON.stringify({{ total: 0, rows: [], error: String(e) }}));
+    }}
+  }};
+  const s = document.createElement("script");
+  s.src = "https://push2.eastmoney.com/webguest/api/qt/clist/get?timil=1&np=1&fltt=1&invt=2&cb=" + cb
+    + "&fs=" + encodeURIComponent({fs_json})
+    + "&fields={fields}&fid=f3&pn={int(pn)}&pz={int(pz)}&po=1&dect=1"
+    + "&ut={A_SHARE_CLIST_UT}&wbp2u=" + encodeURIComponent({wbp2u_json})
+    + "&_=" + Date.now();
+  s.onerror = () => resolve(JSON.stringify({{ total: 0, rows: [], error: "script" }}));
+  document.head.appendChild(s);
+  setTimeout(
+    () => resolve(JSON.stringify({{ total: 0, rows: [], error: "timeout" }})),
+    {int(A_SHARE_JSONP_TIMEOUT_MS)}
+  );
+}})
+"""
+
+
+def _read_a_share_total_pages_js() -> str:
+    return r"""
+JSON.stringify((() => {
+  const nums = [...document.querySelectorAll('a, span, li')]
+    .map((el) => (el.innerText || '').trim())
+    .filter((x) => /^\d+$/.test(x))
+    .map((x) => parseInt(x, 10))
+    .filter((n) => n > 0 && n < 500);
+  if (!nums.length) return 0;
+  return Math.max(...nums);
+})())
+"""
+
+
+def _fetch_market_names_jsonp_head(
+    *,
+    wait_seconds: float = 3.0,
+    page_size: int = 20,
+    max_pages: int = 10,
+) -> dict[str, str]:
+    """JSONP 仅可取前 ~10 页（约 200 条），作 DOM 全量前的快速预热。"""
+    wait_arg = str(max(1, int(round(wait_seconds))))
+    _open_page(A_SHARE_LIST_URL, label="hs-a-jsonp")
+    _run_opencli(["browser", "wait", "time", wait_arg], timeout=15)
+
+    out: dict[str, str] = {}
+    for pn in range(1, max_pages + 1):
+        if pn > 1:
+            _run_opencli(["browser", "wait", "time", "0.5"], timeout=10)
+        raw = _eval_js(
+            _jsonp_clist_page_js(
+                pn,
+                page_size,
+                fs=A_SHARE_CLIST_FS,
+                fields=A_SHARE_CLIST_FIELDS,
+            ),
+            timeout=max(35.0, A_SHARE_JSONP_TIMEOUT_MS / 1000 + 5),
+        )
+        try:
+            payload = json.loads(raw) if raw else {}
+        except json.JSONDecodeError:
+            break
+        rows = payload.get("rows") or []
+        if not rows:
+            break
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            code = code6(str(row.get("code") or ""))
+            name = str(row.get("name") or "").strip()
+            if re.fullmatch(r"\d{6}", code) and name and _has_cjk(name):
+                out[code] = name
+    return out
+
+
+def fetch_market_names_opencli(
+    *,
+    page_size: int = A_SHARE_LIST_PAGE_SIZE,
+    wait_seconds: float = 3.0,
+    close_browser: bool = True,
+    reset_browser: bool = True,
+    max_pages: int = 320,
+    use_jsonp_head: bool = False,
+) -> dict[str, str]:
+    """东财 A 股列表 DOM 翻页全量（单 OpenCLI 会话，约 6～8 分钟）。"""
+    _ = page_size, use_jsonp_head
+    if reset_browser:
+        _reset_browser()
+    return _fetch_market_names_opencli_dom(
+        wait_seconds=max(0.8, wait_seconds * 0.35),
+        close_browser=close_browser,
+        reset_browser=False,
+        max_pages=max_pages,
+        progress=True,
+    )
+
+
+def _extract_a_share_table_rows_js() -> str:
+    return r"""
+JSON.stringify((() => {
+  const out = [];
+  for (const tr of document.querySelectorAll('table tbody tr')) {
+    const tds = [...tr.querySelectorAll('td')];
+    if (tds.length < 3) continue;
+    const code = (tds[1].innerText || '').trim();
+    let name = (tds[2].innerText || '').trim().split(/\s/)[0];
+    if (/^\d{6}$/.test(code) && name) out.push({ code, name });
+  }
+  return out;
+})())
+"""
+
+
+def _qtpager_links_js() -> str:
+    return r"""
+JSON.stringify((() => {
+  const root = document.querySelector('.qtpager');
+  if (!root) return [];
+  return [...root.querySelectorAll('a')].map((a) => (a.innerText || '').trim());
+})())
+"""
+
+
+def _click_qtpager_link_js(label: str) -> str:
+    text = json.dumps(str(label), ensure_ascii=False)
+    return f"""
+JSON.stringify((() => {{
+  const root = document.querySelector('.qtpager');
+  if (!root) return {{ ok: false, error: 'no pager' }};
+  const target = {text};
+  const link = [...root.querySelectorAll('a')].find(
+    (a) => (a.innerText || '').trim() === target
+  );
+  if (!link) return {{ ok: false, error: 'missing ' + target }};
+  link.click();
+  return {{ ok: true, label: target }};
+}})())
+"""
+
+
+def _wait_for_qtpager_ready(*, max_seconds: float = 30.0) -> bool:
+    attempts = max(3, int(max_seconds))
+    for _ in range(attempts):
+        try:
+            links = json.loads(_eval_js(_qtpager_links_js(), timeout=15) or "[]")
+        except json.JSONDecodeError:
+            links = []
+        if isinstance(links, list) and links:
+            return True
+        _run_opencli(["browser", "wait", "time", "1"], timeout=10)
+    return False
+
+
+def _fetch_market_names_opencli_dom(
+    *,
+    wait_seconds: float = 1.2,
+    close_browser: bool = True,
+    reset_browser: bool = True,
+    max_pages: int = 400,
+    progress: bool = False,
+) -> dict[str, str]:
+    """`.qtpager` 区块翻页全量（东财 A 股列表页，约 6～9 分钟）。"""
+    import sys
+
+    if reset_browser:
+        _reset_browser()
+    wait_arg = str(max(1, int(round(wait_seconds))))
+    _open_page(A_SHARE_LIST_URL, label="hs-a-list-dom")
+    if not _wait_for_qtpager_ready(max_seconds=30.0):
+        _close_browser_if(close_browser)
+        raise RuntimeError("东财 A 股列表分页器未加载（.qtpager 为空）")
+
+    out: dict[str, str] = {}
+    seen_pages: set[int] = set()
+    idle_rounds = 0
+    max_idle_rounds = 4
+
+    while len(seen_pages) < max_pages and idle_rounds < max_idle_rounds:
+        try:
+            links = json.loads(_eval_js(_qtpager_links_js(), timeout=15) or "[]")
+        except json.JSONDecodeError:
+            links = []
+        if not isinstance(links, list):
+            links = []
+
+        round_added = 0
+        for label in links:
+            if label == ">":
+                continue
+            if not str(label).isdigit():
+                continue
+            page_no = int(label)
+            if page_no in seen_pages or page_no > max_pages:
+                continue
+            _eval_js(_click_qtpager_link_js(str(page_no)), timeout=15)
+            _run_opencli(["browser", "wait", "time", wait_arg], timeout=15)
+            raw = _eval_js(_extract_a_share_table_rows_js(), timeout=20)
+            try:
+                rows = json.loads(raw) if raw else []
+            except json.JSONDecodeError:
+                rows = []
+            if not rows:
+                continue
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                code = code6(str(row.get("code") or ""))
+                name = str(row.get("name") or "").strip()
+                if re.fullmatch(r"\d{6}", code) and name and _has_cjk(name):
+                    out[code] = name
+            seen_pages.add(page_no)
+            round_added += 1
+            if progress and (
+                page_no == 1 or page_no % 25 == 0 or len(seen_pages) % 25 == 0
+            ):
+                print(
+                    f"  … A 股列表 {page_no} 页，已采集 {len(out)} 只（{len(seen_pages)} 页）",
+                    file=sys.stderr,
+                )
+
+        if ">" in links:
+            _eval_js(_click_qtpager_link_js(">"), timeout=15)
+            _run_opencli(["browser", "wait", "time", wait_arg], timeout=15)
+        else:
+            break
+
+        if round_added:
+            idle_rounds = 0
+        else:
+            idle_rounds += 1
+
+    _close_browser_if(close_browser)
+    return out
+
+
+EXTRACT_HOT_INDUSTRY_JS = r"""
+JSON.stringify((() => {
+  const names = [];
+  const seen = new Set();
+  const push = (text) => {
+    const name = (text || '').trim().replace(/\s+/g, '');
+    if (!name || name.length < 2 || seen.has(name)) return;
+    if (/^(序号|名称|代码|最新|涨跌幅|涨跌额|总手|换手|领涨股)/.test(name)) return;
+    seen.add(name);
+    names.push(name);
+  };
+  for (const row of document.querySelectorAll('table tbody tr')) {
+    const link = row.querySelector('a[href*="bk"], a[href*="/bk/"]');
+    if (link) push(link.innerText);
+    if (names.length >= 12) break;
+  }
+  if (names.length < 3) {
+    for (const a of document.querySelectorAll('a[href*="bk"]')) {
+      push(a.innerText);
+      if (names.length >= 12) break;
+    }
+  }
+  return names;
+})())
+"""
 
 EXTRACT_BREADTH_JS = r"""
 JSON.stringify((() => {
@@ -653,6 +948,41 @@ WTI_OIL_INDEX_URL = "https://data.eastmoney.com/cjsj/hyzs_EMI01508580.html"
 
 def unify_quote_url(code: str) -> str:
     return f"https://quote.eastmoney.com/unify/r/{code}"
+
+
+def fetch_hot_industry_sectors_opencli(
+    *,
+    top_n: int = 5,
+    wait_seconds: float = 3.0,
+    close_browser: bool = True,
+    reset_browser: bool = True,
+) -> list[str]:
+    """行业板块涨幅榜前 N（OpenCLI 东财行业板块页）。"""
+    if top_n <= 0:
+        return []
+    if reset_browser:
+        _reset_browser()
+    wait_arg = str(max(1, int(round(wait_seconds))))
+    _open_page(INDUSTRY_BOARD_URL, label="industry-board")
+    _run_opencli(["browser", "wait", "time", wait_arg], timeout=15)
+    raw = _eval_js(EXTRACT_HOT_INDUSTRY_JS, timeout=30)
+    _close_browser_if(close_browser)
+    if not raw or raw == "null":
+        return []
+    try:
+        names = json.loads(raw)
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(names, list):
+        return []
+    out: list[str] = []
+    for item in names:
+        name = str(item).strip()
+        if name and name not in out:
+            out.append(name)
+        if len(out) >= top_n:
+            break
+    return out
 
 
 def fetch_market_breadth_opencli(
