@@ -18,6 +18,9 @@ defineProps<{
   row: Record<string, unknown>
   held?: boolean
   showHeld?: boolean
+  showSop?: boolean
+  sopLoading?: boolean
+  sopHint?: string
   profileOpen?: boolean
   klineOpen?: boolean
   klineLoading?: boolean
@@ -29,6 +32,7 @@ defineProps<{
 defineEmits<{
   toggleProfile: []
   toggleKline: []
+  runSop: []
 }>()
 </script>
 
@@ -56,7 +60,7 @@ defineEmits<{
       </span>
     </div>
 
-    <div class="card-actions">
+    <div class="card-actions" :class="{ 'with-sop': showSop }">
       <button
         v-if="parseSelectionProfile(row).hasContent"
         type="button"
@@ -74,7 +78,17 @@ defineEmits<{
       >
         {{ klineOpen ? '收起K线' : 'K线' }}
       </button>
+      <button
+        v-if="showSop"
+        type="button"
+        class="action-btn sop-btn"
+        :disabled="sopLoading"
+        @click="$emit('runSop')"
+      >
+        {{ sopLoading ? 'SOP中…' : '东财SOP' }}
+      </button>
     </div>
+    <p v-if="sopHint" class="sop-hint">{{ sopHint }}</p>
 
     <div v-if="profileOpen" class="card-expand">
       <StockProfilePanel :row="row" />
@@ -210,6 +224,10 @@ defineEmits<{
   gap: 8px;
 }
 
+.card-actions.with-sop {
+  grid-template-columns: repeat(3, 1fr);
+}
+
 .action-btn {
   min-height: 40px;
   border: 1px solid #2a3548;
@@ -230,6 +248,24 @@ defineEmits<{
   background: #152238;
   border-color: #3b82f6;
   color: #dbe7ff;
+}
+
+.action-btn.sop-btn {
+  color: #fcd34d;
+  border-color: #4a4020;
+  background: #1a1808;
+}
+
+.action-btn.sop-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.sop-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #93c5fd;
 }
 
 .card-expand {

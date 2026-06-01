@@ -6,6 +6,7 @@ import {
   healthClass,
   healthLabel,
 } from '../api/services'
+import { usePlatformLayout } from '../composables/usePlatformLayout'
 import type { JellyfinMappings, ServiceCategory, ServiceItem } from '../types/services'
 
 const categories = ref<ServiceCategory[]>([])
@@ -17,6 +18,7 @@ const loading = ref(true)
 const showJellyfin = ref(false)
 const showDocker = ref(true)
 const dockerFilter = ref('')
+const isMobile = usePlatformLayout()
 
 /** catalog docker_container → service display name */
 const catalogByContainer = computed(() => {
@@ -87,7 +89,7 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="page">
+  <div class="page" :class="{ mobile: isMobile }">
     <h1>本地服务</h1>
     <p v-if="loading" class="hint">加载中…</p>
     <p v-if="error" class="error">{{ error }}</p>
@@ -624,5 +626,17 @@ th {
 
 .error {
   color: #ff8f8f;
+}
+
+.page.mobile h1 {
+  font-size: 20px;
+}
+
+.page.mobile .cards {
+  grid-template-columns: 1fr;
+}
+
+.page.mobile .card {
+  padding: 14px;
 }
 </style>

@@ -21,8 +21,33 @@ body {
   overflow: hidden;
 }
 
+html.h5-shell,
+body.h5-shell {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #0b1016;
+}
+
+body.h5-shell #app {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #0b1016;
+}
+
+body.h5-shell.has-pwa-banner #app {
+  padding-top: calc(38px + env(safe-area-inset-top));
+  box-sizing: border-box;
+}
+
 #app {
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
+}
+
+body.has-pwa-banner:not(.h5-shell) #app {
+  padding-top: calc(38px + env(safe-area-inset-top));
+  box-sizing: border-box;
 }

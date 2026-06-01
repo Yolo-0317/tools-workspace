@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import DisciplinePanel from '../components/DisciplinePanel.vue'
 import MiniLineChart from '../components/MiniLineChart.vue'
+import { usePlatformLayout } from '../composables/usePlatformLayout'
 import {
   fetchDashboardSummary,
   fetchDiscipline,
@@ -16,6 +17,7 @@ const discipline = ref<DisciplinePayload | null>(null)
 const alerts = ref<string[]>([])
 const error = ref('')
 const loading = ref(true)
+const isMobile = usePlatformLayout()
 
 const assetChart = computed(() =>
   (data.value?.account_series ?? [])
@@ -45,7 +47,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="page">
+  <div class="page" :class="{ mobile: isMobile }">
     <h1>投资总览</h1>
     <p v-if="loading" class="hint">加载中…</p>
     <p v-if="error" class="error">{{ error }}</p>
@@ -191,5 +193,22 @@ onMounted(async () => {
 
 .error {
   color: #ff8f8f;
+}
+
+.page.mobile h1 {
+  font-size: 20px;
+  margin-bottom: 12px;
+}
+
+.page.mobile .cards {
+  grid-template-columns: 1fr;
+}
+
+.page.mobile .big {
+  font-size: 22px;
+}
+
+.page.mobile .block {
+  padding: 14px;
 }
 </style>

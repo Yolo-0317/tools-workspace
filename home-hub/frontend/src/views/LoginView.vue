@@ -2,6 +2,12 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { login } from '../auth/hubAuth'
+import {
+  defaultHomePath,
+  defaultSelectionPath,
+  isMobileViewport,
+  toMobileRoute,
+} from '../utils/platformRoutes'
 
 const router = useRouter()
 const route = useRoute()
@@ -16,12 +22,17 @@ async function onSubmit() {
   loading.value = true
   try {
     const state = await login(username.value.trim(), password.value)
+    const mobile = isMobileViewport()
     const redirect = String(route.query.redirect ?? '')
     if (state.shareOnly) {
-      await router.replace('/selection')
+      await router.replace(defaultSelectionPath(mobile))
       return
     }
-    await router.replace(redirect && redirect !== '/login' ? redirect : '/')
+    if (redirect && redirect !== '/login') {
+      await router.replace(mobile ? toMobileRoute(redirect) : redirect)
+      return
+    }
+    await router.replace(defaultHomePath(mobile))
   } catch (e) {
     error.value = e instanceof Error ? e.message : '登录失败'
   } finally {

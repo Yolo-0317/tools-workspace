@@ -11,7 +11,11 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.tools.fetch_eastmoney_quotes import fetch_full_sop_batch, fetch_full_sop_data
+from scripts.tools.fetch_eastmoney_quotes import (
+    fetch_full_sop_batch,
+    fetch_full_sop_data,
+    fetch_technical_summaries_batch_opencli,
+)
 
 
 def fetch_sop_data(code: str) -> dict[str, str]:
@@ -93,18 +97,35 @@ def extract_and_save(code: str, output_dir: str | Path) -> str:
     return str(out_path)
 
 
-def extract_and_save_batch(codes: list[str], output_dir: str | Path) -> dict[str, str]:
-    """批量 SOP 采集（单 OpenCLI 会话），返回 code -> 报告路径。"""
+def extract_and_save_batch(
+    codes: list[str],
+    output_dir: str | Path,
+    *,
+    chain_technical: bool = False,
+) -> dict[str, str] | tuple[dict[str, str], dict[str, str]]:
+    """批量 SOP 采集（单 OpenCLI 会话），返回 code -> 报告路径。
+
+    chain_technical=True 时在同一浏览器会话内续拉 K 线，并返回 (paths, technical_map)。
+    """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    data_map = fetch_full_sop_batch(codes)
+    data_map = fetch_full_sop_batch(codes, close_browser=not chain_technical)
     paths: dict[str, str] = {}
     for code, data in data_map.items():
         report = build_preliminary_report(code, data)
         out_path = output_dir / f"{code}_初步报告_SOP版.md"
         out_path.write_text(report, encoding="utf-8")
         paths[code] = str(out_path)
-    return paths
+
+    if not chain_technical:
+        return paths
+
+    tech_map = fetch_technical_summaries_batch_opencli(
+        list(paths.keys()),
+        reset_browser=False,
+        close_browser=True,
+    )
+    return paths, tech_map
 
 
 def _extract_worker(args: tuple[str, str]) -> tuple[str, str, str | None]:

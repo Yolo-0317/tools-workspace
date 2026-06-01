@@ -8,7 +8,6 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
 
 from backend.config import ROOT, settings
 from backend.routers import auth, chat, dashboard, services
@@ -81,6 +80,23 @@ app.include_router(services.router)
 
 FRONTEND_DIST = ROOT / "frontend" / "dist"
 
+_STATIC_MEDIA_TYPES = {
+    ".webmanifest": "application/manifest+json",
+    ".js": "application/javascript",
+    ".mjs": "application/javascript",
+    ".css": "text/css",
+    ".svg": "image/svg+xml",
+    ".png": "image/png",
+    ".ico": "image/x-icon",
+}
+
+
+def _static_file_response(path: Path) -> FileResponse:
+    media_type = _STATIC_MEDIA_TYPES.get(path.suffix.lower())
+    if media_type:
+        return FileResponse(path, media_type=media_type)
+    return FileResponse(path)
+
 
 @app.get("/api/health")
 async def health():
@@ -92,12 +108,22 @@ async def health():
 
 
 if FRONTEND_DIST.is_dir():
-    app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
+    dist_root = FRONTEND_DIST.resolve()
 
     @app.get("/{full_path:path}")
     async def spa(full_path: str):
         if full_path.startswith("api/"):
             return JSONResponse(status_code=404, content={"detail": "Not Found"})
+
+        if full_path:
+            candidate = (FRONTEND_DIST / full_path).resolve()
+            try:
+                candidate.relative_to(dist_root)
+            except ValueError:
+                candidate = None
+            if candidate is not None and candidate.is_file():
+                return _static_file_response(candidate)
+
         index = FRONTEND_DIST / "index.html"
         if index.is_file():
             return FileResponse(

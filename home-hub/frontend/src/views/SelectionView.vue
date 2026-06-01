@@ -5,12 +5,16 @@ import {
   fetchSelectionHistory,
   fetchSelectionKline,
   fetchSelectionStrategies,
+  requestSelectionSopAnalyze,
+  type SelectionSopJob,
 } from '../api/dashboard'
 import SelectionStockCard from '../components/SelectionStockCard.vue'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
 import SopReviewCard from '../components/SopReviewCard.vue'
+import SopTaskPanel from '../components/SopTaskPanel.vue'
 import StockKlinePanel from '../components/StockKlinePanel.vue'
 import StockProfilePanel from '../components/StockProfilePanel.vue'
-import { MOBILE_QUERY, useMediaQuery } from '../composables/useMediaQuery'
+import { usePlatformLayout } from '../composables/usePlatformLayout'
 import { isShareMode } from '../auth/hubAuth'
 import type { DailyBar, SelectionHistory } from '../types/dashboard'
 import {
@@ -37,10 +41,14 @@ const klineCache = ref<Record<string, DailyBar[]>>({})
 const klineLoading = ref<string | null>(null)
 const klineError = ref<Record<string, string>>({})
 const klineMeta = ref<Record<string, string>>({})
+const sopLoading = ref<Record<string, boolean>>({})
+const sopHint = ref<Record<string, string>>({})
+const sopConfirmTarget = ref<{ code: string; label: string } | null>(null)
+const sopTaskPanelRef = ref<{ refresh: () => Promise<void> } | null>(null)
 const error = ref('')
 const loading = ref(false)
 
-const isMobile = useMediaQuery(MOBILE_QUERY)
+const isMobile = usePlatformLayout()
 const KLINE_DAYS = 60
 
 function rowKey(code: string, suffix = ''): string {
@@ -80,6 +88,7 @@ async function loadSelection() {
   klineMeta.value = {}
   try {
     data.value = await fetchSelectionHistory(selectedDate.value, strategy.value)
+    syncSopRowHintsFromJobs()
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
     data.value = null
@@ -125,6 +134,83 @@ async function toggleKline(code: string, suffix = '') {
     klineCache.value[key] = []
   } finally {
     klineLoading.value = null
+  }
+}
+
+function sopRowKey(tradeDate: string, code: string): string {
+  return `${tradeDate}:${code}:sop`
+}
+
+function syncSopRowHintsFromJobs(jobs: SelectionSopJob[] = latestSopJobs) {
+  if (shareOnly || !selectedDate.value) return
+  for (const job of jobs) {
+    if (job.trade_date !== selectedDate.value) continue
+    const key = sopRowKey(job.trade_date, job.code)
+    if (job.status === 'queued' || job.status === 'running') {
+      sopLoading.value[key] = true
+      sopHint.value[key] = job.message ?? '分析中…'
+    } else if (job.status === 'done') {
+      sopLoading.value[key] = false
+      sopHint.value[key] = '✅ 已推送到微信'
+    } else if (job.status === 'done_with_warning') {
+      sopLoading.value[key] = false
+      sopHint.value[key] = `⚠️ ${job.message ?? '微信推送异常'}`
+    } else if (job.status === 'failed') {
+      sopLoading.value[key] = false
+      sopHint.value[key] = `❌ ${job.error ?? job.message ?? '分析失败'}`
+    }
+  }
+}
+
+let latestSopJobs: SelectionSopJob[] = []
+
+function onSopJobsUpdate(jobs: SelectionSopJob[]) {
+  latestSopJobs = jobs
+  syncSopRowHintsFromJobs(jobs)
+}
+
+async function promptSopAnalysis(code: string) {
+  if (shareOnly || !selectedDate.value) return
+  const key = rowKey(code, ':sop')
+  if (sopLoading.value[key]) return
+
+  const row = data.value?.rows?.find((r) => selCode(r) === code)
+  const name = row ? selName(row) : ''
+  const label = name && name !== '—' ? `${name}（${code}）` : code
+  sopConfirmTarget.value = { code, label }
+}
+
+function cancelSopConfirm() {
+  sopConfirmTarget.value = null
+}
+
+async function confirmSopAnalysis() {
+  const target = sopConfirmTarget.value
+  if (!target) return
+  sopConfirmTarget.value = null
+  await runSopAnalysis(target.code)
+}
+
+async function runSopAnalysis(code: string) {
+  if (shareOnly || !selectedDate.value) return
+  const key = rowKey(code, ':sop')
+  if (sopLoading.value[key]) return
+
+  sopLoading.value[key] = true
+  sopHint.value[key] = '已排队，OpenCLI 采集中…'
+
+  try {
+    const job = await requestSelectionSopAnalyze(code, selectedDate.value, strategy.value)
+    if (!job.job_id) {
+      sopHint.value[key] = '❌ 服务返回异常，请刷新后重试'
+      sopLoading.value[key] = false
+      return
+    }
+    sopHint.value[key] = job.message ?? '分析中，完成后推送到微信'
+    await sopTaskPanelRef.value?.refresh()
+  } catch (e) {
+    sopHint.value[key] = e instanceof Error ? e.message : String(e)
+    sopLoading.value[key] = false
   }
 }
 
@@ -178,6 +264,12 @@ onMounted(init)
         </select>
       </label>
     </div>
+
+    <SopTaskPanel
+      v-if="!shareOnly"
+      ref="sopTaskPanelRef"
+      @update="onSopJobsUpdate"
+    />
 
     <p v-if="loading" class="hint">加载中…</p>
     <p v-if="error" class="error">{{ error }}</p>
@@ -289,6 +381,9 @@ onMounted(init)
           :row="row"
           :show-held="!shareOnly"
           :held="isHeld(selCode(row))"
+          :show-sop="!shareOnly"
+          :sop-loading="!!sopLoading[rowKey(selCode(row), ':sop')]"
+          :sop-hint="sopHint[rowKey(selCode(row), ':sop')]"
           :profile-open="expandedProfile === rowKey(selCode(row), ':p')"
           :kline-open="expandedKline === rowKey(selCode(row))"
           :kline-loading="klineLoading === rowKey(selCode(row))"
@@ -297,6 +392,7 @@ onMounted(init)
           :kline-end-date="klineMeta[rowKey(selCode(row))]"
           @toggle-profile="toggleProfile(selCode(row))"
           @toggle-kline="toggleKline(selCode(row))"
+          @run-sop="promptSopAnalysis(selCode(row))"
         />
       </div>
 
@@ -360,6 +456,23 @@ onMounted(init)
                   >
                     {{ expandedKline === rowKey(selCode(row)) ? '收起K线' : 'K线' }}
                   </button>
+                  <button
+                    v-if="!shareOnly"
+                    type="button"
+                    class="btn-pill sop"
+                    :disabled="!!sopLoading[rowKey(selCode(row), ':sop')]"
+                    @click="promptSopAnalysis(selCode(row))"
+                  >
+                    {{ sopLoading[rowKey(selCode(row), ':sop')] ? 'SOP中…' : '东财SOP' }}
+                  </button>
+                </td>
+              </tr>
+              <tr
+                v-if="!shareOnly && sopHint[rowKey(selCode(row), ':sop')]"
+                class="detail-row"
+              >
+                <td :colspan="shareOnly ? 8 : 9" class="sop-status-cell">
+                  {{ sopHint[rowKey(selCode(row), ':sop')] }}
                 </td>
               </tr>
               <tr v-if="expandedProfile === rowKey(selCode(row), ':p')" class="detail-row">
@@ -386,6 +499,21 @@ onMounted(init)
     <p v-if="!loading && !error && selectedDate && !data?.rows?.length" class="hint">
       该日无选股记录
     </p>
+
+    <ConfirmDialog
+      :open="!!sopConfirmTarget"
+      title="东财 SOP 深度分析"
+      :message="
+        sopConfirmTarget
+          ? `对 ${sopConfirmTarget.label} 执行 8 维数据采集与 AI 终审。\n约需 2～5 分钟，完成后推送到微信。`
+          : ''
+      "
+      confirm-label="开始分析"
+      cancel-label="取消"
+      tone="warning"
+      @confirm="confirmSopAnalysis"
+      @cancel="cancelSopConfirm"
+    />
   </div>
 </template>
 
@@ -598,6 +726,22 @@ th {
   margin-left: 6px;
 }
 
+.btn-pill.sop {
+  color: #fcd34d;
+  border-color: #4a4020;
+}
+
+.btn-pill.sop:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.sop-status-cell {
+  font-size: 12px;
+  color: #93c5fd;
+  padding: 8px 12px !important;
+}
+
 .error {
   color: #ff8f8f;
 }
@@ -629,11 +773,5 @@ th {
 .page.mobile .section-title {
   font-size: 13px;
   margin-bottom: 10px;
-}
-
-@media (max-width: 768px) {
-  .table-wrap {
-    display: none;
-  }
 }
 </style>

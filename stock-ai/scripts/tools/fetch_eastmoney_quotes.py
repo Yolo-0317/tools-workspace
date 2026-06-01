@@ -176,6 +176,22 @@ def _close_browser_if(enabled: bool) -> None:
         _run_opencli(["browser", "close"], timeout=15)
 
 
+def _reset_browser_if(enabled: bool) -> None:
+    if enabled:
+        _reset_browser()
+
+
+def _wait_page_ready(*, fallback_seconds: float = 2.0, selector: str = ".brief_info_c") -> None:
+    """优先等元素，失败则回退固定等待。"""
+    _, _, rc = _run_opencli(
+        ["browser", "wait", "selector", selector, "8"],
+        timeout=12,
+    )
+    if rc != 0:
+        wait_arg = str(max(1, int(round(fallback_seconds))))
+        _run_opencli(["browser", "wait", "time", wait_arg], timeout=10)
+
+
 def _parse_label_value(text: str, label: str) -> str | None:
     match = re.search(rf"{re.escape(label)}[：:\s]*([^\t\n]+)", text)
     if not match:
@@ -345,15 +361,15 @@ def fetch_kline_rows_opencli(
     limit: int = 120,
     wait_seconds: float = 2.0,
     close_browser: bool = True,
+    reset_browser: bool = True,
 ) -> list[list[str]]:
     """OpenCLI 打开东财行情页，在浏览器上下文中 JSONP 拉取日 K。"""
     c = code6(code)
     sid = secid(c)
-    _run_opencli(["browser", "close"], timeout=15)
+    _reset_browser_if(reset_browser)
     _open_page(quote_url(c), label=c)
 
-    wait_arg = str(max(1, int(round(wait_seconds))))
-    _run_opencli(["browser", "wait", "time", wait_arg], timeout=10)
+    _wait_page_ready(fallback_seconds=wait_seconds)
 
     raw = _eval_js(_kline_jsonp_js(sid, limit), timeout=90)
     if close_browser:
@@ -368,6 +384,43 @@ def fetch_kline_rows_opencli(
     if not isinstance(klines, list):
         return []
     return kline_strings_to_rows([str(x) for x in klines])
+
+
+def fetch_kline_rows_batch_opencli(
+    codes: list[str],
+    *,
+    limit: int = 120,
+    wait_seconds: float = 2.0,
+    close_browser: bool = True,
+    reset_browser: bool = True,
+) -> dict[str, list[list[str]]]:
+    """批量 K 线：单 OpenCLI 会话顺序采集。"""
+    if not codes:
+        return {}
+
+    unique = [code6(c) for c in dict.fromkeys(code6(c) for c in codes)]
+    out: dict[str, list[list[str]]] = {}
+    _reset_browser_if(reset_browser)
+
+    for c in unique:
+        try:
+            _open_page(quote_url(c), label=f"{c}-kline")
+            _wait_page_ready(fallback_seconds=wait_seconds)
+            raw = _eval_js(_kline_jsonp_js(secid(c), limit), timeout=90)
+            if not raw:
+                out[c] = []
+                continue
+            klines = json.loads(raw)
+            if not isinstance(klines, list):
+                out[c] = []
+            else:
+                out[c] = kline_strings_to_rows([str(x) for x in klines])
+        except Exception:  # noqa: BLE001
+            out[c] = []
+
+    if close_browser:
+        _run_opencli(["browser", "close"], timeout=15)
+    return out
 
 
 def fetch_opencli_latest_kline_row(code: str) -> list[str] | None:
@@ -394,6 +447,7 @@ def fetch_sop_snapshots(
     *,
     wait_seconds: float = 2.0,
     close_browser: bool = True,
+    reset_browser: bool = True,
     include_fund_flow_page: bool = True,
 ) -> dict[str, EastmoneySopSnapshot]:
     """SOP：行情页基本面 + 资金页主力流向（同一 OpenCLI 会话）。"""
@@ -403,12 +457,11 @@ def fetch_sop_snapshots(
     unique_codes = sorted({code6(c) for c in codes})
     snapshots: dict[str, EastmoneySopSnapshot] = {}
 
-    _run_opencli(["browser", "close"], timeout=15)
-    wait_arg = str(max(1, int(round(wait_seconds))))
+    _reset_browser_if(reset_browser)
 
     for c in unique_codes:
         _open_page(quote_url(c), label=c)
-        _run_opencli(["browser", "wait", "time", wait_arg], timeout=10)
+        _wait_page_ready(fallback_seconds=wait_seconds)
         raw = _eval_js(EXTRACT_QUOTE_JS)
         if not raw:
             continue
@@ -441,11 +494,13 @@ def fetch_quotes_opencli(
     *,
     wait_seconds: float = 2.0,
     close_browser: bool = True,
+    reset_browser: bool = True,
 ) -> dict[str, EastmoneyQuote]:
     snaps = fetch_sop_snapshots(
         codes,
         wait_seconds=wait_seconds,
         close_browser=close_browser,
+        reset_browser=reset_browser,
         include_fund_flow_page=False,
     )
     return {
@@ -867,11 +922,15 @@ def fetch_full_sop_data(
     *,
     wait_seconds: float = 2.0,
     close_browser: bool = True,
+    reset_browser: bool = True,
 ) -> dict[str, str]:
     """单股 8 维度 SOP（OpenCLI 单会话）。"""
-    return fetch_full_sop_batch([code], wait_seconds=wait_seconds, close_browser=close_browser).get(
-        code6(code), {}
-    )
+    return fetch_full_sop_batch(
+        [code],
+        wait_seconds=wait_seconds,
+        close_browser=close_browser,
+        reset_browser=reset_browser,
+    ).get(code6(code), {})
 
 
 def fetch_full_sop_batch(
@@ -879,6 +938,7 @@ def fetch_full_sop_batch(
     *,
     wait_seconds: float = 2.0,
     close_browser: bool = True,
+    reset_browser: bool = True,
 ) -> dict[str, dict[str, str]]:
     """批量 8 维度 SOP：同一 OpenCLI 会话顺序采集（Top5 分析用）。"""
     if not codes:
@@ -888,13 +948,13 @@ def fetch_full_sop_batch(
     out: dict[str, dict[str, str]] = {}
     wait_arg = str(max(1, int(round(wait_seconds))))
 
-    _run_opencli(["browser", "close"], timeout=15)
+    _reset_browser_if(reset_browser)
 
     for c in unique:
         results: dict[str, str] = {}
         try:
             _open_page(quote_url(c), label=c)
-            _run_opencli(["browser", "wait", "time", wait_arg], timeout=10)
+            _wait_page_ready(fallback_seconds=wait_seconds)
             raw = _eval_js(EXTRACT_QUOTE_JS)
             payload = json.loads(raw) if raw else {}
             results["基本面"] = _truncate(payload.get("infoText") or "未找到基本面数据")
@@ -974,9 +1034,43 @@ def technical_summary_from_kline_rows(rows: list[list[str]]) -> str:
     )
 
 
-def fetch_technical_summary_opencli(code: str, *, limit: int = 60) -> str:
-    rows = fetch_kline_rows_opencli(code, limit=limit, close_browser=True)
+def fetch_technical_summary_opencli(
+    code: str,
+    *,
+    limit: int = 60,
+    reset_browser: bool = True,
+    close_browser: bool = True,
+) -> str:
+    rows = fetch_kline_rows_opencli(
+        code,
+        limit=limit,
+        close_browser=close_browser,
+        reset_browser=reset_browser,
+    )
     return technical_summary_from_kline_rows(rows)
+
+
+def fetch_technical_summaries_batch_opencli(
+    codes: list[str],
+    *,
+    limit: int = 60,
+    reset_browser: bool = True,
+    close_browser: bool = True,
+) -> dict[str, str]:
+    """批量技术面摘要（单 OpenCLI 会话）。"""
+    rows_map = fetch_kline_rows_batch_opencli(
+        codes,
+        limit=limit,
+        reset_browser=reset_browser,
+        close_browser=close_browser,
+    )
+    out: dict[str, str] = {}
+    for c, rows in rows_map.items():
+        if rows:
+            out[c] = technical_summary_from_kline_rows(rows)
+        else:
+            out[c] = "（OpenCLI 无 K 线数据）"
+    return out
 
 
 @dataclass

@@ -81,6 +81,46 @@ export function fetchSelectionKline(
   )
 }
 
+export interface SelectionSopJob {
+  job_id: string
+  status: 'queued' | 'running' | 'done' | 'done_with_warning' | 'failed'
+  code: string
+  name?: string
+  trade_date: string
+  strategy?: string
+  message?: string
+  error?: string
+  created_at?: string
+  started_at?: string
+  finished_at?: string
+}
+
+export function requestSelectionSopAnalyze(
+  code: string,
+  tradeDate: string,
+  strategy = 'combined',
+) {
+  return apiJson<SelectionSopJob>('/api/dashboard/selection/sop-analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code, trade_date: tradeDate, strategy }),
+  })
+}
+
+export function fetchSelectionSopJob(jobId: string) {
+  return apiJson<SelectionSopJob>(`/api/dashboard/selection/sop-jobs/${encodeURIComponent(jobId)}`)
+}
+
+export function fetchSelectionSopJobs(activeOnly = false, limit = 30) {
+  const q = new URLSearchParams({
+    active_only: activeOnly ? 'true' : 'false',
+    limit: String(limit),
+  })
+  return apiJson<{ jobs: SelectionSopJob[]; active_count: number }>(
+    `/api/dashboard/selection/sop-jobs?${q}`,
+  )
+}
+
 export function fetchSnapshotAlerts(limit = 30) {
   return apiJson<{ lines: string[] }>(`/api/dashboard/alerts/snapshot?limit=${limit}`)
 }

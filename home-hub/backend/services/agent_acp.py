@@ -352,14 +352,18 @@ def _session_update_to_events(
 
     if kind == "agent_message_chunk":
         content = update.get("content") or {}
-        ctype = content.get("type")
-        text = str(content.get("text") or "")
-        if not text:
-            return events
-        if ctype == "text":
-            events.append({"kind": "text_delta", "text": text})
-        elif forward_thoughts:
-            events.append({"kind": "thinking_delta", "text": text})
+        if content.get("type") == "text":
+            text = str(content.get("text") or "")
+            if text:
+                events.append({"kind": "text_delta", "text": text})
+        return events
+
+    if kind == "agent_thought_chunk" and forward_thoughts:
+        content = update.get("content") or {}
+        if content.get("type") == "text":
+            text = str(content.get("text") or "")
+            if text:
+                events.append({"kind": "thinking_delta", "text": text})
         return events
 
     if kind == "tool_call":

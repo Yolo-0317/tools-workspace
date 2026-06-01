@@ -582,3 +582,62 @@ def load_launchd_jobs() -> list[dict[str, Any]]:
             }
         )
     return jobs
+
+
+def find_selection_row(
+    trade_date: str,
+    strategy: str,
+    code: str,
+) -> dict[str, Any] | None:
+    target = str(code).split(".")[0].zfill(6)
+    payload = load_selection_history(trade_date, strategy=strategy)
+    for row in payload.get("rows") or []:
+        c = str(row.get("代码") or row.get("ts_code") or "").split(".")[0].zfill(6)
+        if c == target:
+            return row
+    return None
+
+
+def run_selection_sop_single(
+    code: str,
+    *,
+    trade_date: str,
+    strategy: str = "combined",
+    row: dict[str, Any] | None = None,
+    push_wechat: bool = True,
+) -> dict[str, Any]:
+    """单股东财 SOP + DeepSeek + 可选微信推送。"""
+    import os
+
+    _ensure_stock_ai_path()
+    _load_stock_env()
+    os.environ["PATH"] = os.pathsep.join(
+        [
+            str(Path.home() / ".local" / "bin"),
+            str(Path.home() / ".nvm/versions/node/v24.14.1/bin"),
+            os.environ.get("PATH", ""),
+        ]
+    )
+    os.environ.setdefault(
+        "OPENCLI_BIN",
+        str(Path.home() / ".nvm/versions/node/v24.14.1/bin/opencli"),
+    )
+    os.environ["MYSQL_URL"] = os.environ.get("MYSQL_URL", "").replace(
+        "host.docker.internal", "127.0.0.1"
+    )
+
+    target = str(code).split(".")[0].zfill(6)
+    if row is None:
+        row = find_selection_row(trade_date, strategy, target)
+    if row is None:
+        raise ValueError(f"选股列表中未找到 {target}")
+
+    from scripts.analysis.sop_review_single import review_single_and_push_wechat
+
+    day = trade_date.replace("-", "")[:8]
+    return review_single_and_push_wechat(
+        target,
+        row=row,
+        trade_date=day,
+        push=push_wechat,
+    )

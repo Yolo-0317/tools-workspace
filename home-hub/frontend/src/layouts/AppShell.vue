@@ -12,7 +12,6 @@ const router = useRouter()
 const route = useRoute()
 
 const investOpen = ref(false)
-const moreOpen = ref(false)
 
 const investLinks: NavLink[] = [
   { to: '/', label: '总览' },
@@ -41,26 +40,16 @@ const brand = computed(() => (shareOnly.value ? '选股分享' : 'Home Hub'))
 
 function closeSheets() {
   investOpen.value = false
-  moreOpen.value = false
 }
 
 function toggleInvest() {
-  moreOpen.value = false
   investOpen.value = !investOpen.value
-}
-
-function toggleMore() {
-  investOpen.value = false
-  moreOpen.value = !moreOpen.value
 }
 
 function onDocClick(event: MouseEvent) {
   const target = event.target as HTMLElement | null
-  if (!target?.closest('.nav-group') && !target?.closest('.bottom-invest')) {
+  if (!target?.closest('.nav-group')) {
     investOpen.value = false
-  }
-  if (!target?.closest('.bottom-more') && !target?.closest('.more-sheet')) {
-    moreOpen.value = false
   }
 }
 
@@ -79,7 +68,6 @@ async function onLogout() {
     :class="{
       'shell-chat': route.name === 'chat',
       'shell-share': shareOnly,
-      'shell-has-bottom': true,
     }"
   >
     <header class="topbar">
@@ -131,86 +119,6 @@ async function onLogout() {
     <main class="content">
       <RouterView />
     </main>
-
-    <nav class="bottom-nav" aria-label="底部导航">
-      <template v-if="shareOnly">
-        <RouterLink
-          to="/selection"
-          class="bottom-link"
-          exact-active-class="active"
-        >
-          选股
-        </RouterLink>
-      </template>
-      <template v-else>
-        <button
-          type="button"
-          class="bottom-link bottom-invest"
-          :class="{ active: investActive || investOpen }"
-          :aria-expanded="investOpen"
-          @click.stop="toggleInvest"
-        >
-          投资
-        </button>
-        <RouterLink
-          to="/chat"
-          class="bottom-link"
-          exact-active-class="active"
-          @click="closeSheets"
-        >
-          聊天
-        </RouterLink>
-        <button
-          type="button"
-          class="bottom-link bottom-more"
-          :class="{ active: moreOpen }"
-          :aria-expanded="moreOpen"
-          @click.stop="toggleMore"
-        >
-          更多
-        </button>
-      </template>
-    </nav>
-
-    <div
-      v-if="investOpen && !shareOnly"
-      class="sheet-mask"
-      @click="closeSheets"
-    />
-    <div v-if="investOpen && !shareOnly" class="sheet invest-sheet" role="menu">
-      <p class="sheet-title">投资</p>
-      <RouterLink
-        v-for="link in investLinks"
-        :key="link.to"
-        :to="link.to"
-        class="sheet-item"
-        exact-active-class="active"
-        role="menuitem"
-        @click="closeSheets"
-      >
-        {{ link.label }}
-      </RouterLink>
-    </div>
-
-    <div
-      v-if="moreOpen && !shareOnly"
-      class="sheet-mask"
-      @click="closeSheets"
-    />
-    <div v-if="moreOpen && !shareOnly" class="sheet more-sheet" role="menu">
-      <p class="sheet-title">更多</p>
-      <RouterLink
-        v-for="link in systemLinks.filter((l) => l.to !== '/chat')"
-        :key="link.to"
-        :to="link.to"
-        class="sheet-item"
-        exact-active-class="active"
-        role="menuitem"
-        @click="closeSheets"
-      >
-        {{ link.label }}
-      </RouterLink>
-    </div>
   </div>
 </template>
 
@@ -235,8 +143,10 @@ async function onLogout() {
   flex-shrink: 0;
   z-index: 200;
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 24px;
   padding: 12px 20px;
   border-bottom: 1px solid #243041;
   background: #0b1016;
@@ -247,7 +157,6 @@ async function onLogout() {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  width: 100%;
   min-width: 0;
 }
 
@@ -262,7 +171,7 @@ async function onLogout() {
   gap: 8px;
   flex-wrap: wrap;
   align-items: center;
-  width: 100%;
+  flex: 1;
   min-width: 0;
 }
 
@@ -322,17 +231,12 @@ async function onLogout() {
   background: #2563eb;
 }
 
-.bottom-nav,
-.sheet-mask,
-.sheet {
-  display: none;
-}
-
 .user-bar {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .user {
@@ -354,28 +258,21 @@ async function onLogout() {
   background: #152033;
 }
 
-.nav-link,
-.bottom-link,
-.sheet-item {
+.nav-link {
   color: #8b9cb3;
   text-decoration: none;
   border-radius: 8px;
   font-size: 14px;
   white-space: nowrap;
-}
-
-.nav-link {
   padding: 6px 12px;
 }
 
-.nav-link:hover,
-.sheet-item:hover {
+.nav-link:hover {
   color: #dbe7ff;
   background: #152033;
 }
 
-.nav-link.active,
-.sheet-item.active {
+.nav-link.active {
   color: #fff;
   background: #2563eb;
 }
@@ -391,149 +288,5 @@ async function onLogout() {
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
-  -webkit-overflow-scrolling: touch;
-  --bottom-nav-h: 52px;
-}
-
-@media (min-width: 769px) {
-  .topbar {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 16px 24px;
-  }
-
-  .topbar-head {
-    width: auto;
-  }
-
-  .nav {
-    flex: 1;
-    width: auto;
-  }
-
-  .user-bar {
-    margin-left: auto;
-  }
-}
-
-@media (max-width: 768px) {
-  .topbar {
-    padding: 10px 12px;
-    padding-top: max(10px, env(safe-area-inset-top));
-    padding-left: max(12px, env(safe-area-inset-left));
-    padding-right: max(12px, env(safe-area-inset-right));
-    gap: 0;
-  }
-
-  .nav-top {
-    display: none;
-  }
-
-  .brand {
-    font-size: 15px;
-  }
-
-  .shell-share .brand {
-    font-size: 16px;
-  }
-
-  .user {
-    display: none;
-  }
-
-  .logout {
-    padding: 8px 12px;
-    min-height: 36px;
-  }
-
-  .shell-has-bottom .content {
-    padding: 12px;
-    padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
-  }
-
-  .shell-chat.shell-has-bottom .content {
-    padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
-  }
-
-  .bottom-nav {
-    display: flex;
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 300;
-    align-items: stretch;
-    border-top: 1px solid #243041;
-    background: #0b1016;
-    padding-bottom: env(safe-area-inset-bottom);
-    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.35);
-  }
-
-  .bottom-link {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 52px;
-    padding: 6px 4px;
-    border: none;
-    background: transparent;
-    font: inherit;
-    font-size: 13px;
-    cursor: pointer;
-    border-radius: 0;
-  }
-
-  .bottom-link.active {
-    color: #93c5fd;
-    background: transparent;
-    box-shadow: inset 0 -2px 0 #2563eb;
-  }
-
-  .bottom-more.active {
-    color: #dbe7ff;
-    box-shadow: inset 0 -2px 0 #64748b;
-  }
-
-  .sheet-mask {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 310;
-    background: rgba(0, 0, 0, 0.45);
-  }
-
-  .sheet {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    position: fixed;
-    left: 12px;
-    right: 12px;
-    bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
-    z-index: 320;
-    padding: 12px;
-    border-radius: 14px;
-    border: 1px solid #243041;
-    background: #121820;
-    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
-  }
-
-  .sheet-title {
-    margin: 0 4px 4px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #6b7c93;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .sheet-item {
-    display: block;
-    padding: 14px 16px;
-    font-size: 16px;
-    text-align: center;
-  }
 }
 </style>

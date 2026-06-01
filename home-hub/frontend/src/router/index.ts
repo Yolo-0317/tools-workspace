@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import AppShell from '../layouts/AppShell.vue'
+import MobileShell from '../layouts/MobileShell.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -37,6 +38,49 @@ const router = createRouter({
           component: () => import('../views/ServicesView.vue'),
         },
         { path: 'chat', name: 'chat', component: () => import('../views/ChatView.vue') },
+      ],
+    },
+    {
+      path: '/m',
+      component: MobileShell,
+      meta: { mobile: true },
+      children: [
+        {
+          path: '',
+          name: 'm-home',
+          component: () => import('../views/HomeView.vue'),
+          meta: { mobile: true },
+        },
+        {
+          path: 'portfolio',
+          name: 'm-portfolio',
+          component: () => import('../views/PortfolioView.vue'),
+          meta: { mobile: true },
+        },
+        {
+          path: 'selection',
+          name: 'm-selection',
+          component: () => import('../views/SelectionView.vue'),
+          meta: { mobile: true },
+        },
+        {
+          path: 'monitor',
+          name: 'm-monitor',
+          component: () => import('../views/MonitorView.vue'),
+          meta: { mobile: true },
+        },
+        {
+          path: 'jobs',
+          name: 'm-jobs',
+          component: () => import('../views/JobsView.vue'),
+          meta: { mobile: true },
+        },
+        {
+          path: 'services',
+          name: 'm-services',
+          component: () => import('../views/ServicesView.vue'),
+          meta: { mobile: true },
+        },
       ],
     },
   ],

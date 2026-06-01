@@ -105,6 +105,7 @@ class ChatAgentService:
         try:
             async with agent_lock.acquire(f"web:{session_id}"):
                 assistant_parts: list[str] = []
+                thinking_parts: list[str] = []
                 final_session: str | None = resume_ids[0]
                 last_error: str | None = None
                 last_error_code: str | None = None
@@ -138,8 +139,10 @@ class ChatAgentService:
                                 final_session = sid
                             continue
                         if kind == "thinking_delta":
+                            chunk = event.get("text", "")
+                            thinking_parts.append(chunk)
                             yield _sse(
-                                "thinking_delta", {"text": event.get("text", "")}
+                                "thinking_delta", {"text": chunk}
                             )
                             continue
                         if kind == "text_delta":
@@ -195,6 +198,9 @@ class ChatAgentService:
                         continue
 
                 full_text = "".join(assistant_parts).strip()
+                thinking_text = "".join(thinking_parts).strip()
+                if thinking_text:
+                    chat_store.add_message(session_id, "thinking", thinking_text)
                 if full_text:
                     chat_store.add_message(session_id, "assistant", full_text)
 

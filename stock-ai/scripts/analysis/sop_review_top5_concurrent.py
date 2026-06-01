@@ -19,7 +19,7 @@ for _p in (ROOT, ROOT / "core_v2"):
 import pandas as pd
 from dotenv import load_dotenv
 from scripts.analysis.eastmoney_sop_extract import extract_and_save_batch
-from scripts.tools.fetch_eastmoney_quotes import fetch_technical_summary_opencli
+from scripts.tools.fetch_eastmoney_quotes import fetch_technical_summaries_batch_opencli
 from scripts.tools.deepseek_client import call_deepseek
 from scripts.tools.holdings_context import load_full_decision_context
 from scripts.tools.sop_watch_parse import SopWatchMeta, parse_sop_review_text
@@ -35,9 +35,13 @@ def _to_full_code(code: str) -> str:
     return f"{code_str}.SZ"
 
 
-def _technical_supplement(code: str) -> str:
-    """OpenCLI 东财 K 线补充均线/量能。"""
+def _technical_supplement(code: str, cache: dict[str, str] | None = None) -> str:
+    """OpenCLI 东财 K 线补充均线/量能（优先用批量缓存）。"""
+    if cache and code in cache:
+        return cache[code]
     try:
+        from scripts.tools.fetch_eastmoney_quotes import fetch_technical_summary_opencli
+
         return fetch_technical_summary_opencli(code, limit=60)
     except Exception as exc:  # noqa: BLE001
         return f"（技术面补充失败: {exc}）"
@@ -104,7 +108,10 @@ WATCH: 是|否 | DECISION: 买入观察|暂不操作|持有|减仓 | SUPPORT: 7.
 
     content = call_deepseek(
         [
-            {"role": "system", "content": "专业、客观、简洁。结合持仓与操盘红线给出条件式建议。"},
+            {
+                "role": "system",
+                "content": "专业、客观、简洁。结合持仓与操盘红线给出条件式建议。禁止开场白，直接从「1. 数据校验」开始输出。",
+            },
             {"role": "user", "content": prompt},
         ],
         temperature=0.3,
@@ -197,15 +204,26 @@ def review_top5_sop_concurrent(
     if holdings_codes is None:
         holdings_codes, _ = load_full_decision_context()
 
-    # 阶段 1：OpenCLI 单会话顺序 SOP 采集（Top N）
+    # 阶段 1：OpenCLI 单会话 SOP 采集 + 批量 K 线（不重复开关浏览器）
     print(f"🔍 OpenCLI SOP 采集 Top{len(codes)}...", file=sys.stderr)
     preliminary_map: dict[str, str] = {}
+    technical_map: dict[str, str] = {}
     errors: dict[str, str] = {}
 
     try:
-        preliminary_map = extract_and_save_batch(codes, sop_dir)
+        batch_result = extract_and_save_batch(codes, sop_dir, chain_technical=True)
+        if isinstance(batch_result, tuple):
+            preliminary_map, technical_map = batch_result
+        else:
+            preliminary_map = batch_result
+            technical_map = fetch_technical_summaries_batch_opencli(
+                codes,
+                reset_browser=True,
+                close_browser=True,
+            )
         for code, path in preliminary_map.items():
             print(f"  ✅ {code} -> {path}", file=sys.stderr)
+        print(f"  📈 K 线批量摘要 {len(technical_map)} 只（单会话）", file=sys.stderr)
     except Exception as exc:  # noqa: BLE001
         for c in codes:
             errors[c] = str(exc)
@@ -219,7 +237,7 @@ def review_top5_sop_concurrent(
         code = meta["代码"]
         if code not in preliminary_map:
             return code, f"（SOP 采集失败：{errors.get(code, '未知错误')}）"
-        tech = _technical_supplement(code)
+        tech = _technical_supplement(code, technical_map)
         return _deepseek_single_review(meta, preliminary_map[code], tech, context)
 
     print(f"🤖 并发 DeepSeek 分析（workers={deepseek_workers}）...", file=sys.stderr)
@@ -236,15 +254,6 @@ def review_top5_sop_concurrent(
 
     watch_metas: list[SopWatchMeta] = []
     names_map = _load_names([m["代码"] for m in metas], mysql_url)
-    try:
-        from scripts.tools.fetch_eastmoney_quotes import fetch_quotes_opencli
-
-        for c, quote in fetch_quotes_opencli(codes, close_browser=True).items():
-            cn = (quote.name or "").strip()
-            if cn and cn != c:
-                names_map[c] = cn
-    except Exception:
-        pass
     for meta, review in per_stock_reviews:
         code = meta["代码"]
         parsed = parse_sop_review_text(
@@ -269,7 +278,7 @@ def review_top5_sop_concurrent(
             "",
             f"**生成时间**：{datetime.now():%Y-%m-%d %H:%M:%S}  ",
             f"**数据来源**：{source}  ",
-            f"**SOP**：OpenCLI 单会话 | **DeepSeek 并发数**：{deepseek_workers}",
+            f"**SOP**：OpenCLI 单会话（SOP+K线） | **DeepSeek 并发数**：{deepseek_workers}",
             "",
             "---",
             "",

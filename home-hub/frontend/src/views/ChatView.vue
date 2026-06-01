@@ -20,6 +20,7 @@ const draft = ref('')
 const loading = ref(false)
 const streaming = ref(false)
 const streamText = ref('')
+const streamThinking = ref('')
 const statusText = ref('')
 const errorText = ref('')
 const health = ref<ChatHealth | null>(null)
@@ -138,6 +139,7 @@ async function send() {
   draft.value = ''
   streaming.value = true
   streamText.value = ''
+  streamThinking.value = ''
 
   const userMsg: ChatMessage = {
     id: `local-${Date.now()}`,
@@ -173,8 +175,10 @@ async function send() {
           statusText.value = ''
           scrollMessagesToBottom('auto')
         },
-        onThinkingDelta: () => {
+        onThinkingDelta: (chunk) => {
+          streamThinking.value += chunk
           statusText.value = 'Agent 思考中…'
+          scrollMessagesToBottom('auto')
         },
         onToolStart: (data) => {
           statusText.value = `调用工具：${String(data.tool ?? 'tool')}`
@@ -207,6 +211,7 @@ async function send() {
           }
 
           streamText.value = ''
+          streamThinking.value = ''
           statusText.value = ''
           pendingError = null
           await loadMessages(sessionId)
@@ -347,6 +352,12 @@ onMounted(async () => {
           :key="msg.id"
           :role="msg.role"
           :content="msg.content"
+        />
+        <MessageBubble
+          v-if="streamThinking"
+          role="thinking"
+          :content="streamThinking"
+          streaming
         />
         <MessageBubble
           v-if="streamText"

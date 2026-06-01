@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import DisciplinePanel from '../components/DisciplinePanel.vue'
 import MiniLineChart from '../components/MiniLineChart.vue'
 import PortfolioPositionCard from '../components/PortfolioPositionCard.vue'
-import { MOBILE_QUERY, useMediaQuery } from '../composables/useMediaQuery'
+import { usePlatformLayout } from '../composables/usePlatformLayout'
 import {
   fetchDashboardSummary,
   fetchDiscipline,
@@ -25,7 +25,7 @@ const discipline = ref<DisciplinePayload | null>(null)
 const error = ref('')
 const loading = ref(true)
 
-const isMobile = useMediaQuery(MOBILE_QUERY)
+const isMobile = usePlatformLayout()
 
 const assetChart = computed(() =>
   series.value
@@ -411,12 +411,6 @@ th {
 @media (min-width: 900px) {
   .stats-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 768px) {
-  .table-wrap {
-    display: none;
   }
 }
 </style>

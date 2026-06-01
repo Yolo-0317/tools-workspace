@@ -9,7 +9,7 @@ export interface ChatSession {
 export interface ChatMessage {
   id: string
   session_id: string
-  role: 'user' | 'assistant' | 'system'
+  role: 'user' | 'assistant' | 'system' | 'thinking'
   content: string
   created_at: string
 }
