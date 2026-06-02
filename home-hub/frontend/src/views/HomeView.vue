@@ -10,7 +10,7 @@ import {
   fmtNum,
 } from '../api/dashboard'
 import type { DashboardPayload, DisciplinePayload } from '../types/dashboard'
-import { selCode, selName, selScore } from '../utils/selection'
+import { selCode, selName, selScore, strategyLabel } from '../utils/selection'
 
 const data = ref<DashboardPayload | null>(null)
 const discipline = ref<DisciplinePayload | null>(null)
@@ -18,6 +18,12 @@ const alerts = ref<string[]>([])
 const error = ref('')
 const loading = ref(true)
 const isMobile = usePlatformLayout()
+
+const latestAccount = computed(() => {
+  const cur = data.value?.account_current
+  if (cur?.total_assets != null) return cur
+  return data.value?.account_series.at(-1) ?? null
+})
 
 const assetChart = computed(() =>
   (data.value?.account_series ?? [])
@@ -61,27 +67,28 @@ onMounted(async () => {
 
     <section v-if="data" class="cards">
       <article class="card">
-        <h2>账户（{{ data.snapshot_slot }}）</h2>
-        <template v-if="data.account_series.length">
-          <p class="big">
-            ¥{{ fmtNum(data.account_series.at(-1)?.total_assets, 2) }}
-          </p>
+        <h2>账户（实时）</h2>
+        <template v-if="latestAccount">
+          <p class="big">¥{{ fmtNum(latestAccount.total_assets, 2) }}</p>
           <p class="sub">
-            市值 {{ fmtNum(data.account_series.at(-1)?.market_value) }}
-            · 浮盈 {{ fmtNum(data.account_series.at(-1)?.holding_pnl) }}
+            市值 {{ fmtNum(latestAccount.market_value) }}
+            · 浮盈 {{ fmtNum(latestAccount.holding_pnl) }}
+            · {{ latestAccount.snapshot_date ?? '—' }}
           </p>
         </template>
-        <p v-else class="hint">暂无快照</p>
+        <p v-else class="hint">暂无账户数据</p>
       </article>
 
       <article class="card">
         <h2>持仓</h2>
         <p class="big">{{ data.positions_latest.length }} 只</p>
-        <p class="sub">最新快照日 {{ data.account_series.at(-1)?.snapshot_date ?? '—' }}</p>
+        <p class="sub">
+          表 portfolio_positions（同步后即最新）
+        </p>
       </article>
 
       <article class="card">
-        <h2>选股 {{ data.strategy }}</h2>
+        <h2>选股 {{ strategyLabel(data.strategy) }}</h2>
         <p class="big">{{ data.selection_latest.count }} 条</p>
         <p class="sub">交易日 {{ data.selection_latest.trade_date ?? '—' }}</p>
       </article>

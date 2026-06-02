@@ -5,6 +5,7 @@ import type { DailyBar } from '../types/dashboard'
 import {
   parseSelectionProfile,
   selAction,
+  selExecutionCardNote,
   selCode,
   selConceptList,
   selIndustry,
@@ -12,6 +13,8 @@ import {
   selPct,
   selPctTone,
   selScore,
+  selStrategy,
+  strategyLabel,
 } from '../utils/selection'
 
 defineProps<{
@@ -42,6 +45,7 @@ defineEmits<{
       <div class="identity">
         <h3 class="name">{{ selName(row) }}</h3>
         <span class="code">{{ selCode(row) }}</span>
+        <span class="tag strategy">{{ strategyLabel(selStrategy(row)) }}</span>
         <span v-if="showHeld && held" class="tag held">已持有</span>
       </div>
       <div class="score-badge">{{ selScore(row) }}</div>
@@ -52,6 +56,9 @@ defineEmits<{
       <span class="pct" :class="selPctTone(row)">{{ selPct(row) }}</span>
       <span v-if="selAction(row)" class="action-hint">{{ selAction(row) }}</span>
     </div>
+    <p v-if="selExecutionCardNote(row)" class="exec-card-note">
+      {{ selExecutionCardNote(row) }}
+    </p>
 
     <div v-if="selConceptList(row).length" class="concept-row">
       <span v-for="tag in selConceptList(row).slice(0, 5)" :key="tag" class="chip">{{ tag }}</span>
@@ -196,6 +203,13 @@ defineEmits<{
   margin-left: auto;
 }
 
+.exec-card-note {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #a8b8d0;
+}
+
 .concept-row {
   display: flex;
   flex-wrap: wrap;
@@ -283,5 +297,10 @@ defineEmits<{
 .tag.held {
   background: #10261c;
   color: #7dffb2;
+}
+
+.tag.strategy {
+  background: #1a2840;
+  color: #93c5fd;
 }
 </style>

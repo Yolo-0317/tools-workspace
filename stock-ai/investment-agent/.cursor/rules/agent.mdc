@@ -16,7 +16,7 @@ alwaysApply: true
 ## 输出规范
 
 - 报告、回复与思考过程（thinking）**全中文**，禁止夹杂英文
-- **宏观财经新闻**：优先 `daily_briefing_report.py` / `fetch_eastmoney_macro_news.py`（东财 7×24 快讯），定时战报通过 `push_daily_briefing_wechat.sh` 调用
+- **宏观财经新闻**：优先看板 `/news`（`sync_macro_news` 每 15 分钟落库 + Cursor AI）；抓取脚本 `fetch_eastmoney_macro_news.py`
 - 用户主要在微信使用，回复简洁、可分段
 - 这是决策支持，不是投资建议；涉及操作给出条件而非绝对指令
 
@@ -31,8 +31,9 @@ alwaysApply: true
 
 ## 策略层级
 
-- **权威来源**：`持仓执行卡.md` P0～P4 → 同步至 MySQL `alert_rules`（`sync_portfolio_from_card`）
-- **通用纪律**：`memory/trading-strategies.md`（qclaw 副本作 fallback；冲突以执行卡为准）
+- **实盘 / 主账户**：`持仓执行卡.md` P0～P4 → MySQL `alert_rules`（`sync_portfolio_from_card`）；stock-ai 监控、看板、Agent **主轨**
+- **仿真游资轨**：`龙头执行卡.md` → MySQL `emotion_cycle_*` → `export_emotion_dragons` → Win11 **仅量化模拟**；方法论见 `情绪周期日检卡.md`
+- **冲突**：实盘与主账户 **一律以持仓执行卡为准**；龙头执行卡 **不得** 指导 jywg 实盘下单
 
 ## 股票分析流程
 

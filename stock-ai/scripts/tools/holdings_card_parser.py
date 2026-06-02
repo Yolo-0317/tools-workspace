@@ -187,7 +187,7 @@ def _rules_from_block(
             }
         )
 
-    for m in re.finditer(r"跌破\s*\*?\*?([\d.]+)\s*元", block):
+    for m in re.finditer(r"跌破\s*\*?\*?([\d.]+)\s*(?:元(?!\d)|(?=\s*(?:减|→|，|,|；|。|\*\*)))", block):
         price = float(m.group(1))
         rid = _rule_id(code, "price_below", price=price)
         hint = hints.get("below", "评估保护性操作。")
@@ -259,8 +259,10 @@ _NAME_CODE = {
     "广州发展": "600098",
     "南网储能": "600995",
     "宝新能源": "000690",
+    "皖能电力": "000543",
     "中国广核": "003816",
     "中国核电": "601985",
+    "黄金9999": "159937",
 }
 
 _HINTS: dict[str, dict[str, str]] = {
@@ -270,17 +272,23 @@ _HINTS: dict[str, dict[str, str]] = {
     },
     "600995": {
         "above": "可考虑再减 200 股锁定利润。",
-        "below": "600股浮盈需保护，评估是否减仓。",
+        "below": "400股浮盈需保护，评估是否减仓。",
     },
     "600098": {
-        "range": "已盈利，可评估减 200/400 股（整手）换南网或保留。",
+        "range": "已盈利，可评估减 200 股（整手）换仓或保留。",
         "above": "优先锁定利润，评估减仓或换仓南网。",
     },
     "000690": {
-        "dip": "若仓位允许，可小步评估加仓 100 股（勿追高）。",
+        "above": "可考虑减 200 股锁定利润（600→400）。",
+        "below": "评估减 200 股保护，禁止加仓。",
+    },
+    "000543": {
+        "above": "试探仓锁利：可考虑减 200/100 股。",
+        "below": "跌破止损线：清仓 400 股（T+1 后可卖即执行）。",
     },
     "003816": {"below": "收息股保护：评估减仓 500 股。"},
     "601985": {"below": "收息股保护：评估减仓 300 股。"},
+    "159937": {"below": "黄金 ETF 保护：评估减 200 份。"},
 }
 
 
@@ -335,13 +343,24 @@ def parse_holdings_alert_rules(text: str, positions: list[CardPosition] | None =
     legacy_ids = {
         ("600873", "price_below", 9.0): "meihua_stop_9",
         ("600873", "price_above", 10.5): "meihua_reduce_105",
+        ("600995", "price_below", 14.5): "nangwang_stop_145",
         ("600995", "price_below", 14.0): "nangwang_stop_14",
+        ("600995", "price_above", 15.8): "nangwang_reduce_158",
         ("600995", "price_above", 16.0): "nangwang_reduce_16",
-        ("600098", "price_in_range", 7.8, 8.3): "guangfa_swap_zone",
+        ("600098", "price_in_range", 7.75, 8.2): "guangfa_swap_zone",
+        ("600098", "price_in_range", 7.8, 8.3): "guangfa_swap_zone_legacy",
+        ("600098", "price_above", 8.45): "guangfa_lock_845",
         ("600098", "price_above", 8.5): "guangfa_lock_85",
-        ("000690", "price_below", 5.5): "baoxin_add_55",
+        ("000690", "price_below", 5.7): "baoxin_protect_57",
+        ("000690", "price_above", 6.15): "baoxin_reduce_615",
         ("000690", "daily_pct_above", 5.0): "baoxin_no_chase",
+        ("000543", "price_below", 9.2): "waneng_stop_920",
+        ("000543", "price_above", 9.95): "waneng_reduce_995",
+        ("000543", "price_above", 10.3): "waneng_reduce_103",
+        ("000543", "daily_pct_above", 5.0): "waneng_no_chase",
+        ("003816", "price_below", 4.35): "guanghe_stop_435",
         ("003816", "price_below", 4.3): "guanghe_stop_430",
+        ("601985", "price_below", 8.8): "hedian_stop_880",
         ("601985", "price_below", 8.6): "hedian_stop_860",
     }
     for rule in rules:
@@ -357,6 +376,103 @@ def parse_holdings_alert_rules(text: str, positions: list[CardPosition] | None =
             rule["id"] = legacy_ids[key]
 
     return rules
+
+
+def _strip_md(text: str) -> str:
+    return re.sub(r"\*+", "", text).strip()
+
+
+def _parse_shares_from_action(action: str) -> str:
+    m = re.search(r"(\d+)\s*股", action)
+    if m:
+        return m.group(1)
+    m = re.search(r"(\d+)", action)
+    return m.group(1) if m else "100"
+
+
+def parse_execution_card_probe_buys(text: str) -> dict[str, dict[str, str]]:
+    """解析「候选买入队列」→ {code: {name, priority, trigger, shares, stop}}。"""
+    section = _extract_section(text, "### 候选买入队列")
+    if not section:
+        return {}
+
+    buys: dict[str, dict[str, str]] = {}
+    in_table = False
+    for line in section.splitlines():
+        if line.startswith("| 优先级 |"):
+            in_table = True
+            continue
+        if not in_table:
+            continue
+        if not line.startswith("|") or line.startswith("|------"):
+            continue
+
+        raw_priority = _cell(line, 1)
+        priority = _strip_md(raw_priority)
+        code = _cell(line, 2)
+        if not re.fullmatch(r"\d{6}", code):
+            continue
+        if "禁止" in priority or "~~" in raw_priority:
+            continue
+
+        trigger = _strip_md(_cell(line, 4))
+        if "已建仓" in trigger:
+            continue
+
+        action = _strip_md(_cell(line, 5))
+        stop_raw = _strip_md(_cell(line, 6))
+        stop = stop_raw.split()[0] if stop_raw else ""
+        name = _strip_md(_cell(line, 3))
+        buys[code] = {
+            "name": name,
+            "priority": priority,
+            "trigger": trigger,
+            "shares": _parse_shares_from_action(action),
+            "stop": stop,
+        }
+    return buys
+
+
+def parse_execution_card_trim_hints(text: str) -> dict[str, dict[str, str]]:
+    """解析 P1 换仓/锁利区 → Home Hub 执行卡减仓提示。"""
+    plan = _extract_section(text, "## 进行中计划")
+    if not plan:
+        return {}
+
+    m = re.search(r"###\s*🟡\s*P1[：:][^\n]*", plan)
+    if not m:
+        return {}
+
+    tail = plan[m.end() :]
+    next_m = re.search(r"\n###\s", tail)
+    block = plan[m.start() : m.end() + (next_m.start() if next_m else len(tail))]
+
+    title_m = re.search(r"P1[：:]([^（\n]+)", block)
+    title = title_m.group(1).strip() if title_m else ""
+    code = name = ""
+    for n, c in _NAME_CODE.items():
+        if n in title or n in block[:80]:
+            code, name = c, n
+            break
+    if not code:
+        return {}
+
+    range_m = re.search(r"([\d.]+)[～~]([\d.]+)\s*元", block)
+    trigger = f"{range_m.group(1)}～{range_m.group(2)}" if range_m else ""
+
+    shares_m = re.search(r"减\s*\*\*(\d+)\s*股\*\*", block)
+    action = f"减 {shares_m.group(1)} 股" if shares_m else "评估减仓"
+    if "腾现金" in block or "降仓位" in block:
+        action += "（腾现金、降仓位）"
+
+    return {
+        code: {
+            "name": name,
+            "priority": "P1",
+            "trigger": trigger,
+            "action": action,
+        }
+    }
 
 
 def parse_card(text: str) -> tuple[list[CardPosition], CardAccount, list[dict]]:

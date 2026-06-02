@@ -7,7 +7,6 @@ import { usePlatformLayout } from '../composables/usePlatformLayout'
 import {
   fetchDashboardSummary,
   fetchDiscipline,
-  fetchPortfolioCurrent,
   fetchPortfolioHistory,
   fetchPortfolioSnapshot,
   fmtNum,
@@ -20,7 +19,9 @@ const positions = ref<PositionRow[]>([])
 const account = ref<Record<string, unknown>>({})
 const series = ref<AccountSnapshot[]>([])
 const snapshotDates = ref<string[]>([])
-const selectedSnapDate = ref('')
+const LIVE_SNAP = '__live__'
+const selectedSnapDate = ref(LIVE_SNAP)
+const livePositions = ref<PositionRow[]>([])
 const discipline = ref<DisciplinePayload | null>(null)
 const error = ref('')
 const loading = ref(true)
@@ -43,6 +44,10 @@ const positionCount = computed(() => positions.value.length)
 
 async function loadSnapshot(date: string) {
   if (!date) return
+  if (date === LIVE_SNAP) {
+    positions.value = livePositions.value
+    return
+  }
   try {
     const snap = await fetchPortfolioSnapshot(date)
     positions.value = snap.positions
@@ -57,27 +62,22 @@ watch(selectedSnapDate, (d) => {
 
 onMounted(async () => {
   try {
-    const [current, summary, history, disc] = await Promise.all([
-      fetchPortfolioCurrent(),
-      fetchDashboardSummary(),
+    const [summary, history, disc] = await Promise.all([
+      fetchDashboardSummary('eod', true),
       fetchPortfolioHistory(90),
       fetchDiscipline(),
     ])
-    account.value = current.account
+    account.value = (summary.account_current ?? {}) as Record<string, unknown>
+    livePositions.value = (summary.positions_live ?? []) as PositionRow[]
     discipline.value = disc
     series.value = history.series.length ? history.series : summary.account_series
-    snapshotDates.value = history.dates.length
+    const histDates = history.dates.length
       ? history.dates
       : summary.account_series.map((s) => String(s.snapshot_date)).reverse()
+    snapshotDates.value = [LIVE_SNAP, ...histDates]
 
-    selectedSnapDate.value = snapshotDates.value[0] ?? ''
-    if (selectedSnapDate.value) {
-      await loadSnapshot(selectedSnapDate.value)
-    } else if (summary.positions_latest.length > 0) {
-      positions.value = summary.positions_latest
-    } else {
-      positions.value = current.positions as PositionRow[]
-    }
+    selectedSnapDate.value = LIVE_SNAP
+    positions.value = livePositions.value
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
   } finally {
@@ -92,7 +92,8 @@ onMounted(async () => {
       <h1>持仓</h1>
       <p v-if="!loading && positionCount" class="sub">
         {{ positionCount }} 只
-        <span v-if="selectedSnapDate"> · 快照 {{ selectedSnapDate }}</span>
+        <span v-if="selectedSnapDate === LIVE_SNAP"> · 实时</span>
+        <span v-else-if="selectedSnapDate"> · 快照 {{ selectedSnapDate }}</span>
       </p>
     </header>
 
@@ -129,7 +130,9 @@ onMounted(async () => {
       <label class="filter-field filter-field-grow">
         <span class="filter-label">快照日期</span>
         <select v-model="selectedSnapDate" class="filter-select">
-          <option v-for="d in snapshotDates" :key="d" :value="d">{{ d }}</option>
+          <option v-for="d in snapshotDates" :key="d" :value="d">
+            {{ d === LIVE_SNAP ? '实时（MySQL）' : d }}
+          </option>
         </select>
       </label>
     </div>

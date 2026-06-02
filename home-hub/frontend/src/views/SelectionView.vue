@@ -4,7 +4,6 @@ import {
   fetchSelectionDates,
   fetchSelectionHistory,
   fetchSelectionKline,
-  fetchSelectionStrategies,
   requestSelectionSopAnalyze,
   type SelectionSopJob,
 } from '../api/dashboard'
@@ -26,11 +25,11 @@ import {
   selName,
   selPct,
   selScore,
+  selStrategy,
   sopName,
+  strategyLabel,
 } from '../utils/selection'
 
-const strategies = ref<string[]>(['combined'])
-const strategy = ref('combined')
 const dates = ref<string[]>([])
 const selectedDate = ref('')
 const data = ref<SelectionHistory | null>(null)
@@ -43,7 +42,7 @@ const klineError = ref<Record<string, string>>({})
 const klineMeta = ref<Record<string, string>>({})
 const sopLoading = ref<Record<string, boolean>>({})
 const sopHint = ref<Record<string, string>>({})
-const sopConfirmTarget = ref<{ code: string; label: string } | null>(null)
+const sopConfirmTarget = ref<{ code: string; label: string; strategy: string } | null>(null)
 const sopTaskPanelRef = ref<{ refresh: () => Promise<void> } | null>(null)
 const error = ref('')
 const loading = ref(false)
@@ -51,9 +50,14 @@ const loading = ref(false)
 const isMobile = usePlatformLayout()
 const KLINE_DAYS = 60
 
-function rowKey(code: string, suffix = ''): string {
+function rowKey(code: string, suffix = '', strategy = ''): string {
   const d = selectedDate.value || 'na'
-  return `${d}:${code}${suffix}`
+  const strat = strategy ? `${strategy}:` : ''
+  return `${d}:${strat}${code}${suffix}`
+}
+
+function selectionRowKey(row: Record<string, unknown>, suffix = ''): string {
+  return rowKey(selCode(row), suffix, selStrategy(row))
 }
 
 const shareOnly = isShareMode()
@@ -65,7 +69,7 @@ function isHeld(code: string): boolean {
 }
 
 async function loadDates() {
-  const res = await fetchSelectionDates(strategy.value)
+  const res = await fetchSelectionDates()
   dates.value = res.dates
   if (!selectedDate.value && dates.value.length > 0) {
     selectedDate.value = dates.value[0]
@@ -87,7 +91,7 @@ async function loadSelection() {
   klineError.value = {}
   klineMeta.value = {}
   try {
-    data.value = await fetchSelectionHistory(selectedDate.value, strategy.value)
+    data.value = await fetchSelectionHistory(selectedDate.value)
     syncSopRowHintsFromJobs()
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
@@ -97,8 +101,8 @@ async function loadSelection() {
   }
 }
 
-function toggleProfile(code: string) {
-  const key = rowKey(code, ':p')
+function toggleProfile(row: Record<string, unknown>) {
+  const key = selectionRowKey(row, ':p')
   expandedProfile.value = expandedProfile.value === key ? null : key
   if (expandedProfile.value === key) {
     expandedKline.value = null
@@ -109,8 +113,10 @@ function toggleSop(rank: number) {
   expandedSop.value = expandedSop.value === rank ? null : rank
 }
 
-async function toggleKline(code: string, suffix = '') {
-  const key = rowKey(code, suffix)
+async function toggleKline(rowOrCode: Record<string, unknown> | string, suffix = '') {
+  const code = typeof rowOrCode === 'string' ? rowOrCode : selCode(rowOrCode)
+  const strategy = typeof rowOrCode === 'string' ? '' : selStrategy(rowOrCode)
+  const key = rowKey(code, suffix, strategy)
   if (expandedKline.value === key) {
     expandedKline.value = null
     return
@@ -169,15 +175,16 @@ function onSopJobsUpdate(jobs: SelectionSopJob[]) {
   syncSopRowHintsFromJobs(jobs)
 }
 
-async function promptSopAnalysis(code: string) {
+async function promptSopAnalysis(row: Record<string, unknown>) {
   if (shareOnly || !selectedDate.value) return
-  const key = rowKey(code, ':sop')
+  const code = selCode(row)
+  const key = selectionRowKey(row, ':sop')
   if (sopLoading.value[key]) return
 
-  const row = data.value?.rows?.find((r) => selCode(r) === code)
-  const name = row ? selName(row) : ''
+  const name = selName(row)
+  const strat = selStrategy(row)
   const label = name && name !== '—' ? `${name}（${code}）` : code
-  sopConfirmTarget.value = { code, label }
+  sopConfirmTarget.value = { code, label, strategy: strat }
 }
 
 function cancelSopConfirm() {
@@ -188,19 +195,19 @@ async function confirmSopAnalysis() {
   const target = sopConfirmTarget.value
   if (!target) return
   sopConfirmTarget.value = null
-  await runSopAnalysis(target.code)
+  await runSopAnalysis(target.code, target.strategy)
 }
 
-async function runSopAnalysis(code: string) {
+async function runSopAnalysis(code: string, strategy = 'combined') {
   if (shareOnly || !selectedDate.value) return
-  const key = rowKey(code, ':sop')
+  const key = rowKey(code, ':sop', strategy)
   if (sopLoading.value[key]) return
 
   sopLoading.value[key] = true
   sopHint.value[key] = '已排队，OpenCLI 采集中…'
 
   try {
-    const job = await requestSelectionSopAnalyze(code, selectedDate.value, strategy.value)
+    const job = await requestSelectionSopAnalyze(code, selectedDate.value, strategy)
     if (!job.job_id) {
       sopHint.value[key] = '❌ 服务返回异常，请刷新后重试'
       sopLoading.value[key] = false
@@ -217,11 +224,6 @@ async function runSopAnalysis(code: string) {
 async function init() {
   error.value = ''
   try {
-    const s = await fetchSelectionStrategies()
-    strategies.value = s.strategies.length ? s.strategies : ['combined']
-    if (!strategies.value.includes(strategy.value)) {
-      strategy.value = strategies.value[0] ?? 'combined'
-    }
     await loadDates()
     await loadSelection()
   } catch (e) {
@@ -230,12 +232,6 @@ async function init() {
 }
 
 watch(selectedDate, loadSelection)
-
-watch(strategy, async () => {
-  selectedDate.value = ''
-  await loadDates()
-  await loadSelection()
-})
 
 onMounted(init)
 </script>
@@ -250,12 +246,6 @@ onMounted(init)
     </div>
 
     <div class="filter-bar">
-      <label class="filter-field">
-        <span class="filter-label">策略</span>
-        <select v-model="strategy" class="filter-select">
-          <option v-for="s in strategies" :key="s" :value="s">{{ s }}</option>
-        </select>
-      </label>
       <label class="filter-field filter-field-grow">
         <span class="filter-label">交易日</span>
         <select v-model="selectedDate" class="filter-select" :disabled="!dates.length">
@@ -264,6 +254,59 @@ onMounted(init)
         </select>
       </label>
     </div>
+
+    <section
+      v-if="!shareOnly && data?.execution_card_buys?.length"
+      class="card-buys"
+    >
+      <h2 class="section-title">
+        执行卡 · 当日选股候选
+        <span v-if="data.account_position_pct != null" class="pos-tag">
+          仓位 {{ Number(data.account_position_pct).toFixed(1) }}%
+          <template v-if="Number(data.account_position_pct) > 75"> · A 防守（禁新开）</template>
+          <template v-else-if="Number(data.account_position_pct) > 60"> · B 试探</template>
+        </span>
+      </h2>
+      <table class="card-buys-table">
+        <thead>
+          <tr>
+            <th>标的</th>
+            <th>策略</th>
+            <th>分</th>
+            <th>建议</th>
+            <th>条件</th>
+            <th>动作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in data.execution_card_buys" :key="item.code + item.kind + (item.strategy ?? '')">
+            <td>
+              <strong>{{ item.code }}</strong>
+              {{ item.name }}
+              <span v-if="item.priority" class="mini-priority">{{ item.priority }}</span>
+            </td>
+            <td>
+              <span v-if="item.kind === 'trim'" class="tag strategy">持仓</span>
+              <span v-else-if="item.strategy" class="tag strategy">{{ strategyLabel(item.strategy) }}</span>
+              <span v-else class="dash">—</span>
+            </td>
+            <td>{{ item.kind === 'trim' ? '—' : item.score ?? '—' }}</td>
+            <td>{{ item.kind === 'trim' ? '减仓' : item.action || '—' }}</td>
+            <td>{{ item.trigger }}</td>
+            <td>
+              <template v-if="item.kind === 'trim'">{{ item.action }}</template>
+              <template v-else>{{ item.shares }} 股，止损 {{ item.stop }}</template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="card-buys-hint">
+        试探买入来自<strong>当日选股列表</strong>（可买动作 / 执行卡标记 / md 队列交集，按分数 Top8，已持仓除外）；P1 减仓仍读 <code>持仓执行卡.md</code>。
+        <template v-if="data.account_position_pct != null && Number(data.account_position_pct) > 75">
+          当前 A 档（&gt;75%）：列表仅供观察，<strong>禁止纯新开仓</strong>。
+        </template>
+      </p>
+    </section>
 
     <SopTaskPanel
       v-if="!shareOnly"
@@ -377,22 +420,22 @@ onMounted(init)
       <div v-if="isMobile" class="mobile-list">
         <SelectionStockCard
           v-for="(row, i) in data.rows"
-          :key="selCode(row) + '-' + i"
+          :key="`${selStrategy(row)}:${selCode(row)}-${i}`"
           :row="row"
           :show-held="!shareOnly"
           :held="isHeld(selCode(row))"
           :show-sop="!shareOnly"
-          :sop-loading="!!sopLoading[rowKey(selCode(row), ':sop')]"
-          :sop-hint="sopHint[rowKey(selCode(row), ':sop')]"
-          :profile-open="expandedProfile === rowKey(selCode(row), ':p')"
-          :kline-open="expandedKline === rowKey(selCode(row))"
-          :kline-loading="klineLoading === rowKey(selCode(row))"
-          :kline-bars="klineCache[rowKey(selCode(row))]"
-          :kline-error="klineError[rowKey(selCode(row))]"
-          :kline-end-date="klineMeta[rowKey(selCode(row))]"
-          @toggle-profile="toggleProfile(selCode(row))"
-          @toggle-kline="toggleKline(selCode(row))"
-          @run-sop="promptSopAnalysis(selCode(row))"
+          :sop-loading="!!sopLoading[selectionRowKey(row, ':sop')]"
+          :sop-hint="sopHint[selectionRowKey(row, ':sop')]"
+          :profile-open="expandedProfile === selectionRowKey(row, ':p')"
+          :kline-open="expandedKline === selectionRowKey(row)"
+          :kline-loading="klineLoading === selectionRowKey(row)"
+          :kline-bars="klineCache[selectionRowKey(row)]"
+          :kline-error="klineError[selectionRowKey(row)]"
+          :kline-end-date="klineMeta[selectionRowKey(row)]"
+          @toggle-profile="toggleProfile(row)"
+          @toggle-kline="toggleKline(row)"
+          @run-sop="promptSopAnalysis(row)"
         />
       </div>
 
@@ -402,6 +445,7 @@ onMounted(init)
             <tr>
               <th>代码</th>
               <th>名称</th>
+              <th>策略</th>
               <th>行业</th>
               <th>概念</th>
               <th>分</th>
@@ -412,10 +456,13 @@ onMounted(init)
             </tr>
           </thead>
           <tbody>
-            <template v-for="(row, i) in data.rows" :key="selCode(row) + '-' + i">
+            <template v-for="(row, i) in data.rows" :key="`${selStrategy(row)}:${selCode(row)}-${i}`">
               <tr>
                 <td>{{ selCode(row) }}</td>
                 <td>{{ selName(row) }}</td>
+                <td>
+                  <span class="tag strategy">{{ strategyLabel(selStrategy(row)) }}</span>
+                </td>
                 <td>{{ selIndustry(row) }}</td>
                 <td class="concepts">
                   <div v-if="selConceptList(row).length" class="concept-preview">
@@ -443,50 +490,50 @@ onMounted(init)
                     v-if="parseSelectionProfile(row).hasContent"
                     type="button"
                     class="btn-pill"
-                    :class="{ active: expandedProfile === rowKey(selCode(row), ':p') }"
-                    @click="toggleProfile(selCode(row))"
+                    :class="{ active: expandedProfile === selectionRowKey(row, ':p') }"
+                    @click="toggleProfile(row)"
                   >
-                    {{ expandedProfile === rowKey(selCode(row), ':p') ? '收起概况' : '概况' }}
+                    {{ expandedProfile === selectionRowKey(row, ':p') ? '收起概况' : '概况' }}
                   </button>
                   <button
                     type="button"
                     class="btn-pill"
-                    :class="{ active: expandedKline === rowKey(selCode(row)) }"
-                    @click="toggleKline(selCode(row))"
+                    :class="{ active: expandedKline === selectionRowKey(row) }"
+                    @click="toggleKline(row)"
                   >
-                    {{ expandedKline === rowKey(selCode(row)) ? '收起K线' : 'K线' }}
+                    {{ expandedKline === selectionRowKey(row) ? '收起K线' : 'K线' }}
                   </button>
                   <button
                     v-if="!shareOnly"
                     type="button"
                     class="btn-pill sop"
-                    :disabled="!!sopLoading[rowKey(selCode(row), ':sop')]"
-                    @click="promptSopAnalysis(selCode(row))"
+                    :disabled="!!sopLoading[selectionRowKey(row, ':sop')]"
+                    @click="promptSopAnalysis(row)"
                   >
-                    {{ sopLoading[rowKey(selCode(row), ':sop')] ? 'SOP中…' : '东财SOP' }}
+                    {{ sopLoading[selectionRowKey(row, ':sop')] ? 'SOP中…' : '东财SOP' }}
                   </button>
                 </td>
               </tr>
               <tr
-                v-if="!shareOnly && sopHint[rowKey(selCode(row), ':sop')]"
+                v-if="!shareOnly && sopHint[selectionRowKey(row, ':sop')]"
                 class="detail-row"
               >
-                <td :colspan="shareOnly ? 8 : 9" class="sop-status-cell">
-                  {{ sopHint[rowKey(selCode(row), ':sop')] }}
+                <td :colspan="shareOnly ? 9 : 10" class="sop-status-cell">
+                  {{ sopHint[selectionRowKey(row, ':sop')] }}
                 </td>
               </tr>
-              <tr v-if="expandedProfile === rowKey(selCode(row), ':p')" class="detail-row">
-                <td :colspan="shareOnly ? 8 : 9" class="detail-cell">
+              <tr v-if="expandedProfile === selectionRowKey(row, ':p')" class="detail-row">
+                <td :colspan="shareOnly ? 9 : 10" class="detail-cell">
                   <StockProfilePanel :row="row" />
                 </td>
               </tr>
-              <tr v-if="expandedKline === rowKey(selCode(row))" class="detail-row">
-                <td :colspan="shareOnly ? 8 : 9" class="detail-cell">
+              <tr v-if="expandedKline === selectionRowKey(row)" class="detail-row">
+                <td :colspan="shareOnly ? 9 : 10" class="detail-cell">
                   <StockKlinePanel
-                    :bars="klineCache[rowKey(selCode(row))] ?? []"
-                    :loading="klineLoading === rowKey(selCode(row))"
-                    :error="klineError[rowKey(selCode(row))]"
-                    :end-date="klineMeta[rowKey(selCode(row))]"
+                    :bars="klineCache[selectionRowKey(row)] ?? []"
+                    :loading="klineLoading === selectionRowKey(row)"
+                    :error="klineError[selectionRowKey(row)]"
+                    :end-date="klineMeta[selectionRowKey(row)]"
                   />
                 </td>
               </tr>
@@ -632,6 +679,11 @@ th {
   color: #7dffb2;
 }
 
+.tag.strategy {
+  background: #1a2840;
+  color: #93c5fd;
+}
+
 .tag.new {
   background: #1a2840;
   color: #93c5fd;
@@ -744,6 +796,59 @@ th {
 
 .error {
   color: #ff8f8f;
+}
+
+.card-buys {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border: 1px solid #2a3548;
+  border-radius: 12px;
+  background: #121820;
+}
+
+.card-buys .pos-tag {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #93c5fd;
+}
+
+.card-buys-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.card-buys-table th,
+.card-buys-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid #1e2836;
+}
+
+.card-buys-hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #8b9cb3;
+}
+
+.mini-priority {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10px;
+  color: #93c5fd;
+}
+
+.card-buys-table .tag.strategy {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #1a2840;
+  color: #93c5fd;
+}
+
+.card-buys-table .dash {
+  color: #5c6b80;
 }
 
 /* H5 */

@@ -69,7 +69,9 @@ cd frontend && npm install && npm run build
 
 3. 访问 `https://hub.yoloworld.site:8883` → 登录页  
    - **admin**：全部页面与 API  
-   - **share**：仅 `/selection`（选股 + K 线 + SOP，无持仓标记）
+   - **share**：仅 `/selection`（选股 + K 线 + SOP，无持仓标记）  
+   - **公开**：`/news`、`/m/news` 及 `/api/dashboard/news/*` 无需登录（AI 解读为公开版，不含持仓/P0～P4 操作提示）  
+   - **公开 API 防护**（默认开启）：IP 限流 + 短窗口 burst；无 `X-Hub-Client: home-hub` 更严；拦截 curl/python 等 UA；`limit` 上限见 `HUB_NEWS_MAX_LIMIT`
 
 由 Caddy 反代 `127.0.0.1:8780`；鉴权由 Home Hub 会话 Cookie 负责。
 

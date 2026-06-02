@@ -4,6 +4,7 @@
   font-weight: 400;
   color: #e7ecf3;
   background: #0f1419;
+  color-scheme: dark;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -26,6 +27,9 @@ body.h5-shell {
   position: fixed;
   inset: 0;
   overflow: hidden;
+  overflow-x: hidden;
+  max-width: 100%;
+  width: 100%;
   background: #0b1016;
 }
 
@@ -33,6 +37,9 @@ body.h5-shell #app {
   position: fixed;
   inset: 0;
   overflow: hidden;
+  overflow-x: hidden;
+  max-width: 100%;
+  width: 100%;
   background: #0b1016;
 }
 
@@ -52,31 +59,38 @@ body.has-pwa-banner:not(.h5-shell) #app {
   box-sizing: border-box;
 }
 
-/* 深色主题滚动条（聊天消息区、侧栏、输入框等） */
+/* 深色主题滚动条：透明轨道 + 细圆角滑块（避免系统默认灰底轨道） */
+*,
 .hub-scrollbar {
-  color-scheme: dark;
   scrollbar-width: thin;
-  scrollbar-color: #3d4f66 transparent;
+  scrollbar-color: rgba(100, 125, 158, 0.55) transparent;
 }
 
+*::-webkit-scrollbar,
 .hub-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
 }
 
+*::-webkit-scrollbar-track,
 .hub-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 
+*::-webkit-scrollbar-thumb,
 .hub-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(61, 79, 102, 0.85);
-  border-radius: 3px;
+  background-color: rgba(90, 115, 145, 0.45);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
+*::-webkit-scrollbar-thumb:hover,
 .hub-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(74, 97, 120, 0.95);
+  background-color: rgba(120, 150, 190, 0.65);
 }
 
+*::-webkit-scrollbar-corner,
 .hub-scrollbar::-webkit-scrollbar-corner {
   background: transparent;
 }

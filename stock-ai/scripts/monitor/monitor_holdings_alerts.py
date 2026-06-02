@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 from dataclasses import dataclass
@@ -17,6 +16,7 @@ from scripts._bootstrap import ensure_repo_root_on_path
 ensure_repo_root_on_path()
 
 from scripts.tools.fetch_eastmoney_quotes import EastmoneyQuote, fetch_quotes
+from scripts.monitor.monitor_state import load_state, prune_suspect_fired, save_state
 
 ROOT = Path(__file__).resolve().parents[2]
 STATE_DIR = ROOT / "output" / "monitor_state"
@@ -61,24 +61,12 @@ def _load_all_rules() -> list[dict]:
     return load_all_monitor_rules(today=datetime.now(TZ).date())
 
 
-def _state_file(day: date) -> Path:
-    return STATE_DIR / f"holdings_alerts_{day.isoformat()}.json"
+def _load_state(day: date) -> tuple[set[str], dict[str, dict]]:
+    return load_state(day)
 
 
-def _load_state(day: date) -> set[str]:
-    path = _state_file(day)
-    if not path.exists():
-        return set()
-    data = json.loads(path.read_text(encoding="utf-8"))
-    return set(data.get("fired", []))
-
-
-def _save_state(day: date, fired: set[str]) -> None:
-    STATE_DIR.mkdir(parents=True, exist_ok=True)
-    _state_file(day).write_text(
-        json.dumps({"date": day.isoformat(), "fired": sorted(fired)}, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+def _save_state(day: date, fired: set[str], events: dict[str, dict]) -> None:
+    save_state(day, fired, events)
 
 
 def _rule_triggered(rule: dict, quote: Quote) -> bool:
@@ -105,6 +93,8 @@ def evaluate_rules(
     quotes: dict[str, Quote],
     *,
     fired: set[str],
+    events: dict[str, dict],
+    fired_at: str,
     repeat: bool = False,
 ) -> list[tuple[str, str]]:
     alerts: list[tuple[str, str]] = []
@@ -118,8 +108,15 @@ def evaluate_rules(
             continue
         if not repeat and rule_id in fired:
             continue
-        alerts.append((rule_id, _format_message(rule, quote)))
+        message = _format_message(rule, quote)
+        alerts.append((rule_id, message))
         fired.add(rule_id)
+        events[rule_id] = {
+            "fired_at": fired_at,
+            "price": quote.price,
+            "change_pct": quote.change_pct,
+            "message": message,
+        }
     return alerts
 
 
@@ -127,6 +124,12 @@ def push_wechat(text: str) -> None:
     from scripts.tools.wechat_acp_push_text import send_wechat_acp_text
 
     send_wechat_acp_text(text)
+
+
+def push_feishu(text: str) -> bool:
+    from stock_ai.notify import send_to_lark
+
+    return send_to_lark(text, prefix="【持仓监控】")
 
 
 def run_once(*, push: bool, repeat: bool, force: bool) -> int:
@@ -146,13 +149,50 @@ def run_once(*, push: bool, repeat: bool, force: bool) -> int:
     except Exception as exc:  # noqa: BLE001
         print(f"❌ 东财行情抓取失败: {exc}", file=sys.stderr)
         return 1
+    missing = [c for c in codes if c not in quotes]
+    if missing:
+        print(f"⚠️ 未获取到行情: {', '.join(missing)}", file=sys.stderr)
     if not quotes:
         print("❌ 未获取到东财行情", file=sys.stderr)
         return 1
 
-    fired = _load_state(now.date())
-    alerts = evaluate_rules(rules, quotes, fired=fired, repeat=repeat)
-    _save_state(now.date(), fired)
+    try:
+        from scripts.tools.portfolio_db import upsert_monitor_live_quotes
+
+        n = upsert_monitor_live_quotes(quotes, quoted_at=now)
+        if n:
+            print(f"✅ 现价已写入 MySQL monitor_live_quotes ({n} 只)", file=sys.stderr)
+    except Exception as exc:  # noqa: BLE001
+        print(f"⚠️ 现价写入 MySQL 失败: {exc}", file=sys.stderr)
+
+    prune_quotes = dict(quotes)
+    missing_for_prune = [c for c in codes if c not in prune_quotes]
+    if missing_for_prune:
+        from scripts.tools.portfolio_db import load_monitor_live_quotes
+
+        rows, _ = load_monitor_live_quotes(missing_for_prune)
+        for code, row in rows.items():
+            prune_quotes[code] = Quote(
+                code=code,
+                name=str(row.get("name") or ""),
+                price=float(row["price"]),
+                change_amt=float(row.get("change_amt") or 0.0),
+                change_pct=float(row.get("change_pct") or 0.0),
+            )
+
+    fired, events = _load_state(now.date())
+    removed = prune_suspect_fired(fired, events, rules, prune_quotes)
+    if removed:
+        print(f"🧹 已移除误触发记录: {', '.join(removed)}", file=sys.stderr)
+    alerts = evaluate_rules(
+        rules,
+        quotes,
+        fired=fired,
+        events=events,
+        fired_at=now.strftime("%Y-%m-%d %H:%M:%S"),
+        repeat=repeat,
+    )
+    _save_state(now.date(), fired, events)
 
     if not alerts:
         print(f"OK 无触发 ({now.strftime('%H:%M:%S')}) [东财 opencli]")
@@ -168,18 +208,39 @@ def run_once(*, push: bool, repeat: bool, force: bool) -> int:
     print(full)
 
     if push:
-        try:
-            push_wechat(full)
-            print("✅ 已推送微信", file=sys.stderr)
-        except Exception as exc:  # noqa: BLE001
-            print(f"❌ 推送失败: {exc}", file=sys.stderr)
+        push_errors: list[str] = []
+        if os.environ.get("HOLDINGS_ALERT_FEISHU", "1").strip().lower() not in {
+            "0",
+            "false",
+            "no",
+            "off",
+        }:
+            if push_feishu(full):
+                print("✅ 已推送飞书", file=sys.stderr)
+            else:
+                push_errors.append("飞书")
+        if os.environ.get("HOLDINGS_ALERT_WECHAT", "1").strip().lower() not in {
+            "0",
+            "false",
+            "no",
+            "off",
+        }:
+            try:
+                push_wechat(full)
+                print("✅ 已推送微信", file=sys.stderr)
+            except Exception as exc:  # noqa: BLE001
+                push_errors.append(f"微信({exc})")
+        if push_errors and len(push_errors) >= 2:
+            print(f"❌ 推送失败: {', '.join(push_errors)}", file=sys.stderr)
             return 1
+        if push_errors:
+            print(f"⚠️ 部分推送失败: {', '.join(push_errors)}", file=sys.stderr)
     return 0
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="持仓盘中条件监控（MySQL alert_rules）")
-    parser.add_argument("--push", action="store_true", help="触发时推微信")
+    parser.add_argument("--push", action="store_true", help="触发时推飞书/微信（见环境变量）")
     parser.add_argument("--repeat", action="store_true", help="允许同日重复推送同一规则")
     parser.add_argument("--force", action="store_true", help="忽略交易时段检查")
     args = parser.parse_args()
@@ -187,9 +248,14 @@ def main() -> int:
     if args.push:
         instance = os.getenv("WECHAT_ACP_INSTANCE", "tools-workspace")
         token = Path.home() / ".wechat-acp" / "instances" / instance / "token.json"
-        if not token.exists():
-            print(f"❌ 未找到 wechat-acp token: {token}", file=sys.stderr)
-            return 1
+        wechat_on = os.environ.get("HOLDINGS_ALERT_WECHAT", "1").strip().lower() not in {
+            "0",
+            "false",
+            "no",
+            "off",
+        }
+        if wechat_on and not token.exists():
+            print(f"⚠️ 未找到 wechat-acp token，将仅推飞书: {token}", file=sys.stderr)
 
     return run_once(push=args.push, repeat=args.repeat, force=args.force)
 

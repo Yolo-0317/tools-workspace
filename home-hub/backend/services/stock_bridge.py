@@ -39,12 +39,17 @@ def export_dashboard(
     *,
     snapshot_slot: str = "eod",
     strategy: str = "combined",
+    live_quotes: bool = False,
 ) -> dict[str, Any]:
     _ensure_stock_ai_path()
     _load_stock_env()
     from scripts.tools.dashboard_data import export_dashboard_payload
 
-    return export_dashboard_payload(snapshot_slot=snapshot_slot, strategy=strategy)
+    return export_dashboard_payload(
+        snapshot_slot=snapshot_slot,
+        strategy=strategy,
+        live_quotes=live_quotes,
+    )
 
 
 def load_current_portfolio() -> dict[str, Any]:
@@ -81,13 +86,92 @@ def load_current_portfolio() -> dict[str, Any]:
     }
 
 
-def load_monitor_rules() -> list[dict[str, Any]]:
+def load_monitor_rules(*, live: bool = False) -> dict[str, Any]:
     _ensure_stock_ai_path()
     _load_stock_env()
-    from scripts.tools.portfolio_db import load_all_monitor_rules
+    from scripts.tools.portfolio_db import load_all_monitor_rules, load_dashboard_closes
 
-    rules = load_all_monitor_rules(today=datetime.now(_TZ).date())
-    return [_normalize_monitor_rule(r) for r in rules]
+    raw_rules = load_all_monitor_rules(today=datetime.now(_TZ).date())
+    rules = [_normalize_monitor_rule(r) for r in raw_rules]
+    payload: dict[str, Any] = {"rules": rules}
+
+    if not live:
+        return payload
+
+    codes = sorted({str(r.get("code", "")).zfill(6) for r in raw_rules if r.get("code")})
+    from scripts.monitor.monitor_holdings_alerts import Quote, _format_message, _rule_triggered
+    from scripts.tools.portfolio_db import load_monitor_live_quotes
+
+    rows, batch_as_of = load_monitor_live_quotes(codes)
+    quote_source = "mysql" if rows else "snapshot"
+    qmap: dict[str, Quote] = {
+        code: Quote(
+            code=code,
+            name=str(row.get("name") or ""),
+            price=float(row["price"]),
+            change_amt=float(row.get("change_amt") or 0.0),
+            change_pct=float(row.get("change_pct") or 0.0),
+        )
+        for code, row in rows.items()
+    }
+
+    missing = [c for c in codes if c not in qmap]
+    if missing:
+        closes = load_dashboard_closes(missing)
+        for c, p in closes.items():
+            qmap[c] = Quote(code=c, name="", price=p, change_amt=0.0, change_pct=0.0)
+
+    today = datetime.now(_TZ).date()
+    state = load_monitor_state(today.isoformat())
+    fired_today = set(state.get("fired") or [])
+    fired_events = dict(state.get("events") or {})
+
+    for raw, norm in zip(raw_rules, rules, strict=False):
+        code = str(raw.get("code", "")).zfill(6)
+        q = qmap.get(code)
+        rid = str(norm.get("id") or "")
+        event = fired_events.get(rid) or {}
+        if q is None:
+            norm["current_price"] = None
+            norm["change_pct"] = None
+            norm["triggered_now"] = None
+            norm["fired_today"] = rid in fired_today
+            if event.get("message"):
+                norm["fired_message"] = event["message"]
+            continue
+        norm["current_price"] = float(q.price)
+        norm["change_pct"] = float(q.change_pct)
+        norm["triggered_now"] = _rule_triggered(raw, q)
+        norm["fired_today"] = rid in fired_today
+        if event.get("message"):
+            norm["fired_message"] = event["message"]
+            norm["fired_at"] = event.get("fired_at")
+            norm["fired_price"] = event.get("price")
+        elif rid in fired_today:
+            from scripts.monitor.monitor_state import describe_legacy_fired
+
+            msg, suspect = describe_legacy_fired(
+                raw,
+                current_price=float(q.price),
+                current_change_pct=float(q.change_pct),
+            )
+            norm["fired_message"] = msg
+            norm["fired_suspect"] = suspect
+        try:
+            norm["note_live"] = _format_message(raw, q)
+        except Exception:  # noqa: BLE001
+            norm["note_live"] = norm.get("note") or ""
+
+    payload["quote_source"] = quote_source
+    if batch_as_of is not None:
+        payload["quotes_as_of"] = batch_as_of.strftime("%Y-%m-%d %H:%M:%S")
+    else:
+        payload["quotes_as_of"] = datetime.now(_TZ).strftime("%Y-%m-%d %H:%M:%S")
+    return payload
+
+
+def load_monitor_rules_list() -> list[dict[str, Any]]:
+    return load_monitor_rules(live=False)["rules"]
 
 
 def _normalize_monitor_rule(rule: dict[str, Any]) -> dict[str, Any]:
@@ -117,13 +201,16 @@ def load_monitor_state(date_str: str | None = None) -> dict[str, Any]:
         day = datetime.now(_TZ).date()
     path = state_dir / f"holdings_alerts_{day.isoformat()}.json"
     fired: list[str] = []
+    events: dict[str, Any] = {}
     if path.is_file():
         data = json.loads(path.read_text(encoding="utf-8"))
         fired = list(data.get("fired") or [])
+        events = dict(data.get("events") or {})
     return {
         "date": day.isoformat(),
         "fired": fired,
-        "fired_details": _enrich_monitor_fired(fired),
+        "events": events,
+        "fired_details": _enrich_monitor_fired(fired, events),
         "path": str(path),
         "exists": path.is_file(),
     }
@@ -158,12 +245,17 @@ def list_monitor_state_dates(*, limit: int = 90) -> list[dict[str, Any]]:
     return entries
 
 
-def _enrich_monitor_fired(fired_ids: list[str]) -> list[dict[str, Any]]:
+def _enrich_monitor_fired(
+    fired_ids: list[str],
+    events: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
     _ensure_stock_ai_path()
     _load_stock_env()
-    from scripts.tools.portfolio_db import get_engine
+    from scripts.monitor.monitor_state import describe_legacy_fired, rule_row_from_db
+    from scripts.tools.portfolio_db import get_engine, load_monitor_live_quotes
     from sqlalchemy import text
 
+    events = events or {}
     lookup: dict[str, dict[str, Any]] = {}
     engine = get_engine()
     if engine is not None:
@@ -179,75 +271,119 @@ def _enrich_monitor_fired(fired_ids: list[str]) -> list[dict[str, Any]]:
                     )
                 ).fetchall()
             for row in rows:
-                lookup[str(row.rule_id)] = {
-                    "id": row.rule_id,
-                    "source": row.source,
-                    "ts_code": str(row.ts_code).zfill(6),
-                    "name": row.name or "",
-                    "rule_type": row.rule_type,
-                    "note": row.message_template or "",
-                }
+                rule = rule_row_from_db(row)
+                rule["source"] = row.source
+                lookup[str(row.rule_id)] = rule
         except Exception:
             pass
 
+    codes = sorted(
+        {
+            str((lookup.get(fid) or {}).get("ts_code") or "").zfill(6)
+            for fid in fired_ids
+            if lookup.get(fid, {}).get("ts_code")
+        }
+    )
+    live_rows, _ = load_monitor_live_quotes(codes)
+
     out: list[dict[str, Any]] = []
     for fid in fired_ids:
-        rule = lookup.get(fid)
+        rule = lookup.get(fid) or {}
+        event = events.get(fid) or {}
+        ts_code = str(rule.get("ts_code") or rule.get("code") or "").zfill(6)
+        suspect = False
+        message = event.get("message")
+        if not message:
+            live = live_rows.get(ts_code) or {}
+            current_price = live.get("price")
+            current_change_pct = live.get("change_pct")
+            message, suspect = describe_legacy_fired(
+                rule,
+                current_price=float(current_price) if current_price is not None else None,
+                current_change_pct=float(current_change_pct)
+                if current_change_pct is not None
+                else None,
+            )
         out.append(
             {
                 "id": fid,
                 "name": rule.get("name") if rule else "",
-                "ts_code": rule.get("ts_code") if rule else "",
+                "ts_code": ts_code or "",
                 "source": rule.get("source") if rule else "",
                 "rule_type": rule.get("rule_type") if rule else "",
-                "note": rule.get("note") if rule else "",
+                "note": message,
+                "fired_at": event.get("fired_at"),
+                "fired_price": event.get("price"),
+                "change_pct": event.get("change_pct"),
+                "suspect": suspect,
             }
         )
     return out
 
 
-def list_selection_dates(*, strategy: str = "combined") -> list[str]:
+def _is_all_selection_strategy(strategy: str) -> bool:
+    return (strategy or "").strip().lower() in {"", "all", "*"}
+
+
+def _selection_row_sort_key(row: dict[str, Any]) -> tuple[float, ...]:
+    def _num(key: str) -> float:
+        v = row.get(key)
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return float("-inf")
+
+    return (
+        _num("总分"),
+        _num("标签数"),
+        _num("成交额(万)"),
+        _num("形态分(25)"),
+        _num("涨幅%"),
+    )
+
+
+def _enrich_selection_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if not rows:
+        return rows
     _ensure_stock_ai_path()
     _load_stock_env()
-    from scripts.tools.portfolio_db import list_selection_trade_dates
+    from scripts.tools.portfolio_db import (
+        load_stock_profiles_by_codes,
+        merge_profile_fields_into_selection_row,
+    )
 
-    return [d.isoformat() for d in list_selection_trade_dates(strategy=strategy)]
+    codes = [
+        str(r.get("代码") or r.get("ts_code") or "").split(".")[0].zfill(6)
+        for r in rows
+    ]
+    profiles = load_stock_profiles_by_codes(codes)
+    merged_rows: list[dict[str, Any]] = []
+    for row in rows:
+        code = str(row.get("代码") or row.get("ts_code") or "").split(".")[0].zfill(6)
+        prof = profiles.get(code)
+        if prof and (not row.get("所属行业") or not row.get("公司简介")):
+            merged_rows.append(merge_profile_fields_into_selection_row(row, prof))
+        else:
+            merged_rows.append(row)
+    return merged_rows
 
 
-def load_selection_history(
+def _selection_history_extras(
     trade_date: str,
     *,
-    strategy: str = "combined",
+    sop_strategy: str = "combined",
 ) -> dict[str, Any]:
     _ensure_stock_ai_path()
     _load_stock_env()
     from scripts.tools.portfolio_db import (
+        enrich_sop_review_bundle,
+        load_account,
         load_holding_codes,
-        load_selection_daily_results,
         load_sop_review_bundle,
         load_stock_names_by_codes,
-        load_stock_profiles_by_codes,
-        merge_profile_fields_into_selection_row,
-        enrich_sop_review_bundle,
     )
 
-    td, rows = load_selection_daily_results(trade_date, strategy=strategy)
-    if rows:
-        codes = [
-            str(r.get("代码") or r.get("ts_code") or "").split(".")[0].zfill(6)
-            for r in rows
-        ]
-        profiles = load_stock_profiles_by_codes(codes)
-        merged_rows: list[dict[str, Any]] = []
-        for row in rows:
-            code = str(row.get("代码") or row.get("ts_code") or "").split(".")[0].zfill(6)
-            prof = profiles.get(code)
-            if prof and (not row.get("所属行业") or not row.get("公司简介")):
-                merged_rows.append(merge_profile_fields_into_selection_row(row, prof))
-            else:
-                merged_rows.append(row)
-        rows = merged_rows
-    sop = load_sop_review_bundle(trade_date, strategy=strategy)
+    sop = load_sop_review_bundle(trade_date, strategy=sop_strategy)
     if sop and sop.get("items"):
         codes = [
             str(it.get("ts_code") or it.get("code") or "").split(".")[0].zfill(6)
@@ -255,14 +391,99 @@ def load_selection_history(
         ]
         enrich_sop_review_bundle(sop, names=load_stock_names_by_codes(codes))
     holdings = sorted(load_holding_codes())
+    acct = load_account()
+    pos_pct = None
+    if acct and acct.position_ratio is not None:
+        r = float(acct.position_ratio)
+        pos_pct = r * 100 if r <= 1.0 else r
     return {
-        "strategy": strategy,
-        "trade_date": td.isoformat() if td else trade_date,
-        "count": len(rows),
-        "rows": rows,
         "sop_review": sop,
         "holding_codes": holdings,
+        "account_position_pct": pos_pct,
     }
+
+
+def _attach_execution_card_buys(
+    payload: dict[str, Any],
+    *,
+    rows: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    from scripts.tools.execution_card_buys import execution_card_buys_from_selection
+
+    holdings = payload.get("holding_codes") or []
+    selection_rows = rows if rows is not None else payload.get("rows") or []
+    payload["execution_card_buys"] = execution_card_buys_from_selection(
+        selection_rows,
+        holding_codes=holdings,
+    )
+    return payload
+
+
+def list_selection_dates(*, strategy: str = "all") -> list[str]:
+    _ensure_stock_ai_path()
+    _load_stock_env()
+    from scripts.tools.portfolio_db import (
+        list_all_selection_trade_dates,
+        list_selection_trade_dates,
+    )
+
+    if _is_all_selection_strategy(strategy):
+        dates = list_all_selection_trade_dates()
+    else:
+        dates = list_selection_trade_dates(strategy=strategy)
+    return [d.isoformat() for d in dates]
+
+
+def load_selection_history(
+    trade_date: str,
+    *,
+    strategy: str = "all",
+) -> dict[str, Any]:
+    _ensure_stock_ai_path()
+    _load_stock_env()
+    from scripts.tools.portfolio_db import (
+        load_selection_daily_results,
+        list_selection_strategies,
+    )
+
+    if _is_all_selection_strategy(strategy):
+        td: date | None = None
+        merged_rows: list[dict[str, Any]] = []
+        for strat in list_selection_strategies():
+            td_s, rows = load_selection_daily_results(trade_date, strategy=strat)
+            if td is None and td_s is not None:
+                td = td_s
+            for row in rows:
+                tagged = dict(row)
+                tagged["strategy"] = strat
+                merged_rows.append(tagged)
+        merged_rows.sort(key=_selection_row_sort_key, reverse=True)
+        rows = _enrich_selection_rows(merged_rows)
+        extras = _selection_history_extras(trade_date, sop_strategy="combined")
+        return _attach_execution_card_buys(
+            {
+                "strategy": "all",
+                "trade_date": td.isoformat() if td else trade_date,
+                "count": len(rows),
+                "rows": rows,
+                **extras,
+            },
+            rows=rows,
+        )
+
+    td, rows = load_selection_daily_results(trade_date, strategy=strategy)
+    rows = _enrich_selection_rows(rows)
+    extras = _selection_history_extras(trade_date, sop_strategy=strategy)
+    return _attach_execution_card_buys(
+        {
+            "strategy": strategy,
+            "trade_date": td.isoformat() if td else trade_date,
+            "count": len(rows),
+            "rows": rows,
+            **extras,
+        },
+        rows=rows,
+    )
 
 
 def load_selection_kline(
@@ -641,3 +862,265 @@ def run_selection_sop_single(
         trade_date=day,
         push=push_wechat,
     )
+
+
+def load_news_meta(*, date_str: str | None = None) -> dict[str, Any]:
+    _ensure_stock_ai_path()
+    _load_stock_env()
+    from scripts.tools.news_db import news_meta
+
+    day = date.fromisoformat(date_str[:10]) if date_str else datetime.now(_TZ).date()
+    return news_meta(day=day)
+
+
+def load_news_items(
+    *,
+    date_str: str | None = None,
+    category: str | None = None,
+    sentiment: str | None = None,
+    limit: int = 50,
+) -> dict[str, Any]:
+    _ensure_stock_ai_path()
+    _load_stock_env()
+    from scripts.tools.news_db import list_news_items
+
+    day = date.fromisoformat(date_str[:10]) if date_str else datetime.now(_TZ).date()
+    cat = category if category in {"geo", "domestic", "other"} else None
+    sent = sentiment if sentiment in {"bullish", "bearish", "neutral"} else None
+    items = list_news_items(
+        day=day,
+        category=cat,
+        sentiment=sent,
+        limit=min(limit, 200),
+    )
+    return {
+        "date": day.isoformat(),
+        "category": cat,
+        "sentiment": sent,
+        "items": items,
+    }
+
+
+def _sanitize_public_briefings(briefings: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    from scripts.tools.news_ai_interpret import sanitize_public_ai_summary
+
+    out: list[dict[str, Any]] = []
+    for row in briefings:
+        item = dict(row)
+        if item.get("ai_summary"):
+            item["ai_summary"] = sanitize_public_ai_summary(str(item["ai_summary"]))
+        out.append(item)
+    return out
+
+
+def load_news_briefings(*, date_str: str | None = None) -> dict[str, Any]:
+    _ensure_stock_ai_path()
+    _load_stock_env()
+    from scripts.tools.news_db import list_briefing_snapshots
+
+    day = date.fromisoformat(date_str[:10]) if date_str else datetime.now(_TZ).date()
+    briefings = _sanitize_public_briefings(list_briefing_snapshots(day=day))
+    return {"date": day.isoformat(), "briefings": briefings}
+
+
+def load_latest_briefing() -> dict[str, Any]:
+    _ensure_stock_ai_path()
+    _load_stock_env()
+    from scripts.tools.news_db import latest_briefing_snapshot
+
+    row = latest_briefing_snapshot()
+    if row and row.get("ai_summary"):
+        row = dict(row)
+        from scripts.tools.news_ai_interpret import sanitize_public_ai_summary
+
+        row["ai_summary"] = sanitize_public_ai_summary(str(row["ai_summary"]))
+    return {"briefing": row}
+
+
+def _emotion_json_value(value: Any) -> Any:
+    from decimal import Decimal
+
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return float(value)
+    return value
+
+
+def _normalize_emotion_bundle(bundle: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not bundle:
+        return None
+    header = bundle.get("header")
+    if header is None:
+        return None
+    hdr = {k: _emotion_json_value(v) for k, v in dict(header).items()}
+    dragons = []
+    for item in bundle.get("dragon_items") or []:
+        row = {k: _emotion_json_value(v) for k, v in dict(item).items()}
+        dragons.append(row)
+    return {"header": hdr, "dragon_items": dragons}
+
+
+def list_emotion_cycle_dates() -> dict[str, Any]:
+    _ensure_stock_ai_path()
+    _load_stock_env()
+    from scripts.tools.portfolio_db import (
+        latest_emotion_trade_date,
+        list_emotion_cycle_trade_dates,
+    )
+
+    all_dates = [d.isoformat() for d in list_emotion_cycle_trade_dates()]
+    default = latest_emotion_trade_date(checklist_slot="eod")
+    return {
+        "dates": all_dates,
+        "default_date": default.isoformat() if default else (all_dates[0] if all_dates else None),
+    }
+
+
+def _build_dragon_execution_card(header: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not header:
+        return None
+    phase = str(header.get("phase") or "").strip()
+    allow_raw = header.get("allow_new_open")
+    allow_new = allow_raw in (1, True, "1", "true", "True")
+    premium = header.get("limit_up_premium_pct")
+    explode = header.get("explode_rate_pct")
+    cap = header.get("position_cap_pct")
+
+    phase_no_open = phase in ("冰点", "退潮")
+    phase_can_open = phase in ("启动", "发酵", "高潮")
+    premium_ok = premium is None or float(premium) >= 1.0
+    explode_ok = explode is None or float(explode) < 40.0
+
+    allow_buy = (
+        phase_can_open
+        and allow_new
+        and premium_ok
+        and explode_ok
+        and not phase_no_open
+    )
+
+    if phase_no_open:
+        p0 = f"P0 阶段 gate：{phase} — 禁止新开，有仓应清"
+    elif phase == "分歧":
+        p0 = "P0 阶段 gate：分歧 — 禁止新开，只留核心龙"
+    elif allow_buy:
+        p0 = f"P0 阶段 gate：{phase} — 允许仿真试探（见龙头池）"
+    else:
+        p0 = f"P0 阶段 gate：{phase} — 禁止新开（指标未过关）"
+
+    return {
+        "scope": "simulation_only",
+        "title": "龙头执行卡",
+        "mysql_tables": ["emotion_cycle_daily", "emotion_cycle_dragon_watch"],
+        "schedule": "盘中 5min · 09:26 pre_market · 17:10 eod",
+        "p0_gate": p0,
+        "operation": header.get("action_summary"),
+        "position_cap_pct": cap,
+        "allow_new_open": allow_new,
+        "allow_buy": allow_buy,
+        "force_exit": phase_no_open,
+        "exclude_list": header.get("exclude_list"),
+        "main_theme": header.get("main_theme"),
+        "conflict_note": "实盘与主账户以持仓执行卡为准（看板 /portfolio）",
+    }
+
+
+def _attach_dragon_execution_card(payload: dict[str, Any]) -> dict[str, Any]:
+    hdr: dict[str, Any] | None = None
+    rec = payload.get("record")
+    if isinstance(rec, dict) and rec.get("header"):
+        hdr = rec["header"]
+    payload["data_source"] = {
+        "kind": "mysql",
+        "tables": ["emotion_cycle_daily", "emotion_cycle_dragon_watch"],
+        "schedule": "盘中 5min · 09:26 pre_market · 17:10 eod (intraday launchd)",
+    }
+    payload["dragon_execution_card"] = _build_dragon_execution_card(hdr)
+    return payload
+
+
+def load_emotion_cycle(
+    trade_date: str | None = None,
+    *,
+    checklist_slot: str | None = None,
+) -> dict[str, Any]:
+    _ensure_stock_ai_path()
+    _load_stock_env()
+    from scripts.tools.portfolio_db import load_emotion_cycle_checklist
+
+    dates = list_emotion_cycle_dates()
+    eod_dates = dates.get("dates") or []
+
+    if trade_date:
+        td = trade_date[:10]
+        if checklist_slot:
+            bundle = load_emotion_cycle_checklist(td, checklist_slot=checklist_slot)
+            return _attach_dragon_execution_card({
+                "dates": eod_dates,
+                "default_date": dates.get("default_date"),
+                "trade_date": td,
+                "checklist_slot": checklist_slot,
+                "record": _normalize_emotion_bundle(bundle),
+            })
+        pre = _normalize_emotion_bundle(
+            load_emotion_cycle_checklist(td, checklist_slot="pre_market")
+        )
+        intraday = _normalize_emotion_bundle(
+            load_emotion_cycle_checklist(td, checklist_slot="intraday")
+        )
+        eod = _normalize_emotion_bundle(
+            load_emotion_cycle_checklist(td, checklist_slot="eod")
+        )
+        active = intraday or pre or eod
+        return _attach_dragon_execution_card({
+            "dates": eod_dates,
+            "default_date": dates.get("default_date"),
+            "trade_date": td,
+            "pre_market": pre,
+            "intraday": intraday,
+            "eod": eod,
+            "record": active,
+            "checklist_slot": (
+                str(active["header"].get("checklist_slot"))
+                if active and active.get("header")
+                else None
+            ),
+        })
+
+    slot = checklist_slot or "intraday"
+    from stock_ai.emotion_cycle_compute import is_intraday_session
+
+    if slot == "intraday" and is_intraday_session():
+        td_today = datetime.now(_TZ).date().isoformat()
+        intraday = _normalize_emotion_bundle(
+            load_emotion_cycle_checklist(td_today, checklist_slot="intraday")
+        )
+        if intraday:
+            return _attach_dragon_execution_card({
+                "dates": eod_dates,
+                "default_date": dates.get("default_date"),
+                "trade_date": td_today,
+                "intraday": intraday,
+                "record": intraday,
+                "checklist_slot": "intraday",
+            })
+        slot = "eod"
+
+    bundle = load_emotion_cycle_checklist(checklist_slot=slot)
+    if not bundle and slot == "eod":
+        bundle = load_emotion_cycle_checklist(checklist_slot="pre_market")
+    normalized = _normalize_emotion_bundle(bundle)
+    td_out = dates.get("default_date")
+    slot_out = slot
+    if normalized and normalized.get("header"):
+        hdr = normalized["header"]
+        td_out = str(hdr.get("trade_date", ""))[:10] or td_out
+        slot_out = str(hdr.get("checklist_slot") or slot_out or "")
+    return _attach_dragon_execution_card({
+        "dates": eod_dates,
+        "default_date": dates.get("default_date"),
+        "trade_date": td_out,
+        "checklist_slot": slot_out,
+        "record": normalized,
+    })

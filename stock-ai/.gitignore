@@ -41,3 +41,7 @@ investment-agent/reports/
 # 兼容备份
 *.bak
 jupyter/
+
+# 公众号 API 运行时（含 access_token，勿提交）
+data/
+.cache/

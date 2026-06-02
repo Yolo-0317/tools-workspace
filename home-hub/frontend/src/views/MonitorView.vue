@@ -6,6 +6,7 @@ import {
   fetchMonitorState,
 } from '../api/dashboard'
 import { usePlatformLayout } from '../composables/usePlatformLayout'
+import { shanghaiToday } from '../utils/date'
 import type {
   MonitorFiredDetail,
   MonitorHistoryDay,
@@ -14,15 +15,18 @@ import type {
 } from '../types/dashboard'
 
 const rules = ref<MonitorRule[]>([])
+const quoteSource = ref('')
+const quotesAsOf = ref('')
 const history = ref<MonitorHistoryDay[]>([])
 const selectedDate = ref('')
 const state = ref<MonitorState | null>(null)
 const error = ref('')
 const pageLoading = ref(true)
 const stateLoading = ref(false)
+const quotesLoading = ref(false)
 const isMobile = usePlatformLayout()
 
-const today = new Date().toISOString().slice(0, 10)
+const today = shanghaiToday()
 
 const firedDetails = computed(() => state.value?.fired_details ?? [])
 const firedCount = computed(() => state.value?.fired.length ?? 0)
@@ -31,12 +35,55 @@ function ruleCode(rule: MonitorRule): string {
   return String(rule.code ?? rule.ts_code ?? '—')
 }
 
-function ruleType(rule: MonitorRule): string {
-  return String(rule.type ?? rule.rule_type ?? '—')
+function ruleDesc(rule: MonitorRule): string {
+  if (rule.fired_today && rule.fired_message) return String(rule.fired_message)
+  if (rule.triggered_now && rule.note_live) return String(rule.note_live)
+  return String(rule.note ?? rule.message ?? '')
 }
 
-function ruleDesc(rule: MonitorRule): string {
-  return String(rule.message ?? rule.note ?? '')
+function rulePrice(rule: MonitorRule): string {
+  if (rule.current_price == null) return '—'
+  const pct =
+    rule.change_pct != null
+      ? ` (${rule.change_pct >= 0 ? '+' : ''}${rule.change_pct.toFixed(2)}%)`
+      : ''
+  return `${Number(rule.current_price).toFixed(2)}${pct}`
+}
+
+function ruleStatus(rule: MonitorRule): string {
+  if (rule.triggered_now) return rule.fired_today ? '已触发·仍满足' : '现满足条件'
+  if (rule.fired_today) return '今日已触发（已恢复）'
+  return '未触发'
+}
+
+function firedMeta(item: MonitorFiredDetail): string {
+  const parts: string[] = []
+  if (item.fired_at) parts.push(`触发 ${item.fired_at}`)
+  if (item.fired_price != null) parts.push(`触发价 ${Number(item.fired_price).toFixed(2)}`)
+  if (item.change_pct != null) {
+    const pct = Number(item.change_pct)
+    parts.push(`涨跌 ${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`)
+  }
+  return parts.join(' · ')
+}
+
+async function loadRules() {
+  quotesLoading.value = true
+  try {
+    const r = await fetchMonitorRules(true)
+    rules.value = r.rules
+    quoteSource.value = r.quote_source ?? ''
+    quotesAsOf.value = r.quotes_as_of ?? ''
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : String(e)
+  } finally {
+    quotesLoading.value = false
+  }
+}
+
+async function refreshAll() {
+  error.value = ''
+  await Promise.all([loadRules(), loadState()])
 }
 
 function firedTitle(item: MonitorFiredDetail): string {
@@ -72,8 +119,7 @@ async function init() {
   pageLoading.value = true
   error.value = ''
   try {
-    const r = await fetchMonitorRules()
-    rules.value = r.rules
+    await loadRules()
     await loadHistory()
     await loadState()
   } catch (e) {
@@ -91,8 +137,32 @@ onMounted(init)
 <template>
   <div class="page" :class="{ mobile: isMobile }">
     <header class="page-head">
-      <h1>盘中监控</h1>
-      <p class="sub">持仓与选股池告警规则 · 触发记录</p>
+      <div class="head-row">
+        <div>
+          <h1>盘中监控</h1>
+          <p class="sub">
+            持仓告警规则 · 触发记录
+            <span v-if="quotesAsOf" class="quote-meta">
+              · 现价 {{ quotesAsOf }}
+              {{
+                quoteSource === 'mysql'
+                  ? '（每 5 分钟更新）'
+                  : quoteSource === 'opencli'
+                    ? '（东财实时）'
+                    : '（库内快照）'
+              }}
+            </span>
+          </p>
+        </div>
+        <button
+          type="button"
+          class="refresh-btn"
+          :disabled="pageLoading || quotesLoading || stateLoading"
+          @click="refreshAll"
+        >
+          {{ quotesLoading ? '刷新中…' : '刷新' }}
+        </button>
+      </div>
     </header>
 
     <label class="date-field">
@@ -121,14 +191,14 @@ onMounted(init)
       <section v-if="firedDetails.length" class="section">
         <h2 class="section-title">已触发</h2>
         <ul class="fired-list">
-          <li v-for="item in firedDetails" :key="item.id" class="fired-card">
+          <li v-for="item in firedDetails" :key="item.id" class="fired-card" :class="{ suspect: item.suspect }">
             <div class="fired-head">
               <span class="fired-name">{{ firedTitle(item) }}</span>
               <span v-if="item.ts_code" class="code-badge">{{ item.ts_code }}</span>
             </div>
             <p v-if="item.rule_type" class="fired-type">{{ item.rule_type }}</p>
+            <p v-if="firedMeta(item)" class="fired-meta">{{ firedMeta(item) }}</p>
             <p v-if="item.note" class="fired-note">{{ item.note }}</p>
-            <p class="fired-id mono">{{ item.id }}</p>
           </li>
         </ul>
       </section>
@@ -190,8 +260,9 @@ onMounted(init)
                 <span class="rule-name">{{ rule.name || '—' }}</span>
                 <span class="code-badge">{{ ruleCode(rule) }}</span>
               </div>
-              <span class="type-badge">{{ ruleType(rule) }}</span>
+              <span class="type-badge" :class="{ hot: rule.triggered_now }">{{ ruleStatus(rule) }}</span>
             </div>
+            <p class="rule-price">现价 {{ rulePrice(rule) }} · 阈值 {{ rule.threshold ?? '—' }}</p>
             <p v-if="ruleDesc(rule)" class="rule-desc">{{ ruleDesc(rule) }}</p>
             <p class="rule-id mono">{{ rule.id }}</p>
           </li>
@@ -200,19 +271,21 @@ onMounted(init)
           <table>
             <thead>
               <tr>
-                <th>ID</th>
                 <th>代码</th>
                 <th>名称</th>
-                <th>类型</th>
+                <th>现价</th>
+                <th>阈值</th>
+                <th>状态</th>
                 <th>说明</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="rule in rules" :key="String(rule.id)">
-                <td class="mono">{{ rule.id }}</td>
+              <tr v-for="rule in rules" :key="String(rule.id)" :class="{ 'row-hot': rule.triggered_now }">
                 <td>{{ ruleCode(rule) }}</td>
                 <td>{{ rule.name }}</td>
-                <td>{{ ruleType(rule) }}</td>
+                <td class="mono">{{ rulePrice(rule) }}</td>
+                <td class="mono">{{ rule.threshold ?? '—' }}</td>
+                <td>{{ ruleStatus(rule) }}</td>
                 <td class="note">{{ ruleDesc(rule) }}</td>
               </tr>
             </tbody>
@@ -226,6 +299,57 @@ onMounted(init)
 <style scoped>
 .page-head {
   margin-bottom: 14px;
+}
+
+.head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.head-row > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.refresh-btn {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid #3d5a80;
+  background: #1a2433;
+  color: #e7ecf3;
+  cursor: pointer;
+}
+
+.refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.quote-meta {
+  color: #6b7d94;
+}
+
+.rule-price {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #9ec5ff;
+  font-variant-numeric: tabular-nums;
+}
+
+.type-badge.hot {
+  color: #ffb4b4;
+  border-color: #4a3030;
+  background: #261010;
+}
+
+.row-hot {
+  background: rgba(38, 16, 16, 0.35);
 }
 
 .page-head h1 {
@@ -333,6 +457,11 @@ onMounted(init)
   gap: 10px;
 }
 
+.fired-card.suspect {
+  border-color: #3d3520;
+  background: linear-gradient(135deg, #1a1810 0%, #121820 100%);
+}
+
 .fired-card {
   padding: 14px;
   border-radius: 12px;
@@ -370,6 +499,13 @@ onMounted(init)
   margin: 0 0 4px;
   font-size: 12px;
   color: #ffb4b4;
+}
+
+.fired-meta {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: #9ec5ff;
+  font-variant-numeric: tabular-nums;
 }
 
 .fired-note {

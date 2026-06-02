@@ -36,5 +36,25 @@ class Settings:
         os.getenv("STOCK_AI_ROOT", str(ROOT.parent / "stock-ai"))
     ).expanduser()
 
+    trust_proxy: bool = _truthy("HUB_TRUST_PROXY", "1")
+
+    # 公开财经 API 防护（/api/dashboard/news/*）
+    news_public_guard: bool = _truthy("HUB_NEWS_PUBLIC_GUARD", "1")
+    news_rate_per_min: int = int(os.getenv("HUB_NEWS_RATE_PER_MIN", "45"))
+    news_rate_burst: int = int(os.getenv("HUB_NEWS_RATE_BURST", "12"))
+    news_rate_burst_window: int = int(os.getenv("HUB_NEWS_RATE_BURST_WINDOW", "10"))
+    news_strict_rate_per_min: int = int(os.getenv("HUB_NEWS_STRICT_PER_MIN", "8"))
+    news_auth_rate_per_min: int = int(os.getenv("HUB_NEWS_AUTH_RATE_PER_MIN", "120"))
+    news_max_limit: int = int(os.getenv("HUB_NEWS_MAX_LIMIT", "100"))
+
+    @property
+    def news_allowed_hosts(self) -> frozenset[str]:
+        raw = os.getenv(
+            "HUB_NEWS_ALLOWED_HOSTS",
+            "127.0.0.1,localhost,hub.yoloworld.site",
+        )
+        hosts = {h.strip().lower() for h in raw.split(",") if h.strip()}
+        return frozenset(hosts)
+
 
 settings = Settings()

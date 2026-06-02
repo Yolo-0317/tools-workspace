@@ -54,7 +54,8 @@ docker compose down             # 停止
 ```bash
 curl -s http://127.0.0.1:9876/health
 curl -s -X POST http://127.0.0.1:9876/run/monitor -H 'Content-Type: application/json' -d '{}'
-docker exec stock-ai-scheduler cat /etc/cron.d/stock-ai-scheduler
+curl -s -X POST http://127.0.0.1:9876/run/emotion-intraday -H 'Content-Type: application/json' -d '{}'
+launchctl print gui/$(id -u)/com.user.stock-emotion-intraday
 ```
 
 ---

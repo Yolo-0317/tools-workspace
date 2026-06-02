@@ -9,11 +9,19 @@ import { setupRouterGuards } from './router/guards'
 if ('serviceWorker' in navigator) {
   registerSW({
     immediate: true,
+    onRegisteredSW(_swUrl, registration) {
+      if (registration) {
+        window.setInterval(() => {
+          void registration.update()
+        }, 60 * 60 * 1000)
+      }
+    },
     onOfflineReady() {
       console.info('[pwa] 离线壳已就绪')
     },
     onNeedRefresh() {
-      console.info('[pwa] 有新版本，刷新页面即可更新')
+      console.info('[pwa] 检测到新版本，自动刷新')
+      window.location.reload()
     },
   })
 }

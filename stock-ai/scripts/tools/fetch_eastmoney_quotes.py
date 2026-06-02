@@ -12,6 +12,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -19,6 +20,7 @@ DEFAULT_OPENCLI = Path.home() / ".nvm/versions/node/v24.14.1/bin/opencli"
 
 EXTRACT_QUOTE_JS = r"""
 JSON.stringify({
+  pathCode: ((document.location.pathname.match(/(\d{6})/) || [])[1] || ''),
   name: (document.querySelector('.quote_title_name')?.innerText || '').trim(),
   priceText: (document.querySelector('.zxj')?.innerText || '').trim(),
   zdfText: (document.querySelector('.zd')?.innerText || '').trim(),
@@ -310,14 +312,15 @@ def parse_fund_flow_text(text: str) -> dict[str, float | None]:
 
 def _open_page(url: str, *, label: str = "") -> None:
     last_err = ""
-    for attempt in range(2):
+    retry_markers = ("stale page", "detached")
+    for attempt in range(3):
         if attempt:
             _run_opencli(["browser", "close"], timeout=15)
         stdout, stderr, rc = _run_opencli(["browser", "open", url])
         if rc == 0:
             return
         last_err = stderr or stdout
-        if "stale page" not in last_err.lower():
+        if not any(marker in last_err.lower() for marker in retry_markers):
             break
     raise RuntimeError(f"打开东财页面失败 {label or url}: {last_err}")
 
@@ -442,6 +445,37 @@ def fetch_fund_flow_text_opencli(code: str, *, close_browser: bool = True) -> st
         return raw
 
 
+def _quote_page_code(payload: dict[str, str], expected: str) -> str | None:
+    path_code = str(payload.get("pathCode") or "").strip()
+    if len(path_code) == 6 and path_code.isdigit():
+        return path_code.zfill(6)
+    info = payload.get("infoText") or ""
+    match = re.search(r"\b(\d{6})\b", info)
+    if match:
+        return match.group(1)
+    return None
+
+
+def _read_quote_payload(code: str, *, wait_seconds: float) -> dict[str, str] | None:
+    """读取行情页 DOM；校验 URL 代码，避免上一页残留。"""
+    c = code6(code)
+    for attempt in range(3):
+        if attempt:
+            _run_opencli(["browser", "wait", "time", "1"], timeout=10)
+        raw = _eval_js(EXTRACT_QUOTE_JS)
+        if not raw:
+            continue
+        payload = json.loads(raw)
+        page_code = _quote_page_code(payload, c)
+        if page_code is None or page_code == c:
+            return payload
+        print(
+            f"⚠️ {c} 页面代码不匹配(page={page_code})，重试 {attempt + 1}/3",
+            file=sys.stderr,
+        )
+    return None
+
+
 def fetch_sop_snapshots(
     codes: list[str],
     *,
@@ -460,28 +494,34 @@ def fetch_sop_snapshots(
     _reset_browser_if(reset_browser)
 
     for c in unique_codes:
-        _open_page(quote_url(c), label=c)
-        _wait_page_ready(fallback_seconds=wait_seconds)
-        raw = _eval_js(EXTRACT_QUOTE_JS)
-        if not raw:
-            continue
-        payload = json.loads(raw)
-        snap = parse_sop_snapshot(c, payload)
-        if not snap:
-            continue
+        try:
+            _open_page(quote_url(c), label=c)
+            _wait_page_ready(fallback_seconds=wait_seconds)
+            payload = _read_quote_payload(c, wait_seconds=wait_seconds)
+            if not payload:
+                continue
+            snap = parse_sop_snapshot(c, payload)
+            if not snap:
+                continue
 
-        if include_fund_flow_page:
-            _open_page(fund_flow_url(c), label=f"{c}-zjlx")
-            _run_opencli(["browser", "wait", "time", "2"], timeout=10)
-            ff_raw = _eval_js(EXTRACT_ZJLX_JS)
-            try:
-                ff_text = json.loads(ff_raw)
-            except json.JSONDecodeError:
-                ff_text = ff_raw
-            if ff_text:
-                snap.fund_flow_text = ff_text
+            if include_fund_flow_page:
+                try:
+                    _open_page(fund_flow_url(c), label=f"{c}-zjlx")
+                    _run_opencli(["browser", "wait", "time", "2"], timeout=10)
+                    ff_raw = _eval_js(EXTRACT_ZJLX_JS)
+                    try:
+                        ff_text = json.loads(ff_raw)
+                    except json.JSONDecodeError:
+                        ff_text = ff_raw
+                    if ff_text:
+                        snap.fund_flow_text = ff_text
+                except Exception as exc:  # noqa: BLE001
+                    print(f"⚠️ {c} 资金页采集失败: {exc}", file=sys.stderr)
 
-        snapshots[c] = snap
+            snapshots[c] = snap
+        except Exception as exc:  # noqa: BLE001
+            print(f"⚠️ {c} 行情页采集失败: {exc}", file=sys.stderr)
+            continue
 
     if close_browser:
         _run_opencli(["browser", "close"], timeout=15)
@@ -570,6 +610,13 @@ def fetch_macro_news_opencli(*, limit: int = 15, close_browser: bool = True) -> 
 
 
 BREADTH_PAGE_URL = "https://quote.eastmoney.com/zs000001.html"
+ZTB_PAGE_URL = "https://quote.eastmoney.com/ztb/detail"
+ZT_POOL_UT = "7eea3edcaed734bea9cbfc24409ed989"
+ZT_POOL_ENDPOINTS: dict[str, str] = {
+    "zt": "getTopicZTPool",
+    "zb": "getTopicZBPool",
+    "dt": "getTopicDTPool",
+}
 A_SHARE_LIST_URL = "https://quote.eastmoney.com/center/gridlist.html#hs_a_board"
 # 沪深京 A 股列表页 webguest clist（与页面 Network 一致）
 A_SHARE_CLIST_FS = (
@@ -983,6 +1030,87 @@ def fetch_hot_industry_sectors_opencli(
         if len(out) >= top_n:
             break
     return out
+
+
+def _topic_pool_jsonp_js(
+    endpoint: str,
+    trade_date: str,
+    *,
+    pageindex: int = 0,
+    pagesize: int = 200,
+) -> str:
+    return f"""
+new Promise((resolve) => {{
+  const cb = "jQuery_zt_" + Date.now() + "_{pageindex}";
+  window[cb] = (data) => {{
+    try {{
+      const pool = (data && data.data && data.data.pool) ? data.data.pool : [];
+      resolve(JSON.stringify({{ rc: data && data.rc, pool: pool }}));
+    }} catch (e) {{
+      resolve(JSON.stringify({{ rc: -1, pool: [], error: String(e) }}));
+    }}
+  }};
+  const s = document.createElement("script");
+  s.src = "https://push2ex.eastmoney.com/{endpoint}?ut={ZT_POOL_UT}&dpt=wz.ztzt"
+    + "&Pageindex={pageindex}&pagesize={pagesize}&sort=fbt:asc&date={trade_date}&cb=" + cb
+    + "&_=" + Date.now();
+  s.onerror = () => resolve(JSON.stringify({{ rc: -1, pool: [], error: "script" }}));
+  document.head.appendChild(s);
+  setTimeout(
+    () => resolve(JSON.stringify({{ rc: -1, pool: [], error: "timeout" }})),
+    20000
+  );
+}})
+"""
+
+
+def _fetch_topic_pool_pages_opencli(
+    endpoint: str,
+    trade_date: str,
+    *,
+    pagesize: int = 200,
+    max_pages: int = 10,
+) -> list[dict]:
+    out: list[dict] = []
+    for page in range(max_pages):
+        raw = _eval_js(
+            _topic_pool_jsonp_js(endpoint, trade_date, pageindex=page, pagesize=pagesize),
+            timeout=35,
+        )
+        if not raw:
+            break
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError:
+            break
+        pool = payload.get("pool") or []
+        if not isinstance(pool, list) or not pool:
+            break
+        out.extend([x for x in pool if isinstance(x, dict)])
+        if len(pool) < pagesize:
+            break
+    return out
+
+
+def fetch_emotion_topic_pools_opencli(
+    trade_date: str | None = None,
+    *,
+    close_browser: bool = True,
+    reset_browser: bool = True,
+) -> dict[str, list[dict]]:
+    """盘中涨停/炸板/跌停池（OpenCLI JSONP，单会话）。"""
+    from datetime import date
+
+    d = (trade_date or date.today().isoformat())[:10].replace("-", "")
+    if reset_browser:
+        _reset_browser()
+    _open_page(ZTB_PAGE_URL, label="ztb")
+    _run_opencli(["browser", "wait", "time", "2"], timeout=25)
+    pools: dict[str, list[dict]] = {}
+    for kind, endpoint in ZT_POOL_ENDPOINTS.items():
+        pools[kind] = _fetch_topic_pool_pages_opencli(endpoint, d)
+    _close_browser_if(close_browser)
+    return pools
 
 
 def fetch_market_breadth_opencli(

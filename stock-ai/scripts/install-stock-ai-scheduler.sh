@@ -32,13 +32,17 @@ echo "==> 3/4 停止旧 stock-daily-sync 容器（若存在）"
 docker stop stock-daily-sync 2>/dev/null || true
 docker rm stock-daily-sync 2>/dev/null || true
 
-echo "==> 4/4 构建并启动 stock-ai-scheduler"
+echo "==> 4/5 构建并启动 stock-ai-scheduler"
 (cd "${ROOT}/docker/scheduler" && docker compose up -d --build)
+
+echo "==> 5/5 安装盘中龙头 launchd（OpenCLI 每 15 分钟）"
+"${ROOT}/scripts/install-emotion-intraday-launchd.sh"
 
 echo ""
 echo "完成。验证："
 echo "  curl -s http://127.0.0.1:${HOST_JOB_PORT:-9876}/health"
-echo "  docker logs -f stock-ai-scheduler"
+echo "  curl -s -X POST http://127.0.0.1:${HOST_JOB_PORT:-9876}/run/emotion-intraday -H 'Content-Type: application/json' -d '{}'"
+echo "  launchctl print ${UID_GUI}/com.user.stock-emotion-intraday"
 echo ""
 echo "可选：在 stock-ai/.env 设置 HOST_JOB_TOKEN=随机字符串（容器与 host-jobs 共用）"
 echo "若容器 curl 失败，设 HOST_JOB_BIND=0.0.0.0 后重启 host-jobs"

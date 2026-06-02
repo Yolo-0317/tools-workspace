@@ -17,6 +17,12 @@ ensure_repo_root_on_path()
 
 from scripts.tools.deepseek_client import call_deepseek, is_llm_configured
 from scripts.tools.fetch_eastmoney_macro_news import MacroNewsItem, fetch_macro_news, format_report
+from scripts.tools.news_db import (
+    GEOPOLITICS_KEYWORDS,
+    load_recent_news,
+    save_briefing_snapshot,
+    upsert_news_items,
+)
 from scripts.tools.holdings_context import load_full_decision_context
 from scripts.tools.market_session import MarketSession, detect_market_session
 from scripts.tools.wechat_format import format_ai_interpretation
@@ -50,7 +56,18 @@ SLOT_HINTS = {
 # 含 Top5 选股段的战报时段（17:30 与选股任务合并推送；18:00 保留供手动补发）
 SELECTION_BRIEFING_SLOTS = frozenset({"17:30", "18:00"})
 
-GEOPOLITICS_KEYWORDS = ("伊朗", "美伊", "特朗普", "霍尔木兹", "以军", "中东", "制裁", "停火")
+def _load_briefing_news(*, news_limit: int) -> list[MacroNewsItem]:
+    need = max(news_limit * 2, 16)
+    items = load_recent_news(hours=36, limit=need)
+    if len(items) >= news_limit:
+        return items
+    try:
+        fetched = fetch_macro_news(limit=need, include_home=True)
+        if fetched:
+            upsert_news_items(fetched)
+        return fetched or items
+    except Exception:
+        return items
 
 
 def fetch_market_indices() -> list[str]:
@@ -297,9 +314,10 @@ def build_daily_briefing(slot: str, *, news_limit: int = 8, with_ai: bool = True
     session = detect_market_session(now=now)
     title = session.slot_title(slot)
 
-    all_news = fetch_macro_news(limit=max(news_limit * 2, 16), include_home=True)
+    all_news = _load_briefing_news(news_limit=news_limit)
     geo_news = _pick_geopolitics(all_news, limit=5)
-    domestic_news = all_news[:news_limit]
+    geo_hrefs = {x.href for x in geo_news}
+    domestic_news = [x for x in all_news if x.href not in geo_hrefs][:news_limit]
 
     raw_sections = _build_raw_sections(
         session=session,
@@ -340,7 +358,21 @@ def build_daily_briefing(slot: str, *, news_limit: int = 8, with_ai: bool = True
     if ai_block:
         parts.extend([ai_block, "", "────────────", ""])
     parts.extend(raw_sections)
-    return "\n".join(parts)
+    content = "\n".join(parts)
+
+    try:
+        save_briefing_snapshot(
+            slot=slot,
+            title=title,
+            raw_text=content,
+            ai_summary=ai_block,
+            briefing_date=now.date(),
+            created_at=now,
+        )
+    except Exception as exc:  # noqa: BLE001
+        print(f"⚠️ 战报落库失败: {exc}", file=sys.stderr)
+
+    return content
 
 
 def main() -> int:

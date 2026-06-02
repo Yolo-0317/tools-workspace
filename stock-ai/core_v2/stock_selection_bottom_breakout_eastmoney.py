@@ -240,9 +240,27 @@ def main(target_date: Optional[str] = None, max_enrich: int = 20):
     technical_df = select_technical_candidates(df_all)
     if technical_df.empty:
         print("❌ 技术面未筛到候选股票")
-        return
+        return None, trade_date
 
     paths = save_outputs(technical_df, trade_date)
+
+    repo_root = Path(__file__).resolve().parents[1]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    try:
+        from scripts.tools.selection_strategy_bridge import (
+            bottom_breakout_rows_for_db,
+            persist_strategy_rows,
+        )
+
+        persist_strategy_rows(
+            trade_date,
+            bottom_breakout_rows_for_db(technical_df),
+            "bottom_breakout",
+            csv_stem="stock_selection_bottom_breakout_eastmoney",
+        )
+    except Exception as exc:  # noqa: BLE001
+        print(f"⚠️ bottom_breakout MySQL 入库失败：{exc}")
 
     print("\n" + "=" * 60)
     print(f"✅ 技术面选股完成，输出: {len(technical_df)} 只")
@@ -250,6 +268,7 @@ def main(target_date: Optional[str] = None, max_enrich: int = 20):
     print(f"📄 最终结果文件: {paths['final']}")
     print("=" * 60)
     print(technical_df.head(20))
+    return technical_df, trade_date
 
 
 if __name__ == "__main__":

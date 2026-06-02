@@ -40,9 +40,16 @@ uv run python -m scripts.tools.warm_stock_name_cache 2>&1 \
 echo "检查 MySQL 日线是否落后（Tushare 仅同步行情，17:00 后较稳）..."
 uv run python -m scripts.tools.ensure_daily_bars --sync-if-stale
 
-uv run python -m scripts.selection.daily_selection_report $SOP_ARGS 2>&1 | tee "logs/selection_daily_$(date '+%Y%m%d').log"
+echo "并行选股：combined+watch / ma5 / 五因子 / 筑底+放量突破..."
+uv run python -m scripts.selection.run_parallel_selection 2>&1 \
+  | tee "logs/selection_parallel_$(date '+%Y%m%d').log"
 
-echo "OpenCLI 档案 enrich（入选股行业/概念）..."
-uv run python -m scripts.tools.enrich_selection_profiles --trade-date latest 2>&1 \
-  | tee -a "logs/selection_enrich_$(date '+%Y%m%d').log" \
-  || echo "⚠️ 档案 enrich 失败，不影响选股主流程"
+uv run python -m scripts.selection.daily_selection_report --skip-selection $SOP_ARGS 2>&1 \
+  | tee -a "logs/selection_daily_$(date '+%Y%m%d').log"
+
+echo "OpenCLI 档案 enrich（combined + watch，各最多 enrich 数量由库内条数决定）..."
+for STRAT in combined watch ma5 five_factor bottom_breakout; do
+  uv run python -m scripts.tools.enrich_selection_profiles --trade-date latest --strategy "$STRAT" 2>&1 \
+    | tee -a "logs/selection_enrich_${STRAT}_$(date '+%Y%m%d').log" \
+    || echo "⚠️ enrich $STRAT 失败，继续"
+done

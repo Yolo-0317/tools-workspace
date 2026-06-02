@@ -22,6 +22,8 @@ const investLinks: NavLink[] = [
   { to: '/m/portfolio', label: '持仓' },
   { to: '/m/selection', label: '选股' },
   { to: '/m/monitor', label: '监控' },
+  { to: '/m/news', label: '财经' },
+  { to: '/m/emotion', label: '龙头' },
 ]
 
 const moreLinks: NavLink[] = [
@@ -29,11 +31,15 @@ const moreLinks: NavLink[] = [
   { to: '/m/services', label: '服务' },
 ]
 
-const investRouteNames = new Set(['m-portfolio', 'm-selection', 'm-monitor'])
+const investRouteNames = new Set(['m-portfolio', 'm-selection', 'm-monitor', 'm-news', 'm-emotion'])
 
 const shareOnly = computed(() => hubAuth.value.shareOnly)
 const username = computed(() => hubAuth.value.username)
-const brand = computed(() => (shareOnly.value ? '选股分享' : 'Home Hub'))
+const authenticated = computed(() => hubAuth.value.authenticated)
+const brand = computed(() => {
+  if (!authenticated.value) return '财经快讯'
+  return shareOnly.value ? '选股分享' : 'Home Hub'
+})
 
 const homeActive = computed(
   () => route.path === '/m' || route.name === 'm-home',
@@ -105,7 +111,11 @@ async function onLogout() {
 <template>
   <div
     class="shell"
-    :class="{ 'shell-share': shareOnly, 'shell-standalone': standalone }"
+    :class="{
+      'shell-share': shareOnly,
+      'shell-standalone': standalone,
+      'shell-guest': !authenticated,
+    }"
   >
     <header class="topbar">
       <div class="brand">{{ brand }}</div>
@@ -128,15 +138,16 @@ async function onLogout() {
           {{ refreshing ? '…' : '刷新' }}
         </button>
         <span v-if="username" class="user">{{ username }}</span>
-        <button type="button" class="logout" @click="onLogout">退出</button>
+        <RouterLink v-if="!authenticated" to="/login" class="login-link">登录</RouterLink>
+        <button v-else type="button" class="logout" @click="onLogout">退出</button>
       </div>
     </header>
 
-    <main class="content">
+    <main class="content hub-scrollbar">
       <RouterView />
     </main>
 
-    <nav class="bottom-nav" aria-label="H5 底部导航">
+    <nav v-if="authenticated" class="bottom-nav" aria-label="H5 底部导航">
       <template v-if="shareOnly">
         <RouterLink to="/m/selection" class="bottom-link" exact-active-class="active">
           <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -251,7 +262,10 @@ async function onLogout() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   padding: 10px 12px;
   padding-top: max(10px, env(safe-area-inset-top));
   padding-left: max(12px, env(safe-area-inset-left));
@@ -268,6 +282,10 @@ async function onLogout() {
   font-weight: 700;
   font-size: 15px;
   letter-spacing: 0.02em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .shell-share .brand {
@@ -277,8 +295,9 @@ async function onLogout() {
 .user-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
+  max-width: 62%;
 }
 
 .user {
@@ -290,11 +309,12 @@ async function onLogout() {
   background: #152238;
   color: #93c5fd;
   border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 12px;
+  padding: 8px 8px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .refresh-app {
@@ -302,12 +322,13 @@ async function onLogout() {
   background: transparent;
   color: #dbe7ff;
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 8px 8px;
   min-height: 36px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .refresh-app:disabled {
@@ -315,30 +336,61 @@ async function onLogout() {
   cursor: wait;
 }
 
+.shell-guest .content {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+.login-link {
+  color: #dbe7ff;
+  text-decoration: none;
+  border: 1px solid #314158;
+  border-radius: 8px;
+  padding: 8px 10px;
+  min-height: 36px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .logout {
   border: 1px solid #314158;
   background: transparent;
   color: #dbe7ff;
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 8px 10px;
   min-height: 36px;
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .content {
   flex: 1;
   min-height: 0;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
   padding: 12px;
   padding-bottom: calc(12px + var(--tab-bar-h));
   padding-left: max(12px, env(safe-area-inset-left));
   padding-right: max(12px, env(safe-area-inset-right));
-  width: 100%;
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
   background: #0f1419;
+}
+
+.content :deep(> *) {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .bottom-nav {

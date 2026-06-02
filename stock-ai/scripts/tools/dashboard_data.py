@@ -27,18 +27,96 @@ def log_snapshot_alert(message: str) -> None:
         fh.write(line)
 
 
+def _live_account_payload() -> dict[str, Any] | None:
+    """看板「当前账户」：只读 portfolio_account 表。"""
+    from scripts.tools.portfolio_db import load_account
+
+    acct = load_account()
+    if not acct:
+        return None
+    ratio = acct.position_ratio
+    if ratio is not None and ratio <= 1.0:
+        ratio = float(ratio) * 100
+    snap = acct.snapshot_date.isoformat() if acct.snapshot_date else None
+    return {
+        "snapshot_date": snap,
+        "total_assets": acct.total_assets,
+        "available_cash": acct.available_cash,
+        "market_value": acct.market_value,
+        "position_ratio": ratio,
+        "holding_pnl": acct.holding_pnl,
+        "source": "portfolio_account",
+    }
+
+
+def _live_positions_payload(
+    *,
+    snapshot_slot: str = "eod",
+    use_opencli: bool = False,
+) -> list[dict[str, Any]]:
+    """看板「当前持仓」：portfolio_positions + MySQL 快照价或 monitor_live_quotes 缓存。"""
+    from scripts.tools.portfolio_db import (
+        load_dashboard_closes,
+        load_monitor_live_quotes,
+        load_positions,
+    )
+
+    positions = load_positions()
+    if not positions:
+        return []
+    codes = [p.code for p in positions]
+    if use_opencli:
+        rows, _ = load_monitor_live_quotes(codes)
+        closes = {c: float(row["price"]) for c, row in rows.items()}
+        missing = [c for c in codes if c not in closes]
+        if missing:
+            closes.update(load_dashboard_closes(missing, snapshot_slot=snapshot_slot))
+        price_source = "mysql"
+    else:
+        closes = load_dashboard_closes(codes, snapshot_slot=snapshot_slot)
+        price_source = "mysql"
+    rows: list[dict[str, Any]] = []
+    for p in positions:
+        mp = closes.get(p.code)
+        pnl_pct = ((mp / p.cost - 1) * 100) if mp is not None and p.cost else None
+        pnl_amt = ((mp - p.cost) * p.shares) if mp is not None and p.shares else None
+        rows.append(
+            {
+                "code": p.code,
+                "name": p.name,
+                "shares": p.shares,
+                "cost": p.cost,
+                "cost_price": p.cost,
+                "current_price": mp,
+                "market_price": mp,
+                "pnl_pct": pnl_pct,
+                "pnl_amount": pnl_amt,
+                "status": p.status,
+                "action": p.action,
+                "status_note": p.status,
+                "action_note": p.action,
+                "price_source": price_source,
+            }
+        )
+    return rows
+
+
 def export_dashboard_payload(
     *,
     date_from: date | str | None = None,
     date_to: date | str | None = None,
     snapshot_slot: str = "eod",
     strategy: str = "combined",
+    live_quotes: bool = False,
 ) -> dict[str, Any]:
+    """看板数据：当前态读 MySQL 表；历史曲线读 portfolio_*_daily 快照。
+
+    snapshot_slot 仅影响 account_series / 按日持仓查询，不影响 positions_latest。
+    """
     from scripts.tools.portfolio_db import (
         latest_selection_trade_date,
-        load_portfolio_positions_on_date,
-        load_portfolio_snapshot_series,
         load_selection_daily_results,
+        load_portfolio_snapshot_series,
         load_sop_review_bundle,
     )
     from scripts.tools.selection_results import resolve_selection_df, trade_date_to_str
@@ -56,13 +134,12 @@ def export_dashboard_payload(
 
     sop = load_sop_review_bundle(strategy=strategy)
 
-    latest_snap_date = account_series[-1]["snapshot_date"] if account_series else None
-    positions_latest: list[dict] = []
-    if latest_snap_date:
-        positions_latest = load_portfolio_positions_on_date(
-            latest_snap_date,
-            snapshot_slot=snapshot_slot,
-        )
+    account_current = _live_account_payload()
+    positions_live = _live_positions_payload(
+        snapshot_slot=snapshot_slot,
+        use_opencli=live_quotes,
+    )
+    positions_latest = positions_live
 
     try:
         td, sel_df, sel_src = resolve_selection_df(strategy=strategy)
@@ -80,7 +157,10 @@ def export_dashboard_payload(
         "snapshot_slot": snapshot_slot,
         "strategy": strategy,
         "account_series": account_series,
+        "account_current": account_current,
+        "positions_live": positions_live,
         "positions_latest": positions_latest,
+        "positions_source": "mysql_live" if live_quotes else "mysql_snapshot",
         "selection_latest": {
             "trade_date": sel_td.isoformat() if sel_td else None,
             "count": len(selection_rows),

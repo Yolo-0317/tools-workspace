@@ -1,0 +1,4 @@
+.env.emquant
+output/emquant/*.json
+__pycache__/
+*.pyc

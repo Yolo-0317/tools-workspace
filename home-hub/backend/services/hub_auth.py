@@ -23,6 +23,8 @@ SHARE_API_PREFIXES: tuple[str, ...] = (
 PUBLIC_API_PREFIXES: tuple[str, ...] = (
     "/api/health",
     "/api/auth/login",
+    # 财经快讯（东财 7×24 + AI 解读快照，只读）
+    "/api/dashboard/news",
 )
 
 

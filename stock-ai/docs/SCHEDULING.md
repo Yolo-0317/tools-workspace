@@ -76,6 +76,7 @@ launchd com.user.docker-stacks（每 15 分钟）
 | 选股 + SOP + 战报 | 工作日 **17:30** | 本机（经 host-jobs） | `push_selection_wechat.sh` |
 | 每日战报 | 每天 **09 / 12 / 15 / 20:00** | 本机 | `push_daily_briefing_wechat.sh` |
 | 持仓 + 选股池监控 | 工作日 **每 5 分钟** | 本机 | `push_holdings_monitor.sh` → `monitor_holdings_alerts` |
+| 情绪周期日检 | 工作日 **09:26** / **盘中 15min** / **17:10** | 盘前+eod **容器内**；**intraday 本机 launchd** | `sync_emotion_cycle.sh` → MySQL `emotion_cycle_*` → `/emotion` |
 
 **监控时段**：脚本内仅 **9:30–11:30、13:00–15:00** 真正检查；非交易时段返回「跳过」exit 0。
 

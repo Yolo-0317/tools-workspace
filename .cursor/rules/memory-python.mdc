@@ -49,3 +49,36 @@ Hermes Step 3：处理 `stock-ai/` 内代码时与本文件、`project-memory.md
 - **Context**: 用户要做看板，需保留每日持仓/SOP 历史而非仅当前态。
 - **Pitfall/Error**: `portfolio_positions` 只有最新；`sop_review_latest.json` 单文件覆盖。
 - **Solution/Rule**: 迁移 `005_dashboard_snapshots.sql` → `portfolio_account_daily`、`portfolio_positions_daily`、`sop_review_daily`、`sop_review_items`。快照 slot：`midday`（15:00 战报后）、`eod`（17:30）、`sync`（改卡）。失败写 `logs/snapshot_alerts.log`，不阻断主流程。遗留表 `006_drop_legacy_eastmoney_tables.sql` 删除 capital_flow / intraday / orderbook。
+
+### 2026-06-02 情绪周期 + 龙头观察池（游资轨数据层）
+
+- **Context**: 龙头战法数据权威在 MySQL，从 `stock_daily` 自动计算；供 home-hub `/emotion`、Agent 题材建议、emquant `dragons.json` 导出。
+- **Pitfall/Error**: ① `portfolio_db.mysql_url()` / `emotion_cycle_compute.get_engine()` 在 Docker 内勿把 `host.docker.internal` 改 `127.0.0.1`（用 `/.dockerenv` 判断）。② `latest_emotion_trade_date` 缺失会导致 home-hub API 503。③ 龙头 `name` 若与代码相同，检查入库时 `save_emotion_cycle_checklist` 的 name 字段。
+- **Solution/Rule**:
+  - **表**：`emotion_cycle_daily`（`trade_date`+`checklist_slot`）、`emotion_cycle_dragon_watch`（Top3，`rank_no`）；SQL `stock-mysql/sql/010_emotion_cycle.sql`。
+  - **核心**：`stock_ai/emotion_cycle_compute.py` — `infer_phase`（冰点/启动/发酵/高潮/分歧/退潮）、`_score_dragon`（7 项简化为 pass 分，≥5 入池）、`sync_emotion_cycle`。
+  - **CLI**：`scripts/tools/emotion_cycle_checklist.py`（template/save/show/list）；`scripts/tools/sync_emotion_cycle_daily.py`；shell `./sync_emotion_cycle.sh`。
+  - **DB API**：`portfolio_db.save/load_emotion_cycle_checklist`、`list_emotion_cycle_trade_dates`、`latest_emotion_trade_date`。
+  - **调度**：`docker/scheduler/crontab` — 09:26 `pre_market`、17:00 Tushare、**17:10** `eod`；日志 `stock-ai/logs/emotion_cycle.log`。
+  - **文档纪律**：`investment-agent/情绪周期日检卡.md`（与执行卡并行，冲突以执行卡为准）。
+
+### 2026-06-02 个股分析现价：OpenCLI 实时 vs Tushare 昨收
+
+- **Context**: 用户盘中问「南网储能」，Agent 用 MCP `analyze_and_suggest` 报 16.34 当现价；东财实时约 15.47～15.50，口径错误。
+- **Pitfall/Error**: `analyze_and_suggest` / `get_stock_daily_data` 取 Tushare `pro.daily` **最后一根已收盘 K 线**（常为前一交易日或当日未收盘前的上一根）；`持仓执行卡.md` 现价若未 jywg 同步也会过期。勿把「最新收盘价」写成「现价」。
+- **Solution/Rule**:
+  - **盘中现价 / 涨跌幅 / 操作建议**：`uv run python scripts/tools/fetch_eastmoney_quotes.py <code>` 或 `fetch_sop_snapshots` / `intraday_trade_signal`（OpenCLI 东财）。
+  - **历史日线 / 回测 / 均线（收盘口径）**：MySQL `stock_daily` 或 Tushare MCP；报告中须标注「最近交易日收盘（非实时）」。
+  - **输出模板**：并列三列——**昨收**、**今价（OpenCLI）**、**执行卡触发价**；持仓盈亏用今价重算。
+  - **MCP 文案**：`tushare_mcp.py` 的 `analyze_and_suggest` 已改为「最近交易日收盘」；改后需重启 `user-tushare-stock-advisor` MCP。
+
+### 2026-06-02 财经快讯利好/利空标记（每 15 分钟）
+
+- **Context**: 用户要求东财 7×24 快讯（`sync_macro_news` / launchd 每 15min）在看板标注利好或利空。
+- **Pitfall/Error**: ① 未跑 `stock-mysql/sql/011_macro_news_sentiment.sql` 时 `upsert_news_items` 写 `sentiment` 会失败。② 关键词分类对地缘/宏观叙述常标「中性」，勿当成 LLM 个股研判。③ 勿在 15min 同步里默认再调 Cursor 逐条判读（慢、耗 token）。
+- **Solution/Rule**:
+  - **分类**：`scripts/tools/news_sentiment.py` → `classify_news_sentiment`（`bullish`/`bearish`/`neutral`；展示 利好/利空/中性）。
+  - **落库**：`macro_news_items.sentiment`；`news_db.upsert_news_items` 写入；`refresh_sentiment_for_recent(hours=72)` 在每次 `sync_macro_news` 后补刷。
+  - **调度**：`sync_macro_news.sh` + `com.user.stock-macro-news-sync`（900s）；AI 解读仍 `news_ai_interpret.save_news_ai_snapshot`，快讯行前缀 `[利好]` 等。
+  - **看板**：home-hub `/news` — `NewsItem.sentiment`、`meta.sentiment_counts`；公开 AI 解读无持仓段（`news_ai_interpret.sanitize_public_ai_summary` + 生成 prompt 禁止 P0～P4）。
+  - **迁移**：`cd stock-mysql && bash scripts/init-db.sh`（含 011）。

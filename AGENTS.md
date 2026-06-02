@@ -43,7 +43,14 @@
 | `sidestore-infra/` | `sidestore-infra/README.md` |
 | `substore-clash/` | `substore-clash/README.md` — Sub-Store + Mihomo 订阅生成 |
 | `stock-mysql/` | `stock-mysql/README.md` — MySQL 8，stock-ai 业务库 |
+| `emquant-sim/` | `emquant-sim/docs/PLAYBOOK.md` — 掘金 Win11 仿真（只读执行卡，与 stock-ai 隔离） |
 | `~/docker/jellyfin-stack` | `.cursor/skills/jellyfin/SKILL.md`（NAS / 迅雷 / 夸克 三库） |
+
+### 微信公众号草稿 Skill
+
+| Skill | 路径 | 用途 |
+|-------|------|------|
+| `wechat-mp-drafts` | `.cursor/skills/wechat-mp-drafts/` | 四槽草稿 API + [写作法则](.cursor/skills/wechat-mp-drafts/writing-guide.md)（标题/排版/去AI/发布总检） |
 
 ### Jellyfin Skills
 

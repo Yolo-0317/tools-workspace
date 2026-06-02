@@ -130,7 +130,9 @@
 | 文件 | 说明 |
 |------|------|
 | `stock-analysis-framework.md` | 股票深度分析框架 v1.0（8模块完整模板） |
-| `持仓执行卡.md` | 当前持仓与 P0～P4 执行条件（权威来源） |
+| `持仓执行卡.md` | 实盘持仓与 P0～P4（权威；→ `alert_rules`） |
+| `龙头执行卡.md` | **仿真游资轨**（→ `emotion_cycle_*` / emquant；不进 alert_rules） |
+| `情绪周期日检卡.md` | 游资方法论与字段说明 |
 | MySQL `alert_rules` | 盘中价位监控（由执行卡 P0～P4 同步） |
 | MySQL `selection_watch_picks` | 选股次日监控（17:30 `--sync` 写入） |
 | `../docs/CAPABILITIES.md` | 系统能力总览 |

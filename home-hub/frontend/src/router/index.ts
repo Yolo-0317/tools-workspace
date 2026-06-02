@@ -31,6 +31,17 @@ const router = createRouter({
           name: 'monitor',
           component: () => import('../views/MonitorView.vue'),
         },
+        {
+          path: 'news',
+          name: 'news',
+          component: () => import('../views/NewsView.vue'),
+          meta: { public: true },
+        },
+        {
+          path: 'emotion',
+          name: 'emotion',
+          component: () => import('../views/EmotionCycleView.vue'),
+        },
         { path: 'jobs', name: 'jobs', component: () => import('../views/JobsView.vue') },
         {
           path: 'services',
@@ -66,6 +77,18 @@ const router = createRouter({
           path: 'monitor',
           name: 'm-monitor',
           component: () => import('../views/MonitorView.vue'),
+          meta: { mobile: true },
+        },
+        {
+          path: 'news',
+          name: 'm-news',
+          component: () => import('../views/NewsView.vue'),
+          meta: { mobile: true, public: true },
+        },
+        {
+          path: 'emotion',
+          name: 'm-emotion',
+          component: () => import('../views/EmotionCycleView.vue'),
           meta: { mobile: true },
         },
         {

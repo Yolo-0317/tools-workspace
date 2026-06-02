@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from backend.config import ROOT, settings
 from backend.routers import auth, dashboard, services
-from backend.services import hub_auth, session_store
+from backend.services import hub_auth, public_news_guard, session_store
 
 
 @asynccontextmanager
@@ -49,6 +49,12 @@ def _resolve_request_identity(request: Request) -> tuple[str | None, str | None]
     return session["username"], session["role"]
 
 
+def _api_token_ok(request: Request) -> bool:
+    if not settings.api_token:
+        return False
+    return request.headers.get("X-Hub-Token", "") == settings.api_token
+
+
 @app.middleware("http")
 async def hub_session_auth(request: Request, call_next):
     username, role = _resolve_request_identity(request)
@@ -56,6 +62,15 @@ async def hub_session_auth(request: Request, call_next):
     request.state.hub_role = role
 
     path = request.url.path
+    if public_news_guard.is_public_news_path(path):
+        blocked = public_news_guard.check_public_news_request(
+            request,
+            authenticated=role is not None,
+            api_token_ok=_api_token_ok(request),
+        )
+        if blocked is not None:
+            return blocked
+
     if path.startswith("/api/"):
         if not hub_auth.public_api_allowed(path):
             if role is None:
@@ -88,9 +103,15 @@ _STATIC_MEDIA_TYPES = {
 
 def _static_file_response(path: Path) -> FileResponse:
     media_type = _STATIC_MEDIA_TYPES.get(path.suffix.lower())
+    name = path.name.lower()
+    headers: dict[str, str] | None = None
+    if name in {"index.html", "sw.js"} or name.startswith("workbox-"):
+        headers = {"Cache-Control": "no-cache, no-store, must-revalidate"}
+    elif path.suffix.lower() == ".webmanifest":
+        headers = {"Cache-Control": "no-cache, must-revalidate"}
     if media_type:
-        return FileResponse(path, media_type=media_type)
-    return FileResponse(path)
+        return FileResponse(path, media_type=media_type, headers=headers)
+    return FileResponse(path, headers=headers)
 
 
 @app.get("/api/health")
@@ -117,6 +138,9 @@ if FRONTEND_DIST.is_dir():
                 candidate = None
             if candidate is not None and candidate.is_file():
                 return _static_file_response(candidate)
+            # 哈希资源缺失时勿回退 index.html，否则动态 import 会拿到 HTML 报 Failed to fetch
+            if full_path.startswith("assets/"):
+                return JSONResponse(status_code=404, content={"detail": "asset not found"})
 
         index = FRONTEND_DIST / "index.html"
         if index.is_file():

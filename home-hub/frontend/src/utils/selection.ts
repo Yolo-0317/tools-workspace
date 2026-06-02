@@ -1,5 +1,23 @@
 /** 选股 raw_json 中英文字段兼容 */
 
+const STRATEGY_LABELS: Record<string, string> = {
+  combined: '综合选股',
+  five_factor: '五因子',
+  watch: 'B轨观察',
+  ma5: 'MA5回踩',
+  bottom_breakout: '筑底突破',
+}
+
+/** 策略 key → 中文展示名（API 仍用英文 key） */
+export function strategyLabel(key: string): string {
+  const k = (key || 'combined').trim()
+  return STRATEGY_LABELS[k] ?? k
+}
+
+export function selStrategy(row: Record<string, unknown>): string {
+  return String(row.strategy ?? row['策略'] ?? 'combined')
+}
+
 export function selCode(row: Record<string, unknown>): string {
   return String(row['代码'] ?? row.ts_code ?? row.code ?? '')
 }
@@ -42,6 +60,15 @@ export function selPctTone(row: Record<string, unknown>): 'up' | 'down' | 'flat'
 
 export function selAction(row: Record<string, unknown>): string {
   return String(row['建议动作'] ?? row.action_hint ?? '')
+}
+
+export function selExecutionCardNote(row: Record<string, unknown>): string {
+  const trigger = String(row['执行卡触发'] ?? '').trim()
+  const status = String(row['执行卡状态'] ?? '').trim()
+  if (trigger && status) return `${trigger} · ${status}`
+  if (trigger) return trigger
+  if (status) return status
+  return ''
 }
 
 export function selIndustry(row: Record<string, unknown>): string {

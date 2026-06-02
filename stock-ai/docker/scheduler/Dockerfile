@@ -24,13 +24,13 @@ COPY stock_ai ./stock_ai
 COPY scripts ./scripts
 COPY docker ./docker
 
-COPY run_sync_daily.sh ./
+COPY run_sync_daily.sh sync_emotion_cycle.sh ./
 
 COPY docker/scheduler/crontab /etc/cron.d/stock-ai-scheduler
 COPY docker/scheduler/entrypoint.sh /entrypoint.sh
 COPY docker/scheduler/run-host-job.sh ./docker/scheduler/run-host-job.sh
 
-RUN chmod +x /entrypoint.sh run_sync_daily.sh docker/scheduler/run-host-job.sh \
+RUN chmod +x /entrypoint.sh run_sync_daily.sh sync_emotion_cycle.sh docker/scheduler/run-host-job.sh \
   && uv sync --frozen --no-dev
 
 ENV TZ=Asia/Shanghai

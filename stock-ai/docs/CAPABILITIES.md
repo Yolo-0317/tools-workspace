@@ -197,7 +197,9 @@ push_selection_wechat.sh
 | 缺失自动补同步 | `scripts/tools/ensure_daily_bars.py` | 17:30 选股前；期望日规则见脚本 |
 | 执行卡 → 持仓/监控 | `scripts/tools/sync_portfolio_from_card.py` | `portfolio_positions` / `portfolio_account` / `alert_rules` |
 | 实时行情 / SOP | `scripts/tools/fetch_eastmoney_quotes.py` | OpenCLI；东财 HTTP 入库脚本已移除 |
+| 东财证券网页持仓 | `scripts/tools/fetch_jywg_positions_opencli.py` | OpenCLI；首次手动登录，在线时间最长 3h；`--wait-login` |
 | Docker 统一调度 | `docker/scheduler/` | sync 17:00 + 选股/战报/监控 cron；见 [SCHEDULING.md](SCHEDULING.md) |
+| 掘金仿真量化 | 独立子项目 [`../emquant-sim/`](../emquant-sim/README.md) | 与 stock-ai 隔离；不经过本仓库 scheduler |
 
 详见 [TUSHARE_SYNC_GUIDE.md](TUSHARE_SYNC_GUIDE.md)。
 
@@ -233,7 +235,8 @@ MCP 工具：`tushare_mcp.py` — `deepseek_trade_signal` 等。详见 [DEEPSEEK
 | 五因子（v3） | `core_v3/stock_selection_five_factor_mysql.py` | MySQL `strategy=five_factor` + CSV 备份 |
 | 量价突破 | `scripts/selection/stock_selection.py` | `stock_selection_*.csv` |
 | MA5 回踩 | `scripts/selection/stock_selection_ma5.py` | `stock_selection_ma5_*.csv` |
-| 底部突破 | `scripts/selection/stock_selection_bottom_breakout.py` | `stock_selection_bottom_breakout_*.csv` |
+| 筑底+放量突破 | `core_v2/stock_selection_bottom_breakout_eastmoney.py` | MySQL `strategy=bottom_breakout` + CSV |
+| 底部启动（旧） | `scripts/selection/stock_selection_bottom_breakout.py` | `stock_selection_bottom_breakout_*.csv`（手动） |
 
 筛选条件详解见 [SELECTION_STRATEGIES.md](SELECTION_STRATEGIES.md)。
 
@@ -327,6 +330,15 @@ uv run python -m scripts.tools.dashboard_data export -o output/dashboard.json
 ```
 
 快照失败写入 `logs/snapshot_alerts.log`（不阻断战报/选股推送；`SNAPSHOT_STRICT=1` 时 shell 返回非零）。
+
+**home-hub 看板读法（2026-06-01）**：
+
+| 展示 | 数据源 | 何时更新 |
+|------|--------|----------|
+| 总览/持仓「当前」账户与持仓 | **`portfolio_account` + `portfolio_positions`** | `jywg --sync-db` 或 `sync_portfolio_from_card` 后立即 |
+| 资产/盈亏曲线、按日快照下拉 | **`portfolio_*_daily`**（`slot=eod/midday/sync`） | `snapshot-portfolio` / 战报·同步脚本 |
+
+`export_dashboard_payload` 的 `positions_latest` **不再**用 eod 快照冒充当前；`snapshot_slot` 只影响历史序列。
 
 **已删除遗留表**（2026-05-31）：`capital_flow`、`stock_intraday_snapshot`、`stock_orderbook_snapshot`（见 `006_drop_legacy_eastmoney_tables.sql`）。
 

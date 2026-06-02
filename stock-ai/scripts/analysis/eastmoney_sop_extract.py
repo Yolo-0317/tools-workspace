@@ -12,6 +12,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.tools.fetch_eastmoney_quotes import (
+    EastmoneySopSnapshot,
     fetch_full_sop_batch,
     fetch_full_sop_data,
     fetch_technical_summaries_batch_opencli,
@@ -21,6 +22,47 @@ from scripts.tools.fetch_eastmoney_quotes import (
 def fetch_sop_data(code: str) -> dict[str, str]:
     """OpenCLI 采集东财 8 个维度，返回原始文本字典。"""
     return fetch_full_sop_data(code)
+
+
+def build_fast_preliminary_report(
+    code: str,
+    snap: EastmoneySopSnapshot,
+    *,
+    technical: str = "",
+) -> str:
+    """快采：行情页 + 资金页 + K 线摘要（公众号龙头稿 / 盘中刷新用）。"""
+    code = str(code).split(".")[0].zfill(6)
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    tech_block = (technical or "").strip() or "（未获取）"
+    return f"""# {snap.name or code}（{code}）快采报告
+
+**采集时间**: {now}
+**数据来源**: OpenCLI 东财行情+资金（快采，无 F10）
+
+---
+
+## 行情快照
+
+现价 {snap.price:.2f} 元，涨跌 {snap.change_pct:+.2f}%（{snap.change_amt:+.2f} 元）
+
+## 基本面（行情页）
+
+```
+{snap.info_text or "未获取"}
+```
+
+## 资金面
+
+```
+{snap.fund_flow_text or "未获取"}
+```
+
+## 技术面（K 线摘要）
+
+```
+{tech_block}
+```
+"""
 
 
 def build_preliminary_report(code: str, data: dict[str, str]) -> str:

@@ -7,7 +7,10 @@ export function apiUrl(path: string): string {
 }
 
 export function apiHeaders(extra: Record<string, string> = {}): HeadersInit {
-  const h: Record<string, string> = { ...extra }
+  const h: Record<string, string> = {
+    'X-Hub-Client': 'home-hub',
+    ...extra,
+  }
   if (HUB_TOKEN) h['X-Hub-Token'] = HUB_TOKEN
   return h
 }
@@ -17,6 +20,7 @@ export async function apiFetch(
   init: RequestInit = {},
 ): Promise<Response> {
   const headers = new Headers(init.headers ?? {})
+  if (!headers.has('X-Hub-Client')) headers.set('X-Hub-Client', 'home-hub')
   if (HUB_TOKEN) headers.set('X-Hub-Token', HUB_TOKEN)
   if (init.body && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')

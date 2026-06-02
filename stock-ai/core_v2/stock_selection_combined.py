@@ -16,12 +16,14 @@ from pathlib import Path
 import pandas as pd
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
-from fetch_opencli_sop import get_market_sentiment
 
-# 添加项目根目录到 Python 路径
+# 添加项目根目录到 Python 路径（须在 fetch_opencli_sop / scripts 导入之前）
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _bootstrap import ensure_repo_root_on_path
+
 ensure_repo_root_on_path()
+
+from fetch_opencli_sop import get_market_sentiment
 
 load_dotenv()
 
@@ -58,18 +60,48 @@ ROE_MIN = 3.0                   # 最小 ROE (%)
 NET_PROFIT_GROWTH_MIN = -20.0   # 最小净利润增长率 (%)
 EXCLUDE_ST = True               # 是否剔除 ST/*ST
 
-# 基础过滤
+# 基础过滤（MySQL amount = Tushare 千元）
 MIN_PRICE = 5
 MAX_PRICE = 20
-MIN_AMOUNT = 5000  # 万
+MIN_AMOUNT_QIAN = 50_000  # 5000 万元 = 50000 千元
+LIQUIDITY_SCORE_CAP_WAN = 200_000  # 流动性分满分对应 20 亿元成交额
+
+# Top5 / 候选池可执行动作（与 pick_selection_top 默认一致）
+BUY_ACTIONS = frozenset({"强势关注", "观察买入", "小仓埋伏"})
+TOP5_ELIGIBLE_ACTIONS = BUY_ACTIONS | {"持有"}
 
 # 执行卡硬过滤（与 investment-agent/持仓执行卡 对齐）
 CHASE_PCT_MAX = 5.0          # 单日涨幅 >5% 不追高
 DROP_EXCLUDE_PCT = -7.0      # 大跌剔除
 LIMIT_DOWN_PCT = -9.5        # 接近跌停剔除
-HIGH_POSITION_PCT = 80.0     # 总仓位超过此值时不给买入类动作
+POSITION_NO_BUY_PCT = 75.0       # >75%：买入类动作 → 继续观察（对齐执行卡 A 档）
+POSITION_PROBE_ONLY_PCT = 60.0   # 60–75%：仅保留「小仓埋伏」（B 档试探）
+HIGH_POSITION_PCT = POSITION_NO_BUY_PCT  # 兼容旧名
 EXCLUDE_BJ = True            # 剔除北交所 92xxxx
 TOP5_MAX_PER_INDUSTRY = 2
+
+# 突破 K 线：收盘在当日振幅中的位置（越高越好，过滤长上影假突破）
+BREAKOUT_CLOSE_STRENGTH_MIN = 0.55
+
+# 早埋伏允许小幅回踩（%）
+AMBUSH_SOFT_DIP_PCT = -1.5
+
+# 震荡市评分门槛（neutral 用默认；weak 抬高买入门槛）
+SCORE_STRONG_WEAK = 85
+SCORE_BUY_WEAK = 70
+SCORE_AMBUSH_WEAK = 58
+
+
+def amount_qian_to_wan(amount_qian: float) -> float:
+    """Tushare/MySQL 成交额（千元）→ 万元。"""
+    return float(amount_qian) / 10.0
+
+
+def liquidity_score_from_wan(amount_wan: float) -> float:
+    """0–10 分；20 亿元成交额封顶。"""
+    if amount_wan <= 0:
+        return 0.0
+    return min(10.0, amount_wan / (LIQUIDITY_SCORE_CAP_WAN / 10))
 
 
 def _normalize_position_pct(ratio: float | None) -> float:
@@ -80,11 +112,16 @@ def _normalize_position_pct(ratio: float | None) -> float:
 
 
 def _cap_action_for_redlines(action: str, pct_chg: float, account_position_pct: float) -> str:
-    buy_actions = {"强势关注", "观察买入", "小仓埋伏"}
-    if pct_chg > CHASE_PCT_MAX and action in buy_actions:
+    """执行卡买入档位：>75% 禁买；60–75% 仅小仓埋伏；≤60% 按评分动作（仍受禁追高约束）。"""
+    if pct_chg > CHASE_PCT_MAX and action in BUY_ACTIONS:
         return "继续观察"
-    if account_position_pct > HIGH_POSITION_PCT and action in buy_actions:
-        return "继续观察"
+    if account_position_pct > POSITION_NO_BUY_PCT:
+        if action in BUY_ACTIONS:
+            return "继续观察"
+        return action
+    if account_position_pct > POSITION_PROBE_ONLY_PCT:
+        if action in ("强势关注", "观察买入"):
+            return "小仓埋伏"
     return action
 
 
@@ -114,6 +151,61 @@ def _sector_matches(industry: str, hot_sectors: list[str]) -> bool:
     if industry in {"", "N/A", "-", "--"} or not hot_sectors:
         return False
     return any(industry in s or s in industry for s in hot_sectors)
+
+
+def classify_market_regime(up_ratio: float | None) -> str:
+    """weak / neutral / strong，用于震荡市动态门槛。"""
+    if up_ratio is None:
+        return "neutral"
+    if up_ratio < 0.45:
+        return "weak"
+    if up_ratio > 0.60:
+        return "strong"
+    return "neutral"
+
+
+def close_strength_ratio(high: float, low: float, close: float) -> float:
+    """收盘在当日振幅中的相对位置 0~1。"""
+    span = float(high) - float(low)
+    if span <= 0:
+        return 1.0
+    return (float(close) - float(low)) / span
+
+
+def action_thresholds_for_regime(regime: str) -> dict[str, float]:
+    """返回各建议动作最低总分。"""
+    if regime == "weak":
+        return {
+            "强势关注": SCORE_STRONG_WEAK,
+            "观察买入": SCORE_BUY_WEAK,
+            "继续观察": 52.0,
+            "小仓埋伏": SCORE_AMBUSH_WEAK,
+        }
+    if regime == "strong":
+        return {"强势关注": 78.0, "观察买入": 63.0, "继续观察": 48.0, "小仓埋伏": 53.0}
+    return {"强势关注": 80.0, "观察买入": 65.0, "继续观察": 50.0, "小仓埋伏": 55.0}
+
+
+def assign_action(
+    total_score: float,
+    *,
+    is_ambush_only: bool,
+    regime: str,
+) -> str:
+    th = action_thresholds_for_regime(regime)
+    if is_ambush_only:
+        if total_score >= th["小仓埋伏"]:
+            return "小仓埋伏"
+        if total_score >= th["继续观察"]:
+            return "继续观察"
+        return "谨慎回避"
+    if total_score >= th["强势关注"]:
+        return "强势关注"
+    if total_score >= th["观察买入"]:
+        return "观察买入"
+    if total_score >= th["继续观察"]:
+        return "继续观察"
+    return "谨慎回避"
 
 
 def _market_score_from_sentiment(market_sentiment: dict | None) -> tuple[int, list[str]]:
@@ -164,6 +256,7 @@ def main(target_date=None):
     market_sentiment = None
     market_score_adj = 0
     hot_sectors: list[str] = []
+    market_regime = "neutral"
     if skip_sentiment:
         print("📡 跳过大盘情绪（SKIP_MARKET_SENTIMENT=1）")
     else:
@@ -171,10 +264,11 @@ def main(target_date=None):
         try:
             market_sentiment = get_market_sentiment()
             market_score_adj, hot_sectors = _market_score_from_sentiment(market_sentiment)
+            market_regime = classify_market_regime(market_sentiment.get("up_ratio"))
             if market_sentiment.get("up_ratio") is not None:
                 print(
                     f"📊 大盘赚钱效应：{market_sentiment['up_ratio'] * 100:.1f}%，"
-                    f"风险调整：{market_score_adj}"
+                    f"环境={market_regime}，风险调整：{market_score_adj}"
                 )
             if hot_sectors:
                 print(f"🔥 当前热门板块：{', '.join(hot_sectors[:3])}…")
@@ -229,7 +323,8 @@ def main(target_date=None):
         )
         print(
             f"📋 账户约束：持仓 {len(holdings_codes)} 只，"
-            f"仓位 {account_position_pct:.1f}%（>{HIGH_POSITION_PCT:.0f}% 不买）"
+            f"仓位 {account_position_pct:.1f}%（>{POSITION_NO_BUY_PCT:.0f}% 不买；"
+            f"{POSITION_PROBE_ONLY_PCT:.0f}–{POSITION_NO_BUY_PCT:.0f}% 仅小仓埋伏）"
         )
     except Exception as exc:  # noqa: BLE001
         print(f"⚠️ 未读取持仓/仓位（{exc}），跳过执行卡过滤")
@@ -237,6 +332,7 @@ def main(target_date=None):
     excluded_crash = 0
     excluded_bj = 0
     excluded_st = 0
+    signal_hits = {"大底突破": 0, "三连阳": 0, "空中加油": 0, "早埋伏": 0}
     results = []
     for ts_code, group in df_all.groupby('ts_code'):
         group = group.sort_values('trade_date')
@@ -260,7 +356,9 @@ def main(target_date=None):
         
         # 基础过滤
         if not (MIN_PRICE <= close_today <= MAX_PRICE): continue
-        if amount_today < MIN_AMOUNT: continue
+        if amount_today < MIN_AMOUNT_QIAN:
+            continue
+        amount_wan = amount_qian_to_wan(amount_today)
         
         # 均线计算
         ma5 = group['close'].tail(5).mean()
@@ -284,11 +382,15 @@ def main(target_date=None):
             dist_from_high = (close_today - high_250d) / high_250d * 100
             dist_from_low = (close_today - low_250d) / low_250d * 100
             
+            day_high = float(latest["high"])
+            day_low = float(latest["low"])
+            close_str = close_strength_ratio(day_high, day_low, close_today)
             if (box_width <= BOX_WIDTH_MAX and breakout_ratio >= 0 and 
                 dist_from_high <= DIST_FROM_250D_HIGH_MAX and dist_from_low <= DIST_FROM_250D_LOW_MAX and
                 ma5 > ma10 > ma20 and
                 pct_chg_today > 0 and
-                close_today > float(latest['open'])):
+                close_today > float(latest['open']) and
+                close_str >= BREAKOUT_CLOSE_STRENGTH_MIN):
                 is_breakout = True
 
         # --- 策略2: 低位放量三连阳 ---
@@ -342,11 +444,16 @@ def main(target_date=None):
             avg_amount_5b = group['amount'].iloc[-10:-5].mean()
             vol_ratio_b = amount_today / avg_amount_5b if avg_amount_5b > 0 else 0
 
-            if (AMBUSH_NEAR_BOX_TOP_MIN <= near_box_top <= AMBUSH_NEAR_BOX_TOP_MAX and
+            ambush_ok = (
+                AMBUSH_NEAR_BOX_TOP_MIN <= near_box_top <= AMBUSH_NEAR_BOX_TOP_MAX and
                 box_width2 <= AMBUSH_BOX_WIDTH_MAX and
                 ma20_slope_5d >= AMBUSH_MA20_SLOPE_MIN and
                 AMBUSH_VOL_RATIO_MIN <= vol_ratio_b <= AMBUSH_VOL_RATIO_MAX and
-                close_today >= ma20):
+                close_today >= ma20
+            )
+            if ambush_ok and pct_chg_today >= 0 and close_today > float(latest["open"]):
+                is_ambush = True
+            elif ambush_ok and AMBUSH_SOFT_DIP_PCT <= pct_chg_today < 0:
                 is_ambush = True
 
         # --- 策略5: 主力异动（已弃用 capital_flow 表；资金面改 OpenCLI SOP） ---
@@ -355,6 +462,15 @@ def main(target_date=None):
         big_pct = 0
 
         # 记录结果 + 评分
+        if is_breakout:
+            signal_hits["大底突破"] += 1
+        if is_three_up:
+            signal_hits["三连阳"] += 1
+        if is_pullback:
+            signal_hits["空中加油"] += 1
+        if is_ambush:
+            signal_hits["早埋伏"] += 1
+
         if is_breakout or is_three_up or is_pullback or is_ambush or is_surge:
             # --- 暂时跳过自动基本面过滤，由 Agent 通过浏览器手动校验 ---
             # print(f"  🔍 校验基本面红线: {ts_code}...")
@@ -409,7 +525,7 @@ def main(target_date=None):
                     momentum_score += 6
 
             # 4) 流动性分（0-10）
-            liquidity_score = min(10, amount_today / 200000)  # 200亿成交额封顶
+            liquidity_score = liquidity_score_from_wan(amount_wan)
 
             if abs(pct_chg_today) > 8:
                 risk_penalty -= 6
@@ -417,6 +533,12 @@ def main(target_date=None):
                 recent_vol = group['pct_chg'].tail(10).std()
                 if recent_vol > 5:
                     risk_penalty -= 5
+            if is_ambush and AMBUSH_SOFT_DIP_PCT <= pct_chg_today < 0:
+                risk_penalty -= 2
+            if len(group) >= 4:
+                chg_3d = (close_today / float(group['close'].iloc[-4]) - 1) * 100
+                if chg_3d > 12:
+                    risk_penalty -= 4
 
             # 6) 大盘调整
             total_score = max(0, min(100, round(signal_score + trend_score + momentum_score + liquidity_score + risk_penalty + market_score_adj, 1)))
@@ -436,31 +558,34 @@ def main(target_date=None):
                 total_score = min(100, total_score + resonance_score)
                 tags.append("三力合一")
 
-            if total_score >= 80:
-                action = "强势关注"
-            elif total_score >= 65:
-                action = "观察买入"
-            elif total_score >= 50:
-                action = "继续观察"
-            else:
-                action = "谨慎回避"
-
-            # 若仅触发早埋伏且评分中等，给出埋伏提示
-            if is_ambush and not (is_breakout or is_three_up or is_pullback) and total_score >= 55:
-                action = "小仓埋伏"
+            is_ambush_only = is_ambush and not (
+                is_breakout or is_three_up or is_pullback or is_surge
+            )
+            action = assign_action(
+                total_score,
+                is_ambush_only=is_ambush_only,
+                regime=market_regime,
+            )
 
             if code_str in holdings_codes:
-                action = "持有" if action in ("强势关注", "观察买入", "小仓埋伏") else action
+                action = "持有" if action in BUY_ACTIONS else action
             else:
                 action = _cap_action_for_redlines(action, pct_chg_today, account_position_pct)
+                if pct_chg_today > CHASE_PCT_MAX and action in BUY_ACTIONS:
+                    action = "继续观察"
+                if pct_chg_today < 0 and action not in BUY_ACTIONS:
+                    action = "谨慎回避"
+
+            if code_str not in holdings_codes and action == "谨慎回避":
+                continue
 
             _, buy_shares, buy_amount_yuan = _position_suggestion(action, close_today)
 
             results.append({
-                '代码': ts_code,
+                '代码': code_str,
                 '收盘价': close_today,
                 '涨幅%': latest['pct_chg'],
-                '成交额(万)': amount_today,
+                '成交额(万)': round(amount_wan, 2),
                 '策略标签': ",".join(tags),
                 '标签数': len(tags),
                 '总分': total_score,
@@ -472,6 +597,7 @@ def main(target_date=None):
                 '大盘调整': market_score_adj,
                 '板块调整': sector_score_adj,
                 '共振加分': resonance_score,
+                '大盘环境': market_regime,
                 '所属行业': industry,
                 '建议动作': action,
                 '建议买入(股)': buy_shares,
@@ -480,8 +606,93 @@ def main(target_date=None):
                 '超大单占比%': big_pct
             })
 
+    print(
+        "📈 信号命中："
+        + "，".join(f"{k} {v}" for k, v in signal_hits.items())
+        + f"；A轨入池 {len(results)} 只（环境={market_regime}）"
+    )
+    project_root = os.getenv(
+        "PROJECT_ROOT", os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    )
+    # —— B 轨观察池（宽松，strategy=watch，不进 Top5/SOP）——
+    try:
+        from selection_watch_track import run_watch_track
+
+        watch_results = run_watch_track(
+            df_all,
+            trade_date=trade_date,
+            industry_map=industry_map,
+            st_codes=st_codes,
+            market_regime=market_regime,
+            holdings_codes=holdings_codes,
+            account_position_pct=account_position_pct,
+        )
+        if watch_results is not None:
+            from scripts.tools.execution_card_buys import (
+                apply_execution_card_b_tier,
+                ensure_card_probe_in_watch,
+            )
+            from scripts.tools.portfolio_db import save_selection_daily_results
+
+            latest_by_code: dict[str, dict] = {}
+            for ts_code, group in df_all.groupby("ts_code"):
+                g = group.sort_values("trade_date")
+                if g.empty:
+                    continue
+                last = g.iloc[-1]
+                code_str = str(ts_code).split(".")[0].zfill(6)
+                latest_by_code[code_str] = {
+                    "close": float(last["close"]),
+                    "pct_chg": float(last["pct_chg"]),
+                    "amount_wan": amount_qian_to_wan(float(last["amount"])),
+                }
+            n_card_watch = ensure_card_probe_in_watch(
+                watch_results,
+                results,
+                latest_by_code,
+                account_position_pct,
+                market_regime=market_regime,
+            )
+            if n_card_watch:
+                print(f"📌 执行卡关注补入 watch：{n_card_watch} 只（P-买1/买2 未入信号池）")
+            apply_execution_card_b_tier(watch_results, account_position_pct)
+            wn = save_selection_daily_results(
+                trade_date, watch_results, strategy="watch"
+            ) if watch_results else 0
+            watch_path = (
+                Path(project_root) / "output" / f"stock_selection_watch_{trade_date}.csv"
+            )
+            watch_path.parent.mkdir(parents=True, exist_ok=True)
+            pd.DataFrame(watch_results).to_csv(
+                watch_path, index=False, encoding="utf-8-sig"
+            )
+            print(f"👀 B轨观察池 {len(watch_results)} 只 → MySQL strategy=watch ({wn} 条)")
+            print(f"📄 {watch_path}")
+        else:
+            print("👀 B轨观察池：0 只")
+    except Exception as exc:  # noqa: BLE001
+        print(f"⚠️ B轨观察池失败：{exc}")
+
+    try:
+        from scripts.tools.execution_card_buys import apply_execution_card_b_tier
+
+        n_card = apply_execution_card_b_tier(results, account_position_pct)
+        if n_card:
+            print(f"📌 执行卡 B 档试探：{n_card} 只升为「小仓埋伏」（P-买1/买2）")
+        for row in results:
+            action = row.get("建议动作")
+            close_today = float(row.get("收盘价") or 0)
+            if action and close_today > 0:
+                _, buy_shares, buy_amount_yuan = _position_suggestion(
+                    str(action), close_today
+                )
+                row["建议买入(股)"] = buy_shares
+                row["预计金额(元)"] = buy_amount_yuan
+    except Exception as exc:  # noqa: BLE001
+        print(f"⚠️ 执行卡 B 档对齐失败：{exc}")
+
     if not results:
-        print("❌ 未筛选出符合任何策略的股票")
+        print("❌ A轨（combined）未筛选出符合任何策略的股票")
         return
 
     if excluded_crash or excluded_bj or excluded_st:
@@ -491,10 +702,10 @@ def main(target_date=None):
         )
 
     res_df = pd.DataFrame(results).sort_values(by=['总分', '标签数', '成交额(万)'], ascending=False)
+    buyable = res_df[res_df["建议动作"].isin(BUY_ACTIONS)] if not res_df.empty else res_df
+    if not buyable.empty:
+        print(f"🎯 可执行买入类 {len(buyable)} 只（Top5 优先从此筛选）")
     
-    # 兼容 MCP 运行环境：优先使用环境变量中的项目根目录
-    # 强制使用绝对路径，避免相对路径在不同环境下失效
-    project_root = os.getenv("PROJECT_ROOT", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     output_dir = Path(project_root) / "output"
     output_dir.mkdir(parents=True, exist_ok=True)
     

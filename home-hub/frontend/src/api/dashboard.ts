@@ -1,10 +1,14 @@
 import type {
   DashboardPayload,
   DisciplinePayload,
+  EmotionCyclePayload,
   LaunchdJob,
   MonitorHistoryDay,
   MonitorRule,
   MonitorState,
+  NewsItem,
+  NewsMeta,
+  BriefingSnapshot,
   PortfolioHistory,
   PositionRow,
   SelectionHistory,
@@ -12,8 +16,18 @@ import type {
 } from '../types/dashboard'
 import { apiJson } from './http'
 
-export function fetchDashboardSummary(slot = 'eod'): Promise<DashboardPayload> {
-  return apiJson(`/api/dashboard/summary?slot=${encodeURIComponent(slot)}`)
+export function fetchDashboardSummary(slot = 'eod', live = false) {
+  const q = new URLSearchParams({ slot })
+  if (live) q.set('live', 'true')
+  return apiJson<DashboardPayload>(`/api/dashboard/summary?${q}`)
+}
+
+export function fetchMonitorRules(live = true) {
+  return apiJson<{
+    rules: MonitorRule[]
+    quote_source?: string
+    quotes_as_of?: string
+  }>(`/api/dashboard/monitor/rules?live=${live ? 'true' : 'false'}`)
 }
 
 export function fetchDiscipline() {
@@ -44,9 +58,6 @@ export function fetchPortfolioCurrent() {
   }>('/api/dashboard/portfolio')
 }
 
-export function fetchMonitorRules() {
-  return apiJson<{ rules: MonitorRule[] }>('/api/dashboard/monitor/rules')
-}
 
 export function fetchMonitorState(date?: string) {
   const q = date ? `?date=${encodeURIComponent(date)}` : ''
@@ -59,13 +70,13 @@ export function fetchMonitorDates(limit = 90) {
   )
 }
 
-export function fetchSelectionDates(strategy = 'combined') {
+export function fetchSelectionDates(strategy = 'all') {
   return apiJson<{ strategy: string; dates: string[] }>(
     `/api/dashboard/selection/dates?strategy=${encodeURIComponent(strategy)}`,
   )
 }
 
-export function fetchSelectionHistory(tradeDate: string, strategy = 'combined') {
+export function fetchSelectionHistory(tradeDate: string, strategy = 'all') {
   return apiJson<SelectionHistory>(
     `/api/dashboard/selection?trade_date=${encodeURIComponent(tradeDate)}&strategy=${encodeURIComponent(strategy)}`,
   )
@@ -127,6 +138,58 @@ export function fetchSnapshotAlerts(limit = 30) {
 
 export function fetchJobs() {
   return apiJson<{ jobs: LaunchdJob[] }>('/api/dashboard/jobs')
+}
+
+export function fetchNewsMeta(date?: string) {
+  const q = date ? `?date=${encodeURIComponent(date)}` : ''
+  return apiJson<NewsMeta>(`/api/dashboard/news/meta${q}`)
+}
+
+export function fetchNewsItems(params?: {
+  date?: string
+  category?: string
+  sentiment?: string
+  limit?: number
+}) {
+  const q = new URLSearchParams()
+  if (params?.date) q.set('date', params.date)
+  if (params?.category) q.set('category', params.category)
+  if (params?.sentiment) q.set('sentiment', params.sentiment)
+  if (params?.limit) q.set('limit', String(params.limit))
+  const qs = q.toString()
+  return apiJson<{
+    date: string
+    category: string | null
+    sentiment: string | null
+    items: NewsItem[]
+  }>(`/api/dashboard/news/items${qs ? `?${qs}` : ''}`)
+}
+
+export function fetchNewsBriefings(date?: string) {
+  const q = date ? `?date=${encodeURIComponent(date)}` : ''
+  return apiJson<{ date: string; briefings: BriefingSnapshot[] }>(
+    `/api/dashboard/news/briefings${q}`,
+  )
+}
+
+export function fetchLatestBriefing() {
+  return apiJson<{ briefing: BriefingSnapshot | null }>(
+    '/api/dashboard/news/briefings/latest',
+  )
+}
+
+export function fetchEmotionCycleDates() {
+  return apiJson<{ dates: string[]; default_date?: string | null }>(
+    '/api/dashboard/emotion/dates',
+  )
+}
+
+export function fetchEmotionCycle(tradeDate?: string, slot?: string) {
+  const q = new URLSearchParams()
+  if (tradeDate) q.set('trade_date', tradeDate)
+  if (slot) q.set('slot', slot)
+  const qs = q.toString()
+  return apiJson<EmotionCyclePayload>(`/api/dashboard/emotion${qs ? `?${qs}` : ''}`)
 }
 
 export function fmtNum(v: unknown, digits = 2): string {

@@ -35,6 +35,35 @@ def _load_names(engine, codes: list[str]) -> dict[str, str]:
     return load_stock_names_by_codes(codes, engine=engine)
 
 
+def _format_aux_pools(trade_date: date, holdings_codes: set[str]) -> str:
+    """B轨 watch + ma5 + 五因子 摘要（Top5 仍仅 combined）。"""
+    from scripts.tools.portfolio_db import load_selection_daily_results
+    from scripts.tools.selection_results import sort_selection_df
+
+    lines = ["", "📋 辅助观察池（非 Top5 / 不自动 SOP）", ""]
+    for strat, title in (
+        ("watch", "B轨观察"),
+        ("ma5", "MA5回踩"),
+        ("five_factor", "五因子"),
+    ):
+        td, rows = load_selection_daily_results(trade_date, strategy=strat)
+        if not rows:
+            lines.append(f"· {title}：无")
+            continue
+        df = sort_selection_df(pd.DataFrame(rows)).head(5)
+        lines.append(f"· {title}（{len(rows)} 只，示 Top5）：")
+        for i, (_, row) in enumerate(df.iterrows(), 1):
+            code = str(row.get("代码", "")).split(".")[0].zfill(6)
+            held = " 📌" if code in holdings_codes else ""
+            action = row.get("建议动作", "—")
+            tags = row.get("策略标签", "")
+            score = row.get("总分", 0)
+            lines.append(
+                f"  {i}. {code}{held} | {tags} | 分{score} | {action}"
+            )
+    return "\n".join(lines)
+
+
 def _format_report(
     df: pd.DataFrame,
     trade_date: str,
@@ -122,6 +151,11 @@ def main() -> int:
     )
     parser.add_argument("--sop-workers", type=int, default=1, help="OpenCLI 单会话 SOP（参数保留兼容）")
     parser.add_argument("--deepseek-workers", type=int, default=3, help="DeepSeek 并发数")
+    parser.add_argument(
+        "--skip-selection",
+        action="store_true",
+        help="跳过 combined 扫描（已由 run_parallel_selection 跑完）",
+    )
     args = parser.parse_args()
 
     load_dotenv(ROOT / ".env")
@@ -131,9 +165,12 @@ def main() -> int:
         return 1
     os.environ["MYSQL_URL"] = _fix_mysql_url(mysql_url)
 
-    from stock_selection_combined import main as run_selection
+    if not args.skip_selection:
+        from stock_selection_combined import main as run_selection
 
-    run_selection()
+        run_selection()
+    else:
+        print("⏭️ 跳过 combined 扫描（--skip-selection）", file=sys.stderr)
 
     from scripts.tools.selection_results import resolve_selection_df, pick_selection_top, trade_date_to_str
 
@@ -154,12 +191,28 @@ def main() -> int:
         max_per_industry=2,
     )
     if top_df.empty:
+        print(
+            "⚠️ Top5 无可执行动作候选，回退为按总分取前 N（含继续观察）",
+            file=sys.stderr,
+        )
+        top_df = pick_selection_top(
+            df.head(TOP_N * 4),
+            TOP_N,
+            holdings_codes=holdings_codes,
+            max_per_industry=2,
+            eligible_actions=None,
+        )
+    if top_df.empty:
         top_df = df.head(TOP_N)
     top_codes = [str(c).zfill(6) for c in top_df.head(TOP_N)["代码"].astype(str).tolist()]
     engine = create_engine(os.environ["MYSQL_URL"])
     names = _load_names(engine, top_codes)
 
-    sections = [_format_report(top_df, trade_date_str, holdings_codes, names), ""]
+    sections = [
+        _format_report(top_df, trade_date_str, holdings_codes, names),
+        _format_aux_pools(trade_date, holdings_codes),
+        "",
+    ]
 
     if args.no_sop:
         ai_block = _run_ai_review(trade_date, decision_context)

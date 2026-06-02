@@ -3,6 +3,11 @@
 
 rules:
   - RULE-SET,applications,applications
+  # 微信公众平台 API / 开发者站：须家用 WAN 出口（IP 白名单 58.37.x）
+  - DOMAIN-SUFFIX,weixin.qq.com,DIRECT
+  - DOMAIN-SUFFIX,wx.qq.com,DIRECT
+  - DOMAIN,developers.weixin.qq.com,DIRECT
+  - DOMAIN,mp.weixin.qq.com,DIRECT
   - DOMAIN,clash.razord.top,DIRECT
   - DOMAIN,yacd.haishan.me,DIRECT
   - RULE-SET,private,private

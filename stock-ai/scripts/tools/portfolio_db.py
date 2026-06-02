@@ -52,6 +52,13 @@ def _load_dotenv() -> None:
             os.environ.setdefault(k.strip(), v.strip())
 
 
+def _normalize_mysql_host(url: str) -> str:
+    """本机直跑时把 host.docker.internal 换成 127.0.0.1；容器内保持原样。"""
+    if os.path.exists("/.dockerenv"):
+        return url
+    return url.replace("host.docker.internal", "127.0.0.1")
+
+
 def mysql_url() -> str:
     _load_dotenv()
     url = os.environ.get("MYSQL_URL", "")
@@ -60,7 +67,7 @@ def mysql_url() -> str:
         password = os.environ.get("MYSQL_PASSWORD", "")
         db = os.environ.get("MYSQL_DATABASE", "stock_data")
         url = f"mysql+pymysql://{user}:{password}@127.0.0.1:3306/{db}"
-    return url.replace("host.docker.internal", "127.0.0.1")
+    return _normalize_mysql_host(url)
 
 
 def get_engine() -> Engine | None:
@@ -176,6 +183,177 @@ def load_latest_closes(codes: list[str], *, engine: Engine | None = None) -> dic
         return {c: q.price for c, q in quotes.items() if q.price is not None}
     except Exception:
         return {}
+
+
+def upsert_monitor_live_quotes(
+    quotes: dict[str, Any],
+    *,
+    quoted_at: datetime | None = None,
+    source: str = "opencli",
+    engine: Engine | None = None,
+) -> int:
+    """写入 monitor_live_quotes（盘中 cron 每 5 分钟更新）。"""
+    if not quotes:
+        return 0
+    engine = engine or get_engine()
+    if engine is None:
+        return 0
+    quoted_at = quoted_at or datetime.now()
+    n = 0
+    with engine.begin() as conn:
+        for code, q in quotes.items():
+            ts = str(code).zfill(6)
+            name = getattr(q, "name", None) or (q.get("name") if isinstance(q, dict) else "") or ""
+            price = getattr(q, "price", None) if not isinstance(q, dict) else q.get("price")
+            if price is None:
+                continue
+            change_amt = (
+                getattr(q, "change_amt", None)
+                if not isinstance(q, dict)
+                else q.get("change_amt")
+            )
+            change_pct = (
+                getattr(q, "change_pct", None)
+                if not isinstance(q, dict)
+                else q.get("change_pct")
+            )
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO monitor_live_quotes
+                        (ts_code, name, price, change_amt, change_pct, source, quoted_at)
+                    VALUES
+                        (:ts_code, :name, :price, :change_amt, :change_pct, :source, :quoted_at)
+                    ON DUPLICATE KEY UPDATE
+                        name = VALUES(name),
+                        price = VALUES(price),
+                        change_amt = VALUES(change_amt),
+                        change_pct = VALUES(change_pct),
+                        source = VALUES(source),
+                        quoted_at = VALUES(quoted_at)
+                    """
+                ),
+                {
+                    "ts_code": ts,
+                    "name": name,
+                    "price": float(price),
+                    "change_amt": change_amt,
+                    "change_pct": change_pct,
+                    "source": source,
+                    "quoted_at": quoted_at.replace(tzinfo=None)
+                    if quoted_at.tzinfo
+                    else quoted_at,
+                },
+            )
+            n += 1
+    return n
+
+
+def load_monitor_live_quotes(
+    codes: list[str],
+    *,
+    engine: Engine | None = None,
+) -> tuple[dict[str, dict[str, Any]], datetime | None]:
+    """读 monitor_live_quotes；返回 ({code: row}, 最新 quoted_at)。"""
+    if not codes:
+        return {}, None
+    engine = engine or get_engine()
+    if engine is None:
+        return {}, None
+    codes6 = sorted({str(c).zfill(6) for c in codes})
+    placeholders = ", ".join(f":c{i}" for i in range(len(codes6)))
+    params: dict[str, Any] = {f"c{i}": c for i, c in enumerate(codes6)}
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    f"""
+                    SELECT ts_code, name, price, change_amt, change_pct, source, quoted_at
+                    FROM monitor_live_quotes
+                    WHERE ts_code IN ({placeholders})
+                    """
+                ),
+                params,
+            ).fetchall()
+    except Exception:
+        return {}, None
+    out: dict[str, dict[str, Any]] = {}
+    batch_as_of: datetime | None = None
+    for row in rows:
+        code = str(row.ts_code).zfill(6)
+        quoted_at = row.quoted_at
+        if isinstance(quoted_at, datetime):
+            if batch_as_of is None or quoted_at > batch_as_of:
+                batch_as_of = quoted_at
+        out[code] = {
+            "code": code,
+            "name": row.name or "",
+            "price": float(row.price),
+            "change_amt": float(row.change_amt) if row.change_amt is not None else 0.0,
+            "change_pct": float(row.change_pct) if row.change_pct is not None else 0.0,
+            "source": row.source or "opencli",
+            "quoted_at": quoted_at,
+        }
+    return out, batch_as_of
+
+
+def load_dashboard_closes(
+    codes: list[str],
+    *,
+    snapshot_slot: str = "eod",
+    engine: Engine | None = None,
+) -> dict[str, float]:
+    """看板展示价：持仓每日快照 > stock_daily 最近收盘（不走 OpenCLI）。"""
+    engine = engine or get_engine()
+    if engine is None or not codes:
+        return {}
+
+    codes6 = sorted({str(c).zfill(6) for c in codes})
+    out: dict[str, float] = {}
+    slot = (snapshot_slot or "eod").strip() or "eod"
+
+    try:
+        with engine.connect() as conn:
+            snap = conn.execute(
+                text(
+                    "SELECT MAX(snapshot_date) FROM portfolio_positions_daily "
+                    "WHERE snapshot_slot = :slot"
+                ),
+                {"slot": slot},
+            ).scalar()
+            if snap is not None:
+                snap_s = snap.isoformat() if isinstance(snap, date) else str(snap)[:10]
+                placeholders = ", ".join(f":c{i}" for i in range(len(codes6)))
+                params: dict[str, Any] = {
+                    "d": snap_s,
+                    "slot": slot,
+                    **{f"c{i}": c for i, c in enumerate(codes6)},
+                }
+                rows = conn.execute(
+                    text(
+                        f"""
+                        SELECT ts_code, market_price
+                        FROM portfolio_positions_daily
+                        WHERE snapshot_date = :d AND snapshot_slot = :slot
+                          AND ts_code IN ({placeholders})
+                        """
+                    ),
+                    params,
+                ).fetchall()
+                for row in rows:
+                    if row.market_price is not None:
+                        out[str(row.ts_code).zfill(6)] = float(row.market_price)
+    except Exception:
+        pass
+
+    for code in codes6:
+        if code in out:
+            continue
+        bars = load_stock_daily_bars(code, limit=1, engine=engine)
+        if bars and bars[-1].get("close") is not None:
+            out[code] = float(bars[-1]["close"])
+
+    return out
 
 
 def load_alert_rules(
@@ -356,6 +534,101 @@ def sync_from_card(positions, account, rules: list[dict]) -> dict[str, int]:
         rule_n = upsert_alert_rules(rules, source="holdings", conn=conn)
 
     return {"positions": pos_n, "account": acct_n, "rules": rule_n}
+
+
+def sync_positions_and_account(
+    positions,
+    account,
+    *,
+    source: str = "jywg",
+) -> dict[str, int]:
+    """仅同步 portfolio_positions / portfolio_account，不改动 alert_rules。"""
+    engine = get_engine()
+    if engine is None:
+        raise RuntimeError("未配置 MYSQL_URL，无法同步")
+
+    active_codes = [p.code for p in positions]
+    src = (source or "jywg").strip() or "jywg"
+
+    with engine.begin() as conn:
+        if active_codes:
+            placeholders = ", ".join(f":c{i}" for i in range(len(active_codes)))
+            params = {f"c{i}": c for i, c in enumerate(active_codes)}
+            conn.execute(
+                text(
+                    f"UPDATE portfolio_positions SET is_active = 0 "
+                    f"WHERE ts_code NOT IN ({placeholders})"
+                ),
+                params,
+            )
+        else:
+            conn.execute(text("UPDATE portfolio_positions SET is_active = 0"))
+
+        pos_n = 0
+        for p in positions:
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO portfolio_positions
+                      (ts_code, name, asset_type, shares, cost_price,
+                       status_note, action_note, source, is_active)
+                    VALUES
+                      (:code, :name, :atype, :shares, :cost, :status, :action, :src, 1)
+                    ON DUPLICATE KEY UPDATE
+                      name = VALUES(name),
+                      asset_type = VALUES(asset_type),
+                      shares = VALUES(shares),
+                      cost_price = VALUES(cost_price),
+                      status_note = VALUES(status_note),
+                      action_note = VALUES(action_note),
+                      source = VALUES(source),
+                      is_active = 1
+                    """
+                ),
+                {
+                    "code": p.code,
+                    "name": p.name,
+                    "atype": getattr(p, "asset_type", "stock"),
+                    "shares": p.shares,
+                    "cost": p.cost,
+                    "status": p.status,
+                    "action": p.action,
+                    "src": src,
+                },
+            )
+            pos_n += 1
+
+        acct_n = 0
+        if account.total_assets is not None or account.available_cash is not None:
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO portfolio_account
+                      (id, total_assets, available_cash, market_value, position_ratio,
+                       holding_pnl, snapshot_date)
+                    VALUES
+                      (1, :total, :cash, :market, :pos, :pnl, :snap)
+                    ON DUPLICATE KEY UPDATE
+                      total_assets = VALUES(total_assets),
+                      available_cash = VALUES(available_cash),
+                      market_value = VALUES(market_value),
+                      position_ratio = VALUES(position_ratio),
+                      holding_pnl = VALUES(holding_pnl),
+                      snapshot_date = VALUES(snapshot_date)
+                    """
+                ),
+                {
+                    "total": account.total_assets,
+                    "cash": account.available_cash,
+                    "market": account.market_value,
+                    "pos": account.position_ratio,
+                    "pnl": account.holding_pnl,
+                    "snap": account.snapshot_date,
+                },
+            )
+            acct_n = 1
+
+    return {"positions": pos_n, "account": acct_n, "rules": 0}
 
 
 def upsert_alert_rules(rules: list[dict], *, source: str, conn) -> int:
@@ -746,6 +1019,7 @@ def enrich_selection_row_names(
     *,
     names: dict[str, str] | None = None,
     engine: Engine | None = None,
+    force: bool = False,
 ) -> list[dict[str, Any]]:
     if not rows:
         return rows
@@ -756,8 +1030,12 @@ def enrich_selection_row_names(
         code = _selection_row_code(row)
         cur = str(row.get("名称") or row.get("name") or "").strip()
         cn = (names or {}).get(code, "")
-        if cn and _name_needs_enrich(cur, code):
+        if not cn:
+            continue
+        if force or _name_needs_enrich(cur, code) or cur != cn:
             row["名称"] = cn
+            if "name" in row:
+                row["name"] = cn
     return rows
 
 
@@ -856,6 +1134,8 @@ def list_selection_trade_dates(
     if engine is None:
         return []
     strat = (strategy or "combined").strip() or "combined"
+    if strat.lower() in {"all", "*"}:
+        return list_all_selection_trade_dates(engine=engine)
     try:
         with engine.connect() as conn:
             rows = conn.execute(
@@ -868,6 +1148,34 @@ def list_selection_trade_dates(
                     """
                 ),
                 {"s": strat},
+            ).fetchall()
+    except Exception:
+        return []
+    out: list[date] = []
+    for row in rows:
+        val = row.trade_date
+        if isinstance(val, date):
+            out.append(val)
+        else:
+            out.append(datetime.fromisoformat(str(val)[:10]).date())
+    return out
+
+
+def list_all_selection_trade_dates(*, engine: Engine | None = None) -> list[date]:
+    """任意 strategy 有数据的交易日（合并视图用）。"""
+    engine = engine or get_engine()
+    if engine is None:
+        return []
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    """
+                    SELECT DISTINCT trade_date
+                    FROM selection_daily_results
+                    ORDER BY trade_date DESC
+                    """
+                )
             ).fetchall()
     except Exception:
         return []
@@ -1193,8 +1501,10 @@ def merge_profile_fields_into_selection_row(
     profile_text = profile.get("profile_text")
     if profile_text:
         merged["公司简介"] = profile_text
-    if profile.get("name") and not merged.get("名称"):
-        merged["名称"] = profile["name"]
+    profile_name = (profile.get("name") or "").strip()
+    if profile_name and _has_cjk(profile_name):
+        merged["名称"] = profile_name
+        merged["name"] = profile_name
     merged["档案来源"] = profile.get("source") or "eastmoney-opencli"
     return merged
 
@@ -1793,4 +2103,278 @@ def load_sop_reviews_for_watch(
             }
         )
     return reviews
+
+
+EMOTION_CYCLE_SLOTS = frozenset({"pre_market", "intraday", "eod"})
+EMOTION_CYCLE_PHASES = frozenset({"冰点", "启动", "发酵", "高潮", "分歧", "退潮"})
+
+
+def _normalize_emotion_slot(slot: str | None) -> str:
+    s = (slot or "pre_market").strip() or "pre_market"
+    if s not in EMOTION_CYCLE_SLOTS:
+        raise ValueError(f"checklist_slot 须为 pre_market|intraday|eod，收到: {s}")
+    return s
+
+
+def save_emotion_cycle_checklist(
+    trade_date: date | str,
+    header: dict[str, Any],
+    *,
+    checklist_slot: str = "pre_market",
+    dragon_items: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """写入情绪周期日检（同日同 slot 覆盖 header + 龙头观察池）。"""
+    engine = get_engine()
+    if engine is None:
+        raise RuntimeError("未配置 MYSQL_URL，无法写入 emotion_cycle_daily")
+
+    td = _parse_selection_trade_date(trade_date)
+    slot = _normalize_emotion_slot(checklist_slot)
+    phase = header.get("phase")
+    if phase is not None and str(phase).strip() and str(phase) not in EMOTION_CYCLE_PHASES:
+        raise ValueError(f"phase 须为 {sorted(EMOTION_CYCLE_PHASES)} 之一")
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO emotion_cycle_daily
+                  (trade_date, checklist_slot, limit_up_count, limit_down_count,
+                   up_down_ratio, max_board_height, limit_up_premium_pct, explode_rate_pct,
+                   total_amount_yi, theme_count, phase, phase_vs_yesterday,
+                   position_cap_pct, allow_new_open, main_theme, main_theme_is_new,
+                   drain_market, action_summary, tomorrow_phase, tomorrow_position_cap_pct,
+                   tomorrow_plan, exclude_list, review_notes, raw_json)
+                VALUES
+                  (:d, :slot, :lu, :ld, :udr, :mbh, :prem, :expl, :amt, :tc, :phase,
+                   :pvy, :pcap, :allow, :theme, :theme_new, :drain, :action, :tphase,
+                   :tpcap, :tplan, :excl, :rev, :raw)
+                ON DUPLICATE KEY UPDATE
+                  limit_up_count = VALUES(limit_up_count),
+                  limit_down_count = VALUES(limit_down_count),
+                  up_down_ratio = VALUES(up_down_ratio),
+                  max_board_height = VALUES(max_board_height),
+                  limit_up_premium_pct = VALUES(limit_up_premium_pct),
+                  explode_rate_pct = VALUES(explode_rate_pct),
+                  total_amount_yi = VALUES(total_amount_yi),
+                  theme_count = VALUES(theme_count),
+                  phase = VALUES(phase),
+                  phase_vs_yesterday = VALUES(phase_vs_yesterday),
+                  position_cap_pct = VALUES(position_cap_pct),
+                  allow_new_open = VALUES(allow_new_open),
+                  main_theme = VALUES(main_theme),
+                  main_theme_is_new = VALUES(main_theme_is_new),
+                  drain_market = VALUES(drain_market),
+                  action_summary = VALUES(action_summary),
+                  tomorrow_phase = VALUES(tomorrow_phase),
+                  tomorrow_position_cap_pct = VALUES(tomorrow_position_cap_pct),
+                  tomorrow_plan = VALUES(tomorrow_plan),
+                  exclude_list = VALUES(exclude_list),
+                  review_notes = VALUES(review_notes),
+                  raw_json = VALUES(raw_json)
+                """
+            ),
+            {
+                "d": td.isoformat(),
+                "slot": slot,
+                "lu": header.get("limit_up_count"),
+                "ld": header.get("limit_down_count"),
+                "udr": header.get("up_down_ratio"),
+                "mbh": header.get("max_board_height"),
+                "prem": header.get("limit_up_premium_pct"),
+                "expl": header.get("explode_rate_pct"),
+                "amt": header.get("total_amount_yi"),
+                "tc": header.get("theme_count"),
+                "phase": phase,
+                "pvy": header.get("phase_vs_yesterday"),
+                "pcap": header.get("position_cap_pct"),
+                "allow": header.get("allow_new_open"),
+                "theme": header.get("main_theme"),
+                "theme_new": header.get("main_theme_is_new"),
+                "drain": header.get("drain_market"),
+                "action": header.get("action_summary"),
+                "tphase": header.get("tomorrow_phase"),
+                "tpcap": header.get("tomorrow_position_cap_pct"),
+                "tplan": header.get("tomorrow_plan"),
+                "excl": header.get("exclude_list"),
+                "rev": header.get("review_notes"),
+                "raw": json.dumps(header.get("raw_json") or {}, ensure_ascii=False),
+            },
+        )
+        conn.execute(
+            text(
+                "DELETE FROM emotion_cycle_dragon_watch "
+                "WHERE trade_date = :d AND checklist_slot = :slot"
+            ),
+            {"d": td.isoformat(), "slot": slot},
+        )
+        n_dragons = 0
+        for rank_no, item in enumerate(dragon_items or [], 1):
+            code = str(item.get("ts_code") or item.get("code") or "").split(".")[0].zfill(6)
+            if not re.fullmatch(r"\d{6}", code):
+                continue
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO emotion_cycle_dragon_watch
+                      (trade_date, checklist_slot, rank_no, ts_code, name, board_height,
+                       main_theme, checklist_pass, notes, raw_json)
+                    VALUES
+                      (:d, :slot, :rank, :code, :name, :bh, :theme, :pass, :notes, :raw)
+                    """
+                ),
+                {
+                    "d": td.isoformat(),
+                    "slot": slot,
+                    "rank": rank_no,
+                    "code": code,
+                    "name": item.get("name") or "",
+                    "bh": item.get("board_height"),
+                    "theme": item.get("main_theme"),
+                    "pass": item.get("checklist_pass"),
+                    "notes": item.get("notes"),
+                    "raw": json.dumps(item.get("raw_json") or {}, ensure_ascii=False),
+                },
+            )
+            n_dragons += 1
+    return {
+        "trade_date": td.isoformat(),
+        "checklist_slot": slot,
+        "dragon_items": n_dragons,
+    }
+
+
+def load_emotion_cycle_checklist(
+    trade_date: date | str | None = None,
+    *,
+    checklist_slot: str | None = None,
+    engine: Engine | None = None,
+) -> dict[str, Any] | None:
+    """读取情绪周期日检；未指定 trade_date 时取最新一条。"""
+    engine = engine or get_engine()
+    if engine is None:
+        return None
+
+    slot_filter = ""
+    params: dict[str, Any] = {}
+    if checklist_slot:
+        slot = _normalize_emotion_slot(checklist_slot)
+        slot_filter = " AND checklist_slot = :slot"
+        params["slot"] = slot
+
+    with engine.connect() as conn:
+        if trade_date:
+            td = _parse_selection_trade_date(trade_date)
+            params["d"] = td.isoformat()
+            header = conn.execute(
+                text(
+                    f"""
+                    SELECT *
+                    FROM emotion_cycle_daily
+                    WHERE trade_date = :d{slot_filter}
+                    ORDER BY checklist_slot
+                    LIMIT 1
+                    """
+                ),
+                params,
+            ).fetchone()
+        else:
+            header = conn.execute(
+                text(
+                    f"""
+                    SELECT *
+                    FROM emotion_cycle_daily
+                    WHERE 1=1{slot_filter}
+                    ORDER BY trade_date DESC, checklist_slot DESC
+                    LIMIT 1
+                    """
+                ),
+                params,
+            ).fetchone()
+        if not header:
+            return None
+        hdr = dict(header._mapping)
+        td_val = hdr["trade_date"]
+        if not isinstance(td_val, date):
+            td_val = datetime.fromisoformat(str(td_val)[:10]).date()
+        slot_val = str(hdr["checklist_slot"])
+        dragons = conn.execute(
+            text(
+                """
+                SELECT rank_no, ts_code, name, board_height, main_theme,
+                       checklist_pass, notes, raw_json
+                FROM emotion_cycle_dragon_watch
+                WHERE trade_date = :d AND checklist_slot = :slot
+                ORDER BY rank_no
+                """
+            ),
+            {"d": td_val.isoformat(), "slot": slot_val},
+        ).fetchall()
+    return {
+        "header": hdr,
+        "dragon_items": [dict(r._mapping) for r in dragons],
+    }
+
+
+def list_emotion_cycle_trade_dates(
+    *,
+    checklist_slot: str | None = None,
+    engine: Engine | None = None,
+) -> list[date]:
+    engine = engine or get_engine()
+    if engine is None:
+        return []
+    sql = "SELECT DISTINCT trade_date FROM emotion_cycle_daily WHERE 1=1"
+    params: dict[str, Any] = {}
+    if checklist_slot:
+        sql += " AND checklist_slot = :slot"
+        params["slot"] = _normalize_emotion_slot(checklist_slot)
+    sql += " ORDER BY trade_date DESC"
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(text(sql), params).fetchall()
+    except Exception:
+        return []
+    out: list[date] = []
+    for row in rows:
+        val = row.trade_date
+        if isinstance(val, date):
+            out.append(val)
+        else:
+            out.append(datetime.fromisoformat(str(val)[:10]).date())
+    return out
+
+
+def latest_emotion_trade_date(
+    *,
+    checklist_slot: str = "eod",
+    engine: Engine | None = None,
+) -> date | None:
+    engine = engine or get_engine()
+    if engine is None:
+        return None
+    try:
+        from stock_ai.emotion_cycle_compute import is_intraday_session
+        from zoneinfo import ZoneInfo
+
+        if is_intraday_session():
+            today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+            with engine.connect() as conn:
+                row = conn.execute(
+                    text(
+                        "SELECT 1 FROM emotion_cycle_daily "
+                        "WHERE trade_date = :d AND checklist_slot = 'intraday' LIMIT 1"
+                    ),
+                    {"d": today.isoformat()},
+                ).fetchone()
+            if row:
+                return today
+    except Exception:
+        pass
+
+    dates = list_emotion_cycle_trade_dates(checklist_slot=checklist_slot, engine=engine)
+    if dates:
+        return dates[0]
+    all_dates = list_emotion_cycle_trade_dates(engine=engine)
+    return all_dates[0] if all_dates else None
 

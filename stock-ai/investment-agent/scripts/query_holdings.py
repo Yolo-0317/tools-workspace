@@ -38,11 +38,20 @@ def print_holdings_quotes(positions: list[DbPosition] | None = None) -> None:
         print("请先运行: uv run python -m scripts.tools.sync_portfolio_from_card")
         return
 
+    codes = [p.code for p in positions]
+    quotes: dict[str, EastmoneyQuote] = {}
     try:
-        quotes = fetch_quotes([p.code for p in positions])
+        quotes = fetch_quotes(codes)
     except Exception as exc:
         print(f"行情查询失败: {exc}")
         return
+
+    missing = [c for c in codes if c not in quotes]
+    if missing:
+        try:
+            quotes.update(fetch_quotes(missing))
+        except Exception:
+            pass
 
     for position in positions:
         print(_format_line(position, quotes.get(position.code)))

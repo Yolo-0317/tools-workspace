@@ -102,7 +102,7 @@ OUTPUT_DIR = Path(__file__).resolve().parents[1] / "output"
 
 def get_db_engine():
     """获取数据库连接"""
-    mysql_url = os.getenv("MYSQL_URL")
+    mysql_url = os.getenv("MYSQL_URL", "").replace("host.docker.internal", "127.0.0.1")
     if not mysql_url:
         raise ValueError("❌ 环境变量 MYSQL_URL 未设置")
     return create_engine(mysql_url, pool_pre_ping=True, pool_recycle=3600)
@@ -560,7 +560,22 @@ def main():
             print("❌ 没有符合条件的股票")
             return
         
-        # 6. 保存结果
+        # 6. 写入 MySQL（strategy=ma5）+ CSV
+        try:
+            from scripts.tools.selection_strategy_bridge import (
+                ma5_rows_for_db,
+                persist_strategy_rows,
+            )
+
+            persist_strategy_rows(
+                trade_date,
+                ma5_rows_for_db(df_selected),
+                "ma5",
+                csv_stem="stock_selection_ma5",
+            )
+        except Exception as exc:  # noqa: BLE001
+            print(f"⚠️ ma5 MySQL 入库失败：{exc}")
+
         filepath = save_results(df_selected, trade_date)
         
         # 7. 打印摘要

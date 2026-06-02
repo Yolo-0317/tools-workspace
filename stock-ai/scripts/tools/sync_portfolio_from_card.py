@@ -60,10 +60,12 @@ def main() -> int:
     try:
         from scripts.tools.portfolio_db import save_portfolio_daily_snapshot
 
-        snap = save_portfolio_daily_snapshot(snapshot_slot="sync")
-        print(
-            f"📸 持仓快照 sync/{snap['snapshot_date']} positions={snap['positions']}"
-        )
+        for slot in ("sync", "eod"):
+            snap = save_portfolio_daily_snapshot(snapshot_slot=slot)
+            print(
+                f"📸 持仓快照 {slot}/{snap['snapshot_date']} "
+                f"positions={snap['positions']}"
+            )
     except Exception as exc:  # noqa: BLE001
         from scripts.tools.dashboard_data import log_snapshot_alert
 

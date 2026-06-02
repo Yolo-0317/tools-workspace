@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Project Memory (tools-workspace)
 
-本文件由 Hermes 协议维护：跨会话可复用的经验、陷阱与命令。子项目专项记忆见 `memory-python.mdc`（stock-ai）、`memory-infra.mdc`（sidestore-infra）。
+本文件由 Hermes 协议维护：跨会话可复用的经验、陷阱与命令。子项目专项记忆见 `memory-python.mdc`（stock-ai）、`memory-infra.mdc`（sidestore-infra）、`memory-emquant.mdc`（东财掘金仿真）。
 
 ## 工作空间速览
 
@@ -15,6 +15,8 @@ alwaysApply: false
 | stock-ai | `stock-ai/` | A 股数据、选股、MCP、investment-agent |
 | sidestore-infra | `sidestore-infra/` | SideStore、Caddy、DDNS、Docker |
 | substore-clash | `substore-clash/` | Sub-Store + Mihomo 订阅合并（西部世界 + 一元机场） |
+| home-hub | `home-hub/` | 投资/运维 H5 看板（Vue3 + FastAPI，无内置聊天） |
+| wechat-cursor-acp | `wechat-cursor-acp/` | 微信 ↔ Cursor CLI（`agent acp`，与历史 home-hub 聊天同栈） |
 
 ---
 
@@ -68,8 +70,46 @@ alwaysApply: false
 - **Pitfall/Error**: 文档与 `~/.codex/skills/stock-strategy-selector` 仍指向 `ingest_eastmoney_*`、`ai_review_top5.py` 等已删入口；`analyze_holdings_v2 --csv` 与 CSV 兜底易与 `portfolio_positions` 双轨混淆。
 - **Solution/Rule**: **日线**仅 `scripts/sync/sync_tushare_daily_to_mysql.py` + `ensure_daily_bars`；**实时/SOP/战报**仅 `scripts/tools/fetch_eastmoney_quotes.py`（OpenCLI）；**选股结果** MySQL `selection_daily_results`；**持仓** MySQL `portfolio_positions`；**看板历史** `portfolio_*_daily` + `sop_review_*`（`dashboard_data.py`）。细节见 `memory-python.mdc` §2026-05-31。
 
-### 2026-05-31 home-hub 看板 + 聊天（agent acp）
+### 2026-05-31 home-hub 看板 + 聊天（agent acp）— 已废弃
+
+> **Superseded** by §2026-06-01：home-hub 已删除 `/api/chat` 与 `agent_acp.py`；勿按本节恢复 Web 聊天。
 
 - **Context**: `tools-workspace/home-hub` — Vue3 看板 + Cursor 聊天；公网 `hub.yoloworld.site`（Caddy Basic Auth）。Web 聊天需对齐微信 wechat-acp 能力。
 - **Pitfall/Error**: 初版用 `cursor-sdk` 需 API Key；后改 `agent -p` 仍弱于微信（缺 MCP 批准、工具事件、长会话）。浏览器页面测试勿用 Playwright 替代 OpenCLI。
-- **Solution/Rule**: 聊天走 **Cursor CLI** `agent --model <HUB_AGENT_MODEL> acp`（ACP JSON-RPC over stdio，同 wechat-acp）；**勿再用** `agent -p --stream-json`。实现 `home-hub/backend/services/agent_acp.py`（长驻子进程、`session/new|load` + `session/prompt`、自动 `allow-once`）；单轮超时 `HUB_ACP_PROMPT_TIMEOUT`（默认 600s）。健康检查 `GET /api/chat/health` → `backend: agent_acp`。Web 与微信同时跑会争 Agent 额度。见 `home-hub/TOOLS.md`。
+- **Solution/Rule**: （历史）聊天曾走 `agent acp` + `home-hub/backend/services/agent_acp.py`；**现行**见下节 `wechat-cursor-acp/`。
+
+### 2026-06-02 东财掘金仿真 emquant-sim（Win11）
+
+- **Context**: 东财量化在 Parallels Win11 跑仿真策略 `stock_ai_sim_bridge`；纪律与 `stock-ai/investment-agent/持仓执行卡.md` 对齐，运行与 stock-ai 主链路隔离。
+- **Pitfall/Error**: 终端重启策略不自启；`on_bar` 勿 `bar.get()`；仿真空仓会对执行卡「全标的」减仓规则打日志；Mac 不能 `import gm`；控制台日志用 API `127.0.0.1:7002/v3/strategy-logs/<uuid>` 或 UI，无独立 console.log 文件。
+- **Solution/Rule**: 运维入口 `emquant-sim/docs/PLAYBOOK.md`；改卡后 `export_emquant_rules` + `deploy_emquant_strategy.sh` + 终端停止→运行；`holdings_rules` 仅仿真持仓≥100 股；P-买股数在 `export_emquant_rules.py` 的 `BUY_TRIGGERS`（皖能默认 200）。专项记忆 `memory-emquant.mdc`；**龙头战法**见 §2026-06-02 游资轨龙头战法。
+
+### 2026-06-02 游资轨龙头战法（全链路）
+
+- **Context**: 与主账户 **并行** 的游资/情绪/龙头轨：Mac 从 `stock_daily` 算情绪+龙头池 → MySQL → home-hub 看板 + Win11 掘金仿真验证；纪律文档 `stock-ai/investment-agent/情绪周期日检卡.md`。
+- **Pitfall/Error**: ① home-hub `/emotion` 曾缺 `latest_emotion_trade_date()` 导致 API ImportError；测试日 2026-06-02 脏数据（600000 示例龙）导致看板选错日。② scheduler 容器内 `sync_emotion_cycle` 若把 `host.docker.internal` 换成 `127.0.0.1` 会连不上 MySQL；`pipefail` 在 `/bin/sh` 下报错。③ EOD 若在 17:00 Tushare 前跑，只能写入上一交易日。④ 掘金终端固定跑 `main.py`，不能只在 UI 改 `dragon_main.py`。
+- **Solution/Rule**:
+  - **层级**（冲突自上而下）：`持仓执行卡.md` > `trading-strategies.md` > 情绪日检卡（主轨收息/不追连板不变；游资轨仅试探预算≤40%）。
+  - **MySQL**：`emotion_cycle_daily` + `emotion_cycle_dragon_watch`（迁移 `stock-mysql/sql/010_emotion_cycle.sql`）；读写 `portfolio_db.load/save_emotion_cycle_checklist`、`latest_emotion_trade_date`。
+  - **计算**：`stock_ai/emotion_cycle_compute.py`（涨跌停/连板/炸板率/阶段/Top3 龙，`checklist_pass`≥5 入池）；CLI `scripts/tools/emotion_cycle_checklist.py`；自动 `scripts/tools/sync_emotion_cycle_daily.py` + `./sync_emotion_cycle.sh`。
+  - **调度**（`stock-ai/docker/scheduler/crontab`，容器 `stock-ai-scheduler`）：工作日 **09:26** `pre_market`、**17:10** `eod`（在 17:00 Tushare 之后）；改 crontab 须 `docker compose up -d --build`。
+  - **看板**：home-hub `/emotion`；API `stock_bridge.load_emotion_cycle`；默认日期取最新 **eod** 交易日。
+  - **交叉规则**：综合选股 Top5 ∩ 龙头池 → 提高关注；仅龙头池有 → 最多 1 手高风险试探。
+  - **掘金仿真**：`emquant-sim` 读 `dragons.json`（Mac `export_emotion_dragons`）；`main.py` 路由 + `strategy_entry.json`（`dragon`|`combined`）；策略 ID `5aa6af16-5da8-11f1-996b-001c42c700fc`；60s `on_bar` 盯订阅龙头，阶段退潮/冰点 **只卖不买**。详见 `emquant-sim/docs/emquant-dragon-strategy.md`、`memory-emquant.mdc` §龙头战法。
+
+### 2026-06-02 双执行卡（实盘 vs 仿真龙头）
+
+- **Context**: 维护两套执行卡：① **持仓执行卡** — jywg 实盘、stock-ai 主轨（监控/看板/Agent）；② **龙头执行卡** — 游资轨，**当前仅 emquant 仿真**。
+- **Pitfall/Error**: 混用两卡会导致 Agent 用龙头纪律指导实盘，或仿真误绑 `alert_rules`；`情绪周期日检卡.md` 与可执行卡职责重叠。
+- **Solution/Rule**:
+  - **持仓执行卡**：`investment-agent/持仓执行卡.md` → `alert_rules` / 微信 / 可选 `export_emquant_rules`（combined）。
+  - **龙头执行卡**：`investment-agent/龙头执行卡.md` → `emotion_cycle_*` → `export_emotion_dragons` → `dragon_main`；**不进** `alert_rules`，**不**绑 jywg。
+  - **方法论**：`情绪周期日检卡.md`；冲突 **实盘以持仓执行卡为准**。
+  - **stock-ai 后续**：大盘/震荡识别写入 `emotion_cycle_daily`，home-hub 可并列展示两卡。
+  - **看板（2026-06-02）**：`/emotion` 合并 **龙头执行卡** 区块；API 增 `dragon_execution_card` + `data_source`；导航改「龙头」。持仓执行卡 → `/portfolio` 读 `portfolio_*` / `alert_rules`。
+
+### 2026-06-01 home-hub 移除内置聊天，Agent 仅走微信
+
+- **Context**: 整理提交 `154d838`：`home-hub` 专注投资/运维看板（持仓、选股、任务、服务），不再在 H5 内嵌 Cursor Agent 聊天。
+- **Pitfall/Error**: 旧记忆与 `home-hub/TOOLS.md` 仍指向 `HUB_AGENT_*`、`/api/chat`、`agent_acp.py`；Agent 可能误加聊天路由或与微信双开争用 CLI 额度。
+- **Solution/Rule**: **home-hub** 无聊天：已删 `backend/routers/chat.py`、`backend/services/agent_*.py`、前端 `ChatView`；`.env.example` 无 `HUB_AGENT_MODEL` / `HUB_ACP_PROMPT_TIMEOUT`。**Cursor Agent 对话**仅用 `wechat-cursor-acp/`（`agent acp`，同历史 wechat-acp 栈）。公网看板仍为 `hub.yoloworld.site`（鉴权 `HUB_REQUIRE_AUTH`）。勿在 home-hub 恢复 Web 聊天，除非用户明确要求并单独设计。

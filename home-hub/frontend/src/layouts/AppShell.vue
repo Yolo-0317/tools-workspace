@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+import { computed } from 'vue'
+import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { hubAuth, logout } from '../auth/hubAuth'
 
 interface NavLink {
@@ -9,51 +9,25 @@ interface NavLink {
 }
 
 const router = useRouter()
-const route = useRoute()
 
-const investOpen = ref(false)
-
-const investLinks: NavLink[] = [
+const navLinks: NavLink[] = [
   { to: '/', label: '总览' },
   { to: '/portfolio', label: '持仓' },
   { to: '/selection', label: '选股' },
   { to: '/monitor', label: '监控' },
-]
-
-const systemLinks: NavLink[] = [
+  { to: '/news', label: '财经' },
+  { to: '/emotion', label: '龙头' },
   { to: '/jobs', label: '任务' },
   { to: '/services', label: '服务' },
 ]
 
-const investRouteNames = new Set(['home', 'portfolio', 'selection', 'monitor'])
-
 const shareOnly = computed(() => hubAuth.value.shareOnly)
 const username = computed(() => hubAuth.value.username)
-
-const investActive = computed(() => {
-  if (shareOnly.value) return route.path === '/selection'
-  return investRouteNames.has(String(route.name ?? ''))
+const authenticated = computed(() => hubAuth.value.authenticated)
+const brand = computed(() => {
+  if (!authenticated.value) return '财经快讯'
+  return shareOnly.value ? '选股分享' : 'Home Hub'
 })
-
-const brand = computed(() => (shareOnly.value ? '选股分享' : 'Home Hub'))
-
-function closeSheets() {
-  investOpen.value = false
-}
-
-function toggleInvest() {
-  investOpen.value = !investOpen.value
-}
-
-function onDocClick(event: MouseEvent) {
-  const target = event.target as HTMLElement | null
-  if (!target?.closest('.nav-group')) {
-    investOpen.value = false
-  }
-}
-
-onMounted(() => document.addEventListener('click', onDocClick))
-onUnmounted(() => document.removeEventListener('click', onDocClick))
 
 async function onLogout() {
   await logout()
@@ -68,37 +42,14 @@ async function onLogout() {
         <div class="brand">{{ brand }}</div>
         <div class="user-bar">
           <span v-if="username" class="user">{{ username }}</span>
-          <button type="button" class="logout" @click="onLogout">退出</button>
+          <RouterLink v-if="!authenticated" to="/login" class="login-link">登录</RouterLink>
+          <button v-else type="button" class="logout" @click="onLogout">退出</button>
         </div>
       </div>
 
-      <nav v-if="!shareOnly" class="nav nav-top" aria-label="主导航">
-        <div class="nav-group" :class="{ open: investOpen, active: investActive }">
-          <button
-            type="button"
-            class="nav-link nav-group-trigger"
-            :aria-expanded="investOpen"
-            @click.stop="toggleInvest"
-          >
-            投资
-            <span class="chev" aria-hidden="true">▾</span>
-          </button>
-          <div class="nav-dropdown" role="menu">
-            <RouterLink
-              v-for="link in investLinks"
-              :key="link.to"
-              :to="link.to"
-              class="nav-link nav-sub"
-              exact-active-class="active"
-              role="menuitem"
-              @click="closeSheets"
-            >
-              {{ link.label }}
-            </RouterLink>
-          </div>
-        </div>
+      <nav v-if="authenticated && !shareOnly" class="nav nav-top" aria-label="主导航">
         <RouterLink
-          v-for="link in systemLinks"
+          v-for="link in navLinks"
           :key="link.to"
           :to="link.to"
           class="nav-link"
@@ -109,7 +60,7 @@ async function onLogout() {
       </nav>
     </header>
 
-    <main class="content">
+    <main class="content hub-scrollbar">
       <RouterView />
     </main>
   </div>
@@ -130,10 +81,8 @@ async function onLogout() {
   flex-shrink: 0;
   z-index: 200;
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 16px 24px;
+  flex-direction: column;
+  gap: 10px;
   padding: 12px 20px;
   border-bottom: 1px solid #243041;
   background: #0b1016;
@@ -155,67 +104,10 @@ async function onLogout() {
 
 .nav {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
   align-items: center;
-  flex: 1;
-  min-width: 0;
-}
-
-.nav-group {
-  position: relative;
-}
-
-.nav-group-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  border: none;
-  font: inherit;
-}
-
-.nav-group-trigger .chev {
-  font-size: 10px;
-  opacity: 0.7;
-  transition: transform 0.15s ease;
-}
-
-.nav-group.open .nav-group-trigger .chev,
-.nav-group:hover .nav-group-trigger .chev {
-  transform: rotate(180deg);
-}
-
-.nav-dropdown {
-  display: none;
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  min-width: 132px;
-  padding: 6px;
-  border-radius: 12px;
-  border: 1px solid #243041;
-  background: #121820;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-  z-index: 220;
-}
-
-.nav-group.open .nav-dropdown,
-.nav-group:hover .nav-dropdown {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.nav-sub {
-  display: block;
   width: 100%;
-  text-align: left;
-}
-
-.nav-group.active > .nav-group-trigger {
-  color: #fff;
-  background: #2563eb;
 }
 
 .user-bar {
@@ -223,7 +115,6 @@ async function onLogout() {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
-  margin-left: auto;
 }
 
 .user {
@@ -242,6 +133,19 @@ async function onLogout() {
 }
 
 .logout:hover {
+  background: #152033;
+}
+
+.login-link {
+  color: #dbe7ff;
+  text-decoration: none;
+  border: 1px solid #314158;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.login-link:hover {
   background: #152033;
 }
 
@@ -267,6 +171,8 @@ async function onLogout() {
 .content {
   flex: 1;
   min-height: 0;
+  min-width: 0;
+  overflow-x: clip;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 20px;

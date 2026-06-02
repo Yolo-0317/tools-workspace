@@ -197,6 +197,17 @@ def review_top5_sop_concurrent(
 
     top = pick_selection_top(df.head(top_n * 4), top_n, holdings_codes=holdings_codes)
     if top.empty:
+        print(
+            "⚠️ Top5 无可执行动作候选，回退为按总分取前 N（含继续观察）",
+            file=sys.stderr,
+        )
+        top = pick_selection_top(
+            df.head(top_n * 4),
+            top_n,
+            holdings_codes=holdings_codes,
+            eligible_actions=None,
+        )
+    if top.empty:
         top = df.head(top_n).copy()
     codes = [str(c).split(".")[0].zfill(6) for c in top["代码"].astype(str)]
     trade_date_str = trade_date_to_str(td)

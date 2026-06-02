@@ -1,0 +1,34 @@
+---
+description: emquant-sim 东财掘金仿真 — Hermes 专项记忆
+globs: emquant-sim/**/*
+alwaysApply: false
+---
+
+# Memory: emquant-sim（东财掘金 Win11）
+
+处理 `emquant-sim/` 或用户问东财量化/掘金仿真时，与本文件、`project-memory.mdc` 一并检索。完整运维见 `emquant-sim/docs/PLAYBOOK.md`。
+
+## 记忆条目
+
+### 2026-06-02 东财掘金仿真策略落地与排障
+
+- **Context**: `emquant-sim` 在 Parallels Win11 跑 `stock_ai_sim_bridge`；规则由 `stock-ai/investment-agent/持仓执行卡.md` 导出，与 stock-ai 调度/MySQL/微信隔离。
+- **Pitfall/Error**: ① 终端重启后策略不自启，UI 仍可能显示「运行中」但 `main.log` 无 `PUT strategy-commands`。② 掘金 `on_bar` 的 bar 勿用 `bar.get()`。③ `holdings_rules_gm.position_ratio_pct` 曾误用未定义名 `cash`。④ 执行卡导出含全持仓标的减仓规则，仿真空仓会对无仓标的刷 `RULE`（如广州发展）。⑤ 策略日志不在磁盘 tail 文件，需 API `GET http://127.0.0.1:7002/v3/strategy-logs/<uuid>`（Bearer=`.env.emquant` 的 `EMQUANT_TOKEN`）或终端 Python 控制台。
+- **Solution/Rule**:
+  - **每日**：Win11 仿真 → 关联户 → **停止→运行**；改卡后 `cd emquant-sim && PYTHONPATH=. python3 -m scripts.tools.export_emquant_rules && ./scripts/win/deploy_emquant_strategy.sh <uuid>`。
+  - **`holdings_rules`**：仅 `get_position()` 该标的 **≥100 股** 才订阅+判规则；**`buy_triggers`** 可空仓（股数在 `export_emquant_rules.py` 的 `BUY_TRIGGERS`，如皖能 `shares:200`）。
+  - **Mac**：`probe_emquant` 只测配置/TCP；`gm` 仅 Win11。Parallels IP 写入 `EMQUANT_SERV_ADDR`（如 `10.211.55.8:7001`）。
+  - **策略路径**：`C:\Users\yolo\.emgm3\projects\<EMQUANT_STRATEGY_ID>\`；Python `C:\Program Files\Python312-x64\python.exe`。
+  - 详见 `emquant-sim/docs/PLAYBOOK.md`、`docs/emquant-strategy-not-running.md`。
+
+### 2026-06-02 龙头战法仿真（dragon 轨）
+
+- **Context**: 游资轨在东财掘金 **仿真户**验证：`dragons.json` ← MySQL 龙头池；与 `main_combined.py`（综合选股+执行卡）并存；终端仍跑 **`main.py`**，由 `strategy_entry.json` 切换（当前默认 `dragon`）。
+- **Pitfall/Error**: ① 终端固定入口 `main.py`，不能只改 UI 为 `dragon_main.py`。② 仿真 **不等于** 真实打板排队，60s bar 近似 gate。③ 退潮/冰点时 `[dragon] open=False` 为正常，非 bug。④ Mac `export`/`deploy` 不盯盘，盯盘是 Win11 策略进程 `on_bar`+`schedule`。
+- **Solution/Rule**:
+  - **策略 ID**：`.env.emquant` → `EMQUANT_STRATEGY_ID=15b31eed-5e49-11f1-8b08-001c42c700fc`（执行卡+综合选股）；旧 `5aa6af16-...` 可停用。目录 `C:\Users\yolo\.emgm3\projects\<uuid>\`。
+  - **入口**：`strategy_entry.json` → `"entry":"dragon"|"combined"`；`main.py` import `dragon_main` 或 `main_combined`。
+  - **每日 Mac**：`PYTHONPATH=. python3 -m scripts.tools.export_emotion_dragons` → `./scripts/win/deploy_emquant_strategy.sh <uuid>`；Win11 **停止→运行**（09:31 前完成以便重载池）。
+  - **买**：阶段∈启动/发酵/高潮、`allow_new_open`、溢价≥1%、炸板<40%、`-3%<daily_pct≤5%`、`checklist_pass≥5`；单龙 1 手、最多 3 龙、总仓≤`position_cap_pct`。
+  - **卖**：阶段冰点/退潮清仓；浮亏≤-5%；持仓≥5 日时间止损。日志：`[dragon] reload|BUY|EXIT|SESSION_EXIT`。
+  - **切回主轨**：`strategy_entry.json` 改 `"combined"` 再 deploy。文档 `docs/emquant-dragon-strategy.md`。

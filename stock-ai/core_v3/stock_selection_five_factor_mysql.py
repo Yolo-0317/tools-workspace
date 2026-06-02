@@ -63,7 +63,7 @@ class FactorScore:
 
 
 def get_db_engine():
-    mysql_url = os.getenv("MYSQL_URL")
+    mysql_url = os.getenv("MYSQL_URL", "").replace("host.docker.internal", "127.0.0.1")
     if not mysql_url:
         raise RuntimeError("MYSQL_URL 未设置，无法从 MySQL 读取数据")
     return create_engine(mysql_url, pool_pre_ping=True, pool_recycle=3600)
@@ -606,13 +606,17 @@ def main(target_date: Optional[str] = None, min_score: float = DEFAULT_MIN_SCORE
     if str(repo_root) not in sys.path:
         sys.path.insert(0, str(repo_root))
     try:
-        from scripts.tools.portfolio_db import save_selection_daily_results
-
-        rows = result.to_dict(orient="records")
-        db_n = save_selection_daily_results(
-            trade_date, rows, strategy="five_factor"
+        from scripts.tools.selection_strategy_bridge import (
+            five_factor_rows_for_db,
+            persist_strategy_rows,
         )
-        print(f"💾 MySQL selection_daily_results (five_factor): {db_n} 条")
+
+        persist_strategy_rows(
+            trade_date,
+            five_factor_rows_for_db(result),
+            "five_factor",
+            csv_stem="stock_selection_five_factor",
+        )
     except Exception as exc:  # noqa: BLE001
         print(f"⚠️ MySQL 入库失败: {exc}")
 

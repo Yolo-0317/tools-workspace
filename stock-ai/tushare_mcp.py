@@ -259,6 +259,9 @@ def get_stock_daily_data(
 def analyze_and_suggest(stock_code: str):
     """
     分析个股涨跌趋势并提供投资建议（基于 MA5/MA20 均线策略）。
+
+    数据说明：使用 Tushare 已入库的**最近交易日收盘**（非盘中实时价）。
+    盘中现价请用 `intraday_trade_signal` 或 OpenCLI `fetch_eastmoney_quotes.py`。
     """
     if pro is None:
         return "错误：未配置 TUSHARE_TOKEN"
@@ -309,16 +312,22 @@ def analyze_and_suggest(stock_code: str):
             )
         )
 
+        trade_d = str(latest.get("trade_date", ""))
+        trade_d_fmt = (
+            f"{trade_d[:4]}-{trade_d[4:6]}-{trade_d[6:8]}"
+            if len(trade_d) == 8
+            else trade_d or "未知"
+        )
         suggestion = f"""
         ### 股票分析报告: {stock_code}
-        - **最新收盘价**: {latest['close']} (涨跌幅: {latest['pct_chg']}%)
+        - **最近交易日收盘**（{trade_d_fmt}，Tushare 日线，**非盘中实时**）: {latest['close']} (涨跌幅: {latest['pct_chg']}%)
         - **当前趋势**: {price_trend}
         - **均线状态**: {ma_signal}
         - **技术指标**: MA5={latest['ma5']:.2f}, MA20={latest['ma20']:.2f}
 
         **投资建议**:
         {"建议关注买入机会，趋势走强。" if "金叉" in ma_signal or "多头" in ma_signal else "建议观望或减仓，趋势偏弱。"}
-        (注：本分析仅供参考，股市有风险，入市需谨慎。)
+        (注：盘中现价请用 intraday_trade_signal 或 fetch_eastmoney_quotes；本分析仅供参考，股市有风险，入市需谨慎。)
         """
         return suggestion
     except Exception as e:
@@ -452,10 +461,16 @@ def realtime_trade_signal(code: str, trade_date: Optional[str] = None):
         ma5_str = f"{ma5:.4f}" if pd.notna(ma5) else "未知"
         ma20_str = f"{ma20:.4f}" if pd.notna(ma20) else "未知"
 
+        data_note = (
+            "东财日 K 最新一根（盘中会随行情更新）"
+            if trade_date is None
+            else f"东财日 K 指定交易日 {trade_date}"
+        )
         suggestion = f"""
             ### 实时买卖信号报告: {code}
+            - **数据**: {data_note}
             - **日期**: {target_date}
-            - **今开/当前/最高/最低**: {latest_open} / {latest_close} / {latest_high} / {latest_low}
+            - **今开/当前价/最高/最低**: {latest_open} / {latest_close} / {latest_high} / {latest_low}
             - **涨跌幅(相对昨收)**: {pct_str}
             - **技术指标**: MA5={ma5_str}, MA20={ma20_str}
             - **信号**: {signal}

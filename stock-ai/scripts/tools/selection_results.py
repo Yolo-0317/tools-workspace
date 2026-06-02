@@ -3,9 +3,11 @@
 
 from __future__ import annotations
 
+import os
 import re
 from datetime import date, datetime
 from pathlib import Path
+from typing import Sequence
 
 import pandas as pd
 
@@ -59,14 +61,121 @@ def sort_selection_df(df: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values(by=sort_cols, ascending=False)
 
 
+TOP5_ELIGIBLE_ACTIONS = frozenset(
+    {"强势关注", "观察买入", "小仓埋伏", "持有"}
+)
+
+# 公众号 Top5：默认合并多策略候选后按总分重选（见 load_wechat_top5_picks）
+DEFAULT_WECHAT_TOP5_STRATEGIES = ("combined", "five_factor", "ma5", "watch")
+
+_STRATEGY_DISPLAY = {
+    "combined": "综合",
+    "five_factor": "五因子",
+    "ma5": "MA5",
+    "watch": "观察池",
+}
+
+
+def wechat_top5_strategies() -> tuple[str, ...]:
+    raw = os.getenv(
+        "WECHAT_MP_TOP5_STRATEGIES",
+        ",".join(DEFAULT_WECHAT_TOP5_STRATEGIES),
+    )
+    out = tuple(s.strip() for s in raw.split(",") if s.strip())
+    return out or DEFAULT_WECHAT_TOP5_STRATEGIES
+
+
+def _strategy_label(strategy: str) -> str:
+    return _STRATEGY_DISPLAY.get(strategy, strategy)
+
+
+def merge_selection_strategies_df(
+    *,
+    trade_date: date | str | None = None,
+    strategies: Sequence[str] | None = None,
+) -> tuple[date, pd.DataFrame, str]:
+    """
+    合并多策略选股结果：同代码保留总分最高行，并标注策略来源。
+    返回 (trade_date, 已按总分排序的 DataFrame, 来源说明)。
+    """
+    strategies = tuple(strategies or wechat_top5_strategies())
+    explicit = parse_trade_date(trade_date) if trade_date else None
+    anchor = explicit or latest_selection_trade_date(strategy="combined")
+    if anchor is None:
+        for strat in strategies:
+            anchor = latest_selection_trade_date(strategy=strat)
+            if anchor:
+                break
+    if anchor is None:
+        raise FileNotFoundError("未找到任何策略的选股交易日")
+
+    resolved_td: date = anchor
+    frames: list[pd.DataFrame] = []
+    loaded: list[str] = []
+
+    for strat in strategies:
+        try:
+            td, rows = load_selection_daily_results(anchor, strategy=strat)
+            if not rows:
+                continue
+            df = pd.DataFrame(rows)
+            df["策略来源"] = _strategy_label(strat)
+            frames.append(df)
+            loaded.append(f"{strat}({len(rows)})")
+        except Exception:
+            continue
+
+    if not frames or resolved_td is None:
+        raise FileNotFoundError(
+            f"未找到可合并的选股结果（strategies={strategies}，date={explicit or 'latest'}）"
+        )
+
+    merged = pd.concat(frames, ignore_index=True)
+    if "代码" not in merged.columns:
+        raise ValueError("选股结果缺少「代码」列")
+
+    merged["_code6"] = merged["代码"].astype(str).str.split(".").str[0].str.zfill(6)
+    if "总分" in merged.columns:
+        merged["_score"] = pd.to_numeric(merged["总分"], errors="coerce").fillna(0)
+    else:
+        merged["_score"] = 0.0
+
+    # 同代码保留最高分；策略来源合并展示
+    merged = merged.sort_values(by=["_score"], ascending=False)
+    best_rows: list[pd.Series] = []
+    sources_by_code: dict[str, list[str]] = {}
+    for _, row in merged.iterrows():
+        code = row["_code6"]
+        src = str(row.get("策略来源", ""))
+        sources_by_code.setdefault(code, [])
+        if src and src not in sources_by_code[code]:
+            sources_by_code[code].append(src)
+
+    seen: set[str] = set()
+    for _, row in merged.iterrows():
+        code = row["_code6"]
+        if code in seen:
+            continue
+        seen.add(code)
+        out = row.copy()
+        out["策略来源"] = "+".join(sources_by_code.get(code, [src]))
+        best_rows.append(out)
+
+    out_df = pd.DataFrame(best_rows).drop(columns=["_code6", "_score"], errors="ignore")
+    out_df = sort_selection_df(out_df)
+    source = f"merge[{','.join(loaded)}]@{resolved_td.isoformat()}"
+    return resolved_td, out_df, source
+
+
 def pick_selection_top(
     df: pd.DataFrame,
     top_n: int = 5,
     *,
     holdings_codes: set[str] | None = None,
     max_per_industry: int = 2,
+    eligible_actions: frozenset[str] | None = TOP5_ELIGIBLE_ACTIONS,
 ) -> pd.DataFrame:
-    """Top N：剔除持仓 + 同行业上限（执行卡 P0）。"""
+    """Top N：剔除持仓 + 同行业上限（执行卡 P0）；默认仅可执行买入类动作。"""
     if df.empty or top_n <= 0:
         return df.iloc[0:0].copy()
 
@@ -79,6 +188,9 @@ def pick_selection_top(
             break
         code = str(row.get("代码", "")).split(".")[0].zfill(6)
         if code in holdings_codes:
+            continue
+        action = str(row.get("建议动作", "")).strip()
+        if eligible_actions is not None and action and action not in eligible_actions:
             continue
         raw_industry = row.get("所属行业")
         if raw_industry is None or (isinstance(raw_industry, float) and pd.isna(raw_industry)):
@@ -158,3 +270,26 @@ def resolve_selection_df(
         )
     df = pd.read_csv(path, encoding="utf-8-sig")
     return parse_trade_date_from_csv(path), sort_selection_df(df), f"csv:{path.name}"
+
+
+def pick_wechat_top5(
+    df: pd.DataFrame,
+    *,
+    top_n: int = 5,
+    score_only: bool | None = None,
+) -> pd.DataFrame:
+    """公众号 Top5：按总分重选（默认不筛持仓；可按环境变量放宽动作过滤）。"""
+    if score_only is None:
+        score_only = os.getenv("WECHAT_MP_TOP5_SCORE_ONLY", "1").strip().lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        )
+    eligible = None if score_only else TOP5_ELIGIBLE_ACTIONS
+    return pick_selection_top(
+        sort_selection_df(df),
+        top_n,
+        holdings_codes=set(),
+        eligible_actions=eligible,
+    )

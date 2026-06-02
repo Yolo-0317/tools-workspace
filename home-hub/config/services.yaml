@@ -96,13 +96,26 @@ categories:
           port: 3001
 
       - id: clash-gen
-        name: Clash 订阅生成
+        name: Clash 订阅生成（完整版）
+        description: Mihomo / Stash / ClashMi；含 Loyalsoldier 在线规则集
         local_url: http://127.0.0.1:8787/clash.yaml
         public_url: https://sub.yoloworld.site:8883/clash.yaml
         docker_container: substore-clash-gen
+        compose_dir: ~/dev/yolo/tools-workspace/substore-clash
         health:
           type: http
           url: http://127.0.0.1:8787/clash.yaml
+
+      - id: clash-verge
+        name: Clash Verge 轻量订阅
+        description: 无 rule-providers，避免 Verge 首次导入长时间转圈；与 clash-gen 同容器
+        local_url: http://127.0.0.1:8787/clash-verge.yaml
+        public_url: https://sub.yoloworld.site:8883/clash-verge.yaml
+        docker_container: substore-clash-gen
+        compose_dir: ~/dev/yolo/tools-workspace/substore-clash
+        health:
+          type: http
+          url: http://127.0.0.1:8787/clash-verge.yaml
 
       - id: anisette
         name: Anisette (SideStore)

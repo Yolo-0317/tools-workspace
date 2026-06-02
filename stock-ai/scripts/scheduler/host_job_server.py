@@ -19,18 +19,15 @@ LOG_DIR = ROOT / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def _briefing_cmd(slot: str) -> list[str]:
-    return ["/bin/bash", str(ROOT / "push_daily_briefing_wechat.sh"), slot]
-
-
 def _job_command(name: str, body: dict) -> list[str] | None:
     if name == "selection":
         return ["/bin/bash", str(ROOT / "push_selection_wechat.sh")]
     if name == "monitor":
         return ["/bin/bash", str(ROOT / "push_holdings_monitor.sh"), "--push"]
-    if name == "briefing":
-        slot = str(body.get("slot") or body.get("briefing_slot") or "09:00")
-        return _briefing_cmd(slot)
+    if name == "news-sync":
+        return ["/bin/bash", str(ROOT / "sync_macro_news.sh")]
+    if name == "emotion-intraday":
+        return ["/bin/bash", str(ROOT / "sync_emotion_cycle.sh"), "intraday"]
     return None
 
 

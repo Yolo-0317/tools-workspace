@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
@@ -16,9 +17,15 @@ router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 async def dashboard_summary(
     slot: str = "eod",
     strategy: str = "combined",
+    live: bool = False,
 ) -> dict[str, Any]:
     try:
-        return stock_bridge.export_dashboard(snapshot_slot=slot, strategy=strategy)
+        return await asyncio.to_thread(
+            stock_bridge.export_dashboard,
+            snapshot_slot=slot,
+            strategy=strategy,
+            live_quotes=live,
+        )
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -32,9 +39,9 @@ async def portfolio_current() -> dict[str, Any]:
 
 
 @router.get("/monitor/rules")
-async def monitor_rules() -> dict[str, Any]:
+async def monitor_rules(live: bool = True) -> dict[str, Any]:
     try:
-        return {"rules": stock_bridge.load_monitor_rules()}
+        return await asyncio.to_thread(stock_bridge.load_monitor_rules, live=live)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -82,7 +89,7 @@ async def selection_strategies() -> dict[str, Any]:
 
 
 @router.get("/selection/dates")
-async def selection_dates(strategy: str = "combined") -> dict[str, Any]:
+async def selection_dates(strategy: str = "all") -> dict[str, Any]:
     try:
         dates = stock_bridge.list_selection_dates(strategy=strategy)
         return {"strategy": strategy, "dates": dates}
@@ -110,7 +117,7 @@ async def selection_kline(
 async def selection_history(
     request: Request,
     trade_date: str,
-    strategy: str = "combined",
+    strategy: str = "all",
 ) -> dict[str, Any]:
     try:
         payload = stock_bridge.load_selection_history(trade_date, strategy=strategy)
@@ -129,6 +136,73 @@ async def snapshot_alerts(limit: int = 30) -> dict[str, Any]:
 @router.get("/jobs")
 async def launchd_jobs() -> dict[str, Any]:
     return {"jobs": stock_bridge.load_launchd_jobs()}
+
+
+@router.get("/news/meta")
+async def news_meta(date: str | None = None) -> dict[str, Any]:
+    try:
+        return stock_bridge.load_news_meta(date_str=date)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.get("/news/items")
+async def news_items(
+    date: str | None = None,
+    category: str | None = None,
+    sentiment: str | None = None,
+    limit: int = 50,
+) -> dict[str, Any]:
+    try:
+        return stock_bridge.load_news_items(
+            date_str=date,
+            category=category,
+            sentiment=sentiment,
+            limit=limit,
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.get("/news/briefings")
+async def news_briefings(date: str | None = None) -> dict[str, Any]:
+    try:
+        return stock_bridge.load_news_briefings(date_str=date)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.get("/news/briefings/latest")
+async def news_briefing_latest() -> dict[str, Any]:
+    try:
+        return stock_bridge.load_latest_briefing()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.get("/emotion/dates")
+async def emotion_cycle_dates() -> dict[str, Any]:
+    try:
+        return await asyncio.to_thread(stock_bridge.list_emotion_cycle_dates)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.get("/emotion")
+async def emotion_cycle(
+    trade_date: str | None = None,
+    slot: str | None = None,
+) -> dict[str, Any]:
+    try:
+        return await asyncio.to_thread(
+            stock_bridge.load_emotion_cycle,
+            trade_date,
+            checklist_slot=slot,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 class SelectionSopAnalyzeBody(BaseModel):

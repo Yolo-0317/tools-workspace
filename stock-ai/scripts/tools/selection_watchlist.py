@@ -101,6 +101,44 @@ def load_top_picks(
     return td, picks
 
 
+def load_wechat_top5_picks(
+    *,
+    top_n: int = TOP_N,
+    trade_date: date | None = None,
+) -> tuple[date, list[SelectionPick], str]:
+    """
+    公众号 Top5：合并多策略（combined / five_factor / ma5 / watch 等）后按总分重选。
+    返回 (trade_date, picks, source_tag)。
+    """
+    from scripts.tools.selection_results import merge_selection_strategies_df, pick_wechat_top5
+
+    td, universe, source = merge_selection_strategies_df(trade_date=trade_date)
+    top_df = pick_wechat_top5(universe, top_n=top_n)
+    if top_df.empty:
+        raise ValueError(f"合并候选后 Top{top_n} 为空（{source}）")
+
+    picks: list[SelectionPick] = []
+    for _, row in top_df.iterrows():
+        code = str(row["代码"]).split(".")[0].zfill(6)
+        label = str(row.get("策略标签", "") or "")
+        src = str(row.get("策略来源", "") or "")
+        if src and src not in label:
+            label = f"{label}·{src}" if label else src
+        picks.append(
+            SelectionPick(
+                code=code,
+                name="",
+                close=float(row["收盘价"]),
+                change_pct=float(row["涨幅%"]),
+                score=float(row.get("总分", 0)),
+                label=label,
+                action=str(row.get("建议动作", "")),
+                in_holdings=False,
+            )
+        )
+    return td, picks, source
+
+
 def _load_names(codes: list[str]) -> dict[str, str]:
     from scripts.tools.portfolio_db import load_stock_names_by_codes
 
