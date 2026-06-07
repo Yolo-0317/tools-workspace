@@ -142,10 +142,22 @@ def _find_sentence_index(en_sentences: list[str], text: str) -> int:
 def attach(manifest: dict, en_data: dict, zh_data: dict, *, translation_source: str) -> dict:
     en_sents = en_data["sentences"]
     zh_sents = zh_data["sentences"]
+    en_kinds = en_data.get("kinds") or ["body"] * len(en_sents)
+    heading_zh = zh_data.get("heading_zh") or (
+        zh_sents[0] if zh_sents and (zh_data.get("kinds") or [None])[0] == "heading" else ""
+    )
     en_to_zh = _align_sentences_dp(en_sents, zh_sents)
 
     attached = 0
     for line in manifest.get("lines", []):
+        if line.get("kind") == "heading":
+            if heading_zh:
+                line["zh"] = heading_zh
+                attached += 1
+            elif "zh" in line:
+                del line["zh"]
+            continue
+
         en_text = line.get("text", "").strip()
         si = _find_sentence_index(en_sents, en_text)
         if si < 0:

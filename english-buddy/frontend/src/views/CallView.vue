@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import AppIcon from "../components/AppIcon.vue";
 import CharacterAvatar from "../components/CharacterAvatar.vue";
 import { useAppRefresh } from "../composables/useAppRefresh";
 import { useVoiceCallWs } from "../composables/useVoiceCallWs";
 import type { Program } from "../config/programs";
+import OrtTopicView from "./OrtTopicView.vue";
 
 const {
   screen,
@@ -68,6 +69,11 @@ const {
   ttsSpeed,
   canTapChildDone,
   tapChildDone,
+  canOrtAdvanceLine,
+  ortAdvanceLine,
+  canToggleOrtPause,
+  teacherPaused,
+  toggleOrtTeacherPause,
   canRereadLine,
   showReadActionBar,
   rereadLine,
@@ -94,6 +100,7 @@ const {
   sttEnabledForMe,
   sttEnabled,
   listenOnlyHint,
+  ortStartButtonLabel,
   isAuthenticated,
   displayName,
   activeCallsLabel,
@@ -104,9 +111,56 @@ const {
   freeChatFull,
   freeChatLimitMessage,
   rereadFromDone,
+  ortCatalogLoading,
+  ortCatalogError,
+  ortLevelFilter,
+  ortSelectedBookId,
+  ortFilteredLessonGroups,
+  ortActiveBook,
+  readAlongPageIndex,
+  ortScriptLines,
+  ortCallPageImage,
+  ortCallPageMissing,
+  onOrtImgError,
+  canOrtPrevPage,
+  canOrtNextPage,
+  ortGoToPrevPage,
+  ortGoToNextPage,
+  goOrtTopic,
+  selectOrtLesson,
+  setOrtLevelFilter,
+  startOrtReadAlong,
+  ortIllustratedCount,
+  ortLessonReadyForTopic,
+  canStartOrtReadAlong,
 } = useVoiceCallWs();
 
+const ortSwipeStartX = ref(0);
+const ortSwipeStartY = ref(0);
+
+function onOrtPageTouchStart(e: TouchEvent) {
+  if (e.touches.length !== 1) return;
+  ortSwipeStartX.value = e.touches[0].clientX;
+  ortSwipeStartY.value = e.touches[0].clientY;
+}
+
+function onOrtPageTouchEnd(e: TouchEvent) {
+  if (e.changedTouches.length !== 1) return;
+  const dx = e.changedTouches[0].clientX - ortSwipeStartX.value;
+  const dy = e.changedTouches[0].clientY - ortSwipeStartY.value;
+  if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.25) return;
+  if (dx < 0) ortGoToNextPage();
+  else ortGoToPrevPage();
+}
+
 const { refreshing, refreshApp } = useAppRefresh();
+
+async function refreshFromCall() {
+  if (inCall.value) {
+    endCall();
+  }
+  await refreshApp();
+}
 
 const skin = computed(() => selectedProgram.value?.page.skin ?? "");
 
@@ -149,7 +203,7 @@ const pickerCustomLessons = computed(() =>
 );
 
 const gradeStages = computed(() => {
-  const order = ["幼儿园", "拓展", "小学"];
+  const order = ["幼儿园", "牛津阅读树", "小学"];
   const map = new Map<string, typeof grades.value>();
   for (const g of grades.value) {
     const label =
@@ -167,7 +221,10 @@ const gradeStages = computed(() => {
 <template>
   <div
     class="app"
-    :class="[usesThemedShell ? `app--${skin}` : 'app--shell']"
+    :class="[
+      usesThemedShell ? `app--${skin}` : 'app--shell',
+      screen === 'call' && ortActiveBook && 'app--ort-call',
+    ]"
     :style="appStyle"
   >
     <nav v-if="screen !== 'call'" class="top-nav">
@@ -236,6 +293,16 @@ const gradeStages = computed(() => {
           type="button"
           role="tab"
           class="top-nav__seg-btn"
+          :class="{ 'top-nav__seg-btn--active': screen === 'ort_topic' }"
+          :aria-selected="screen === 'ort_topic'"
+          @click="goOrtTopic()"
+        >
+          牛津阅读树
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="top-nav__seg-btn"
           :class="{
             'top-nav__seg-btn--active':
               screen === 'lesson_manage' ||
@@ -254,6 +321,16 @@ const gradeStages = computed(() => {
 
     <!-- ① 首页选课文 -->
     <section v-if="screen === 'pick_show'" class="picker">
+      <button type="button" class="picker__ort-banner" @click="goOrtTopic()">
+        <span class="picker__ort-banner-title">牛津阅读树</span>
+        <span class="picker__ort-banner-sub">
+          {{ ortIllustratedCount }} 本配图带读 ·
+          {{ sttEnabledForMe ? "可跟读" : "只听模式" }}
+          <template v-if="ortIllustratedCount < 50">
+            · 其余回首页选课文
+          </template>
+        </span>
+      </button>
       <div class="picker__lesson-panel">
         <label class="picker__lesson-label">选老师</label>
         <div class="picker__teachers">
@@ -452,6 +529,34 @@ const gradeStages = computed(() => {
       </div>
     </section>
 
+    <!-- 牛津阅读树专题 -->
+    <OrtTopicView
+      v-else-if="screen === 'ort_topic'"
+      :lesson-groups="ortFilteredLessonGroups"
+      :lessons-loading="lessonsLoading || ortCatalogLoading"
+      :catalog-error="ortCatalogError"
+      :level-filter="ortLevelFilter"
+      :selected-lesson-id="selectedLessonId"
+      :selected-lesson="selectedLesson"
+      :read-along-full="readAlongFull"
+      :read-along-limit-message="readAlongLimitMessage"
+      :can-start="canStartOrtReadAlong"
+      :tts-speed-presets="ttsSpeedPresets"
+      :tts-speed-preset="ttsSpeedPreset"
+      :programs="programs"
+      :picker-program-id="pickerProgramId"
+      :prewarm-label="prewarmStatusLabel"
+      :lesson-ready="ortLessonReadyForTopic"
+      :illustrated-count="ortIllustratedCount"
+      :listen-only-hint="listenOnlyHint"
+      :start-button-label="ortStartButtonLabel"
+      @set-level="setOrtLevelFilter"
+      @select-lesson="selectOrtLesson"
+      @select-program="selectPickerProgram"
+      @set-speed="setTtsSpeedPreset"
+      @start-read-along="startOrtReadAlong"
+    />
+
     <!-- ② 登录（首页 / 自定义课文共用） -->
     <section v-else-if="screen === 'login'" class="login">
       <div class="login__card">
@@ -647,14 +752,18 @@ const gradeStages = computed(() => {
     </section>
 
     <!-- ③ 通话中 -->
-    <section v-else-if="screen === 'call'" class="call-screen">
+    <section
+      v-else-if="screen === 'call'"
+      class="call-screen"
+      :class="{ 'call-screen--ort': callMode === 'read_along' && ortActiveBook }"
+    >
       <header class="call-screen__top call-screen__top--call">
         <button
           type="button"
           class="btn-refresh-call"
           :disabled="refreshing"
           aria-label="强制刷新页面"
-          @click="refreshApp"
+          @click="refreshFromCall"
         >
           {{ refreshing ? "…" : "刷新" }}
         </button>
@@ -685,9 +794,13 @@ const gradeStages = computed(() => {
       <div class="call-screen__body">
         <main
           class="call-screen__main"
-          :class="{ 'call-screen__main--read': callMode === 'read_along' }"
+          :class="{
+            'call-screen__main--read': callMode === 'read_along',
+            'call-screen__main--ort': callMode === 'read_along' && ortActiveBook,
+          }"
         >
           <div
+            v-if="!(callMode === 'read_along' && ortActiveBook)"
             :class="[orbClass, callMode === 'read_along' && 'orb--compact']"
             aria-hidden="true"
           >
@@ -730,11 +843,63 @@ const gradeStages = computed(() => {
           </div>
 
           <div
-            v-if="callMode === 'read_along' && materialLines.length"
+            v-if="callMode === 'read_along' && ortActiveBook"
+            class="ort-call-page"
+          >
+            <div
+              class="ort-call-page__frame"
+              :class="{ 'ort-call-page__frame--missing': ortCallPageMissing }"
+              @touchstart.passive="onOrtPageTouchStart"
+              @touchend.passive="onOrtPageTouchEnd"
+            >
+              <img
+                class="ort-call-page__img"
+                :src="ortCallPageImage"
+                :alt="`${ortActiveBook.title} 第 ${readAlongPageIndex + 1} 页`"
+                decoding="async"
+                @error="onOrtImgError"
+              />
+              <button
+                type="button"
+                class="ort-call-page__nav ort-call-page__nav--prev"
+                :disabled="!canOrtPrevPage"
+                aria-label="上一页"
+                @click="ortGoToPrevPage"
+              >
+                <AppIcon name="prev" />
+              </button>
+              <button
+                type="button"
+                class="ort-call-page__nav ort-call-page__nav--next"
+                :disabled="!canOrtNextPage"
+                aria-label="下一页"
+                @click="ortGoToNextPage"
+              >
+                <AppIcon name="next" />
+              </button>
+              <p
+                v-if="ortCallPageMissing"
+                class="ort-call-page__missing-label"
+              >
+                暂无页图
+              </p>
+            </div>
+            <p class="ort-call-page__meta">
+              第 {{ readAlongPageIndex + 1 }} / {{ ortActiveBook.page_count }} 页 · 左右滑动翻页
+            </p>
+          </div>
+
+          <div
+            v-if="
+              callMode === 'read_along' &&
+              (ortScriptLines?.length || materialLines.length)
+            "
             class="script-panel"
+            :class="{ 'script-panel--ort': ortActiveBook }"
           >
             <p class="script-panel__label">
-              课文（点一句可重读）
+              <template v-if="ortActiveBook">本页句子</template>
+              <template v-else>课文（点一句可重读）</template>
               <span
                 v-if="pronunciationAssess && sttEnabled"
                 class="script-panel__legend"
@@ -743,30 +908,62 @@ const gradeStages = computed(() => {
               </span>
             </p>
             <ul class="script-panel__lines">
-              <li
-                v-for="(line, i) in materialLines"
-                :key="i"
-                class="script-panel__line"
-                :class="{
-                  'script-panel__line--active':
-                    i === readAlongLineIndex && !lineVerdict(i),
-                  'script-panel__line--done':
-                    i < readAlongLineIndex &&
-                    !lineVerdict(i) &&
-                    readAlongTurn !== 'done',
-                  'script-panel__line--pass': lineVerdict(i) === 'pass',
-                  'script-panel__line--almost': lineVerdict(i) === 'almost',
-                  'script-panel__line--retry': lineVerdict(i) === 'retry',
-                  'script-panel__line--clickable': canRereadLine,
-                }"
-                role="button"
-                :tabindex="canRereadLine ? 0 : -1"
-                :aria-disabled="!canRereadLine"
-                @click="rereadLine(i)"
-                @keydown.enter.prevent="rereadLine(i)"
-              >
-                {{ line }}
-              </li>
+              <template v-if="ortScriptLines">
+                <li
+                  v-for="row in ortScriptLines"
+                  :key="row.globalIndex"
+                  class="script-panel__line"
+                  :class="{
+                    'script-panel__line--active':
+                      row.globalIndex === readAlongLineIndex &&
+                      !lineVerdict(row.globalIndex),
+                    'script-panel__line--done':
+                      row.globalIndex < readAlongLineIndex &&
+                      !lineVerdict(row.globalIndex) &&
+                      readAlongTurn !== 'done',
+                    'script-panel__line--pass':
+                      lineVerdict(row.globalIndex) === 'pass',
+                    'script-panel__line--almost':
+                      lineVerdict(row.globalIndex) === 'almost',
+                    'script-panel__line--retry':
+                      lineVerdict(row.globalIndex) === 'retry',
+                    'script-panel__line--clickable': canRereadLine,
+                  }"
+                  role="button"
+                  :tabindex="canRereadLine ? 0 : -1"
+                  :aria-disabled="!canRereadLine"
+                  @click="rereadLine(row.globalIndex)"
+                  @keydown.enter.prevent="rereadLine(row.globalIndex)"
+                >
+                  {{ row.text }}
+                </li>
+              </template>
+              <template v-else>
+                <li
+                  v-for="(line, i) in materialLines"
+                  :key="i"
+                  class="script-panel__line"
+                  :class="{
+                    'script-panel__line--active':
+                      i === readAlongLineIndex && !lineVerdict(i),
+                    'script-panel__line--done':
+                      i < readAlongLineIndex &&
+                      !lineVerdict(i) &&
+                      readAlongTurn !== 'done',
+                    'script-panel__line--pass': lineVerdict(i) === 'pass',
+                    'script-panel__line--almost': lineVerdict(i) === 'almost',
+                    'script-panel__line--retry': lineVerdict(i) === 'retry',
+                    'script-panel__line--clickable': canRereadLine,
+                  }"
+                  role="button"
+                  :tabindex="canRereadLine ? 0 : -1"
+                  :aria-disabled="!canRereadLine"
+                  @click="rereadLine(i)"
+                  @keydown.enter.prevent="rereadLine(i)"
+                >
+                  {{ line }}
+                </li>
+              </template>
             </ul>
           </div>
 
@@ -779,9 +976,13 @@ const gradeStages = computed(() => {
             aria-live="polite"
           >
             <span class="turn-strip__dot" aria-hidden="true" />
-            <span v-if="readAlongTurn === 'teacher'" class="turn-strip__text"
-              >听老师说</span
-            >
+            <span v-if="readAlongTurn === 'teacher'" class="turn-strip__text">{{
+              teacherPaused
+                ? "已暂停 · 点继续"
+                : sttEnabled
+                  ? "听老师说"
+                  : "只听 · 听老师说"
+            }}</span>
             <span v-else-if="readAlongTurn === 'child'" class="turn-strip__text"
               >小朋友说 · 叮叮</span
             >
@@ -824,6 +1025,17 @@ const gradeStages = computed(() => {
               <span>{{ readAlongTurn === "done" ? "重读这句" : "再说一遍" }}</span>
             </button>
             <button
+              v-if="ortActiveBook"
+              type="button"
+              class="btn-read-action btn-read-action--pause"
+              :disabled="!canToggleOrtPause"
+              :aria-pressed="teacherPaused"
+              @click="toggleOrtTeacherPause"
+            >
+              <AppIcon :name="teacherPaused ? 'play' : 'pause'" />
+              <span>{{ teacherPaused ? "继续" : "暂停" }}</span>
+            </button>
+            <button
               v-if="sttEnabled"
               type="button"
               class="btn-read-action btn-read-action--done"
@@ -833,12 +1045,34 @@ const gradeStages = computed(() => {
               <AppIcon name="check" />
               <span>我说完啦</span>
             </button>
+            <button
+              v-if="ortActiveBook"
+              type="button"
+              class="btn-read-action btn-read-action--next"
+              :disabled="!canOrtAdvanceLine"
+              @click="ortAdvanceLine"
+            >
+              <AppIcon name="next" />
+              <span>下一句</span>
+            </button>
           </div>
           <p
             v-if="callMode === 'read_along' && readAlongTurn && readAlongTurn !== 'done' && sttEnabled"
             class="call-screen__read-intro"
           >
-            听「叮叮」后跟读；可上一句 / 再说一遍 / 我说完啦
+            听「叮叮」后跟读；可暂停 / 上一句 / 再说一遍 / 我说完啦 / 下一句
+          </p>
+          <p
+            v-if="
+              callMode === 'read_along' &&
+              ortActiveBook &&
+              readAlongTurn &&
+              readAlongTurn !== 'done' &&
+              !sttEnabled
+            "
+            class="call-screen__read-intro"
+          >
+            只听模式：老师逐句朗读；可暂停；翻页或上一句后需点「下一句」继续
           </p>
           <p v-if="!readAlongTurn" class="call-screen__status">
             {{
@@ -1125,6 +1359,32 @@ const gradeStages = computed(() => {
 
 .top-nav__seg-btn:active:not(:disabled) {
   transform: scale(0.98);
+}
+
+.picker__ort-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  width: 100%;
+  margin-bottom: 0.85rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #c8dcc7;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f4faf3 0%, #eef5ed 100%);
+  cursor: pointer;
+  text-align: left;
+}
+
+.picker__ort-banner-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #3d5c3c;
+}
+
+.picker__ort-banner-sub {
+  font-size: 0.78rem;
+  color: #6b8a6a;
 }
 
 .picker {
@@ -1858,10 +2118,165 @@ const gradeStages = computed(() => {
   padding-top: 0.15rem;
 }
 
+.call-screen--ort {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.call-screen--ort .call-screen__top {
+  padding-left: 0.85rem;
+  padding-right: 0.85rem;
+}
+
+.call-screen__main--ort {
+  align-items: stretch;
+  gap: 0.35rem;
+  padding-left: 0;
+  padding-right: 0;
+  width: 100%;
+}
+
 .orb--compact {
   width: clamp(5.5rem, 28vw, 6.5rem);
   height: clamp(5.5rem, 28vw, 6.5rem);
   margin-bottom: 0.15rem;
+}
+
+.ort-call-page {
+  margin: 0.25rem 0 0.35rem;
+  text-align: center;
+  width: 100%;
+}
+
+.call-screen__main--ort .ort-call-page {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  margin: 0;
+}
+
+.ort-call-page__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 986 / 1136;
+  max-height: min(58dvh, calc(100vw * 1136 / 986));
+  margin: 0 auto;
+  background: #f0ebe3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.ort-call-page__nav {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  color: #3d3428;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 2px 10px rgba(45, 38, 28, 0.14);
+  transform: translateY(-50%);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ort-call-page__nav:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+
+.ort-call-page__nav--prev {
+  left: 0.45rem;
+}
+
+.ort-call-page__nav--next {
+  right: 0.45rem;
+}
+
+.ort-call-page__nav:not(:disabled):active {
+  transform: translateY(-50%) scale(0.94);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.ort-call-page__frame--missing {
+  background: #ebe4da;
+}
+
+.ort-call-page__img {
+  display: block;
+  width: 100%;
+  max-height: 11rem;
+  object-fit: contain;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.call-screen__main--ort .ort-call-page__img {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  border-radius: 0;
+  background: transparent;
+  object-fit: contain;
+}
+
+.ort-call-page__missing-label {
+  position: absolute;
+  left: 50%;
+  bottom: 12%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: #8a7a68;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.ort-call-page__meta {
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  opacity: 0.85;
+}
+
+.call-screen__main--ort .ort-call-page__meta {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0.25rem 0.85rem 0;
+}
+
+.call-screen__main--ort .speed-field--call {
+  padding: 0 0.85rem;
+}
+
+.call-screen__main--ort .script-panel--ort,
+.call-screen__main--ort .turn-strip,
+.call-screen__main--ort .call-screen__read-actions,
+.call-screen__main--ort .call-screen__read-intro,
+.call-screen__main--ort .call-screen__status {
+  margin-left: 0.85rem;
+  margin-right: 0.85rem;
+  width: calc(100% - 1.7rem);
+  max-width: none;
+}
+
+.script-panel--ort .script-panel__lines {
+  max-height: 5rem;
+}
+
+.script-panel--ort {
+  max-width: none;
 }
 
 .script-panel {
@@ -2245,6 +2660,26 @@ const gradeStages = computed(() => {
   box-shadow: 0 4px 12px rgba(5, 150, 105, 0.22);
 }
 
+.btn-read-action--next {
+  color: #fff;
+  background: linear-gradient(145deg, #5b7f5a, #3d5c3c);
+  border-color: #3d5c3c;
+  box-shadow: 0 4px 12px rgba(61, 92, 60, 0.22);
+}
+
+.btn-read-action--pause {
+  color: #1d4ed8;
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.btn-read-action--pause[aria-pressed="true"] {
+  color: #fff;
+  background: linear-gradient(145deg, #3b82f6, #1d4ed8);
+  border-color: #1d4ed8;
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.22);
+}
+
 .btn-read-action:disabled {
   opacity: 0.38;
   box-shadow: none;
@@ -2437,9 +2872,196 @@ const gradeStages = computed(() => {
 }
 
 @media (min-height: 700px) {
-  .call-screen__main {
+  .call-screen__main:not(.call-screen__main--ort) {
     justify-content: center;
     padding-top: 0.5rem;
+  }
+}
+
+/* PC：左图右操作，一屏无滚动 */
+@media (min-width: 768px) {
+  .app.app--ort-call {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
+  .call-screen--ort {
+    max-width: none;
+    width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .call-screen--ort .call-screen__top--call {
+    flex-shrink: 0;
+    position: relative;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .call-screen--ort .call-screen__body {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .call-screen--ort .call-screen__main--ort {
+    display: grid;
+    grid-template-columns: minmax(0, 1.28fr) minmax(17rem, 0.72fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
+    gap: 0.45rem 1rem;
+    padding: 0.35rem 1rem 0.6rem;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    align-content: stretch;
+  }
+
+  .call-screen--ort .ort-call-page {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    min-height: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .call-screen--ort .ort-call-page__frame {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    max-height: none;
+    aspect-ratio: unset;
+    margin: 0;
+    background: #ebe6de;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .call-screen--ort .ort-call-page__img {
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .call-screen--ort .ort-call-page__nav {
+    width: 3.1rem;
+    height: 3.1rem;
+    top: 50%;
+  }
+
+  .call-screen--ort .ort-call-page__meta {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0.3rem 0 0;
+    text-align: center;
+    font-size: 0.78rem;
+  }
+
+  .call-screen--ort .speed-field--call {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    max-width: none;
+    align-self: start;
+  }
+
+  .call-screen--ort .speed-segment--call {
+    max-width: none;
+  }
+
+  .call-screen--ort .script-panel--ort {
+    grid-column: 2;
+    grid-row: 2;
+    margin: 0;
+    width: 100%;
+    max-width: none;
+    align-self: start;
+  }
+
+  .call-screen--ort .script-panel--ort .script-panel__lines {
+    max-height: 8rem;
+    overflow-y: auto;
+  }
+
+  .call-screen--ort .script-panel--ort .script-panel__line {
+    font-size: 1.05rem;
+    line-height: 1.35;
+  }
+
+  .call-screen--ort .turn-strip {
+    grid-column: 2;
+    grid-row: 3;
+    margin: 0;
+    width: 100%;
+    max-width: none;
+    align-self: start;
+  }
+
+  .call-screen--ort .call-screen__read-actions {
+    grid-column: 2;
+    grid-row: 5;
+    margin: 0;
+    width: 100%;
+    max-width: none;
+    align-self: end;
+    gap: 0.45rem;
+  }
+
+  .call-screen--ort .call-screen__read-intro {
+    grid-column: 2;
+    grid-row: 6;
+    margin: 0;
+    width: 100%;
+    max-width: none;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    text-align: left;
+  }
+
+  .call-screen--ort .call-screen__status {
+    grid-column: 2;
+    grid-row: 6;
+    margin: 0;
+    width: 100%;
+    max-width: none;
+  }
+
+  .call-screen--ort .btn-read-action {
+    min-height: 2.65rem;
+    font-size: 0.72rem;
+  }
+}
+
+@media (min-width: 1100px) {
+  .call-screen--ort .call-screen__main--ort {
+    grid-template-columns: minmax(0, 1.42fr) minmax(19rem, 0.58fr);
+    gap: 0.55rem 1.25rem;
+    padding-inline: 1.25rem;
+  }
+
+  .call-screen--ort .ort-call-page__nav {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+
+  .call-screen--ort .script-panel--ort .script-panel__line {
+    font-size: 1.12rem;
+  }
+
+  .call-screen--ort .btn-read-action {
+    min-height: 2.85rem;
+    font-size: 0.78rem;
   }
 }
 </style>

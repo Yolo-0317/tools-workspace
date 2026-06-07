@@ -27,3 +27,14 @@ Hermes Step 3：处理 `sidestore-infra/` 时与本文件、`project-memory.mdc`
 - **Context**: `substore-clash` 通过 sidestore Caddy 对外提供 Clash 订阅与 Sub-Store UI。
 - **Pitfall/Error**: Caddy 在 Docker 内须用 `host.docker.internal:8787` / `:3001` 访问宿主机绑定的服务；DDNS 须用 `scripts/run-ddns.sh` 加载 `.env` 才会包含 `sub`。
 - **Solution/Rule**: `caddy/Caddyfile` 已增 `https://sub.yoloworld.site`；`DDNS_SUBDOMAINS` 含 `sub`。外网订阅 **`https://sub.yoloworld.site:8883/clash.yaml`**（`EXTERNAL_HTTPS_PORT=8883`，无 443 映射）。Sub-Store UI 同样带 `:8883`。
+
+### 2026-06-07 Hub 公网暴露 · Readalong 试读推广前置
+
+- **Context**: 用户计划 readalong 公网试读引流（技术分享 + 开源）；担心家庭网络被攻击。
+- **Pitfall/Error**: `8883→8443→Caddy` 暴露 **整站 Hub**，不只 `/readalong/`；readalong 试读开启后扫描器会顺带探测 `/hub/`、`/english/` 等。`:8791` 若绑定 `0.0.0.0` 则绕过 Caddy 直连。
+- **Solution/Rule**:
+  - **策略与清单真源**：`readalong/docs/PRODUCT-STRATEGY.md` §4。
+  - **推广前必查**：readalong `:8791` 仅 `127.0.0.1`；外网 ch2+ / EPUB / words 403；admin 强密码；各 Hub 子服务鉴权与并发上限。
+  - **建议加固**：Caddy `/readalong/*` rate limit；`/api/auth/login`、`/api/dict` 限速。
+  - **应急下线**：Caddy 注释 readalong 块 + `docker compose restart caddy`，或停 `com.user.readalong` launchd。
+  - **未做前不推广**：清单 §4.1 未完成时不发公网试读链接。

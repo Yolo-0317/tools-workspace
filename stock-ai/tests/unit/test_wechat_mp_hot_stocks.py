@@ -16,6 +16,7 @@ from scripts.tools.wechat_mp_hot_stocks import (
     filter_hot_stock_rows,
     hot_rows_to_picks,
     is_hot_stock_eligible,
+    normalize_hot_stock_name,
     top5_pool_mode,
 )
 
@@ -44,6 +45,11 @@ def test_filter_hot_stock_rows_dedup_and_st():
     ]
     out = filter_hot_stock_rows(rows)
     assert [r.code for r in out] == ["000725", "600487"]
+
+
+def test_normalize_hot_stock_name_strips_concept_tags():
+    assert normalize_hot_stock_name("板 建筑节能 数字孪生 天娱数科", "002354") == "天娱数科"
+    assert normalize_hot_stock_name("京东方Ａ", "000725").startswith("京东方")
 
 
 def test_hot_rows_to_picks_score_by_rank():

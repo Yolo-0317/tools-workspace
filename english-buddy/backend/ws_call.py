@@ -216,6 +216,9 @@ class CallSession:
         self.username: str | None = None
         self.stt_enabled: bool = True
         self.reread_in_progress: bool = False
+        self.listen_only_busy: bool = False
+        # Skip one auto-advance after manual nav (上一句/翻页/下一句) in listen-only
+        self.listen_only_hold_after_teacher: bool = False
         self.child_spoken_buffer: str = ""
         self.from_pcm_inflight: bool = False
 
@@ -416,6 +419,58 @@ class CallSession:
                 self.from_pcm_inflight = False
 
 
+async def _advance_read_along_manual(session: CallSession) -> None:
+    """ORT / manual skip: interrupt teacher and advance one line."""
+    if (
+        session.call_mode != "read_along"
+        or not session.call_started
+        or session.read_along.done
+        or session.reread_in_progress
+        or session.listen_only_busy
+    ):
+        return
+    session.request_interrupt()
+    assistant_to_speak: str | None = None
+    async with session.turn_lock:
+        session.clear_interrupt()
+        session.discard_mic_buffer()
+        if session.read_along.done:
+            return
+        if session.stt_enabled:
+            await _finish_read_along_child_turn(
+                session, CHILD_DONE_MARKER, CHILD_DONE_MARKER
+            )
+            return
+        expected = session.read_along.current_expected()
+        if not expected:
+            return
+        assistant, lesson_done, _unclear = session.read_along.after_child_spoke(
+            expected
+        )
+        if lesson_done and not assistant:
+            await session.send_json({"type": "lesson_complete"})
+            await session.send_status("listening", "课文读完了，点句子可重读")
+            return
+        if assistant:
+            assistant_to_speak = assistant
+    if assistant_to_speak:
+        await _speak_teacher_line(
+            session,
+            assistant_to_speak,
+            user_echo_for_history="(Manual advance)",
+        )
+        if not session.stt_enabled:
+            session.listen_only_hold_after_teacher = True
+
+
+async def _safe_advance_read_along(session: CallSession) -> None:
+    try:
+        await _advance_read_along_manual(session)
+    except Exception:
+        logger.exception("read_along_advance failed")
+        await _resume_listening(session, "出错了，请再试")
+
+
 async def _continue_listen_only(session: CallSession) -> None:
     """Listen-only: advance after client finished playing teacher TTS."""
     if (
@@ -424,25 +479,42 @@ async def _continue_listen_only(session: CallSession) -> None:
         or not session.call_started
         or session.read_along.done
         or session.reread_in_progress
+        or session.listen_only_busy
     ):
         return
-    await asyncio.sleep(0.6)
-    if not session.call_started or session.cancel.is_set():
+    if session.listen_only_hold_after_teacher:
+        session.listen_only_hold_after_teacher = False
         return
-    expected = session.read_along.current_expected()
-    if not expected:
-        return
-    assistant, lesson_done, _unclear = session.read_along.after_child_spoke(expected)
-    if lesson_done and not assistant:
-        await session.send_json({"type": "lesson_complete"})
-        await session.send_status("listening", "课文读完了，点句子可重读")
-        return
-    if assistant:
-        await _speak_teacher_line(
-            session,
-            assistant,
-            user_echo_for_history="(Listen-only advance)",
-        )
+    session.listen_only_busy = True
+    try:
+        await asyncio.sleep(0.6)
+        if (
+            not session.call_started
+            or session.cancel.is_set()
+            or session.stt_enabled
+            or session.read_along.done
+            or session.reread_in_progress
+            or session.listen_only_hold_after_teacher
+        ):
+            if session.listen_only_hold_after_teacher:
+                session.listen_only_hold_after_teacher = False
+            return
+        expected = session.read_along.current_expected()
+        if not expected:
+            return
+        assistant, lesson_done, _unclear = session.read_along.after_child_spoke(expected)
+        if lesson_done and not assistant:
+            await session.send_json({"type": "lesson_complete"})
+            await session.send_status("listening", "课文读完了，点句子可重读")
+            return
+        if assistant:
+            await _speak_teacher_line(
+                session,
+                assistant,
+                user_echo_for_history="(Listen-only advance)",
+            )
+    finally:
+        session.listen_only_busy = False
 
 
 async def _kickoff_read_along(session: CallSession) -> None:
@@ -461,13 +533,17 @@ def prog_hint(material: str) -> str:
 async def _reread_line(session: CallSession, line_index: int) -> None:
     if session.call_mode != "read_along" or not session.reading_material:
         return
-    text, idx = session.read_along.jump_to_line(line_index)
-    if not text:
-        return
+    session.request_interrupt()
     session.reread_in_progress = True
     try:
-        session.request_interrupt()
-        session.clear_interrupt()
+        text: str | None = None
+        idx = line_index
+        async with session.turn_lock:
+            session.clear_interrupt()
+            session.discard_mic_buffer()
+            text, idx = session.read_along.jump_to_line(line_index)
+        if not text:
+            return
         # 读完后点句子：从该句恢复带读（小朋友跟读 + 发音评分），而非只播一遍就结束
         await _speak_teacher_line(
             session,
@@ -476,6 +552,8 @@ async def _reread_line(session: CallSession, line_index: int) -> None:
             line_index=idx,
             reread_only=False,
         )
+        if not session.stt_enabled:
+            session.listen_only_hold_after_teacher = True
     finally:
         session.reread_in_progress = False
 
@@ -600,7 +678,8 @@ async def ws_call(websocket: WebSocket) -> None:
             if msg_type == "interrupt":
                 session.request_interrupt()
                 await session.send_json({"type": "interrupted"})
-                await session.send_status("listening", "已打断，请说")
+                if session.call_mode != "read_along":
+                    await session.send_status("listening", "已打断，请说")
                 continue
 
             if msg_type == "update_tts_speed":
@@ -799,6 +878,11 @@ async def ws_call(websocket: WebSocket) -> None:
                     and session.call_mode == "read_along"
                 ):
                     asyncio.create_task(_continue_listen_only(session))
+                continue
+
+            if msg_type == "read_along_advance":
+                if session.call_started and session.call_mode == "read_along":
+                    asyncio.create_task(_safe_advance_read_along(session))
                 continue
 
             if msg_type == "utterance_end":

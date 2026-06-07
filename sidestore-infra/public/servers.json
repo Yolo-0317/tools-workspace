@@ -2,7 +2,7 @@
   "servers": [
     {
       "name": "Yolo Home Anisette",
-      "address": "https://ani.yoloworld.site:8883"
+      "address": "https://ani.yoloworld.site:8883/"
     }
   ]
 }

@@ -45,6 +45,7 @@
 | `stock-mysql/` | `stock-mysql/README.md` — MySQL 8，stock-ai 业务库 |
 | `emquant-sim/` | `emquant-sim/OFFLINE.md` — **已下线**（专业投资者门槛）；代码备查 |
 | `english-buddy/` | `english-buddy/README.md` — 少儿英文带读（Ollama + edge-tts）；账号见 `docs/AUTH.md` |
+| `readalong/` | `readalong/README.md` — 哈利波特有声书句级带读 PWA（`:8791`） |
 | `~/docker/jellyfin-stack` | `.cursor/skills/jellyfin/SKILL.md`（NAS / 迅雷 / 夸克 三库） |
 
 ### OpenCLI 浏览器（stock-ai）
@@ -55,6 +56,14 @@
 | `eastmoney-browser-sop` | `stock-ai/investment-agent/docs/skills/eastmoney-browser-sop/` | 东财 **深度分析** 十一维 SOP（在 OpenCLI 采集之后） |
 
 用户说 **OpenCLI、东财浏览器、公众号后台抓取** → 先读 `stock-opencli`，勿每次重查 `opencli --help`。
+
+### Readalong 章节导入
+
+| Skill | 路径 | 用途 |
+|-------|------|------|
+| `readalong-import` | `.cursor/skills/readalong-import/` | **按书目+章号导入**：`BOOK=hp01 ./scripts/pipeline.sh N` · verify |
+
+用户说 **导入哈利波特第一部第 N 章、hp01 第 N 章、魔法石第 N 章** → 先读 `readalong-import`。**禁止**仅凭「第 N 章」执行（须确认 book_id）。Whisper 首跑须前台 ~5 min/章。
 
 ### 微信公众号草稿 Skill
 

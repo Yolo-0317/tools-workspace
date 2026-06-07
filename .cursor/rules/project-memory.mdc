@@ -32,6 +32,7 @@ alwaysApply: false
 | **公众号内容分析复盘** | **2026-06-05** | 本节 §2026-06-05 · `sousou-analytics-sop.md` |
 | **公众号 top5 人气榜** | **2026-06-05** | `memory-python.mdc` §2026-06-05 top5 人气榜 |
 | **选股前日线门禁** | **2026-06-04** | `memory-python.mdc` §2026-06-04 · `SCHEDULING.md` §3/§9 |
+| **Readalong 开源引流 / 公网试听** | **2026-06-07** | 本节 §2026-06-07 · `readalong/docs/PRODUCT-STRATEGY.md` · `memory-infra.mdc` |
 
 ---
 
@@ -225,4 +226,15 @@ alwaysApply: false
 
 - **Context**: 搜一搜搜索词与点击榜以 **票名** 为主；top5 改从东财人气榜选题以对齐流量。
 - **Pitfall/Error**: 多策略总分名单与热搜票错位；纯热股需滤 ST/禁码；勿用 `emappdata` 裸 HTTP（易异常）。
-- **Solution/Rule**: 默认 `WECHAT_MP_TOP5_POOL=hot` · `fetch_hot_stocks_opencli` · `wechat_mp_hot_stocks.py`；失败回退 selection。详见 `memory-python.mdc` §2026-06-05 top5 人气榜。
+  - **Solution/Rule**: 默认 `WECHAT_MP_TOP5_POOL=hot` · `fetch_hot_stocks_opencli` · `wechat_mp_hot_stocks.py`；失败回退 selection。详见 `memory-python.mdc` §2026-06-05 top5 人气榜。
+
+### 2026-06-07 Readalong · 开源引流策略 + 公网试听须先加固
+
+- **Context**: HP 句级带读 PWA（`readalong/`）拟用于技术分享引流，非卖听书；用户定调：**试读链接 + Git 开源，读者自备素材自建**。
+- **Pitfall/Error**: ① 若走「关注换全本账号」运维成本高且与开源定位不符。② **公网试听会扩大攻击面**：8883 映射整台 Caddy Hub（SideStore / home-hub / english-buddy / readalong），不能只做 readalong 半套防护。③ HP MP3/EPUB **不可进公开仓库**。
+- **Solution/Rule**:
+  - **策略真源**：`readalong/docs/PRODUCT-STRATEGY.md`。
+  - **漏斗**：公众号/小红书技术文 → 试读 URL（外网 **仅 ch1**）+ GitHub → BYO 素材 `pipeline.sh` 本地玩。
+  - **admin 登录**：仅本人外网听全本（`.env` 勿提交）；**不**给读者发全本账号。
+  - **推广门禁**：完成 `PRODUCT-STRATEGY.md` §4.1 网络安全清单（+ 建议限速）**之前**，不主动推公网试读。
+  - **infra 联动**：见 `memory-infra.mdc` §2026-06-07 Hub 公网暴露检查项。

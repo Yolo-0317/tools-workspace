@@ -1,24 +1,143 @@
 {
 	# 证书由 acme.sh + 阿里云 DNS 签发，不走 80/443 HTTP 验证
 	auto_https off
+	# SideStore 登录走 wss provisioning_session；iOS Starscream 在 HTTP/2 下易失败
+	servers :443 {
+		protocols h1
+	}
 }
 
-https://ani.yoloworld.site {
+(tls_le) {
 	tls /etc/caddy/certs/fullchain.cer /etc/caddy/certs/key.key
-	encode gzip
-	reverse_proxy anisette:6969 {
-		transport http {
-			read_timeout 60s
-		}
-	}
+}
+
+(security_headers) {
 	header {
 		-Server
 		X-Content-Type-Options nosniff
 	}
 }
 
+(wechat_verify) {
+	handle /c4de45255be91b51cd4b88b52fb77956.txt {
+		root * /srv
+		header Cache-Control "no-cache, no-store, must-revalidate"
+		file_server
+	}
+}
+
+(hub_apps) {
+	# English Buddy — launchd :18787
+	handle /english {
+		redir * /english/ permanent
+	}
+	handle_path /english/* {
+		reverse_proxy host.docker.internal:18787 {
+			flush_interval -1
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+    # Readalong — launchd :8791（web 静态直出；音频/manifest/API 反代 Python）
+	handle /readalong {
+		redir * /readalong/web/ permanent
+	}
+	handle /readalong/web {
+		redir * /readalong/web/ permanent
+	}
+	handle /readalong/web/* {
+		root * /readalong
+		uri strip_prefix /readalong
+		header Cache-Control "no-cache" /web/index.html
+		header Cache-Control "no-cache" /web/sw.js
+		file_server
+	}
+	handle_path /readalong/* {
+		reverse_proxy host.docker.internal:8791 {
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	# Home Hub — launchd :8780
+	handle /hub {
+		redir * /hub/ permanent
+	}
+	handle_path /hub/* {
+		reverse_proxy host.docker.internal:8780 {
+			flush_interval -1
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	# 兼容旧前端 /api/*（勿 301：POST 跟重定向会变 GET → 登录报 Not Found）
+	handle /api/* {
+		reverse_proxy host.docker.internal:8780 {
+			flush_interval -1
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	@legacy_hub {
+		not path /english /english/* /readalong /readalong/* /hub /hub/*
+		not path /c4de45255be91b51cd4b88b52fb77956.txt
+	}
+	handle @legacy_hub {
+		redir * /hub{uri} permanent
+	}
+}
+
+# --- SideStore ---
+https://ani.yoloworld.site {
+	import tls_le
+	# SideStore 登录走 wss /v3/provisioning_session，勿对 WebSocket 开 gzip
+	@ws {
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+	handle @ws {
+		reverse_proxy anisette:6969 {
+			flush_interval -1
+			transport http {
+				read_timeout 0
+			}
+		}
+	}
+	handle {
+		reverse_proxy anisette:6969 {
+			transport http {
+				read_timeout 60s
+			}
+		}
+	}
+	import security_headers
+}
+
 https://config.yoloworld.site {
-	tls /etc/caddy/certs/fullchain.cer /etc/caddy/certs/key.key
+	import tls_le
 	encode gzip
 	handle /servers.json {
 		root * /srv
@@ -30,8 +149,9 @@ https://config.yoloworld.site {
 	}
 }
 
+# --- 媒体 / 订阅 ---
 https://alist.yoloworld.site {
-	tls /etc/caddy/certs/fullchain.cer /etc/caddy/certs/key.key
+	import tls_le
 	@jellyfin path /jellyfin /jellyfin/*
 	handle @jellyfin {
 		reverse_proxy host.docker.internal:8096 {
@@ -48,16 +168,12 @@ https://alist.yoloworld.site {
 	handle {
 		redir /jellyfin permanent
 	}
-	header {
-		-Server
-		X-Content-Type-Options nosniff
-	}
+	import security_headers
 }
 
 https://sub.yoloworld.site {
-	tls /etc/caddy/certs/fullchain.cer /etc/caddy/certs/key.key
+	import tls_le
 	encode gzip
-
 	handle /sub-store/* {
 		uri strip_prefix /sub-store
 		reverse_proxy host.docker.internal:3001 {
@@ -66,7 +182,6 @@ https://sub.yoloworld.site {
 			}
 		}
 	}
-
 	handle /clash-verge.yaml {
 		reverse_proxy host.docker.internal:8787 {
 			transport http {
@@ -75,7 +190,6 @@ https://sub.yoloworld.site {
 		}
 		header Cache-Control "no-cache, no-store, must-revalidate"
 	}
-
 	handle /clash.yaml {
 		reverse_proxy host.docker.internal:8787 {
 			transport http {
@@ -84,187 +198,46 @@ https://sub.yoloworld.site {
 		}
 		header Cache-Control "no-cache, no-store, must-revalidate"
 	}
-
-	handle / {
-		redir https://{host}:8883/clash.yaml permanent
-	}
-
 	handle {
-		respond 404
+		redir /clash.yaml permanent
 	}
-	header {
-		-Server
-		X-Content-Type-Options nosniff
-	}
+	import security_headers
 }
 
+# --- Hub 聚合（english / readalong / home-hub）---
 http://hub.yoloworld.site {
-	# 微信域名验证仅支持 80/443 标准端口（不支持 :8883）
-	handle /c4de45255be91b51cd4b88b52fb77956.txt {
-		root * /srv
-		header Cache-Control "no-cache, no-store, must-revalidate"
-		file_server
-	}
+	import wechat_verify
 	handle {
 		respond 404
 	}
 }
 
 https://hub.yoloworld.site {
-	tls /etc/caddy/certs/fullchain.cer /etc/caddy/certs/key.key
+	import tls_le
 	encode gzip
-
-	# 微信域名验证（Caddy 静态直出，优先于反代）
-	handle /c4de45255be91b51cd4b88b52fb77956.txt {
-		root * /srv
-		header Cache-Control "no-cache, no-store, must-revalidate"
-		file_server
-	}
-
-	# English Buddy — 少儿英文语音通话（launchd :18787，路径前缀 /english）
-	handle /english {
-		redir * /english/ permanent
-	}
-	handle_path /english/* {
-		reverse_proxy host.docker.internal:18787 {
-			flush_interval -1
-			transport http {
-				read_timeout 0
-				write_timeout 0
-			}
-			header_up X-Forwarded-Proto {scheme}
-			header_up X-Forwarded-Host {host}
-			header_up X-Forwarded-For {remote_host}
-		}
-	}
-
-	# Readalong — 有声书句级带读（launchd :8791，不经 Home Hub 登录）
-	handle /readalong {
-		redir * /readalong/web/ permanent
-	}
-	handle /readalong/web {
-		redir * /readalong/web/ permanent
-	}
-	handle_path /readalong/* {
-		reverse_proxy host.docker.internal:8791 {
-			transport http {
-				read_timeout 0
-				write_timeout 0
-			}
-			header_up X-Forwarded-Proto {scheme}
-			header_up X-Forwarded-Host {host}
-			header_up X-Forwarded-For {remote_host}
-		}
-	}
-
-	# Home Hub 看板（launchd :8780，路径前缀 /hub）
-	handle /hub {
-		redir * /hub/ permanent
-	}
-	handle_path /hub/* {
-		reverse_proxy host.docker.internal:8780 {
-			flush_interval -1
-			transport http {
-				read_timeout 0
-				write_timeout 0
-			}
-			header_up X-Forwarded-Proto {scheme}
-			header_up X-Forwarded-Host {host}
-			header_up X-Forwarded-For {remote_host}
-		}
-	}
-
-	# 旧书签 /login、/m → /hub/...
-	@legacy_hub {
-		not path /english /english/* /readalong /readalong/* /hub /hub/*
-		not path /c4de45255be91b51cd4b88b52fb77956.txt
-	}
-	handle @legacy_hub {
-		redir * /hub{uri} permanent
-	}
-	header {
-		-Server
-		X-Content-Type-Options nosniff
-	}
+	import wechat_verify
+	import hub_apps
+	import security_headers
 }
 
-# 兜底：内网用 IP 访问时 Host 不是 hub 子域，仍返回微信验证文件
+https://www.yoloworld.site {
+	import tls_le
+	redir https://hub.yoloworld.site{uri} permanent
+}
+
+# 微信验证兜底（IP 访问或未知 Host）
 :80 {
-	handle /c4de45255be91b51cd4b88b52fb77956.txt {
-		root * /srv
-		header Cache-Control "no-cache, no-store, must-revalidate"
-		file_server
-	}
+	import wechat_verify
 }
 
 :443 {
-	tls /etc/caddy/certs/fullchain.cer /etc/caddy/certs/key.key
-	handle /c4de45255be91b51cd4b88b52fb77956.txt {
-		root * /srv
-		header Cache-Control "no-cache, no-store, must-revalidate"
-		file_server
-	}
+	import tls_le
+	import wechat_verify
 }
 
-# 局域网 IP 直连 HTTPS（mkcert 或 openssl；LAN_IP_HTTPS_SITE）
+# 局域网 IP 直连（mkcert；scripts/mkcert-lan-ip.sh 维护地址行）
 https://192.168.1.13 { # LAN_IP_HTTPS_SITE
 	tls /etc/caddy/certs/lan-ip/cert.pem /etc/caddy/certs/lan-ip/key.pem
 	encode gzip
-
-	handle /english {
-		redir * /english/ permanent
-	}
-	handle_path /english/* {
-		reverse_proxy host.docker.internal:18787 {
-			flush_interval -1
-			transport http {
-				read_timeout 0
-				write_timeout 0
-			}
-			header_up X-Forwarded-Proto {scheme}
-			header_up X-Forwarded-Host {host}
-			header_up X-Forwarded-For {remote_host}
-		}
-	}
-
-	handle /readalong {
-		redir * /readalong/web/ permanent
-	}
-	handle /readalong/web {
-		redir * /readalong/web/ permanent
-	}
-	handle_path /readalong/* {
-		reverse_proxy host.docker.internal:8791 {
-			transport http {
-				read_timeout 0
-				write_timeout 0
-			}
-			header_up X-Forwarded-Proto {scheme}
-			header_up X-Forwarded-Host {host}
-			header_up X-Forwarded-For {remote_host}
-		}
-	}
-
-	handle /hub {
-		redir * /hub/ permanent
-	}
-	handle_path /hub/* {
-		reverse_proxy host.docker.internal:8780 {
-			flush_interval -1
-			transport http {
-				read_timeout 0
-				write_timeout 0
-			}
-			header_up X-Forwarded-Proto {scheme}
-			header_up X-Forwarded-Host {host}
-			header_up X-Forwarded-For {remote_host}
-		}
-	}
-
-	@legacy_hub {
-		not path /english /english/* /readalong /readalong/* /hub /hub/*
-	}
-	handle @legacy_hub {
-		redir * /hub{uri} permanent
-	}
+	import hub_apps
 }

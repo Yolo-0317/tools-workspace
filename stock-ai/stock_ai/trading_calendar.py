@@ -107,3 +107,13 @@ def is_a_share_trading_day(d: date | None = None) -> bool:
 def is_off_market_day(d: date | None = None) -> bool:
     """周末或法定节假日等非交易日（定时只推 news）。"""
     return not is_a_share_trading_day(d)
+
+
+def latest_a_share_trade_date(*, on_or_before: date | None = None) -> date:
+    """不晚于 on_or_before 的最近一个 A 股交易日（休市周末取周五等）。"""
+    d = on_or_before or datetime.now(TZ).date()
+    for _ in range(366):
+        if is_a_share_trading_day(d):
+            return d
+        d -= timedelta(days=1)
+    return on_or_before or datetime.now(TZ).date()

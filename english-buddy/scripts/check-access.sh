@@ -52,7 +52,7 @@ fi
 probe "Caddy 本机" "https://${HUB}:${EXTERNAL_PORT}${HEALTH_PATH}" \
   --resolve "${HUB}:${EXTERNAL_PORT}:127.0.0.1" || FAIL=1
 
-if grep -qF "sidestore-infra hub local dns" /etc/hosts 2>/dev/null; then
+if grep -qF "sidestore-infra local dns" /etc/hosts 2>/dev/null || grep -qF "sidestore-infra hub local dns" /etc/hosts 2>/dev/null; then
   probe "域名 split DNS" "https://${HUB}:${EXTERNAL_PORT}${HEALTH_PATH}" || FAIL=1
 else
   code=$(curl -sk --max-time 8 -o /dev/null -w "%{http_code}" \
@@ -61,7 +61,7 @@ else
     ok "域名直连"
   else
     warn "域名直连失败 (http=${code}) — 在家 WiFi 多为 hairpin：DNS 指向公网 IP，内网回连失败"
-    echo "      修复：sudo ${SIDESTORE}/scripts/setup-hub-local-dns.sh"
+    echo "      修复：bash ${SIDESTORE}/scripts/setup-local-dns.sh"
     echo "      临时：https://${LAN_IP:-<LAN_IP>}:${INTERNAL_PORT}/english/"
   fi
 fi

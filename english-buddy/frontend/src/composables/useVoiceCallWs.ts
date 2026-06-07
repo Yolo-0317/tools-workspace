@@ -1,4 +1,4 @@
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import {
   createLesson,
   DEFAULT_GRADE_ID,
@@ -16,6 +16,7 @@ import {
   type Grade,
   type Lesson,
 } from "../api/client";
+import { fetchOrtCatalog, type OrtBook } from "../api/ort";
 import {
   DEFAULT_PROGRAM_ID,
   getProgramById,
@@ -46,8 +47,40 @@ import { wsCallUrl } from "../config/base";
 import { useAuth } from "./useAuth";
 import { PcmCapture } from "../audio/pcmCapture";
 import { unlockAudioOutput, installAudioUnlockListeners } from "../audio/audioUnlock";
-import { speakAssistant, stopSpeaking } from "../audio/speakReply";
+import {
+  hasPausableTeacherAudio,
+  isTeacherAudioPaused,
+  pauseTeacherAudio,
+  resumeTeacherAudio,
+  speakAssistant,
+  stopSpeaking,
+} from "../audio/speakReply";
+import {
+  DEFAULT_ORT_LEVEL,
+  isOrtGrade,
+  ORT_GRADE_IDS,
+  ORT_LEVEL_ORDER,
+  ortGradeIdForLevel,
+  ortLevelFromGradeId,
+  type OrtLevelFilter,
+} from "../config/ort";
+import { ortImageUrl, ortPlaceholderUrl } from "../utils/ortImageUrl";
+import {
+  findOrtBook,
+  ortLinePageIndex,
+  ortPageFirstLineIndex,
+  ortPageLineOffset as materialLineOffsetForPage,
+} from "../utils/ortPage";
 import { playChildTurnCue } from "../audio/turnCue";
+
+export type { OrtLevelFilter } from "../config/ort";
+export {
+  DEFAULT_ORT_LEVEL,
+  isOrtGrade,
+  ORT_GRADE_IDS,
+  ortGradeIdForLevel,
+  ortLevelFromGradeId,
+} from "../config/ort";
 
 export type CallPhase =
   | "idle"
@@ -59,7 +92,18 @@ export type CallPhase =
 
 export type LineVerdict = "pass" | "almost" | "retry";
 
-export type AppScreen = "pick_show" | "login" | "lesson_manage" | "call";
+export type AppScreen =
+  | "pick_show"
+  | "login"
+  | "lesson_manage"
+  | "ort_topic"
+  | "call";
+
+export type OrtLessonGroup = {
+  level: string;
+  label: string;
+  lessons: Lesson[];
+};
 
 type ServerJson =
   | { type: "ready"; model: string; whisper?: { ready: boolean; model: string } }
@@ -133,6 +177,13 @@ export function useVoiceCallWs() {
 
   const screen = ref<AppScreen>("pick_show");
   const loginReturnTo = ref<"pick_show" | "lesson_manage">("pick_show");
+  const postCallScreen = ref<"pick_show" | "ort_topic">("pick_show");
+  const ortCatalog = ref<OrtBook[]>([]);
+  const ortCatalogLoading = ref(false);
+  const ortCatalogError = ref("");
+  const ortLevelFilter = ref<OrtLevelFilter>(DEFAULT_ORT_LEVEL);
+  const ortSelectedBookId = ref<string | null>(null);
+  const ortLessonsCache = ref<Lesson[]>([]);
   const loginUsername = ref("");
   const loginPassword = ref("");
   const loginBusy = ref(false);
@@ -175,9 +226,14 @@ export function useVoiceCallWs() {
   const ttsSpeedPreset = ref<TtsSpeedPresetId>(loadTtsSpeedPreset());
   const ttsSpeed = computed(() => ttsSpeedFromPreset(ttsSpeedPreset.value));
 
-  const selectedLesson = computed(() =>
-    lessons.value.find((l) => l.id === selectedLessonId.value),
-  );
+  const selectedLesson = computed(() => {
+    const id = selectedLessonId.value;
+    if (!id) return undefined;
+    return (
+      lessons.value.find((l) => l.id === id) ??
+      ortLessonsCache.value.find((l) => l.id === id)
+    );
+  });
 
   function isBuiltinLesson(lesson: Lesson | undefined): boolean {
     return Boolean(lesson?.is_builtin);
@@ -307,6 +363,141 @@ export function useVoiceCallWs() {
       .filter(Boolean),
   );
 
+  const ortSelectedBook = computed(
+    () => ortCatalog.value.find((b) => b.id === ortSelectedBookId.value) ?? null,
+  );
+
+  const ortFilteredBooks = computed(() =>
+    ortCatalog.value.filter((b) => b.ort_level === ortLevelFilter.value),
+  );
+
+  function ortLevelForLessonId(lessonId: string): string {
+    const cached =
+      ortLessonsCache.value.find((l) => l.id === lessonId) ??
+      lessons.value.find((l) => l.id === lessonId);
+    if (cached?.grade_id && isOrtGrade(cached.grade_id)) {
+      return ortLevelFromGradeId(cached.grade_id);
+    }
+    const book = ortCatalog.value.find(
+      (b) => b.lesson_id === lessonId || b.id === lessonId,
+    );
+    if (book?.ort_level) return book.ort_level;
+    const m = cached?.title.match(/\(L([^)]+)\)/);
+    return m?.[1] ?? "";
+  }
+
+  function ortBookImagesReady(lessonId: string): boolean {
+    const book = ortCatalog.value.find(
+      (b) => b.lesson_id === lessonId || b.id === lessonId,
+    );
+    return Boolean(book?.images_ready);
+  }
+
+  const ortIllustratedLessonIds = computed(
+    () =>
+      new Set(
+        ortCatalog.value
+          .filter((b) => b.images_ready)
+          .map((b) => b.lesson_id || b.id),
+      ),
+  );
+
+  const ortIllustratedCount = computed(
+    () => ortCatalog.value.filter((b) => b.images_ready).length,
+  );
+
+  const ortBuiltinLessons = computed(() => {
+    if (screen.value === "ort_topic" && ortLessonsCache.value.length) {
+      return ortLessonsCache.value;
+    }
+    if (isOrtGrade(pickerGradeId.value)) {
+      return lessons.value.filter((l) => l.is_builtin);
+    }
+    return ortLessonsCache.value;
+  });
+
+  const ortLessonGroups = computed((): OrtLessonGroup[] => {
+    const buckets = new Map<string, Lesson[]>();
+    for (const lesson of ortBuiltinLessons.value) {
+      const level = ortLevelForLessonId(lesson.id) || "?";
+      const list = buckets.get(level) ?? [];
+      list.push(lesson);
+      buckets.set(level, list);
+    }
+    const order: string[] = [...ORT_LEVEL_ORDER, "?"];
+    return order
+      .filter((level) => buckets.has(level))
+      .map((level) => ({
+        level,
+        label: level === "?" ? "其他" : `Level ${level}`,
+        lessons: buckets.get(level)!,
+      }));
+  });
+
+  const ortFilteredLessonGroups = computed(() =>
+    ortLessonGroups.value.filter((g) => g.level === ortLevelFilter.value),
+  );
+
+  const ortActiveBook = computed(() => {
+    if (callMode.value !== "read_along") return null;
+    const lid = selectedLessonId.value;
+    if (!lid?.startsWith("ort_")) return null;
+    const book = findOrtBook(ortCatalog.value, lid);
+    if (!book?.images_ready) return null;
+    return book;
+  });
+
+  const readAlongPageIndex = computed(() => {
+    const book = ortActiveBook.value;
+    if (!book) return 0;
+    return ortLinePageIndex(book, readAlongLineIndex.value);
+  });
+
+  const ortPageLineOffset = computed(() => {
+    const book = ortActiveBook.value;
+    if (!book) return 0;
+    return materialLineOffsetForPage(book, readAlongPageIndex.value);
+  });
+
+  const ortScriptLines = computed(() => {
+    const book = ortActiveBook.value;
+    if (!book) return null;
+    const page = book.pages[readAlongPageIndex.value];
+    if (!page) return null;
+    const offset = ortPageLineOffset.value;
+    return page.lines.map((text, localI) => ({
+      text,
+      globalIndex: offset + localI,
+    }));
+  });
+
+  const ortCallPageImage = computed(() => {
+    const book = ortActiveBook.value;
+    if (!book?.pages.length) return ortPlaceholderUrl();
+    const page = book.pages[readAlongPageIndex.value] ?? book.pages[0];
+    if (ortFailedImagePaths.value.has(page.image)) {
+      return ortPlaceholderUrl();
+    }
+    return ortImageUrl(page.image);
+  });
+
+  const ortCallPageMissing = computed(() => {
+    const book = ortActiveBook.value;
+    if (!book?.pages.length) return true;
+    const page = book.pages[readAlongPageIndex.value] ?? book.pages[0];
+    return ortFailedImagePaths.value.has(page.image);
+  });
+
+  function onOrtImgError() {
+    const book = ortActiveBook.value;
+    if (!book?.pages.length) return;
+    const page = book.pages[readAlongPageIndex.value] ?? book.pages[0];
+    if (!page?.image || ortFailedImagePaths.value.has(page.image)) return;
+    const next = new Set(ortFailedImagePaths.value);
+    next.add(page.image);
+    ortFailedImagePaths.value = next;
+  }
+
   function lineVerdict(index: number): LineVerdict | undefined {
     return lineVerdicts.value[index];
   }
@@ -362,24 +553,75 @@ export function useVoiceCallWs() {
     readingMaterial.value = lesson.text;
   }
 
+  function findLessonById(lessonId: string): Lesson | undefined {
+    return (
+      lessons.value.find((l) => l.id === lessonId) ??
+      ortLessonsCache.value.find((l) => l.id === lessonId)
+    );
+  }
+
   function selectLessonOption(value: string) {
-    const lesson = lessons.value.find((l) => l.id === value);
+    const lesson = findLessonById(value);
     if (lesson) {
-      selectedLessonId.value = lesson.id;
-      readingMaterial.value = lesson.text;
+      applyLesson(lesson);
       errorMessage.value = "";
     }
   }
 
+  async function loadAllOrtLessons(programIdOverride?: string) {
+    const pid = programIdOverride ?? pickerProgramId.value;
+    const speed = ttsSpeed.value;
+    lessonsLoading.value = true;
+    try {
+      await loadOrtCatalog();
+      const imageReady = ortIllustratedLessonIds.value;
+      const [lists, stats] = await Promise.all([
+        Promise.all(
+          ORT_GRADE_IDS.map((gid) =>
+            fetchLessons(gid, pid, speed, { requirePrewarm: false }),
+          ),
+        ),
+        fetchBuiltinPrewarmStats(pid, speed),
+      ]);
+      ortLessonsCache.value = lists
+        .flat()
+        .filter((l) => imageReady.has(l.id));
+      if (stats) builtinPrewarm.value = stats;
+      return ortLessonsCache.value;
+    } finally {
+      lessonsLoading.value = false;
+    }
+  }
+
+  function ortLessonReadyForTopic(lesson: Lesson | undefined): boolean {
+    if (!lesson) return false;
+    if (!ortBookImagesReady(lesson.id)) return false;
+    return lessonReadyAtSpeed(lesson, ttsSpeed.value);
+  }
+
+  const canStartOrtReadAlong = computed(() => {
+    if (readAlongFull.value) return false;
+    const lesson = selectedLesson.value;
+    if (!lesson?.id.startsWith("ort_")) return false;
+    return ortLessonReadyForTopic(lesson);
+  });
+
   async function selectPickerProgram(id: string) {
     pickerProgramId.value = id;
     programId.value = id;
-    await loadLessonsForGrade(pickerGradeId.value, id);
+    if (screen.value === "ort_topic") {
+      await loadAllOrtLessons(id);
+    } else {
+      await loadLessonsForGrade(pickerGradeId.value, id);
+    }
     if (pickerProgramId.value !== id) return;
   }
 
   async function selectPickerGrade(id: string) {
     pickerGradeId.value = id;
+    if (isOrtGrade(id)) {
+      void loadOrtCatalog();
+    }
     const keepId = selectedLessonId.value;
     await loadLessonsForGrade(id);
     if (pickerGradeId.value !== id) return;
@@ -420,6 +662,7 @@ export function useVoiceCallWs() {
       return;
     }
     unlockAudioOutput();
+    postCallScreen.value = "pick_show";
     programId.value = pid;
     errorMessage.value = "";
     await loadLessonsForGrade(pickerGradeId.value, pid);
@@ -452,12 +695,82 @@ export function useVoiceCallWs() {
     void loadCustomLessons(manageProgramId.value);
   }
 
+  async function loadOrtCatalog(force = false) {
+    if (ortCatalog.value.length && !force) return;
+    ortCatalogLoading.value = true;
+    ortCatalogError.value = "";
+    try {
+      const data = await fetchOrtCatalog();
+      ortCatalog.value = data.books ?? [];
+    } catch (e) {
+      ortCatalogError.value =
+        e instanceof Error ? e.message : "牛津阅读树目录加载失败";
+    } finally {
+      ortCatalogLoading.value = false;
+    }
+  }
+
+  function goOrtTopic() {
+    if (screen.value === "call") return;
+    lessonManageError.value = "";
+    errorMessage.value = "";
+    ortLevelFilter.value = DEFAULT_ORT_LEVEL;
+    ortSelectedBookId.value = null;
+    screen.value = "ort_topic";
+    void loadAllOrtLessons();
+  }
+
+  function selectOrtLesson(lessonId: string) {
+    ortSelectedBookId.value = lessonId;
+    const lesson = findLessonById(lessonId);
+    if (lesson) {
+      applyLesson(lesson);
+      errorMessage.value = "";
+    }
+  }
+
+  function setOrtLevelFilter(level: OrtLevelFilter) {
+    ortLevelFilter.value = level;
+    ortSelectedBookId.value = null;
+  }
+
+  async function startOrtReadAlong(bookId: string) {
+    if (readAlongFull.value) {
+      errorMessage.value = readAlongLimitMessage.value;
+      return;
+    }
+    postCallScreen.value = "ort_topic";
+    await loadOrtCatalog();
+    const book = findOrtBook(ortCatalog.value, bookId);
+    if (!book) {
+      errorMessage.value = "读本未找到";
+      return;
+    }
+    if (!book.images_ready) {
+      errorMessage.value = "该读本暂无页图，请回首页选课文带读";
+      return;
+    }
+    unlockAudioOutput();
+    errorMessage.value = "";
+    const gradeId = ortGradeIdForLevel(book.ort_level);
+    pickerGradeId.value = gradeId;
+    programId.value = pickerProgramId.value;
+    await loadLessonsForGrade(gradeId, pickerProgramId.value);
+    selectLessonOption(book.lesson_id);
+    if (!isLessonPrewarmReady.value) {
+      errorMessage.value = "课文预热中，请稍后再试";
+      return;
+    }
+    await startCall("read_along");
+  }
+
   function goHome() {
     if (screen.value === "call") {
       endCall();
       return;
     }
     lessonManageError.value = "";
+    ortSelectedBookId.value = null;
     screen.value = "pick_show";
     void loadLessonsForGrade(pickerGradeId.value, pickerProgramId.value);
   }
@@ -504,7 +817,11 @@ export function useVoiceCallWs() {
     loginUsername.value = "";
     loginPassword.value = "";
     customLessons.value = [];
-    if (screen.value === "lesson_manage" || screen.value === "login") {
+    if (
+      screen.value === "lesson_manage" ||
+      screen.value === "login" ||
+      screen.value === "ort_topic"
+    ) {
       screen.value = "pick_show";
     }
     await loadLessonsForGrade(pickerGradeId.value, pickerProgramId.value);
@@ -599,6 +916,7 @@ export function useVoiceCallWs() {
   const rereadFromDone = ref(false);
   let rereadInFlight = false;
   const ttsPlaying = ref(false);
+  const teacherPaused = ref(false);
   let processingUtterance = false;
   let utteranceStuckTimer: ReturnType<typeof setTimeout> | null = null;
   let pendingAudioB64: string | undefined;
@@ -606,7 +924,17 @@ export function useVoiceCallWs() {
   let ttsPlayStartedAt = 0;
   let listenAllowedAfter = 0;
   let utteranceCooldownUntil = 0;
+  /**
+   * ORT/read-along teacher handoff (client-owned timing):
+   * - STT: playAssistantVoice finally → scheduleListenAfterTeacher → child turn
+   * - Listen-only: same finally → teacher_playback_done → server auto-advance
+   * - Manual nav (下一句/翻页/重读): abortTeacherHandoff() bumps teacherPlaybackEpoch
+   *   so the in-flight finally does NOT also hand off (prevents double-advance).
+   */
   let listenScheduleToken = 0;
+  let listenOnlyAdvancePending = false;
+  let teacherPlaybackEpoch = 0;
+  const ortFailedImagePaths = ref(new Set<string>());
   const sttEnabled = ref(true);
 
   const inCall = computed(() => screen.value === "call");
@@ -616,8 +944,12 @@ export function useVoiceCallWs() {
     const names = sttUsers.value.length
       ? sttUsers.value.join(" / ")
       : "yueyue / dingdang";
-    return `当前为只听模式（不识别语音）。请用 ${names} 登录后可跟读。`;
+    return `当前为只听模式（不识别语音）。请用 ${names} 登录后可跟读、打分。`;
   });
+
+  const ortStartButtonLabel = computed(() =>
+    sttEnabledForMe.value ? "开始带读" : "开始听读",
+  );
 
   const readAlongMax = computed(() => activeCalls.value.read_along_max || 2);
 
@@ -673,6 +1005,7 @@ export function useVoiceCallWs() {
     "teacher" | "child" | "busy" | "done" | null
   >(() => {
     if (callMode.value !== "read_along" || !inCall.value) return null;
+    if (teacherPaused.value) return "teacher";
     if (lessonDone.value) return "done";
     if (rereadFromDone.value) {
       if (ttsPlaying.value || phase.value === "speaking") return "teacher";
@@ -694,6 +1027,7 @@ export function useVoiceCallWs() {
   const canTapChildDone = computed(
     () =>
       sttEnabled.value &&
+      !teacherPaused.value &&
       readAlongTurn.value === "child" &&
       phase.value !== "processing",
   );
@@ -730,14 +1064,87 @@ export function useVoiceCallWs() {
         readAlongTurn.value === "child"),
   );
 
+  const canOrtAdvanceLine = computed(
+    () =>
+      callStartedRef.value &&
+      Boolean(ortActiveBook.value) &&
+      !lessonDone.value &&
+      phase.value !== "connecting" &&
+      phase.value !== "processing",
+  );
+
+  const canToggleOrtPause = computed(
+    () =>
+      Boolean(ortActiveBook.value) &&
+      callMode.value === "read_along" &&
+      inCall.value &&
+      callStartedRef.value &&
+      !lessonDone.value &&
+      (teacherPaused.value ||
+        (ttsPlaying.value && hasPausableTeacherAudio())),
+  );
+
   const showReadActionBar = computed(
     () =>
       callMode.value === "read_along" &&
       inCall.value &&
       (canBackToPreviousLine.value ||
         canRepeatCurrentLine.value ||
-        (readAlongTurn.value === "child" && sttEnabled.value)),
+        (readAlongTurn.value === "child" && sttEnabled.value) ||
+        canOrtAdvanceLine.value ||
+        canToggleOrtPause.value),
   );
+
+  function invalidateListenSchedule(clearProcessing = false) {
+    listenScheduleToken += 1;
+    listenOnlyAdvancePending = false;
+    if (clearProcessing) clearProcessingUtterance();
+  }
+
+  function stopTeacherPlayback() {
+    teacherPaused.value = false;
+    stopSpeaking();
+  }
+
+  /** Stop teacher audio and cancel post-TTS child/listen-only handoff for this playback. */
+  function abortTeacherHandoff(clearProcessing = false) {
+    teacherPlaybackEpoch += 1;
+    invalidateListenSchedule(clearProcessing);
+    stopTeacherPlayback();
+    ttsPlaying.value = false;
+  }
+
+  function toggleOrtTeacherPause() {
+    if (!canToggleOrtPause.value) return;
+    if (teacherPaused.value || isTeacherAudioPaused()) {
+      if (resumeTeacherAudio()) {
+        teacherPaused.value = false;
+        setPhase(
+          "speaking",
+          callMode.value === "read_along" && !sttEnabled.value
+            ? "老师正在说…"
+            : "老师正在说…（说完再跟读；或点「我要说话」）",
+        );
+      }
+      return;
+    }
+    if (!ttsPlaying.value || !pauseTeacherAudio()) return;
+    teacherPaused.value = true;
+    invalidateListenSchedule(true);
+    setPhase("speaking", "已暂停");
+  }
+
+  function ortAdvanceLine() {
+    if (!canOrtAdvanceLine.value || !callActive || !callStartedRef.value) return;
+    const wasSpeaking = ttsPlaying.value || phase.value === "speaking";
+    abortTeacherHandoff(true);
+    listenAllowedAfter = 0;
+    if (wasSpeaking) {
+      sendJson({ type: "interrupt" });
+    }
+    sendJson({ type: "read_along_advance" });
+    setPhase("processing", "下一句…");
+  }
 
   const orbClass = computed(() => {
     switch (phase.value) {
@@ -788,7 +1195,11 @@ export function useVoiceCallWs() {
   }
 
   function cueChildTurn() {
-    if (callMode.value !== "read_along" || lessonDone.value) {
+    if (
+      callMode.value !== "read_along" ||
+      lessonDone.value ||
+      teacherPaused.value
+    ) {
       return;
     }
     turnCueKey.value += 1;
@@ -803,7 +1214,7 @@ export function useVoiceCallWs() {
       if (!callActive || !callStartedRef.value || token !== listenScheduleToken) {
         return;
       }
-      if (ttsPlaying.value) return;
+      if (teacherPaused.value || ttsPlaying.value) return;
       clearProcessingUtterance();
       if (callMode.value === "free") {
         setPhase(
@@ -818,7 +1229,10 @@ export function useVoiceCallWs() {
         !lessonDone.value &&
         !rereadInFlight
       ) {
-        sendJson({ type: "teacher_playback_done" });
+        if (!listenOnlyAdvancePending) {
+          listenOnlyAdvancePending = true;
+          sendJson({ type: "teacher_playback_done" });
+        }
         return;
       }
       if (
@@ -833,8 +1247,14 @@ export function useVoiceCallWs() {
   }
 
   function mapServerPhase(p: string, msg?: string) {
-    if (p === "listening" && ttsPlaying.value) {
-      if (callMode.value === "free" || callMode.value === "read_along") {
+    if (p === "listening" && (ttsPlaying.value || teacherPaused.value)) {
+      if (callMode.value === "read_along" && !sttEnabled.value) {
+        return;
+      }
+      if (
+        !teacherPaused.value &&
+        (callMode.value === "free" || callMode.value === "read_along")
+      ) {
         scheduleListenAfterTeacher();
       }
       return;
@@ -867,8 +1287,7 @@ export function useVoiceCallWs() {
 
   function bargeIn() {
     if (!callActive) return;
-    stopSpeaking();
-    ttsPlaying.value = false;
+    abortTeacherHandoff();
     pendingAudioB64 = undefined;
     sendJson({ type: "interrupt" });
     setPhase("listening", "已打断，请说…");
@@ -890,6 +1309,7 @@ export function useVoiceCallWs() {
   function submitChildUtterance() {
     if (!callActive || !callStartedRef.value || processingUtterance) return;
     if (callMode.value === "read_along" && lessonDone.value) return;
+    if (teacherPaused.value) return;
     if (ttsPlaying.value || phase.value === "speaking") return;
     if (Date.now() < listenAllowedAfter) return;
     if (Date.now() < utteranceCooldownUntil) return;
@@ -940,9 +1360,7 @@ export function useVoiceCallWs() {
     rereadInFlight = true;
     lessonDone.value = false;
     const wasSpeaking = ttsPlaying.value || phase.value === "speaking";
-    stopSpeaking();
-    ttsPlaying.value = false;
-    clearProcessingUtterance();
+    abortTeacherHandoff(true);
     listenAllowedAfter = 0;
     utteranceCooldownUntil = 0;
     if (wasSpeaking) {
@@ -959,7 +1377,39 @@ export function useVoiceCallWs() {
     rereadLine(readAlongLineIndex.value - 1);
   }
 
+  const canOrtPrevPage = computed(
+    () =>
+      Boolean(ortActiveBook.value) &&
+      callStartedRef.value &&
+      readAlongPageIndex.value > 0 &&
+      canRereadLine.value,
+  );
+
+  const canOrtNextPage = computed(() => {
+    const book = ortActiveBook.value;
+    if (!book || !callStartedRef.value || !canRereadLine.value) return false;
+    return readAlongPageIndex.value < book.pages.length - 1;
+  });
+
+  function ortGoToPage(pageIndex: number) {
+    const book = ortActiveBook.value;
+    if (!book || pageIndex < 0 || pageIndex >= book.pages.length) return;
+    if (pageIndex === readAlongPageIndex.value) return;
+    rereadLine(ortPageFirstLineIndex(book, pageIndex));
+  }
+
+  function ortGoToPrevPage() {
+    if (!canOrtPrevPage.value) return;
+    ortGoToPage(readAlongPageIndex.value - 1);
+  }
+
+  function ortGoToNextPage() {
+    if (!canOrtNextPage.value) return;
+    ortGoToPage(readAlongPageIndex.value + 1);
+  }
+
   async function playAssistantVoice(text: string, audioB64?: string) {
+    const playbackEpoch = teacherPlaybackEpoch;
     capture?.resetVad();
     ttsPlaying.value = true;
     ttsPlayStartedAt = Date.now();
@@ -976,10 +1426,13 @@ export function useVoiceCallWs() {
     try {
       await speakAssistant(text, audioB64, pendingAudioMime);
     } finally {
+      teacherPaused.value = false;
       ttsPlaying.value = false;
       pendingAudioB64 = undefined;
       capture?.resetVad();
-      scheduleListenAfterTeacher();
+      if (playbackEpoch === teacherPlaybackEpoch) {
+        scheduleListenAfterTeacher();
+      }
     }
   }
 
@@ -1131,6 +1584,7 @@ export function useVoiceCallWs() {
         interimText.value = data.text;
         break;
       case "assistant_text":
+        listenOnlyAdvancePending = false;
         lastAssistant.value = data.text;
         pendingAudioB64 = undefined;
         capture?.resetVad();
@@ -1178,6 +1632,7 @@ export function useVoiceCallWs() {
         }
         break;
       case "lesson_complete":
+        listenOnlyAdvancePending = false;
         lessonDone.value = true;
         rereadFromDone.value = false;
         rereadInFlight = false;
@@ -1200,10 +1655,12 @@ export function useVoiceCallWs() {
       case "tts_speed":
         break;
       case "interrupted":
-        stopSpeaking();
-        ttsPlaying.value = false;
+        abortTeacherHandoff();
         pendingAudioB64 = undefined;
         clearProcessingUtterance();
+        if (ortActiveBook.value && phase.value === "processing") {
+          setPhase("speaking", "听老师念下一句…");
+        }
         break;
       case "stt_active":
         sttEnabled.value = data.enabled;
@@ -1245,7 +1702,7 @@ export function useVoiceCallWs() {
         setPhase("idle", "连接已断开");
       }
       stopCapture();
-      stopSpeaking();
+      abortTeacherHandoff();
       if (!callActive) {
         schedulePresenceReconnect();
       }
@@ -1393,6 +1850,13 @@ export function useVoiceCallWs() {
       return;
     }
 
+    if (
+      mode === "read_along" &&
+      selectedLessonId.value?.startsWith("ort_")
+    ) {
+      void loadOrtCatalog();
+    }
+
     screen.value = "call";
     callMode.value = mode;
     callActive = true;
@@ -1402,6 +1866,8 @@ export function useVoiceCallWs() {
     turnCueKey.value = 0;
     readAlongLineIndex.value = 0;
     lineVerdicts.value = {};
+    ortFailedImagePaths.value = new Set();
+    listenOnlyAdvancePending = false;
     micWarning.value = "";
     lastAssistant.value = "";
     interimText.value = "";
@@ -1442,24 +1908,59 @@ export function useVoiceCallWs() {
     sendJson({ type: "text_message", text });
   }
 
-  function endCall() {
+  function hangupCallSession(notifyServer = true) {
+    const wasLive = callActive || callStartedRef.value;
     callPrepareToken += 1;
-    listenScheduleToken += 1;
+    abortTeacherHandoff(true);
     callActive = false;
     callStartedRef.value = false;
     micPrepareListenOnly = false;
-    clearProcessingUtterance();
-    ttsPlaying.value = false;
-    stopSpeaking();
+    rereadInFlight = false;
     stopCapture();
-    sendJson({ type: "end_call" });
-    interimText.value = "";
-    screen.value = "pick_show";
-    setPhase("idle", "选老师、年级和课文即可带读");
+    if (notifyServer && wasLive && ws?.readyState === WebSocket.OPEN) {
+      sendJson({ type: "end_call" });
+    }
   }
+
+  function endCall() {
+    hangupCallSession(true);
+    ortFailedImagePaths.value = new Set();
+    interimText.value = "";
+    screen.value = postCallScreen.value;
+    setPhase(
+      "idle",
+      postCallScreen.value === "ort_topic"
+        ? "选一本牛津阅读树，按页带读"
+        : "选老师、年级和课文即可带读",
+    );
+  }
+
+  function onLeavePage() {
+    abortTeacherHandoff();
+    if (screen.value === "call" || callActive || callStartedRef.value) {
+      endCall();
+    }
+  }
+
+  function onVisibilityHidden() {
+    if (document.visibilityState === "hidden") {
+      onLeavePage();
+    }
+  }
+
+  watch(screen, (next, prev) => {
+    if (prev === "call" && next !== "call") {
+      abortTeacherHandoff();
+      if (callActive || callStartedRef.value) {
+        hangupCallSession(true);
+      }
+    }
+  });
 
   onMounted(() => {
     installAudioUnlockListeners();
+    window.addEventListener("pagehide", onLeavePage);
+    document.addEventListener("visibilitychange", onVisibilityHidden);
     startPrewarmPoll();
     startActiveCallsPoll();
     void (async () => {
@@ -1506,6 +2007,8 @@ export function useVoiceCallWs() {
   });
 
   onUnmounted(() => {
+    window.removeEventListener("pagehide", onLeavePage);
+    document.removeEventListener("visibilitychange", onVisibilityHidden);
     clearUtteranceStuckTimer();
     stopPrewarmPoll();
     stopActiveCallsPoll();
@@ -1513,9 +2016,7 @@ export function useVoiceCallWs() {
       clearTimeout(presenceReconnectTimer);
       presenceReconnectTimer = null;
     }
-    callActive = false;
-    stopCapture();
-    stopSpeaking();
+    hangupCallSession(true);
     ws?.close();
     ws = null;
   });
@@ -1591,6 +2092,7 @@ export function useVoiceCallWs() {
     sttUsers,
     sttEnabled,
     listenOnlyHint,
+    ortStartButtonLabel,
     isAuthenticated,
     displayName,
     switchManageProgram,
@@ -1607,6 +2109,11 @@ export function useVoiceCallWs() {
     repeatCurrentLine,
     backToPreviousLine,
     tapChildDone,
+    canOrtAdvanceLine,
+    ortAdvanceLine,
+    canToggleOrtPause,
+    teacherPaused,
+    toggleOrtTeacherPause,
     orbClass,
     startCall,
     endCall,
@@ -1622,6 +2129,34 @@ export function useVoiceCallWs() {
     enterShow,
     enterFreeChat,
     backToPicker,
+    ortCatalog,
+    ortCatalogLoading,
+    ortCatalogError,
+    ortLevelFilter,
+    ortSelectedBookId,
+    ortSelectedBook,
+    ortFilteredBooks,
+    ortLessonGroups,
+    ortFilteredLessonGroups,
+    ortBuiltinLessons,
+    ortIllustratedCount,
+    ortLessonReadyForTopic,
+    canStartOrtReadAlong,
+    ortActiveBook,
+    readAlongPageIndex,
+    ortScriptLines,
+    ortCallPageImage,
+    ortCallPageMissing,
+    onOrtImgError,
+    canOrtPrevPage,
+    canOrtNextPage,
+    ortGoToPrevPage,
+    ortGoToNextPage,
+    goOrtTopic,
+    selectOrtLesson,
+    setOrtLevelFilter,
+    startOrtReadAlong,
+    loadOrtCatalog,
     ttsSpeedPreset,
     ttsSpeed,
     ttsSpeedPresets: TTS_SPEED_PRESETS,

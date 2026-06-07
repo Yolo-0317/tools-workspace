@@ -1,0 +1,265 @@
+{
+  "note": "ORT Level 2 课文原文（无爱贝 aid 的读本）；与橙果 PDF 页图分开维护，勿从 PDF OCR。",
+  "books": [
+    {
+      "id": "ort_the_chase",
+      "lines": [
+        "Everyone wanted to play.",
+        "Biff wanted to play.",
+        "Chip wanted to play.",
+        "Kipper wanted to play.",
+        "Floppy wanted to play.",
+        "They played chase.",
+        "Floppy chased the cat.",
+        "Up the tree went the cat.",
+        "Floppy chased the ducks.",
+        "Into the water went Floppy.",
+        "Oh no!"
+      ]
+    },
+    {
+      "id": "ort_poor_floppy",
+      "lines": [
+        "Floppy was not well.",
+        "He lay on the bed.",
+        "\"Mum,\" said Kipper.",
+        "\"Floppy is poorly.\"",
+        "Mum looked at Floppy.",
+        "\"He is not well,\" said Mum.",
+        "They took Floppy to the vet.",
+        "The vet looked at Floppy.",
+        "\"Put him in the basket,\" she said.",
+        "Floppy went in the basket.",
+        "They took him home.",
+        "Floppy was better."
+      ]
+    },
+    {
+      "id": "ort_put_it_back",
+      "lines": [
+        "Kipper went on the logs.",
+        "\"Put it back,\" said Mum.",
+        "Kipper put it back.",
+        "Kipper went on the rocks.",
+        "\"Put it back,\" said Dad.",
+        "Kipper put it back.",
+        "Kipper went in the mud.",
+        "\"Put it back,\" said Chip.",
+        "Kipper put it back.",
+        "Kipper went in the water.",
+        "\"Put it back,\" said Biff.",
+        "Kipper put it back."
+      ]
+    },
+    {
+      "id": "ort_in_a_bit",
+      "lines": [
+        "\"Come and eat,\" said Mum.",
+        "\"In a bit,\" said Biff.",
+        "\"Come and eat,\" said Mum.",
+        "\"In a bit,\" said Chip.",
+        "\"Come and eat,\" said Mum.",
+        "\"In a bit,\" said Kipper.",
+        "\"In a bit,\" they said.",
+        "\"In a bit,\" said Biff.",
+        "\"In a bit,\" said Chip.",
+        "\"In a bit,\" said Kipper."
+      ]
+    },
+    {
+      "id": "ort_a_hole_in_the_sand",
+      "lines": [
+        "Dad dug a hole.",
+        "Biff dug a hole.",
+        "Chip dug a hole.",
+        "Kipper dug a hole.",
+        "Dad put up the windbreak.",
+        "Mum put up the windbreak.",
+        "They went in the sea.",
+        "The tide came in.",
+        "The hole was full of water.",
+        "\"Look at the pool,\" said Kipper."
+      ]
+    },
+    {
+      "id": "ort_monkey_tricks",
+      "lines": [
+        "Lee had a monkey.",
+        "It did tricks.",
+        "Lin had a monkey.",
+        "It did tricks.",
+        "Kipper liked the monkeys.",
+        "The monkeys did tricks.",
+        "Everyone liked the monkeys.",
+        "The monkeys did more tricks.",
+        "Oh no!",
+        "The monkeys ran away."
+      ]
+    },
+    {
+      "id": "ort_hey_presto",
+      "lines": [
+        "Wilf had a box.",
+        "Wilma had a wand.",
+        "\"Hey presto!\" said Wilma.",
+        "A rabbit was in the box.",
+        "\"Hey presto!\" said Wilf.",
+        "A bird was in the box.",
+        "\"Hey presto!\" said Wilma.",
+        "A frog was in the box.",
+        "Oh no!",
+        "Floppy was in the box."
+      ]
+    },
+    {
+      "id": "ort_its_the_weather",
+      "lines": [
+        "It was the weather.",
+        "It rained and rained.",
+        "The children were bored.",
+        "Mum was cross.",
+        "The children were noisy.",
+        "Dad was cross.",
+        "The sun came out.",
+        "Everyone was happy.",
+        "They went out to play.",
+        "It was a sunny day."
+      ]
+    },
+    {
+      "id": "ort_naughty_children",
+      "lines": [
+        "The children were naughty.",
+        "Biff was naughty.",
+        "Chip was naughty.",
+        "Kipper was naughty.",
+        "Mum was cross.",
+        "Dad was cross.",
+        "The children said sorry.",
+        "Mum was not cross.",
+        "Dad was not cross.",
+        "The children were good."
+      ]
+    },
+    {
+      "id": "ort_a_sinking_feeling",
+      "lines": [
+        "Wilf did not want to swim.",
+        "Wilma wanted to swim.",
+        "Chip wanted to swim.",
+        "Biff wanted to swim.",
+        "Wilf had a sinking feeling.",
+        "He did not want to go in.",
+        "Everyone went in the pool.",
+        "Wilf went in the pool.",
+        "Wilf liked the pool.",
+        "Wilf did not have a sinking feeling."
+      ]
+    },
+    {
+      "id": "ort_creepy_crawly",
+      "lines": [
+        "Kipper had a bath.",
+        "He saw a creepy-crawly.",
+        "\"A creepy-crawly!\" said Kipper.",
+        "Mum came to see.",
+        "Dad came to see.",
+        "Biff came to see.",
+        "Chip came to see.",
+        "They looked at the creepy-crawly.",
+        "The creepy-crawly went away.",
+        "Kipper had his bath."
+      ]
+    },
+    {
+      "id": "ort_what_is_it",
+      "lines": [
+        "Mum and Dad went out.",
+        "Gran came to babysit.",
+        "Gran sat in the chair.",
+        "She went to sleep.",
+        "The children went out.",
+        "They saw something.",
+        "\"What is it?\" said Biff.",
+        "\"What is it?\" said Chip.",
+        "It was Gran's glasses.",
+        "Gran woke up."
+      ]
+    },
+    {
+      "id": "ort_the_lost_puppy",
+      "lines": [
+        "A puppy was lost.",
+        "The children looked for it.",
+        "They looked in the garden.",
+        "They looked in the shed.",
+        "They looked in the park.",
+        "They could not find it.",
+        "Floppy barked.",
+        "The puppy was under the bush.",
+        "They found the puppy.",
+        "Everyone was happy."
+      ]
+    },
+    {
+      "id": "ort_new_trees",
+      "lines": [
+        "The children planted trees.",
+        "Biff planted a tree.",
+        "Chip planted a tree.",
+        "Kipper planted a tree.",
+        "They watered the trees.",
+        "The trees grew.",
+        "The trees grew tall.",
+        "The trees had leaves.",
+        "Everyone liked the new trees.",
+        "The new trees were good."
+      ]
+    },
+    {
+      "id": "ort_up_and_down",
+      "lines": [
+        "Mum and Dad went shopping.",
+        "Dad went up.",
+        "Mum went down.",
+        "Dad went down.",
+        "Mum went up.",
+        "Biff went up.",
+        "Chip went down.",
+        "Kipper went up and down.",
+        "They were on the escalator.",
+        "Up and down."
+      ]
+    },
+    {
+      "id": "ort_the_little_dragon",
+      "lines": [
+        "The children put on a play.",
+        "Biff was a king.",
+        "Chip was a knight.",
+        "Kipper was a dragon.",
+        "The dragon was little.",
+        "The dragon roared.",
+        "Everyone was scared.",
+        "The little dragon was funny.",
+        "Everyone laughed.",
+        "The play was good."
+      ]
+    },
+    {
+      "id": "ort_the_band",
+      "lines": [
+        "Dad had a band.",
+        "Mum had a band.",
+        "Biff had a drum.",
+        "Chip had a trumpet.",
+        "Kipper had a horn.",
+        "They played music.",
+        "Everyone liked the band.",
+        "The band played loudly.",
+        "Oh no!",
+        "The band stopped."
+      ]
+    }
+  ]
+}

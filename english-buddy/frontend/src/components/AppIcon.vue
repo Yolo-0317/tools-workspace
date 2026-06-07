@@ -1,6 +1,14 @@
 <script setup lang="ts">
 defineProps<{
-  name: "hangup" | "repeat" | "prev" | "check" | "trash";
+  name:
+    | "hangup"
+    | "repeat"
+    | "prev"
+    | "next"
+    | "check"
+    | "trash"
+    | "pause"
+    | "play";
 }>();
 </script>
 
@@ -78,6 +86,33 @@ defineProps<{
     />
   </svg>
   <svg
+    v-else-if="name === 'next'"
+    class="app-icon"
+    viewBox="0 0 24 24"
+    fill="none"
+    aria-hidden="true"
+  >
+    <path
+      d="M18 7v10"
+      stroke="currentColor"
+      stroke-width="1.75"
+      stroke-linecap="round"
+    />
+    <path
+      d="M14 12H6"
+      stroke="currentColor"
+      stroke-width="1.75"
+      stroke-linecap="round"
+    />
+    <path
+      d="M11 9l3 3-3 3"
+      stroke="currentColor"
+      stroke-width="1.75"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </svg>
+  <svg
     v-else-if="name === 'check'"
     class="app-icon"
     viewBox="0 0 24 24"
@@ -92,6 +127,25 @@ defineProps<{
       stroke-linecap="round"
       stroke-linejoin="round"
     />
+  </svg>
+  <svg
+    v-else-if="name === 'pause'"
+    class="app-icon"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    aria-hidden="true"
+  >
+    <rect x="7" y="6" width="3.5" height="12" rx="0.75" />
+    <rect x="13.5" y="6" width="3.5" height="12" rx="0.75" />
+  </svg>
+  <svg
+    v-else-if="name === 'play'"
+    class="app-icon"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    aria-hidden="true"
+  >
+    <path d="M9 7.2v9.6c0 .62.68 1 1.22.68l7.4-4.56a.85.85 0 0 0 0-1.44l-7.4-4.56C9.68 6.2 9 6.58 9 7.2z" />
   </svg>
   <svg
     v-else-if="name === 'trash'"

@@ -9,7 +9,17 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="HP带读" />
-  <base id="base" href="/readalong/web/" />
+  <script>
+    (function () {
+      var m = location.pathname.match(/^(\/readalong)(?=\/|$)/);
+      var webBase = (m ? m[1] + "/web" : "/web") + "/";
+      window.__READALONG_WEB_BASE__ = webBase.replace(/\/$/, "");
+      var base = document.createElement("base");
+      base.id = "base";
+      base.href = webBase;
+      (document.head || document.documentElement).appendChild(base);
+    })();
+  </script>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" type="image/png" sizes="192x192" href="pwa-192.png" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
@@ -24,7 +34,7 @@
       --active: #f0b429;
       --accent: #5b9dff;
       --line: #2a3342;
-      --player-h: 13.5rem;
+      --player-h: 14.75rem;
       --safe-t: env(safe-area-inset-top, 0px);
       --safe-b: env(safe-area-inset-bottom, 0px);
       --topbar-h: calc(3.4rem + var(--safe-t));
@@ -116,6 +126,43 @@
       box-shadow: inset 3px 0 0 var(--active);
     }
     .sentence.low { opacity: 0.55; }
+    .sentence.interpolated {
+      opacity: 0.72;
+      border: 1px dashed #3d4d63;
+    }
+    .sentence.interpolated .time {
+      font-style: italic;
+      opacity: 0.65;
+    }
+    .sentence.interpolated.active {
+      opacity: 0.88;
+      border-color: #5a6a82;
+    }
+    .sentence.heading {
+      text-align: center;
+      padding: 1.25rem 0.75rem 1rem;
+      margin: 0.25rem 0 0.75rem;
+      background: transparent;
+      border-left: none;
+      opacity: 1;
+    }
+    .sentence.heading:hover { background: #151b24; }
+    .sentence.heading.active {
+      background: rgba(96, 165, 250, 0.08);
+      border-left: none;
+    }
+    .sentence.heading .en {
+      font-size: 1.12rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: #dbeafe;
+    }
+    .sentence.heading .zh {
+      font-size: 1rem;
+      color: #94a3b8;
+      margin-top: 0.35rem;
+    }
+    .sentence.heading .time { opacity: 0.45; font-size: 0.72rem; }
     .time {
       font-family: ui-monospace, Menlo, monospace;
       font-size: 0.72rem;
@@ -133,6 +180,150 @@
       line-height: 1.55;
     }
     .sentence.active .zh { color: #b8c9de; }
+    .sentence .en .word {
+      cursor: pointer;
+      border-radius: 0.15rem;
+      padding: 0 0.05em;
+    }
+    .sentence .en .word:hover { background: rgba(91, 157, 255, 0.22); }
+    .sentence .en .word.selected {
+      background: rgba(240, 180, 41, 0.38);
+      box-shadow: 0 0 0 1px rgba(240, 180, 41, 0.45);
+    }
+
+    .dict-panel {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: calc(var(--player-h) + var(--safe-b));
+      z-index: 4;
+      max-height: min(44vh, 22rem);
+      display: flex;
+      flex-direction: column;
+      background: var(--surface2);
+      border-top: 1px solid var(--line);
+      box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
+      transform: translateY(110%);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.22s ease, opacity 0.18s ease;
+    }
+    .dict-panel.open {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .dict-panel__head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.85rem 1rem 0.55rem;
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+    }
+    .dict-panel__word {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+      font-family: Georgia, serif;
+    }
+    .dict-panel__meta {
+      margin: 0.2rem 0 0;
+      font-size: 0.82rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .dict-panel__zh {
+      color: #93c5fd;
+      font-size: 0.95rem;
+    }
+    .dict-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.35rem;
+    }
+    .dict-badge {
+      font-size: 0.68rem;
+      padding: 0.12rem 0.45rem;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      background: var(--surface);
+    }
+    .dict-badge--collins { color: #fcd34d; border-color: #854d0e; }
+    .dict-badge--oxford { color: #86efac; border-color: #166534; }
+    .dict-zh-list {
+      margin: 0.15rem 0 0.45rem;
+      padding-left: 1rem;
+      color: #bfdbfe;
+      font-size: 0.95rem;
+    }
+    .dict-zh-list li { margin: 0.12rem 0; }
+    .dict-exchange {
+      margin: 0 0 0.75rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .dict-panel__play {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 0.15rem 0.55rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .dict-panel__close {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 1.5rem;
+      line-height: 1;
+      padding: 0.1rem 0.35rem;
+      cursor: pointer;
+    }
+    .dict-panel__body {
+      overflow-y: auto;
+      padding: 0.65rem 1rem 0.9rem;
+      -webkit-overflow-scrolling: touch;
+    }
+    .dict-meaning { margin: 0 0 0.75rem; }
+    .dict-meaning__pos {
+      margin: 0 0 0.25rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-transform: lowercase;
+    }
+    .dict-meaning__list {
+      margin: 0;
+      padding-left: 1.1rem;
+      color: #dbe4ef;
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+    .dict-meaning__list li { margin: 0.25rem 0; }
+    .dict-meaning__ex {
+      display: block;
+      margin-top: 0.15rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+    .dict-panel__status {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .dict-panel__status.error { color: #f87171; }
     .empty {
       text-align: center;
       color: var(--muted);
@@ -365,10 +556,17 @@
     .player audio { display: none; }
     .player__toolbar {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 0.75rem;
       margin-top: 0.45rem;
+    }
+    .player__toolbar-left {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      min-width: 0;
+      flex: 1;
     }
     .speed {
       display: flex;
@@ -376,6 +574,19 @@
       gap: 0.4rem;
       flex-wrap: wrap;
       min-width: 0;
+    }
+    .sleep {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+    .sleep__countdown {
+      font-size: 0.74rem;
+      color: #7dcea0;
+      font-variant-numeric: tabular-nums;
+      min-width: 2.5rem;
     }
     .btn-refresh {
       appearance: none;
@@ -391,7 +602,8 @@
     .btn-refresh:hover { border-color: #3d4d63; }
     .btn-refresh:disabled { opacity: 0.55; cursor: wait; }
     .speed__label { font-size: 0.76rem; color: var(--muted); }
-    .speed__btn {
+    .speed__btn,
+    .sleep__btn {
       appearance: none;
       border: 1px solid var(--line);
       background: transparent;
@@ -405,6 +617,11 @@
       border-color: var(--active);
       color: var(--active);
       background: #2a2418;
+    }
+    .sleep__btn.active {
+      border-color: #7dcea0;
+      color: #7dcea0;
+      background: #1a2e22;
     }
     .stats { font-size: 0.72rem; color: var(--muted); margin-top: 0.35rem; }
 
@@ -530,6 +747,102 @@
       margin-top: 0.2rem;
     }
     .badge--ready { background: #1a2e22; color: #7dcea0; }
+    .badge--locked { background: #2e2438; color: #c4b5fd; }
+    .demo-banner {
+      margin: 0;
+      padding: 0.35rem 1rem;
+      font-size: 0.78rem;
+      color: #c4b5fd;
+      background: #1a1524;
+      border-bottom: 1px solid var(--line);
+      text-align: center;
+    }
+    .demo-banner button {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: #93c5fd;
+      text-decoration: underline;
+      cursor: pointer;
+      font: inherit;
+      padding: 0;
+    }
+    .topbar__actions {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex-shrink: 0;
+    }
+    .auth-user {
+      font-size: 0.72rem;
+      color: var(--muted);
+      max-width: 5.5rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .auth-dialog {
+      position: fixed;
+      inset: 0;
+      z-index: 6;
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0.55);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease;
+    }
+    .auth-dialog.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .auth-dialog__panel {
+      width: min(22rem, 100%);
+      background: var(--surface2);
+      border: 1px solid var(--line);
+      border-radius: 0.85rem;
+      padding: 1.1rem 1rem 1rem;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+    }
+    .auth-dialog__title {
+      margin: 0 0 0.35rem;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .auth-dialog__sub {
+      margin: 0 0 0.85rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .auth-dialog label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin: 0.55rem 0 0.25rem;
+    }
+    .auth-dialog input {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 0.45rem;
+      padding: 0.55rem 0.65rem;
+      font: inherit;
+    }
+    .auth-dialog__error {
+      min-height: 1.1rem;
+      margin: 0.45rem 0 0;
+      font-size: 0.78rem;
+      color: #f87171;
+    }
+    .auth-dialog__actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin-top: 0.85rem;
+    }
     @media (min-width: 768px) {
       .sheet {
         left: auto;
@@ -549,8 +862,13 @@
         <p class="topbar__book" id="book-title">Readalong</p>
         <p class="topbar__ch" id="chapter-label">加载中…</p>
       </div>
-      <button type="button" class="btn-ghost" id="open-chapters">目录</button>
+      <div class="topbar__actions">
+        <span class="auth-user" id="auth-user" hidden></span>
+        <button type="button" class="btn-ghost" id="auth-btn">登录</button>
+        <button type="button" class="btn-ghost" id="open-chapters">目录</button>
+      </div>
     </header>
+    <p class="demo-banner" id="demo-banner" hidden></p>
     <main class="lyrics" id="lines"></main>
   </div>
 
@@ -584,16 +902,40 @@
         </div>
       </div>
       <p class="player__error" id="player-error"></p>
-      <audio id="player" preload="metadata"></audio>
+      <audio id="player" preload="auto"></audio>
       <div class="player__toolbar">
-        <div class="speed" id="speed" aria-label="语速">
-          <span class="speed__label">语速</span>
+        <div class="player__toolbar-left">
+          <div class="speed" id="speed" aria-label="语速">
+            <span class="speed__label">语速</span>
+          </div>
+          <div class="sleep" id="sleep-timer" aria-label="定时停止">
+            <span class="speed__label">定时</span>
+            <span class="sleep__countdown" id="sleep-countdown" hidden aria-live="polite"></span>
+          </div>
         </div>
         <button type="button" class="btn-refresh" id="force-refresh" title="清缓存并重新加载">刷新</button>
       </div>
       <div class="stats" id="stats"></div>
     </div>
   </footer>
+
+  <aside class="dict-panel" id="dict-panel" aria-label="词典" aria-hidden="true">
+    <div class="dict-panel__head">
+      <div>
+        <h3 class="dict-panel__word" id="dict-word">—</h3>
+        <p class="dict-panel__meta">
+          <span id="dict-phonetic"></span>
+          <span class="dict-panel__zh" id="dict-zh"></span>
+          <button type="button" class="dict-panel__play" id="dict-audio" hidden>🔊 发音</button>
+        </p>
+        <div class="dict-badges" id="dict-badges"></div>
+      </div>
+      <button type="button" class="dict-panel__close" id="dict-close" aria-label="关闭词典">×</button>
+    </div>
+    <div class="dict-panel__body" id="dict-body">
+      <p class="dict-panel__status">点击英文单词查释义</p>
+    </div>
+  </aside>
 
   <div class="sheet-backdrop" id="sheet-backdrop"></div>
   <aside class="sheet" id="chapter-sheet" aria-label="章节目录">
@@ -608,6 +950,22 @@
     <div class="chapter-list" id="chapter-list"></div>
   </aside>
 
+  <div class="auth-dialog" id="auth-dialog" aria-hidden="true">
+    <form class="auth-dialog__panel" id="auth-form">
+      <h2 class="auth-dialog__title">管理员登录</h2>
+      <p class="auth-dialog__sub">外网试读仅第 1 章，登录后可听全本</p>
+      <label for="auth-user-input">用户名</label>
+      <input id="auth-user-input" name="username" autocomplete="username" required />
+      <label for="auth-pass-input">密码</label>
+      <input id="auth-pass-input" name="password" type="password" autocomplete="current-password" required />
+      <p class="auth-dialog__error" id="auth-error"></p>
+      <div class="auth-dialog__actions">
+        <button type="button" class="btn-ghost" id="auth-cancel">取消</button>
+        <button type="submit" class="btn-ghost" id="auth-submit">登录</button>
+      </div>
+    </form>
+  </div>
+
   <script>
     (function cleanCacheBustParam() {
       const url = new URL(location.href);
@@ -618,7 +976,7 @@
 
     const params = new URLSearchParams(location.search);
     const hubBase = (location.pathname.match(/^(\/readalong)(?=\/|$)/) || [])[1] || "";
-    const webBase = hubBase ? `${hubBase}/web` : "/web";
+    const webBase = window.__READALONG_WEB_BASE__ || (hubBase ? `${hubBase}/web` : "/web");
     const baseEl = document.getElementById("base");
     if (baseEl) baseEl.href = `${webBase}/`;
     const root = hubBase || "";
@@ -693,10 +1051,20 @@
     const timeDurEl = document.getElementById("time-dur");
     const playerErrorEl = document.getElementById("player-error");
     const speedEl = document.getElementById("speed");
+    const sleepTimerEl = document.getElementById("sleep-timer");
+    const sleepCountdownEl = document.getElementById("sleep-countdown");
     const chapterListEl = document.getElementById("chapter-list");
     const sheetEl = document.getElementById("chapter-sheet");
     const sheetBackdrop = document.getElementById("sheet-backdrop");
     const sheetSubEl = document.getElementById("sheet-sub");
+    const dictPanel = document.getElementById("dict-panel");
+    const dictWordEl = document.getElementById("dict-word");
+    const dictPhoneticEl = document.getElementById("dict-phonetic");
+    const dictZhEl = document.getElementById("dict-zh");
+    const dictBodyEl = document.getElementById("dict-body");
+    const dictAudioBtn = document.getElementById("dict-audio");
+    const dictCloseBtn = document.getElementById("dict-close");
+    const dictBadgesEl = document.getElementById("dict-badges");
 
     const SPEED_PRESETS = [
       { label: "0.75×", rate: 0.75 },
@@ -706,6 +1074,15 @@
     ];
     const SPEED_KEY = "readalong_playback_rate";
     const CHAPTER_KEY = "readalong_last_chapter";
+    const PROGRESS_KEY = "readalong_progress";
+    const SLEEP_PRESETS = [
+      { label: "关", minutes: 0 },
+      { label: "15分", minutes: 15 },
+      { label: "30分", minutes: 30 },
+      { label: "45分", minutes: 45 },
+      { label: "60分", minutes: 60 },
+      { label: "90分", minutes: 90 },
+    ];
 
     let catalog = null;
     let currentChapter = null;
@@ -719,6 +1096,423 @@
     let switching = false;
     let switchSeq = 0;
     const manifestCache = new Map();
+    const dictCache = new Map();
+    let selectedWordEl = null;
+    let dictAudio = null;
+    let sleepEndAt = 0;
+    let sleepTickTimer = 0;
+    let sleepActiveMinutes = 0;
+    let appConfig = { fullAccess: true, maxPublicChapter: 0, demoHint: "", loggedIn: false, username: null };
+    let lastProgressSave = 0;
+
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function wrapEnWords(text) {
+      return escapeHtml(text).replace(
+        /([A-Za-z]+(?:'[A-Za-z]+)?)/g,
+        (m) => `<span class="word" data-word="${m.toLowerCase()}">${m}</span>`
+      );
+    }
+
+    function chapterLocked(ch) {
+      if (!ch) return false;
+      if (ch.locked) return true;
+      if (appConfig.fullAccess || !appConfig.maxPublicChapter) return false;
+      return ch.id > appConfig.maxPublicChapter;
+    }
+
+    function applyDemoFromCatalog() {
+      if (!catalog?.demo_max_chapter) return;
+      appConfig.maxPublicChapter = catalog.demo_max_chapter;
+      appConfig.fullAccess = false;
+    }
+
+    function showDemoBannerIfNeeded() {
+      const demoBanner = document.getElementById("demo-banner");
+      if (!demoBanner) return;
+      const inDemo = !appConfig.fullAccess && appConfig.maxPublicChapter > 0;
+      if (!inDemo) {
+        demoBanner.hidden = true;
+        return;
+      }
+      demoBanner.hidden = false;
+      const hint = appConfig.demoHint || `试读开放第 ${appConfig.maxPublicChapter} 章`;
+      if (appConfig.requireAuth) {
+        demoBanner.innerHTML =
+          `${hint} · <button type="button" id="demo-login-link">登录听全本</button>`;
+        document.getElementById("demo-login-link")?.addEventListener("click", openAuthDialog);
+      } else {
+        demoBanner.textContent = hint;
+      }
+    }
+
+    function updateAuthChrome() {
+      const authBtn = document.getElementById("auth-btn");
+      const authUserEl = document.getElementById("auth-user");
+      if (!authBtn) return;
+      if (appConfig.loggedIn && appConfig.username) {
+        authBtn.textContent = "退出";
+        authBtn.dataset.mode = "logout";
+        if (authUserEl) {
+          authUserEl.hidden = false;
+          authUserEl.textContent = appConfig.username;
+        }
+      } else {
+        authBtn.textContent = "登录";
+        authBtn.dataset.mode = "login";
+        if (authUserEl) authUserEl.hidden = true;
+      }
+    }
+
+    function openAuthDialog() {
+      const dlg = document.getElementById("auth-dialog");
+      const err = document.getElementById("auth-error");
+      if (err) err.textContent = "";
+      dlg?.classList.add("open");
+      dlg?.setAttribute("aria-hidden", "false");
+      document.getElementById("auth-user-input")?.focus();
+    }
+
+    function closeAuthDialog() {
+      const dlg = document.getElementById("auth-dialog");
+      dlg?.classList.remove("open");
+      dlg?.setAttribute("aria-hidden", "true");
+    }
+
+    async function reloadAfterAuth() {
+      const cfgRes = await fetch(`${root}/api/config`, { credentials: "same-origin" });
+      if (cfgRes.ok) appConfig = await cfgRes.json();
+      const catRes = await fetch(`${root}/output/catalog.json`, { credentials: "same-origin" });
+      catalog = await catRes.json();
+      applyDemoFromCatalog();
+      showDemoBannerIfNeeded();
+      updateAuthChrome();
+      sheetSubEl.textContent = `${catalog.book_title_zh} · ${catalog.ready_count}/${catalog.chapter_count} 章可播`;
+      renderChapterList();
+      prefetchManifests();
+      if (currentChapter && !currentChapter.ready && !chapterLocked(currentChapter)) {
+        /* keep */
+      } else if (currentChapter && chapterLocked(currentChapter)) {
+        const first = catalog.chapters.find((c) => c.ready && !chapterLocked(c));
+        if (first) await switchChapter(first, { force: true });
+      } else if (currentChapter?.ready) {
+        await switchChapter(currentChapter, { force: true });
+      }
+    }
+
+    async function loginAdmin(username, password) {
+      const res = await fetch(`${root}/api/auth/login`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error === "invalid_credentials" ? "用户名或密码错误" : "登录失败");
+      }
+      await reloadAfterAuth();
+    }
+
+    async function logoutAdmin() {
+      await fetch(`${root}/api/auth/logout`, {
+        method: "POST",
+        credentials: "same-origin",
+      });
+      await reloadAfterAuth();
+    }
+
+    function initAuthControls() {
+      const authBtn = document.getElementById("auth-btn");
+      const authForm = document.getElementById("auth-form");
+      const authCancel = document.getElementById("auth-cancel");
+      const authDialog = document.getElementById("auth-dialog");
+
+      authBtn?.addEventListener("click", () => {
+        if (authBtn.dataset.mode === "logout") {
+          void logoutAdmin();
+          return;
+        }
+        openAuthDialog();
+      });
+      authCancel?.addEventListener("click", closeAuthDialog);
+      authDialog?.addEventListener("click", (e) => {
+        if (e.target === authDialog) closeAuthDialog();
+      });
+      authForm?.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const errEl = document.getElementById("auth-error");
+        const user = document.getElementById("auth-user-input")?.value?.trim() || "";
+        const pass = document.getElementById("auth-pass-input")?.value || "";
+        if (errEl) errEl.textContent = "";
+        void loginAdmin(user, pass)
+          .then(() => {
+            closeAuthDialog();
+            authForm.reset();
+          })
+          .catch((err) => {
+            if (errEl) errEl.textContent = String(err.message || err);
+          });
+      });
+      updateAuthChrome();
+    }
+
+    function progressStorageKey(pad) {
+      const book = catalog?.book_id || "hp01";
+      return `${book}:${pad}`;
+    }
+
+    function getProgressStore() {
+      try {
+        return JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}");
+      } catch {
+        return {};
+      }
+    }
+
+    function getChapterProgress(pad) {
+      return getProgressStore()[progressStorageKey(pad)];
+    }
+
+    function saveChapterProgressFor(pad) {
+      if (!pad || !Number.isFinite(player.duration) || player.duration <= 0) return;
+      const t = player.currentTime;
+      if (t < 1) return;
+      let line = active;
+      if (line < 0) {
+        for (let i = 0; i < lines.length; i++) {
+          if (t >= lines[i].start && t < lines[i].end) line = i;
+        }
+      }
+      const store = getProgressStore();
+      store[progressStorageKey(pad)] = { time: t, line, at: Date.now() };
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify(store));
+    }
+
+    function saveChapterProgress() {
+      if (currentChapter) saveChapterProgressFor(currentChapter.pad);
+    }
+
+    function maybeSaveProgress() {
+      const now = Date.now();
+      if (now - lastProgressSave < 4000) return;
+      lastProgressSave = now;
+      saveChapterProgress();
+    }
+
+    function showDemoToast(msg) {
+      const text = msg || appConfig.demoHint || "试读仅开放第 1 章";
+      statsEl.textContent = text;
+      window.setTimeout(() => {
+        if (statsEl.textContent === text && currentChapter) {
+          updateChrome(currentChapter, { lines });
+        }
+      }, 3200);
+    }
+
+    function closeDictPanel() {
+      dictPanel.classList.remove("open");
+      dictPanel.setAttribute("aria-hidden", "true");
+      if (selectedWordEl) {
+        selectedWordEl.classList.remove("selected");
+        selectedWordEl = null;
+      }
+    }
+
+    function openDictPanel() {
+      dictPanel.classList.add("open");
+      dictPanel.setAttribute("aria-hidden", "false");
+    }
+
+    function renderDictLoading(word) {
+      dictWordEl.textContent = word;
+      dictPhoneticEl.textContent = "";
+      dictZhEl.textContent = "";
+      if (dictBadgesEl) dictBadgesEl.innerHTML = "";
+      dictAudioBtn.hidden = true;
+      dictBodyEl.innerHTML = `<p class="dict-panel__status">查询中…</p>`;
+      openDictPanel();
+    }
+
+    function renderDictBadges(data) {
+      if (!dictBadgesEl) return;
+      const badges = [];
+      if (data.collins > 0) {
+        badges.push(`<span class="dict-badge dict-badge--collins">Collins ${"★".repeat(data.collins)}</span>`);
+      }
+      if (data.oxford > 0) {
+        badges.push(`<span class="dict-badge dict-badge--oxford">Oxford 3000</span>`);
+      }
+      (data.tags || []).slice(0, 4).forEach((tag) => {
+        badges.push(`<span class="dict-badge">${escapeHtml(tag.toUpperCase())}</span>`);
+      });
+      dictBadgesEl.innerHTML = badges.join("");
+    }
+
+    function renderDictResult(data) {
+      dictWordEl.textContent = data.word || data.query || "—";
+      dictPhoneticEl.textContent = data.phonetic || "";
+      dictZhEl.textContent = "";
+      renderDictBadges(data);
+      if (data.audio) {
+        dictAudioBtn.hidden = false;
+        dictAudioBtn.onclick = () => {
+          if (!dictAudio) dictAudio = new Audio();
+          dictAudio.src = data.audio;
+          void dictAudio.play();
+        };
+      } else {
+        dictAudioBtn.hidden = true;
+      }
+
+      if (!data.ok) {
+        const hints = {
+          dict_api_unavailable: "词典服务未就绪，请运行 <code>./scripts/restart.sh</code>",
+          network_error: "联网查词失败，请检查网络后重试",
+          not_found: data.hint || `未找到「${escapeHtml(data.query || "")}」的释义`,
+        };
+        const hint =
+          hints[data.error] ||
+          (data.hint ? `${escapeHtml(data.hint)}` : `未找到「${escapeHtml(data.query || "")}」的释义`);
+        dictBadgesEl.innerHTML = "";
+        dictBodyEl.innerHTML = `<p class="dict-panel__status error">${hint}</p>`;
+        return;
+      }
+
+      const exchange = data.exchange
+        ? `<p class="dict-exchange">${Object.entries(data.exchange)
+            .map(([k, v]) => `${escapeHtml(k)}: ${escapeHtml(v)}`)
+            .join(" · ")}</p>`
+        : "";
+
+      const parts = (data.meanings || []).map((m) => {
+        const pos = m.pos ? `<p class="dict-meaning__pos">${escapeHtml(m.pos)}</p>` : "";
+        const zhItems = (m.zh || [])
+          .map((z) => `<li>${escapeHtml(z)}</li>`)
+          .join("");
+        const zhBlock = zhItems ? `<ul class="dict-zh-list">${zhItems}</ul>` : "";
+        const enDefs = (m.definitions || [])
+          .map((d) => {
+            const ex = d.example ? `<span class="dict-meaning__ex">${escapeHtml(d.example)}</span>` : "";
+            return `<li>${escapeHtml(d.def)}${ex}</li>`;
+          })
+          .join("");
+        const enBlock = enDefs ? `<ul class="dict-meaning__list">${enDefs}</ul>` : "";
+        return `<div class="dict-meaning">${pos}${zhBlock}${enBlock}</div>`;
+      });
+      dictBodyEl.innerHTML =
+        (exchange || "") + (parts.join("") || `<p class="dict-panel__status">暂无释义</p>`);
+    }
+
+    async function seekToLine(i, opts = {}) {
+      const line = lines[i];
+      if (!line || line.start == null || Number.isNaN(Number(line.start))) return;
+      userScrolling = false;
+      const t = Math.max(0, Number(line.start) + 0.02);
+      const shouldPlay = opts.play !== false;
+
+      if (player.readyState < 2) {
+        await waitAudioCanPlay(8000);
+      }
+
+      seeking = true;
+      await new Promise((resolve) => {
+        const tolerance = 0.35;
+        if (Math.abs(player.currentTime - t) <= tolerance) {
+          seeking = false;
+          resolve();
+          return;
+        }
+        let settled = false;
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          seeking = false;
+          player.removeEventListener("seeked", onSeeked);
+          clearTimeout(fallback);
+          resolve();
+        };
+        const onSeeked = () => finish();
+        const fallback = window.setTimeout(finish, 1500);
+        player.addEventListener("seeked", onSeeked);
+        try {
+          if (typeof player.fastSeek === "function") {
+            player.fastSeek(t);
+          } else {
+            player.currentTime = t;
+          }
+        } catch {
+          finish();
+        }
+      });
+
+      if (shouldPlay) {
+        try {
+          await player.play();
+        } catch (_) {
+          /* autoplay policy */
+        }
+      }
+      syncPlayButton();
+      setActive(i, { forceScroll: true });
+    }
+
+    async function lookupWord(rawWord, wordEl) {
+      const word = (rawWord || "").toLowerCase();
+      if (!word || word.length < 2) return;
+
+      if (selectedWordEl && selectedWordEl !== wordEl) {
+        selectedWordEl.classList.remove("selected");
+      }
+      selectedWordEl = wordEl;
+      wordEl.classList.add("selected");
+
+      if (dictCache.has(word)) {
+        renderDictResult(dictCache.get(word));
+        return;
+      }
+
+      renderDictLoading(word);
+      try {
+        const res = await fetch(`${root}/api/dict?word=${encodeURIComponent(word)}`);
+        const ct = res.headers.get("content-type") || "";
+        if (!ct.includes("json")) {
+          throw new Error("dict_api_unavailable");
+        }
+        const data = await res.json();
+        dictCache.set(word, data);
+        renderDictResult(data);
+      } catch (err) {
+        const msg =
+          err?.message === "dict_api_unavailable"
+            ? "词典 API 未就绪，请在本机执行：./scripts/restart.sh"
+            : null;
+        renderDictResult({ ok: false, query: word, error: msg || "lookup_failed" });
+      }
+    }
+
+    function initLineClicks() {
+      linesEl.addEventListener("click", (e) => {
+        const wordEl = e.target.closest(".word");
+        if (wordEl) {
+          e.preventDefault();
+          e.stopPropagation();
+          void lookupWord(wordEl.dataset.word, wordEl);
+          return;
+        }
+        const row = e.target.closest(".sentence");
+        if (!row) return;
+        e.preventDefault();
+        const i = Number(row.dataset.lineIdx);
+        if (Number.isInteger(i) && i >= 0) void seekToLine(i);
+      });
+    }
 
     function fmt(sec) {
       if (sec == null || Number.isNaN(sec)) return "—";
@@ -764,6 +1558,85 @@
       applySpeed(loadSpeed());
     }
 
+    function formatSleepCountdown(ms) {
+      const total = Math.max(0, Math.ceil(ms / 1000));
+      const h = Math.floor(total / 3600);
+      const m = Math.floor((total % 3600) / 60);
+      const s = total % 60;
+      if (h > 0) {
+        return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+      }
+      return `${m}:${s.toString().padStart(2, "0")}`;
+    }
+
+    function updateSleepUi() {
+      sleepTimerEl.querySelectorAll(".sleep__btn").forEach((btn) => {
+        const mins = Number(btn.dataset.minutes);
+        btn.classList.toggle("active", sleepActiveMinutes === mins && mins > 0);
+      });
+      if (sleepEndAt > Date.now()) {
+        sleepCountdownEl.hidden = false;
+        sleepCountdownEl.textContent = formatSleepCountdown(sleepEndAt - Date.now());
+      } else {
+        sleepCountdownEl.hidden = true;
+        sleepCountdownEl.textContent = "";
+      }
+    }
+
+    function clearSleepTimer() {
+      sleepEndAt = 0;
+      sleepActiveMinutes = 0;
+      if (sleepTickTimer) {
+        clearInterval(sleepTickTimer);
+        sleepTickTimer = 0;
+      }
+      updateSleepUi();
+    }
+
+    function tickSleepTimer() {
+      if (!sleepEndAt) return;
+      const left = sleepEndAt - Date.now();
+      if (left <= 0) {
+        clearSleepTimer();
+        player.pause();
+        syncPlayButton();
+        return;
+      }
+      updateSleepUi();
+    }
+
+    function setSleepTimer(minutes) {
+      if (!minutes) {
+        clearSleepTimer();
+        return;
+      }
+      sleepActiveMinutes = minutes;
+      sleepEndAt = Date.now() + minutes * 60 * 1000;
+      if (!sleepTickTimer) {
+        sleepTickTimer = window.setInterval(tickSleepTimer, 1000);
+      }
+      updateSleepUi();
+    }
+
+    function initSleepControls() {
+      SLEEP_PRESETS.forEach((preset) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "sleep__btn";
+        btn.dataset.minutes = String(preset.minutes);
+        btn.textContent = preset.label;
+        btn.addEventListener("click", () => {
+          if (preset.minutes === sleepActiveMinutes && sleepEndAt > Date.now()) {
+            clearSleepTimer();
+            return;
+          }
+          setSleepTimer(preset.minutes);
+        });
+        sleepTimerEl.appendChild(btn);
+      });
+      updateSleepUi();
+    }
+
     function setPlayerError(msg) {
       if (!msg) {
         playerErrorEl.textContent = "";
@@ -797,6 +1670,33 @@
       timeDurEl.textContent = fmt(dur);
     }
 
+    function getNextReadyChapter() {
+      if (!catalog || !currentChapter) return null;
+      const idx = catalog.chapters.findIndex((c) => c.pad === currentChapter.pad);
+      if (idx < 0) return null;
+      for (let i = idx + 1; i < catalog.chapters.length; i++) {
+        const ch = catalog.chapters[i];
+        if (ch.ready && !chapterLocked(ch)) return ch;
+      }
+      return null;
+    }
+
+    function onChapterEnded() {
+      syncPlayButton();
+      if (switching) return;
+      const next = getNextReadyChapter();
+      if (next) void switchChapter(next, { autoplay: true });
+    }
+
+    function togglePlayPause() {
+      if (player.error || !player.src || switching) return;
+      if (player.paused || player.ended) {
+        void player.play();
+      } else {
+        player.pause();
+      }
+    }
+
     function initPlayerControls() {
       btnPlay.addEventListener("click", () => {
         if (player.error || !player.src) return;
@@ -805,6 +1705,27 @@
       btnPause.addEventListener("click", () => {
         if (player.error || !player.src) return;
         player.pause();
+      });
+
+      document.addEventListener("keydown", (e) => {
+        const tag = (e.target instanceof Element && e.target.tagName) || "";
+        if (/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(tag)) return;
+        if (e.target instanceof Element && e.target.isContentEditable) return;
+
+        if (e.code === "ArrowLeft") {
+          e.preventDefault();
+          if (lines.length && active > 0) void seekToLine(active - 1);
+          else if (lines.length && active < 0) void seekToLine(0);
+          return;
+        }
+        if (e.code === "ArrowRight") {
+          e.preventDefault();
+          if (active >= 0 && active < lines.length - 1) void seekToLine(active + 1);
+          return;
+        }
+        if (e.code !== "Space" && e.key !== " ") return;
+        e.preventDefault();
+        togglePlayPause();
       });
 
       playerSeek.addEventListener("input", () => {
@@ -828,8 +1749,11 @@
         player.playbackRate = playbackRate;
         syncPlayButton();
       });
-      player.addEventListener("pause", syncPlayButton);
-      player.addEventListener("ended", syncPlayButton);
+      player.addEventListener("pause", () => {
+        saveChapterProgress();
+        syncPlayButton();
+      });
+      player.addEventListener("ended", onChapterEnded);
       player.addEventListener("loadedmetadata", () => {
         player.playbackRate = playbackRate;
         btnPlay.disabled = false;
@@ -856,22 +1780,30 @@
       chapterListEl.innerHTML = "";
       if (!catalog) return;
       catalog.chapters.forEach((ch) => {
+        const locked = chapterLocked(ch);
         const btn = document.createElement("button");
         btn.type = "button";
         btn.dataset.pad = ch.pad;
         btn.className = "chapter-item" + (currentChapter?.pad === ch.pad ? " active" : "");
-        btn.disabled = !ch.ready;
+        btn.disabled = !ch.ready || locked;
+        const badge = ch.ready
+          ? `<span class="badge badge--ready">可播放</span>`
+          : locked
+            ? `<span class="badge badge--locked">试读锁定</span>`
+            : `<span class="badge">${ch.has_audio ? "待对齐" : "待音频"}</span>`;
         btn.innerHTML =
           `<span class="chapter-item__num">${ch.pad}</span>` +
           `<div>` +
           `<p class="chapter-item__title">${ch.title_zh}</p>` +
           `<p class="chapter-item__sub">${ch.title_en}</p>` +
-          (ch.ready
-            ? `<span class="badge badge--ready">可播放</span>`
-            : `<span class="badge">${ch.has_audio ? "待对齐" : "待音频"}</span>`) +
+          badge +
           `</div>` +
           `<span class="chapter-item__meta">${ch.ready ? fmt(ch.duration_sec) : "—"}</span>`;
         btn.addEventListener("click", () => {
+          if (locked) {
+            showDemoToast();
+            return;
+          }
           if (!ch.ready || switching) return;
           closeSheet();
           void switchChapter(ch);
@@ -912,6 +1844,10 @@
     async function loadManifest(ch) {
       if (manifestCache.has(ch.pad)) return manifestCache.get(ch.pad);
       const res = await fetch(`${root}/${ch.manifest}`);
+      if (res.status === 403) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.hint || "试读仅开放第 1 章");
+      }
       if (!res.ok) throw new Error(`manifest ${res.status}`);
       const data = await res.json();
       manifestCache.set(ch.pad, data);
@@ -920,25 +1856,28 @@
 
     function prefetchManifests() {
       if (!catalog) return;
-      catalog.chapters.filter((c) => c.ready).forEach((ch) => {
+      catalog.chapters.filter((c) => c.ready && !chapterLocked(c)).forEach((ch) => {
         void loadManifest(ch).catch(() => {});
       });
     }
 
     function buildLineElement(line, i) {
       const div = document.createElement("div");
-      const low = line.confidence != null && line.confidence < 0.6;
-      div.className = "sentence" + (i === active ? " active" : "") + (low ? " low" : "");
+      const isHeading = line.kind === "heading";
+      const low = !isHeading && line.confidence != null && line.confidence < 0.6;
+      const interp = !isHeading && !!line.interpolated;
+      div.className =
+        "sentence" +
+        (isHeading ? " heading" : "") +
+        (i === active ? " active" : "") +
+        (low ? " low" : "") +
+        (interp ? " interpolated" : "");
+      div.dataset.lineIdx = String(i);
       const zh = line.zh ? `<p class="zh">${line.zh}</p>` : "";
+      const timeLabel = interp ? `~${fmt(line.start)}` : fmt(line.start);
       div.innerHTML =
-        `<span class="time">${fmt(line.start)}</span>` +
-        `<div class="sentence__body"><p class="en">${line.text}</p>${zh}</div>`;
-      div.addEventListener("click", () => {
-        userScrolling = false;
-        player.currentTime = line.start + 0.02;
-        void player.play().then(syncPlayButton);
-        setActive(i, { forceScroll: true });
-      });
+        `<span class="time">${timeLabel}</span>` +
+        `<div class="sentence__body"><p class="en">${wrapEnWords(line.text)}</p>${zh}</div>`;
       return div;
     }
 
@@ -982,7 +1921,25 @@
       });
     }
 
-    function updateChrome(ch, data) {
+    function waitAudioCanPlay(timeoutMs = 12000) {
+      return new Promise((resolve) => {
+        if (player.readyState >= 2) {
+          resolve();
+          return;
+        }
+        const timer = window.setTimeout(resolve, timeoutMs);
+        const onReady = () => {
+          clearTimeout(timer);
+          player.removeEventListener("canplay", onReady);
+          player.removeEventListener("loadeddata", onReady);
+          resolve();
+        };
+        player.addEventListener("canplay", onReady);
+        player.addEventListener("loadeddata", onReady);
+      });
+    }
+
+    function updateChrome(ch, data, extra) {
       const label = `第 ${ch.id} 章 · ${ch.title_zh}`;
       chapterLabelEl.textContent = label;
       playerTitleEl.textContent = ch.title_zh;
@@ -993,17 +1950,27 @@
         const zhN = (data.lines || []).filter((l) => l.zh).length;
         statsEl.textContent =
           `${data.aligned_sentences || data.lines?.length || 0} 句 · ` +
-          `${zhN} 句中文 · 高置信 ${conf} · 起点 ${fmt(data.body_start_sec)}`;
+          `${zhN} 句中文 · 高置信 ${conf} · 起点 ${fmt(data.body_start_sec)}` +
+          (extra ? ` · ${extra}` : "");
       }
     }
 
     async function switchChapter(ch, opts = {}) {
+      if (chapterLocked(ch)) {
+        showDemoToast();
+        return;
+      }
       if (!ch.ready) return;
       if (switching && !opts.force) return;
       if (currentChapter?.pad === ch.pad && lines.length && !opts.force) return;
 
+      if (currentChapter && currentChapter.pad !== ch.pad) {
+        saveChapterProgressFor(currentChapter.pad);
+      }
+
       const seq = ++switchSeq;
       switching = true;
+      closeDictPanel();
       updateChapterListActive(ch.pad);
 
       player.pause();
@@ -1043,14 +2010,39 @@
         player.src = `${root}/${ch.audio}?v=${ch.pad}`;
         player.load();
         player.playbackRate = playbackRate;
-        updateChrome(ch, data);
         updateChapterListActive(null);
 
         await waitAudioReady();
         if (seq !== switchSeq) return;
 
+        let resumeExtra = "";
+        if (!opts.fromStart && !opts.autoplay) {
+          const saved = getChapterProgress(ch.pad);
+          if (saved && saved.time > 3) {
+            player.currentTime = saved.time;
+            let idx = saved.line;
+            if (idx == null || idx < 0) {
+              for (let i = 0; i < lines.length; i++) {
+                if (saved.time >= lines[i].start && saved.time < lines[i].end) idx = i;
+              }
+            }
+            if (idx >= 0) setActive(idx, { forceScroll: true });
+            resumeExtra = `已从 ${fmt(saved.time)} 继续`;
+          }
+        }
+
         setChapterLoadingProgress("完成", 100);
-        if (opts.autoplay) void player.play().then(syncPlayButton);
+        updateChrome(ch, data, resumeExtra);
+        if (opts.autoplay) {
+          await waitAudioCanPlay();
+          if (seq !== switchSeq) return;
+          try {
+            await player.play();
+          } catch (_) {
+            /* autoplay policy */
+          }
+          syncPlayButton();
+        }
       } catch (e) {
         if (seq !== switchSeq) return;
         linesEl.innerHTML = `<div class="empty">章节加载失败<br>${String(e)}</div>`;
@@ -1099,6 +2091,7 @@
 
     let lastTick = 0;
     player.addEventListener("timeupdate", () => {
+      maybeSaveProgress();
       const now = performance.now();
       if (now - lastTick < 120) return;
       lastTick = now;
@@ -1117,11 +2110,44 @@
     sheetBackdrop.addEventListener("click", closeSheet);
 
     initSpeedControls();
+    initSleepControls();
     initPlayerControls();
+    initAuthControls();
+    dictCloseBtn.addEventListener("click", closeDictPanel);
+    initLineClicks();
 
     async function boot() {
-      const catRes = await fetch(`${root}/output/catalog.json`);
+      const onPublicHub =
+        /yoloworld\.site$/i.test(location.hostname) || location.port === "8883";
+      try {
+        const cfgRes = await fetch(`${root}/api/config`, { credentials: "same-origin" });
+        if (cfgRes.ok) appConfig = await cfgRes.json();
+        else if (onPublicHub) {
+          appConfig = {
+            fullAccess: false,
+            maxPublicChapter: 1,
+            requireAuth: true,
+            loggedIn: false,
+            demoHint: "试读开放第 1 章 · 登录后可听全本",
+          };
+        }
+      } catch (_) {
+        if (onPublicHub) {
+          appConfig = {
+            fullAccess: false,
+            maxPublicChapter: 1,
+            requireAuth: true,
+            loggedIn: false,
+            demoHint: "试读开放第 1 章 · 登录后可听全本",
+          };
+        }
+      }
+      updateAuthChrome();
+
+      const catRes = await fetch(`${root}/output/catalog.json`, { credentials: "same-origin" });
       catalog = await catRes.json();
+      applyDemoFromCatalog();
+      showDemoBannerIfNeeded();
       bookTitleEl.textContent = catalog.book_title_zh;
       sheetSubEl.textContent = `${catalog.book_title_zh} · ${catalog.ready_count}/${catalog.chapter_count} 章可播`;
       renderChapterList();

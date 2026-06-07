@@ -22,6 +22,7 @@ from db.database import init_db
 from routers.auth_api import router as auth_router
 from routers.calls_api import router as calls_router
 from routers.lessons_api import router as lessons_router
+from routers.ort_api import router as ort_router
 from services.user_store import assign_orphan_custom_lessons, bootstrap_from_env, list_users
 from services.builtin_prewarm import schedule_builtin_prewarm
 from services.lesson_store import ensure_db
@@ -59,6 +60,7 @@ app.include_router(ws_router)
 app.include_router(auth_router)
 app.include_router(calls_router)
 app.include_router(lessons_router)
+app.include_router(ort_router)
 
 
 @app.on_event("startup")

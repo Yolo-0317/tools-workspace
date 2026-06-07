@@ -53,13 +53,39 @@ python3 scripts/verify_chapter.py --chapter N
 - `verify_chapter.py`：merged 词数 ≥ 95% HTML 正文。
 - manifest：**lines 数 = sentences 数**（允许含 interpolated；高置信句越多越好）。
 
-## 7. 历史问题章节
+## 7. 章标题 / 小节名（有声书片头）
+
+- EPUB 章首有 `<h2>CHAPTER N</h2>` + `<h4>TITLE</h4>`，Stephen Fry 会朗读出来。
+- `extract_sentences.py` 在正文前插入 **`kind: heading`** 行（如 `Chapter 9 · The Midnight Duel`）。
+- 中文来自珍藏版章首段（如 `第九章 · 午夜决斗`）。
+- 播放器对 `heading` 行居中加粗显示；重跑 `./scripts/pipeline.sh N` 即可更新已有章。
+
+## 8. 历史问题章节
 
 | 章 | 曾出问题 | 处理 |
 |----|---------|------|
 | 2–4 | MP3 symlink → 404 | `import_downloads.sh` + 真实文件 |
 | 3 | 186/231 句 manifest | `align_words.py` 英/美等价 + 插值 |
 | 4 | 67/221 句 manifest | 同上，重跑后 221/221 |
+| 9 | 多句吞并 37–186s 音频块 | `align_words.py` 限制 lookahead + 25s 硬顶；重跑 `./scripts/pipeline.sh 9` |
 | 1–2 | 章末缺 3/10 句 | 插值在 `nxt.start ≤ prev.end` 时失败；已加兜底，241/241、190/190 |
+
+## 9. 批量重对齐（不改 Whisper）
+
+对齐逻辑更新后，不必重跑 Whisper：
+
+```bash
+./scripts/realign_range.sh 1 11    # hp01 第 1–11 章
+```
+
+等价于每章 `align_words.py` + `attach_translation.py` + `build_catalog.py`。
+
+## 10. 外网试读 / 内网全章 / 管理员登录
+
+- 外网默认 `READALONG_MAX_PUBLIC_CHAPTER=1`；内网 IP 前缀见 `READALONG_FULL_ACCESS_CIDRS`。
+- **管理员**：`readalong/.env` 中 `READALONG_ADMIN_USER` / `READALONG_ADMIN_PASSWORD`（gitignore，勿提交）。
+- 登录后 cookie `ra_session`（Path=`/readalong/`）外网也可听全章；未登录仍试读第 1 章。
+- API：`POST /api/auth/login` · `POST /api/auth/logout` · `GET /api/auth/me`
+- Caddy：`web/` 静态直出；`samples/`、`output/`、`/api/*` 反代 `:8791`。
 
 更新本文当发现新坑时，并在 README 链到此处。

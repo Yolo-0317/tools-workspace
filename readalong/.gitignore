@@ -1,3 +1,6 @@
 samples/
 output/
+data/dict_cache/
+data/.auth_secret
 .venv/
+.env

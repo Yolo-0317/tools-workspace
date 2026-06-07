@@ -28,12 +28,24 @@ def _split_zh_sentences(text: str) -> list[str]:
     return [p.strip() for p in parts if p.strip()]
 
 
+def _extract_heading_zh(html: str, chapter: int, title_zh: str) -> str:
+    for raw in re.findall(r"<p[^>]*>(.*?)</p>", html, flags=re.S):
+        if "height:1em" in raw:
+            continue
+        text = _clean_html(raw)
+        if text and re.match(r"^第[一二三四五六七八九十百零\d]+章", text) and len(text) < 48:
+            return text.replace("\u3000", " · ")
+    return f"第{chapter}章 · {title_zh}"
+
+
 def extract_chapter(epub_path: Path, book_id: str, chapter: int) -> dict:
     meta = get_chapter(book_id, chapter)
     rel = meta["zh_file"]
 
     with zipfile.ZipFile(epub_path) as zf:
         html = zf.read(rel).decode("utf-8", errors="replace")
+
+    heading_zh = _extract_heading_zh(html, chapter, meta["title_zh"])
 
     paragraphs: list[str] = []
     for raw in re.findall(r"<p[^>]*>(.*?)</p>", html, flags=re.S):
@@ -42,21 +54,27 @@ def extract_chapter(epub_path: Path, book_id: str, chapter: int) -> dict:
         text = _clean_html(raw)
         if not text:
             continue
-        if re.match(r"^第[一二三四五六七八九十百]+章", text) and len(text) < 40:
+        if re.match(r"^第[一二三四五六七八九十百零\d]+章", text) and len(text) < 48:
             continue
         paragraphs.append(text)
 
-    sentences: list[str] = []
+    body_sentences: list[str] = []
     for para in paragraphs:
-        sentences.extend(_split_zh_sentences(para))
+        body_sentences.extend(_split_zh_sentences(para))
+
+    sentences = [heading_zh, *body_sentences]
+    kinds = ["heading", *(["body"] * len(body_sentences))]
 
     return {
         "chapter": chapter,
         "title": meta["title_zh"],
+        "heading_zh": heading_zh,
         "paragraph_count": len(paragraphs),
         "sentence_count": len(sentences),
+        "body_sentence_count": len(body_sentences),
         "paragraphs": paragraphs,
         "sentences": sentences,
+        "kinds": kinds,
     }
 
 

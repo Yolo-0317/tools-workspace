@@ -1,5 +1,5 @@
 /* Readalong PWA — bump CACHE when shell assets change. */
-const CACHE = "readalong-shell-v2";
+const CACHE = "readalong-shell-v15";
 const SHELL = ["./manifest.webmanifest", "./pwa-192.png", "./pwa-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", (event) => {

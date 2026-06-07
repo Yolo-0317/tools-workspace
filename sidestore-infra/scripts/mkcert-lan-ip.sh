@@ -44,26 +44,7 @@ else
 https://${LAN_IP} {$MARKER
 	tls /etc/caddy/certs/lan-ip/cert.pem /etc/caddy/certs/lan-ip/key.pem
 	encode gzip
-
-	handle /english {
-		redir * /english/ permanent
-	}
-	handle_path /english/* {
-		reverse_proxy host.docker.internal:18787 {
-			flush_interval -1
-			transport http {
-				read_timeout 0
-				write_timeout 0
-			}
-			header_up X-Forwarded-Proto {scheme}
-			header_up X-Forwarded-Host {host}
-			header_up X-Forwarded-For {remote_host}
-		}
-	}
-
-	handle {
-		respond "Home Hub / English Buddy → /english/" 200
-	}
+	import hub_apps
 }
 EOF
 fi

@@ -133,6 +133,7 @@ export async function fetchLessons(
   gradeId: string,
   programId: string,
   ttsSpeed: number,
+  options?: { requirePrewarm?: boolean },
 ): Promise<Lesson[]> {
   try {
     const q = new URLSearchParams({
@@ -140,6 +141,9 @@ export async function fetchLessons(
       program: programId,
       tts_speed: String(ttsSpeed),
     });
+    if (options?.requirePrewarm === false) {
+      q.set("require_prewarm", "false");
+    }
     const r = await apiFetch(`api/lessons?${q.toString()}`);
     if (!r.ok) return [];
     const data = (await r.json()) as { lessons?: Lesson[] };

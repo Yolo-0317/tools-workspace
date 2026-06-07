@@ -1440,7 +1440,10 @@ def fetch_hot_stocks_opencli(
     reset_browser: bool = True,
     url: str | None = None,
 ) -> list[dict]:
-    """东财 A 股人气榜前 N（OpenCLI；vipmoney 飙升/人气页）。"""
+    """东财 A 股人气榜前 N（OpenCLI；vipmoney 飙升/人气页）。
+
+    休市周末页面多为**上一交易日收盘快照**，非盘中实时排名。
+    """
     if top_n <= 0:
         return []
     if reset_browser:

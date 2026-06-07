@@ -127,6 +127,7 @@ def _match_sentence_tokens(
     start_i: int,
     *,
     min_coverage: float = 0.55,
+    strict: bool = True,
 ) -> tuple[int, int, float] | None:
     """Find ordered token subsequence in word stream; return word indices + coverage."""
     if not sent_tokens or start_i >= len(words):
@@ -134,7 +135,7 @@ def _match_sentence_tokens(
 
     ti = 0
     first_i = last_i = start_i
-    max_lookahead = max(len(sent_tokens) * 10, 80)
+    max_lookahead = min(max(len(sent_tokens) * (4 if strict else 6), 20), 50 if strict else 65)
 
     for j in range(start_i, min(len(words), start_i + max_lookahead)):
         w_tokens = _word_tokens(words[j]["word"])
@@ -158,14 +159,35 @@ def _match_sentence_tokens(
     coverage = ti / len(sent_tokens)
     if coverage < min_coverage:
         return None
+
+    span_words = last_i - first_i + 1
+    span_sec = float(words[last_i]["end"]) - float(words[first_i]["start"])
+    if strict:
+        max_words = max(int(len(sent_tokens) * 2.4) + 4, 10)
+        max_sec = max(len(sent_tokens) * 0.55 + 2.5, 7.0)
+    else:
+        max_words = max(int(len(sent_tokens) * 3.2) + 8, 14)
+        max_sec = min(max(len(sent_tokens) * 0.72 + 3.5, 9.0), 22.0)
+    max_sec = min(max_sec, 25.0)
+    if span_words > max_words or span_sec > max_sec:
+        return None
+
+    if strict:
+        spoken_tokens: list[str] = []
+        for k in range(first_i, last_i + 1):
+            spoken_tokens.extend(_word_tokens(words[k]["word"]))
+        if spoken_tokens and _lcs_ratio(sent_tokens, spoken_tokens) < min(0.68, min_coverage + 0.08):
+            return None
+
     return first_i, last_i, coverage
 
 
-def _find_chapter_start(words: list[dict], sentences: list[str]) -> int:
-    """Anchor on first EPUB sentence (skip 'CHAPTER N' audiobook intro)."""
-    if not sentences:
-        return 0
-    probe = _tokens(sentences[0])[:10]
+def _find_chapter_start(words: list[dict], sentences: list[str], kinds: list[str]) -> int:
+    """Anchor on first body sentence (skip spoken chapter-title intro)."""
+    first_body = next((s for s, k in zip(sentences, kinds) if k != "heading"), "")
+    if not first_body:
+        return _find_body_word_index(words)
+    probe = _tokens(first_body)[:10]
     if not probe:
         return _find_body_word_index(words)
     for i in range(min(len(words), 120)):
@@ -175,16 +197,40 @@ def _find_chapter_start(words: list[dict], sentences: list[str]) -> int:
     return _find_body_word_index(words)
 
 
-def _line_from_hit(sent: str, words: list[dict], hit: tuple[int, int, float]) -> dict:
+def _line_from_hit(
+    sent: str, words: list[dict], hit: tuple[int, int, float], *, kind: str = "body"
+) -> dict:
     first_i, last_i, coverage = hit
     spoken = " ".join(words[k]["word"].strip() for k in range(first_i, last_i + 1))
-    return {
+    line = {
         "text": sent,
         "start": round(float(words[first_i]["start"]), 3),
         "end": round(float(words[last_i]["end"]), 3),
         "spoken": spoken,
         "confidence": round(coverage, 3),
     }
+    if kind != "body":
+        line["kind"] = kind
+    return line
+
+
+def _align_heading(sent: str, words: list[dict]) -> tuple[int, int, float] | None:
+    """Match EPUB chapter banner to Stephen Fry's 'Chapter N … Title' intro."""
+    st = _tokens(sent)
+    if not st:
+        return None
+    for cov in (0.45, 0.35):
+        hit = _match_sentence_tokens(st, words, 0, min_coverage=cov)
+        if hit:
+            return hit
+    # Title words only (after "Chapter N ·")
+    title_tokens = [t for t in st if t not in {"chapter", "·"} and not t.isdigit()]
+    if title_tokens:
+        for cov in (0.55, 0.4):
+            hit = _match_sentence_tokens(title_tokens, words, 0, min_coverage=cov)
+            if hit:
+                return hit
+    return None
 
 
 def _interpolate_gaps(
@@ -226,6 +272,10 @@ def _interpolate_gaps(
             t0, t1 = prev["end"], nxt["start"]
             if t1 <= t0:
                 t1 = min(t0 + 0.8, duration)
+            elif t1 - t0 > 120:
+                # Bad anchors far apart — spread across full gap instead of cramming.
+                _fill_range(gap_start, gap_end, t0, t1, 0.3)
+                continue
             _fill_range(gap_start, gap_end, t0, t1, 0.35)
         elif prev:
             t1 = max(duration, prev["end"] + 0.5)
@@ -260,7 +310,11 @@ def _interpolate_gaps(
 
 
 def _align_sentences(
-    sentences: list[str], words: list[dict], start_i: int, duration: float
+    sentences: list[str],
+    kinds: list[str],
+    words: list[dict],
+    start_i: int,
+    duration: float,
 ) -> list[dict]:
     """Map EPUB sentences to timestamps; interpolate gaps when audiobook wording diverges."""
     n = len(sentences)
@@ -268,6 +322,14 @@ def _align_sentences(
     wi = start_i
 
     for idx, sent in enumerate(sentences):
+        kind = kinds[idx] if idx < len(kinds) else "body"
+        if kind == "heading":
+            hit = _align_heading(sent, words)
+            if hit:
+                slots[idx] = _line_from_hit(sent, words, hit, kind="heading")
+                wi = max(wi, hit[1] + 1)
+            continue
+
         st = _tokens(sent)
         if not st:
             continue
@@ -276,7 +338,13 @@ def _align_sentences(
             if wi + skip >= len(words):
                 break
             for cov in (0.55, 0.45):
-                hit = _match_sentence_tokens(st, words, wi + skip, min_coverage=cov)
+                hit = _match_sentence_tokens(
+                    st, words, wi + skip, min_coverage=cov, strict=True
+                )
+                if not hit:
+                    hit = _match_sentence_tokens(
+                        st, words, wi + skip, min_coverage=max(0.4, cov - 0.05), strict=False
+                    )
                 if hit:
                     if skip:
                         wi += skip
@@ -285,10 +353,14 @@ def _align_sentences(
                 break
         if not hit:
             continue
-        slots[idx] = _line_from_hit(sent, words, hit)
+        slots[idx] = _line_from_hit(sent, words, hit, kind="body")
         wi = hit[1] + 1
 
     lines = _interpolate_gaps(sentences, slots, duration)
+    for idx, line in enumerate(lines):
+        kind = kinds[idx] if idx < len(kinds) else "body"
+        if kind != "body" and "kind" not in line:
+            line["kind"] = kind
     return lines
 
 
@@ -357,15 +429,22 @@ def main() -> None:
 
     text_data = json.loads(text_path.read_text(encoding="utf-8"))
     sentences = text_data["sentences"]
+    kinds = text_data.get("kinds") or ["body"] * len(sentences)
+    if len(kinds) != len(sentences):
+        kinds = ["body"] * len(sentences)
     words, duration = transcribe_words(audio, args.model, word_cache)
 
-    start_i = _find_chapter_start(words, sentences) if ch > 1 else _find_body_word_index(words)
+    if ch > 1:
+        start_i = _find_chapter_start(words, sentences, kinds)
+    else:
+        start_i = _find_chapter_start(words, sentences, kinds)
+
     print(
-        f"{book_id} ch{ch}: {len(sentences)} sentences, {len(words)} words, "
-        f"body @ {words[start_i]['start']:.1f}s, audio {duration/60:.1f} min"
+        f"{book_id} ch{ch}: {len(sentences)} sentences ({sum(1 for k in kinds if k == 'heading')} heading), "
+        f"{len(words)} words, body @ {words[start_i]['start']:.1f}s, audio {duration/60:.1f} min"
     )
 
-    lines = _align_sentences(sentences, words, start_i, duration)
+    lines = _align_sentences(sentences, kinds, words, start_i, duration)
     manifest = {
         "book_id": book_id,
         "chapter": ch,

@@ -7,7 +7,8 @@ services:
       HOME: /home/Alcoholic
       TZ: ${TZ}
     volumes:
-      - ./anisette/data:/home/Alcoholic/.config/anisette-v3/lib
+      # 持久化整棵 anisette-v3（含 device.json / adi.pb），避免重启后机器重配导致登录失败
+      - ./anisette/data:/home/Alcoholic/.config/anisette-v3
     networks:
       sidestore_net:
         ipv4_address: 172.28.0.2
@@ -33,9 +34,9 @@ services:
       - "${EXTERNAL_HTTPS_PORT:-8883}:443"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./caddy/home-hub.auth:/etc/caddy/home-hub.auth:ro
       - ./certs:/etc/caddy/certs:ro
       - ./public:/srv:ro
+      - ../readalong:/readalong:ro
     networks:
       - sidestore_net
     depends_on:

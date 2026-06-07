@@ -76,11 +76,26 @@ def _split_sentences(block: str) -> list[str]:
     return out
 
 
+def _chapter_heading_en(html: str, chapter: int, title_en: str) -> str:
+    """EPUB h2/h4 chapter banner (matches Stephen Fry's spoken intro)."""
+    heads: list[str] = []
+    for raw in re.findall(r"<h[1-4][^>]*>(.*?)</h[1-4]>", html, flags=re.S | re.I):
+        text = _clean_html_paragraph(raw)
+        if text:
+            heads.append(text)
+    if len(heads) >= 2 and heads[1]:
+        title_part = heads[1].title() if heads[1].isupper() else heads[1]
+        return f"Chapter {chapter} · {title_part}"
+    return f"Chapter {chapter} · {title_en}"
+
+
 def extract_chapter(epub_path: Path, book_id: str, chapter: int) -> dict:
     meta = get_chapter(book_id, chapter)
     rel, title = meta["en_file"], meta["title_en"]
     with zipfile.ZipFile(epub_path) as zf:
         html = zf.read(rel).decode("utf-8", errors="replace")
+
+    heading = _chapter_heading_en(html, chapter, title)
 
     paragraphs: list[str] = []
     for raw in re.findall(r"<p[^>]*>(.*?)</p>", html, flags=re.S):
@@ -90,22 +105,28 @@ def extract_chapter(epub_path: Path, book_id: str, chapter: int) -> dict:
         paragraphs.append(text)
 
     merged = _merge_flowing_paragraphs(paragraphs)
-    sentences: list[str] = []
+    body_sentences: list[str] = []
     sentence_paragraphs: list[int] = []
     for pi, block in enumerate(merged):
         sents = _split_sentences(block)
-        sentences.extend(sents)
+        body_sentences.extend(sents)
         sentence_paragraphs.extend([pi] * len(sents))
+
+    sentences = [heading, *body_sentences]
+    kinds = ["heading", *(["body"] * len(body_sentences))]
 
     return {
         "chapter": chapter,
         "title": title,
+        "heading_en": heading,
         "paragraph_count": len(paragraphs),
         "merged_paragraph_count": len(merged),
         "sentence_count": len(sentences),
+        "body_sentence_count": len(body_sentences),
         "merged_paragraphs": merged,
         "sentences": sentences,
-        "sentence_paragraphs": sentence_paragraphs,
+        "kinds": kinds,
+        "sentence_paragraphs": [-1, *sentence_paragraphs],
     }
 
 

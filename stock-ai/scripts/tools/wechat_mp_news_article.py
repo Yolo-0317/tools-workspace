@@ -63,10 +63,16 @@ def is_weekend_news_mode() -> bool:
 def news_pick_params() -> tuple[int, int, int, bool]:
     """返回 (limit, pool_limit, hours, prefer_stock)。"""
     if is_weekend_news_mode():
+        from scripts.tools.wechat_mp_weekend_news import (
+            weekend_hot_stock_count,
+            weekend_kuaixun_pool_limit,
+            weekend_news_hours,
+        )
+
         return (
-            _env_int("WECHAT_MP_NEWS_TOP_WEEKEND", 12),
-            _env_int("WECHAT_MP_NEWS_POOL_LIMIT_WEEKEND", 120),
-            _env_int("WECHAT_MP_NEWS_HOURS_WEEKEND", 72),
+            weekend_hot_stock_count(),
+            weekend_kuaixun_pool_limit(),
+            weekend_news_hours(),
             True,
         )
     return (
@@ -93,6 +99,17 @@ def load_top_news_items(*, limit: int | None = None) -> list[dict[str, Any]]:
     lim, pool_limit, hours, prefer_stock = news_pick_params()
     if limit is not None:
         lim = limit
+    if is_weekend_news_mode():
+        try:
+            from scripts.tools.wechat_mp_weekend_news import load_weekend_hot_stock_news_items
+
+            items = load_weekend_hot_stock_news_items(top_n=lim)
+            if items:
+                return items
+        except Exception as exc:  # noqa: BLE001
+            import sys
+
+            print(f"⚠️ 周末热股快讯 OpenCLI 失败，回退库内快讯: {exc}", file=sys.stderr)
     engagement = fetch_news_engagement(limit=pool_limit)
     items = pick_top_news_by_attention(
         limit=lim,
@@ -126,6 +143,39 @@ def _clip_text(text: str, *, max_len: int) -> str:
     return cut
 
 
+def _strip_template_news_title(title: str, *, stock: str = "") -> str:
+    raw = (title or "").strip()
+    if stock and raw.startswith(f"{stock}｜"):
+        raw = raw.split("｜", 1)[1].strip()
+    raw = re.sub(r"^周五人气关注[：:]\s*", "", raw)
+    raw = re.sub(r"^周五人气关注", "", raw)
+    return raw.strip()
+
+
+def news_display_headline(item: dict[str, Any], *, max_len: int = 28) -> str:
+    """列表小标题：优先快讯标题，周末合成稿走盘面规则。"""
+    stock = str(item.get("matched_stock_name") or "").strip()
+    if item.get("synthetic") and stock:
+        from scripts.tools.wechat_mp_hot_stocks import HotStockRow
+        from scripts.tools.wechat_mp_weekend_news import synthetic_display_title
+
+        row = HotStockRow(
+            rank=int(item.get("matched_stock_rank") or 0),
+            code=str(item.get("matched_stock_code") or ""),
+            name=stock,
+            change_pct=float(item.get("matched_stock_change_pct") or 0.0),
+        )
+        return _clip_text(synthetic_display_title(row), max_len=max_len)
+
+    raw = _strip_template_news_title(str(item.get("title") or ""), stock=stock)
+    if not raw and stock:
+        return stock
+    headline = _clip_text(raw, max_len=max_len)
+    if stock and stock not in headline and len(headline) <= 18:
+        headline = _clip_text(f"{stock}：{headline}", max_len=max_len + 4)
+    return headline
+
+
 def _raw_item_blob(item: dict[str, Any]) -> str:
     title = (item.get("title") or "").strip()
     summary = (item.get("summary") or "").strip()
@@ -153,6 +203,27 @@ _SUMMARY_PAD = (
     "从交易层面看，市场往往先定价预期、再等待事实验证，短线波动不一定等于趋势反转。",
     "对 A 股而言，更需观察相关板块是否出现放量共振，以及是否与当日主线方向一致。",
     "若盘中仅为脉冲式上冲，通常说明资金仍在等待进一步信息确认，不宜过度外推。",
+)
+
+# 读者正文禁止出现的流水线/后台术语（周末稿尤甚）
+_NEWS_READER_META_BANNED = (
+    "周末未匹配到该股专属 7×24 快讯",
+    "周末未匹配到该股专属",
+    "未匹配到该股专属",
+    "未匹配到该股",
+    "未匹配到",
+    "专属 7×24",
+    "专属快讯",
+    "7×24 快讯",
+    "本条按「人气股 + 休市舆情」占位",
+    "人气股 + 休市舆情",
+    "休市舆情」占位",
+    "流水线",
+    "占位：",
+    "占位，",
+    "非实时盘中排名",
+    "榜单为休市前快照",
+    "勿写「周末仍登榜",
 )
 
 # AI 点评套话 — LLM 与 fallback 均不得出现（后处理剔除）
@@ -183,9 +254,24 @@ _AI_COMMENT_BANNED = (
 )
 
 
+def _sanitize_news_reader_meta(text: str) -> str:
+    """去掉「未匹配/占位/7×24」等后台话术，避免漏进读者正文。"""
+    out = (text or "").strip()
+    for phrase in _NEWS_READER_META_BANNED:
+        out = out.replace(phrase, "")
+    out = re.sub(r"周末未匹配[^。；！？\n]*[。；]?", "", out)
+    out = re.sub(r"未匹配到[^。；！？\n]*[。；]?", "", out)
+    out = re.sub(r"本条按[^。；！？\n]*占位[：:]?", "", out)
+    out = re.sub(r"专属\s*7×24[^。；！？\n]*", "", out)
+    out = re.sub(r"[；;，,]{2,}", "，", out)
+    out = re.sub(r"\s+", "", out)
+    out = re.sub(r"^[，。；、]+|[，。；、]+$", "", out)
+    return out.strip()
+
+
 def _sanitize_ai_comment(text: str) -> str:
     """去掉模板套话，合并重复标点。"""
-    out = (text or "").strip()
+    out = _sanitize_news_reader_meta(text)
     for phrase in _AI_COMMENT_BANNED:
         out = out.replace(phrase, "")
     out = re.sub(r"[；;，,]{2,}", "，", out)
@@ -328,8 +414,9 @@ def _finalize_summary(text: str, item: dict[str, Any]) -> str:
     max_len = summary_max_len()
     min_len = summary_min_len()
     tag = sentiment_label(str(item.get("sentiment") or "neutral"))
+    base = _sanitize_news_reader_meta(text)
     base = _ensure_min_length(
-        text,
+        base,
         min_len=min_len,
         max_len=max_len,
         pad_sentences=_SUMMARY_PAD,
@@ -375,13 +462,23 @@ def _fallback_ai_comment(item: dict[str, Any], *, summary: str) -> str:
     return _pick_fallback_comment(item)
 
 
-def _parse_enriched_blocks(text: str, *, expected: int) -> list[tuple[str, str]]:
+def _parse_enriched_blocks(text: str, *, expected: int) -> list[tuple[str, str, str]]:
+    headlines: dict[int, str] = {}
     summaries: dict[int, str] = {}
     comments: dict[int, str] = {}
     current: int | None = None
     for raw in text.splitlines():
         line = raw.strip()
         if not line:
+            continue
+        title_m = re.match(r"^(\d+)\.\s*小标题[：:]\s*(.+)$", line)
+        if title_m:
+            current = int(title_m.group(1))
+            headlines[current] = title_m.group(2).strip()
+            continue
+        title_only = re.match(r"^小标题[：:]\s*(.+)$", line)
+        if title_only and current is not None:
+            headlines[current] = title_only.group(1).strip()
             continue
         head = re.match(r"^(\d+)\.\s*摘要[：:]\s*(.*)$", line)
         if head:
@@ -390,31 +487,43 @@ def _parse_enriched_blocks(text: str, *, expected: int) -> list[tuple[str, str]]
             if rest:
                 summaries[current] = rest
             continue
+        summary_only = re.match(r"^摘要[：:]\s*(.+)$", line)
+        if summary_only and current is not None:
+            summaries[current] = summary_only.group(1).strip()
+            continue
         ai_m = re.match(r"^AI点评[：:]\s*(.+)$", line)
         if ai_m and current is not None:
             comments[current] = ai_m.group(1).strip()
             continue
-        cont_ai = re.match(r"^AI点评[：:]\s*(.+)$", line)
-        if current is not None and current not in comments and cont_ai:
-            comments[current] = cont_ai.group(1).strip()
-            continue
         if current is not None and current in summaries and current not in comments:
             summaries[current] = f"{summaries[current]}{line}"
-    out: list[tuple[str, str]] = []
+    out: list[tuple[str, str, str]] = []
     for i in range(1, expected + 1):
-        out.append((summaries.get(i, ""), comments.get(i, "")))
+        out.append((headlines.get(i, ""), summaries.get(i, ""), comments.get(i, "")))
     return out
+
+
+def _finalize_headline(text: str, item: dict[str, Any]) -> str:
+    headline = _sanitize_news_reader_meta((text or "").strip())
+    headline = re.sub(r"^周五人气关注[：:]\s*", "", headline)
+    if len(headline) < 6 or "周五人气关注" in headline:
+        headline = news_display_headline(item)
+    return _clip_text(headline, max_len=30)
 
 
 def generate_enriched_news_copy(
     items: list[dict[str, Any]],
-) -> list[tuple[str, str]]:
-    """为每条快讯生成扩写摘要 + 加厚 AI 点评。返回 [(summary, ai_comment), ...]。"""
+) -> list[tuple[str, str, str]]:
+    """为每条快讯生成小标题 + 扩写摘要 + AI 点评。返回 [(headline, summary, ai_comment), ...]。"""
     if not items:
         return []
 
     fallbacks = [
-        (_fallback_summary(it), _finalize_ai(_fallback_ai_comment(it, summary=""), it))
+        (
+            news_display_headline(it),
+            _fallback_summary(it),
+            _finalize_ai(_fallback_ai_comment(it, summary=""), it),
+        )
         for it in items
     ]
     if not is_llm_configured():
@@ -428,12 +537,55 @@ def generate_enriched_news_copy(
     for idx, it in enumerate(items, start=1):
         tag = sentiment_label(str(it.get("sentiment") or "neutral"))
         angle = _infer_news_angle(it)
+        stock_line = ""
+        if it.get("matched_stock_name"):
+            anchor = it.get("hot_stock_anchor_label") or "周五收盘"
+            rank = it.get("matched_stock_rank") or "—"
+            name = it.get("matched_stock_name")
+            code = it.get("matched_stock_code")
+            if it.get("synthetic"):
+                stock_line = (
+                    f"   周五人气榜第{rank}位：{name}（{code}）；周末无该股单独快讯标题。\n"
+                    "   按「休市观察」写：周五资金面 + 周一竞价/首小时验证；"
+                    "禁止出现「未匹配/占位/7×24/专属快讯/流水线」等后台用语。\n"
+                )
+            else:
+                stock_line = (
+                    f"   对应周五人气榜第{rank}位 {name}（{code}）。\n"
+                    "   摘要/点评须点名该股或同赛道验证点；"
+                    "禁止写「未匹配/占位/7×24」等后台术语。\n"
+                )
         briefs.append(
             f"{idx}. [{tag}] 标题：{it.get('title', '')}\n"
+            f"{stock_line}"
             f"   素材：{_clip_text(_raw_item_blob(it), max_len=480)}\n"
             f"   联想（仅供展开，勿照抄）：{angle['sectors']}；验证：{angle['watch']}"
         )
-    prompt = f"""为下列 {len(items)} 条 7×24 快讯各写「扩写摘要」和「AI点评」。
+    weekend_seo = ""
+    if is_weekend_news_mode():
+        weekend_seo = (
+            "\n## 搜一搜（周末稿）\n"
+            "- 摘要前 20 字尽量含热股名或 A股/周末；勿一句塞 3 个热词\n"
+            "- AI点评写清「该股/同赛道下一交易日盯什么」\n"
+            "- 严禁向读者暴露采编后台：未匹配、占位、7×24、专属快讯、流水线、快照锚点等\n"
+        )
+    headline_rule = ""
+    if is_weekend_news_mode():
+        headline_rule = (
+            "\n## 小标题（每条 — 读者列表项标题，最先写）\n"
+            "- 8-22 字，概括本条事件或验证点；须含热股名\n"
+            "- 有快讯素材：提炼快讯核心，勿照抄长标题\n"
+            "- 无快讯（休市观察）：写盘面+周一验证，如「达实智能涨停占榜一，周一竞价怎么看」\n"
+            "- 严禁「周五人气关注」等模板句\n"
+        )
+    else:
+        headline_rule = (
+            "\n## 小标题（每条）\n"
+            "- 8-22 字，概括快讯核心；可含主体公司/板块名\n"
+        )
+
+    prompt = f"""为下列 {len(items)} 条要闻各写「小标题」「扩写摘要」和「AI点评」。
+{weekend_seo}{headline_rule}
 {RESEARCHER_VOICE_RULE}
 
 ## 摘要（每条）
@@ -449,11 +601,13 @@ def generate_enriched_news_copy(
 - 每条写法必须有变化，禁止填空式「第1句板块、第2句机制、第3句验证」
 - 严禁套话：{banned_sample}
 
-## 输出格式（严格，每条两行；**每条快讯单独占一组，禁止同一行写「1. … 2. …」**）
-1. 摘要：……
+## 输出格式（严格，每条三行；**每条单独占一组，禁止同一行写「1. … 2. …」**）
+1. 小标题：……
+   摘要：……
    AI点评：……
 
-2. 摘要：……
+2. 小标题：……
+   摘要：……
    AI点评：……
 
 快讯素材：
@@ -468,7 +622,8 @@ def generate_enriched_news_copy(
                     "content": (
                         "你是有实战经验的 A 股研究员，写给懂行的老读者。"
                         "AI点评要有具体判断和可验证的观察，拒绝空话和模板句。"
-                        "只输出编号「摘要 / AI点评」行，不要标题、markdown 或多余解释。"
+                        "禁止出现采编后台用语（未匹配、占位、7×24、专属快讯等）。"
+                        "只输出编号「小标题 / 摘要 / AI点评」行，不要 markdown 或多余解释。"
                     ),
                 },
                 {"role": "user", "content": prompt},
@@ -476,17 +631,18 @@ def generate_enriched_news_copy(
             max_tokens=6000,
         )
         parsed = _parse_enriched_blocks(raw.strip(), expected=len(items))
-        out: list[tuple[str, str]] = []
-        for i, (summary, ai) in enumerate(parsed):
+        out: list[tuple[str, str, str]] = []
+        for i, (headline, summary, ai) in enumerate(parsed):
             item = items[i]
+            headline = _finalize_headline(headline, item) if headline.strip() else fallbacks[i][0]
             summary = _finalize_summary(
-                summary if len(summary) >= summary_min_len() - 40 else fallbacks[i][0],
+                summary if len(summary) >= summary_min_len() - 40 else fallbacks[i][1],
                 item,
             )
-            ai_raw = ai if len(_sanitize_ai_comment(ai)) >= max(60, lo // 2) else fallbacks[i][1]
+            ai_raw = ai if len(_sanitize_ai_comment(ai)) >= max(60, lo // 2) else fallbacks[i][2]
             ai = _finalize_ai(ai_raw, item)
-            out.append((summary, ai))
-        if len(out) == len(items) and all(s and a for s, a in out):
+            out.append((headline, summary, ai))
+        if len(out) == len(items) and all(h and s and a for h, s, a in out):
             return out
     except Exception:  # noqa: BLE001
         pass
@@ -530,9 +686,17 @@ def assemble_news_body(
 ) -> str:
     _, _, hours, prefer_stock = news_pick_params()
     if is_weekend_news_mode():
+        anchor_label = str(
+            (items[0] or {}).get("hot_stock_anchor_label") or "上一交易日收盘"
+        )
+        lead = str((items[0] or {}).get("matched_stock_name") or "").strip()
+        lead2 = str((items[1] or {}).get("matched_stock_name") or "").strip()
+        heads = "、".join(x for x in (lead, lead2) if x) or "人气前十"
         intro = (
-            f"以下为近 {hours} 小时（约周末两日）内关注度较高的 {len(items)} 条快讯"
-            "（东方财富 7×24；个股与公司相关优先，其余宏观条补足）。"
+            f"周五收盘人气前十（{heads} 等）为选股锚；"
+            f"休市周末榜单不刷新，下面 {len(items)} 条各对应一只人气股，"
+            f"配近 {hours} 小时周末快讯或舆情解读。"
+            f"先扫摘要，再看 AI 点评里的验证动作（非荐股）。"
         )
     elif prefer_stock:
         intro = (
@@ -549,10 +713,19 @@ def assemble_news_body(
         intro,
         "",
     ]
-    for idx, (it, (summary, ai)) in enumerate(zip(items, enriched), start=1):
+    for idx, (it, block) in enumerate(zip(items, enriched), start=1):
         tag = sentiment_label(str(it.get("sentiment") or "neutral"))
-        title = (it.get("title") or "").strip()
-        lines.append(f"{idx}. [{tag}] {title}")
+        headline, summary, ai = block
+        if is_weekend_news_mode():
+            head = headline.strip() or news_display_headline(it)
+        else:
+            title = (it.get("title") or "").strip()
+            stock = (it.get("matched_stock_name") or "").strip()
+            head = (
+                headline.strip()
+                or (f"{stock}｜{title}" if stock and not title.startswith(stock) else title)
+            )
+        lines.append(f"{idx}. [{tag}] {head}")
         lines.append(f"  {summary}")
         lines.append(f"  AI点评：{ai.strip()}")
         if idx < len(items):
@@ -564,6 +737,10 @@ def generate_news_feature_body(*, now: datetime | None = None) -> str:
     now = now or datetime.now(TZ)
     items = load_top_news_items()
     if not items:
+        if is_weekend_news_mode():
+            raise RuntimeError(
+                "周末要闻生成失败：请确认 OpenCLI 可访问东财热股榜与 7×24 快讯"
+            )
         raise RuntimeError("无可用快讯，请先运行 sync_macro_news")
     enriched = generate_enriched_news_copy(items)
     return assemble_news_body(items, enriched, now=now)

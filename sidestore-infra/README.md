@@ -29,7 +29,7 @@ Docker 跑 **anisette** + **Caddy**；证书用 **acme.sh DNS-01（阿里云）*
                               │
         ┌─────────────────────┼─────────────────────┐
         ▼                     ▼                     ▼
-  ani.* → anisette      config.* → servers.json   alist.* → Alist :5244
+  ani.* → anisette      config.* → servers.json   alist.* → Jellyfin :8096
   :6969 (容器内)         (public/)                  + /jellyfin → :8096
                                                     sub.* → clash :8787
                                                           + Sub-Store :3001
@@ -48,7 +48,6 @@ Docker 跑 **anisette** + **Caddy**；证书用 **acme.sh DNS-01（阿里云）*
 |------|------|----------|
 | clash-gen | 8787 | `sub.*/clash.yaml` |
 | Sub-Store | 3001 | `sub.*/sub-store/*` |
-| Alist | 5244 | `alist.*` |
 | Jellyfin | 8096 | `alist.*/jellyfin` |
 
 clash-gen / Sub-Store 由 [substore-clash](../substore-clash/README.md) 维护；Jellyfin 在 `~/docker/jellyfin-stack`（仓库外）。
@@ -72,9 +71,7 @@ SideStore 设置 → Anisette List URL 填 **servers.json 外网地址** → 选
 
 | 子域 | 外网示例 | 说明 |
 |------|----------|------|
-| **alist** | https://alist.yoloworld.site:8883 | Alist 文件管理 |
-| | https://alist.yoloworld.site:8883/jellyfin | Jellyfin |
-| | https://alist.yoloworld.site:8883/dav/… | WebDAV（Infuse 等） |
+| **alist** | https://alist.yoloworld.site:8883/jellyfin | Jellyfin（根路径重定向至此） |
 | **sub** | https://sub.yoloworld.site:8883/clash.yaml | Clash 订阅 |
 | | https://sub.yoloworld.site:8883/clash.yaml?verge=1 | Verge 轻量订阅 |
 | | https://sub.yoloworld.site:8883/sub-store/… | Sub-Store 管理 |
@@ -187,7 +184,8 @@ bash scripts/install-launchd.sh
 |--------|------|
 | `ani.yoloworld.site` | → `anisette:6969` |
 | `config.yoloworld.site` | `/servers.json` 静态文件 |
-| `alist.yoloworld.site` | `/jellyfin` → Jellyfin；`/dav` 无 gzip → Alist |
+| `alist.yoloworld.site` | `/jellyfin` → Jellyfin |
+| `www.yoloworld.site` | → 重定向 `hub` |
 | `sub.yoloworld.site` | `/clash.yaml` → clash-gen；`/sub-store/*` → Sub-Store |
 
 Caddy 使用 `auto_https off`，证书来自 `certs/fullchain.cer` + `certs/key.key`（acme.sh 安装，非 Caddy 自动 ACME）。

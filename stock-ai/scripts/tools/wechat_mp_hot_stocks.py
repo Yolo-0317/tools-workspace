@@ -64,6 +64,44 @@ def is_hot_stock_eligible(code: str, name: str) -> bool:
     return True
 
 
+def normalize_hot_stock_name(raw: str, code: str) -> str:
+    """东财人气页 DOM 常把「板 建筑节能 数字孪生」等概念标签粘在股名前，需纠正。"""
+    name = (raw or "").strip()
+    if not name:
+        return name
+    try:
+        from scripts.tools.portfolio_db import load_stock_names_by_codes
+
+        canonical = (load_stock_names_by_codes([code]) or {}).get(code.zfill(6), "").strip()
+        if canonical and len(canonical) <= 12:
+            return canonical
+    except Exception:
+        pass
+    if "板" in name or len(name) > 8 or " " in name:
+        parts = re.split(r"[\s板]+", name)
+        parts = [p.strip() for p in parts if p.strip() and len(p.strip()) >= 2]
+        suffixes = (
+            "股份",
+            "集团",
+            "科技",
+            "智能",
+            "电子",
+            "能源",
+            "谐波",
+            "数科",
+            "传媒",
+            "药业",
+            "新材",
+            "装备",
+        )
+        for part in reversed(parts):
+            if any(part.endswith(s) for s in suffixes):
+                return part
+        if parts:
+            return parts[-1]
+    return name
+
+
 def filter_hot_stock_rows(rows: list[HotStockRow]) -> list[HotStockRow]:
     out: list[HotStockRow] = []
     seen: set[str] = set()
@@ -98,16 +136,20 @@ def fetch_hot_stock_rows(*, top_n: int | None = None) -> list[HotStockRow]:
 
     n = top_n if top_n is not None else hot_fetch_top_n()
     raw = fetch_hot_stocks_opencli(top_n=max(n, 12))
-    rows = [
-        HotStockRow(
-            rank=int(item.get("rank") or i + 1),
-            code=str(item["code"]).zfill(6),
-            name=str(item.get("name") or "").strip(),
-            change_pct=float(item.get("change_pct") or 0.0),
+    rows = []
+    for i, item in enumerate(raw):
+        if not isinstance(item, dict) or not item.get("code"):
+            continue
+        code = str(item["code"]).zfill(6)
+        raw_name = str(item.get("name") or "").strip()
+        rows.append(
+            HotStockRow(
+                rank=int(item.get("rank") or i + 1),
+                code=code,
+                name=normalize_hot_stock_name(raw_name, code),
+                change_pct=float(item.get("change_pct") or 0.0),
+            )
         )
-        for i, item in enumerate(raw)
-        if isinstance(item, dict) and item.get("code")
-    ]
     return filter_hot_stock_rows(rows)
 
 

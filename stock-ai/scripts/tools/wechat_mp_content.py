@@ -457,16 +457,27 @@ def _news_title(
     top_n, _, _, _ = news_pick_params()
     n_label = str(top_n)
     if is_weekend_news_mode():
+        leads = [
+            str(it.get("matched_stock_name") or "").strip()
+            for it in items[:3]
+            if str(it.get("matched_stock_name") or "").strip()
+        ]
+        lead = leads[0] if leads else hook
+        second = leads[1] if len(leads) > 1 else (hook_alt or hook)
+        anchor = str((items[0] or {}).get("hot_stock_anchor_label") or "").replace(
+            "收盘", ""
+        )
+        anchor_short = anchor if anchor else "周五"
         pools = [
             [
-                f"周末A股{n_label}条要闻｜{hook}与个股映射",
-                f"周末财经快讯{n_label}条：{hook}怎么读？",
-                f"A股周末要闻｜{hook}等{n_label}条精选",
-                f"周末必读？{hook}与上市公司动态",
+                f"周末A股{n_label}条｜{lead}等{anchor_short}人气+快讯",
+                f"A股周末快讯{n_label}条：{lead}怎么读？",
+                f"周末财经要闻｜{lead}等{n_label}条精选",
+                f"A股周末必读？{lead}与{second}要闻",
             ],
             [
-                f"周末7×24精选｜{hook_alt or hook}逐条拆",
-                f"A股周末{n_label}条｜{hook_alt or hook}有何影响？",
+                f"周末{n_label}条要闻｜{lead}等快讯+AI点评",
+                f"A股周末7×24｜{lead}领衔{n_label}条",
             ],
         ]
     else:
@@ -505,9 +516,19 @@ def _news_digest(items: list[dict[str, Any]], *, now: datetime) -> str:
     )
     top_n, _, hours, _ = news_pick_params()
     if is_weekend_news_mode():
+        names = [
+            str(it.get("matched_stock_name") or "").strip()
+            for it in items[:3]
+            if str(it.get("matched_stock_name") or "").strip()
+        ]
+        name_blob = "、".join(names) if names else hook
+        anchor_label = str(
+            (items[0] or {}).get("hot_stock_anchor_label") or "上一交易日收盘"
+        )
+        lead = names[0] if names else hook
         base = (
-            f"【周末 {now.strftime('%m-%d')}】近{hours}h精选{top_n}条，"
-            f"个股与公司优先，主线 {hook}。信息整理，非荐股。"
+            f"【周末{now.strftime('%m-%d')}】{anchor_label}人气Top{top_n}锚"
+            f"+{hours}h快讯（{lead}等）；休市榜为快照。摘要+AI点评，非荐股。"
         )
     else:
         base = (
@@ -718,6 +739,7 @@ def _article_shell(
     engagement_kind: str | None = None,
 ) -> dict[str, str]:
     from scripts.tools.wechat_mp_monetization import comment_settings
+    from scripts.tools.wechat_mp_seo import clip_digest
 
     content, merged_body = render_article_content_html(
         body_text,
@@ -728,7 +750,7 @@ def _article_shell(
     article: dict[str, str] = {
         "title": title[:32],
         "author": _author(),
-        "digest": digest[:128],
+        "digest": clip_digest(digest),
         "body_text": merged_body,
         "content": content,
         "article_type": "news",
@@ -871,6 +893,12 @@ def build_news_article(*, peer_market_title: str | None = None) -> dict[str, str
     now = datetime.now(TZ)
     items = load_top_news_items()
     if not items:
+        from scripts.tools.wechat_mp_news_article import is_weekend_news_mode
+
+        if is_weekend_news_mode():
+            raise RuntimeError(
+                "周末要闻生成失败：请确认 OpenCLI 可访问东财热股榜与 7×24 快讯"
+            )
         raise RuntimeError("无可用快讯，请先运行 sync_macro_news")
     title = _news_title(items, now=now, peer_title=peer_market_title)
     raw_body = ensure_blockquote_sections(

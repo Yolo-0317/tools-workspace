@@ -24,7 +24,7 @@
 | 日历 | batch | 篇数 | kinds | 备注 |
 |------|-------|------|-------|------|
 | **A 股交易日** | `evening` | 3 | `sector` + `dragons` + `top5` | `edition=close`；龙头 `eod` |
-| **周日/法定节假日休市** | `weekend` | 1 | `news` | 72h 快讯、个股优先 |
+| **周日/法定节假日休市** | `weekend` | 1 | `news` | **不装快讯定时 sync**；18:20 时 OpenCLI 拉 48h 快讯 + 热股 Top10 逐股匹配 |
 | **周六休市** | — | 0 | — | 不自动推（`weekend_skip`） |
 
 **不在定时里**（手动 `wechat_mp_draft --kind …`）：

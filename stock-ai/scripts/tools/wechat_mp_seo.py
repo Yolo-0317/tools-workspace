@@ -165,8 +165,18 @@ def market_digest_phrase(edition: str | None) -> str:
 
 
 def clip_digest(text: str, *, max_len: int = DIGEST_MAX) -> str:
+    """微信 draft digest 上限为 max_len **字节**（非字符数）。"""
     t = " ".join(text.split())
-    return t[:max_len]
+    raw = t.encode("utf-8")
+    if len(raw) <= max_len:
+        return t
+    cut = raw[:max_len]
+    while cut:
+        try:
+            return cut.decode("utf-8")
+        except UnicodeDecodeError:
+            cut = cut[:-1]
+    return ""
 
 
 def title_has_search_keywords(

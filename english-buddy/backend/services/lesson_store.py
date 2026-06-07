@@ -181,15 +181,21 @@ def _seed_from_json(conn) -> None:
     if not incoming:
         return
 
-    if stored == target:
-        n = conn.execute("SELECT COUNT(*) AS c FROM lessons WHERE is_builtin=1").fetchone()
-        if n and n["c"]:
-            return
-
     existing_rows = conn.execute(
         "SELECT id, grade_id, title, text, unit_num FROM lessons WHERE is_builtin = 1"
     ).fetchall()
     existing = {str(row["id"]): row for row in existing_rows}
+
+    if stored == target and existing:
+        missing = set(incoming) - set(existing)
+        removed = set(existing) - set(incoming)
+        changed = any(
+            _builtin_lesson_changed(existing.get(lid), item)
+            for lid, item in incoming.items()
+            if lid in existing
+        )
+        if not missing and not removed and not changed:
+            return
 
     # First import or empty DB: full reseed (clears all builtin cache once).
     if not stored or not existing:
@@ -273,6 +279,7 @@ def list_lessons(
     tts_speed: float | None = None,
     custom_only: bool = False,
     owner_user_id: str | None = None,
+    require_prewarm: bool = True,
 ) -> list[dict]:
     ensure_db()
     gid = (grade_id or default_grade_id()).strip()
@@ -312,7 +319,12 @@ def list_lessons(
                 (gid,),
             ).fetchall()
         out: list[dict] = []
-        picker_mode = not custom_only and program_id and tts_speed is not None
+        picker_mode = (
+            require_prewarm
+            and not custom_only
+            and program_id
+            and tts_speed is not None
+        )
         for row in rows:
             prewarm = None
             if program_id and tts_speed is not None:

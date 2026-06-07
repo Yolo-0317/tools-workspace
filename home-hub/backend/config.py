@@ -23,7 +23,7 @@ class Settings:
     port: int = int(os.getenv("HUB_PORT", "8780"))
     url_prefix: str = os.getenv("HUB_URL_PREFIX", "/hub").strip().rstrip("/")
     session_cookie_path: str = (
-        os.getenv("HUB_SESSION_COOKIE_PATH", "/hub/").strip() or "/"
+        os.getenv("HUB_SESSION_COOKIE_PATH", "/").strip() or "/"
     )
     api_token: str = os.getenv("HUB_API_TOKEN", "").strip()
 

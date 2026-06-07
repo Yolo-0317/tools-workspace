@@ -14,6 +14,7 @@ import re
 from pathlib import Path
 
 OUT = Path(__file__).resolve().parent / "lessons.json"
+ORT_BOOKS = Path(__file__).resolve().parent / "ort_oxford_owl" / "books.json"
 
 KG = {
     "kg_small": [
@@ -45,83 +46,48 @@ KG = {
     ],
 }
 
-# 牛津阅读树：Biff / Chip / Kipper + Mum / Dad / Floppy；原创短句（非教材原文）
-ORT = {
-    "ort_dialogue": [
-        (
-            "ort_morning",
-            "第1课 · Good morning",
-            1,
-            "Good morning, Mum!\nGood morning, Kipper.\nAre you hungry, Chip?\nYes, I am hungry.\nBreakfast is ready!",
-        ),
-        (
-            "ort_dog",
-            "第2课 · Where is Floppy?",
-            2,
-            "Where is Floppy?\nIs he in the garden?\nNo, he is not there.\nLook! Floppy is on the bed.\nSilly Floppy!",
-        ),
-        (
-            "ort_park",
-            "第3课 · At the park",
-            3,
-            "Let's go to the park.\nCan you see the swings?\nPush me, Biff!\nPush me, Chip!\nThis is fun, Kipper!",
-        ),
-        (
-            "ort_rain",
-            "第4课 · Oh no, rain",
-            4,
-            "Look at the rain.\nOh no! It is wet.\nTake your coat, Kipper.\nWe can play inside.\nThat is OK, Mum.",
-        ),
-        (
-            "ort_shop",
-            "第5课 · At the shop",
-            5,
-            "We go to the shop.\nCan I have an apple?\nYes, you can, Kipper.\nHere you are.\nThank you, Mum.",
-        ),
-        (
-            "ort_key",
-            "第6课 · The little key",
-            6,
-            "What is this, Chip?\nIt is a little key.\nThe door is open.\nLook inside, Biff!\nWhat can you see?",
-        ),
-        (
-            "ort_toy",
-            "第7课 · Lost toy",
-            7,
-            "I cannot find my toy.\nHelp me, Biff!\nIs it under the chair?\nLook on the bed, Kipper.\nHere it is!",
-        ),
-        (
-            "ort_bedtime",
-            "第8课 · Bedtime",
-            8,
-            "It is bedtime, Kipper.\nBrush your teeth, please.\nRead a story, Chip.\nGood night, Mum.\nGood night, Dad!",
-        ),
-        (
-            "ort_school",
-            "第9课 · At school",
-            9,
-            "This is my school.\nHello, I am Kipper.\nBiff is my big sister.\nChip is my brother.\nSchool is fun!",
-        ),
-        (
-            "ort_picnic",
-            "第10课 · Picnic day",
-            10,
-            "It is sunny today.\nPack a picnic, Mum.\nSit on the mat.\nPass the juice, Chip.\nWhat a lovely day!",
-        ),
-        (
-            "ort_mud",
-            "第11课 · Muddy shoes",
-            11,
-            "Look at Floppy!\nOh no! He is muddy.\nLook at your shoes, Kipper!\nTake them off, please.\nAll clean now!",
-        ),
-        (
-            "ort_help",
-            "第12课 · Can you help?",
-            12,
-            "Can you help me, Chip?\nYes, I can help.\nHold the bag, Biff.\nThank you very much.\nYou are kind!",
-        ),
-    ],
-}
+# (grade_id, ort_level, dropdown_title, subtitle)
+ORT_LEVEL_GRADES = [
+    ("ort_l1", "1", "Level 1", "Pink · 启蒙读本"),
+    ("ort_l1plus", "1+", "Level 1+", "Pink · 进阶读本"),
+    ("ort_l2", "2", "Level 2", "Red · 短句故事"),
+    ("ort_l3", "3", "Level 3", "Yellow · 故事进阶"),
+    ("ort_l4", "4", "Level 4", "Blue · 长篇故事"),
+]
+
+
+def load_ort_lessons_by_grade() -> tuple[dict[str, list], str, str]:
+    """Oxford Reading Tree 按 Level 分年级灌入 lessons。"""
+    raw = json.loads(ORT_BOOKS.read_text(encoding="utf-8"))
+    level_to_gid = {level: gid for gid, level, *_ in ORT_LEVEL_GRADES}
+    lessons_by_grade: dict[str, list] = {gid: [] for gid, *_ in ORT_LEVEL_GRADES}
+    unit_counters: dict[str, int] = {gid: 0 for gid, *_ in ORT_LEVEL_GRADES}
+
+    from ort_oxford_owl.book_lines import flatten_lines
+
+    for book in raw.get("books") or []:
+        lines = flatten_lines(book)
+        if not lines:
+            continue
+        level = str(book.get("ort_level") or "").strip()
+        gid = level_to_gid.get(level)
+        if not gid:
+            continue
+        unit_counters[gid] += 1
+        unit = unit_counters[gid]
+        title = book.get("title") or book.get("id") or ""
+        lessons_by_grade[gid].append(
+            {
+                "id": book["id"],
+                "title": f"第{unit}课 · {title}",
+                "unit": unit,
+                "text": "\n".join(lines),
+            }
+        )
+
+    note = raw.get("note") or ""
+    source = raw.get("source") or "Oxford Reading Tree"
+    return lessons_by_grade, source, note
 
 # (grade_id, title, subtitle, semester, book, units[(num, en_title, lines)])
 PRIMARY = [
@@ -361,8 +327,8 @@ def build() -> dict:
             "book": "课堂 · 天气 · 入园准备",
         },
     ]
+    ort_by_grade, ort_source, ort_note = load_ort_lessons_by_grade()
     lessons: dict[str, list] = {k: [] for k in KG}
-    lessons.update({k: [] for k in ORT})
 
     for gid, items in KG.items():
         for lid, title, unit, text in items:
@@ -370,21 +336,19 @@ def build() -> dict:
                 {"id": lid, "title": title, "unit": unit, "text": text}
             )
 
-    grades.append(
-        {
-            "id": "ort_dialogue",
-            "title": "牛津阅读树",
-            "subtitle": "Biff · Chip · Kipper · 4～7 岁",
-            "stage": "kindergarten",
-            "stage_label": "拓展",
-            "book": "Mum / Dad / Floppy · 原创短句跟读",
-        }
-    )
-    for gid, items in ORT.items():
-        for lid, title, unit, text in items:
-            lessons[gid].append(
-                {"id": lid, "title": title, "unit": unit, "text": text}
-            )
+    for gid, _level, gtitle, subtitle in ORT_LEVEL_GRADES:
+        book_count = len(ort_by_grade.get(gid) or [])
+        grades.append(
+            {
+                "id": gid,
+                "title": gtitle,
+                "subtitle": subtitle,
+                "stage": "kindergarten",
+                "stage_label": "牛津阅读树",
+                "book": f"ORT · {book_count} 本",
+            }
+        )
+        lessons[gid] = ort_by_grade.get(gid) or []
 
     for gid, gtitle, subtitle, semester, book, units in PRIMARY:
         grades.append(
@@ -411,23 +375,32 @@ def build() -> dict:
             )
 
     return {
-        "version": 8,
-        "curriculum": "上海幼儿园启蒙 + 沪教牛津小学 + 牛津阅读树对话",
-        "source": "小学目录参考沪教牛津版(六三制)；牛津阅读树为 Biff/Chip/Kipper 家庭原创短句（每行≤10词），非 ORT 教材原文。",
-        "note": "牛津阅读树用书里角色名 Mum/Dad/Floppy；句式原创。三年级起 8 单元/册，一二年级 12 单元/册。",
+        "version": 12,
+        "curriculum": "上海幼儿园启蒙 + 沪教牛津小学 + 牛津阅读树 ORT",
+        "source": (
+            "小学目录参考沪教牛津版(六三制)；"
+            f"牛津阅读树为 {ort_source} 读本原文（见 teaching/ort_oxford_owl/books.json）。"
+        ),
+        "note": (
+            f"{ort_note} 三年级起 8 单元/册，一二年级 12 单元/册。"
+        ),
         "grades": grades,
         "lessons": lessons,
     }
 
 
 def main() -> None:
+    from ort_oxford_owl.catalog import write_catalog
+
     data = build()
     OUT.write_text(
         json.dumps(data, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+    catalog_path = write_catalog(data["version"])
     n = sum(len(v) for v in data["lessons"].values())
     print(f"wrote {OUT} grades={len(data['grades'])} lessons={n}")
+    print(f"wrote {catalog_path} ort_books={len(json.loads(catalog_path.read_text())['books'])}")
 
 
 if __name__ == "__main__":

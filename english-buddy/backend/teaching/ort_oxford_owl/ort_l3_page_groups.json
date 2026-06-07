@@ -1,0 +1,26 @@
+{
+  "note": "ORT L3 句↔橙果插图页手工分组（真源在 books.json pages[]）。橙果 PDF 故事页数常少于 lines 数。",
+  "books": {
+    "ort_a_cat_in_the_tree": {
+      "pdf_story_pages": 16,
+      "groups": [
+        ["Floppy barked at a cat.", "The cat ran up a tree."],
+        ["Biff was cross with Floppy."],
+        ["Wilma climbed on the wall."],
+        ["Wilma climbed up the tree."],
+        ["She couldn't get the cat."],
+        ["Wilma couldn't get down."],
+        ["Wilma's dad was cross."],
+        ["He put the ladder up."],
+        ["Wilma climbed down."],
+        ["Wilma's dad climbed the tree."],
+        ["He couldn't get the cat."],
+        ["Wilma's dad was stuck."],
+        ["The cat jumped down."],
+        ["The fireman put a ladder up."],
+        ["Wilma's dad climbed down."],
+        ["\"Oh no!\" said everyone."]
+      ]
+    }
+  }
+}

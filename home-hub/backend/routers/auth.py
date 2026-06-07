@@ -18,12 +18,24 @@ class LoginBody(BaseModel):
     password: str = Field(..., min_length=1, max_length=128)
 
 
-def _set_session_cookie(response: Response, token: str, expires) -> None:
+def _cookie_secure(request: Request) -> bool:
+    if settings.session_cookie_secure:
+        return True
+    if settings.trust_proxy:
+        proto = (
+            request.headers.get("x-forwarded-proto", "").split(",")[0].strip().lower()
+        )
+        if proto == "https":
+            return True
+    return False
+
+
+def _set_session_cookie(response: Response, request: Request, token: str, expires) -> None:
     response.set_cookie(
         key=hub_auth.SESSION_COOKIE,
         value=token,
         httponly=True,
-        secure=settings.session_cookie_secure,
+        secure=_cookie_secure(request),
         samesite=settings.session_cookie_samesite,
         max_age=int(settings.session_ttl_hours * 3600),
         path=settings.session_cookie_path,
@@ -34,15 +46,18 @@ def _clear_session_cookie(response: Response) -> None:
     response.delete_cookie(
         key=hub_auth.SESSION_COOKIE, path=settings.session_cookie_path
     )
+    # 迁移：清掉旧版 Path=/hub/ 的会话
+    if settings.session_cookie_path.rstrip("/") != "/hub":
+        response.delete_cookie(key=hub_auth.SESSION_COOKIE, path="/hub/")
 
 
 @router.post("/login")
-async def login(body: LoginBody, response: Response) -> dict[str, Any]:
+async def login(body: LoginBody, request: Request, response: Response) -> dict[str, Any]:
     account = hub_auth.authenticate(body.username, body.password)
     if not account:
         raise HTTPException(status_code=401, detail="用户名或密码错误")
     token, _expires = session_store.create_session(account.username, account.role)
-    _set_session_cookie(response, token, _expires)
+    _set_session_cookie(response, request, token, _expires)
     return {
         "ok": True,
         "username": account.username,

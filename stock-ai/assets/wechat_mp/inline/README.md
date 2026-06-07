@@ -8,6 +8,7 @@ Pexels 免费图（商用友好，见 [Pexels License](https://www.pexels.com/li
 - **主题**：每张 tags 须含 `market|chart|trading|screen|tech|ai|finance|selection|emotion|workspace` 至少一项
 - **带货图**：放在 `../inline-commerce/`，勿与本目录混放
 - **下载**：`uv run python -m scripts.tools.download_wechat_mp_inline_figures`
+- **核对**：Pexels `photos/{id}` 直链可能与预期不符；新增/改 `pexels_id` 后须 `--force` 重下并肉眼确认（禁花卉、生活照等非财经图）
 - **当日去重**：`data/wechat_mp_figure_usage.json`（同天五槽位尽量不重复）
 
 ## 正文标记

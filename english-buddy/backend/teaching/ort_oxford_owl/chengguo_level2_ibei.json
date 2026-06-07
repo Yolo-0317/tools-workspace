@@ -1,0 +1,494 @@
+{
+  "source": "i-bei.com ORT L2 guides",
+  "books": [
+    {
+      "id": "ort_the_toys_party",
+      "title": "The Toys' Party",
+      "aid": 31049,
+      "lines": [
+        "Kipper wanted a party.",
+        "Nobody wanted to come.",
+        "He got his toys.",
+        "He wanted a cake.",
+        "He put in cornflakes.",
+        "He put in tomato sauce.",
+        "He put in milk.",
+        "He put in jam.",
+        "He put in sugar.",
+        "He put in baked beans.",
+        "Mum was cross.",
+        "Floppy."
+      ]
+    },
+    {
+      "id": "ort_new_trainers",
+      "title": "New Trainers",
+      "aid": 31050,
+      "lines": [
+        "Chip wanted new trainers.",
+        "He liked this pair.",
+        "Chip wore the new trainers.",
+        "Chip went to play.",
+        "The trainers got muddy.",
+        "The trainers got wet.",
+        "Dad was cross.",
+        "Chip washed the trainers.",
+        "Oh no!"
+      ]
+    },
+    {
+      "id": "ort_a_new_dog",
+      "title": "A New Dog",
+      "aid": 31051,
+      "lines": [
+        "Kipper wanted a dog.",
+        "Everyone wanted a dog.",
+        "They went to Dog's home.",
+        "They looked at the dogs.",
+        "Kipper wanted this dog.",
+        "It was too big.",
+        "Biff wanted this dog.",
+        "It was too little.",
+        "Mum wanted this dog.",
+        "It was too strong.",
+        "Everyone liked this dog.",
+        "They took the dog home."
+      ]
+    },
+    {
+      "id": "ort_what_a_bad_dog",
+      "title": "What a Bad Dog!",
+      "aid": 31052,
+      "lines": [
+        "Floppy went on the concrete.",
+        "Floppy went in the mud.",
+        "Floppy pulled the washing down.",
+        "Floppy pushed the lego over.",
+        "What a bad dog!\"Said Mum.",
+        "Floppy barked and barked.",
+        "Dad couldn't sleep.",
+        "Dad was cross.",
+        "What a bad dog!\" said Dad.",
+        "The tray was on fire."
+      ]
+    },
+    {
+      "id": "ort_the_go_kart",
+      "title": "The Go-Kart",
+      "aid": 31053,
+      "lines": [
+        "Dad made a go-kart.",
+        "Biff wanted the go-kart.",
+        "Chip wanted the go-kart.",
+        "Biff wanted a go.",
+        "Chip wanted a go.",
+        "Biff pushed.",
+        "Chip pulled.",
+        "They had a fight.",
+        "Stop it,&rdquo;said Dad.",
+        "Stop it,&rdquo;said ��um.",
+        "Dad put the go-kart away.",
+        "They made a swing.",
+        "Oh no!"
+      ]
+    },
+    {
+      "id": "ort_the_dream",
+      "title": "The Dream",
+      "aid": 31055,
+      "lines": [
+        "Biff couldn't sleep.",
+        "Dad told her a story.",
+        "The story was about a dragon.",
+        "Biff dreamed about the dragon.",
+        "It was a nasty dragon.",
+        "It was a very nasty dragon.",
+        "Biff had to fight it.",
+        "Biff went downstairs.",
+        "Mum told her a story.",
+        "The story was about a dolphin.",
+        "Biff dreamed about a dolphin."
+      ]
+    },
+    {
+      "id": "ort_floppys_bath",
+      "title": "Floppy's Bath",
+      "aid": 31057,
+      "lines": [
+        "Floppy saw a rabbit.",
+        "Floppy chased it.",
+        "It went under a fence.",
+        "Floppy got wet.",
+        "Floppy got muddy.",
+        "They took Floppy home.",
+        "Kipper.",
+        "They put Floppy in the bath.",
+        "Mum and Dad washed him.",
+        "Biff and Chip dried Floppy.",
+        "Floppy looked clean.",
+        "Oh no!"
+      ]
+    },
+    {
+      "id": "ort_the_baby_sitter",
+      "title": "The Baby-sitter",
+      "aid": 31058,
+      "lines": [
+        "The baby-sitter came.",
+        "The children came downstairs.",
+        "We couldn't sleep,\"they said.",
+        "Kipper got his book.",
+        "He wanted a story.",
+        "Biff was hungry.",
+        "They made a sandwich.",
+        "Chip wanted a pillow fight.",
+        "Everyone joined in.",
+        "The children went back bed.",
+        "What a mess!\"said the baby-sitter.",
+        "Mum and Dad came back.",
+        "Was everyone good?\"said Mum.",
+        "Yes and no\",said the baby-sitter."
+      ]
+    },
+    {
+      "id": "ort_the_water_fight",
+      "title": "The Water Fight",
+      "aid": 31059,
+      "lines": [
+        "Everyone was hot.",
+        "The children wanted to go swimming.",
+        "Biff got the paddling pool.",
+        "Kipper filled it with water.",
+        "Chip pushed Biff in the water.",
+        "He grabbed the hose.",
+        "They had a water fight.",
+        "Mum got wet.",
+        "Stop it !&rdquo;said Dad.",
+        "Dad got a bucket of water.",
+        "He chased Chip.",
+        "Chip.",
+        "Dad threw the water at Chip.",
+        "Oh no!",
+        "Sorry!&rdquo;said Dad."
+      ]
+    },
+    {
+      "id": "ort_kippers_balloon",
+      "title": "Kipper's Balloon",
+      "aid": 31060,
+      "lines": [
+        "Mum and Dad went shopping.",
+        "Kipper bought a balloon.",
+        "They went to the supermarket.",
+        "The balloon went bang.",
+        "Kipper baught a new balloon.",
+        "Dad went to the toilet.",
+        "Dad saw a balloon.",
+        "Kipper's balloon!&rdquo;he said.",
+        "Dad ran after it.",
+        "The balloon flew away.",
+        "Dad chased it.",
+        "The balloon was on a statue.",
+        "Dad got it down.",
+        "Oh no !&rdquo;said Dad.",
+        "Oh no!"
+      ]
+    },
+    {
+      "id": "ort_spots",
+      "title": "Spots",
+      "aid": 31063,
+      "lines": [
+        "Kipper had spots.",
+        "Biff and Chip had spots too.",
+        "Stay in bed,\" she said.",
+        "Mum had spots.",
+        "Stay in bed, too,\" said the doctor.",
+        "Dad looked after everyone.",
+        "He put the washing out.",
+        "He went shopping.",
+        "What a job!\" said Dad.",
+        "Everyone got better.",
+        "Oh,no!\" said Mum.",
+        "Dad had spots."
+      ]
+    },
+    {
+      "id": "ort_kippers_birthday",
+      "title": "Kipper's Birthday",
+      "aid": 31064,
+      "lines": [
+        "It was kipper's birthday.",
+        "Kipper wanted a party.",
+        "Everyone wanted to come.",
+        "Mum made a cake.",
+        "Dad took a sandwich.",
+        "Stop it ,\"said Mum.",
+        "Everyone came to the party.",
+        "Dad wanted to play a game.",
+        "But Kipper put the television on.",
+        "The children played with the bubbles."
+      ]
+    },
+    {
+      "id": "ort_kippers_laces",
+      "title": "Kipper's Laces",
+      "aid": 31065,
+      "lines": [
+        "Kipper wanted new shoes.",
+        "He couldn't tie his laces.",
+        "Dad helped him.",
+        "Kipper was at school.",
+        "The class had P.",
+        "Kipper couldn't tie his laces.",
+        "Miss Green helped him.",
+        "Kipper was upset.",
+        "He told Dad.",
+        "Dad made a block.",
+        "Kipper tried.",
+        "Hooray!\" said Kipper.",
+        "He did up his laces.",
+        "Oh no!\" said Kipper.",
+        "Oh no!"
+      ]
+    },
+    {
+      "id": "ort_the_wobbly_tooth",
+      "title": "The Wobbly Tooth",
+      "aid": 31066,
+      "lines": [
+        "Kipper had a wobbly tooth.",
+        "Mum wanted to pull it out.",
+        "No��&rdquo;said Kipper.",
+        "Dad wanted to pull it out.",
+        "No,no,no��&rdquo;said Kipper.",
+        "Biff went on the swing.",
+        "Kipper pushed her.",
+        "Oh no!",
+        "The swing hit Kipper.",
+        "The tooth was gone.",
+        "Kipper had swallowed it.",
+        "Kipper was upset.",
+        "Sorry��&rdquo;said Biff and Chip.",
+        "Never mind,&rdquo;said Mum.",
+        "Never mind,&rdquo;said Dad.",
+        "I'm not sad,&rdquo;said Kipper.",
+        "I'm glad."
+      ]
+    },
+    {
+      "id": "ort_the_foggy_day",
+      "title": "The Foggy Day",
+      "aid": 31068,
+      "lines": [
+        "It was foggy.",
+        "Dad wanted to go shopping.",
+        "Oh no,\" said the children.",
+        "Oh no!",
+        "They got into the car.",
+        "They were fed up.",
+        "The fog got worse.",
+        "Dad couldn't see.",
+        "Dad stopped the car.",
+        "They had to walk home.",
+        "They were lost.",
+        "This way,\" said Biff.",
+        "No, this way,\" said Chip.",
+        "They saw a light.",
+        "A monster!\" said Dad.",
+        "It's Mum!\" said the children."
+      ]
+    },
+    {
+      "id": "ort_biffs_aeroplane",
+      "title": "Biff's Aeroplane",
+      "aid": 31069,
+      "lines": [
+        "Biff made an aeroplane.",
+        "The aeroplane looked good.",
+        "Biff wanted to fly it.",
+        "The aeroplane flew up.",
+        "It went over the trees.",
+        "It went over the houses.",
+        "Biff looked for the aeroplane.",
+        "Everyone helped.",
+        "Biff looked and looked.",
+        "The aeroplane was on the bed ."
+      ]
+    },
+    {
+      "id": "ort_floppy_the_hero",
+      "title": "Floppy the Hero",
+      "aid": 31070,
+      "lines": [
+        "A fire engine went by.",
+        "There was a fire.",
+        "Everyone ran to see.",
+        "Get back\",said a fireman.",
+        "A barn was on fire.",
+        "A little dog ran to the barn.",
+        "She barked and barked.",
+        "Floppy ran to the barn .",
+        "The firemen pushed the door down.",
+        "Floppy ran out .",
+        "He had some puppies.",
+        "Everyone looked at floppy.",
+        "Floppy."
+      ]
+    },
+    {
+      "id": "ort_the_chase",
+      "title": "The Chase",
+      "aid": null,
+      "lines": []
+    },
+    {
+      "id": "ort_the_big_egg",
+      "title": "The Big Egg",
+      "aid": 31074,
+      "lines": [
+        "Biff and Chip went to the farm with Mum.",
+        "The farm had chicks to sell.",
+        "It had chicks in a pen.",
+        "Can we get chicks,Mum?\"said Biff.",
+        "We can hatch chicks,\"said Mum.",
+        "Mum got the eggs.",
+        "She got an incubator to put the eggs in.",
+        "It's fun to hatch chicks,\"said Dad.",
+        "This is an odd egg,\"said Biff.",
+        "The incubator had a lamp and a fan.",
+        "It will turn the eggs,\"said Mum.",
+        "Ten eggs did hatch.",
+        "They had ten chicks.",
+        "But the odd egg did not hatch.",
+        "At last it did hatch.",
+        "But it was not a chick.",
+        "It was a duckling."
+      ]
+    },
+    {
+      "id": "ort_poor_floppy",
+      "title": "Poor Floppy",
+      "aid": null,
+      "lines": []
+    },
+    {
+      "id": "ort_put_it_back",
+      "title": "Put it back",
+      "aid": null,
+      "lines": []
+    },
+    {
+      "id": "ort_in_a_bit",
+      "title": "In a bit",
+      "aid": null,
+      "lines": []
+    },
+    {
+      "id": "ort_a_present_for_mum",
+      "title": "A present for Mum",
+      "aid": 31087,
+      "lines": [
+        "Dad got flowers for Mum.",
+        "He had a big bunch.",
+        "Flowers for Mum,\" he said.",
+        "He put the flowers on the back.",
+        "The flowers fell off.",
+        "Oh no! Dad was upset.",
+        "Oh no!",
+        "He had lost the flowers.",
+        "Wilma saw the flowers.",
+        "Lost flowers,\" said her mum.",
+        "She put them on a bin.",
+        "Dad was in a rush.",
+        "He went back to the flower shop.",
+        "He got a big bunch of flowers.",
+        "Dad saw his lost flowers.",
+        "Well, well,\" he said.",
+        "Flowers for Mum,\" said Dad.",
+        "Mix them up,\" said Chip.",
+        "Then it will be a big bunch.",
+        "It's an enormous bunch,\" said Mum.",
+        "Thank you."
+      ]
+    },
+    {
+      "id": "ort_a_hole_in_the_sand",
+      "title": "A hole in the sand",
+      "aid": null,
+      "lines": []
+    },
+    {
+      "id": "ort_monkey_tricks",
+      "title": "Monkey Tricks",
+      "aid": null,
+      "lines": []
+    },
+    {
+      "id": "ort_hey_presto",
+      "title": "Hey Presto!",
+      "aid": null,
+      "lines": []
+    },
+    {
+      "id": "ort_its_the_weather",
+      "title": "It's the Weather",
+      "aid": null,
+      "lines": []
+    },
+    {
+      "id": "ort_naughty_children",
+      "title": "Naughty Children",
+      "aid": null,
+      "lines": []
+    },
+    {
+      "id": "ort_a_sinking_feeling",
+      "title": "A Sinking Feeling",
+      "aid": null,
+      "lines": []
+    },
+    {
+      "id": "ort_creepy_crawly",
+      "title": "Creepy-crawly!",
+      "aid": null,
+      "lines": []
+    },
+    {
+      "id": "ort_what_is_it",
+      "title": "What is it?",
+      "aid": null,
+      "lines": []
+    },
+    {
+      "id": "ort_the_lost_puppy",
+      "title": "The Lost Puppy",
+      "aid": null,
+      "lines": []
+    },
+    {
+      "id": "ort_new_trees",
+      "title": "New Trees",
+      "aid": null,
+      "lines": []
+    },
+    {
+      "id": "ort_up_and_down",
+      "title": "Up and Down",
+      "aid": null,
+      "lines": []
+    },
+    {
+      "id": "ort_the_little_dragon",
+      "title": "The Little Dragon",
+      "aid": null,
+      "lines": []
+    },
+    {
+      "id": "ort_the_band",
+      "title": "The Band",
+      "aid": null,
+      "lines": []
+    }
+  ]
+}

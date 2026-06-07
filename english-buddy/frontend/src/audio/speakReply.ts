@@ -6,9 +6,35 @@ import { getSharedAudioElement } from "./audioUnlock";
 let currentAudio: HTMLAudioElement | null = null;
 let speakGen = 0;
 let playResolve: (() => void) | null = null;
+let pausedByUser = false;
+
+export function hasPausableTeacherAudio(): boolean {
+  return currentAudio !== null && !currentAudio.ended;
+}
+
+export function isTeacherAudioPaused(): boolean {
+  return pausedByUser && hasPausableTeacherAudio();
+}
+
+export function pauseTeacherAudio(): boolean {
+  if (!hasPausableTeacherAudio() || currentAudio!.paused) return false;
+  currentAudio!.pause();
+  pausedByUser = true;
+  return true;
+}
+
+export function resumeTeacherAudio(): boolean {
+  if (!pausedByUser || !hasPausableTeacherAudio()) return false;
+  pausedByUser = false;
+  void currentAudio!.play().catch(() => {
+    pausedByUser = true;
+  });
+  return true;
+}
 
 export function stopSpeaking(): void {
   speakGen++;
+  pausedByUser = false;
   if (playResolve) {
     const done = playResolve;
     playResolve = null;

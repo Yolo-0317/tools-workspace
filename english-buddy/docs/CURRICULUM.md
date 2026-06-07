@@ -8,7 +8,7 @@
 | 学段 | grade_id 示例 | 册别 |
 |------|---------------|------|
 | 幼儿园 | `kg_small` / `kg_middle` / `kg_large` | 小班 / 中班 / 大班 |
-| 拓展 | `ort_dialogue` | **牛津阅读树** Biff / Chip / Kipper 家庭对话（原创短句，非 ORT 原文） |
+| 拓展 | `ort_dialogue` | **牛津阅读树 ORT** — Oxford Owl 免费库 Stage 1 / Level 1+ **读本原文** |
 | 小学 | `g1_up` / `g1_down` … `g5_up` / `g5_down` | 按教材真实上、下册 |
 
 规模（v7）：**14** 个年级档，**144** 个内置单元。
@@ -24,9 +24,10 @@
 
 ### 牛津阅读树（`ort_dialogue`）
 
-- **12 课**家庭情景：起床、找 Floppy、公园、下雨、商店、小钥匙、丢玩具、睡前、上学、野餐等。
-- 角色：**Biff、Chip、Kipper**、Mum、Dad、**Floppy**（与书里一致）；句式为原创短句，**不摘抄** ORT 教材原文。
-- **带读入口**：首页 → 年级选 **「牛津阅读树」**（拓展）→ 选第几课 → 预热 → **开始带读**。
+- **真源**：`backend/teaching/ort_oxford_owl/books.json`（Who Is It?、Get On、Six in a Bed、Big Feet 等 ORT 经典读本**原句**）。
+- **来源**：[Oxford Owl 免费电子书 · Oxford Reading Tree](https://www.oxfordowl.co.uk/for-home/find-a-book/library-page/?series=Oxford+Reading+Tree)（注册后可读完整插图版）。
+- **带读入口**：首页 → **「牛津阅读树」**（拓展）→ 选读本 → 预热 → **开始带读**。
+- **增删读本**：改 `books.json` → `python3 teaching/build_lessons_v5.py` → 重启；校验 `python3 scripts/sync_oxford_owl_ort.py`。
 
 ## 重生成课文 JSON
 

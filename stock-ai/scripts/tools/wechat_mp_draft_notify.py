@@ -13,7 +13,7 @@ TZ = ZoneInfo("Asia/Shanghai")
 
 BATCH_LABELS = {
     "evening": "交易日 19:00",
-    "weekend": "休市日 19:00 周末要闻(72h)",
+    "weekend": "休市日 18:20 周末要闻(热股Top10×快讯)",
     "weekend_skip": "周六休市(跳过)",
 }
 

@@ -79,6 +79,7 @@ async def lessons_list(
     program: Optional[str] = None,
     tts_speed: float = 1.0,
     custom_only: bool = False,
+    require_prewarm: bool = True,
     user: Optional[Dict[str, Any]] = Depends(get_optional_user),
 ) -> dict:
     if custom_only and not user:
@@ -92,6 +93,7 @@ async def lessons_list(
         tts_speed=speed,
         custom_only=custom_only,
         owner_user_id=user["id"] if user else None,
+        require_prewarm=require_prewarm,
     )
     return {
         "grade": gid,
