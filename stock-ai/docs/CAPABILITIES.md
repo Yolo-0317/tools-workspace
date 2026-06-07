@@ -1,8 +1,37 @@
 # stock-ai 能力总览
 
 > 工作目录：`/Users/yolo/dev/yolo/tools-workspace/stock-ai`  
-> 投资 Agent：`investment-agent/`（决策纪律、持仓执行卡、微信对话上下文）  
+> 投资 Agent：`investment-agent/`（**投顾带操**：`投顾主策略.md` 决策 → 工具执行 → 看板/微信交付）  
 > 本文档为**当前生产链路**的单一入口；细节见各子文档链接。
+
+---
+
+## 0. 投顾带操（总原则）
+
+**所有面向用户的自动化输出**，须先符合 `investment-agent/投顾主策略.md` 阶段，再落到 `持仓执行卡.md` 价位与监控。
+
+```text
+投顾主策略（阶段 0/1/2 · 本周必做/禁止）
+        ↓ 过滤 & 解读
+工具层：选股 / SOP / 监控 / 战报 / MCP（均注入决策上下文）
+        ↓ 交付
+看板 home-hub · 微信战报 · investment-agent 对话
+```
+
+| 阶段 | 选股 Top5 | SOP / AI 简评 | 次日监控 | 执行卡试探买 |
+|------|-----------|---------------|----------|--------------|
+| **0 止血降仓** | 情报池（继续观察） | **SOP 启用** / AI 简评跳过 | 不写 selection 规则 | 仅减仓提示 |
+| **1 稳态组合** | 小仓试探 | 启用 | 启用 | B 档 P-买 |
+| **2 进攻试探** | 可进攻 | 启用 | 启用 | 按档位 |
+
+代码门控：`stock_ai/advisor_selection.py`（读 `投顾主策略.md` 阶段标记）。
+
+**专业投顾能力**（2026-06-02）：
+
+- 模块：`stock_ai/advisor_diagnosis.py` — 账户健康度、集中度、配置缺口、风险预算、投教
+- 文档：`investment-agent/投顾专业技能.md` — 对齐中证协投顾六大职责
+- 看板 `advisor.diagnosis` + 扩展 `delivery_template`（七段交付）
+- 战报首段含 `【账户诊断】` 摘要
 
 ---
 
@@ -48,15 +77,23 @@ Agent 排查「是否漏接 DB/OpenCLI」时，先对号入座；**只有第一�
 
 | 优先级 | 来源 | 路径 |
 |--------|------|------|
-| 1 | 持仓执行卡 P0～P4 | `investment-agent/持仓执行卡.md` |
-| 2 | 通用操盘策略 | `investment-agent/memory/trading-strategies.md`（qclaw 副本 fallback） |
-| 3 | 个股东财 SOP | `investment-agent/docs/skills/eastmoney-browser-sop/` |
+| 1 | **投顾主策略**（阶段、回本路径、本周必做） | `investment-agent/投顾主策略.md` |
+| 2 | 持仓执行卡（执行价位、监控） | `investment-agent/持仓执行卡.md` |
+| 3 | 通用操盘策略 | `investment-agent/memory/trading-strategies.md` |
+| 4 | 个股东财 SOP | `investment-agent/docs/skills/eastmoney-browser-sop/` |
 
 注入方式：
 
 - Python：`from scripts.tools.decision_context import inject_decision_context`
 - 或：`load_full_decision_context()`（`scripts/tools/holdings_context.py`）
 - MCP：`tushare_mcp.py` 内 `_maybe_inject_decision_context()`（`SKIP_DECISION_CONTEXT=1` 可跳过）
+
+**投顾看板（home-hub）**
+
+- API：`GET /api/dashboard/advisor`；`summary` 响应含 `advisor` 块（阶段、回本进度、本周必做）
+- **周五周复盘**：`push_advisor_weekly_review.sh` → MySQL `advisor_weekly_reviews` → 看板 `advisor.weekly_review_latest`；API `GET /api/dashboard/advisor/weekly-reviews`
+- 选股 Top5 经 `advisor_selection` 过滤；阶段 0 = 情报池，**仍跑 Top5 SOP**，跳过 AI 简评与 `selection_watchlist --sync`
+- 战报 `daily_briefing_report.py` 首行含投顾横幅
 
 **Agent Skill 权威副本**（与 `~/.codex/skills/` 不一致时以 repo 为准）：
 
@@ -73,14 +110,21 @@ Agent 排查「是否漏接 DB/OpenCLI」时，先对号入座；**只有第一�
 
 | 任务 | 调度 | 执行位置 | 入口 |
 |------|------|----------|------|
-| Tushare 日线同步 | 工作日 **17:00** | scheduler **容器内** | `run_sync_daily.sh` |
-| 选股 + SOP + 战报 | 工作日 **17:30** | 本机 host-jobs | `push_selection_wechat.sh` |
-| 每日战报 | **09 / 12 / 15 / 20:00** | 本机 | `push_daily_briefing_wechat.sh` |
-| 持仓 + 选股池监控 | 工作日 **每 5 分钟** | 本机 | `push_holdings_monitor.sh`（9:30–11:30 / 13:00–15:00 生效） |
+| Tushare 日线同步 | 工作日 **17:30** | scheduler **容器内** | `run_sync_daily.sh` |
+| 选股 + SOP + 战报 | 工作日 **17:45** | 本机 host-jobs | `push_selection_wechat.sh`（默认不推微信） |
+| 东财快讯 + AI 解读 | **每 15 分钟** | launchd | `sync_macro_news.sh` |
+| 持仓 + 选股池监控 | 工作日 **每 5 分钟** | Docker → host-jobs | `push_holdings_monitor.sh`（勿装 `holdings-monitor` launchd） |
+| 情绪周期 / 收盘龙头 | 工作日 **18:00 eod** 容器（盘前 pre_market 已下线） | `sync_emotion_cycle.sh eod` |
+| **投顾周五周复盘** | **周五 20:30** | 本机 | `push_advisor_weekly_review.sh` → 看板 `/advisor` |
+| 公众号草稿 | 每天 **19:00** | launchd | `wechat_mp_draft_scheduled.sh` |
 
-**安装**：`./scripts/install-stock-ai-scheduler.sh`（会停用旧 launchd 三个 plist，移除 `stock-daily-sync`）。
+**安装**：`./scripts/install-stock-ai-scheduler.sh`（移除旧 selection/briefing/holdings-monitor launchd，启动 scheduler）。
 
-**仍用 launchd（非 cron）**：`com.user.stock-ai-host-jobs`、`docker-stacks`、`home-hub`、`wechat-cursor-acp`、DDNS/证书等 — 见 SCHEDULING.md §7。
+**已停用定时**：09/12/15/20 战报微信推送 → 改快讯 `com.user.stock-macro-news-sync`。详见 [SCHEDULING.md](SCHEDULING.md)。
+
+**仍用 launchd**：`host-jobs`、`macro-news-sync`、`docker-stacks`、`wechat-mp-draft-scheduled` 等 — 见 SCHEDULING.md §7。
+
+**微信公众号草稿（每日 19:00）**：`com.user.wechat-mp-draft-scheduled` — 交易日三篇 / 休市日要闻（见 [WECHAT_MP_SCHEDULING.md](WECHAT_MP_SCHEDULING.md)）；安装 `scripts/install-wechat-mp-launchd.sh`。
 
 **旧 launchd 安装脚本**（仅回滚）：`install-daily-selection-launchd.sh`、`install-daily-briefing-launchd.sh`、`install-holdings-monitor-launchd.sh`。
 
@@ -89,8 +133,8 @@ Agent 排查「是否漏接 DB/OpenCLI」时，先对号入座；**只有第一�
 ```bash
 cd stock-ai
 ./push_selection_wechat.sh                      # 完整 17:30
-REPORT_ONLY=1 ./push_selection_wechat.sh        # 跳过选股，仅战报+推送
-FETCH_ONLY=1 ./push_daily_briefing_wechat.sh 15:00
+REPORT_ONLY=1 ./push_selection_wechat.sh        # 跳过选股，仅推送已有产物
+./sync_macro_news.sh                            # 快讯 + AI 解读（与 15min launchd 相同）
 uv run python -m scripts.monitor.monitor_holdings_alerts --force --push
 ```
 
@@ -118,21 +162,22 @@ cd wechat-cursor-acp && cp -n .env.example .env && ./scripts/start.sh
 ```text
 push_selection_wechat.sh
   └─ run_selection_daily.sh
-       ├─ ensure_daily_bars --sync-if-stale     # MySQL 落后则 Tushare by_date 补同步
+       ├─ ensure_daily_bars --sync-if-stale --require-ready  # 期望日+条数门禁，未就绪 exit 1
        └─ daily_selection_report              # 综合选股 Top5 + 东财 SOP（默认）
   └─ selection_watchlist --sync                # SOP → MySQL selection_watch_picks + alert_rules
-  └─ push_daily_briefing_wechat.sh 17:30       # 战报（含 Top5 段 + AI 解读）→ 微信
+  └─ 微信推送选股报告（wechat-acp）
 ```
 
 | 步骤 | 模块 | 输出 |
 |------|------|------|
-| 日线补缺 | `scripts/tools/ensure_daily_bars.py` | MySQL `stock_daily` 至期望交易日（17:00 后较稳） |
+| 日线门禁 | `scripts/tools/ensure_daily_bars.py` | 期望交易日 + 当日≥3500 条；落后 by_date 补同步，仍不满足中止选股 |
 | 综合选股 | `core_v2/stock_selection_combined.py` | MySQL `selection_daily_results` + CSV 导出 |
 | SOP 采集 | `scripts/tools/fetch_eastmoney_quotes.py` → `eastmoney_sop_extract.py` | OpenCLI 8 维度 → `output/sop_preliminary/YYYYMMDD/` |
 | SOP + DeepSeek | `scripts/analysis/sop_review_top5_concurrent.py` | MySQL `sop_review_*` + `sop_review_latest.json` 双写 |
 | 干净 AI 摘要 | `daily_selection_report.py` | `output/daily_selection_ai_latest.txt`（无 stderr 日志） |
 | 次日监控 | `scripts/tools/selection_watchlist.py` | MySQL `selection_watch_picks` + `alert_rules`（source=selection） |
-| 战报 | `scripts/tools/daily_briefing_report.py` | `output/daily_briefing_1730_latest.txt` |
+
+**盘中/全天快讯与 AI 解读**：`sync_macro_news.sh`（launchd 每 15 分钟），非 17:30 链路。
 
 **环境变量**
 
@@ -144,18 +189,16 @@ push_selection_wechat.sh
 
 ---
 
-## 4. 每日战报（09 / 12 / 15 / 20）
+## 4. 快讯与 AI 解读（定时：每 15 分钟）
 
 | 模块 | 说明 |
 |------|------|
-| `scripts/tools/daily_briefing_report.py` | 大盘 + 东财 7×24 + 国际 + 持仓 + **【AI 综合解读】** |
-| `scripts/tools/market_session.py` | 休市/非交易时段标注 |
-| `scripts/tools/fetch_eastmoney_macro_news.py` | OpenCLI 抓东财 7×24 快讯 |
-| `scripts/tools/wechat_format.py` | AI 解读分节排版、SOP 摘要去日志 |
+| `sync_macro_news.sh` | launchd `com.user.stock-macro-news-sync` |
+| `scripts/tools/fetch_eastmoney_macro_news.py` | OpenCLI 抓东财 7×24 |
+| `scripts/tools/news_ai_interpret.py` | 快讯 AI 解读落库 |
+| `scripts/tools/daily_briefing_report.py` | **手动/看板**用；09/12/15/20 微信战报已停用 |
 
-**17:30 战报**额外包含：第五节 Top5 + `── SOP / AI 投资决策 ──`（读 `daily_selection_ai_latest.txt`）。
-
-**AI 解读格式**（微信友好）：
+**AI 解读格式**（看板/快讯，微信友好）：
 
 ```text
 【AI 综合解读】
@@ -185,7 +228,7 @@ push_selection_wechat.sh
 **改执行卡后同步**：`uv run python -m scripts.tools.sync_portfolio_from_card`
 
 现价来源：东财行情页（OpenCLI Browser）。  
-与 `持仓执行卡.md` 冲突时以执行卡为准。
+**做不做**以投顾主策略为准；**什么价位触发**以持仓执行卡为准。
 
 ---
 
@@ -194,12 +237,12 @@ push_selection_wechat.sh
 | 能力 | 入口 | 说明 |
 |------|------|------|
 | Tushare 日线 → MySQL | `scripts/sync/sync_tushare_daily_to_mysql.py` | 主入口；`./run_sync_daily.sh` |
-| 缺失自动补同步 | `scripts/tools/ensure_daily_bars.py` | 17:30 选股前；期望日规则见脚本 |
+| 选股前日线门禁 | `ensure_daily_bars_at_selection_start()` | `run_selection_daily` / `run_parallel_selection` / `stock_selection_combined`；`SKIP_DAILY_BARS_CHECK=1` 跳过 |
 | 执行卡 → 持仓/监控 | `scripts/tools/sync_portfolio_from_card.py` | `portfolio_positions` / `portfolio_account` / `alert_rules` |
 | 实时行情 / SOP | `scripts/tools/fetch_eastmoney_quotes.py` | OpenCLI；东财 HTTP 入库脚本已移除 |
 | 东财证券网页持仓 | `scripts/tools/fetch_jywg_positions_opencli.py` | OpenCLI；首次手动登录，在线时间最长 3h；`--wait-login` |
-| Docker 统一调度 | `docker/scheduler/` | sync 17:00 + 选股/战报/监控 cron；见 [SCHEDULING.md](SCHEDULING.md) |
-| 掘金仿真量化 | 独立子项目 [`../emquant-sim/`](../emquant-sim/README.md) | 与 stock-ai 隔离；不经过本仓库 scheduler |
+| Docker 统一调度 | `docker/scheduler/` | sync 17:30 + 选股 17:45 + 龙头 eod 18:00；见 [SCHEDULING.md](SCHEDULING.md) |
+| 掘金仿真量化 | 独立子项目 [`../emquant-sim/`](../emquant-sim/README.md) | **2026-06-02 已下线**（`EMQUANT_ENABLED=0`）；情绪周期仍走 MySQL |
 
 详见 [TUSHARE_SYNC_GUIDE.md](TUSHARE_SYNC_GUIDE.md)。
 
@@ -207,19 +250,19 @@ push_selection_wechat.sh
 
 ---
 
-## 7. LLM 调用（DeepSeek API 或 Cursor auto）
+## 7. LLM 调用（写稿 Cursor + SOP DeepSeek）
 
 统一封装：`scripts/tools/deepseek_client.py`（Cursor 实现见 `cursor_agent_client.py`）
 
-| `LLM_BACKEND` | 说明 | 前置 |
-|---------------|------|------|
-| `deepseek`（**默认**） | DeepSeek API | `DEEPSEEK_API_KEY` |
-| `cursor` | Cursor CLI `agent --model auto` | `agent login`，走订阅额度 |
+| 变量 | 默认 | 说明 | 前置 |
+|------|------|------|------|
+| `LLM_BACKEND` | `deepseek`（**.env.example 推荐 `cursor`**） | 公众号写稿、战报、AI 审查 | `cursor` → `agent login`；`deepseek` → `DEEPSEEK_API_KEY` |
+| `SOP_LLM_BACKEND` | `deepseek` | 东财 SOP 并发终审（**不受** `LLM_BACKEND` 影响） | `DEEPSEEK_API_KEY` |
 
-| 函数 | deepseek 默认模型 | cursor 模型 | 典型调用方 |
-|------|-------------------|-------------|------------|
-| `call_deepseek(messages=…)` | `deepseek-v4-flash`（`DEEPSEEK_MODEL`） | `auto`（`CURSOR_AGENT_MODEL`） | 战报、SOP 汇总 |
-| `call_deepseek_prompt(…)` | `deepseek-v4-flash`（`DEEPSEEK_MCP_MODEL`） | 同上 | MCP、持仓分析 |
+| 函数 | deepseek 模型 | cursor 模型 | 典型调用方 |
+|------|---------------|-------------|------------|
+| `call_deepseek(…)` | `DEEPSEEK_MODEL` | `CURSOR_AGENT_MODEL` | 写稿；SOP 传 `backend=sop_llm_backend()` |
+| `call_deepseek_prompt(…)` | `DEEPSEEK_MCP_MODEL` | 同上 | MCP、持仓分析 |
 
 Cursor 相关：`CURSOR_AGENT_WORKSPACE`（默认 `investment-agent`）、`CURSOR_AGENT_MODE=ask`（只读问答）、`CURSOR_AGENT_TIMEOUT_SECONDS`（默认 300）。
 
@@ -335,7 +378,7 @@ uv run python -m scripts.tools.dashboard_data export -o output/dashboard.json
 
 | 展示 | 数据源 | 何时更新 |
 |------|--------|----------|
-| 总览/持仓「当前」账户与持仓 | **`portfolio_account` + `portfolio_positions`** | `jywg --sync-db` 或 `sync_portfolio_from_card` 后立即 |
+| 总览/持仓「当前」账户与持仓 | **`portfolio_account` + `portfolio_positions`** | 东方财富证券 `fetch_jywg_positions_opencli --sync-db` 或 `sync_portfolio_from_card` 后立即 |
 | 资产/盈亏曲线、按日快照下拉 | **`portfolio_*_daily`**（`slot=eod/midday/sync`） | `snapshot-portfolio` / 战报·同步脚本 |
 
 `export_dashboard_payload` 的 `positions_latest` **不再**用 eod 快照冒充当前；`snapshot_slot` 只影响历史序列。

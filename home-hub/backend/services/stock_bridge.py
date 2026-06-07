@@ -35,6 +35,71 @@ def _load_stock_env() -> None:
     load_dotenv(stock_ai.parent / "stock-mysql" / ".env")
 
 
+def load_advisor_summary() -> dict[str, Any]:
+    """投顾模式摘要（阶段、回本进度、本周必做）。"""
+    _ensure_stock_ai_path()
+    _load_stock_env()
+    from scripts.tools.portfolio_db import load_account, load_positions
+    from stock_ai.advisor_selection import build_advisor_dashboard_payload
+
+    acct = load_account()
+    positions = load_positions()
+    ratio = _position_ratio_pct(acct.position_ratio) if acct else None
+    closes: dict[str, float] = {}
+    if positions:
+        try:
+            from scripts.tools.portfolio_db import load_dashboard_closes, load_monitor_live_quotes
+
+            codes = [p.code for p in positions]
+            live_rows, _ = load_monitor_live_quotes(codes)
+            closes = {c: float(r["price"]) for c, r in live_rows.items()}
+            missing = [c for c in codes if c not in closes]
+            if missing:
+                closes.update(load_dashboard_closes(missing, snapshot_slot="eod"))
+        except Exception:
+            pass
+    return build_advisor_dashboard_payload(
+        total_assets=acct.total_assets if acct else None,
+        position_ratio_pct=ratio,
+        holding_pnl=acct.holding_pnl if acct else None,
+        available_cash=acct.available_cash if acct else None,
+        positions=positions,
+        closes=closes,
+    )
+
+
+def load_advisor_weekly_reviews(*, limit: int = 12) -> list[dict[str, Any]]:
+    _ensure_stock_ai_path()
+    _load_stock_env()
+    from scripts.tools.portfolio_db import list_advisor_weekly_reviews
+    from stock_ai.advisor_weekly_review import public_weekly_review_row
+
+    return [public_weekly_review_row(r) for r in list_advisor_weekly_reviews(limit=limit)]
+
+
+def load_latest_advisor_weekly_review() -> dict[str, Any] | None:
+    _ensure_stock_ai_path()
+    _load_stock_env()
+    from stock_ai.advisor_weekly_review import load_latest_weekly_review_public
+
+    return load_latest_weekly_review_public()
+
+
+def _public_weekly_review(row: dict[str, Any]) -> dict[str, Any]:
+    from stock_ai.advisor_weekly_review import public_weekly_review_row
+
+    return public_weekly_review_row(row)
+
+
+def load_advisor_summary_with_weekly() -> dict[str, Any]:
+    summary = load_advisor_summary()
+    try:
+        summary["weekly_review_latest"] = load_latest_advisor_weekly_review()
+    except Exception:
+        summary["weekly_review_latest"] = None
+    return summary
+
+
 def export_dashboard(
     *,
     snapshot_slot: str = "eod",
@@ -86,6 +151,23 @@ def load_current_portfolio() -> dict[str, Any]:
     }
 
 
+def _attach_monitor_advisor(payload: dict[str, Any]) -> dict[str, Any]:
+    """监控 API：附带投顾摘要与规则分轨统计。"""
+    rules = payload.get("rules") or []
+    holdings_n = sum(1 for r in rules if r.get("source") != "selection")
+    selection_n = sum(1 for r in rules if r.get("source") == "selection")
+    payload["rule_stats"] = {
+        "total": len(rules),
+        "holdings": holdings_n,
+        "selection": selection_n,
+    }
+    try:
+        payload["advisor"] = load_advisor_summary()
+    except Exception as exc:  # noqa: BLE001
+        payload["advisor"] = {"error": str(exc)}
+    return payload
+
+
 def load_monitor_rules(*, live: bool = False) -> dict[str, Any]:
     _ensure_stock_ai_path()
     _load_stock_env()
@@ -96,7 +178,7 @@ def load_monitor_rules(*, live: bool = False) -> dict[str, Any]:
     payload: dict[str, Any] = {"rules": rules}
 
     if not live:
-        return payload
+        return _attach_monitor_advisor(payload)
 
     codes = sorted({str(r.get("code", "")).zfill(6) for r in raw_rules if r.get("code")})
     from scripts.monitor.monitor_holdings_alerts import Quote, _format_message, _rule_triggered
@@ -167,7 +249,7 @@ def load_monitor_rules(*, live: bool = False) -> dict[str, Any]:
         payload["quotes_as_of"] = batch_as_of.strftime("%Y-%m-%d %H:%M:%S")
     else:
         payload["quotes_as_of"] = datetime.now(_TZ).strftime("%Y-%m-%d %H:%M:%S")
-    return payload
+    return _attach_monitor_advisor(payload)
 
 
 def load_monitor_rules_list() -> list[dict[str, Any]]:
@@ -357,6 +439,16 @@ def _enrich_selection_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         for r in rows
     ]
     profiles = load_stock_profiles_by_codes(codes)
+    pos_pct = 0.0
+    try:
+        from scripts.tools.portfolio_db import load_account
+
+        acct = load_account()
+        if acct and acct.position_ratio is not None:
+            r = float(acct.position_ratio)
+            pos_pct = r * 100 if r <= 1.0 else r
+    except Exception:
+        pass
     merged_rows: list[dict[str, Any]] = []
     for row in rows:
         code = str(row.get("代码") or row.get("ts_code") or "").split(".")[0].zfill(6)
@@ -364,7 +456,14 @@ def _enrich_selection_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if prof and (not row.get("所属行业") or not row.get("公司简介")):
             merged_rows.append(merge_profile_fields_into_selection_row(row, prof))
         else:
-            merged_rows.append(row)
+            merged_rows.append(dict(row))
+    try:
+        from stock_ai.advisor_selection import apply_advisor_to_results_row
+
+        for row in merged_rows:
+            apply_advisor_to_results_row(row, account_position_pct=pos_pct)
+    except ImportError:
+        pass
     return merged_rows
 
 
@@ -396,10 +495,17 @@ def _selection_history_extras(
     if acct and acct.position_ratio is not None:
         r = float(acct.position_ratio)
         pos_pct = r * 100 if r <= 1.0 else r
+    advisor: dict[str, Any] = {}
+    try:
+        advisor = load_advisor_summary()
+    except Exception as exc:  # noqa: BLE001
+        advisor = {"error": str(exc)}
+
     return {
         "sop_review": sop,
         "holding_codes": holdings,
         "account_position_pct": pos_pct,
+        "advisor": advisor,
     }
 
 
@@ -661,6 +767,14 @@ def load_discipline() -> dict[str, Any]:
             pass
 
     alerts: list[dict[str, Any]] = []
+    try:
+        from stock_ai.advisor_selection import advisor_discipline_alerts
+
+        for item in advisor_discipline_alerts(position_ratio_pct=position_ratio):
+            alerts.append(item)
+    except ImportError:
+        pass
+
     if position_ratio is not None and position_ratio >= 97:
         alerts.append(
             {
@@ -702,7 +816,7 @@ def load_discipline() -> dict[str, Any]:
                     {
                         "level": "warn",
                         "title": f"{MEIHUA_BIO_NAME}减仓",
-                        "message": f"{MEIHUA_BIO_NAME}({MEIHUA_BIO_CODE}) 现价 {price:.2f} 元 ≥ 10.50，条件：减仓 250 股",
+                        "message": f"{MEIHUA_BIO_NAME}({MEIHUA_BIO_CODE}) 现价 {price:.2f} 元 ≥ 10.50，条件：减仓 200 股",
                         "code": code,
                     }
                 )
@@ -749,6 +863,114 @@ def _format_calendar_interval(item: dict[str, Any]) -> str:
     return " ".join(parts) if parts else "定时"
 
 
+# 勿在任务页展示（与 Docker scheduler 双轨或已停用；plist 仍可能在 launchd/ 目录）
+_LAUNCHD_LABELS_HIDDEN: frozenset[str] = frozenset(
+    {
+        "com.user.stock-ai-daily-selection",
+        "com.user.stock-holdings-monitor",
+    }
+)
+
+# launchd Label → 看板任务卡片中文（title 短标题，description 一句话说明）
+_LAUNCHD_JOB_META: dict[str, dict[str, str]] = {
+    "com.user.home-hub": {
+        "title": "投资看板服务",
+        "description": "启动 home-hub FastAPI（:8780），供 H5 投顾总览、持仓、选股、任务页",
+    },
+    "com.user.stock-ai-host-jobs": {
+        "title": "选股调度桥接",
+        "description": "常驻 host-jobs（:9876）；scheduler 工作日 17:45 触发选股，本机执行 OpenCLI/脚本",
+    },
+    "com.user.stock-ai-daily-selection": {
+        "title": "每日综合选股（勿启用）",
+        "description": "与 Docker 17:45 双轨冲突；生产仅 scheduler→host-jobs，勿 launchctl load 本项",
+        "schedule": "已弃用（原 plist 17:30）",
+    },
+    "com.user.stock-macro-news-sync": {
+        "title": "财经快讯同步",
+        "description": "定时拉东财 7×24 快讯入库，供看板要闻与 news 稿素材",
+    },
+    "com.user.wechat-mp-draft-scheduled": {
+        "title": "公众号晚间草稿",
+        "description": "每天 19:00 推 evening 三篇（行业→龙头→选股）进微信草稿箱",
+    },
+    "com.user.wechat-mp-whitelist-check": {
+        "title": "公众号 IP 白名单",
+        "description": "探测公网 IP 变化并提醒更新微信公众平台 API 白名单",
+    },
+    "com.user.wechat-cursor-acp": {
+        "title": "微信 ↔ Cursor",
+        "description": "wechat-cursor-acp 桥接，微信消息走 Cursor Agent",
+    },
+    "com.user.docker-stacks": {
+        "title": "Docker 栈自启",
+        "description": "登录后幂等 docker compose up（MySQL、scheduler、SideStore 等）",
+    },
+    "com.user.stock-holdings-monitor": {
+        "title": "持仓盘中监控",
+        "description": "每 5 分钟 OpenCLI 盯持仓告警（默认建议停用，与 Docker monitor 勿双轨）",
+    },
+    "com.user.stock-watch-reminder-20260601": {
+        "title": "观察名单提醒",
+        "description": "一次性/短期观察提醒任务（按 plist 日历触发）",
+    },
+}
+
+# Docker stock-ai-scheduler（supercronic，非 launchd；与 stock-ai/docker/scheduler/crontab 同步）
+_DOCKER_SCHEDULER_JOBS: list[dict[str, str]] = [
+    {
+        "label": "docker.stock-ai-scheduler.tushare-sync",
+        "title": "Tushare 日线同步",
+        "description": "全市场日线入库 MySQL（run_sync_daily.sh，2 个交易日）",
+        "entry": "stock-ai/docker/scheduler → run_sync_daily.sh",
+        "schedule": "工作日 17:30",
+    },
+    {
+        "label": "docker.stock-ai-scheduler.selection",
+        "title": "综合选股 + SOP",
+        "description": "HTTP 触发 host-jobs → push_selection_wechat.sh",
+        "entry": "stock-ai/docker/scheduler → run-host-job.sh selection",
+        "schedule": "工作日 17:45",
+    },
+    {
+        "label": "docker.stock-ai-scheduler.emotion-eod",
+        "title": "收盘龙头 eod",
+        "description": "情绪周期 + 龙头观察池入库（须在日线同步之后）",
+        "entry": "stock-ai/sync_emotion_cycle.sh eod",
+        "schedule": "工作日 18:00",
+    },
+]
+
+
+def _scheduler_container_running() -> bool:
+    try:
+        out = subprocess.run(
+            ["docker", "ps", "--format", "{{.Names}}"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return "stock-ai-scheduler" in out.stdout
+    except OSError:
+        return False
+
+
+def _launchd_job_meta(label: str, entry: str) -> dict[str, str]:
+    meta = _LAUNCHD_JOB_META.get(label)
+    if meta:
+        return {
+            "title": meta["title"],
+            "description": meta["description"],
+            "schedule": meta.get("schedule", ""),
+        }
+    base = Path(entry).name.replace(".sh", "").replace("_", " ") if entry else label
+    short = label.replace("com.user.", "").replace("-", " ")
+    return {
+        "title": short,
+        "description": f"脚本 {base}" if base else "本机 launchd 计划任务",
+    }
+
+
 def load_launchd_jobs() -> list[dict[str, Any]]:
     jobs: list[dict[str, Any]] = []
     if not _LAUNCHD_DIR.is_dir():
@@ -777,6 +999,8 @@ def load_launchd_jobs() -> list[dict[str, Any]]:
             continue
 
         label = str(data.get("Label", plist.stem))
+        if label in _LAUNCHD_LABELS_HIDDEN:
+            continue
         args = data.get("ProgramArguments") or []
         entry = str(args[-1]) if args else ""
         schedule = ""
@@ -792,14 +1016,32 @@ def load_launchd_jobs() -> list[dict[str, Any]]:
             else:
                 schedule = f"每 {sec} 秒"
 
+        meta = _launchd_job_meta(label, entry)
         jobs.append(
             {
                 "label": label,
+                "title": meta["title"],
+                "description": meta["description"],
                 "entry": entry,
-                "schedule": schedule or "登录/事件触发",
+                "schedule": meta.get("schedule") or schedule or "登录/事件触发",
                 "loaded": label in loaded,
                 "stdout": data.get("StandardOutPath"),
                 "stderr": data.get("StandardErrorPath"),
+            }
+        )
+
+    sched_up = _scheduler_container_running()
+    for item in _DOCKER_SCHEDULER_JOBS:
+        jobs.append(
+            {
+                "label": item["label"],
+                "title": item["title"],
+                "description": item["description"],
+                "entry": item["entry"],
+                "schedule": item["schedule"],
+                "loaded": sched_up,
+                "stdout": None,
+                "stderr": None,
             }
         )
     return jobs
@@ -1013,7 +1255,7 @@ def _build_dragon_execution_card(header: dict[str, Any] | None) -> dict[str, Any
         "scope": "simulation_only",
         "title": "龙头执行卡",
         "mysql_tables": ["emotion_cycle_daily", "emotion_cycle_dragon_watch"],
-        "schedule": "盘中 5min · 09:26 pre_market · 17:10 eod",
+        "schedule": "工作日 18:00 eod（收盘后）",
         "p0_gate": p0,
         "operation": header.get("action_summary"),
         "position_cap_pct": cap,
@@ -1034,7 +1276,7 @@ def _attach_dragon_execution_card(payload: dict[str, Any]) -> dict[str, Any]:
     payload["data_source"] = {
         "kind": "mysql",
         "tables": ["emotion_cycle_daily", "emotion_cycle_dragon_watch"],
-        "schedule": "盘中 5min · 09:26 pre_market · 17:10 eod (intraday launchd)",
+        "schedule": "工作日 18:00 eod（容器 scheduler）",
     }
     payload["dragon_execution_card"] = _build_dragon_execution_card(hdr)
     return payload
@@ -1045,82 +1287,39 @@ def load_emotion_cycle(
     *,
     checklist_slot: str | None = None,
 ) -> dict[str, Any]:
+    """情绪周期看板：仅收盘 eod（盘前/盘中 slot 已下线）。"""
     _ensure_stock_ai_path()
     _load_stock_env()
     from scripts.tools.portfolio_db import load_emotion_cycle_checklist
 
     dates = list_emotion_cycle_dates()
     eod_dates = dates.get("dates") or []
+    slot = "eod"
+    if checklist_slot and checklist_slot != "eod":
+        pass  # 忽略历史 query，统一 eod
 
-    if trade_date:
-        td = trade_date[:10]
-        if checklist_slot:
-            bundle = load_emotion_cycle_checklist(td, checklist_slot=checklist_slot)
-            return _attach_dragon_execution_card({
-                "dates": eod_dates,
-                "default_date": dates.get("default_date"),
-                "trade_date": td,
-                "checklist_slot": checklist_slot,
-                "record": _normalize_emotion_bundle(bundle),
-            })
-        pre = _normalize_emotion_bundle(
-            load_emotion_cycle_checklist(td, checklist_slot="pre_market")
-        )
-        intraday = _normalize_emotion_bundle(
-            load_emotion_cycle_checklist(td, checklist_slot="intraday")
-        )
-        eod = _normalize_emotion_bundle(
-            load_emotion_cycle_checklist(td, checklist_slot="eod")
-        )
-        active = intraday or pre or eod
+    td = trade_date[:10] if trade_date else None
+    if not td:
+        bundle = load_emotion_cycle_checklist(checklist_slot=slot)
+        normalized = _normalize_emotion_bundle(bundle)
+        td_out = dates.get("default_date")
+        if normalized and normalized.get("header"):
+            hdr = normalized["header"]
+            td_out = str(hdr.get("trade_date", ""))[:10] or td_out
         return _attach_dragon_execution_card({
             "dates": eod_dates,
             "default_date": dates.get("default_date"),
-            "trade_date": td,
-            "pre_market": pre,
-            "intraday": intraday,
-            "eod": eod,
-            "record": active,
-            "checklist_slot": (
-                str(active["header"].get("checklist_slot"))
-                if active and active.get("header")
-                else None
-            ),
+            "trade_date": td_out,
+            "checklist_slot": slot,
+            "record": normalized,
         })
 
-    slot = checklist_slot or "intraday"
-    from stock_ai.emotion_cycle_compute import is_intraday_session
-
-    if slot == "intraday" and is_intraday_session():
-        td_today = datetime.now(_TZ).date().isoformat()
-        intraday = _normalize_emotion_bundle(
-            load_emotion_cycle_checklist(td_today, checklist_slot="intraday")
-        )
-        if intraday:
-            return _attach_dragon_execution_card({
-                "dates": eod_dates,
-                "default_date": dates.get("default_date"),
-                "trade_date": td_today,
-                "intraday": intraday,
-                "record": intraday,
-                "checklist_slot": "intraday",
-            })
-        slot = "eod"
-
-    bundle = load_emotion_cycle_checklist(checklist_slot=slot)
-    if not bundle and slot == "eod":
-        bundle = load_emotion_cycle_checklist(checklist_slot="pre_market")
+    bundle = load_emotion_cycle_checklist(td, checklist_slot=slot)
     normalized = _normalize_emotion_bundle(bundle)
-    td_out = dates.get("default_date")
-    slot_out = slot
-    if normalized and normalized.get("header"):
-        hdr = normalized["header"]
-        td_out = str(hdr.get("trade_date", ""))[:10] or td_out
-        slot_out = str(hdr.get("checklist_slot") or slot_out or "")
     return _attach_dragon_execution_card({
         "dates": eod_dates,
         "default_date": dates.get("default_date"),
-        "trade_date": td_out,
-        "checklist_slot": slot_out,
+        "trade_date": td,
+        "checklist_slot": slot,
         "record": normalized,
     })

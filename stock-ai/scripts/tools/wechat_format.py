@@ -35,6 +35,40 @@ def strip_markdown_for_wechat(text: str) -> str:
     return text
 
 
+_CODE_FENCE_RE = re.compile(r"```(\w*)\n([\s\S]*?)```", re.MULTILINE)
+
+
+def split_body_code_fences(text: str) -> list[tuple[str, str, str]]:
+    """
+    按 ``` 围栏切段。返回 (kind, lang, chunk)：
+    kind=prose|code；code 时 lang 可为空。
+    """
+    parts: list[tuple[str, str, str]] = []
+    last = 0
+    for m in _CODE_FENCE_RE.finditer(text):
+        if m.start() > last:
+            parts.append(("prose", "", text[last : m.start()]))
+        lang = (m.group(1) or "").strip()
+        code = (m.group(2) or "").rstrip("\n")
+        parts.append(("code", lang, code))
+        last = m.end()
+    if last < len(text):
+        parts.append(("prose", "", text[last:]))
+    return parts or [("prose", "", text)]
+
+
+def prepare_static_mp_body(text: str) -> str:
+    """技术静态稿：保留 ``` 代码块，仅对散文部分去 Markdown。"""
+    chunks: list[str] = []
+    for kind, lang, chunk in split_body_code_fences(text):
+        if kind == "code":
+            header = f"```{lang}\n" if lang else "```\n"
+            chunks.append(f"{header}{chunk}\n```")
+        else:
+            chunks.append(strip_markdown_for_wechat(chunk))
+    return normalize_wechat_spacing("\n\n".join(chunks))
+
+
 def normalize_wechat_spacing(text: str) -> str:
     """统一空行：大段之间留一行，去掉首尾空白与连续三行以上空行。"""
     lines = [ln.rstrip() for ln in text.strip().splitlines()]

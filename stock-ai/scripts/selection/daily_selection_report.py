@@ -36,11 +36,45 @@ def _load_names(engine, codes: list[str]) -> dict[str, str]:
 
 
 def _format_aux_pools(trade_date: date, holdings_codes: set[str]) -> str:
-    """B轨 watch + ma5 + 五因子 摘要（Top5 仍仅 combined）。"""
+    """B轨 watch + ma5 + 五因子 摘要（Top5 仍仅 combined）；动作经投顾 cap。"""
     from scripts.tools.portfolio_db import load_selection_daily_results
     from scripts.tools.selection_results import sort_selection_df
 
-    lines = ["", "📋 辅助观察池（非 Top5 / 不自动 SOP）", ""]
+    advisor_phase = 0
+    banner = ""
+    account_position_pct = 0.0
+    try:
+        from stock_ai.advisor_selection import (
+            format_selection_banner,
+            parse_advisor_phase,
+            selection_watch_sync_enabled,
+        )
+        from scripts.tools.portfolio_db import load_account
+
+        advisor_phase = parse_advisor_phase()
+        banner = format_selection_banner(phase=advisor_phase)
+        acct = load_account()
+        if acct and acct.position_ratio is not None:
+            r = float(acct.position_ratio)
+            account_position_pct = r * 100 if r <= 1.0 else r
+        watch_note = (
+            "（阶段0：辅助池=情报，非必买/非监控）"
+            if not selection_watch_sync_enabled(phase=advisor_phase)
+            else "（辅助池非 Top5，不自动 SOP）"
+        )
+    except ImportError:
+        watch_note = "（辅助池非 Top5，不自动 SOP）"
+
+    lines = ["", f"📋 辅助观察池{watch_note}", ""]
+    if banner:
+        lines.insert(2, banner)
+        lines.insert(3, "")
+
+    try:
+        from stock_ai.advisor_selection import apply_advisor_to_results_row
+    except ImportError:
+        apply_advisor_to_results_row = None  # type: ignore[assignment,misc]
+
     for strat, title in (
         ("watch", "B轨观察"),
         ("ma5", "MA5回踩"),
@@ -53,13 +87,22 @@ def _format_aux_pools(trade_date: date, holdings_codes: set[str]) -> str:
         df = sort_selection_df(pd.DataFrame(rows)).head(5)
         lines.append(f"· {title}（{len(rows)} 只，示 Top5）：")
         for i, (_, row) in enumerate(df.iterrows(), 1):
-            code = str(row.get("代码", "")).split(".")[0].zfill(6)
+            row_dict = row.to_dict()
+            if apply_advisor_to_results_row is not None:
+                apply_advisor_to_results_row(
+                    row_dict,
+                    phase=advisor_phase,
+                    account_position_pct=account_position_pct,
+                )
+            code = str(row_dict.get("代码", "")).split(".")[0].zfill(6)
             held = " 📌" if code in holdings_codes else ""
-            action = row.get("建议动作", "—")
-            tags = row.get("策略标签", "")
-            score = row.get("总分", 0)
+            action = row_dict.get("建议动作", "—")
+            note = row_dict.get("投顾备注", "")
+            tags = row_dict.get("策略标签", "")
+            score = row_dict.get("总分", 0)
+            suffix = f" · {note}" if note else ""
             lines.append(
-                f"  {i}. {code}{held} | {tags} | 分{score} | {action}"
+                f"  {i}. {code}{held} | {tags} | 分{score} | {action}{suffix}"
             )
     return "\n".join(lines)
 
@@ -73,9 +116,17 @@ def _format_report(
     if "总分" in df.columns:
         df = df.sort_values(by=["总分", "标签数", "成交额(万)"], ascending=False)
 
+    banner = ""
+    try:
+        from stock_ai.advisor_selection import format_selection_banner
+
+        banner = format_selection_banner() + "\n"
+    except ImportError:
+        pass
+
     lines = [
         f"📈 综合选股 Top{TOP_N} ({trade_date[:4]}-{trade_date[4:6]}-{trade_date[6:]})",
-        "",
+        banner,
     ]
 
     for i, (_, row) in enumerate(df.head(TOP_N).iterrows(), 1):
@@ -184,11 +235,42 @@ def main() -> int:
     print(f"📂 选股数据源: {source}", file=sys.stderr)
 
     holdings_codes, decision_context = load_full_decision_context()
+
+    account_position_pct = 0.0
+    try:
+        from scripts.tools.portfolio_db import load_account
+
+        acct = load_account()
+        if acct and acct.position_ratio is not None:
+            r = float(acct.position_ratio)
+            account_position_pct = r * 100 if r <= 1.0 else r
+    except Exception:
+        pass
+
+    try:
+        from stock_ai.advisor_selection import (
+            ai_selection_review_enabled,
+            format_selection_banner,
+            parse_advisor_phase,
+            sop_review_enabled,
+        )
+
+        advisor_phase = parse_advisor_phase()
+        print(format_selection_banner(phase=advisor_phase), file=sys.stderr)
+        if advisor_phase == 0 and not args.no_sop:
+            print(
+                "📋 投顾阶段0：仍跑 Top5 东财 SOP（情报池·供公众号/战报）；不写次日监控",
+                file=sys.stderr,
+            )
+    except ImportError:
+        advisor_phase = 0
+
     top_df = pick_selection_top(
         df.head(TOP_N * 4),
         TOP_N,
         holdings_codes=holdings_codes,
         max_per_industry=2,
+        account_position_pct=account_position_pct,
     )
     if top_df.empty:
         print(
@@ -215,7 +297,18 @@ def main() -> int:
     ]
 
     if args.no_sop:
-        ai_block = _run_ai_review(trade_date, decision_context)
+        try:
+            from stock_ai.advisor_selection import ai_selection_review_enabled
+
+            if ai_selection_review_enabled(phase=advisor_phase):
+                ai_block = _run_ai_review(trade_date, decision_context)
+            else:
+                ai_block = (
+                    "【投顾·情报池】阶段0已跳过 Top5 AI 简评。\n"
+                    "Top5 仅供观察，非买入清单；本周以投顾「本周必做」减仓为主。"
+                )
+        except ImportError:
+            ai_block = _run_ai_review(trade_date, decision_context)
     else:
         ai_block = _run_sop_review(
             trade_date,

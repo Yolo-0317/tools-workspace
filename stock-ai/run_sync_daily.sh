@@ -4,8 +4,8 @@
 # Tushare 日线数据同步脚本
 # Docker 定时任务见 docker/daily-sync/
 #
-# 本机 crontab 示例（每个交易日 17:00）：
-# 0 17 * * 1-5 cd /path/to/stock-ai && ./run_sync_daily.sh >> logs/sync_daily.log 2>&1
+# 本机 crontab 示例（每个交易日 17:30，生产以 docker/scheduler/crontab 为准）：
+# 30 17 * * 1-5 cd /path/to/stock-ai && ./run_sync_daily.sh >> logs/sync_daily.log 2>&1
 #
 
 set -e
@@ -38,7 +38,7 @@ echo "=========================================="
 
 uv run python scripts/sync_tushare_daily_to_mysql.py \
   --mode by_date \
-  --days 7 \
+  --days 2 \
   --sleep 2.0 \
   --max-calls 40
 

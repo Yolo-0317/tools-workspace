@@ -196,6 +196,14 @@ def run_watch_track(
             }
         )
 
+    try:
+        from stock_ai.advisor_selection import reapply_advisor_to_rows
+
+        reapply_advisor_to_rows(results, account_position_pct=account_position_pct)
+        results = [r for r in results if r.get("建议动作") != "禁止"]
+    except ImportError:
+        pass
+
     results.sort(
         key=lambda r: (r["总分"], r["标签数"], r["成交额(万)"]),
         reverse=True,

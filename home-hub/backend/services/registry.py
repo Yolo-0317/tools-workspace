@@ -189,6 +189,7 @@ def load_jellyfin_mappings() -> dict[str, Any]:
 def build_catalog(*, with_health: bool = True) -> dict[str, Any]:
     _load_service_env_files()
     raw = load_catalog_raw()
+    domains = raw.get("domains") or {}
     docker_names = _docker_running_names()
     categories: list[dict[str, Any]] = []
 
@@ -197,13 +198,22 @@ def build_catalog(*, with_health: bool = True) -> dict[str, Any]:
         for item in cat.get("items") or []:
             compose_dir = item.get("compose_dir")
             container = item.get("docker_container")
+            public_url = item.get("public_url")
+            internal_url = item.get("internal_url")
+            if not internal_url and public_url:
+                ext = str(domains.get("external_https_port", 8883))
+                intr = str(domains.get("internal_https_port", 8443))
+                if f":{ext}" in public_url:
+                    internal_url = public_url.replace(f":{ext}", f":{intr}", 1)
+
             row = {
                 "id": item.get("id"),
                 "name": item.get("name"),
                 "description": item.get("description", ""),
                 "local_url": item.get("local_url"),
                 "dev_url": item.get("dev_url"),
-                "public_url": item.get("public_url"),
+                "internal_url": internal_url,
+                "public_url": public_url,
                 "public_note": item.get("public_note"),
                 "health_note": item.get("health_note"),
                 "doc": item.get("doc"),
@@ -223,7 +233,6 @@ def build_catalog(*, with_health: bool = True) -> dict[str, Any]:
             }
         )
 
-    domains = raw.get("domains") or {}
     base = domains.get("base", "yoloworld.site")
     ext_port = domains.get("external_https_port", 8883)
     return {

@@ -12,6 +12,7 @@ export interface ServiceItem {
   local_url?: string
   dev_url?: string
   public_url?: string
+  internal_url?: string
   public_note?: string
   health_note?: string
   doc?: string

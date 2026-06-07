@@ -328,11 +328,57 @@ def build_daily_briefing(slot: str, *, news_limit: int = 8, with_ai: bool = True
     )
     raw_report = "\n".join(raw_sections)
 
+    advisor_header = ""
+    try:
+        from scripts.tools.portfolio_db import load_account, load_latest_closes, load_positions
+        from stock_ai.advisor_selection import build_advisor_dashboard_payload
+
+        acct = load_account()
+        positions = load_positions()
+        ratio = None
+        closes: dict[str, float] = {}
+        if acct and acct.position_ratio is not None:
+            r = float(acct.position_ratio)
+            ratio = r * 100 if r <= 1.0 else r
+        if positions:
+            try:
+                closes = load_latest_closes([p.code for p in positions])
+            except Exception:
+                closes = {}
+        adv = build_advisor_dashboard_payload(
+            total_assets=acct.total_assets if acct else None,
+            position_ratio_pct=ratio,
+            holding_pnl=acct.holding_pnl if acct else None,
+            available_cash=acct.available_cash if acct else None,
+            positions=positions,
+            closes=closes,
+        )
+        gap = adv.get("gap_to_principal") or 0
+        advisor_header = (
+            f"【投顾·{adv.get('phase_label', '阶段0')}】"
+            f" 净资产 {adv.get('total_assets') or '—'} / 本金 {adv.get('principal_cny')} "
+            f"（{adv.get('progress_pct')}%）"
+            f" 还差约 {gap:.0f} 元"
+            f" | {adv.get('banner', '')}"
+        )
+        try:
+            from stock_ai.advisor_diagnosis import format_diagnosis_briefing
+
+            diag_block = format_diagnosis_briefing(adv.get("diagnosis") or {})
+            if diag_block:
+                advisor_header = advisor_header + "\n" + diag_block
+        except ImportError:
+            pass
+    except Exception:
+        advisor_header = "【投顾·6万回本】阶段0止血降仓 | Top5=情报池"
+
     header = [
         f"【{title} | {slot}】",
         f"生成时间：{now.strftime('%Y-%m-%d %H:%M:%S')}",
         session.header_note(),
     ]
+    if advisor_header:
+        header.insert(1, advisor_header)
 
     ai_block = ""
     if with_ai:

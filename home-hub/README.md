@@ -6,7 +6,7 @@
 
 | 分组 | 页面 |
 |------|------|
-| **投资** | 总览、持仓、选股、监控 |
+| **投资** | **投顾**总览、持仓、选股**情报**、监控、龙头（仿真） |
 | **系统** | 任务、服务、聊天 |
 
 H5 底部：**投资**（展开子菜单）｜**聊天**｜**更多**（任务、服务）。桌面顶栏：**投资** 下拉 + 任务 / 服务 / 聊天。
@@ -15,11 +15,11 @@ H5 底部：**投资**（展开子菜单）｜**聊天**｜**更多**（任务�
 
 | 页面 | 路径 | 数据 |
 |------|------|------|
-| 总览 | `/` | MySQL 快照 + 选股 + SOP |
-| 持仓 | `/portfolio` | 执行卡 sync + 每日快照 |
-| 选股 | `/selection` | `selection_daily_results` + SOP |
+| 投顾总览 | `/` | 回本进度 + 本周必做 + **周五周复盘** + 情报 Top5（`advisor` API） |
+| 持仓 | `/portfolio` | 执行卡 sync + 投顾阶段条 |
+| 选股情报 | `/selection` | `selection_daily_results`（阶段 0 非必买；SOP 按阶段） |
 | 监控 | `/monitor` | `alert_rules` + 触发状态 |
-| 任务 | `/jobs` | launchd plist（含 host-jobs；Docker scheduler cron 见 [stock-ai/docs/SCHEDULING.md](../stock-ai/docs/SCHEDULING.md)） |
+| 任务 | `/jobs` | launchd + Docker scheduler（17:30 日线 · 17:45 选股 · 18:00 龙头 eod） |
 | **服务** | `/services` | 本地服务目录 + 健康探针 + Jellyfin 映射 |
 | 聊天 | `/chat` | Cursor CLI（`agent login`，同 wechat-acp） |
 
@@ -78,7 +78,7 @@ cd frontend && npm install && npm run build
 ## API
 
 - 聊天：`/api/chat/*`
-- 看板：`/api/dashboard/summary|portfolio|monitor/*|jobs`
+- 看板：`/api/dashboard/summary|advisor|portfolio|monitor/*|jobs`（投顾见 `stock-ai/investment-agent/投顾主策略.md`）
 - 服务：`/api/services/catalog|jellyfin|health-summary`
 
 详见 [docs/chat-design.md](docs/chat-design.md)、[TOOLS.md](TOOLS.md)

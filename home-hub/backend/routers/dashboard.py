@@ -33,7 +33,7 @@ async def dashboard_summary(
 @router.get("/portfolio")
 async def portfolio_current() -> dict[str, Any]:
     try:
-        return stock_bridge.load_current_portfolio()
+        return await asyncio.to_thread(stock_bridge.load_current_portfolio)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -48,18 +48,52 @@ async def monitor_rules(live: bool = True) -> dict[str, Any]:
 
 @router.get("/monitor/dates")
 async def monitor_dates(limit: int = 90) -> dict[str, Any]:
-    return {"dates": stock_bridge.list_monitor_state_dates(limit=min(limit, 365))}
+    dates = await asyncio.to_thread(
+        stock_bridge.list_monitor_state_dates,
+        limit=min(limit, 365),
+    )
+    return {"dates": dates}
 
 
 @router.get("/monitor/state")
 async def monitor_state(date: str | None = None) -> dict[str, Any]:
-    return stock_bridge.load_monitor_state(date)
+    return await asyncio.to_thread(stock_bridge.load_monitor_state, date)
+
+
+@router.get("/advisor")
+async def advisor_summary() -> dict[str, Any]:
+    """投顾主策略摘要（阶段、回本、本周必做、最新周复盘）。"""
+    try:
+        return await asyncio.to_thread(stock_bridge.load_advisor_summary_with_weekly)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.get("/advisor/weekly-reviews")
+async def advisor_weekly_reviews(limit: int = 12) -> dict[str, Any]:
+    try:
+        rows = await asyncio.to_thread(
+            stock_bridge.load_advisor_weekly_reviews,
+            limit=min(max(1, limit), 52),
+        )
+        return {"reviews": rows}
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.get("/advisor/weekly-reviews/latest")
+async def advisor_weekly_review_latest() -> dict[str, Any]:
+    try:
+        row = await asyncio.to_thread(stock_bridge.load_latest_advisor_weekly_review)
+        return {"review": row}
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 @router.get("/discipline")
 async def discipline() -> dict[str, Any]:
     try:
-        return stock_bridge.load_discipline()
+        return await asyncio.to_thread(stock_bridge.load_discipline)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -67,7 +101,11 @@ async def discipline() -> dict[str, Any]:
 @router.get("/portfolio/history")
 async def portfolio_history(days: int = 90, slot: str = "eod") -> dict[str, Any]:
     try:
-        return stock_bridge.load_portfolio_history(days=min(days, 365), snapshot_slot=slot)
+        return await asyncio.to_thread(
+            stock_bridge.load_portfolio_history,
+            days=min(days, 365),
+            snapshot_slot=slot,
+        )
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -75,7 +113,11 @@ async def portfolio_history(days: int = 90, slot: str = "eod") -> dict[str, Any]
 @router.get("/portfolio/snapshot")
 async def portfolio_snapshot(date: str, slot: str = "eod") -> dict[str, Any]:
     try:
-        return stock_bridge.load_portfolio_snapshot(date, snapshot_slot=slot)
+        return await asyncio.to_thread(
+            stock_bridge.load_portfolio_snapshot,
+            date,
+            snapshot_slot=slot,
+        )
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -83,7 +125,8 @@ async def portfolio_snapshot(date: str, slot: str = "eod") -> dict[str, Any]:
 @router.get("/selection/strategies")
 async def selection_strategies() -> dict[str, Any]:
     try:
-        return {"strategies": stock_bridge.list_selection_strategies()}
+        strategies = await asyncio.to_thread(stock_bridge.list_selection_strategies)
+        return {"strategies": strategies}
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -91,7 +134,10 @@ async def selection_strategies() -> dict[str, Any]:
 @router.get("/selection/dates")
 async def selection_dates(strategy: str = "all") -> dict[str, Any]:
     try:
-        dates = stock_bridge.list_selection_dates(strategy=strategy)
+        dates = await asyncio.to_thread(
+            stock_bridge.list_selection_dates,
+            strategy=strategy,
+        )
         return {"strategy": strategy, "dates": dates}
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -104,7 +150,8 @@ async def selection_kline(
     days: int = 60,
 ) -> dict[str, Any]:
     try:
-        return stock_bridge.load_selection_kline(
+        return await asyncio.to_thread(
+            stock_bridge.load_selection_kline,
             code,
             trade_date,
             days=min(max(days, 5), 250),
@@ -120,7 +167,11 @@ async def selection_history(
     strategy: str = "all",
 ) -> dict[str, Any]:
     try:
-        payload = stock_bridge.load_selection_history(trade_date, strategy=strategy)
+        payload = await asyncio.to_thread(
+            stock_bridge.load_selection_history,
+            trade_date,
+            strategy=strategy,
+        )
         if getattr(request.state, "hub_role", "admin") == "share":
             return hub_auth.sanitize_selection_payload(payload)
         return payload
@@ -130,18 +181,31 @@ async def selection_history(
 
 @router.get("/alerts/snapshot")
 async def snapshot_alerts(limit: int = 30) -> dict[str, Any]:
-    return {"lines": stock_bridge.tail_snapshot_alerts(limit=min(limit, 200))}
+    lines = await asyncio.to_thread(
+        stock_bridge.tail_snapshot_alerts,
+        limit=min(limit, 200),
+    )
+    return {"lines": lines}
 
 
 @router.get("/jobs")
 async def launchd_jobs() -> dict[str, Any]:
-    return {"jobs": stock_bridge.load_launchd_jobs()}
+    jobs = await asyncio.to_thread(stock_bridge.load_launchd_jobs)
+    return {"jobs": jobs}
+
+
+def _news_disabled() -> None:
+    from backend.config import settings
+
+    if not settings.news_enabled:
+        raise HTTPException(status_code=404, detail="财经快讯功能已关闭")
 
 
 @router.get("/news/meta")
 async def news_meta(date: str | None = None) -> dict[str, Any]:
+    _news_disabled()
     try:
-        return stock_bridge.load_news_meta(date_str=date)
+        return await asyncio.to_thread(stock_bridge.load_news_meta, date_str=date)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -153,8 +217,10 @@ async def news_items(
     sentiment: str | None = None,
     limit: int = 50,
 ) -> dict[str, Any]:
+    _news_disabled()
     try:
-        return stock_bridge.load_news_items(
+        return await asyncio.to_thread(
+            stock_bridge.load_news_items,
             date_str=date,
             category=category,
             sentiment=sentiment,
@@ -166,16 +232,18 @@ async def news_items(
 
 @router.get("/news/briefings")
 async def news_briefings(date: str | None = None) -> dict[str, Any]:
+    _news_disabled()
     try:
-        return stock_bridge.load_news_briefings(date_str=date)
+        return await asyncio.to_thread(stock_bridge.load_news_briefings, date_str=date)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 @router.get("/news/briefings/latest")
 async def news_briefing_latest() -> dict[str, Any]:
+    _news_disabled()
     try:
-        return stock_bridge.load_latest_briefing()
+        return await asyncio.to_thread(stock_bridge.load_latest_briefing)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -222,7 +290,12 @@ async def selection_sop_analyze(
 
     code = str(body.code).split(".")[0].zfill(6)
     try:
-        row = stock_bridge.find_selection_row(body.trade_date, body.strategy, code)
+        row = await asyncio.to_thread(
+            stock_bridge.find_selection_row,
+            body.trade_date,
+            body.strategy,
+            code,
+        )
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     if row is None:

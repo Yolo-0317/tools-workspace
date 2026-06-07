@@ -29,8 +29,8 @@ def main() -> int:
     parser.add_argument(
         "--slot",
         default="eod",
-        choices=["pre_market", "intraday", "eod"],
-        help="pre_market=盘前 / intraday=盘中 / eod=收盘",
+        choices=["eod"],
+        help="仅收盘 eod（盘前/盘中 slot 已下线）",
     )
     args = parser.parse_args()
 

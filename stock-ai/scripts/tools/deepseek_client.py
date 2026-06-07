@@ -21,14 +21,28 @@ RETRYABLE_STATUS = {408, 429, 500, 502, 503, 504}
 
 
 def llm_backend() -> str:
-    """deepseek | cursor"""
+    """deepseek | cursor（默认写稿/战报等）"""
     return os.getenv("LLM_BACKEND", "deepseek").strip().lower()
 
 
-def is_llm_configured() -> bool:
-    if llm_backend() == "cursor":
+def sop_llm_backend() -> str:
+    """东财 SOP 并发终审：默认 deepseek，与 LLM_BACKEND 解耦。"""
+    return os.getenv("SOP_LLM_BACKEND", "deepseek").strip().lower()
+
+
+def _resolve_backend(explicit: str | None) -> str:
+    return (explicit or llm_backend()).strip().lower()
+
+
+def is_llm_configured(*, backend: str | None = None) -> bool:
+    b = _resolve_backend(backend)
+    if b == "cursor":
         return cursor_agent_available()
     return bool(os.getenv("DEEPSEEK_API_KEY"))
+
+
+def is_sop_llm_configured() -> bool:
+    return is_llm_configured(backend=sop_llm_backend())
 
 
 def _env_int(name: str, default: int) -> int:
@@ -64,9 +78,10 @@ def call_deepseek(
     max_tokens: int = 1200,
     model: str | None = None,
     timeout: tuple[float, float] | None = None,
+    backend: str | None = None,
 ) -> str:
-    """Chat Completions（messages 列表）。"""
-    if llm_backend() == "cursor":
+    """Chat Completions（messages 列表）。backend 覆盖 LLM_BACKEND（SOP 传 sop_llm_backend()）。"""
+    if _resolve_backend(backend) == "cursor":
         _ = temperature, max_tokens, timeout  # Cursor CLI 不支持细粒度采样参数
         return call_cursor_agent(
             messages_to_prompt(messages),
@@ -115,6 +130,7 @@ def call_deepseek_prompt(
     max_tokens: int | None = None,
     model: str | None = None,
     continue_on_length: bool | None = None,
+    backend: str | None = None,
 ) -> str:
     """单条 user prompt（MCP / 持仓分析沿用；DeepSeek 支持 length 自动续写）。"""
     messages: list[dict[str, str]] = [
@@ -122,7 +138,7 @@ def call_deepseek_prompt(
         {"role": "user", "content": prompt},
     ]
 
-    if llm_backend() == "cursor":
+    if _resolve_backend(backend) == "cursor":
         content = call_cursor_agent(
             messages_to_prompt(messages),
             model=_cursor_model(model),

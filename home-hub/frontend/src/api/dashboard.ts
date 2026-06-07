@@ -1,4 +1,6 @@
 import type {
+  AdvisorPayload,
+  AdvisorWeeklyReview,
   DashboardPayload,
   DisciplinePayload,
   EmotionCyclePayload,
@@ -27,11 +29,29 @@ export function fetchMonitorRules(live = true) {
     rules: MonitorRule[]
     quote_source?: string
     quotes_as_of?: string
+    advisor?: AdvisorPayload | null
+    rule_stats?: { total: number; holdings: number; selection: number }
   }>(`/api/dashboard/monitor/rules?live=${live ? 'true' : 'false'}`)
 }
 
 export function fetchDiscipline() {
   return apiJson<DisciplinePayload>('/api/dashboard/discipline')
+}
+
+export function fetchAdvisor() {
+  return apiJson<AdvisorPayload>('/api/dashboard/advisor')
+}
+
+export function fetchAdvisorWeeklyReviews(limit = 12) {
+  return apiJson<{ reviews: AdvisorWeeklyReview[] }>(
+    `/api/dashboard/advisor/weekly-reviews?limit=${limit}`,
+  )
+}
+
+export function fetchLatestAdvisorWeeklyReview() {
+  return apiJson<{ review: AdvisorWeeklyReview | null }>(
+    '/api/dashboard/advisor/weekly-reviews/latest',
+  )
 }
 
 export function fetchPortfolioHistory(days = 90, slot = 'eod') {

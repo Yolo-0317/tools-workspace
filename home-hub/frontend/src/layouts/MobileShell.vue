@@ -2,6 +2,7 @@
 import { computed, inject, onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { hubAuth, logout } from '../auth/hubAuth'
+import { NEWS_ENABLED } from '../config/features'
 import { isStandaloneDisplay } from '../utils/standalone'
 
 interface NavLink {
@@ -18,37 +19,49 @@ const moreOpen = ref(false)
 const standalone = ref(isStandaloneDisplay())
 const refreshing = ref(false)
 
-const investLinks: NavLink[] = [
-  { to: '/m/portfolio', label: '持仓' },
-  { to: '/m/selection', label: '选股' },
-  { to: '/m/monitor', label: '监控' },
-  { to: '/m/news', label: '财经' },
-  { to: '/m/emotion', label: '龙头' },
-]
+const investLinks = computed<NavLink[]>(() => {
+  const links: NavLink[] = [
+    { to: '/m/advisor', label: '投顾总览' },
+    { to: '/m/portfolio', label: '持仓' },
+    { to: '/m/selection', label: '情报' },
+    { to: '/m/monitor', label: '监控' },
+  ]
+  if (NEWS_ENABLED) links.push({ to: '/m/news', label: '财经' })
+  links.push({ to: '/m/emotion', label: '龙头' })
+  return links
+})
 
 const moreLinks: NavLink[] = [
   { to: '/m/jobs', label: '任务' },
   { to: '/m/services', label: '服务' },
 ]
 
-const investRouteNames = new Set(['m-portfolio', 'm-selection', 'm-monitor', 'm-news', 'm-emotion'])
+const investRouteNames = computed(() => {
+  const names = new Set(['m-portfolio', 'm-selection', 'm-monitor', 'm-emotion'])
+  if (NEWS_ENABLED) names.add('m-news')
+  return names
+})
 
 const shareOnly = computed(() => hubAuth.value.shareOnly)
 const username = computed(() => hubAuth.value.username)
 const authenticated = computed(() => hubAuth.value.authenticated)
 const brand = computed(() => {
-  if (!authenticated.value) return '财经快讯'
+  if (!authenticated.value) return NEWS_ENABLED ? '财经快讯' : 'Home Hub'
   return shareOnly.value ? '选股分享' : 'Home Hub'
 })
 
 const homeActive = computed(
-  () => route.path === '/m' || route.name === 'm-home',
+  () =>
+    route.path === '/m'
+    || route.path === '/m/advisor'
+    || route.name === 'm-home'
+    || route.name === 'm-advisor',
 )
 
 const investActive = computed(() => {
   if (shareOnly.value) return route.path === '/m/selection'
   if (homeActive.value) return false
-  return investRouteNames.has(String(route.name ?? ''))
+  return investRouteNames.value.has(String(route.name ?? ''))
 })
 const moreActive = computed(() => moreLinks.some((link) => route.path === link.to))
 
@@ -161,11 +174,9 @@ async function onLogout() {
       </template>
       <template v-else>
         <RouterLink
-          to="/m"
+          to="/m/advisor"
           class="bottom-link"
-          active-class=""
-          exact-active-class=""
-          :class="{ active: homeActive }"
+          active-class="active"
           @click="closeSheets"
         >
           <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -174,7 +185,7 @@ async function onLogout() {
               d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3l9-8z"
             />
           </svg>
-          <span class="tab-text">首页</span>
+          <span class="tab-text">投顾</span>
         </RouterLink>
         <button
           type="button"

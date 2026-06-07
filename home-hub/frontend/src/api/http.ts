@@ -1,10 +1,7 @@
 /** 带 Cookie 会话的 fetch 封装 */
-const API_BASE = import.meta.env.VITE_API_BASE ?? ''
-const HUB_TOKEN = import.meta.env.VITE_HUB_TOKEN ?? ''
+import { apiUrl } from '../config/base'
 
-export function apiUrl(path: string): string {
-  return `${API_BASE}${path}`
-}
+const HUB_TOKEN = import.meta.env.VITE_HUB_TOKEN ?? ''
 
 export function apiHeaders(extra: Record<string, string> = {}): HeadersInit {
   const h: Record<string, string> = {

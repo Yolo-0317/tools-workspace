@@ -174,10 +174,22 @@ def pick_selection_top(
     holdings_codes: set[str] | None = None,
     max_per_industry: int = 2,
     eligible_actions: frozenset[str] | None = TOP5_ELIGIBLE_ACTIONS,
+    account_position_pct: float | None = None,
 ) -> pd.DataFrame:
-    """Top N：剔除持仓 + 同行业上限（执行卡 P0）；默认仅可执行买入类动作。"""
+    """Top N：剔除持仓 + 同行业上限；投顾阶段 0 仅情报池（继续观察/持有）。"""
     if df.empty or top_n <= 0:
         return df.iloc[0:0].copy()
+
+    if eligible_actions is TOP5_ELIGIBLE_ACTIONS:
+        try:
+            from stock_ai.advisor_selection import top5_eligible_actions as _advisor_eligible
+
+            pct = account_position_pct if account_position_pct is not None else 0.0
+            adv = _advisor_eligible(account_position_pct=pct)
+            if adv is not None:
+                eligible_actions = adv
+        except ImportError:
+            pass
 
     holdings_codes = holdings_codes or set()
     picked: list[int] = []
@@ -272,6 +284,43 @@ def resolve_selection_df(
     return parse_trade_date_from_csv(path), sort_selection_df(df), f"csv:{path.name}"
 
 
+# 收盘 enrich：五策略合并后按总分取 Top5（与公众号 pick 规则一致）
+ENRICH_UNIFIED_TOP5_STRATEGIES = (
+    "combined",
+    "watch",
+    "ma5",
+    "five_factor",
+    "bottom_breakout",
+)
+
+
+def pick_unified_top5(
+    *,
+    trade_date: date | str | None = None,
+    top_n: int = 5,
+    strategies: Sequence[str] | None = None,
+) -> tuple[date, list[str], str]:
+    """
+    合并多策略选股池后取 Top N 代码（去重、同代码保留最高分行）。
+    返回 (trade_date, code6 列表, 来源说明)。
+    """
+    strategies = tuple(strategies or ENRICH_UNIFIED_TOP5_STRATEGIES)
+    td, universe, source = merge_selection_strategies_df(
+        trade_date=trade_date,
+        strategies=strategies,
+    )
+    top_df = pick_wechat_top5(universe, top_n=top_n)
+    if top_df.empty:
+        return td, [], source
+    codes = [
+        str(row.get("代码", "")).split(".")[0].zfill(6)
+        for _, row in top_df.iterrows()
+        if str(row.get("代码", "")).strip()
+    ]
+    codes = list(dict.fromkeys(c for c in codes if c))
+    return td, codes[:top_n], source
+
+
 def pick_wechat_top5(
     df: pd.DataFrame,
     *,
@@ -286,7 +335,17 @@ def pick_wechat_top5(
             "yes",
             "on",
         )
-    eligible = None if score_only else TOP5_ELIGIBLE_ACTIONS
+    if score_only:
+        eligible = None
+    else:
+        try:
+            from stock_ai.advisor_selection import top5_eligible_actions
+
+            eligible = top5_eligible_actions()
+            if eligible is None:
+                eligible = TOP5_ELIGIBLE_ACTIONS
+        except ImportError:
+            eligible = TOP5_ELIGIBLE_ACTIONS
     return pick_selection_top(
         sort_selection_df(df),
         top_n,

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, time, timedelta
 from typing import Any, Literal
@@ -17,6 +18,40 @@ from scripts.tools.portfolio_db import get_engine
 TZ = ZoneInfo("Asia/Shanghai")
 
 GEOPOLITICS_KEYWORDS = ("伊朗", "美伊", "特朗普", "霍尔木兹", "以军", "中东", "制裁", "停火")
+
+# 周末要闻：优先带 A 股公司/代码/交易信号的快讯（搜一搜友好）
+_STOCK_CODE_RE = re.compile(r"(?<!\d)(?:00|30|60|68)\d{4}(?!\d)")
+_STOCK_NEWS_KEYWORDS = (
+    "涨停",
+    "跌停",
+    "股份",
+    "集团",
+    "控股",
+    "财报",
+    "业绩",
+    "净利",
+    "回购",
+    "增持",
+    "减持",
+    "立案",
+    "中标",
+    "收购",
+    "并购",
+    "停牌",
+    "复牌",
+    "龙虎榜",
+    "研报",
+    "评级",
+    "上市公司",
+    "业绩预告",
+    "三季报",
+    "年报",
+    "中报",
+    "定增",
+    "配股",
+    "ST",
+    "*ST",
+)
 
 NewsCategory = Literal["geo", "domestic", "other"]
 
@@ -490,3 +525,130 @@ def latest_briefing_snapshot() -> dict[str, Any] | None:
 
 def macro_items_as_dicts(items: list[MacroNewsItem]) -> list[dict[str, Any]]:
     return [asdict(x) for x in items]
+
+
+def _normalize_href(href: str) -> str:
+    href = (href or "").strip()
+    if href.startswith("//"):
+        return f"https:{href}"
+    return href
+
+
+def news_item_has_stock_signal(item: dict[str, Any]) -> bool:
+    """标题/摘要是否含 A 股代码或典型个股/公司关键词。"""
+    blob = f"{item.get('title') or ''} {item.get('summary') or ''}"
+    if _STOCK_CODE_RE.search(blob):
+        return True
+    return any(kw in blob for kw in _STOCK_NEWS_KEYWORDS)
+
+
+def _attention_score(
+    item: dict[str, Any],
+    engagement: dict[str, dict[str, int]] | None,
+) -> float:
+    href = _normalize_href(str(item.get("href") or ""))
+    eng = (engagement or {}).get(href) or {}
+    comment = int(eng.get("comment") or item.get("comment") or 0)
+    read = int(eng.get("read") or item.get("read") or 0)
+    if comment or read:
+        return float(comment * 100 + read)
+
+    title = str(item.get("title") or "")
+    summary = str(item.get("summary") or "")
+    blob = f"{title} {summary}"
+    heat = sum(1 for kw in GEOPOLITICS_KEYWORDS if kw in blob)
+    return float(heat * 5 + min(len(summary), 120) / 40.0)
+
+
+def load_news_pool_for_attention(
+    *,
+    hours: int = 36,
+    limit: int = 80,
+) -> list[dict[str, Any]]:
+    """合并当日库内快讯与近 hours 小时滚动池。"""
+    today = datetime.now(TZ).date()
+    rows = list_news_items(day=today, limit=limit)
+    if len(rows) < limit // 2:
+        seen = {_normalize_href(str(r.get("href") or "")) for r in rows}
+        for item in load_recent_news(hours=hours, limit=limit):
+            href = _normalize_href(item.href)
+            if href in seen:
+                continue
+            rows.append(
+                {
+                    "href": href,
+                    "title": item.title,
+                    "summary": item.summary or "",
+                    "news_time": item.time or "",
+                    "category": classify_category(item.title, item.summary),
+                    "sentiment": "neutral",
+                }
+            )
+            seen.add(href)
+    return rows[:limit]
+
+
+def _enrich_news_pick(
+    item: dict[str, Any],
+    *,
+    engagement: dict[str, dict[str, int]] | None,
+) -> dict[str, Any]:
+    href = _normalize_href(str(item.get("href") or ""))
+    eng = (engagement or {}).get(href) or {}
+    enriched = dict(item)
+    enriched["comment"] = int(eng.get("comment") or item.get("comment") or 0)
+    enriched["read"] = int(eng.get("read") or item.get("read") or 0)
+    enriched["attention_score"] = _attention_score(item, engagement)
+    enriched["has_stock_signal"] = news_item_has_stock_signal(item)
+    return enriched
+
+
+def pick_top_news_by_attention(
+    *,
+    limit: int = 10,
+    pool_limit: int = 80,
+    hours: int = 36,
+    engagement: dict[str, dict[str, int]] | None = None,
+    prefer_stock: bool = False,
+) -> list[dict[str, Any]]:
+    """按评论/阅读互动排序，取 top N。prefer_stock 时个股相关快讯优先入榜。"""
+    pool = load_news_pool_for_attention(hours=hours, limit=pool_limit)
+    if not pool:
+        return []
+
+    def sort_key(it: dict[str, Any]) -> tuple[float, str]:
+        base = _attention_score(it, engagement)
+        if prefer_stock and news_item_has_stock_signal(it):
+            base += 80.0
+        return (base, str(it.get("published_at") or it.get("last_seen_at") or ""))
+
+    ranked = sorted(pool, key=sort_key, reverse=True)
+
+    def append_unique(
+        dest: list[dict[str, Any]],
+        seen: set[str],
+        candidates: list[dict[str, Any]],
+        *,
+        cap: int,
+    ) -> None:
+        for item in candidates:
+            if len(dest) >= cap:
+                return
+            href = _normalize_href(str(item.get("href") or ""))
+            if not href or href in seen:
+                continue
+            seen.add(href)
+            dest.append(_enrich_news_pick(item, engagement=engagement))
+
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    if prefer_stock:
+        stock_ranked = [it for it in ranked if news_item_has_stock_signal(it)]
+        other_ranked = [it for it in ranked if not news_item_has_stock_signal(it)]
+        append_unique(out, seen, stock_ranked, cap=limit)
+        append_unique(out, seen, other_ranked, cap=limit)
+    else:
+        append_unique(out, seen, ranked, cap=limit)
+
+    return out

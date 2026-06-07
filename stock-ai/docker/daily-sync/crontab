@@ -1,2 +1,2 @@
-# 工作日 17:00（Asia/Shanghai）增量同步最近 7 个交易日
-0 17 * * 1-5 /bin/sh /app/run_sync_daily.sh >> /app/logs/sync_daily.log 2>&1
+# 已并入 docker/scheduler；勿单独启 daily-sync 栈。工作日 17:30 同步 2 个交易日
+30 17 * * 1-5 /bin/sh /app/run_sync_daily.sh >> /app/logs/sync_daily.log 2>&1

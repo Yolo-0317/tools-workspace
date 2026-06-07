@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import AdvisorPanel from '../components/AdvisorPanel.vue'
+import AdvisorWeeklyReviewPanel from '../components/AdvisorWeeklyReviewPanel.vue'
+import DashboardLoadingSkeleton from '../components/DashboardLoadingSkeleton.vue'
 import DisciplinePanel from '../components/DisciplinePanel.vue'
 import MiniLineChart from '../components/MiniLineChart.vue'
 import { usePlatformLayout } from '../composables/usePlatformLayout'
@@ -9,10 +12,11 @@ import {
   fetchSnapshotAlerts,
   fmtNum,
 } from '../api/dashboard'
-import type { DashboardPayload, DisciplinePayload } from '../types/dashboard'
+import type { AdvisorPayload, DashboardPayload, DisciplinePayload } from '../types/dashboard'
 import { selCode, selName, selScore, strategyLabel } from '../utils/selection'
 
 const data = ref<DashboardPayload | null>(null)
+const advisor = ref<AdvisorPayload | null>(null)
 const discipline = ref<DisciplinePayload | null>(null)
 const alerts = ref<string[]>([])
 const error = ref('')
@@ -34,6 +38,10 @@ const assetChart = computed(() =>
     })),
 )
 
+const weeklyReview = computed(
+  () => advisor.value?.weekly_review_latest ?? null,
+)
+
 onMounted(async () => {
   try {
     const [summary, alertRes, disc] = await Promise.all([
@@ -42,6 +50,7 @@ onMounted(async () => {
       fetchDiscipline(),
     ])
     data.value = summary
+    advisor.value = summary?.advisor ?? null
     alerts.value = alertRes.lines
     discipline.value = disc
   } catch (e) {
@@ -54,9 +63,13 @@ onMounted(async () => {
 
 <template>
   <div class="page" :class="{ mobile: isMobile }">
-    <h1>投资总览</h1>
-    <p v-if="loading" class="hint">加载中…</p>
+    <h1>投顾总览</h1>
+    <DashboardLoadingSkeleton v-if="loading" variant="home" />
     <p v-if="error" class="error">{{ error }}</p>
+
+    <AdvisorPanel v-if="!loading && advisor" :advisor="advisor" />
+    <AdvisorWeeklyReviewPanel v-if="!loading && weeklyReview" :review="weeklyReview" />
+    <p v-if="!loading && !advisor" class="hint">投顾摘要未加载（请刷新或检查 MySQL）</p>
 
     <DisciplinePanel
       v-if="discipline"
@@ -106,12 +119,16 @@ onMounted(async () => {
     </section>
 
     <section v-if="data?.selection_resolve?.top5?.length" class="block">
-      <h2>Top5 摘要</h2>
+      <h2>选股情报 Top5</h2>
+      <p v-if="advisor?.selection?.mode === 'intel_only'" class="hint block-hint">
+        投顾阶段 0：以下仅供观察，非买入清单。
+      </p>
       <ul>
         <li v-for="(row, i) in data.selection_resolve.top5" :key="i">
           {{ selCode(row) }}
           <span v-if="selName(row) !== '—'"> {{ selName(row) }}</span>
           <span v-if="selScore(row) !== '—'"> · 分 {{ selScore(row) }}</span>
+          <span v-if="row['建议动作']"> · {{ row['建议动作'] }}</span>
         </li>
       </ul>
     </section>

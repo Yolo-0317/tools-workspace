@@ -388,6 +388,13 @@ def load_active_selection_rules(
     today: date | None = None,
     engine: Engine | None = None,
 ) -> list[dict]:
+    try:
+        from stock_ai.advisor_selection import selection_watch_sync_enabled
+
+        if not selection_watch_sync_enabled():
+            return []
+    except ImportError:
+        pass
     today = today or date.today()
     engine = engine or get_engine()
     if engine is None:
@@ -534,6 +541,29 @@ def sync_from_card(positions, account, rules: list[dict]) -> dict[str, int]:
         rule_n = upsert_alert_rules(rules, source="holdings", conn=conn)
 
     return {"positions": pos_n, "account": acct_n, "rules": rule_n}
+
+
+def sync_holdings_alert_rules(rules: list[dict]) -> int:
+    """仅同步 alert_rules（source=holdings），不改动 portfolio_positions / portfolio_account。"""
+    engine = get_engine()
+    if engine is None:
+        raise RuntimeError("未配置 MYSQL_URL，无法同步")
+
+    rule_ids = [str(r["id"]) for r in rules]
+    with engine.begin() as conn:
+        if rule_ids:
+            placeholders = ", ".join(f":r{i}" for i in range(len(rule_ids)))
+            params = {f"r{i}": rid for i, rid in enumerate(rule_ids)}
+            conn.execute(
+                text(
+                    f"UPDATE alert_rules SET is_enabled = 0 "
+                    f"WHERE source = 'holdings' AND rule_id NOT IN ({placeholders})"
+                ),
+                params,
+            )
+        else:
+            conn.execute(text("UPDATE alert_rules SET is_enabled = 0 WHERE source = 'holdings'"))
+        return upsert_alert_rules(rules, source="holdings", conn=conn)
 
 
 def sync_positions_and_account(
@@ -2377,4 +2407,98 @@ def latest_emotion_trade_date(
         return dates[0]
     all_dates = list_emotion_cycle_trade_dates(engine=engine)
     return all_dates[0] if all_dates else None
+
+
+def save_advisor_weekly_review(
+    *,
+    week_end_date: date | str,
+    phase: int,
+    title: str,
+    health_score: int | None,
+    report_md: str,
+    report_json: dict[str, Any] | None = None,
+    engine: Engine | None = None,
+) -> None:
+    engine = engine or get_engine()
+    if engine is None:
+        raise RuntimeError("未配置 MYSQL_URL")
+    wd = _parse_selection_trade_date(week_end_date)
+    payload = json.dumps(report_json or {}, ensure_ascii=False)
+    now = datetime.now().replace(tzinfo=None)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO advisor_weekly_reviews
+                  (week_end_date, phase, title, health_score, report_md, report_json, created_at)
+                VALUES (:d, :phase, :title, :hs, :md, :js, :created)
+                ON DUPLICATE KEY UPDATE
+                  phase = VALUES(phase),
+                  title = VALUES(title),
+                  health_score = VALUES(health_score),
+                  report_md = VALUES(report_md),
+                  report_json = VALUES(report_json),
+                  created_at = VALUES(created_at)
+                """
+            ),
+            {
+                "d": wd.isoformat(),
+                "phase": int(phase),
+                "title": (title or "")[:128],
+                "hs": health_score,
+                "md": report_md,
+                "js": payload,
+                "created": now,
+            },
+        )
+
+
+def list_advisor_weekly_reviews(*, limit: int = 12) -> list[dict[str, Any]]:
+    engine = get_engine()
+    if engine is None:
+        return []
+    lim = max(1, min(int(limit), 52))
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    """
+                    SELECT week_end_date, phase, title, health_score,
+                           report_md, report_json, created_at
+                    FROM advisor_weekly_reviews
+                    ORDER BY week_end_date DESC
+                    LIMIT :lim
+                    """
+                ),
+                {"lim": lim},
+            ).fetchall()
+    except Exception:
+        return []
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        js = row.report_json
+        if isinstance(js, str):
+            try:
+                js = json.loads(js)
+            except Exception:
+                js = {}
+        out.append(
+            {
+                "week_end_date": row.week_end_date.isoformat(),
+                "phase": int(row.phase),
+                "title": row.title or "",
+                "health_score": row.health_score,
+                "report_md": row.report_md or "",
+                "report_json": js or {},
+                "created_at": row.created_at.isoformat(sep=" ", timespec="seconds")
+                if row.created_at
+                else None,
+            }
+        )
+    return out
+
+
+def latest_advisor_weekly_review() -> dict[str, Any] | None:
+    rows = list_advisor_weekly_reviews(limit=1)
+    return rows[0] if rows else None
 

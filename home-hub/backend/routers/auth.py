@@ -26,12 +26,14 @@ def _set_session_cookie(response: Response, token: str, expires) -> None:
         secure=settings.session_cookie_secure,
         samesite=settings.session_cookie_samesite,
         max_age=int(settings.session_ttl_hours * 3600),
-        path="/",
+        path=settings.session_cookie_path,
     )
 
 
 def _clear_session_cookie(response: Response) -> None:
-    response.delete_cookie(key=hub_auth.SESSION_COOKIE, path="/")
+    response.delete_cookie(
+        key=hub_auth.SESSION_COOKIE, path=settings.session_cookie_path
+    )
 
 
 @router.post("/login")

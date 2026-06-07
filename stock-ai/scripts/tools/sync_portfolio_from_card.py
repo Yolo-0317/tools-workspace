@@ -13,7 +13,7 @@ ensure_repo_root_on_path()
 
 from scripts.tools.holdings_card_parser import parse_card
 from scripts.tools.holdings_context import AGENT_HOLDINGS, DEFAULT_HOLDINGS
-from scripts.tools.portfolio_db import sync_from_card
+from scripts.tools.portfolio_db import sync_from_card, sync_holdings_alert_rules
 
 
 def resolve_card(path: Path | None) -> Path:
@@ -28,6 +28,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="从持仓执行卡同步 MySQL 持仓与监控规则")
     parser.add_argument("--card", type=Path, default=None, help="执行卡路径")
     parser.add_argument("--dry-run", action="store_true", help="只解析不写入")
+    parser.add_argument(
+        "--rules-only",
+        action="store_true",
+        help="仅同步 alert_rules（P0～P5）；不覆盖 portfolio_positions（股数以东方财富证券为准）",
+    )
     args = parser.parse_args()
 
     card_path = resolve_card(args.card)
@@ -50,6 +55,11 @@ def main() -> int:
     print(f"监控规则: {len(rules)} 条")
 
     if args.dry_run:
+        return 0
+
+    if args.rules_only:
+        rule_n = sync_holdings_alert_rules(rules)
+        print(f"✅ 已同步 MySQL: rules={rule_n}（仅 holdings 监控规则，持仓未改动）")
         return 0
 
     stats = sync_from_card(positions, account, rules)

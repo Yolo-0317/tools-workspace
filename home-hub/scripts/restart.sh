@@ -7,8 +7,8 @@ LABEL="com.user.home-hub"
 LAUNCHD_UID="$(id -u)"
 
 do_build() {
-  echo "[restart] 构建前端…" >&2
-  (cd "${ROOT}/frontend" && npm run build)
+  echo "[restart] 构建前端（VITE_BASE_PATH=/hub/）…" >&2
+  (cd "${ROOT}/frontend" && npm install && VITE_BASE_PATH=/hub/ npm run build)
 }
 
 case "${1:-}" in
@@ -23,7 +23,7 @@ esac
 
 if launchctl print "gui/${LAUNCHD_UID}/${LABEL}" &>/dev/null; then
   launchctl kickstart -k "gui/${LAUNCHD_UID}/${LABEL}"
-  echo "[restart] 已重启 ${LABEL} → http://127.0.0.1:${HUB_PORT:-8780}"
+  echo "[restart] 已重启 ${LABEL} → http://127.0.0.1:${HUB_PORT:-8780}/hub/"
 else
   echo "[restart] launchd 未安装，执行: ./scripts/install-launchd.sh" >&2
   if [[ ! -f "${ROOT}/frontend/dist/index.html" ]]; then

@@ -141,16 +141,64 @@ def export_dashboard_payload(
     )
     positions_latest = positions_live
 
+    position_ratio_pct: float | None = None
+    if account_current and account_current.get("position_ratio") is not None:
+        r = float(account_current["position_ratio"])
+        position_ratio_pct = r * 100 if r <= 1.0 else r
+
+    holdings_codes: set[str] = set()
+    try:
+        from scripts.tools.portfolio_db import load_holding_codes
+
+        holdings_codes = load_holding_codes()
+    except Exception:
+        pass
+
     try:
         td, sel_df, sel_src = resolve_selection_df(strategy=strategy)
+        from scripts.tools.selection_results import pick_selection_top
+
+        top5_df = (
+            pick_selection_top(
+                sel_df.head(25),
+                5,
+                holdings_codes=holdings_codes,
+                max_per_industry=2,
+                account_position_pct=position_ratio_pct or 0.0,
+            )
+            if not sel_df.empty
+            else sel_df
+        )
+        if top5_df.empty and not sel_df.empty:
+            top5_df = sel_df.head(5)
         selection_summary = {
             "trade_date": trade_date_to_str(td),
             "source": sel_src,
             "count": len(sel_df),
-            "top5": sel_df.head(5).to_dict(orient="records") if not sel_df.empty else [],
+            "top5": top5_df.to_dict(orient="records"),
         }
     except Exception as exc:  # noqa: BLE001
         selection_summary = {"error": str(exc)}
+
+    advisor: dict[str, Any] = {}
+    try:
+        from stock_ai.advisor_selection import build_advisor_dashboard_payload
+
+        advisor = build_advisor_dashboard_payload(
+            total_assets=(account_current or {}).get("total_assets"),
+            position_ratio_pct=position_ratio_pct,
+            holding_pnl=(account_current or {}).get("holding_pnl"),
+            available_cash=(account_current or {}).get("available_cash"),
+        )
+    except Exception as exc:  # noqa: BLE001
+        advisor = {"error": str(exc)}
+
+    try:
+        from stock_ai.advisor_weekly_review import load_latest_weekly_review_public
+
+        advisor["weekly_review_latest"] = load_latest_weekly_review_public()
+    except Exception:
+        advisor["weekly_review_latest"] = None
 
     return {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
@@ -168,6 +216,7 @@ def export_dashboard_payload(
         },
         "selection_resolve": selection_summary,
         "sop_review": sop,
+        "advisor": advisor,
     }
 
 

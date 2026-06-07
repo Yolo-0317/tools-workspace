@@ -7,6 +7,7 @@ import os
 import re
 import struct
 import time
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -42,6 +43,11 @@ _load_dotenv()
 
 TOKEN_CACHE = ROOT / "data" / "wechat_mp_token.json"
 THUMB_CACHE = ROOT / "data" / "wechat_mp_thumb.json"
+SECTOR_BANNER_THUMB_CACHE = ROOT / "data" / "wechat_mp_sector_banner_thumb.json"
+_KIND_THUMB_ASSET_CACHE: dict[str, Path] = {
+    "top5": ROOT / "data" / "wechat_mp_thumb_top5.json",
+    "dragons": ROOT / "data" / "wechat_mp_thumb_dragons.json",
+}
 DEFAULT_COVER_PATH = ROOT / "assets" / "wechat_mp" / "default_cover.jpg"
 ALERT_LOG = ROOT / "logs" / "wechat_mp_alerts.log"
 API_BASE = "https://api.weixin.qq.com/cgi-bin"
@@ -72,8 +78,45 @@ def _material_display_name(item: dict[str, Any]) -> str:
     return _normalize_material_name(str(item.get("name") or ""))
 
 
-def mp_configured() -> bool:
-    return bool(_env("WECHAT_MP_APPID") and _env("WECHAT_MP_SECRET"))
+def mp_configured(*, profile: str = "finance") -> bool:
+    appid, secret = mp_credentials(profile=profile)
+    return bool(appid and secret)
+
+
+def mp_credentials(*, profile: str = "finance") -> tuple[str, str]:
+    if profile == "commerce":
+        appid = _env("WECHAT_MP_COMMERCE_APPID") or _env("WECHAT_MP_APPID")
+        secret = _env("WECHAT_MP_COMMERCE_SECRET") or _env("WECHAT_MP_SECRET")
+        return appid, secret
+    return _env("WECHAT_MP_APPID"), _env("WECHAT_MP_SECRET")
+
+
+@contextmanager
+def mp_account_profile(profile: str = "finance"):
+    """临时切换 API 凭证（带货独立号 WECHAT_MP_COMMERCE_*）。"""
+    if profile != "commerce":
+        yield
+        return
+    swaps: list[tuple[str, str | None]] = []
+    for dst, src in (
+        ("WECHAT_MP_APPID", "WECHAT_MP_COMMERCE_APPID"),
+        ("WECHAT_MP_SECRET", "WECHAT_MP_COMMERCE_SECRET"),
+        ("WECHAT_MP_AUTHOR", "WECHAT_MP_COMMERCE_AUTHOR"),
+        ("WECHAT_MP_DAIHUO_UIN", "WECHAT_MP_COMMERCE_DAIHUO_UIN"),
+    ):
+        val = _env(src)
+        if not val:
+            continue
+        swaps.append((dst, os.environ.get(dst)))
+        os.environ[dst] = val
+    try:
+        yield
+    finally:
+        for key, old in swaps:
+            if old is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = old
 
 
 def _mp_session() -> requests.Session:
@@ -83,11 +126,19 @@ def _mp_session() -> requests.Session:
     return session
 
 
-def _mp_post_json(url: str, *, params: dict[str, Any] | None, payload: Any) -> dict[str, Any]:
+def _mp_post_json(
+    url: str,
+    *,
+    params: dict[str, Any] | None,
+    payload: Any,
+    headers: dict[str, str] | None = None,
+) -> dict[str, Any]:
     """POST JSON 且 UTF-8 直传中文，避免 requests.json= 把中文变成 \\uXXXX 在草稿箱乱码。"""
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-    headers = {"Content-Type": "application/json; charset=utf-8"}
-    resp = _mp_session().post(url, params=params, data=body, headers=headers, timeout=60)
+    req_headers = {"Content-Type": "application/json; charset=utf-8"}
+    if headers:
+        req_headers.update(headers)
+    resp = _mp_session().post(url, params=params, data=body, headers=req_headers, timeout=60)
     try:
         data = resp.json()
     except Exception:
@@ -210,37 +261,399 @@ def _line_to_html(line: str) -> str:
     return _escape_html(line)
 
 
-def _append_body_lines(parts: list[str], lines: list[str]) -> None:
+def _body_paragraph_style() -> str:
+    from scripts.tools.wechat_mp_layout import active_layout
+
+    layout = active_layout()
+    return (
+        f"margin:{layout.para_margin};padding:0;"
+        "line-height:1.72;font-size:16px;color:#333333;"
+        "letter-spacing:0.01em;"
+    )
+
+
+def _body_list_style() -> str:
+    from scripts.tools.wechat_mp_layout import active_layout
+
+    layout = active_layout()
+    return (
+        f"margin:{layout.list_margin};padding-left:1.2em;"
+        "line-height:1.65;color:#333333;"
+    )
+
+
+_SECTION_HEAD_RE = re.compile(r"^[一二三四五六七八九十]、")
+_NEWS_HEAD_RE = re.compile(r"^\[(利好|利空|中性)\]")
+_NEWS_ITEM_RE = re.compile(r"^\d+\.\s*(\[(利好|利空|中性)\]|(?:利好|利空|中性)｜)")
+_NEWS_AI_RE = re.compile(r"^AI点评[：:]")
+_NEWS_LABEL_RE = re.compile(r"^(地缘|国内)[：:]?\s*$")
+_NEWS_SUMMARY_RE = re.compile(r"^\s{2,}\S")
+
+
+def _is_news_content_line(line: str) -> bool:
+    s = line.strip()
+    if not s:
+        return False
+    if _NEWS_HEAD_RE.match(s):
+        return True
+    if _NEWS_ITEM_RE.match(s):
+        return True
+    if _NEWS_AI_RE.match(s):
+        return True
+    if _NEWS_LABEL_RE.match(s):
+        return True
+    if _NEWS_SUMMARY_RE.match(line):
+        return True
+    return False
+
+
+def _block_is_news_cluster(lines: list[str]) -> bool:
+    non_empty = [ln for ln in lines if ln.strip()]
+    if not non_empty:
+        return False
+    return all(_is_news_content_line(ln) for ln in non_empty)
+
+
+def _next_nonempty_line(lines: list[str], start: int) -> tuple[int, str] | None:
+    for j in range(start, len(lines)):
+        if lines[j].strip():
+            return j, lines[j]
+    return None
+
+
+_FIGURE_BODY_RE = re.compile(r"^\[\[fig:[^|\]]+\|[^\]]*\]\]\s*$")
+
+
+def _is_figure_line(line: str) -> bool:
+    return bool(_FIGURE_BODY_RE.match(line.strip()))
+
+
+def split_wechat_body_blocks(text: str) -> list[str]:
+    """
+    分段落块。快讯区不把「空行」当成新段落，避免每条 [利好] 新闻各包一个 <p> 拉大留白。
+    """
+    from scripts.tools.wechat_mp_rich_html import is_blockquote_title_line
+
+    lines = text.splitlines()
+    blocks: list[list[str]] = []
+    cur: list[str] = []
+
+    def flush() -> None:
+        if cur:
+            blocks.append(cur[:])
+            cur.clear()
+
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if not line.strip():
+            nxt = _next_nonempty_line(lines, i + 1)
+            if nxt is None:
+                flush()
+                break
+            _, next_line = nxt
+            ns = next_line.strip()
+            if _SECTION_HEAD_RE.match(ns) or is_blockquote_title_line(ns):
+                flush()
+            elif _is_figure_line(next_line):
+                flush()
+            elif cur and _block_is_news_cluster(cur) and _is_news_content_line(next_line):
+                pass
+            elif _is_news_content_line(next_line) and cur and not _block_is_news_cluster(cur):
+                flush()
+            elif cur and _block_is_news_cluster(cur) and not _is_news_content_line(next_line):
+                flush()
+            elif (
+                cur
+                and len(cur) == 1
+                and _SECTION_HEAD_RE.match(cur[0].strip())
+                and not _is_news_content_line(next_line)
+            ):
+                flush()
+            elif cur and not _block_is_news_cluster(cur) and not _is_news_content_line(next_line):
+                flush()
+            i += 1
+            continue
+
+        if _is_figure_line(line):
+            flush()
+            cur.append(line)
+            flush()
+            i += 1
+            continue
+
+        if is_blockquote_title_line(line.strip()):
+            flush()
+            cur.append(line)
+            i += 1
+            continue
+
+        if _SECTION_HEAD_RE.match(line.strip()):
+            flush()
+            cur.append(line)
+            i += 1
+            continue
+
+        if _is_news_content_line(line):
+            if cur and not _block_is_news_cluster(cur):
+                flush()
+            cur.append(line)
+            i += 1
+            continue
+
+        if cur and _block_is_news_cluster(cur):
+            flush()
+        cur.append(line)
+        i += 1
+
+    flush()
+    return ["\n".join(b) for b in blocks]
+
+
+def _body_news_paragraph_style(*, kind: str = "body") -> str:
+    from scripts.tools.wechat_mp_layout import active_layout
+
+    layout = active_layout()
+    if kind == "title":
+        return (
+            f"margin:{layout.news_title_margin};padding:0;"
+            f"line-height:{layout.news_line_height};font-size:{layout.news_title_size};"
+            "color:#1a1a1a;letter-spacing:0.01em;"
+        )
+    if kind == "ai":
+        return (
+            f"margin:{layout.news_ai_margin};padding:0;"
+            f"line-height:{layout.news_line_height};font-size:{layout.news_body_size};"
+            "color:#333333;letter-spacing:0.01em;"
+        )
+    if kind == "summary":
+        return (
+            f"margin:{layout.news_summary_margin};padding:0;"
+            f"line-height:{layout.news_line_height};font-size:{layout.news_body_size};"
+            "color:#333333;letter-spacing:0.01em;"
+        )
+    return (
+        f"margin:{layout.news_margin};padding:0;"
+        f"line-height:{layout.news_line_height};font-size:{layout.news_body_size};"
+        "color:#333333;"
+    )
+
+
+def _news_line_kind(line: str) -> str:
+    s = line.strip()
+    if _NEWS_ITEM_RE.match(s):
+        return "title"
+    if _NEWS_AI_RE.match(s):
+        return "ai"
+    if _NEWS_SUMMARY_RE.match(line):
+        return "summary"
+    return "body"
+
+
+def _append_news_cluster(parts: list[str], lines: list[str]) -> None:
+    for line in lines:
+        kind = _news_line_kind(line)
+        parts.append(
+            f'<p style="{_body_news_paragraph_style(kind=kind)}">{_line_to_html(line)}</p>'
+        )
+
+
+def _append_body_lines(
+    parts: list[str],
+    lines: list[str],
+    *,
+    lede_first_para: bool = False,
+) -> bool:
+    """追加正文段落；若 `lede_first_para` 则首段用开篇样式。返回是否已应用开篇样式。"""
     if not lines:
-        return
+        return False
+    if _block_is_news_cluster(lines):
+        _append_news_cluster(parts, lines)
+        return False
     if len(lines) == 1 and lines[0].startswith("·"):
-        parts.append(f"<p>{_line_to_html(lines[0])}</p>")
-    elif all(line.startswith("·") for line in lines):
+        parts.append(f'<p style="{_body_paragraph_style()}">{_line_to_html(lines[0])}</p>')
+        return False
+    if all(line.startswith("·") for line in lines):
         items = "".join(
             f"<li>{_line_to_html(line.lstrip('·').strip())}</li>" for line in lines
         )
-        parts.append(f"<ul>{items}</ul>")
-    else:
-        parts.append(f"<p>{'<br/>'.join(_line_to_html(x) for x in lines)}</p>")
+        parts.append(f'<ul style="{_body_list_style()}">{items}</ul>')
+        return False
+    from scripts.tools.wechat_mp_rich_html import opening_lede_paragraph_style
+
+    style = (
+        opening_lede_paragraph_style()
+        if lede_first_para
+        else _body_paragraph_style()
+    )
+    inner = "<br/>".join(_line_to_html(x) for x in lines)
+    parts.append(f'<p style="{style}">{inner}</p>')
+    return lede_first_para
 
 
-def text_to_html(text: str) -> str:
+def upload_article_image(image_path: Path) -> tuple[str | None, dict[str, Any] | None]:
+    """上传图文消息正文图片，返回 (url, error_json)。草稿 content 仅接受此 URL。"""
+    token, err = get_access_token()
+    if err:
+        return None, err
+    path = Path(image_path)
+    if not path.is_file():
+        return None, {"errcode": -1, "errmsg": f"正文图片不存在: {path}"}
+
+    url = f"{API_BASE}/media/uploadimg"
+    suffix = path.suffix.lower()
+    mime = "image/jpeg" if suffix in {".jpg", ".jpeg"} else "image/png"
+    with path.open("rb") as fh:
+        resp = _mp_session().post(
+            url,
+            params={"access_token": token},
+            files={"media": (path.name, fh, mime)},
+            timeout=60,
+        )
+    try:
+        data = resp.json()
+    except Exception:
+        snippet = (resp.text or "")[:200]
+        return None, {"errcode": -1, "errmsg": f"uploadimg 非 JSON: {snippet}"}
+    if data.get("errcode"):
+        return None, data
+    img_url = str(data.get("url") or "").strip()
+    if not img_url:
+        return None, {"errcode": -1, "errmsg": "uploadimg 未返回 url"}
+    return img_url, None
+
+
+def _text_prose_to_html(
+    text: str,
+    *,
+    upload_figures: bool = True,
+    local_figure_preview: bool = False,
+    seen_section: bool = False,
+    prev_was_figure: bool = False,
+    lede_done: bool = False,
+    article_kind: str | None = None,
+) -> tuple[list[str], bool, bool, bool]:
+    """将无 ``` 围栏的散文转为 HTML 片段。"""
+    from scripts.tools.wechat_mp_rich_html import OPENING_LEDE_KINDS
+
     parts: list[str] = []
-    for block in re.split(r"\n\s*\n", text.strip()):
+    kind = (article_kind or "").strip().lower()
+    want_lede_kind = kind in OPENING_LEDE_KINDS
+
+    def _want_opening_lede() -> bool:
+        if not want_lede_kind or lede_done:
+            return False
+        if kind == "market":
+            return not seen_section
+        if kind in ("top5", "dragons"):
+            return seen_section
+        return False
+
+    for block in split_wechat_body_blocks(text):
         block = block.strip()
         if not block:
             continue
         lines = block.splitlines()
+        from scripts.tools.wechat_mp_figures import figure_to_html, parse_figure_line
         from scripts.tools.wechat_mp_rich_html import (
             blockquote_title_html,
+            commerce_hashtag_html,
             is_blockquote_title_line,
+            is_commerce_hashtag_line,
         )
 
+        if len(lines) == 1:
+            if kind == "commerce" and is_commerce_hashtag_line(lines[0]):
+                tags = [t.lstrip("#") for t in lines[0].strip().split()]
+                parts.append(commerce_hashtag_html(tags))
+                prev_was_figure = False
+                continue
+            fig = parse_figure_line(lines[0])
+            if fig:
+                fname, caption = fig
+                img_url: str | None = None
+                if mp_configured():
+                    from scripts.tools.wechat_mp_figures import (
+                        inline_figure_url_from_cache,
+                        upload_inline_figure,
+                    )
+
+                    if upload_figures:
+                        img_url, up_err = upload_inline_figure(fname)
+                        if up_err:
+                            append_alert(f"FIGURE upload fail {fname}: {up_err}")
+                    else:
+                        img_url = inline_figure_url_from_cache(fname)
+                parts.append(
+                    figure_to_html(
+                        fname,
+                        caption,
+                        image_url=img_url,
+                        local_preview=local_figure_preview and not img_url,
+                    )
+                )
+                prev_was_figure = True
+                continue
+
         if lines and is_blockquote_title_line(lines[0]):
-            parts.append(blockquote_title_html(lines[0]))
-            _append_body_lines(parts, [ln for ln in lines[1:] if ln.strip()])
+            parts.append(
+                blockquote_title_html(
+                    lines[0],
+                    tight_top=prev_was_figure,
+                    first_section=not seen_section,
+                )
+            )
+            seen_section = True
+            prev_was_figure = False
+            body_lines = [ln for ln in lines[1:] if ln.strip()]
+            if body_lines:
+                if _append_body_lines(
+                    parts, body_lines, lede_first_para=_want_opening_lede()
+                ):
+                    lede_done = True
             continue
-        _append_body_lines(parts, lines)
+        prev_was_figure = False
+        if _want_opening_lede():
+            if _append_body_lines(parts, lines, lede_first_para=True):
+                lede_done = True
+        else:
+            _append_body_lines(parts, lines)
+    return parts, seen_section, prev_was_figure, lede_done
+
+
+def text_to_html(
+    text: str,
+    *,
+    upload_figures: bool = True,
+    local_figure_preview: bool = False,
+    article_kind: str | None = None,
+) -> str:
+    from scripts.tools.wechat_format import split_body_code_fences
+    from scripts.tools.wechat_mp_rich_html import code_block_html
+
+    parts: list[str] = []
+    seen_section = False
+    prev_was_figure = False
+    lede_done = False
+    for fence_kind, lang, chunk in split_body_code_fences(text):
+        if fence_kind == "code":
+            if chunk.strip():
+                parts.append(code_block_html(chunk, lang=lang))
+            prev_was_figure = False
+            continue
+        prose = chunk.strip()
+        if not prose:
+            continue
+        sub_parts, seen_section, prev_was_figure, lede_done = _text_prose_to_html(
+            prose,
+            upload_figures=upload_figures,
+            local_figure_preview=local_figure_preview,
+            seen_section=seen_section,
+            prev_was_figure=prev_was_figure,
+            lede_done=lede_done,
+            article_kind=article_kind,
+        )
+        parts.extend(sub_parts)
     return "\n".join(parts) or "<p>（空）</p>"
 
 
@@ -480,13 +893,51 @@ def batchget_material_images(
     return items, None
 
 
-# 四槽位默认封面（素材名子串，优先「双封面」竖版）
+# 四槽位默认封面（素材名子串，须与公众平台素材库文件名一致）
 _DEFAULT_KIND_THUMB_NAMES: dict[str, str] = {
+    "sector": "封面-牛马品牌-双封面",
     "market": "封面-交易所屏-双封面",
-    "top5": "封面-手机看盘-双封面",
-    "dragons": "封面-K线暗色-双封面",
+    "news": "封面-显示器走势-双封面",
+    "top5": "封面-财经亮屏-双封面",
+    "dragons": "封面-多屏亮行情-双封面",
     "workspace": "封面-数据大屏-双封面",
+    "temp": "封面-数据大屏-双封面",
 }
+
+# top5 / dragons 默认本地亮色封面（相对 ROOT）；可被 WECHAT_MP_THUMB_PATH_{KIND} 覆盖
+_DEFAULT_KIND_THUMB_ASSETS: dict[str, Path] = {
+    "top5": ROOT / "assets" / "wechat_mp" / "cover-financial-screen-dual.jpg",
+    "dragons": ROOT / "assets" / "wechat_mp" / "cover-multi-screen-dual.jpg",
+}
+
+# 带货预览会上传 avatar 等到同一素材库；财经选封面须排除，禁止回退到「最新一张」
+_FINANCE_THUMB_DENY_SUBSTR: tuple[str, ...] = ("avatar", "简选")
+
+_KIND_THUMB_FALLBACKS: dict[str, tuple[str, ...]] = {
+    "news": ("封面-多屏行情-双封面", "封面-平板分析-双封面", "多屏行情"),
+    "top5": ("封面-手机看盘-双封面", "财经亮屏", "financial-screen"),
+    "dragons": (
+        "封面-多屏行情-双封面",
+        "封面-显示器走势-双封面",
+        "多屏亮行情",
+        "multi-screen",
+    ),
+}
+
+
+def _material_name_blob(item: dict[str, Any]) -> str:
+    return " ".join(
+        (
+            _material_display_name(item),
+            str(item.get("name") or ""),
+            str(item.get("name_raw") or ""),
+        )
+    ).lower()
+
+
+def _is_finance_thumb_material(item: dict[str, Any]) -> bool:
+    blob = _material_name_blob(item)
+    return not any(d in blob for d in _FINANCE_THUMB_DENY_SUBSTR)
 
 
 def pick_thumb_from_material_library(
@@ -494,11 +945,14 @@ def pick_thumb_from_material_library(
     name_sub: str | None = None,
     media_id_preset: str | None = None,
     use_global_preset: bool = True,
+    finance_only: bool = False,
+    allow_latest_fallback: bool = True,
 ) -> tuple[str | None, dict[str, Any] | None]:
     """
     从素材库选封面 thumb_media_id。
     优先级：media_id_preset → 全局 WECHAT_MP_THUMB_MEDIA_ID（可选）
     → name_sub / WECHAT_MP_THUMB_NAME → WECHAT_MP_THUMB_INDEX → 最新一张图。
+    finance_only=True 时排除带货 avatar/简选 素材；allow_latest_fallback=False 时不回退最新图。
     """
     preset = (media_id_preset or "").strip()
     if not preset and use_global_preset:
@@ -513,13 +967,34 @@ def pick_thumb_from_material_library(
             "errmsg": "素材库无图片：请在 mp.weixin.qq.com 素材管理上传封面，或设置 WECHAT_MP_THUMB_MEDIA_ID",
         }
 
+    pool = [it for it in items if _is_finance_thumb_material(it)] if finance_only else items
+    if finance_only and not pool:
+        return None, {
+            "errcode": -1,
+            "errmsg": "素材库无可用财经封面（已排除带货 avatar/简选 图）；请上传「封面-*-双封面」或设置 WECHAT_MP_THUMB_NAME_NEWS 等",
+        }
+
     if name_sub is None:
         name_sub = _env("WECHAT_MP_THUMB_NAME", "机器人图")
     if name_sub:
-        for it in items:
+        for it in pool:
             display = _material_display_name(it)
             if name_sub in display or name_sub in str(it.get("name_raw") or ""):
                 return str(it["media_id"]), None
+        if finance_only and not allow_latest_fallback:
+            return None, {
+                "errcode": -1,
+                "errmsg": (
+                    f"未匹配财经封面「{name_sub}」（已排除带货 avatar）。"
+                    f"请上传对应素材或设置 WECHAT_MP_THUMB_NAME_*"
+                ),
+            }
+
+    if finance_only and not allow_latest_fallback:
+        return None, {
+            "errcode": -1,
+            "errmsg": "财经封面未指定或未匹配，已禁止回退到素材库最新图（防误用带货 avatar）",
+        }
 
     idx_raw = _env("WECHAT_MP_THUMB_INDEX")
     if idx_raw:
@@ -531,7 +1006,6 @@ def pick_thumb_from_material_library(
             pass
 
     skip_default = _env("WECHAT_MP_THUMB_SKIP_DEFAULT", "1").lower() not in {"0", "false", "no"}
-    pool = items
     if skip_default:
         filtered = [
             it
@@ -553,20 +1027,221 @@ def pick_thumb_from_material_library(
     return str(sorted_items[0]["media_id"]), None
 
 
+def _sector_banner_thumb_path() -> Path:
+    """行业稿封面 = 正文品牌头 banner（牛马图），与 masthead 同源。"""
+    explicit = _env("WECHAT_MP_SECTOR_THUMB_PATH")
+    if explicit:
+        path = Path(explicit).expanduser()
+        if path.is_file():
+            return path
+        raise FileNotFoundError(f"WECHAT_MP_SECTOR_THUMB_PATH 不存在: {path}")
+    from scripts.tools.wechat_mp_masthead import resolve_banner_path
+
+    return resolve_banner_path(kind="sector")
+
+
+def _load_sector_banner_thumb_cache() -> dict[str, Any] | None:
+    if not SECTOR_BANNER_THUMB_CACHE.is_file():
+        return None
+    try:
+        return json.loads(SECTOR_BANNER_THUMB_CACHE.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def _save_sector_banner_thumb_cache(media_id: str, *, source: str, cache_key: str) -> None:
+    SECTOR_BANNER_THUMB_CACHE.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "media_id": media_id,
+        "source": source,
+        "cache_key": cache_key,
+        "updated_at": datetime.now(TZ).isoformat(),
+    }
+    SECTOR_BANNER_THUMB_CACHE.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def _kind_thumb_from_assets_enabled(kind: str) -> bool:
+    k = (kind or "").strip().lower()
+    if k not in _DEFAULT_KIND_THUMB_ASSETS:
+        return False
+    per = _env(f"WECHAT_MP_{k.upper()}_THUMB_FROM_ASSETS", "")
+    if per:
+        return per.lower() not in ("0", "false", "no", "off")
+    return _env("WECHAT_MP_KIND_THUMB_FROM_ASSETS", "1").lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
+
+
+def _kind_thumb_asset_path(kind: str) -> Path | None:
+    k = (kind or "").strip().lower()
+    explicit = _env(f"WECHAT_MP_THUMB_PATH_{k.upper()}")
+    if explicit:
+        path = Path(explicit).expanduser()
+        if path.is_file():
+            return path
+        raise FileNotFoundError(f"WECHAT_MP_THUMB_PATH_{k.upper()} 不存在: {path}")
+    path = _DEFAULT_KIND_THUMB_ASSETS.get(k)
+    if path is not None and path.is_file():
+        return path
+    return None
+
+
+def _load_kind_thumb_asset_cache(kind: str) -> dict[str, Any] | None:
+    cache_path = _KIND_THUMB_ASSET_CACHE.get(kind)
+    if not cache_path or not cache_path.is_file():
+        return None
+    try:
+        return json.loads(cache_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def _save_kind_thumb_asset_cache(
+    kind: str,
+    media_id: str,
+    *,
+    source: str,
+    cache_key: str,
+) -> None:
+    cache_path = _KIND_THUMB_ASSET_CACHE.get(kind)
+    if not cache_path:
+        return
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "media_id": media_id,
+        "source": source,
+        "cache_key": cache_key,
+        "updated_at": datetime.now(TZ).isoformat(),
+    }
+    cache_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def pick_kind_thumb_from_local_asset(
+    kind: str,
+    *,
+    force_reupload: bool = False,
+) -> tuple[str | None, dict[str, Any] | None]:
+    """top5 / dragons：上传 repo 内亮色财经封面（默认优先于素材库暗色图）。"""
+    k = (kind or "").strip().lower()
+    if not _kind_thumb_from_assets_enabled(k):
+        return None, {
+            "errcode": -1,
+            "errmsg": (
+                f"未启用本地封面（WECHAT_MP_{k.upper()}_THUMB_FROM_ASSETS=0）；"
+                "或设置 WECHAT_MP_THUMB_PATH_{KIND}"
+            ),
+        }
+    try:
+        path = _kind_thumb_asset_path(k)
+    except FileNotFoundError as exc:
+        return None, {"errcode": -1, "errmsg": str(exc)}
+    if path is None:
+        return None, {
+            "errcode": -1,
+            "errmsg": f"未找到 {k} 默认封面文件（assets/wechat_mp/cover-*-dual.jpg）",
+        }
+
+    import hashlib
+
+    cache_key = hashlib.md5(path.read_bytes()).hexdigest()[:16]
+    if not force_reupload:
+        cached = _load_kind_thumb_asset_cache(k)
+        if (
+            cached
+            and str(cached.get("cache_key") or "") == cache_key
+            and cached.get("media_id")
+        ):
+            return str(cached["media_id"]), None
+
+    media_id, err = add_permanent_image(path)
+    if err or not media_id:
+        return None, err or {"errcode": -1, "errmsg": f"上传 {k} 本地封面失败"}
+    _save_kind_thumb_asset_cache(k, media_id, source=str(path), cache_key=cache_key)
+    return media_id, None
+
+
+def pick_sector_thumb_from_banner(*, force_reupload: bool = False) -> tuple[str | None, dict[str, Any] | None]:
+    """素材库无「封面-牛马品牌」时，上传 assets/wechat_mp/banner.png 作 sector 封面。"""
+    if _env("WECHAT_MP_SECTOR_THUMB_FROM_BANNER", "1").lower() in ("0", "false", "no", "off"):
+        return None, {
+            "errcode": -1,
+            "errmsg": "未匹配素材库封面；可在素材库上传「封面-牛马品牌-双封面」或保持 WECHAT_MP_SECTOR_THUMB_FROM_BANNER=1",
+        }
+    try:
+        path = _sector_banner_thumb_path()
+    except FileNotFoundError as exc:
+        return None, {"errcode": -1, "errmsg": str(exc)}
+
+    import hashlib
+
+    cache_key = hashlib.md5(path.read_bytes()).hexdigest()[:16]
+    if not force_reupload:
+        cached = _load_sector_banner_thumb_cache()
+        if (
+            cached
+            and str(cached.get("cache_key") or "") == cache_key
+            and cached.get("media_id")
+        ):
+            return str(cached["media_id"]), None
+
+    media_id, err = add_permanent_image(path)
+    if err or not media_id:
+        return None, err or {"errcode": -1, "errmsg": "上传 sector banner 封面失败"}
+    _save_sector_banner_thumb_cache(media_id, source=str(path), cache_key=cache_key)
+    return media_id, None
+
+
 def pick_thumb_for_draft_kind(kind: str) -> tuple[str | None, dict[str, Any] | None]:
     """
-    按草稿槽位选封面（market / top5 / dragons / workspace）。
+    按草稿槽位选封面（market / news / top5 / dragons / workspace / temp）。
     环境变量：WECHAT_MP_THUMB_MEDIA_ID_{KIND}、WECHAT_MP_THUMB_NAME_{KIND}
+    与带货隔离：排除 avatar/简选 素材，且禁止「最新一张」回退。
+    sector：素材库「封面-牛马品牌」→ 否则上传正文 masthead 用 banner.png（牛马图）。
     """
     k = (kind or "").strip().lower()
     env_suffix = k.upper()
     media_preset = _env(f"WECHAT_MP_THUMB_MEDIA_ID_{env_suffix}")
-    name_sub = _env(f"WECHAT_MP_THUMB_NAME_{env_suffix}") or _DEFAULT_KIND_THUMB_NAMES.get(k, "")
-    return pick_thumb_from_material_library(
-        name_sub=name_sub,
-        media_id_preset=media_preset or None,
-        use_global_preset=False,
-    )
+    if media_preset:
+        return media_preset, None
+    if _kind_thumb_from_assets_enabled(k):
+        mid, err = pick_kind_thumb_from_local_asset(k)
+        if mid:
+            return mid, None
+    primary = _env(f"WECHAT_MP_THUMB_NAME_{env_suffix}") or _DEFAULT_KIND_THUMB_NAMES.get(k, "")
+    candidates: list[str] = []
+    for sub in (primary, *_KIND_THUMB_FALLBACKS.get(k, ())):
+        if sub and sub not in candidates:
+            candidates.append(sub)
+    last_err: dict[str, Any] | None = None
+    for name_sub in candidates:
+        mid, err = pick_thumb_from_material_library(
+            name_sub=name_sub,
+            media_id_preset=media_preset if name_sub == primary else None,
+            use_global_preset=False,
+            finance_only=True,
+            allow_latest_fallback=False,
+        )
+        if mid:
+            return mid, None
+        last_err = err
+    if k == "sector":
+        mid, err = pick_sector_thumb_from_banner()
+        if mid:
+            return mid, None
+        last_err = err or last_err
+    return None, last_err or {
+        "errcode": -1,
+        "errmsg": f"财经槽位 {k} 未匹配任何封面候选: {', '.join(candidates)}",
+    }
 
 
 def ensure_thumb_media_id(*, force_reupload: bool = False) -> tuple[str | None, dict[str, Any] | None]:
@@ -759,3 +1434,169 @@ def freepublish_submit(*, media_id: str) -> tuple[str | None, dict[str, Any] | N
     if data.get("errcode"):
         return None, data
     return str(data.get("publish_id") or ""), None
+
+
+def freepublish_batchget(
+    *,
+    offset: int = 0,
+    count: int = 20,
+    no_content: bool = True,
+) -> tuple[list[dict[str, Any]], int, dict[str, Any] | None]:
+    """已发布（未群发通知）列表；返回 (items, total_count, error_json)。"""
+    token, err = get_access_token()
+    if err:
+        return [], 0, err
+    count = max(1, min(20, count))
+    url = f"{API_BASE}/freepublish/batchget"
+    data = _mp_post_json(
+        url,
+        params={"access_token": token},
+        payload={
+            "offset": offset,
+            "count": count,
+            "no_content": 1 if no_content else 0,
+        },
+    )
+    if data.get("errcode"):
+        return [], 0, data
+    items = list(data.get("item") or [])
+    total = int(data.get("total_count") or 0)
+    return items, total, None
+
+
+def get_product_card_info(
+    *,
+    product_id: str,
+    article_type: str = "news",
+    card_type: int = 1,
+    extra: dict[str, Any] | None = None,
+    cookie: str = "",
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    """返佣商品卡片：获取 product_key / DOM（文末 footer 用 product_key）。"""
+    token, err = get_access_token()
+    if err:
+        return {}, err
+    url = "https://api.weixin.qq.com/channels/ec/service/product/getcardinfo"
+    payload: dict[str, Any] = {
+        "product_id": str(product_id),
+        "article_type": article_type,
+        "card_type": card_type,
+    }
+    if extra:
+        payload.update(extra)
+    headers: dict[str, str] | None = None
+    ck = (cookie or _env("WECHAT_MP_DAIHUO_COOKIE")).strip()
+    if ck:
+        headers = {"Cookie": ck}
+    data = _mp_post_json(
+        url,
+        params={"access_token": token},
+        payload=payload,
+        headers=headers,
+    )
+    if data.get("errcode"):
+        return {}, data
+    return data, None
+
+
+def list_all_freepublish(*, max_items: int = 5000) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+    """分页拉取全部 freepublish 记录（默认最多 5000）。"""
+    all_items: list[dict[str, Any]] = []
+    offset = 0
+    total = 0
+    while offset < max_items:
+        chunk, total, err = freepublish_batchget(offset=offset, count=20, no_content=True)
+        if err:
+            return all_items, err
+        if not chunk:
+            break
+        all_items.extend(chunk)
+        offset += len(chunk)
+        if total and offset >= total:
+            break
+        if len(chunk) < 20:
+            break
+    return all_items, None
+
+
+def freepublish_delete(*, article_id: str, index: int = 0) -> dict[str, Any] | None:
+    """删除已发布文章（不可逆）。index=0 删除该 article_id 下全部图文。"""
+    token, err = get_access_token()
+    if err:
+        return err
+    url = f"{API_BASE}/freepublish/delete"
+    payload: dict[str, Any] = {"article_id": article_id}
+    if index:
+        payload["index"] = index
+    data = _mp_post_json(url, params={"access_token": token}, payload=payload)
+    if data.get("errcode"):
+        return data
+    return None
+
+
+def freepublish_first_title(item: dict[str, Any]) -> str:
+    content = item.get("content") or {}
+    news = content.get("news_item") or []
+    if news and isinstance(news[0], dict):
+        return normalize_draft_text(str(news[0].get("title") or ""))
+    return ""
+
+
+def batchget_material_news(
+    *,
+    offset: int = 0,
+    count: int = 20,
+) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+    """拉取永久图文素材列表（素材库 news）。"""
+    token, err = get_access_token()
+    if err:
+        return [], err
+    count = max(1, min(20, count))
+    url = f"{API_BASE}/material/batchget_material"
+    data = _mp_post_json(
+        url,
+        params={"access_token": token},
+        payload={"type": "news", "offset": offset, "count": count},
+    )
+    if data.get("errcode"):
+        return [], data
+    return list(data.get("item") or []), None
+
+
+def list_all_material_news(*, max_items: int = 5000) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+    """分页拉取全部 news 永久素材。"""
+    all_items: list[dict[str, Any]] = []
+    offset = 0
+    while offset < max_items:
+        chunk, err = batchget_material_news(offset=offset, count=20)
+        if err:
+            return all_items, err
+        if not chunk:
+            break
+        all_items.extend(chunk)
+        offset += len(chunk)
+        if len(chunk) < 20:
+            break
+    return all_items, None
+
+
+def material_news_first_title(item: dict[str, Any]) -> str:
+    content = item.get("content") or {}
+    news = content.get("news_item") or []
+    if news and isinstance(news[0], dict):
+        return normalize_draft_text(str(news[0].get("title") or ""))
+    return ""
+
+
+def get_material_count() -> tuple[dict[str, int], dict[str, Any] | None]:
+    """返回各类型永久素材数量，如 news_count / image_count。"""
+    token, err = get_access_token()
+    if err:
+        return {}, err
+    url = f"{API_BASE}/material/get_materialcount"
+    resp = _mp_session().get(url, params={"access_token": token}, timeout=30)
+    data = resp.json()
+    if data.get("errcode"):
+        return {}, data
+    counts = {k: int(v) for k, v in data.items() if k.endswith("_count")}
+    return counts, None

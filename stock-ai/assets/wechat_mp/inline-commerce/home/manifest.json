@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "vertical": "home",
+  "policy": "带货 home：贴近生活的厨房实拍感（有碗筷/调料/沥水架等日常物），禁空无一物的样板间/杂志棚拍；与 assets/wechat_mp/inline/ 财经图完全分离",
+  "width": 900,
+  "figures": [
+    {
+      "file": "01-compact-kitchen.jpg",
+      "source": "unsplash",
+      "unsplash_photo": "1649954596857-1e8c87d53ae3",
+      "unsplash_page": "https://unsplash.com/photos/x1JoLTIBeuU",
+      "tags": ["home", "kitchen", "commerce", "lived-in"],
+      "caption": "水槽边日常杂物：沥水架、清洁瓶、杯子都挤在一块",
+      "verified": "2026-06-03"
+    },
+    {
+      "file": "02-small-kitchen.jpg",
+      "source": "pexels",
+      "pexels_id": 9462223,
+      "tags": ["home", "kitchen", "commerce", "lived-in"],
+      "caption": "洗完的碗盘竖插沥水架，小户型常见场景",
+      "verified": "2026-06-03"
+    },
+    {
+      "file": "03-counter.jpg",
+      "source": "pexels",
+      "pexels_id": 4108718,
+      "tags": ["home", "kitchen", "commerce", "lived-in"],
+      "caption": "台面上待收的碗碟和杯具，买收纳前先看清占地",
+      "verified": "2026-06-03"
+    }
+  ]
+}

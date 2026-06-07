@@ -1,5 +1,7 @@
 # 东财掘金仿真量化 — 运维手册（PLAYBOOK）
 
+> **2026-06-02 下线**：`EMQUANT_ENABLED=0`，见 [OFFLINE.md](../OFFLINE.md)。下文保留备查。
+
 > 子项目：`emquant-sim/` · 与 `stock-ai` **隔离运行**，只读执行卡。  
 > 策略 ID 示例：`5aa6af16-5da8-11f1-996b-001c42c700fc`（以 `.env.emquant` 为准）
 
@@ -30,7 +32,7 @@ flowchart TB
 | 维度 | stock-ai | emquant-sim / Win11 |
 |------|----------|---------------------|
 | 执行卡 | 权威来源、改卡、同步 MySQL/微信 | **只读**导出 `rules.json` |
-| 持仓 | 券商 jywg / `portfolio_positions` | **仅仿真户** `get_position()` |
+| 持仓 | **东方财富证券** / `portfolio_positions` | **仅仿真户** `get_position()` |
 | 减仓/止损 `holdings_rules` | 监控提醒（全卡标的） | **仅仿真持仓 ≥100 股** 才判+下单 |
 | P-买 `buy_triggers` | 文档纪律 | 仿真可空仓触发（如皖能） |
 | 综合选股 | `stock_selection_combined` 脚本 | `combined_selection_gm`（09:35 等） |

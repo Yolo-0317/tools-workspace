@@ -1,5 +1,6 @@
 import type { Router } from 'vue-router'
 import { getHubAuth, initHubAuth, isAuthenticated } from '../auth/hubAuth'
+import { NEWS_ENABLED } from '../config/features'
 import {
   defaultHomePath,
   defaultSelectionPath,
@@ -11,8 +12,8 @@ import {
 
 const SHARE_PATHS = new Set(['/selection', '/m/selection'])
 
-/** 未登录可访问（与 backend PUBLIC_API_PREFIXES 对应） */
-const PUBLIC_PATHS = new Set(['/news', '/m/news'])
+/** 未登录可访问（与 backend public_api_prefixes 对应） */
+const PUBLIC_PATHS = NEWS_ENABLED ? new Set(['/news', '/m/news']) : new Set<string>()
 
 const CHUNK_RELOAD_KEY = 'hub-chunk-reload-once'
 
@@ -42,6 +43,10 @@ export function setupRouterGuards(router: Router) {
   router.beforeEach(async (to) => {
     const mobileViewport = isMobileViewport()
     const mobileRoute = isMobileRoutePath(to.path)
+
+    if (!NEWS_ENABLED && (to.path === '/news' || to.path === '/m/news')) {
+      return { path: defaultHomePath(mobileViewport), replace: true }
+    }
 
     if (to.meta.public) {
       if (to.path === '/login' && isAuthenticated()) {

@@ -25,6 +25,8 @@ from _bootstrap import ensure_repo_root_on_path
 ensure_repo_root_on_path()
 load_dotenv()
 
+from stock_ai.market_codes import is_sh_sz_a_share
+
 # ============================================
 # 技术面参数（筑底 + 放量突破）
 # ============================================
@@ -85,6 +87,8 @@ def select_technical_candidates(df_all: pd.DataFrame) -> pd.DataFrame:
     rows: List[Dict[str, Any]] = []
 
     for ts_code, group in df_all.groupby("ts_code"):
+        if not is_sh_sz_a_share(str(ts_code)):
+            continue
         group = group.sort_values("trade_date")
         if len(group) < 130:
             continue

@@ -19,6 +19,8 @@ from scripts.tools.wechat_mp_dragons_article import (
     _save_sop_cache,
     _template_trader_body,
     generate_dragons_trader_body,
+    sanitize_dragons_public_text,
+    strip_dragon_title_echo,
 )
 
 
@@ -78,9 +80,36 @@ def test_template_has_trader_sections() -> None:
         td_s="2026-06-02",
         slot_label="eod",
     )
-    assert "二、龙头拆解" in body
+    assert "> 龙头拆解" in body
     assert "地位：" in body
     assert "博弈：" in body
+    assert "/7" not in body
+    assert "系统筛选用分" not in body
+    assert "内部认可" not in body
+
+
+def test_strip_dragon_title_echo_removes_title_line() -> None:
+    title = "情绪发酵怎么玩？大有能源5板还在榜"
+    body = (
+        f"{title}\n"
+        "> 情绪与盘面\n"
+        "数据日 2026-06-05（eod）\n"
+        "· 情绪阶段：发酵"
+    )
+    out = strip_dragon_title_echo(body, title=title)
+    assert title not in out
+    assert out.startswith("> 情绪与盘面")
+    assert "数据日 2026-06-05" in out
+
+
+def test_sanitize_dragons_strips_internal_approval_wording() -> None:
+    raw = "龙头确认 7/7 内部是认可的，值得推荐买入。"
+    out = sanitize_dragons_public_text(raw)
+    assert "内部认可" not in out
+    assert "龙头确认" not in out
+    assert "/7" not in out
+    assert "系统筛选用分" not in out
+    assert "推荐" not in out
 
 
 @patch("scripts.tools.wechat_mp_dragons_article.is_llm_configured", return_value=False)
@@ -88,8 +117,8 @@ def test_template_has_trader_sections() -> None:
 def test_generate_without_llm(mock_sop, _mock_llm) -> None:
     mock_sop.return_value = []
     body = generate_dragons_trader_body(_sample_bundle(), checklist_slot="eod")
-    assert "一、情绪与盘面" in body
-    assert "四、明日计划与纪律" in body
+    assert "> 情绪与盘面" in body
+    assert "> 明日计划与纪律" in body
 
 
 def test_sop_cache_isolated_from_top5_preliminary() -> None:

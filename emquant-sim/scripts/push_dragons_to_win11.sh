@@ -2,8 +2,12 @@
 # 仅推送 dragons.json 到 Win11 掘金策略目录（intraday 每 5min 调用）
 set -euo pipefail
 
-VM_NAME="${EMQUANT_VM_NAME:-Windows 11}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# shellcheck disable=SC1091
+source "$ROOT/scripts/_offline_guard.sh"
+emquant_require_enabled || exit 0
+
+VM_NAME="${EMQUANT_VM_NAME:-Windows 11}"
 DRAGONS="${EMQUANT_DRAGONS:-$ROOT/output/emquant/dragons.json}"
 ENV_FILE="${EMQUANT_ENV:-$ROOT/.env.emquant}"
 PY="C:\\Program Files\\Python312-x64\\python.exe"

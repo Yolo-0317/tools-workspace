@@ -136,8 +136,20 @@ def execution_card_buys_from_selection(
 ) -> list[dict[str, str]]:
     """
     执行卡试探买入：从当日选股列表挑候选（按分数，去重，排除已持仓）。
-    减仓提示仍读 md P1。
+    减仓提示仍读 md P1。投顾阶段 0 仅返回减仓提示。
     """
+    try:
+        from stock_ai.advisor_selection import execution_card_probe_enabled
+
+        if not execution_card_probe_enabled():
+            trim = load_execution_card_trim_hints()
+            return [
+                {**meta, "code": code, "kind": "trim"}
+                for code, meta in trim.items()
+            ]
+    except ImportError:
+        pass
+
     holdings = {_code6(c) for c in (holding_codes or [])}
     md_probe = load_execution_card_probe_buys()
     best_by_code: dict[str, dict[str, Any]] = {}
@@ -173,10 +185,17 @@ def execution_card_buys_from_selection(
 
 def execution_card_buys_payload() -> list[dict[str, str]]:
     """Home Hub / API：当前执行卡可试探买入与减仓提示（读持仓执行卡.md）。"""
-    probe = load_execution_card_probe_buys()
     trim = load_execution_card_trim_hints()
-    buys = [{**meta, "code": code, "kind": "probe_buy"} for code, meta in probe.items()]
     trims = [{**meta, "code": code, "kind": "trim"} for code, meta in trim.items()]
+    try:
+        from stock_ai.advisor_selection import execution_card_probe_enabled
+
+        if not execution_card_probe_enabled():
+            return trims
+    except ImportError:
+        pass
+    probe = load_execution_card_probe_buys()
+    buys = [{**meta, "code": code, "kind": "probe_buy"} for code, meta in probe.items()]
     return buys + trims
 
 
@@ -191,10 +210,18 @@ def apply_execution_card_b_tier(
 ) -> int:
     """
     B 档（60%～75%）：执行卡 P-买1/买2 在池内且未禁追高 → 建议动作升为「小仓埋伏」。
-    返回被提升的条数。
+    返回被提升的条数。投顾阶段 0 跳过（由投顾主策略禁止新开）。
     """
     if buy_actions is None:
         buy_actions = frozenset({"强势关注", "观察买入", "小仓埋伏"})
+
+    try:
+        from stock_ai.advisor_selection import execution_card_probe_enabled
+
+        if not execution_card_probe_enabled():
+            return 0
+    except ImportError:
+        pass
 
     if not (probe_only_pct < account_position_pct <= no_buy_pct):
         return 0
@@ -308,7 +335,18 @@ def ensure_card_probe_in_watch(
         close = float(bar.get("close") or 0)
         amount_wan = float(bar.get("amount_wan") or 0)
         action = "继续观察"
-        if 60.0 < account_position_pct <= 75.0 and pct <= chase_pct_max:
+        probe_ok = True
+        try:
+            from stock_ai.advisor_selection import execution_card_probe_enabled
+
+            probe_ok = execution_card_probe_enabled()
+        except ImportError:
+            pass
+        if (
+            probe_ok
+            and 60.0 < account_position_pct <= 75.0
+            and pct <= chase_pct_max
+        ):
             action = "小仓埋伏"
         row: dict[str, Any] = {
             "代码": code,

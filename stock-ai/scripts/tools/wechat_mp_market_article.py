@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""公众号宏观稿：盘面行情 + 扩充快讯 + 研究员体例（不依赖 briefing 最后一版 AI）。"""
+"""公众号 A 股盘面稿：指数 + 外围 + 结构判断（要闻另开 news 槽位）。"""
 
 from __future__ import annotations
 
 import os
-from datetime import date, datetime
-from typing import Any
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from scripts._bootstrap import ensure_repo_root_on_path
@@ -13,14 +12,15 @@ from scripts._bootstrap import ensure_repo_root_on_path
 ensure_repo_root_on_path()
 
 from scripts.tools.deepseek_client import call_deepseek, is_llm_configured
-from scripts.tools.wechat_mp_public import PUBLIC_MP_WRITER_RULE
-from scripts.tools.fetch_eastmoney_macro_news import MacroNewsItem
+from scripts.tools.wechat_mp_public import PUBLIC_MP_WRITER_RULE, RESEARCHER_VOICE_RULE
+from scripts.tools.wechat_mp_monetization import monetization_prompt_block
 from scripts.tools.market_session import detect_market_session
-from scripts.tools.news_db import GEOPOLITICS_KEYWORDS, classify_category, list_news_items
-from scripts.tools.news_sentiment import sentiment_label
 
 TZ = ZoneInfo("Asia/Shanghai")
-WEEKDAY_CN = "一二三四五六日"
+
+SECTION_MARKET = "> 盘面速览"
+SECTION_GLOBAL = "> 外围与资金"
+SECTION_VIEW = "> 结构判断"
 
 
 def _env_int(name: str, default: int) -> int:
@@ -28,49 +28,6 @@ def _env_int(name: str, default: int) -> int:
         return int(os.getenv(name) or default)
     except ValueError:
         return default
-
-
-def _env_bool(name: str, default: bool = False) -> bool:
-    raw = os.getenv(name, "").strip().lower()
-    if not raw:
-        return default
-    return raw in {"1", "true", "yes", "on"}
-
-
-def _pick_geopolitics(items: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
-    picked: list[dict[str, Any]] = []
-    for it in items:
-        blob = f"{it.get('title', '')} {it.get('summary', '')}"
-        if any(kw in blob for kw in GEOPOLITICS_KEYWORDS):
-            picked.append(it)
-        if len(picked) >= limit:
-            break
-    return picked
-
-
-def _load_news_pool(*, hours: int, limit: int) -> list[dict[str, Any]]:
-    from scripts.tools.news_db import load_recent_news
-
-    today = datetime.now(TZ).date()
-    rows = list_news_items(day=today, limit=limit)
-    if len(rows) < limit // 2:
-        seen = {r.get("href") for r in rows}
-        for item in load_recent_news(hours=hours, limit=limit):
-            href = getattr(item, "href", "")
-            if href in seen:
-                continue
-            rows.append(
-                {
-                    "href": href,
-                    "title": item.title,
-                    "summary": item.summary or "",
-                    "news_time": item.time or "",
-                    "category": classify_category(item.title, item.summary),
-                    "sentiment": "neutral",
-                }
-            )
-            seen.add(href)
-    return rows[:limit]
 
 
 def _fetch_market_block(session) -> list[str]:
@@ -84,119 +41,129 @@ def _fetch_market_block(session) -> list[str]:
     lines.append("")
     lines.append("国际市场简况：")
     intl = fetch_international_markets()
-    lines.extend(intl[:6] if len(intl) > 6 else intl)
+    lines.extend(intl[:8] if len(intl) > 8 else intl)
     return lines
 
 
-def _format_news_lines(items: list[dict[str, Any]], *, limit: int) -> list[str]:
-    show_time = _env_bool("WECHAT_MP_NEWS_SHOW_TIME", False)
-    out: list[str] = []
-    for it in items[:limit]:
-        tag = sentiment_label(str(it.get("sentiment") or "neutral"))
-        t = (it.get("news_time") or "").strip()
-        title = (it.get("title") or "").strip()
-        summary = (it.get("summary") or "").strip()
-        if show_time and t:
-            head = f"{t} [{tag}] {title}"
-        else:
-            head = f"[{tag}] {title}"
-        out.append(head)
-        if summary and summary != title:
-            brief = summary if len(summary) <= 96 else summary[:96] + "…"
-            out.append(f"  {brief}")
-    return out or ["（暂无相关快讯）"]
+def build_market_context_blob(
+    *,
+    now: datetime | None = None,
+    edition: str | None = None,
+) -> str:
+    """组装给 LLM / 模板的盘面素材（不含快讯列表；快讯以素材块注入）。"""
+    from scripts.tools.wechat_mp_market_edition import (
+        build_market_news_context,
+        edition_label,
+        edition_writing_hint,
+        normalize_market_edition,
+    )
 
-
-def build_market_context_blob(*, now: datetime | None = None) -> tuple[str, str]:
-    """
-    组装给 LLM / 模板的原始素材。
-    返回 (full_blob, news_blob_for_title)。
-    """
     now = now or datetime.now(TZ)
+    ed = normalize_market_edition(edition)
     session = detect_market_session(now=now)
-    news_limit = _env_int("WECHAT_MP_MARKET_NEWS_LIMIT", 40)
-    hours = _env_int("WECHAT_MP_MARKET_NEWS_HOURS", 36)
-    geo_limit = _env_int("WECHAT_MP_MARKET_GEO_LIMIT", 8)
-    dom_limit = _env_int("WECHAT_MP_MARKET_DOMESTIC_LIMIT", 14)
-
-    pool = _load_news_pool(hours=hours, limit=news_limit)
-    geo = _pick_geopolitics(pool, geo_limit)
-    geo_hrefs = {x.get("href") for x in geo}
-    domestic = [x for x in pool if x.get("href") not in geo_hrefs][:dom_limit]
-
+    news_blob, _items = build_market_news_context(ed, now=now)
     parts = [
         f"写作时间：{now.strftime('%Y-%m-%d %H:%M')}（{session.ai_session_hint(now.strftime('%H:%M'))}）",
+        f"发稿时段：{edition_label(ed)}",
+        edition_writing_hint(ed),
         "",
         "【A股盘面数据】",
         *_fetch_market_block(session),
         "",
-        f"【地缘要闻 {len(geo)} 条】",
-        *_format_news_lines(geo, limit=geo_limit),
-        "",
-        f"【国内财经 {len(domestic)} 条】",
-        *_format_news_lines(domestic, limit=dom_limit),
+        news_blob,
     ]
-    blob = "\n".join(parts)
-    news_blob = "\n".join(_format_news_lines(geo + domestic, limit=12))
-    return blob, news_blob
+    return "\n".join(parts)
 
 
-def _template_market_body(*, now: datetime, session) -> str:
+def _index_lines_from_blob(blob: str) -> list[str]:
+    lines: list[str] = []
+    for block_line in blob.splitlines():
+        if block_line.startswith(
+            ("上证指数", "深证成指", "创业板指", "沪深300", "科创50", "全A涨跌")
+        ):
+            lines.append(block_line)
+    return lines or ["（指数数据获取失败，请稍后重试）"]
+
+
+def _template_market_body(*, now: datetime | None = None) -> str:
     """无 LLM 时的研究员体例模板。"""
-    blob, _ = build_market_context_blob(now=now)
+    now = now or datetime.now(TZ)
+    blob = build_market_context_blob(now=now)
     lines = [
-        "一、盘面一览",
+        SECTION_MARKET,
+        *_index_lines_from_blob(blob),
+        "",
+        "指数收红并不等同于普涨，需对照涨跌家数看结构：若上涨家数偏少，"
+        "往往意味着权重或少数主线在撑指数，操作上要更强调位置与纪律。",
+        "",
+        SECTION_GLOBAL,
+        "隔夜欧美市场波动不大，港股方向对 A 股情绪仍有传导；"
+        "若外围风险偏好抬升，北向与两融数据是否同步跟进，是验证逻辑的关键。",
+        "原油与汇率若有异动，则优先影响周期与出口链的预期，而非一刀切看多或看空。",
+        "",
+        SECTION_VIEW,
+        "我们认为，当前阶段仍宜「先看结构、再谈方向」：指数点位是结果，"
+        "涨跌家数、量能与主线持续性才是原因。",
+        "若指数与个股背离，短线更宜控节奏、减追高；若量能回升且梯队完整，"
+        "再讨论加仓或扩面。向后看，外围变量与政策预期仍可能扰动节奏。",
     ]
-    for block_line in blob.splitlines():
-        if block_line.startswith(("上证指数", "深证成指", "创业板指", "沪深300", "科创50", "全A涨跌")):
-            lines.append(block_line)
-    lines.extend(["", "二、外围与资金", "（详见国际市场简况，数据见上）", "", "三、要闻精选"])
-    in_news = False
-    for block_line in blob.splitlines():
-        if block_line.startswith("【地缘") or block_line.startswith("【国内"):
-            in_news = True
-            lines.append("")
-            lines.append(block_line.replace("【", "").replace("】", ""))
-            continue
-        if in_news and block_line.strip() and not block_line.startswith("【"):
-            lines.append(block_line)
-    lines.extend(
-        [
-            "",
-            "四、观点与推演",
-            "我们认为，盘面与要闻需放在同一框架下理解：指数涨跌反映风险偏好，",
-            "地缘与政策变量则决定结构性强弱。短期宜先确认量能与涨跌家数是否共振，",
-            "再讨论行业机会；以上仅为市场观察，不构成投资建议。",
-        ]
-    )
     return "\n".join(lines)
 
 
-def generate_researcher_market_body(*, now: datetime | None = None) -> str:
-    """资深研究员口吻正文（盘面 + 扩充快讯 + 四段式）。"""
+def generate_researcher_market_body(
+    *,
+    now: datetime | None = None,
+    edition: str | None = None,
+) -> str:
+    """资深研究员口吻正文（盘面 + 外围 + 结构判断；快讯融入评论，不列清单）。"""
+    from scripts.tools.wechat_mp_market_edition import (
+        edition_writing_hint,
+        normalize_market_edition,
+    )
+
     now = now or datetime.now(TZ)
-    session = detect_market_session(now=now)
-    context, _ = build_market_context_blob(now=now)
+    ed = normalize_market_edition(edition)
+    context = build_market_context_blob(now=now, edition=ed)
 
     if not is_llm_configured():
-        return _template_market_body(now=now, session=session)
+        return _template_market_body(now=now)
 
-    prompt = f"""你是一位从业15年的A股宏观策略研究员，为公众号撰写「盘后札记」。
+    view_min = _env_int("WECHAT_MP_MARKET_VIEW_MIN", 380)
+    view_max = _env_int("WECHAT_MP_MARKET_VIEW_MAX", 520)
+
+    prompt = f"""你是一位从业15年的A股宏观策略研究员，为公众号撰写「A股评论稿」。
 {PUBLIC_MP_WRITER_RULE}
+{RESEARCHER_VOICE_RULE}
 
 {context}
 
 ## 写作要求
-1. 全文四节，直接从「一、盘面一览」起笔，不要写「研究员札记 |」等抬头行
-   一、盘面一览
-   二、外围与资金
-   三、要闻精选
-   四、观点与推演
-2. 「一、盘面一览」必须逐条写出上下文中的主要指数、涨跌幅与全A涨跌家数（有则写，无则说明获取失败）
-3. 「三、要闻精选」分「地缘」与「国内」两段，合计至少12条，每条格式：[利好/利空/中性] 标题（不要写具体钟点，札记开头已有日期）；下一行可有一句摘要
-4. 「四、观点与推演」250-400字：先给1-2句总判断，再拆2-3条逻辑链；可用「我们认为」「值得关注的是」「向后看」；避免喊单与具体价位
+0. **结论先行**：在 `{SECTION_MARKET}` 之前，先写 2 句（40-80字），含主要指数涨跌幅数字 + 结构判断（如指数与个股是否共振）；然后再写三节标题。若遗漏，成稿流水线会自动从「盘面速览」提炼。
+1. 全文三节，节标题必须逐字使用以下三行（不要用「一、二、三」或数字序号）：
+   {SECTION_MARKET}
+   {SECTION_GLOBAL}
+   {SECTION_VIEW}
+2. 「盘面速览」180-260字：
+   - 先逐条写出主要指数涨跌幅与全A涨跌家数（有则写，无则说明获取失败）
+   - 再写 2-3 句结构解读：指数与个股是否共振、权重/中小盘谁更强、对下一交易节奏的含义
+3. 「外围与资金」240-340字：
+   - 概括上下文中的国际市场简况（美股/港股/原油等，有则写）
+   - **将「财经快讯素材」中的宏观/产业要点自然融入**，写清事件→传导→对A股风险偏好或板块的影响
+   - 说明对 A 股风险偏好、北向/两融预期的可能影响
+   - 点 1 个需跟踪的验证指标（如美债收益率、油价、恒生科技等）
+4. 「结构判断」{view_min}-{view_max}字：
+   - 首段 1-2 句总判断（偏多/偏空/结构分化）
+   - 中间拆 3 条逻辑链，每条含「现象 → 机制 → 板块映射」；**至少 1 条须承接快讯素材中的主线**
+   - **「我们认为」「值得关注的是」「向后看」须各起一段**：段首单独成行，段与段之间空一行（勿挤在同一段）
+   - 末段用「向后看」给 1-2 个观察点
+   - 避免喊单、具体价位、个股推荐
 5. 禁止 emoji、禁止【AI综合解读】、禁止 markdown 加粗与表格
-6. 只使用上下文出现的事实，勿编造数据"""
+6. 只使用上下文出现的事实，勿编造数据
+6b. **移动端排版**：普通段落每段约 120 字内，超长须在句号处拆段；若用 `1. 2. 3.` 列表则每项单独一行
+7. **禁止**编号列出快讯（不要「1. 2. 3.」、不要「今日要闻如下」「据快讯」）；读者应读到连贯评论而非新闻清单
+8. **禁止**在正文写「免责声明」、括号免责、不构成投资建议等收尾句（文末由排版统一追加）
+8. 时段要求：{edition_writing_hint(ed)}
+{monetization_prompt_block("market")}"""
 
     try:
         content = call_deepseek(
@@ -206,14 +173,14 @@ def generate_researcher_market_body(*, now: datetime | None = None) -> str:
                     "content": (
                         "你是资深A股宏观研究员，文风冷静、有框架感，"
                         "像给不特定读者的公开盘后简报，而不是聊天机器人或作者日记。"
-                        "禁止涉及作者个人持仓与账户。"
+                        "禁止涉及作者个人持仓与账户。正文要够厚，避免一句带过。"
                     ),
                 },
                 {"role": "user", "content": prompt},
             ],
-            max_tokens=2200,
+            max_tokens=_env_int("WECHAT_MP_MARKET_MAX_TOKENS", 3200),
         )
         return content.strip()
     except Exception as exc:  # noqa: BLE001
-        body = _template_market_body(now=now, session=session)
+        body = _template_market_body(now=now)
         return f"{body}\n\n（研究员点评生成失败：{exc}，以上为模板正文）"

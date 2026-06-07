@@ -1,0 +1,3 @@
+samples/
+manifests/*.json
+.venv/

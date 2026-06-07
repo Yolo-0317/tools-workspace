@@ -1,16 +1,20 @@
-"""公众号日更正文：宏观 / Top5 / 龙头 / 工作区技术分享。"""
+"""公众号日更正文：宏观盘面 / 要闻精选 / Top5 / 龙头 / 工作区技术分享。"""
 
 from __future__ import annotations
 
+import json
 import os
 import re
 from datetime import date, datetime
+from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
 from scripts._bootstrap import ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
+
+from scripts.tools.wechat_mp_client import ROOT
 
 from scripts.tools.news_ai_interpret import sanitize_public_ai_summary
 from scripts.tools.portfolio_db import load_emotion_cycle_checklist
@@ -22,9 +26,17 @@ TZ = ZoneInfo("Asia/Shanghai")
 TITLE_MAX = 32
 WEEKDAY_CN = "一二三四五六日"
 DISCLAIMER = (
-    "本文为作者个人投资日记与信息整理，不构成投资建议。"
-    "市场有风险，决策自负。"
+    "本文为作者个人投资日记与信息整理，不构成投资建议；市场有风险，决策自负。"
 )
+TECH_DISCLAIMER = "本文为作者个人工程笔记，仅供学习交流。"
+TECH_DRAFT_KINDS = frozenset({"workspace", "temp", "tech", "lab", "dev"})
+
+
+def disclaimer_for_kind(kind: str | None) -> str:
+    """行情稿用投资免责；技术分享（workspace/temp）用工程笔记说明。"""
+    if (kind or "").strip().lower() in TECH_DRAFT_KINDS:
+        return TECH_DISCLAIMER
+    return DISCLAIMER
 
 
 def _clip_wechat_title(text: str, *, max_len: int = TITLE_MAX) -> str:
@@ -56,16 +68,21 @@ def _weekday_cn(d: date) -> str:
     return f"周{WEEKDAY_CN[d.weekday()]}"
 
 
-def _session_label(slot: str) -> str:
+def _market_publish_label(*, edition: str | None = None) -> str:
+    from scripts.tools.wechat_mp_market_edition import edition_label, normalize_market_edition
+
     try:
-        hour = int(str(slot).split(":")[0])
+        return edition_label(normalize_market_edition(edition))
     except ValueError:
-        return "复盘"
-    if hour >= 15:
         return "收盘"
-    if hour >= 11:
-        return "午间"
-    return "盘中"
+
+
+_MARKET_TITLE_BANNED = ()  # 分时段发稿后按 edition 生成标题，不再一律替换为「收盘」
+
+
+def _sanitize_market_title(text: str, *, edition: str | None = None) -> str:
+    del edition
+    return (text or "").strip()
 
 
 def _extract_market_hook(ai: str, *, max_len: int = 14) -> str:
@@ -128,20 +145,67 @@ def _extract_market_hook(ai: str, *, max_len: int = 14) -> str:
     return hook
 
 
-def _compress_market_tags(ai: str) -> str:
-    """标题用短标签（更易做引流句）。"""
+def _compress_market_tags(ai: str, *, edition: str | None = None) -> str:
+    """标题用短标签；优先多源挖掘当日热门行业（wechat_mp_hot_theme）。"""
+    from scripts.tools.wechat_mp_market_edition import normalize_market_edition
+
     blob = ai
-    pairs = (
-        ("霍尔木兹", "霍尔木兹"),
-        ("中东", "中东局势"),
-        ("原油", "油价"),
-        ("服务业", "服务业"),
-        ("半导体", "半导体"),
-        ("华为", "华为链"),
-        ("山东", "山东政策"),
-        ("涨停", "涨停潮"),
-        ("跌停", "亏钱效应"),
-    )
+    try:
+        ed = normalize_market_edition(edition) if edition else "close"
+    except ValueError:
+        ed = "close"
+
+    if os.getenv("WECHAT_MP_HOT_THEME", "1").strip() not in {"0", "false", "no"}:
+        try:
+            from scripts.tools.wechat_mp_hot_theme import discover_hot_themes, format_title_tags
+
+            report = discover_hot_themes(
+                edition=ed,
+                draft_blob=blob,
+                include_opencli=os.getenv("WECHAT_MP_HOT_THEME_OPENCLI", "0").strip()
+                in {"1", "true", "yes"},
+            )
+            tags = format_title_tags(report, max_len=12)
+            if tags and tags != "盘面结构":
+                return tags
+        except Exception:
+            pass
+
+    if ed == "pre":
+        pairs = (
+            ("A50", "A50偏弱"),
+            ("富时中国", "A50期货"),
+            ("煤化工", "煤化工"),
+            ("MLCC", "MLCC缺口"),
+            ("日经", "日股强势"),
+            ("商业航天", "航天IPO"),
+            ("创业板", "创业板"),
+            ("开盘", "开盘结构"),
+            ("原油", "油价脉冲"),
+            ("半导体", "半导体"),
+        )
+    elif ed == "midday":
+        pairs = (
+            ("上午", "上午主线"),
+            ("半日", "半日结构"),
+            ("涨停", "涨停梯队"),
+            ("情绪", "情绪"),
+            ("半导体", "半导体"),
+            ("原油", "油价"),
+            ("主线", "主线"),
+        )
+    else:
+        pairs = (
+            ("霍尔木兹", "霍尔木兹"),
+            ("中东", "中东局势"),
+            ("原油", "油价"),
+            ("服务业", "服务业"),
+            ("半导体", "半导体"),
+            ("华为", "华为链"),
+            ("山东", "山东政策"),
+            ("涨停", "涨停潮"),
+            ("跌停", "亏钱效应"),
+        )
     tags: list[str] = []
     for kw, label in pairs:
         if kw in blob and label not in tags:
@@ -153,45 +217,304 @@ def _compress_market_tags(ai: str) -> str:
     return _extract_market_hook(ai, max_len=10)
 
 
-def _pick_clickbait_title(options: list[str]) -> str:
-    """优先选用带悬念、且不超过 32 字的标题。"""
-    ranked = sorted(
-        options,
-        key=lambda t: (
-            ("？" in t or "?" in t or "！" in t),
-            "必读" in t or "别漏" in t or "先看" in t,
-            -len(t),
+_MARKET_TITLE_LOG = ROOT / "data" / "wechat_mp_market_title_log.json"
+
+
+def _load_last_market_title(edition: str) -> str | None:
+    """读取最近一次指定时段 market 标题（用于盘前避开昨日盘后钩子）。"""
+    if not _MARKET_TITLE_LOG.is_file():
+        return None
+    try:
+        data = json.loads(_MARKET_TITLE_LOG.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    if not isinstance(data, dict):
+        return None
+    # 优先同日 close；否则最近一条 close
+    today = datetime.now(TZ).date().isoformat()
+    if edition == "close":
+        row = data.get(today) if isinstance(data.get(today), dict) else None
+        if row and row.get("close"):
+            return str(row["close"])
+    best: str | None = None
+    for day_key in sorted(data.keys(), reverse=True):
+        row = data.get(day_key)
+        if isinstance(row, dict) and row.get(edition):
+            best = str(row[edition])
+            break
+    return best
+
+
+MARKET_BODY_CACHE = ROOT / "data" / "wechat_mp_market_body_cache.json"
+
+
+def _save_market_body_cache(
+    *,
+    edition: str,
+    body_text: str,
+    title: str,
+    digest: str,
+) -> None:
+    MARKET_BODY_CACHE.parent.mkdir(parents=True, exist_ok=True)
+    MARKET_BODY_CACHE.write_text(
+        json.dumps(
+            {
+                "edition": edition,
+                "title": title,
+                "digest": digest,
+                "body_text": body_text,
+                "saved_at": datetime.now(TZ).isoformat(timespec="seconds"),
+            },
+            ensure_ascii=False,
+            indent=2,
         ),
-        reverse=True,
+        encoding="utf-8",
     )
+
+
+def load_market_body_cache() -> dict[str, Any] | None:
+    if not MARKET_BODY_CACHE.is_file():
+        return None
+    try:
+        data = json.loads(MARKET_BODY_CACHE.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    return data if isinstance(data, dict) and data.get("body_text") else None
+
+
+def _record_market_title(*, edition: str, title: str) -> None:
+    day = datetime.now(TZ).date().isoformat()
+    data: dict[str, Any] = {}
+    if _MARKET_TITLE_LOG.is_file():
+        try:
+            raw = json.loads(_MARKET_TITLE_LOG.read_text(encoding="utf-8"))
+            if isinstance(raw, dict):
+                data = raw
+        except Exception:
+            pass
+    row = data.get(day) if isinstance(data.get(day), dict) else {}
+    row[str(edition)] = title[:32]
+    data[day] = row
+    _MARKET_TITLE_LOG.parent.mkdir(parents=True, exist_ok=True)
+    _MARKET_TITLE_LOG.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _pick_clickbait_title(
+    options: list[str],
+    *,
+    peer_title: str | None = None,
+    kind: str | None = None,
+    edition: str | None = None,
+) -> str:
+    """优先选用带悬念、且不超过 32 字的标题；可与配对稿标题去重。"""
+    from scripts.tools.wechat_mp_seo import title_search_rank_key
+
+    def _rank(t: str) -> tuple:
+        seo = title_search_rank_key(t, kind, edition=edition) if kind else (False, False, False, 0)
+        return (
+            seo,
+            ("？" in t or "?" in t or "！" in t),
+            "必读" in t or "先看" in t,
+            -len(t),
+        )
+
+    ranked = sorted(options, key=_rank, reverse=True)
     for text in ranked:
         clipped = _clip_wechat_title(text)
+        if peer_title and _titles_too_similar(clipped, peer_title):
+            continue
         if 10 <= len(clipped) <= TITLE_MAX:
             return clipped
-    return _clip_wechat_title(options[0])
+    for text in reversed(ranked):
+        clipped = _clip_wechat_title(text)
+        if not peer_title or not _titles_too_similar(clipped, peer_title):
+            return clipped
+    return _clip_wechat_title(ranked[0])
 
 
-def _market_title(ai: str, *, now: datetime, slot: str) -> str:
-    tags = _compress_market_tags(ai)
+_TITLE_COMPARE_DROP = (
+    "收盘",
+    "今晚",
+    "别漏看",
+    "必读",
+    "10条",
+    "要闻",
+    "快讯",
+    "复盘",
+    "A股",
+    "盘后",
+    "逐条",
+    "改写盘面",
+    "怎么影响盘面",
+    "7×24",
+    "精选",
+    "宏观",
+)
+
+
+def _title_compare_key(text: str) -> str:
+    s = re.sub(r"[？！?｜，。、：\s]", "", (text or "").strip())
+    for w in _TITLE_COMPARE_DROP:
+        s = s.replace(w, "")
+    return s
+
+
+def _titles_too_similar(a: str, b: str) -> bool:
+    """market / news 同日标题勿共用同一钩子或高度雷同。"""
+    ka, kb = _title_compare_key(a), _title_compare_key(b)
+    if not ka or not kb:
+        return False
+    if ka == kb:
+        return True
+    shorter, longer = (ka, kb) if len(ka) <= len(kb) else (kb, ka)
+    if len(shorter) >= 4 and shorter in longer:
+        return True
+    if len(shorter) >= 6 and len(longer) >= 6:
+        overlap = sum(1 for i in range(len(shorter) - 2) if shorter[i : i + 3] in longer)
+        if overlap / max(len(shorter) - 2, 1) >= 0.55:
+            return True
+    return False
+
+
+def _market_title(
+    ai: str,
+    *,
+    now: datetime,
+    slot: str = "",
+    peer_title: str | None = None,
+    edition: str | None = None,
+) -> str:
+    from scripts.tools.wechat_mp_market_edition import normalize_market_edition
+    from scripts.tools.wechat_mp_market_titles import (
+        build_market_title_options,
+        load_recent_market_titles,
+        pick_rotated_market_title,
+    )
+
+    ed = normalize_market_edition(edition)
+    tags = _compress_market_tags(ai, edition=ed)
     wd = _weekday_cn(now.date())
-    sess = _session_label(slot)
-    return _pick_clickbait_title(
-        [
-            f"{wd}{sess}必读｜{tags}，明天怎么跟？",
-            f"收盘别漏看！{tags}正在改写盘面？",
-            f"{wd}盘后一文｜{tags}，机会藏哪？",
-            f"A股{sess}复盘：{tags}，一文捋清",
-        ]
+    options = build_market_title_options(ed, wd=wd, tags=tags)
+    recent = load_recent_market_titles(ed, log_path=_MARKET_TITLE_LOG, today=now.date())
+    from scripts.tools.wechat_mp_seo import enrich_title_for_search
+
+    raw = pick_rotated_market_title(
+        options,
+        now=now,
+        edition=ed,
+        peer_title=peer_title,
+        recent_titles=recent,
+        clip_fn=_clip_wechat_title,
+        too_similar_fn=_titles_too_similar,
+    )
+    return _sanitize_market_title(
+        enrich_title_for_search(
+            raw,
+            "market",
+            edition=ed,
+            clip_fn=_clip_wechat_title,
+        ),
+        edition=edition,
     )
 
 
-def _market_digest(ai: str, *, now: datetime, slot: str) -> str:
-    tags = _compress_market_tags(ai)
-    return (
-        f"【{now.strftime('%m-%d')} {_session_label(slot)}】{tags}——"
-        "地缘、政策与板块节奏，3分钟读完今日盘面逻辑。"
-        "个人日记，非荐股。"
-    )[:128]
+def _market_digest(
+    ai: str,
+    *,
+    now: datetime,
+    slot: str = "",
+    edition: str | None = None,
+) -> str:
+    del slot
+    from scripts.tools.wechat_mp_seo import enrich_digest
+
+    tags = _compress_market_tags(ai, edition=edition)
+    label = _market_publish_label(edition=edition)
+    base = (
+        f"【{now.strftime('%m-%d')} {label}】{tags}——"
+        "指数、外围与结构判断；3分钟读完盘面逻辑。个人观察，非荐股。"
+    )
+    return enrich_digest(base, "market", edition=edition)
+
+
+def _news_title(
+    items: list[dict[str, Any]],
+    *,
+    now: datetime,
+    peer_title: str | None = None,
+) -> str:
+    blob = " ".join(str(it.get("title") or "") for it in items[:3])
+    hook = _extract_market_hook(blob, max_len=12)
+    hook_alt = _extract_market_hook(
+        " ".join(str(it.get("title") or "") for it in items[1:4]),
+        max_len=12,
+    )
+    wd = _weekday_cn(now.date())
+    from scripts.tools.wechat_mp_seo import enrich_title_for_search
+
+    from scripts.tools.wechat_mp_news_article import is_weekend_news_mode, news_pick_params
+
+    top_n, _, _, _ = news_pick_params()
+    n_label = str(top_n)
+    if is_weekend_news_mode():
+        pools = [
+            [
+                f"周末A股{n_label}条要闻｜{hook}与个股映射",
+                f"周末财经快讯{n_label}条：{hook}怎么读？",
+                f"A股周末要闻｜{hook}等{n_label}条精选",
+                f"周末必读？{hook}与上市公司动态",
+            ],
+            [
+                f"周末7×24精选｜{hook_alt or hook}逐条拆",
+                f"A股周末{n_label}条｜{hook_alt or hook}有何影响？",
+            ],
+        ]
+    else:
+        pools = [
+            [
+                f"A股{wd}{n_label}条快讯｜{hook}逐条拆",
+                f"A股快讯精选{n_label}条：{hook}有何影响？",
+                f"A股财经快讯｜{hook}等{n_label}条",
+                f"A股要闻必读？{hook}与板块映射",
+            ],
+            [
+                f"A股快讯逐条点评｜{hook_alt or hook}",
+                f"{wd}A股7×24｜{hook_alt or hook}，每条AI点评",
+                f"A股快讯Top{n_label}：{hook_alt or hook}怎么读？",
+            ],
+        ]
+    for options in pools:
+        title = _pick_clickbait_title(
+            options,
+            peer_title=peer_title,
+            kind="news",
+        )
+        if not peer_title or not _titles_too_similar(title, peer_title):
+            return enrich_title_for_search(title, "news", clip_fn=_clip_wechat_title)
+    title = _pick_clickbait_title(pools[-1], peer_title=None, kind="news")
+    return enrich_title_for_search(title, "news", clip_fn=_clip_wechat_title)
+
+
+def _news_digest(items: list[dict[str, Any]], *, now: datetime) -> str:
+    from scripts.tools.wechat_mp_seo import enrich_digest
+    from scripts.tools.wechat_mp_news_article import is_weekend_news_mode, news_pick_params
+
+    hook = _extract_market_hook(
+        " ".join(str(it.get("title") or "") for it in items[:2]),
+        max_len=14,
+    )
+    top_n, _, hours, _ = news_pick_params()
+    if is_weekend_news_mode():
+        base = (
+            f"【周末 {now.strftime('%m-%d')}】近{hours}h精选{top_n}条，"
+            f"个股与公司优先，主线 {hook}。信息整理，非荐股。"
+        )
+    else:
+        base = (
+            f"【{now.strftime('%m-%d')} 要闻】Top{top_n} 快讯，"
+            f"主线 {hook}，每条附 AI 点评。信息整理，非荐股。"
+        )
+    return enrich_digest(base, "news")
 
 
 def _top5_title(picks: list[Any], *, trade_date: date) -> str:
@@ -199,34 +522,39 @@ def _top5_title(picks: list[Any], *, trade_date: date) -> str:
     names = [n for n in names if n and not n.isdigit()]
     n = len(names) or len(picks)
     wd = _weekday_cn(trade_date)
-    if len(names) >= 2:
-        a, b = names[0], names[1]
-        return _pick_clickbait_title(
-            [
-                f"{a}领衔{n}只！收盘信号出炉，明日盯啥？",
-                f"刚筛出{n}只｜{a}、{b}，明天怎么走？",
-                f"{wd}盘后值得看：{a}等{n}只技术信号",
-            ]
-        )
+    from scripts.tools.wechat_mp_seo import enrich_title_for_search
+
     if names:
-        return _pick_clickbait_title(
+        lead = names[0]
+        if n >= 2:
+            raw = _clip_wechat_title(f"{lead}领衔{n}只！收盘信号出炉，明日盯啥？")
+            return enrich_title_for_search(raw, "top5", clip_fn=_clip_wechat_title)
+        title = _pick_clickbait_title(
             [
-                f"{names[0]}收盘出信号！明日重点就看它？",
-                f"{wd}甄选1只｜{names[0]}，逻辑一次说透",
-            ]
+                f"{lead}领衔1只！收盘信号出炉，明日盯啥？",
+                f"A股选股｜{lead}收盘信号，明日盯啥？",
+                f"{wd}A股选股｜{lead}结构说透",
+            ],
+            kind="top5",
         )
-    return _clip_wechat_title(f"{wd}盘后｜{n}只技术信号，别错过？")
+        return enrich_title_for_search(title, "top5", clip_fn=_clip_wechat_title)
+    return enrich_title_for_search(
+        _clip_wechat_title(f"A股选股｜{wd}{n}只技术信号，别错过？"),
+        "top5",
+        clip_fn=_clip_wechat_title,
+    )
 
 
 def _top5_digest(picks: list[Any], *, trade_date: date) -> str:
+    from scripts.tools.wechat_mp_seo import enrich_digest
+
     names = [str(getattr(p, "name", "") or "") for p in picks[:3] if getattr(p, "name", None)]
     names_s = "、".join(names) if names else "当日标的"
-    top = picks[0] if picks else None
-    score = f"{getattr(top, 'score', 0):.0f}分" if top else ""
-    return (
-        f"收盘刚跑完综合选股：{names_s} 等 {len(picks)} 只进入观察。"
-        f"技术评分{score}，附宏观逻辑与纪律提示——非荐股，仅供复盘。"
-    )[:128]
+    base = (
+        f"收盘综合选股：{names_s} 等 {len(picks)} 只进入结构拆解。"
+        f"逐只梳理逻辑、量价与技术位置——信息整理，非荐股。"
+    )
+    return enrich_digest(base, "top5")
 
 
 def _dragon_lead_name(dragons: list[dict[str, Any]]) -> tuple[str, str, int | None]:
@@ -250,6 +578,9 @@ def _dragon_title(hdr: dict[str, Any], dragons: list[dict[str, Any]], *, trade_d
     theme = str(hdr.get("main_theme") or "").strip()[:6]
     lead, boards_s, _ = _dragon_lead_name(dragons)
     wd = _weekday_cn(trade_date)
+    from scripts.tools.wechat_mp_evening_align import dragons_title_phase_label
+
+    phase_q = dragons_title_phase_label(phase)
     phase_hint = {
         "退潮": "退潮也别瞎割",
         "发酵": "发酵期盯龙头",
@@ -259,25 +590,34 @@ def _dragon_title(hdr: dict[str, Any], dragons: list[dict[str, Any]], *, trade_d
         "启动": "启动先小仓跟",
     }.get(phase, f"{phase[:2]}期")
 
-    return _pick_clickbait_title(
+    from scripts.tools.wechat_mp_seo import enrich_title_for_search
+
+    title = _pick_clickbait_title(
         [
-            f"{phase_hint}？{theme}主线+{lead}{boards_s}",
-            f"{wd}游资轨｜{theme}{lead}{boards_s}，一文读懂",
-            f"情绪{phase[:2]}怎么玩？{lead}{boards_s}还在榜",
-        ]
+            f"{phase_q}怎么玩？{lead}{boards_s}还在榜",
+            f"A股龙头｜{phase_q}怎么玩？{lead}{boards_s}还在榜",
+            f"情绪周期·{theme}龙头｜{lead}{boards_s}还在榜",
+            f"A股龙头复盘｜{phase_hint}·{lead}{boards_s}",
+            f"{wd}连板梯队｜{theme}{lead}{boards_s}怎么跟？",
+        ],
+        kind="dragons",
     )
+    return enrich_title_for_search(title, "dragons", clip_fn=_clip_wechat_title)
 
 
 def _dragon_digest(hdr: dict[str, Any], dragons: list[dict[str, Any]], *, trade_date: date) -> str:
+    from scripts.tools.wechat_mp_seo import enrich_digest
+
     phase = hdr.get("phase") or "—"
     theme = hdr.get("main_theme") or "—"
     pool = "、".join(
         str(d.get("name") or d.get("ts_code") or "")[:6] for d in dragons[:3]
     ) or "暂无"
-    return (
+    base = (
         f"今日情绪「{phase}」，主线 {theme}，龙头池 {pool}。"
         "炸板率、仓位上限与明日计划一次看完——游资观察日记，非操作建议。"
-    )[:128]
+    )
+    return enrich_digest(base, "dragons")
 
 
 # 旧版/测试草稿标题（清理用）
@@ -319,8 +659,53 @@ def _author() -> str:
     return os.getenv("WECHAT_MP_AUTHOR", "R2D2")[:16]
 
 
+def content_source_url_enabled() -> bool:
+    """是否写入草稿「阅读原文」链接（默认关，避免暴露看板）。"""
+    raw = os.getenv("WECHAT_MP_READ_SOURCE_URL", "0").strip().lower()
+    return raw in ("1", "true", "yes", "on")
+
+
 def _source_url() -> str:
-    return os.getenv("WECHAT_MP_SOURCE_URL", "").strip()[:1024]
+    if not content_source_url_enabled():
+        return ""
+    url = os.getenv("WECHAT_MP_SOURCE_URL", "").strip()
+    if url.lower() in ("0", "false", "no", "off", "none"):
+        return ""
+    if not url.startswith(("http://", "https://")):
+        return ""
+    return url[:1024]
+
+
+def render_article_content_html(
+    body_text: str,
+    *,
+    kind: str | None = None,
+    engagement_kind: str | None = None,
+    upload_figures: bool = True,
+) -> tuple[str, str]:
+    """正文区 HTML + 合并后的 body_text（单一免责块）。"""
+    from scripts.tools.wechat_mp_masthead import masthead_html
+    from scripts.tools.wechat_mp_monetization import (
+        polish_for_traffic,
+        split_disclaimer,
+        strip_inline_disclaimer_blocks,
+    )
+    from scripts.tools.wechat_mp_public import finalize_public_body_text
+    from scripts.tools.wechat_mp_rich_html import disclaimer_html
+
+    core, _disc_tail = split_disclaimer(body_text)
+    core = strip_inline_disclaimer_blocks(core)
+    if kind:
+        core = polish_for_traffic(core, kind=kind, engagement_kind=engagement_kind)
+    core = finalize_public_body_text(core, kind=kind)
+    disc_text = disclaimer_for_kind(kind)
+    merged_body = f"{core}\n\n{disc_text}" if disc_text else core
+
+    body_html = text_to_html(core, upload_figures=upload_figures, article_kind=kind)
+    disc_html = disclaimer_html(disc_text, kind=kind) if disc_text else ""
+    masthead = masthead_html(kind, upload_images=upload_figures)
+    content = f"{masthead}{body_html}{disc_html}" if masthead else f"{body_html}{disc_html}"
+    return content, merged_body
 
 
 def _article_shell(
@@ -328,18 +713,35 @@ def _article_shell(
     title: str,
     digest: str,
     body_text: str,
+    upload_figures: bool = True,
+    kind: str | None = None,
+    engagement_kind: str | None = None,
 ) -> dict[str, str]:
+    from scripts.tools.wechat_mp_monetization import comment_settings
+
+    content, merged_body = render_article_content_html(
+        body_text,
+        kind=kind,
+        engagement_kind=engagement_kind,
+        upload_figures=upload_figures,
+    )
     article: dict[str, str] = {
         "title": title[:32],
         "author": _author(),
         "digest": digest[:128],
-        "content": text_to_html(body_text),
+        "body_text": merged_body,
+        "content": content,
         "article_type": "news",
     }
+    if engagement_kind:
+        article["engagement_kind"] = engagement_kind
+    article.update({k: str(v) for k, v in comment_settings().items()})
     hub = _source_url()
     if hub:
         article["content_source_url"] = hub
-    return article
+    from scripts.tools.wechat_mp_product import attach_footer_product
+
+    return attach_footer_product(article, kind=kind)
 
 
 def _redact_account_hints(line: str) -> str:
@@ -367,20 +769,128 @@ def sanitize_top5_public_text(text: str) -> str:
     return normalize_wechat_spacing(cleaned.strip())
 
 
-def build_market_article() -> dict[str, str]:
-    from scripts.tools.wechat_mp_market_article import (
-        build_market_context_blob,
-        generate_researcher_market_body,
+def build_sector_article(*, edition: str | None = None) -> dict[str, str]:
+    from scripts.tools.wechat_mp_figures import inject_market_figures
+    from scripts.tools.wechat_mp_prose import SECTOR_SECTION_TITLES, ensure_blockquote_sections
+    from scripts.tools.wechat_mp_sector_article import (
+        build_sector_digest,
+        build_sector_title,
+        format_sector_trade_label,
+        generate_sector_research_body,
+        resolve_sector_trade_date,
+    )
+    from scripts.tools.wechat_mp_sector_polish import finalize_sector_body
+
+    ed = edition or "close"
+    now = datetime.now(TZ)
+    raw_body, themes, _report = generate_sector_research_body(now=now, edition=ed)
+    polished = ensure_blockquote_sections(humanize_mp_text(raw_body), SECTOR_SECTION_TITLES)
+
+    trade_label = format_sector_trade_label(
+        resolve_sector_trade_date(_report), edition=ed
+    )
+    primary = themes[0].name if themes else ""
+    polished = finalize_sector_body(
+        polished,
+        trade_label=trade_label,
+        primary_theme=primary,
+    )
+    title = build_sector_title(themes, now=now)
+    td = now.date()
+    try:
+        from scripts.tools.selection_results import merge_selection_strategies_df
+
+        td, _, _ = merge_selection_strategies_df()
+    except Exception:
+        pass
+    digest = build_sector_digest(themes, trade_date=td, edition=ed)
+    body = f"{inject_market_figures(polished)}\n\n{DISCLAIMER}"
+    from scripts.tools.wechat_mp_seo import attach_publish_hints
+
+    return attach_publish_hints(
+        _article_shell(title=title, digest=digest, body_text=body, kind="sector"),
+        "sector",
+        theme=themes[0].name if themes else None,
     )
 
+
+def build_market_article(*, edition: str | None = None) -> dict[str, str]:
+    from scripts.tools.wechat_mp_market_edition import normalize_market_edition
+    from scripts.tools.wechat_mp_market_article import generate_researcher_market_body
+    from scripts.tools.wechat_mp_market_polish import align_market_title_mood, finalize_market_body
+    from scripts.tools.wechat_mp_prose import MARKET_SECTION_TITLES, ensure_blockquote_sections
+
+    ed = normalize_market_edition(edition)
     now = datetime.now(TZ)
     slot = now.strftime("%H:%M")
-    raw_body = generate_researcher_market_body(now=now)
-    _, news_blob = build_market_context_blob(now=now)
-    title = _market_title(news_blob, now=now, slot=slot)
-    body = humanize_mp_text(f"{raw_body}\n\n{DISCLAIMER}")
-    digest = _market_digest(news_blob, now=now, slot=slot)
-    return _article_shell(title=title, digest=digest, body_text=body)
+    raw_body = ensure_blockquote_sections(
+        generate_researcher_market_body(now=now, edition=ed),
+        MARKET_SECTION_TITLES,
+    )
+    polished = finalize_market_body(humanize_mp_text(raw_body), edition=ed)
+    polished = ensure_blockquote_sections(polished, MARKET_SECTION_TITLES)
+    peer_title = _load_last_market_title("close") if ed == "pre" else None
+    if peer_title is None and ed == "pre":
+        peer_title = os.getenv("WECHAT_MP_PEER_CLOSE_TITLE", "").strip() or None
+    title = _market_title(
+        polished,
+        now=now,
+        slot=slot,
+        peer_title=peer_title,
+        edition=ed,
+    )
+    title = align_market_title_mood(title, polished)
+    from scripts.tools.wechat_mp_figures import inject_market_figures
+
+    body = f"{inject_market_figures(polished)}\n\n{DISCLAIMER}"
+    digest = _market_digest(polished, now=now, slot=slot, edition=ed)
+    _record_market_title(edition=ed, title=title)
+    _save_market_body_cache(
+        edition=ed,
+        body_text=body,
+        title=title,
+        digest=digest,
+    )
+    from scripts.tools.wechat_mp_seo import attach_publish_hints
+
+    return attach_publish_hints(
+        _article_shell(title=title, digest=digest, body_text=body, kind="market"),
+        "market",
+        edition=ed,
+    )
+
+
+def build_news_article(*, peer_market_title: str | None = None) -> dict[str, str]:
+    from scripts.tools.wechat_mp_figures import inject_news_figures
+    from scripts.tools.wechat_mp_news_article import (
+        generate_news_feature_body,
+        load_top_news_items,
+    )
+    from scripts.tools.wechat_mp_prose import NEWS_SECTION_TITLES, ensure_blockquote_sections
+
+    now = datetime.now(TZ)
+    items = load_top_news_items()
+    if not items:
+        raise RuntimeError("无可用快讯，请先运行 sync_macro_news")
+    title = _news_title(items, now=now, peer_title=peer_market_title)
+    raw_body = ensure_blockquote_sections(
+        generate_news_feature_body(now=now),
+        NEWS_SECTION_TITLES,
+    )
+    from scripts.tools.wechat_mp_news_article import reflow_news_article_body
+
+    body_core = reflow_news_article_body(humanize_mp_text(raw_body))
+    from scripts.tools.wechat_mp_news_polish import finalize_news_body
+
+    body_core = finalize_news_body(body_core)
+    body = f"{inject_news_figures(body_core)}\n\n{DISCLAIMER}"
+    digest = _news_digest(items, now=now)
+    from scripts.tools.wechat_mp_seo import attach_publish_hints
+
+    return attach_publish_hints(
+        _article_shell(title=title, digest=digest, body_text=body, kind="news"),
+        "news",
+    )
 
 
 def build_top5_article() -> dict[str, str]:
@@ -394,33 +904,141 @@ def build_top5_article() -> dict[str, str]:
 
     title = _top5_title(picks, trade_date=td)
     raw_body = generate_top5_trader_body(picks, trade_date=td, pool_source=_source)
-    body = humanize_mp_text(f"{raw_body}\n\n{DISCLAIMER}")
+    from scripts.tools.wechat_mp_figures import inject_top5_figures
+    from scripts.tools.wechat_mp_top5_article import sanitize_top5_analysis_text
+
+    from scripts.tools.wechat_mp_prose import TOP5_SECTION_TITLES, ensure_blockquote_sections
+
+    from scripts.tools.wechat_mp_top5_article import strip_top5_title_echo
+
+    sector_primary = ""
+    try:
+        from scripts.tools.wechat_mp_evening_align import sector_primary_label
+
+        sector_primary = sector_primary_label()
+    except Exception:
+        pass
+
+    body = sanitize_top5_analysis_text(
+        ensure_blockquote_sections(
+            humanize_mp_text(
+                strip_top5_title_echo(
+                    f"{inject_top5_figures(raw_body)}\n\n{DISCLAIMER}",
+                    title=title,
+                )
+            ),
+            TOP5_SECTION_TITLES,
+        )
+    )
+    from scripts.tools.wechat_mp_top5_polish import finalize_top5_body
+
+    body = finalize_top5_body(
+        body,
+        picks,
+        trade_date=td,
+        sector_primary=sector_primary,
+    )
     digest = _top5_digest(picks, trade_date=td)
-    return _article_shell(title=title, digest=digest, body_text=body)
+    from scripts.tools.wechat_mp_seo import attach_publish_hints
+
+    return attach_publish_hints(
+        _article_shell(title=title, digest=digest, body_text=body, kind="top5"),
+        "top5",
+    )
 
 
-def build_workspace_article() -> dict[str, str]:
+def build_workspace_article(*, variant: str | None = None) -> dict[str, str]:
+    import os
+
     from scripts.tools.wechat_mp_workspace_article import (
         generate_workspace_overview_body,
         workspace_overview_digest,
         workspace_overview_title,
     )
 
-    from scripts.tools.wechat_format import normalize_wechat_spacing, strip_markdown_for_wechat
+    from scripts.tools.wechat_format import (
+        normalize_wechat_spacing,
+        prepare_static_mp_body,
+        strip_markdown_for_wechat,
+    )
     from scripts.tools.wechat_mp_public import sanitize_public_mp_text
 
-    title = workspace_overview_title()
-    raw_body = generate_workspace_overview_body()
-    merged = normalize_wechat_spacing(
-        strip_markdown_for_wechat(f"{raw_body}\n\n{DISCLAIMER}")
-    )
+    v = (variant or os.getenv("WECHAT_MP_WORKSPACE_VARIANT", "overview")).strip().lower()
+    if v == "english_buddy":
+        from scripts.tools.wechat_mp_english_buddy_article import (
+            english_buddy_article_digest,
+            english_buddy_article_title,
+            english_buddy_recommended_hashtags,
+            generate_english_buddy_article_body,
+        )
+
+        title = english_buddy_article_title()
+        raw_body = generate_english_buddy_article_body()
+        digest_fn = english_buddy_article_digest
+        hashtag_override = english_buddy_recommended_hashtags()
+        merged = prepare_static_mp_body(
+            f"{raw_body}\n\n{disclaimer_for_kind('workspace')}"
+        )
+    else:
+        title = workspace_overview_title()
+        raw_body = generate_workspace_overview_body()
+        digest_fn = workspace_overview_digest
+        hashtag_override = None
+        merged = normalize_wechat_spacing(
+            strip_markdown_for_wechat(f"{raw_body}\n\n{disclaimer_for_kind('workspace')}")
+        )
+
     body = sanitize_public_mp_text(merged)
-    digest = workspace_overview_digest()
-    return _article_shell(title=title, digest=digest, body_text=body)
+    from scripts.tools.wechat_mp_seo import attach_publish_hints, clip_digest, enrich_digest
+
+    base_digest = digest_fn()
+    digest = (
+        clip_digest(base_digest)
+        if hashtag_override
+        else enrich_digest(base_digest, "workspace")
+    )
+    return attach_publish_hints(
+        _article_shell(
+            title=title,
+            digest=digest,
+            body_text=body,
+            kind="workspace",
+            engagement_kind="english_buddy" if v == "english_buddy" else None,
+        ),
+        "workspace",
+        hashtag_override=hashtag_override,
+        engagement_kind="english_buddy" if v == "english_buddy" else None,
+    )
+
+
+def build_temp_article(*, variant: str | None = None) -> dict[str, str]:
+    from scripts.tools.wechat_mp_temp_article import (
+        generate_temp_article_body,
+        temp_article_digest,
+        temp_article_title,
+    )
+
+    from scripts.tools.wechat_format import prepare_static_mp_body
+    from scripts.tools.wechat_mp_public import sanitize_public_mp_text
+
+    title = temp_article_title(variant=variant)
+    raw_body = generate_temp_article_body(variant=variant)
+    merged = prepare_static_mp_body(f"{raw_body}\n\n{disclaimer_for_kind('temp')}")
+    body = sanitize_public_mp_text(merged)
+    from scripts.tools.wechat_mp_seo import attach_publish_hints, enrich_digest
+
+    digest = enrich_digest(temp_article_digest(variant=variant), "temp")
+    return attach_publish_hints(
+        _article_shell(title=title, digest=digest, body_text=body, kind="temp"),
+        "temp",
+    )
 
 
 def build_dragons_article(*, checklist_slot: str | None = None) -> dict[str, str]:
-    from scripts.tools.wechat_mp_dragons_article import generate_dragons_trader_body
+    from scripts.tools.wechat_mp_dragons_article import (
+        generate_dragons_trader_body,
+        sanitize_dragons_public_text,
+    )
 
     slot = (checklist_slot or os.getenv("WECHAT_MP_DRAGON_SLOT", "eod")).strip()
     bundle = load_emotion_cycle_checklist(checklist_slot=slot)
@@ -441,22 +1059,58 @@ def build_dragons_article(*, checklist_slot: str | None = None) -> dict[str, str
 
     title = _dragon_title(hdr, dragons, trade_date=td_date)
     raw_body = generate_dragons_trader_body(bundle, checklist_slot=slot)
-    body = humanize_mp_text(f"{raw_body}\n\n{DISCLAIMER}")
+    from scripts.tools.wechat_mp_dragons_article import strip_dragon_title_echo
+    from scripts.tools.wechat_mp_dragons_polish import finalize_dragons_body
+    from scripts.tools.wechat_mp_figures import inject_dragons_figures
+    from scripts.tools.wechat_mp_prose import DRAGON_SECTION_TITLES, ensure_blockquote_sections
+
+    polished = finalize_dragons_body(
+        strip_dragon_title_echo(humanize_mp_text(raw_body), title=title),
+        hdr=hdr,
+    )
+    body = sanitize_dragons_public_text(
+        ensure_blockquote_sections(
+            f"{inject_dragons_figures(polished)}\n\n{DISCLAIMER}",
+            DRAGON_SECTION_TITLES,
+        )
+    )
     digest = _dragon_digest(hdr, dragons, trade_date=td_date)
-    return _article_shell(title=title, digest=digest, body_text=body)
+    from scripts.tools.wechat_mp_seo import attach_publish_hints
+
+    return attach_publish_hints(
+        _article_shell(title=title, digest=digest, body_text=body, kind="dragons"),
+        "dragons",
+        dragon_slot=slot,
+        theme=str(hdr.get("main_theme") or "").strip() or None,
+        phase=str(hdr.get("phase") or "").strip() or None,
+    )
 
 
-DRAFT_KINDS = ("market", "top5", "dragons", "workspace")
+# 定时 evening 三篇：sector + top5 + dragons；market/news 仅手动
+DAILY_DRAFT_KINDS = ("sector", "dragons", "top5", "workspace")
+DRAFT_KINDS = (*DAILY_DRAFT_KINDS, "market", "news", "temp")
 
 
-def build_article(kind: str) -> dict[str, str]:
+def build_article(
+    kind: str,
+    *,
+    peer_market_title: str | None = None,
+    edition: str | None = None,
+    variant: str | None = None,
+) -> dict[str, str]:
     k = kind.strip().lower()
+    if k in {"sector", "industry", "theme"}:
+        return build_sector_article(edition=edition or "close")
     if k == "market":
-        return build_market_article()
+        return build_market_article(edition=edition)
+    if k in {"news", "kuaixun", "macro_news"}:
+        return build_news_article(peer_market_title=peer_market_title)
     if k == "top5":
         return build_top5_article()
     if k in {"dragons", "dragon", "leaders"}:
         return build_dragons_article()
     if k in {"workspace", "tech", "lab", "dev"}:
-        return build_workspace_article()
+        return build_workspace_article(variant=variant)
+    if k in {"temp", "adhoc", "extra"}:
+        return build_temp_article(variant=variant)
     raise ValueError(f"未知 kind={kind!r}，可选: {', '.join(DRAFT_KINDS)}")

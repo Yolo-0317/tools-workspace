@@ -18,6 +18,21 @@ alwaysApply: false
 | home-hub | `home-hub/` | 投资/运维 H5 看板（Vue3 + FastAPI，无内置聊天） |
 | wechat-cursor-acp | `wechat-cursor-acp/` | 微信 ↔ Cursor CLI（`agent acp`，与历史 home-hub 聊天同栈） |
 
+### 主题索引（检索用）
+
+| 主题 | 条目日期 | 子项目记忆 |
+|------|----------|------------|
+| monorepo / Superpowers | 2026-05-29 | — |
+| substore-clash / Stash / TLS | 2026-05-29 | — |
+| stock-ai 数据主链路 | 2026-05-30 | `memory-python.mdc` |
+| home-hub 无聊天 | 2026-06-01 | — |
+| emquant / 龙头战法 | 2026-06-02 | `memory-emquant.mdc` |
+| 投顾 / 双执行卡 | 2026-06-02 | `memory-python.mdc` |
+| **公众号晚间三篇** | **2026-06-04** | `memory-python.mdc` §2026-06-04 晚间完读钩子 · `evening-trilogy-templates.md` |
+| **公众号内容分析复盘** | **2026-06-05** | 本节 §2026-06-05 · `sousou-analytics-sop.md` |
+| **公众号 top5 人气榜** | **2026-06-05** | `memory-python.mdc` §2026-06-05 top5 人气榜 |
+| **选股前日线门禁** | **2026-06-04** | `memory-python.mdc` §2026-06-04 · `SCHEDULING.md` §3/§9 |
+
 ---
 
 ## 记忆条目（按时间追加）
@@ -68,7 +83,7 @@ alwaysApply: false
 
 - **Context**: 完成 MySQL 持仓/选股入库与 OpenCLI 战报/SOP 迁移后，删除仍引用东财 HTTP、Playwright、AkShare 的旧脚本，避免 Agent 误调。
 - **Pitfall/Error**: 文档与 `~/.codex/skills/stock-strategy-selector` 仍指向 `ingest_eastmoney_*`、`ai_review_top5.py` 等已删入口；`analyze_holdings_v2 --csv` 与 CSV 兜底易与 `portfolio_positions` 双轨混淆。
-- **Solution/Rule**: **日线**仅 `scripts/sync/sync_tushare_daily_to_mysql.py` + `ensure_daily_bars`；**实时/SOP/战报**仅 `scripts/tools/fetch_eastmoney_quotes.py`（OpenCLI）；**选股结果** MySQL `selection_daily_results`；**持仓** MySQL `portfolio_positions`；**看板历史** `portfolio_*_daily` + `sop_review_*`（`dashboard_data.py`）。细节见 `memory-python.mdc` §2026-05-31。
+- **Solution/Rule**: **日线**仅 `scripts/sync/sync_tushare_daily_to_mysql.py` + `ensure_daily_bars`（17:30 选股前 `--require-ready` 门禁，见 `memory-python.mdc` §2026-06-04）；**实时/SOP/战报**仅 `scripts/tools/fetch_eastmoney_quotes.py`（OpenCLI）；**选股结果** MySQL `selection_daily_results`；**持仓** MySQL `portfolio_positions`；**看板历史** `portfolio_*_daily` + `sop_review_*`（`dashboard_data.py`）。细节见 `memory-python.mdc` §2026-05-31。
 
 ### 2026-05-31 home-hub 看板 + 聊天（agent acp）— 已废弃
 
@@ -92,18 +107,29 @@ alwaysApply: false
   - **层级**（冲突自上而下）：`持仓执行卡.md` > `trading-strategies.md` > 情绪日检卡（主轨收息/不追连板不变；游资轨仅试探预算≤40%）。
   - **MySQL**：`emotion_cycle_daily` + `emotion_cycle_dragon_watch`（迁移 `stock-mysql/sql/010_emotion_cycle.sql`）；读写 `portfolio_db.load/save_emotion_cycle_checklist`、`latest_emotion_trade_date`。
   - **计算**：`stock_ai/emotion_cycle_compute.py`（涨跌停/连板/炸板率/阶段/Top3 龙，`checklist_pass`≥5 入池）；CLI `scripts/tools/emotion_cycle_checklist.py`；自动 `scripts/tools/sync_emotion_cycle_daily.py` + `./sync_emotion_cycle.sh`。
-  - **调度**（`stock-ai/docker/scheduler/crontab`，容器 `stock-ai-scheduler`）：工作日 **09:26** `pre_market`、**17:10** `eod`（在 17:00 Tushare 之后）；改 crontab 须 `docker compose up -d --build`。
+  - **调度**（`stock-ai/docker/scheduler/crontab`）：工作日 **18:00** 仅 `eod`（`pre_market`/`intraday` 已下线，2026-06-04）；改 crontab 须 `docker compose up -d --build`。
   - **看板**：home-hub `/emotion`；API `stock_bridge.load_emotion_cycle`；默认日期取最新 **eod** 交易日。
   - **交叉规则**：综合选股 Top5 ∩ 龙头池 → 提高关注；仅龙头池有 → 最多 1 手高风险试探。
   - **掘金仿真**：`emquant-sim` 读 `dragons.json`（Mac `export_emotion_dragons`）；`main.py` 路由 + `strategy_entry.json`（`dragon`|`combined`）；策略 ID `5aa6af16-5da8-11f1-996b-001c42c700fc`；60s `on_bar` 盯订阅龙头，阶段退潮/冰点 **只卖不买**。详见 `emquant-sim/docs/emquant-dragon-strategy.md`、`memory-emquant.mdc` §龙头战法。
 
+### 2026-06-02 6 万投顾模式 · 阶段 0 止血降仓
+
+- **Context**: 用户本金 6 万、现净资产约 5.3 万，要求投顾主导回本（非听持仓熬仓）；选股须与投顾一致。
+- **Pitfall/Error**: 原体系以 `持仓执行卡` 为最高，17:30 Top5/SOP/选股监控仍像「找机会买」，与 A 档降仓冲突；用户易把 Top5 当必买。
+- **Solution/Rule**:
+  - **决策最高**：`stock-ai/investment-agent/投顾主策略.md`（阶段 0/1/2）；Agent `agent.mdc` 先读投顾五段再附执行卡。
+  - **阶段 0** = 止血降仓（用户 2026-06-02 确认「按投顾执行」）；本周：减梅花/广州/锁南网，禁新开。
+  - **选股代码**：`stock_ai/advisor_selection.py` → `combined` 压买入动作为「继续观察」、排除 600873；阶段 0 **仍跑 Top5 SOP**、不写 `alert_rules`；`selection_watchlist --sync` 阶段 0 跳过。
+  - **进阶段 1**：改投顾主策略标题为阶段 1 + 仓位 ≤65% 且梅花化解后，选股才恢复 SOP/监控试探。
+  - **看板（2026-06-02）**：home-hub `AdvisorPanel` + `/api/dashboard/advisor`；总览/持仓/选股情报页；`dashboard_data` 的 Top5 走投顾 `pick_selection_top`；战报首行投顾横幅。
+
 ### 2026-06-02 双执行卡（实盘 vs 仿真龙头）
 
-- **Context**: 维护两套执行卡：① **持仓执行卡** — jywg 实盘、stock-ai 主轨（监控/看板/Agent）；② **龙头执行卡** — 游资轨，**当前仅 emquant 仿真**。
+- **Context**: 维护两套执行卡：① **持仓执行卡** — **东方财富证券**实盘、stock-ai 主轨（监控/看板/Agent）；② **龙头执行卡** — 游资轨，**当前仅 emquant 仿真**。
 - **Pitfall/Error**: 混用两卡会导致 Agent 用龙头纪律指导实盘，或仿真误绑 `alert_rules`；`情绪周期日检卡.md` 与可执行卡职责重叠。
 - **Solution/Rule**:
   - **持仓执行卡**：`investment-agent/持仓执行卡.md` → `alert_rules` / 微信 / 可选 `export_emquant_rules`（combined）。
-  - **龙头执行卡**：`investment-agent/龙头执行卡.md` → `emotion_cycle_*` → `export_emotion_dragons` → `dragon_main`；**不进** `alert_rules`，**不**绑 jywg。
+  - **龙头执行卡**：`investment-agent/龙头执行卡.md` → `emotion_cycle_*` → `export_emotion_dragons` → `dragon_main`；**不进** `alert_rules`，**不**绑东方财富证券实盘。
   - **方法论**：`情绪周期日检卡.md`；冲突 **实盘以持仓执行卡为准**。
   - **stock-ai 后续**：大盘/震荡识别写入 `emotion_cycle_daily`，home-hub 可并列展示两卡。
   - **看板（2026-06-02）**：`/emotion` 合并 **龙头执行卡** 区块；API 增 `dragon_execution_card` + `data_source`；导航改「龙头」。持仓执行卡 → `/portfolio` 读 `portfolio_*` / `alert_rules`。
@@ -113,3 +139,90 @@ alwaysApply: false
 - **Context**: 整理提交 `154d838`：`home-hub` 专注投资/运维看板（持仓、选股、任务、服务），不再在 H5 内嵌 Cursor Agent 聊天。
 - **Pitfall/Error**: 旧记忆与 `home-hub/TOOLS.md` 仍指向 `HUB_AGENT_*`、`/api/chat`、`agent_acp.py`；Agent 可能误加聊天路由或与微信双开争用 CLI 额度。
 - **Solution/Rule**: **home-hub** 无聊天：已删 `backend/routers/chat.py`、`backend/services/agent_*.py`、前端 `ChatView`；`.env.example` 无 `HUB_AGENT_MODEL` / `HUB_ACP_PROMPT_TIMEOUT`。**Cursor Agent 对话**仅用 `wechat-cursor-acp/`（`agent acp`，同历史 wechat-acp 栈）。公网看板仍为 `hub.yoloworld.site`（鉴权 `HUB_REQUIRE_AUTH`）。勿在 home-hub 恢复 Web 聊天，除非用户明确要求并单独设计。
+
+### 2026-06-04 公众号 = 牛马也智能（命名约定）
+
+- **Context**: 用户全力运营财经公众号 **牛马也智能**；简选小电 / 小红书摄影已搁置。
+- **Solution/Rule**: 用户说 **「公众号」** → 仅 [wechat-mp-drafts](.cursor/skills/wechat-mp-drafts/)（`WECHAT_MP_*`）；真源 [brand.md](.cursor/skills/wechat-mp-drafts/brand.md)、[operations-sop.md](.cursor/skills/wechat-mp-drafts/operations-sop.md)。简选 → commerce skill，默认不执行。
+
+### 2026-06-04 OpenCLI · 少标签分组、用完关 tab
+
+- **Context**: Chrome 里堆很多 OpenCLI **标签分组**；用户要求用完关 tab、别再建分组。
+- **Pitfall/Error**: 默认 `OPENCLI_BROWSER_IF_EXISTS=tab` 每次 `tab new`；`tab close` 失败后会话 id 失效，分组/标签只增不减；`browser close` 不关 Chrome 物理标签。
+- **Solution/Rule**: 默认改 **`IF_EXISTS=navigate`** + **`CLOSE_TABS_ON_RELEASE=1`** → `release_browser_session()` 先 `tab close` 全部再 `browser close`。清理：`bash stock-ai/scripts/opencli_browser_cleanup.sh`；Chrome 内残留分组需手动「解散分组」。
+
+### 2026-06-04 公众号看稿 · 只进草稿箱
+
+- **Context**: 用户要求试看稿件时 **直接推 mp 草稿箱**，不要本地 HTML 预览。
+- **Solution/Rule**: 「看一下 / 做一版稿件」→ `uv run python -m scripts.tools.wechat_mp_draft_batch --batch evening` 或 `wechat_mp_draft --kind …`（**无** `--dry-run`）；**禁止**默认写 `output/wechat_mp_*_preview.html`。校验清单可用 `--dry-run`；版式在 mp.weixin.qq.com 草稿预览。
+
+### 2026-06-04 晚间三篇金模版 · 完读钩子与移动排版（定稿）
+
+- **Context**: 用户审阅 `sector`/`dragons`/`top5` 推稿后确认「这一版可以」，要求金模版与代码一致：完读由 **代码注入**（非 LLM「往下看」导流），移动端段长与序号排版。
+- **Pitfall/Error**: ① LLM/变现把 Top5 **标题句式**（「XX领衔N只！收盘信号出炉…」）写进「筛选名单」正文。② 曾用「往下看」「→」做段间导流，观感像营销号。③ 单段过长、同行多个 `1. 2. 3.` 手机难读。
+- **Solution/Rule**:
+  - **金标准文档（2026-06-04）**：`.cursor/skills/wechat-mp-drafts/evening-trilogy-templates.md`（**· 轻过渡**、段长/序号、三稿骨架/勿回退）；五槽 `templates.md`；`rules-implemented.md` 脚注同日期。
+  - **完读钩子**：节间/股间/条间用 **`·` + 对比/验证口吻**；**禁止**「往下看」「接着读」「→」。共享 `wechat_mp_read_hooks.py`（`BRIDGE_MARK = "· "`）；`WECHAT_MP_READ_HOOKS=1`（分稿型可 `WECHAT_MP_*_READ_HOOKS=0`）。
+  - **成稿链**：`finalize_sector_body` / `finalize_top5_body` / `finalize_dragons_body`（+ market/news 手动稿）；Top5 另 `strip_top5_title_echo` in `wechat_mp_top5_article.py`。
+  - **移动排版**：`wechat_mp_readability.polish_mobile_readability` via `finalize_public_body_text`；`WECHAT_MP_PARA_MAX_CHARS`（默认 120）；`1. 2. 3.` **一行一项**；Top5 四字段各占一行。
+  - **标题示例（定稿）**：sector `A股行业｜资金流+沪深京板块：产业链怎么拆？` · top5 `新安股份领衔5只！收盘信号出炉，明日盯啥？`（**仅标题栏**）· dragons `情绪冰点怎么玩？郑州煤电3板还在榜`。
+  - **勿回退**：恢复「往下看/→」；Top5 标题句式进正文；去掉 `finalize_*_body` 或 `polish_mobile_readability`。
+  - **测试**：`pytest tests/unit/test_wechat_mp_read_hooks.py tests/unit/test_wechat_mp_top5_polish.py -q`。
+
+### 2026-06-03 微信公众号 · 晚间三篇金标准 + 19:00 定时
+
+- **Context**: 交易日 **19:00** 推 `evening` 三篇（**`sector` + `dragons` + `top5`**）；休市 `weekend` 仅 `sector`。版式见 skill 模板。
+- **Pitfall/Error**: ① 重建 HTML 时 `upload_images=False` **丢顶栏 banner**。② `WECHAT_MP_SOURCE_URL` 未关会出现「阅读原文」链 home-hub。③ LLM 内联免责 + 文末红框 = **双免责**。④ 曾按分节末插 CPS（结构判断/待验证事项）→ 用户要求改 **正文约 2/3**。⑤ `context_token ret=-2` 时 API 报错但草稿仍可能 `OK created`（wechat-acp token 过期，给机器人发一条消息后重试）。
+- **Solution/Rule**:
+  - **金标准文档（Agent 优先读）**：`.cursor/skills/wechat-mp-drafts/evening-trilogy-templates.md`；五槽总表 `templates.md`；代码映射 `rules-implemented.md`。
+  - **定时**：`evening` = `sector`+`dragons`+`top5`；`weekend` = `sector` 1 篇；`scripts/wechat_mp_draft_scheduled.sh` + plist `com.user.wechat-mp-draft-scheduled`；`stock-ai/docs/WECHAT_MP_SCHEDULING.md`。
+  - **行业封面**：与正文顶栏同源 **`assets/wechat_mp/banner.png`（牛马图）**；优先素材库 `封面-牛马品牌-双封面`，否则 `pick_sector_thumb_from_banner` 自动上传永久素材（`WECHAT_MP_SECTOR_THUMB_FROM_BANNER=1`）。勿用交易所屏顶替。
+  - **覆写命令**：`cd stock-ai && uv run python -m scripts.tools.wechat_mp_draft_batch --batch evening`。
+  - **版式（三篇共用）**：顶栏 banner + slogan；分节 `> 标题`（禁止「一、二、三」）；首节后才插图（200px）；文末 **1 处**红框免责 + 上一行 `#A股 #…`；默认 **无**阅读原文（`WECHAT_MP_READ_SOURCE_URL=0`）。
+  - **彩色开篇**（17px 居中 `#1a5276`）：`market` = `inject_market_opening_lede` 后在 `> 盘面速览` **前**；`top5` = `> 筛选名单` 首段；`dragons` = `> 情绪与盘面` 首段 → `opening_lede_paragraph_style` + `text_to_html(..., article_kind=)`。
+  - **返佣 CPS**：`inject_cpsad_at_body_ratio`（`cps_injection_index`，ratio **2/3**）；`WECHAT_MP_FOOTER_PRODUCT=1` + `WECHAT_MP_DAIHUO_UIN`；真机制 `mp-common-cpsad data-pid`，非 `getcardinfo product_key`（JD 10170001）。
+  - **免责**：`strip_inline_disclaimer_blocks` + `disclaimer_html`；market 勿在正文写「不构成投资建议」垫句（`wechat_mp_market_article` prompt）。
+  - **搜一搜 / 口吻**：`wechat_mp_seo.enrich_title_for_search`；标题池 `wechat_mp_market_titles --edition close`；正文 `RESEARCHER_VOICE_RULE` → `researcher-voice.md`。
+  - **标题示例**：见 **§2026-06-04 晚间三篇金模版**（钩子/排版以该节为准）。
+  - **统计**：`fetch_wechat_mp_analytics_opencli.py` → `output/wechat_mp_analytics_latest.json`（非官方 datacube）。
+  - **勿回退**：CPS 改回分节末；恢复双免责；去掉彩色开篇；默认开阅读原文外链；完读/段长见 §2026-06-04。
+
+### 2026-06-03 stock-ai 定时任务去重与文档对齐
+
+- **Context**: 检查股票相关 launchd/Docker cron；用户要求处理重复监控、废弃战报文档、一次性坏任务。
+- **Pitfall/Error**: ① `com.user.stock-holdings-monitor` 与 Docker `*/5 monitor` 双轨，OpenCLI 争抢。② `SCHEDULING.md` 仍写 09/12/15/20 `push_daily_briefing_wechat.sh`，但 crontab/host-jobs 已无 briefing。③ 选股 pipeline 常 `exit 1` 因 `微信 ret=-2`（数据已入库）。④ `install-stock-ai-scheduler.sh` 只 bootout 不删 plist，重启登录会再加载 holdings-monitor。
+- **Solution/Rule**:
+  - **监控唯一入口**：Docker scheduler → `run/monitor`；**勿**装 `holdings-monitor` launchd。
+  - **快讯定时**：`com.user.stock-macro-news-sync`（15min）替代战报微信推送；`install-daily-briefing-launchd.sh` 已废弃。
+  - **安装脚本**：`install-stock-ai-scheduler.sh` 会 `rm` 旧 plist（含 `watch-reminder-20260601`）。
+  - **文档真源**：[SCHEDULING.md](stock-ai/docs/SCHEDULING.md)（2026-06-03 更新）。
+  - **微信 token**：推送/选股失败时给 wechat-acp 发消息刷新；非 cron 配置问题。
+
+### 2026-06-05 公众号内容分析 · sector 标题勿用资金流
+
+- **Context**: OpenCLI 抓取 `daily_v2` 内容分析（昨日口径 2026-06-04），对照 `sousou-analytics-sop.md` 解读牛马也智能运营数据。
+- **Pitfall/Error**: ① 手动 `market`「收盘复盘：XX牵动哪些线」阅读/完读远高于 evening 三篇，**勿抄为标题模板**（SOP outlier）。② sector 标题「资金流+沪深京板块」系东财行业榜 **Tab 误抓**，阅读偏低且不利于搜一搜。③ `*ST`+代码标题阅读高但合规风险，**禁止复用**。④ 内容分析页「搜一搜%」≠ 搜一搜看板「搜索后阅读/关注」— **口径勿混**。
+- **Solution/Rule**:
+  - **保持**：`dragons`「情绪…怎么玩？…还在榜」— 样例稿（2026-06-02）单篇流量来源 **搜一搜 90.4%**。
+  - **本周只调一类**：`sector` 前 15 字写 **当日主线行业名** +「产业链怎么拆」；**禁「资金流」作主词**；推稿前 `wechat_mp_eval --kind sector --traffic`；选题见 `sector-discovery.md` / `wechat_mp_hot_theme.py`。
+  - **勿当模板**：高阅读 `market` 稿、`*ST`/代码标题、`workspace` 技术稿（完读常低、聊天直达）。
+  - **抓取**：`uv run python -m scripts.tools.fetch_wechat_mp_analytics_opencli --analytics-url '…token=…' -o output/wechat_mp_analytics_latest.json`；搜一搜看板另 `fetch_wechat_mp_sousou_opencli`（Chrome 看板 tab + `pluginuin=10071` bind）。
+  - **全号昨日参考（2026-06-04）**：阅读 253；来源 朋友圈 41.1% / 搜一搜 23.8% / 聊天 21.4% / 推荐 1.3%。
+  - **标题示例修正**：§2026-06-04 金模版中 sector 示例「资金流+沪深京板块」**仅作排版参照，勿再用于生产标题**；改以「A股行业｜{主线}：产业链怎么拆？」为准。
+
+### 2026-06-04 English Buddy · 带读重读与语速（已实现）+ 性能优化待办
+
+- **Context**: `english-buddy/` 儿童英语带读 WebSocket 应用；用户要求先记下架构优化方案、暂不实施，只先做 **按句重读** + **语速调节**。
+- **Pitfall/Error**: ① 课文读完若 `jump_to_line` 会把 `read_along.done` 变 false，误开小朋友跟读回合 — 须在重读前记 `was_complete` 并 `reread_only` 只播不重进流程。② `edge-tts` 语速用 program `rate` 百分比叠加 `tts_speed` 乘数，勿与 Piper `length_scale` 混用。③ 读完不自动下一篇：代码本无 auto-next，但须 `lesson_complete` 事件 + 前端 `lessonDone` 拦截 PCM/`我说完啦`。
+- **Solution/Rule**:
+  - **按句重读**：WS `reread_line` + `line_index`；`ReadAlongState.jump_to_line`；课文面板可点句；读完显示「点句子重读」。
+  - **语速**：准备页/通话中 慢 0.85 / 标准 1.0 / 快 1.15；`start_call` 与 `update_tts_speed`；`localStorage` `english-buddy-tts-speed`；`tts.text_to_mp3_bytes(..., speed=)`。
+  - **待办（用户说先不改）**：Whisper `WHISPER_DEVICE=auto`；Piper 本地 TTS；`MAX_CONCURRENT` 限流；带读路径去 Ollama 依赖；Mac Mini / NAS VM 部署 sizing；`edge` TTS ≠ 边缘本地推理。压测脚本 `english-buddy/scripts/stress_ws.py`（text 模式 6 客户端 p50 ~1.5s，stt 扫频未完成）。
+  - **TTS 预缓存（2026-06-04 记下、未做）**：预设课 `lessons.json` 部署时 `prewarm_lessons.py` 按 `program + voice + tts_speed + 句文本` 落盘；带读命中 cache 降延迟、减 edge 并发排队；**不替代** Whisper STT 瓶颈。自定义课同 pipeline：粘贴后「预生成语音」→ 可选试听 → `start_call`；`POST /api/lessons/prewarm` 或 WS `prewarm_lesson`。规模约 2 节目×10 课×5 句×3 语速≈300 文件。
+  - **按句重读**：小朋友回合 **「老师再说一遍」**（当前句）；老师说下一句时 **「回到上一句」**（interrupt + `reread_line`）；课文行可点；识别中不可；读完后重读只播。`speakReply.stopSpeaking` 须 resolve 挂起播放 Promise 否则打断后状态错乱。
+
+### 2026-06-05 公众号 top5 · 东财人气榜（流量优先）
+
+- **Context**: 搜一搜搜索词与点击榜以 **票名** 为主；top5 改从东财人气榜选题以对齐流量。
+- **Pitfall/Error**: 多策略总分名单与热搜票错位；纯热股需滤 ST/禁码；勿用 `emappdata` 裸 HTTP（易异常）。
+- **Solution/Rule**: 默认 `WECHAT_MP_TOP5_POOL=hot` · `fetch_hot_stocks_opencli` · `wechat_mp_hot_stocks.py`；失败回退 selection。详见 `memory-python.mdc` §2026-06-05 top5 人气榜。

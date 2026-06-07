@@ -20,6 +20,8 @@ import pandas as pd
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
+from stock_ai.market_codes import is_sh_sz_a_share
+
 
 # 尽量兼容项目已有 .env 加载方式
 ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
@@ -519,6 +521,8 @@ def run_selection(
 ) -> pd.DataFrame:
     rows: List[Dict[str, object]] = []
     for ts_code, group in df_all.groupby("ts_code"):
+        if not is_sh_sz_a_share(str(ts_code)):
+            continue
         scored = score_one_stock(group, strict_bottom=strict_bottom, strict_breakout=strict_breakout)
         if not scored:
             continue

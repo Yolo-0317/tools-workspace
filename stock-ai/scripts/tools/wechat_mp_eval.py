@@ -53,14 +53,7 @@ BANNED_AI_PHRASES: tuple[str, ...] = (
 
 BANNED_TITLE_WORDS = ("震惊", "重磅", "炸裂", "逆天", "100倍", "100%")
 
-COMPLIANCE_CHECKS: tuple[tuple[str, str, int], ...] = (
-    ("结合持仓", r"结合持仓", 0),
-    ("执行卡", r"执行卡", 0),
-    ("个人持仓表述", r"我的持仓|作者持仓|个人仓位", 0),
-    ("敏感网络工具", r"clash|mihomo|substore", re.I),
-    ("机场/订阅", r"机场节点|订阅合并", 0),
-    ("已持仓标记", r"📌已持仓|（已持仓）", 0),
-)
+COMPLIANCE_CHECKS: tuple[tuple[str, str, int], ...] = ()  # 见 wechat_mp_public.PUBLIC_COMPLIANCE_CHECKS
 
 _OPENING_FLUFF = re.compile(r"^(在当今|随着|近年来|不可否认)")
 _TRANSITION_AI = re.compile(r"首先|其次|最后|综上")
@@ -135,7 +128,7 @@ def _score_title(title: str, *, kind: str) -> DimensionScore:
 
     if re.search(r"[？?！!]", t):
         score += 3
-    elif kind != "workspace":
+    elif kind not in {"workspace", "temp"}:
         notes.append("建议含 ？ 或 ！ 提升点击率")
 
     if not any(w in t for w in BANNED_TITLE_WORDS):
@@ -236,7 +229,7 @@ def _score_body(body: str, *, kind: str, html: str = "") -> DimensionScore:
     else:
         notes.append("段落偏少，结构偏薄")
 
-    if kind == "workspace" and "工具工作区" in body:
+    if kind in {"workspace", "temp"} and "工具工作区" in body:
         score += 3
     elif kind in {"market", "top5", "dragons"} and re.search(r"[一二三四五六]、", body):
         score += 3
@@ -301,12 +294,13 @@ def _score_closing(body: str) -> DimensionScore:
     score = 0
     tail = "\n".join(_paragraphs(body)[-2:]) if body else ""
 
-    if re.search(r"不构成投资|免责声明|决策自负|仅供参考", tail + body[-200:]):
+    tail_blob = tail + body[-200:]
+    if re.search(r"不构成投资|决策自负|市场有风险", tail_blob):
         score += 5
-    elif "技术分享" in body or "工程记录" in body:
-        score += 4
+    elif re.search(r"个人工程笔记|工程记录|技术分享", tail_blob):
+        score += 5
     else:
-        notes.append("建议文末合规一句")
+        notes.append("建议文末合规一句（行情稿投资免责 / 技术稿工程说明）")
 
     if not re.search(r"点赞|转发|在看|留言即可", tail):
         score += 3
@@ -320,14 +314,9 @@ def _score_closing(body: str) -> DimensionScore:
 
 
 def check_compliance(body: str, *, title: str = "") -> list[str]:
-    failures: list[str] = []
-    blob = f"{title}\n{body}"
-    for label, pat, flags in COMPLIANCE_CHECKS:
-        if re.search(pat, blob, flags=flags):
-            failures.append(label)
-    if re.search(r"(?<![你])我(?:的|们)?(?:仓|持仓|账户)", body):
-        failures.append("第一人称持仓")
-    return failures
+    from scripts.tools.wechat_mp_public import check_public_compliance
+
+    return check_public_compliance(body, title=title)
 
 
 def evaluate_article(
@@ -397,60 +386,87 @@ def format_report(report: EvalReport, *, verbose: bool = True) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="公众号文章质量评分")
-    parser.add_argument("--kind", choices=["market", "top5", "dragons", "workspace", "all"])
+    parser.add_argument(
+        "--kind",
+        choices=["market", "top5", "dragons", "workspace", "temp", "all"],
+    )
     parser.add_argument("--file", type=str, help="纯文本/Markdown 正文文件")
     parser.add_argument("--title", type=str, default="")
     parser.add_argument("--digest", type=str, default="")
     parser.add_argument("--min-score", type=int, default=0, help="低于此分返回 exit 1")
     parser.add_argument("--max-ai-flavor", type=int, default=100, help="AI味高于此返回 exit 1")
     parser.add_argument("--json", action="store_true")
-    parser.add_argument("--quiet", action="store_true", help="只打印 verdict 行")
+    parser.add_argument("--traffic", action="store_true", help="附加阅读量优化清单")
+    parser.add_argument(
+        "--edition",
+        choices=("pre", "midday", "close"),
+        default=None,
+        help="market 时段（配合 --kind market）",
+    )
     args = parser.parse_args()
 
-    reports: list[EvalReport] = []
+    reports: list[tuple[EvalReport, dict[str, Any]]] = []
 
     if args.kind:
-        from scripts.tools.wechat_mp_content import DRAFT_KINDS, build_article
+        from scripts.tools.wechat_mp_content import DAILY_DRAFT_KINDS, build_article
 
-        kinds = list(DRAFT_KINDS) if args.kind == "all" else [args.kind]
+        kinds = list(DAILY_DRAFT_KINDS) if args.kind == "all" else [args.kind]
         for k in kinds:
             try:
-                art = build_article(k)
+                if k == "market" and args.edition:
+                    art = build_article(k, edition=args.edition)
+                else:
+                    art = build_article(k)
             except Exception as exc:
                 print(f"❌ [{k}] 无法构建: {exc}", file=sys.stderr)
                 return 1
             html = art.get("content", "")
-            reports.append(
-                evaluate_article(
-                    title=art["title"],
-                    digest=art.get("digest", ""),
-                    body=html,
-                    content_html=html,
-                    kind=k,
-                )
+            rep = evaluate_article(
+                title=art["title"],
+                digest=art.get("digest", ""),
+                body=html,
+                content_html=html,
+                kind=k,
             )
+            reports.append((rep, art))
     elif args.file:
         path = Path(args.file)
         body = path.read_text(encoding="utf-8")
-        reports.append(
-            evaluate_article(
-                title=args.title,
-                digest=args.digest,
-                body=body,
-                kind="file",
-            )
+        rep = evaluate_article(
+            title=args.title,
+            digest=args.digest,
+            body=body,
+            kind="file",
         )
+        reports.append((rep, {"body_text": body, "content": body}))
     else:
         parser.error("请指定 --kind 或 --file")
 
     ok = True
-    for rep in reports:
+    for rep, art in reports:
         if args.json:
             print(json.dumps(rep.to_dict(), ensure_ascii=False, indent=2))
         elif args.quiet:
             print(f"{rep.kind}: {rep.total_score}/{rep.max_total} {rep.verdict}")
         else:
             print(format_report(rep))
+            if args.traffic:
+                from scripts.tools.wechat_mp_traffic_checklist import (
+                    format_traffic_report,
+                    run_traffic_checklist,
+                )
+
+                edition = args.edition if rep.kind == "market" else None
+                traffic = run_traffic_checklist(
+                    title=rep.title,
+                    digest=rep.digest,
+                    body=str(art.get("body_text") or art.get("content") or ""),
+                    kind=rep.kind,
+                    edition=edition,
+                    content_html=str(art.get("content") or ""),
+                    recommended_tags=list(art.get("recommended_hashtags") or []),
+                )
+                print(format_traffic_report(traffic))
             print()
 
         if rep.total_score < args.min_score or rep.ai_flavor_score > args.max_ai_flavor:

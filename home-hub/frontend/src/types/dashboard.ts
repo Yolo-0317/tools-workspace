@@ -26,10 +26,93 @@ export interface PositionRow {
   action_note?: string
 }
 
+export interface AdvisorWeeklyTask {
+  title: string
+  detail: string
+}
+
+export interface AdvisorDiagnosisIssue {
+  severity: string
+  title: string
+  detail: string
+}
+
+export interface AdvisorDiagnosis {
+  health_score: number
+  health_label: string
+  issues?: AdvisorDiagnosisIssue[]
+  concentration?: {
+    holding_count?: number
+    max_single_code?: string | null
+    max_single_name?: string | null
+    max_single_pct?: number | null
+    power_sector_pct?: number
+    top3?: { code: string; name: string; weight_pct: number; pnl?: number | null }[]
+  }
+  allocation_gap?: {
+    phase?: number
+    current_position_pct?: number
+    target_position_pct?: number
+    position_gap_pp?: number
+    current_cash_pct?: number
+    target_cash_pct_min?: number
+  }
+  risk_budget?: {
+    max_loss_per_trade_pct?: number
+    max_loss_per_trade_cny?: number
+    worst_holding_code?: string | null
+    worst_holding_loss_cny?: number
+    within_budget?: boolean
+  }
+  education_tip?: string
+  rebalance_priority?: string[]
+}
+
+export interface AdvisorPayload {
+  principal_cny: number
+  phase: number
+  phase_label: string
+  banner: string
+  market_tier: string
+  position_tier: string
+  total_assets: number | null
+  position_ratio_pct: number | null
+  holding_pnl: number | null
+  available_cash: number | null
+  gap_to_principal: number
+  progress_pct: number
+  need_return_pct: number
+  selection: {
+    mode: string
+    mode_label: string
+    sop_top5_enabled: boolean
+    watch_sync_enabled: boolean
+  }
+  weekly_must_do: AdvisorWeeklyTask[]
+  weekly_forbidden: string[]
+  focus_codes: { code: string; name: string; priority: string }[]
+  diagnosis?: AdvisorDiagnosis
+  delivery_template?: string
+  weekly_review_latest?: AdvisorWeeklyReview | null
+  error?: string
+}
+
+export interface AdvisorWeeklyReview {
+  week_end_date: string
+  phase: number
+  title: string
+  health_score: number | null
+  report_md: string
+  week_stats?: Record<string, unknown> | null
+  ai_summary?: string | null
+  created_at?: string | null
+}
+
 export interface DashboardPayload {
   generated_at: string
   snapshot_slot: string
   strategy: string
+  advisor?: AdvisorPayload | null
   account_series: AccountSnapshot[]
   /** MySQL portfolio_account 当前态（优先于 eod 快照展示） */
   account_current?: AccountSnapshot | null
@@ -168,10 +251,15 @@ export interface SelectionHistory {
   holding_codes?: string[]
   account_position_pct?: number | null
   execution_card_buys?: ExecutionCardBuyHint[]
+  advisor?: AdvisorPayload | null
 }
 
 export interface LaunchdJob {
   label: string
+  /** 看板短标题（中文） */
+  title?: string
+  /** 一句话说明 */
+  description?: string
   entry: string
   schedule: string
   loaded: boolean

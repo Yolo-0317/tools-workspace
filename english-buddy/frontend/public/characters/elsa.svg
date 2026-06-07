@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Elsa">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#dbeafe"/>
+      <stop offset="100%" stop-color="#fce7f3"/>
+    </linearGradient>
+    <linearGradient id="hair" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fef9c3"/>
+      <stop offset="100%" stop-color="#fde68a"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="100" fill="url(#bg)"/>
+  <ellipse cx="100" cy="118" rx="52" ry="58" fill="#fde8f0"/>
+  <path d="M48 95c8-38 44-58 52-58s44 20 52 58c-18-8-36-12-52-12s-34 4-52 12z" fill="url(#hair)"/>
+  <path d="M52 78c6-22 28-34 48-34s42 12 48 34c-14-6-30-9-48-9s-34 3-48 9z" fill="#fff7ed" opacity=".55"/>
+  <path d="M62 52c8-18 24-28 38-28s30 10 38 28" fill="none" stroke="#fde68a" stroke-width="8" stroke-linecap="round"/>
+  <ellipse cx="82" cy="112" rx="7" ry="9" fill="#334155"/>
+  <ellipse cx="118" cy="112" rx="7" ry="9" fill="#334155"/>
+  <ellipse cx="84" cy="110" rx="2.5" ry="3" fill="#fff"/>
+  <ellipse cx="120" cy="110" rx="2.5" ry="3" fill="#fff"/>
+  <path d="M88 132q12 10 24 0" fill="none" stroke="#f472b6" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="72" cy="126" r="6" fill="#fecdd3" opacity=".55"/>
+  <circle cx="128" cy="126" r="6" fill="#fecdd3" opacity=".55"/>
+  <path d="M78 148l22 18 22-18" fill="#93c5fd" opacity=".85"/>
+  <circle cx="145" cy="58" r="6" fill="#fff" opacity=".8"/>
+  <circle cx="58" cy="68" r="4" fill="#fff" opacity=".6"/>
+</svg>

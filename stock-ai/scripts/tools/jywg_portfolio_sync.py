@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""东财 jywg 网页持仓 JSON → MySQL portfolio_positions / portfolio_account。"""
+"""东方财富证券网页持仓 JSON → MySQL portfolio_positions / portfolio_account。"""
 
 from __future__ import annotations
 
@@ -81,5 +81,5 @@ def sync_jywg_payload(payload: dict[str, Any]) -> dict[str, int]:
 
     positions, account = jywg_payload_to_card(payload)
     if not positions:
-        raise RuntimeError("jywg  payload 无持仓行")
+        raise RuntimeError("东方财富证券网页持仓 payload 无持仓行")
     return sync_positions_and_account(positions, account, source="jywg")

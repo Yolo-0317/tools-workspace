@@ -10,12 +10,11 @@
 
 ```text
 stock-ai-scheduler (Docker)
-  ├─ 17:00  sync（容器内）
-  └─ 17:30 / 战报 / 监控 → curl host.docker.internal:9876/run/{job}
-                              ↓
-                         host-jobs (launchd 本机)
-                              ↓
-                         push_*.sh（OpenCLI + 微信）
+  ├─ 17:30 sync · 18:00 emotion eod（容器内）
+  └─ 17:45 selection · 周五 advisor-weekly → host-jobs :9876
+launchd（勿与 monitor 重复）
+  ├─ macro-news-sync（15min）
+  └─ wechat-mp-draft-scheduled（19:00）
 ```
 
 ---
@@ -31,7 +30,7 @@ cd stock-ai
 会：
 
 1. 安装 `com.user.stock-ai-host-jobs`（KeepAlive）
-2. 停用 `daily-selection` / `daily-briefing` / `holdings-monitor` launchd
+2. **移除**旧 plist：`daily-selection` / `daily-briefing` / `holdings-monitor`（监控仅走 Docker）
 3. 移除旧 `stock-daily-sync` 容器，启动 `stock-ai-scheduler`
 
 ---
@@ -64,8 +63,9 @@ launchctl print gui/$(id -u)/com.user.stock-emotion-intraday
 
 | 时间 | 任务 |
 |------|------|
-| 工作日 17:00 | Tushare → MySQL |
-| 工作日 17:30 | 选股 + SOP + 战报 |
+| 工作日 17:30 | Tushare → MySQL |
+| 工作日 17:45 | 选股 + SOP + 战报 |
+| 工作日 18:00 | 收盘龙头 eod → MySQL |
 | 每天 09/12/15/20 | 战报 |
 | 工作日 */5 | 持仓监控（交易时段内脚本才生效） |
 

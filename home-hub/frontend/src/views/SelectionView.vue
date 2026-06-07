@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import {
   fetchSelectionDates,
   fetchSelectionHistory,
@@ -7,6 +7,8 @@ import {
   requestSelectionSopAnalyze,
   type SelectionSopJob,
 } from '../api/dashboard'
+import AdvisorPanel from '../components/AdvisorPanel.vue'
+import DashboardLoadingSkeleton from '../components/DashboardLoadingSkeleton.vue'
 import SelectionStockCard from '../components/SelectionStockCard.vue'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import SopReviewCard from '../components/SopReviewCard.vue'
@@ -61,6 +63,11 @@ function selectionRowKey(row: Record<string, unknown>, suffix = ''): string {
 }
 
 const shareOnly = isShareMode()
+
+const advisor = computed(() => data.value?.advisor ?? null)
+const intelOnly = computed(
+  () => advisor.value?.selection?.mode === 'intel_only',
+)
 
 function isHeld(code: string): boolean {
   if (shareOnly) return false
@@ -239,11 +246,14 @@ onMounted(init)
 <template>
   <div class="page" :class="{ mobile: isMobile }">
     <div class="head">
-      <h1>选股结果</h1>
+      <h1>选股情报</h1>
       <p v-if="data && !loading" class="summary">
         {{ data.trade_date }} · {{ data.count }} 条
+        <span v-if="intelOnly"> · 投顾阶段0（非必买）</span>
       </p>
     </div>
+
+    <AdvisorPanel v-if="advisor" :advisor="advisor" compact />
 
     <div class="filter-bar">
       <label class="filter-field filter-field-grow">
@@ -256,7 +266,7 @@ onMounted(init)
     </div>
 
     <section
-      v-if="!shareOnly && data?.execution_card_buys?.length"
+      v-if="!shareOnly && !intelOnly && data?.execution_card_buys?.length"
       class="card-buys"
     >
       <h2 class="section-title">
@@ -314,7 +324,7 @@ onMounted(init)
       @update="onSopJobsUpdate"
     />
 
-    <p v-if="loading" class="hint">加载中…</p>
+    <DashboardLoadingSkeleton v-if="loading" variant="cards" label="加载选股" />
     <p v-if="error" class="error">{{ error }}</p>
 
     <!-- SOP 审查 -->
@@ -504,7 +514,7 @@ onMounted(init)
                     {{ expandedKline === selectionRowKey(row) ? '收起K线' : 'K线' }}
                   </button>
                   <button
-                    v-if="!shareOnly"
+                    v-if="!shareOnly && !intelOnly"
                     type="button"
                     class="btn-pill sop"
                     :disabled="!!sopLoading[selectionRowKey(row, ':sop')]"

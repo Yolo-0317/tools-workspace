@@ -66,7 +66,9 @@ opencli browser state  # 查看当前页面
 | `opencli browser wait time <seconds>` | 等N秒 |
 | `opencli browser eval <js>` | 在页面内执行JS |
 | `opencli browser network` | 查看捕获的网络请求 |
-| `opencli browser close` | 关闭浏览器窗口 |
+| `opencli browser close` | 关闭**当前**自动化窗口（常需多轮；不关整个 Chrome） |
+| `bash scripts/opencli_browser_cleanup.sh` | 多轮 close，清理残留空窗 |
+| `opencli daemon stop` | 停止守护进程（配合 cleanup，仍可能需手关空白窗） |
 
 ### 工作流（东方财富数据采集标准流程）
 1. `opencli browser open "https://quote.eastmoney.com/sh600995.html"`
@@ -80,6 +82,7 @@ opencli browser state  # 查看当前页面
 - ❌ `unknown command`：opencli 版本不对 → 检查 PATH 是否指向正确版本
 - ❌ 页面空白/超时：东方财富JS渲染慢 → 页面 render 慢，多等几秒
 - ❌ Chrome 未检测到：浏览器已关闭 → 重开Chrome或用 `opencli browser open` 触发
+- ❌ 多个空白 Chrome 窗：`browser open` 多次 + `close` 只关自动化层 → `bash stock-ai/scripts/opencli_browser_cleanup.sh`（可选 `--stop-daemon`）
 
 ### 东财SOP脚本（自动处理NVM）
 ```bash

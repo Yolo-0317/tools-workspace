@@ -13,11 +13,15 @@ _COLOR_BEAR = "#1a7f37"
 _COLOR_NEUT = "#666666"
 _COLOR_ACCENT = "#1a5276"
 
-# 分块标题引用块（科技感）
+# 分块标题：compact=订阅号正文（默认）；card=旧版深色引用块
 _BLOCKQUOTE_BORDER = "#22d3ee"
 _BLOCKQUOTE_BG = "#0f172a"
 _BLOCKQUOTE_TITLE_COLOR = "#7dd3fc"
 _BLOCKQUOTE_TITLE_SIZE = "17px"
+_SECTION_ACCENT = "#1a5276"
+_SECTION_TITLE_COLOR = "#1a5276"
+_SECTION_TITLE_SIZE = "17px"
+_SECTION_TITLE_SIZE_BRIEF = "16px"
 
 _BLOCKQUOTE_TITLE_RE = re.compile(r"^>\s*(.+)\s*$")
 _CN_SECTION_RE = re.compile(r"^[一二三四五六七八九十]、")
@@ -26,12 +30,64 @@ _SENTIMENT_TAG_RE = re.compile(r"\[(利好|利空|中性)\]")
 _PCT_RE = re.compile(r"([+\-]?\d+\.?\d*)%")
 _EMPHASIS_PHRASES = ("我们认为", "值得关注的是", "向后看")
 _TOP5_RANK_RE = re.compile(r"^(\d+)\.\s+.+")
+_NEWS_ITEM_HEAD_RE = re.compile(
+    r"^(\d+)\.\s*(?:\[(利好|利空|中性)\]|(利好|利空|中性)｜)\s*(.+)$"
+)
 _METRIC_BULLET_RE = re.compile(r"^·\s*([^：]+)：(.+)$")
 _PLAN_LINE_RE = re.compile(r"^(明日计划|复盘|不做清单)：(.+)$")
 _TRADER_FIELD_RE = re.compile(r"^(地位|量价资金|博弈|结论)：(.+)$")
+_AI_COMMENT_LINE_RE = re.compile(r"^AI点评[：:]\s*(.+)$")
 _SOP_POS_RE = re.compile(r"SOP倾向关注[：:]?")
 _SOP_NEG_RE = re.compile(r"暂不纳入监控[：:]?")
 _JOURNAL_TITLE_LINE_RE = re.compile(r"^研究员札记\s*\|")
+
+_KNOWN_SECTION_TITLES = frozenset(
+    {
+        "盘面速览",
+        "外围与资金",
+        "结构判断",
+        "为什么现在看",
+        "产业链怎么拆",
+        "盘面里谁在用价格说话",
+        "和指数情绪怎么联动",
+        "向后看要验证什么",
+        "要闻精选",
+        "筛选名单",
+        "个股拆解",
+        "组合特征",
+        "待验证事项",
+        "组合与纪律",
+        "次日跟踪",
+        "情绪与盘面",
+        "龙头拆解",
+        "主线与梯队",
+        "明日计划与纪律",
+        "为什么值得多一层",
+        "开始前要准备什么",
+        "安装与把应用接到 CLI",
+        "bot 和用户两种身份",
+        "三层命令怎么发现",
+        "三个真在用的模式",
+        "和自写 Python 脚本怎么选",
+        "排错收藏",
+        "在 Cursor 里怎么配",
+    }
+)
+
+
+def code_block_html(code: str, *, lang: str = "") -> str:
+    """公众号正文代码块（等宽、浅底、可换行）。"""
+    _ = lang
+    escaped = _escape_html(code.rstrip("\n"))
+    return (
+        '<section style="margin:8px 0 14px;padding:0;">'
+        '<pre style="margin:0;padding:12px 10px;background:#f4f6f8;'
+        "border:1px solid #dbe2ea;border-radius:8px;"
+        "font-size:13px;line-height:1.58;color:#1e293b;"
+        "white-space:pre-wrap;word-break:break-all;"
+        'font-family:Menlo,Consolas,Monaco,monospace;">'
+        f"<code>{escaped}</code></pre></section>"
+    )
 
 
 def rich_html_enabled() -> bool:
@@ -41,6 +97,9 @@ def rich_html_enabled() -> bool:
 
 def is_blockquote_title_line(line: str) -> bool:
     s = line.strip()
+    bare = s.lstrip("> ").strip()
+    if bare in _KNOWN_SECTION_TITLES:
+        return True
     return bool(_BLOCKQUOTE_TITLE_RE.match(s) or _CN_SECTION_RE.match(s))
 
 
@@ -52,8 +111,13 @@ def normalize_blockquote_title(line: str) -> str:
     return s
 
 
-def blockquote_title_html(title: str) -> str:
-    """公众号分块标题 → 科技感引用块（大字加粗）。"""
+def section_style() -> str:
+    raw = os.environ.get("WECHAT_MP_SECTION_STYLE", "compact").strip().lower()
+    return raw if raw in ("compact", "card") else "compact"
+
+
+def blockquote_title_html_card(title: str) -> str:
+    """旧版深色引用块（WECHAT_MP_SECTION_STYLE=card）。"""
     text = normalize_blockquote_title(title)
     inner = (
         f'<span style="color: {_BLOCKQUOTE_TITLE_COLOR}; font-size: {_BLOCKQUOTE_TITLE_SIZE}; '
@@ -65,6 +129,92 @@ def blockquote_title_html(title: str) -> str:
         'border-radius: 0 8px 8px 0; '
         'box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.12);">'
         f"{inner}</blockquote>"
+    )
+
+
+def blockquote_title_html(title: str, *, tight_top: bool = False, first_section: bool = False) -> str:
+    """公众号分节标题：居中、加粗、主题色（非引用块）。"""
+    text = _escape_html(normalize_blockquote_title(title))
+    if section_style() == "card":
+        return blockquote_title_html_card(normalize_blockquote_title(title))
+
+    from scripts.tools.wechat_mp_layout import active_layout
+
+    layout = active_layout()
+    if tight_top:
+        margin = layout.section_margin_tight_top
+    elif first_section:
+        margin = f"{layout.section_first_margin_top} 0 2px"
+    else:
+        margin = layout.section_margin
+
+    size = _SECTION_TITLE_SIZE_BRIEF if layout.key == "brief" else _SECTION_TITLE_SIZE
+    return (
+        f'<p style="margin:{margin};padding:0;text-align:center;'
+        f"font-size:{size};font-weight:700;color:{_SECTION_TITLE_COLOR};"
+        'line-height:1.35;letter-spacing:0.03em;">'
+        f"{text}</p>"
+    )
+
+
+OPENING_LEDE_KINDS = frozenset({"sector", "market", "top5", "dragons"})
+
+
+def opening_lede_paragraph_style() -> str:
+    """开篇结论段：略大于正文、居中、主题色（market 文首 / top5·dragons 首节首段）。"""
+    from scripts.tools.wechat_mp_layout import active_layout
+
+    layout = active_layout()
+    return (
+        f"margin:{layout.para_margin};padding:0;"
+        "text-align:center;line-height:1.55;"
+        "font-size:17px;font-weight:700;"
+        f"color:{_COLOR_ACCENT};letter-spacing:0.02em;"
+    )
+
+
+def commerce_hashtag_html(tags: list[str]) -> str:
+    """简选小电正文内 #话题：居中、浅底，与文末免责区分开。"""
+    names = [str(t).strip().lstrip("#") for t in tags if str(t).strip()]
+    if not names:
+        return ""
+    inner = " ".join(
+        f'<span style="color:#5c5348;font-weight:600;">#{_escape_html(t)}</span>'
+        for t in names
+    )
+    return (
+        '<p style="margin:14px 0 16px;padding:10px 8px;text-align:center;'
+        "font-size:14px;line-height:1.75;"
+        'background-color:#faf6f0;border:1px solid #e8ddd0;border-radius:8px;">'
+        f"{inner}</p>"
+    )
+
+
+def is_commerce_hashtag_line(line: str) -> bool:
+    s = (line or "").strip()
+    if not s or " " not in s and not s.startswith("#"):
+        return False
+    tokens = s.split()
+    return bool(tokens) and all(t.startswith("#") and len(t) > 1 for t in tokens)
+
+
+def disclaimer_html(text: str, *, kind: str | None = None) -> str:
+    """文末免责声明：居中、加字号、浅色底（与正文区分）。"""
+    t = _escape_html(" ".join((text or "").split()))
+    if not t:
+        return ""
+    k = (kind or "").strip().lower()
+    if k == "commerce":
+        color, bg, border = "#6b5b4f", "#fffaf5", "#e8ddd0"
+    elif k in {"workspace", "temp", "tech", "lab", "dev"}:
+        color, bg, border = "#5d6d7e", "#f0f4f8", "#c5d0dc"
+    else:
+        color, bg, border = "#c0392b", "#fff5f5", "#f5b7b1"
+    return (
+        f'<p style="margin:20px 0 12px;padding:12px 10px;text-align:center;'
+        f"font-size:15px;line-height:1.65;color:{color};"
+        f"background-color:{bg};border:1px solid {border};border-radius:8px;"
+        f'letter-spacing:0.02em;">{t}</p>'
     )
 
 
@@ -199,11 +349,33 @@ def _format_inline_spans(segment: str) -> str:
     return "".join(parts)
 
 
+def _format_news_item_head(line: str) -> str | None:
+    stripped = line.strip()
+    m = _NEWS_ITEM_HEAD_RE.match(stripped)
+    if not m:
+        return None
+    from scripts.tools.wechat_mp_layout import active_layout
+
+    layout = active_layout()
+    num, tag = m.group(1), m.group(2) or m.group(3)
+    title = m.group(4).strip()
+    tag_html = _span(_sentiment_color(tag), f"[{tag}]", bold=True)
+    return (
+        f'<span style="font-size:{layout.news_title_size};font-weight:700;'
+        f'color:#1a1a1a;line-height:1.45;">'
+        f"{_escape_html(num)}. {tag_html} "
+        f"{_escape_html(title)}</span>"
+    )
+
+
 def format_line_rich_html(line: str) -> str:
     """单行纯文本 → 已转义且带受控 inline 样式的 HTML 片段。"""
     stripped = line.strip()
     if _SECTION_RE.match(stripped):
-        return f"<strong>{_escape_html(stripped)}</strong>"
+        return (
+            f'<span style="font-size:{_SECTION_TITLE_SIZE};font-weight:700;'
+            f'color:{_SECTION_TITLE_COLOR};">{_escape_html(stripped)}</span>'
+        )
 
     stock_line = _format_stock_score_line(line)
     if stock_line:
@@ -230,6 +402,9 @@ def format_line_rich_html(line: str) -> str:
         )
 
     if _TOP5_RANK_RE.match(stripped):
+        news_head = _format_news_item_head(line)
+        if news_head:
+            return news_head
         return f"<strong>{_format_inline_spans(stripped)}</strong>"
 
     if stripped.startswith("数据日 "):
@@ -237,5 +412,13 @@ def format_line_rich_html(line: str) -> str:
 
     if stripped.startswith("   "):
         return _format_inline_spans(line.lstrip())
+
+    ai_m = _AI_COMMENT_LINE_RE.match(stripped)
+    if ai_m:
+        body = ai_m.group(1).strip()
+        return (
+            f'<span style="color:{_COLOR_ACCENT};font-weight:600;">AI点评：</span>'
+            f"{_apply_emphasis_phrases(_format_inline_spans(body))}"
+        )
 
     return _apply_emphasis_phrases(_format_inline_spans(line))

@@ -10,6 +10,7 @@ from pathlib import Path
 QCLAW_WORKSPACE = Path.home() / ".qclaw/workspace"
 AGENT_ROOT = Path(__file__).resolve().parents[2] / "investment-agent"
 AGENT_HOLDINGS = AGENT_ROOT / "持仓执行卡.md"
+AGENT_ADVISOR_STRATEGY = AGENT_ROOT / "投顾主策略.md"
 DEFAULT_HOLDINGS = QCLAW_WORKSPACE / "持仓执行卡.md"
 TRADING_RULES_CANDIDATES = (
     AGENT_ROOT / "memory" / "trading-strategies.md",
@@ -135,18 +136,29 @@ def load_trading_rules(path: Path | None = None) -> str:
     return resolved.read_text(encoding="utf-8").strip()
 
 
+def load_advisor_strategy(path: Path | None = None) -> str:
+    resolved = path or AGENT_ADVISOR_STRATEGY
+    if not resolved.exists():
+        return "（未找到 investment-agent/投顾主策略.md）"
+    return resolved.read_text(encoding="utf-8").strip()
+
+
 def load_full_decision_context(
     holdings_path: Path | None = None,
     rules_path: Path | None = None,
+    advisor_path: Path | None = None,
 ) -> tuple[set[str], str]:
     """Return holdings codes and combined context for AI decision-making."""
     codes, _, holdings_ctx = load_holdings_card(holdings_path)
+    advisor_ctx = load_advisor_strategy(advisor_path)
     rules_ctx = load_trading_rules(rules_path)
     combined = (
         "# 决策上下文（必须全部遵循）\n\n"
-        "## A. 高级操盘策略（A股定制版，全部逻辑）\n"
+        "## A. 投顾主策略（投资决策最高权威）\n"
+        f"{advisor_ctx}\n\n"
+        "## B. 高级操盘策略（A股定制版）\n"
         f"{rules_ctx}\n\n"
-        "## B. 持仓执行卡（最新计划与红线，优先级高于通用策略冲突处）\n"
+        "## C. 持仓执行卡（执行价位、监控与红线）\n"
         f"{holdings_ctx}"
     )
     return codes, combined

@@ -1,0 +1,33 @@
+{
+  "purpose": "Parent-facing pointers to public young-learner English resources. Not sent verbatim to the LLM; used for manual curation and future updates to playbook_age4_read_along.md.",
+  "age_focus": "3-6",
+  "references": [
+    {
+      "name": "BBC Learning English - The English We Speak (simple phrases)",
+      "url": "https://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak",
+      "note": "Short phrase lessons; pick very simple episodes for adults to preview, not for 4yo alone."
+    },
+    {
+      "name": "British Council - LearnEnglish Kids",
+      "url": "https://learnenglishkids.britishcouncil.org/",
+      "note": "Songs, stories, games; good for parent to choose one story/song per week as pasted material."
+    },
+    {
+      "name": "Oxford Owl - Free eBooks (Read with Oxford)",
+      "url": "https://www.oxfordowl.co.uk/for-home/find-a-book/library-page/",
+      "note": "Graded readers; Level 1+ for parent-led read-aloud; paste short pages into the app."
+    },
+    {
+      "name": "Cambridge English - Activities for children",
+      "url": "https://www.cambridgeenglish.org/learning-english/parents-and-children/activities-for-children/",
+      "note": "Activity ideas; align home play with call rhythm (short, repeatable)."
+    }
+  ],
+  "methodology_keywords": [
+    "TPR (Total Physical Response)",
+    "choral repetition / shadowing",
+    "scaffolding",
+    "recast (gentle correction by modeling)",
+    "phonics listening (not drilling rules at age 4)"
+  ]
+}

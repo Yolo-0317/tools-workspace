@@ -21,6 +21,10 @@ def _truthy(name: str, default: str = "0") -> bool:
 class Settings:
     host: str = os.getenv("HUB_HOST", "127.0.0.1")
     port: int = int(os.getenv("HUB_PORT", "8780"))
+    url_prefix: str = os.getenv("HUB_URL_PREFIX", "/hub").strip().rstrip("/")
+    session_cookie_path: str = (
+        os.getenv("HUB_SESSION_COOKIE_PATH", "/hub/").strip() or "/"
+    )
     api_token: str = os.getenv("HUB_API_TOKEN", "").strip()
 
     require_auth: bool = _truthy("HUB_REQUIRE_AUTH", "1")
@@ -37,6 +41,9 @@ class Settings:
     ).expanduser()
 
     trust_proxy: bool = _truthy("HUB_TRUST_PROXY", "1")
+
+    # 财经快讯看板 + /api/dashboard/news/*（默认关；需与 launchd macro-news 一致）
+    news_enabled: bool = _truthy("HUB_NEWS_ENABLED", "0")
 
     # 公开财经 API 防护（/api/dashboard/news/*）
     news_public_guard: bool = _truthy("HUB_NEWS_PUBLIC_GUARD", "1")

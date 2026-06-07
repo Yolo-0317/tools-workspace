@@ -18,8 +18,8 @@ PORT="${HUB_PORT:-8780}"
 HOST="${HUB_HOST:-127.0.0.1}"
 
 if [ ! -f frontend/dist/index.html ]; then
-  echo "[$(date '+%F %T')] frontend/dist 缺失，尝试构建..." >&2
-  (cd frontend && npm run build) || exit 1
+  echo "[$(date '+%F %T')] frontend/dist 缺失，构建（VITE_BASE_PATH=/hub/）..." >&2
+  (cd frontend && npm install && VITE_BASE_PATH=/hub/ npm run build) || exit 1
 fi
 
 mkdir -p logs data

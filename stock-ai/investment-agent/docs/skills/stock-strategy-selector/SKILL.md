@@ -1,34 +1,45 @@
 ---
 name: stock-strategy-selector
-description: A股综合分析工作台 - 每日行情数据同步到MySQL、选股筛选、策略对比、AI审查、持仓次日计划、回测验证、单股诊断。支持 Tushare 和东方财富数据源。
+description: A股投顾带操工作台 — 投顾主策略决策 → 数据/选股/SOP/监控工具 → 看板/微信交付。支持 Tushare 与东财 OpenCLI。
 ---
 
-# Stock Strategy Selector
+# Stock Strategy Selector（投顾带操）
 
 Use the local project at `/Users/yolo/dev/yolo/tools-workspace/stock-ai` as the execution backend.
 
-This is the default and unified entrypoint for daily stock-analysis tasks.
+**所有任务须先对齐投顾阶段**，再调用工具。决策权威：`investment-agent/投顾主策略.md`；执行价位：`持仓执行卡.md`。
+
+## 投顾阶段门控（必读）
+
+| 阶段 | 含义 | Top5 / combined | SOP & AI 简评 | 次日监控 | 新开仓建议 |
+|------|------|-----------------|---------------|----------|------------|
+| **0** | 止血降仓 | 情报池（继续观察） | **SOP 启用** / AI 简评跳过 | **不写** selection 规则 | **禁止**；仅减仓 |
+| **1** | 稳态组合 | 小仓试探 | 启用 | 启用 | ≤1 只试探 |
+| **2** | 进攻试探 | 可进攻 | 启用 | 启用 | 每月 ≤2 只 |
+
+- 代码门控：`stock_ai/advisor_selection.py`（读 `投顾主策略.md` 阶段标记）
+- Agent 回复：先输出投顾五段（见 `投顾主策略.md` §六），再附执行卡触发价
+- 阶段 0 当前重点：降仓 ≤65%、减梅花/广州/锁南网；**不**把 Top5 当必买
 
 ## Quick workflow
 
-1. Confirm the task type: data update, daily screening, strategy comparison, AI review, holdings-aware next-day plan, or single-stock diagnosis.
-2. Read `references/project-map.md` once if you need the project layout or prerequisites.
-3. Read `references/strategy-playbook.md` when you need strategy selection, command recipes, or result interpretation.
-4. If the task depends on the user's current positions, load from MySQL via `scripts/tools/portfolio_db.py` (`load_positions` / `load_holding_codes`), or run `sync_portfolio_from_card` if the execution card was just updated.
-5. Prefer the wrapper script `scripts/run_stock_ai.sh` for common tasks.
-6. Report results in plain language, with the exact output file path when a script generates artifacts.
+1. **Read `investment-agent/投顾主策略.md`** — 阶段、本周必做、禁止项
+2. **Read `investment-agent/投顾专业技能.md`** — 账户诊断、七段交付、中证协职责映射
+3. Confirm task type: data update, screening, AI review, monitor, or diagnosis
+3. Read `references/project-map.md` if you need layout or prerequisites
+4. Read `references/strategy-playbook.md` for commands and interpretation
+5. Load holdings from MySQL (`portfolio_db.load_positions`) or sync card if updated
+6. Prefer `scripts/run_stock_ai.sh` for common tasks
+7. Report in plain language with artifact paths; **frame as advisor-led plan**, not raw CSV
 
 ## Operating rules
 
-- Treat this as decision support, not investment advice.
-- Prefer fewer, larger writes: run one strategy command, then summarize the output, instead of spamming many small commands.
-- Check for required env before long runs:
-  - `MYSQL_URL` for any database-backed workflow
-  - `DEEPSEEK_API_KEY` only when using AI review features
-- Use `uv run python ...` inside the project root when not using the wrapper.
-- If a command may take time, say so briefly and run it.
-- Do not edit strategy thresholds unless the user asks.
-- Do not restart unrelated services; this project is just local scripts plus MySQL/API dependencies.
+- **投顾带操**：工具输出是投顾的输入，不是最终指令；与用户口头冲突时以投顾主策略为准（可反对补梅花、A 档追高）
+- Treat as decision support, not licensed investment advice
+- Inject decision context for all AI analysis: `inject_decision_context()` / `load_full_decision_context()`
+- Required env: `MYSQL_URL`; `DEEPSEEK_API_KEY` only for AI features
+- Do not edit strategy thresholds unless the user asks
+- Do not restart unrelated services
 
 ## 每日行情数据更新（Data Sync）
 
@@ -80,13 +91,16 @@ Use one of these:
 
 Prefer the combined strategy when the user asks broadly for “today’s stock picks”, “综合选股”, or wants a ranked watchlist.
 
-Hard daily rules (merged from `daily-strategy-selection`):
+Hard daily rules (merged from `daily-strategy-selection` + **投顾门控**):
 
+- **First**: read `投顾主策略.md` phase; stage 0 = intel pool only, no SOP, no selection watch
 - Confirm target trade date from MySQL `stock_daily` first.
 - Sync missing daily data only when target date is not already present.
 - Run combined workflow from `core_v2/stock_selection_combined.py` if import-path issues appear.
-- Do a browser-based Eastmoney second pass (names/news/funds/finance/basic info) before final advice.
-- Do not present raw CSV directly as final recommendation; output keep/observe/drop style interpretation.
+- Results are **advisor-filtered** (`apply_advisor_to_results_row`); do not undo with execution-card B-tier in phase 0.
+- After first-pass CSV, Eastmoney second pass is for **context**, not override of advisor phase.
+- Do not present raw CSV as final advice; output 投顾五段 + keep/observe/drop interpretation.
+- Stage 0 buckets: **无「候选新开仓」**；仅 持有观察 / 反弹减仓 / 情报观察
 
 ### Strategy comparison
 
@@ -98,44 +112,43 @@ Run two or more strategy scripts and compare:
 
 ### AI review
 
-Use `scripts/analysis/ai_review_combined_top5.py` after screening results land in MySQL or CSV, with `DEEPSEEK_API_KEY` available.
+Use `scripts/analysis/ai_review_combined_top5.py` after screening, with `DEEPSEEK_API_KEY`.
 
-During AI review, use browser-based Eastmoney/news enrichment when stronger recommendation context is needed.
+**投顾门控**：阶段 0 **仍跑 Top5 东财 SOP**（`sop_review_enabled()` 恒真）；跳过 AI 简评与次日监控（`ai_selection_review_enabled()` / `selection_watch_sync_enabled()`）。阶段 ≥1 恢复 DeepSeek 简评。
 
-Typical enrichment angles:
+During AI review, inject `load_full_decision_context()` (投顾主策略 > 执行卡 > 通用策略).
+
+Typical enrichment angles (context only, not override):
 
 - latest company announcements or earnings clues
 - industry policy and sector catalysts
-- recent negative news, investigations, profit warnings, financing pressure, unlocks, or major shareholder actions
+- recent negative news, investigations, profit warnings
 
-Treat enrichment as context, not a replacement for technical screening. Synthesize technical signals + AI review + browser/news context before final advice.
+Treat enrichment as context. Synthesize **advisor phase + technical + AI + news** before final advice.
 
 ### Holdings-aware next-day plan
 
-After screening or AI review, compare the candidate list with current holdings from MySQL (`portfolio_db.load_holding_codes()` or `holdings_context.load_holdings_card()`).
+Compare candidates with holdings from MySQL (`portfolio_db.load_holding_codes()`).
 
-Use this workflow when the user asks for 次日操作建议, 持仓去留, 明天怎么操作, 调仓建议, or a plan that combines fresh picks with current positions.
+Use when user asks for 次日操作建议, 持仓去留, 调仓建议.
 
-Output should separate stocks into a few plain-language buckets:
+Output buckets (**phase-aware**):
 
-- 持有观察：still hold, watch key levels, no immediate action
-- 逢高减仓 / 反弹减仓：weaker names already held, especially if trapped or no longer aligned with strategy
-- 候选新开仓：new names from fresh screening not already held
-- 不操作：positions with no clear edge
+| 阶段 | 允许桶 |
+|------|--------|
+| **0** | 持有观察 · 反弹/逢高减仓 · 情报观察（**无候选新开仓**） |
+| **1** | + 小仓试探（最多 1 只，符合目标组合） |
+| **2** | + 进攻试探（仍禁追高、禁补梅花） |
 
-Base the recommendation on:
+Base on:
 
-- whether the stock is already in holdings
-- current cost basis and quantity from MySQL `portfolio_positions` (synced from `investment-agent/持仓执行卡.md`)
-- total portfolio size when known (user provided: about 5w RMB)
-- whether it appears in the latest strategy output
-- ranking / score / tags from the latest screening CSV
-- AI review conclusions if available
-- browser-based Eastmoney/news context when available
+- `投顾主策略.md` weekly must-do / forbidden
+- MySQL `portfolio_positions` + execution card triggers
+- latest screening (advisor-capped actions)
+- AI/SOP if phase ≥1
+- OpenCLI live price for intraday (not Tushare last close as 现价)
 
-For sizing suggestions, keep them proportional to the stated portfolio size instead of speaking in abstract terms only.
-
-Do not present this as certainty; frame it as a next-day watchlist and action plan with risk notes.
+Frame as next-day watchlist with risk notes; user executes in **东方财富证券** (East Money brokerage).
 
 ### Selection performance check (optional)
 
@@ -153,15 +166,23 @@ Use:
 
 ## Result reporting template
 
-When replying with results, usually include:
+When replying with results, **lead with advisor summary**:
 
-- strategy used
-- target date
-- candidate count
-- top 3-10 names/codes if available
-- notable tags or scores if available
+```text
+【市场一句话】档位 + 主线
+【回本进度】现净资产/6万；距目标差额
+【本周必做 1～3 条】代码+股数+条件+理由
+【本周不做】
+【触发价附录】摘自执行卡
+```
+
+Then include:
+
+- strategy used + advisor phase
+- target date + candidate count
+- top names with **advisor-capped 建议动作**
 - output artifact path
-- one short caveat about data freshness or risk
+- caveat on data freshness / 决策支持非投资建议
 
 ## Files to read on demand
 

@@ -241,6 +241,11 @@ def get_latest_trade_date(engine):
         return conn.execute(text(query)).scalar().strftime("%Y%m%d")
 
 def main(target_date=None):
+    if not target_date:
+        from scripts.tools.ensure_daily_bars import ensure_daily_bars_at_selection_start
+
+        ensure_daily_bars_at_selection_start()
+
     engine = get_db_engine()
     if target_date:
         trade_date = target_date
@@ -329,6 +334,15 @@ def main(target_date=None):
     except Exception as exc:  # noqa: BLE001
         print(f"⚠️ 未读取持仓/仓位（{exc}），跳过执行卡过滤")
 
+    advisor_phase = 0
+    try:
+        from stock_ai.advisor_selection import format_selection_banner, parse_advisor_phase
+
+        advisor_phase = parse_advisor_phase()
+        print(format_selection_banner(phase=advisor_phase))
+    except Exception as exc:  # noqa: BLE001
+        print(f"⚠️ 投顾选股过滤未加载（{exc}）")
+
     excluded_crash = 0
     excluded_bj = 0
     excluded_st = 0
@@ -336,7 +350,16 @@ def main(target_date=None):
     results = []
     for ts_code, group in df_all.groupby('ts_code'):
         group = group.sort_values('trade_date')
-        if len(group) < 60: continue
+        if len(group) < 60:
+            continue
+        code_early = str(ts_code).split(".")[0].zfill(6)
+        try:
+            from stock_ai.advisor_selection import EXCLUDE_CODES
+
+            if code_early in EXCLUDE_CODES:
+                continue
+        except ImportError:
+            pass
         
         latest = group.iloc[-1]
         close_today = latest['close']
@@ -579,9 +602,22 @@ def main(target_date=None):
             if code_str not in holdings_codes and action == "谨慎回避":
                 continue
 
+            try:
+                from stock_ai.advisor_selection import (
+                    advisor_industry_score_bonus,
+                    apply_advisor_to_results_row,
+                )
+
+                total_score = min(
+                    100.0,
+                    total_score + advisor_industry_score_bonus(industry, phase=advisor_phase),
+                )
+            except ImportError:
+                pass
+
             _, buy_shares, buy_amount_yuan = _position_suggestion(action, close_today)
 
-            results.append({
+            row = {
                 '代码': code_str,
                 '收盘价': close_today,
                 '涨幅%': latest['pct_chg'],
@@ -604,7 +640,22 @@ def main(target_date=None):
                 '预计金额(元)': buy_amount_yuan,
                 '超大单净流入(万)': big_net,
                 '超大单占比%': big_pct
-            })
+            }
+            try:
+                from stock_ai.advisor_selection import apply_advisor_to_results_row
+
+                apply_advisor_to_results_row(
+                    row, phase=advisor_phase, account_position_pct=account_position_pct
+                )
+                if row.get("建议动作") == "禁止":
+                    continue
+                action = str(row["建议动作"])
+                _, buy_shares, buy_amount_yuan = _position_suggestion(action, close_today)
+                row["建议买入(股)"] = buy_shares
+                row["预计金额(元)"] = buy_amount_yuan
+            except ImportError:
+                pass
+            results.append(row)
 
     print(
         "📈 信号命中："
@@ -656,6 +707,16 @@ def main(target_date=None):
             if n_card_watch:
                 print(f"📌 执行卡关注补入 watch：{n_card_watch} 只（P-买1/买2 未入信号池）")
             apply_execution_card_b_tier(watch_results, account_position_pct)
+            try:
+                from stock_ai.advisor_selection import reapply_advisor_to_rows
+
+                reapply_advisor_to_rows(
+                    watch_results,
+                    phase=advisor_phase,
+                    account_position_pct=account_position_pct,
+                )
+            except ImportError:
+                pass
             wn = save_selection_daily_results(
                 trade_date, watch_results, strategy="watch"
             ) if watch_results else 0
@@ -690,6 +751,17 @@ def main(target_date=None):
                 row["预计金额(元)"] = buy_amount_yuan
     except Exception as exc:  # noqa: BLE001
         print(f"⚠️ 执行卡 B 档对齐失败：{exc}")
+
+    try:
+        from stock_ai.advisor_selection import reapply_advisor_to_rows
+
+        reapply_advisor_to_rows(
+            results,
+            phase=advisor_phase,
+            account_position_pct=account_position_pct,
+        )
+    except ImportError:
+        pass
 
     if not results:
         print("❌ A轨（combined）未筛选出符合任何策略的股票")

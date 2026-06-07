@@ -1,20 +1,18 @@
 # USER.md - About Your Human
 
-_Learn about the person you're helping. Update this as you go._
+## 投资账户（投顾模式）
 
-- **Name:**
-- **What to call them:**
-- **Pronouns:** _(optional)_
-- **Timezone:**
-- **Notes:**
+- **本金**：**60,000 元**（心理锚点）
+- **模式**：**投顾主导** — 见 `投顾主策略.md`；执行价位见 `持仓执行卡.md`
+- **目标**：净资产从约 **5.3 万** 回到 **6 万**（约 +13%），**6～12 个月**分阶段，不赌单票回本
+- **通道**：微信；回复全中文、简洁可分段
+- **授权**：投顾可反对「熬仓/追高/补梅花」等口头意图；用户负责在 **东方财富证券** 下单
 
-## Context
+## 偏好
 
-- **语言偏好**：回复与思考过程（thinking）均使用**中文**，禁止夹杂英文
-- 主要在微信使用投资助手，报告简洁、可分段
-
-_(What do they care about? What projects are they working on? What annoys them? What makes them laugh? Build this over time.)_
+- 要**专业投顾带方向**，不要只听持仓复述
+- 决策支持，非持牌投顾承诺收益
 
 ---
 
-The more you know, the better you can help. But remember — you're learning about a person, not building a dossier. Respect the difference.
+_其他个人信息随对话补充。_

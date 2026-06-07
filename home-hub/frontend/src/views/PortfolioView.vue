@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import AdvisorPanel from '../components/AdvisorPanel.vue'
+import DashboardLoadingSkeleton from '../components/DashboardLoadingSkeleton.vue'
 import DisciplinePanel from '../components/DisciplinePanel.vue'
 import MiniLineChart from '../components/MiniLineChart.vue'
 import PortfolioPositionCard from '../components/PortfolioPositionCard.vue'
@@ -12,7 +14,12 @@ import {
   fmtNum,
   fmtRatioPct,
 } from '../api/dashboard'
-import type { AccountSnapshot, DisciplinePayload, PositionRow } from '../types/dashboard'
+import type {
+  AccountSnapshot,
+  AdvisorPayload,
+  DisciplinePayload,
+  PositionRow,
+} from '../types/dashboard'
 import { posCode, posCost, posPnl, posPrice } from '../utils/portfolio'
 
 const positions = ref<PositionRow[]>([])
@@ -23,6 +30,7 @@ const LIVE_SNAP = '__live__'
 const selectedSnapDate = ref(LIVE_SNAP)
 const livePositions = ref<PositionRow[]>([])
 const discipline = ref<DisciplinePayload | null>(null)
+const advisor = ref<AdvisorPayload | null>(null)
 const error = ref('')
 const loading = ref(true)
 
@@ -69,6 +77,7 @@ onMounted(async () => {
     ])
     account.value = (summary.account_current ?? {}) as Record<string, unknown>
     livePositions.value = (summary.positions_live ?? []) as PositionRow[]
+    advisor.value = summary.advisor ?? null
     discipline.value = disc
     series.value = history.series.length ? history.series : summary.account_series
     const histDates = history.dates.length
@@ -97,8 +106,10 @@ onMounted(async () => {
       </p>
     </header>
 
-    <p v-if="loading" class="hint">加载中…</p>
+    <DashboardLoadingSkeleton v-if="loading" variant="portfolio" label="加载持仓" />
     <p v-if="error" class="error">{{ error }}</p>
+
+    <AdvisorPanel v-if="!loading && advisor" :advisor="advisor" compact />
 
     <DisciplinePanel
       v-if="discipline"

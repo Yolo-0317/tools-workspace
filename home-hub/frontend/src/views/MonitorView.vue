@@ -5,9 +5,12 @@ import {
   fetchMonitorRules,
   fetchMonitorState,
 } from '../api/dashboard'
+import AdvisorPanel from '../components/AdvisorPanel.vue'
+import DashboardLoadingSkeleton from '../components/DashboardLoadingSkeleton.vue'
 import { usePlatformLayout } from '../composables/usePlatformLayout'
 import { shanghaiToday } from '../utils/date'
 import type {
+  AdvisorPayload,
   MonitorFiredDetail,
   MonitorHistoryDay,
   MonitorRule,
@@ -15,6 +18,8 @@ import type {
 } from '../types/dashboard'
 
 const rules = ref<MonitorRule[]>([])
+const advisor = ref<AdvisorPayload | null>(null)
+const ruleStats = ref({ total: 0, holdings: 0, selection: 0 })
 const quoteSource = ref('')
 const quotesAsOf = ref('')
 const history = ref<MonitorHistoryDay[]>([])
@@ -30,6 +35,15 @@ const today = shanghaiToday()
 
 const firedDetails = computed(() => state.value?.fired_details ?? [])
 const firedCount = computed(() => state.value?.fired.length ?? 0)
+const selectionWatchEnabled = computed(
+  () => advisor.value?.selection?.watch_sync_enabled !== false,
+)
+const holdingsRuleCount = computed(
+  () => ruleStats.value.holdings || rules.value.filter((r) => r.source !== 'selection').length,
+)
+const selectionRuleCount = computed(
+  () => ruleStats.value.selection || rules.value.filter((r) => r.source === 'selection').length,
+)
 
 function ruleCode(rule: MonitorRule): string {
   return String(rule.code ?? rule.ts_code ?? '—')
@@ -72,6 +86,16 @@ async function loadRules() {
   try {
     const r = await fetchMonitorRules(true)
     rules.value = r.rules
+    advisor.value = r.advisor ?? null
+    if (r.rule_stats) {
+      ruleStats.value = r.rule_stats
+    } else {
+      ruleStats.value = {
+        total: r.rules.length,
+        holdings: r.rules.filter((x) => x.source !== 'selection').length,
+        selection: r.rules.filter((x) => x.source === 'selection').length,
+      }
+    }
     quoteSource.value = r.quote_source ?? ''
     quotesAsOf.value = r.quotes_as_of ?? ''
   } catch (e) {
@@ -176,15 +200,29 @@ onMounted(init)
     </label>
 
     <p v-if="error" class="error">{{ error }}</p>
-    <p v-if="pageLoading" class="hint">加载中…</p>
-    <p v-else-if="stateLoading" class="hint">切换日期…</p>
+    <DashboardLoadingSkeleton v-if="pageLoading" variant="block" label="加载监控" />
+    <p v-else-if="stateLoading" class="hint reload-hint">
+      <span class="reload-spinner" aria-hidden="true" />切换日期…
+    </p>
+
+    <AdvisorPanel v-if="!pageLoading && advisor" :advisor="advisor" compact />
+    <p
+      v-if="!pageLoading && advisor && !selectionWatchEnabled"
+      class="hint advisor-hint"
+    >
+      投顾阶段 0：选股池监控已关闭，本页仅监控持仓执行卡规则（{{ holdingsRuleCount }} 条）。
+    </p>
 
     <template v-if="!pageLoading && state && !stateLoading">
       <div class="summary">
         <span class="pill" :class="firedCount ? 'pill-warn' : 'pill-muted'">
           已触发 {{ firedCount }} 条
         </span>
-        <span class="pill pill-muted">规则 {{ rules.length }} 条</span>
+        <span class="pill pill-muted">持仓规则 {{ holdingsRuleCount }} 条</span>
+        <span v-if="selectionWatchEnabled" class="pill pill-muted">
+          选股监控 {{ selectionRuleCount }} 条
+        </span>
+        <span v-else class="pill pill-muted">选股监控 已关闭</span>
         <span v-if="!state.exists" class="pill pill-empty">无状态文件</span>
       </div>
 
@@ -688,6 +726,35 @@ tbody tr.active {
 
 .hint {
   color: #8b9cb3;
+}
+
+.advisor-hint {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.reload-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+
+.reload-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(125, 211, 252, 0.2);
+  border-top-color: #7dd3fc;
+  border-radius: 50%;
+  animation: reloadSpin 0.75s linear infinite;
+}
+
+@keyframes reloadSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error {

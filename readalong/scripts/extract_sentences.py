@@ -1,0 +1,129 @@
+#!/usr/bin/env python3
+"""Extract one EPUB chapter as a list of sentences for forced alignment."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import zipfile
+from html import unescape
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_EPUB = ROOT / "samples" / "book.epub"
+
+CHAPTER_FILES: dict[int, tuple[str, str]] = {
+    1: ("OEBPS/hp01_watermarkval001_en-ushtml", "The Boy Who Lived"),
+}
+
+_PROTECTED = {
+    "Mr.": "§MR§",
+    "Mrs.": "§MRS§",
+    "Ms.": "§MS§",
+    "Dr.": "§DR§",
+    "St.": "§ST§",
+    "No.": "§NO§",
+}
+
+
+def _clean_html_paragraph(raw: str) -> str:
+    raw = re.sub(
+        r'<span[^>]*class="[^"]*drop[^"]*"[^>]*>([^<]*)</span>\s*',
+        r"\1",
+        raw,
+        flags=re.I,
+    )
+    text = re.sub(r"<br\s*/?>", " ", raw, flags=re.I)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = unescape(text).replace("\xa0", " ")
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _merge_flowing_paragraphs(raw_paragraphs: list[str]) -> list[str]:
+    merged: list[str] = []
+    buf = ""
+    for para in raw_paragraphs:
+        piece = para.strip()
+        if not piece:
+            continue
+        buf = f"{buf} {piece}".strip() if buf else piece
+        if re.search(r'[.!?…][\'")\]]*\s*$', buf):
+            merged.append(buf)
+            buf = ""
+    if buf:
+        merged.append(buf)
+    return merged
+
+
+def _ascii_quotes(text: str) -> str:
+    return text.replace("\u2019", "'").replace("\u2018", "'").replace("\u2032", "'")
+
+
+def _split_sentences(block: str) -> list[str]:
+    text = re.sub(r"\s+", " ", _ascii_quotes(block.strip()))
+    for k, v in _PROTECTED.items():
+        text = text.replace(k, v)
+    # Dialogue / ellipsis kept inside sentences.
+    parts = re.split(r'(?<=[.!?…])\s+(?=[A-Z"\'(])', text)
+    rev = {v: k for k, v in _PROTECTED.items()}
+    out: list[str] = []
+    for p in parts:
+        p = p.strip()
+        if not p:
+            continue
+        for v, k in rev.items():
+            p = p.replace(v, k)
+        out.append(p)
+    return out
+
+
+def extract_chapter(epub_path: Path, chapter: int) -> dict:
+    if chapter not in CHAPTER_FILES:
+        raise SystemExit(f"Chapter {chapter} not mapped in CHAPTER_FILES")
+    rel, title = CHAPTER_FILES[chapter]
+    with zipfile.ZipFile(epub_path) as zf:
+        html = zf.read(rel).decode("utf-8", errors="replace")
+
+    paragraphs: list[str] = []
+    for raw in re.findall(r"<p[^>]*>(.*?)</p>", html, flags=re.S):
+        text = _clean_html_paragraph(raw)
+        if not text or ("The Boy Who Lived" in text and text.startswith("Chapter")):
+            continue
+        paragraphs.append(text)
+
+    merged = _merge_flowing_paragraphs(paragraphs)
+    sentences: list[str] = []
+    sentence_paragraphs: list[int] = []
+    for pi, block in enumerate(merged):
+        sents = _split_sentences(block)
+        sentences.extend(sents)
+        sentence_paragraphs.extend([pi] * len(sents))
+
+    return {
+        "chapter": chapter,
+        "title": title,
+        "paragraph_count": len(paragraphs),
+        "merged_paragraph_count": len(merged),
+        "sentence_count": len(sentences),
+        "merged_paragraphs": merged,
+        "sentences": sentences,
+        "sentence_paragraphs": sentence_paragraphs,
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--epub", type=Path, default=DEFAULT_EPUB)
+    parser.add_argument("--chapter", type=int, required=True)
+    parser.add_argument("-o", "--output", type=Path, required=True)
+    args = parser.parse_args()
+
+    data = extract_chapter(args.epub, args.chapter)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"Chapter {args.chapter}: {data['sentence_count']} sentences → {args.output}")
+
+
+if __name__ == "__main__":
+    main()

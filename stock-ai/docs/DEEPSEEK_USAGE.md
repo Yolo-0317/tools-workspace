@@ -2,26 +2,28 @@
 
 > **2026-05 更新**：调用已统一到 `scripts/tools/deepseek_client.py`；能力总览见 **[CAPABILITIES.md](CAPABILITIES.md)**。
 
-## 后端切换（DeepSeek API ↔ Cursor auto）
+## 后端切换（推荐：写稿 Cursor + SOP DeepSeek）
 
 在 `stock-ai/.env` 设置：
 
 ```bash
-# 默认：DeepSeek API
-LLM_BACKEND=deepseek
-DEEPSEEK_API_KEY=sk-...
-
-# 改用 Cursor 订阅（与微信桥相同的 agent login）
+# 公众号写稿、战报、单篇 LLM 等（需 agent login）
 LLM_BACKEND=cursor
 CURSOR_AGENT_MODEL=auto
+
+# 东财 SOP Top5 并发终审（与 LLM_BACKEND 解耦，始终走 API）
+SOP_LLM_BACKEND=deepseek
+DEEPSEEK_API_KEY=sk-...
 ```
 
-| 入口 | 函数 | deepseek 默认 | cursor |
-|------|------|---------------|--------|
-| MCP / 持仓 prompt | `call_deepseek_prompt()` | `deepseek-v4-flash` | `auto` |
-| 战报 / SOP messages | `call_deepseek()` | `deepseek-v4-flash` | `auto` |
+| 场景 | 环境变量 | 后端 |
+|------|----------|------|
+| `wechat_mp_*_article`、选股 AI 审查等 | `LLM_BACKEND` | 默认 `cursor` → `auto` |
+| `sop_review_top5_concurrent` / `sop_review_single` | `SOP_LLM_BACKEND`（默认 `deepseek`） | DeepSeek API，可 `DEEPSEEK_WORKERS` 并发 |
 
-Cursor 模式：`agent --print --mode ask --trust`，工作区默认 `investment-agent`。无需 `DEEPSEEK_API_KEY`，但单次较慢、不宜高并发 SOP。
+`call_deepseek(..., backend=…)` 可显式覆盖；SOP 脚本固定 `backend=sop_llm_backend()`。
+
+Cursor 模式：`agent --print --mode ask --trust`，工作区默认 `investment-agent`。无需 `DEEPSEEK_API_KEY`，但单次较慢，**勿**把 SOP 并发改为 `cursor`。
 
 ## API 封装与模型（LLM_BACKEND=deepseek 时）
 

@@ -43,14 +43,29 @@
 | `sidestore-infra/` | `sidestore-infra/README.md` |
 | `substore-clash/` | `substore-clash/README.md` — Sub-Store + Mihomo 订阅生成 |
 | `stock-mysql/` | `stock-mysql/README.md` — MySQL 8，stock-ai 业务库 |
-| `emquant-sim/` | `emquant-sim/docs/PLAYBOOK.md` — 掘金 Win11 仿真（只读执行卡，与 stock-ai 隔离） |
+| `emquant-sim/` | `emquant-sim/OFFLINE.md` — **已下线**（专业投资者门槛）；代码备查 |
+| `english-buddy/` | `english-buddy/README.md` — 少儿英文带读（Ollama + edge-tts）；账号见 `docs/AUTH.md` |
 | `~/docker/jellyfin-stack` | `.cursor/skills/jellyfin/SKILL.md`（NAS / 迅雷 / 夸克 三库） |
 
-### 微信公众号草稿 Skill
+### OpenCLI 浏览器（stock-ai）
 
 | Skill | 路径 | 用途 |
 |-------|------|------|
-| `wechat-mp-drafts` | `.cursor/skills/wechat-mp-drafts/` | 四槽草稿 API + [写作法则](.cursor/skills/wechat-mp-drafts/writing-guide.md)（标题/排版/去AI/发布总检） |
+| `stock-opencli` | `.cursor/skills/stock-opencli/` | **场景路由真源**：东财 / 公众号内容分析 / JYWG；命令与故障速查 |
+| `eastmoney-browser-sop` | `stock-ai/investment-agent/docs/skills/eastmoney-browser-sop/` | 东财 **深度分析** 十一维 SOP（在 OpenCLI 采集之后） |
+
+用户说 **OpenCLI、东财浏览器、公众号后台抓取** → 先读 `stock-opencli`，勿每次重查 `opencli --help`。
+
+### 微信公众号草稿 Skill
+
+**约定**：用户说 **「公众号」= 「牛马也智能」**（`wechat-mp-drafts`），不是简选小电。
+
+| Skill | 路径 | 用途 |
+|-------|------|------|
+| `wechat-mp-drafts` | `.cursor/skills/wechat-mp-drafts/` | **牛马也智能**：先 [INDEX.md](.cursor/skills/wechat-mp-drafts/INDEX.md) → [evening-trilogy-templates.md](.cursor/skills/wechat-mp-drafts/evening-trilogy-templates.md) · [operations-sop.md](.cursor/skills/wechat-mp-drafts/operations-sop.md) · [SKILL.md](.cursor/skills/wechat-mp-drafts/SKILL.md) |
+| `wechat-mp-commerce-drafts` | `.cursor/skills/wechat-mp-commerce-drafts/` | **简选小电**（**已搁置**；仅用户明确带货时使用） |
+
+**公众号定时（每日 18:20）**：交易日 `sector`+`dragons`+`top5` · 周日/节假日休市 `news`（72h）· 周六跳过 — 见 `stock-ai/docs/WECHAT_MP_SCHEDULING.md`。
 
 ### Jellyfin Skills
 

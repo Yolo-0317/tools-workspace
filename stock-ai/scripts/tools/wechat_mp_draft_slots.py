@@ -1,4 +1,4 @@
-"""公众号四槽位草稿：优先 update，否则 add 并替换 media_id。"""
+"""公众号五槽位草稿：优先 update，否则 add 并替换 media_id。"""
 
 from __future__ import annotations
 
@@ -30,6 +30,14 @@ SLOTS_PATH = ROOT / "data" / "wechat_mp_draft_slots.json"
 
 # 用于识别「本脚本管理的草稿」，避免误删人工撰写的其他草稿
 _KIND_TITLE_HINTS: dict[str, tuple[str, ...]] = {
+    "sector": (
+        "行业",
+        "产业链",
+        "热点行业",
+        "量价",
+        "行业研究",
+        "A股行业",
+    ),
     "market": (
         "市场评论",
         "宏观",
@@ -40,6 +48,17 @@ _KIND_TITLE_HINTS: dict[str, tuple[str, ...]] = {
         "盘面",
         "霍尔木兹",
         "中东",
+        "结构判断",
+    ),
+    "news": (
+        "要闻",
+        "快讯",
+        "7×24",
+        "精选",
+        "评论最高",
+        "AI 解读",
+        "地缘",
+        "财经",
     ),
     "top5": (
         "选股",
@@ -65,6 +84,16 @@ _KIND_TITLE_HINTS: dict[str, tuple[str, ...]] = {
         "git",
         "仓库",
         "全景",
+    ),
+    "temp": (
+        "飞书",
+        "lark",
+        "CLI",
+        "OpenAPI",
+        "临稿",
+        "临时",
+        "Agent",
+        "自建应用",
     ),
 }
 
@@ -130,17 +159,14 @@ def upsert_draft_article(
     更新或新建草稿。返回 (media_id, action, error)。
     action: updated | created
     """
-    item = dict(article)
+    from scripts.tools.wechat_mp_product import draft_article_payload
+
+    item = draft_article_payload(article)
     item["thumb_media_id"] = thumb_media_id
     attach_cover_crop_fields(item, thumb_media_id=thumb_media_id)
 
     old_id = get_slot_media_id(kind)
     if old_id:
-        err = draft_update(media_id=old_id, article=item)
-        if not err:
-            set_slot_media_id(kind, old_id, title=str(item.get("title") or ""))
-            return old_id, "updated", None
-        # 旧 media_id 失效 → 删除后重建
         draft_delete(media_id=old_id)
 
     new_id, err = draft_add(articles=[item])
@@ -148,7 +174,8 @@ def upsert_draft_article(
         return None, "failed", err
     if new_id:
         set_slot_media_id(kind, new_id, title=str(item.get("title") or ""))
-    return new_id, "created", None
+    action = "recreated" if old_id else "created"
+    return new_id, action, None
 
 
 def prune_extra_managed_drafts(

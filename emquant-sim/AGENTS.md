@@ -2,6 +2,8 @@
 
 东财掘金 **仿真量化** 专用子项目，与 `stock-ai` **解耦**。
 
+> **2026-06-02 已下线**（专业投资者 / 约 300w 门槛）：默认 `EMQUANT_ENABLED=0`。勿主动 deploy/push；情绪周期 MySQL 与 home-hub 继续由 stock-ai 维护。见 [OFFLINE.md](OFFLINE.md)。
+
 ## 禁止
 
 - 不要在 `stock-ai` 下新增/修改掘金策略、`scripts/win/`、`.env.emquant`

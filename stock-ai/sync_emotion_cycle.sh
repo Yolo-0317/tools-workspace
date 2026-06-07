@@ -15,9 +15,16 @@ if [ -z "${HOME:-}" ]; then
   HOME="/Users/$(whoami)"
 fi
 export HOME
-export PATH="${HOME}/.local/bin:${HOME}/.nvm/versions/node/v24.14.1/bin:${PATH}"
+export PATH="/usr/local/bin:${HOME}/.local/bin:${HOME}/.nvm/versions/node/v24.14.1/bin:${PATH}"
 export OPENCLI_BIN="${OPENCLI_BIN:-${HOME}/.nvm/versions/node/v24.14.1/bin/opencli}"
-UV_BIN="${UV_BIN:-${HOME}/.local/bin/uv}"
+if [ -f /.dockerenv ]; then
+  UV_BIN="${UV_BIN:-/usr/local/bin/uv}"
+else
+  UV_BIN="${UV_BIN:-${HOME}/.local/bin/uv}"
+fi
+if [ ! -x "${UV_BIN}" ] && command -v uv >/dev/null 2>&1; then
+  UV_BIN="$(command -v uv)"
+fi
 
 if [ -f .env ]; then
   set -a
@@ -32,21 +39,32 @@ if [ ! -f /.dockerenv ]; then
 fi
 
 SLOT="${1:-eod}"
+if [ "$SLOT" != "eod" ]; then
+  echo "[$(date '+%F %T')] warn: slot=${SLOT} 已废弃，仅用 eod" >&2
+  SLOT=eod
+fi
 echo "[$(date '+%F %T')] sync_emotion_cycle slot=${SLOT}"
 "${UV_BIN}" run python -m scripts.tools.sync_emotion_cycle_daily --slot "$SLOT"
 SYNC_RC=$?
 
-# 入库成功后 → 导出并推送 Win11 量化（dragons.json）
+# 入库成功后 → 可选推送 Win11 量化（EMQUANT_ENABLED=1 时）
 if [ "$SYNC_RC" -eq 0 ]; then
   EMQUANT_ROOT="$(dirname "$ROOT")/emquant-sim"
+  EMQUANT_ENV_FILE="${EMQUANT_ROOT}/.env.emquant"
+  EMQUANT_ON="${EMQUANT_ENABLED:-}"
+  if [ -z "$EMQUANT_ON" ] && [ -f "$EMQUANT_ENV_FILE" ]; then
+    EMQUANT_ON="$(grep -E '^EMQUANT_ENABLED=' "$EMQUANT_ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2- | tr -d ' \r')"
+  fi
   PUSH_SH="${EMQUANT_ROOT}/scripts/push_dragons_to_win11.sh"
-  if [ -d "$EMQUANT_ROOT" ] && [ -f "$PUSH_SH" ]; then
+  if [ "$EMQUANT_ON" = "1" ] && [ -d "$EMQUANT_ROOT" ] && [ -f "$PUSH_SH" ]; then
     (
       cd "$EMQUANT_ROOT"
       PYTHONPATH=. python3 -m scripts.tools.export_emotion_dragons --slot "$SLOT" \
         || PYTHONPATH=. python3 -m scripts.tools.export_emotion_dragons --slot eod
       bash "$PUSH_SH"
     ) || echo "[$(date '+%F %T')] warn: export/push dragons.json failed (量化可沿用旧文件)"
+  elif [ -d "$EMQUANT_ROOT" ] && [ -f "$EMQUANT_ENV_FILE" ] && [ "${EMQUANT_ON:-0}" != "1" ]; then
+    echo "[$(date '+%F %T')] emquant push skipped (EMQUANT_ENABLED≠1，见 emquant-sim/OFFLINE.md)"
   fi
 fi
 

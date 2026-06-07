@@ -8,11 +8,8 @@ PORT="${HOST_JOB_PORT:-9876}"
 TOKEN="${HOST_JOB_TOKEN:-}"
 URL="http://${HOST}:${PORT}/run/${JOB}"
 
+# 每日战报 09/12/15/20 已停用；快讯见 launchd com.user.stock-macro-news-sync
 BODY="{}"
-if [ "$JOB" = "briefing" ]; then
-  SLOT="${2:-09:00}"
-  BODY="{\"slot\":\"${SLOT}\"}"
-fi
 
 echo "[scheduler] trigger host job: $JOB -> $URL"
 if [ -n "$TOKEN" ]; then

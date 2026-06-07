@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Spider-Man">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fee2e2"/>
+      <stop offset="100%" stop-color="#dbeafe"/>
+    </linearGradient>
+    <radialGradient id="mask" cx="50%" cy="42%" r="55%">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="100%" stop-color="#b91c1c"/>
+    </radialGradient>
+  </defs>
+  <rect width="200" height="200" rx="100" fill="url(#bg)"/>
+  <ellipse cx="100" cy="108" rx="62" ry="68" fill="url(#mask)"/>
+  <path d="M38 108c0-36 28-62 62-62s62 26 62 62" fill="#1d4ed8"/>
+  <ellipse cx="78" cy="102" rx="18" ry="22" fill="#fff"/>
+  <ellipse cx="122" cy="102" rx="18" ry="22" fill="#fff"/>
+  <ellipse cx="78" cy="104" rx="9" ry="11" fill="#111827"/>
+  <ellipse cx="122" cy="104" rx="9" ry="11" fill="#111827"/>
+  <path d="M38 108h124" stroke="#1e3a8a" stroke-width="3" opacity=".35"/>
+  <path d="M100 46v124M62 68l76 80M138 68L62 148M48 108h104" stroke="#1e3a8a" stroke-width="2.5" opacity=".25"/>
+  <path d="M88 138c4 6 20 6 24 0" fill="none" stroke="#991b1b" stroke-width="3" stroke-linecap="round"/>
+</svg>

@@ -20,7 +20,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from scripts.analysis.eastmoney_sop_extract import extract_and_save_batch
 from scripts.tools.fetch_eastmoney_quotes import fetch_technical_summaries_batch_opencli
-from scripts.tools.deepseek_client import call_deepseek
+from scripts.tools.deepseek_client import call_deepseek, sop_llm_backend
 from scripts.tools.holdings_context import load_full_decision_context
 from scripts.tools.sop_watch_parse import SopWatchMeta, parse_sop_review_text
 from scripts.tools.wechat_format import format_sop_wechat_summary
@@ -117,6 +117,7 @@ WATCH: 是|否 | DECISION: 买入观察|暂不操作|持有|减仓 | SUPPORT: 7.
         temperature=0.3,
         max_tokens=3500,
         timeout=(10, 180),
+        backend=sop_llm_backend(),
     )
     return code, content
 
@@ -166,6 +167,7 @@ def _deepseek_summary(
         temperature=0.3,
         max_tokens=3500,
         timeout=(10, 180),
+        backend=sop_llm_backend(),
     )
     if "===WECHAT===" in content:
         raw = content.split("===WECHAT===", 1)[-1].strip()

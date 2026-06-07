@@ -143,11 +143,28 @@ def persist_strategy_rows(
     *,
     csv_stem: str | None = None,
 ) -> int:
-    from scripts.tools.portfolio_db import save_selection_daily_results
+    from scripts.tools.portfolio_db import load_account, save_selection_daily_results
 
     if not rows:
         print(f"⚠️ {strategy}：0 条，跳过入库")
         return 0
+
+    account_position_pct = 0.0
+    try:
+        from stock_ai.advisor_selection import parse_advisor_phase, reapply_advisor_to_rows
+
+        acct = load_account()
+        if acct and acct.position_ratio is not None:
+            r = float(acct.position_ratio)
+            account_position_pct = r * 100 if r <= 1.0 else r
+        phase = parse_advisor_phase()
+        reapply_advisor_to_rows(
+            rows, phase=phase, account_position_pct=account_position_pct
+        )
+        rows = [r for r in rows if r.get("建议动作") != "禁止"]
+    except ImportError:
+        pass
+
     n = save_selection_daily_results(trade_date, rows, strategy=strategy)
     td = (
         trade_date.strftime("%Y%m%d")

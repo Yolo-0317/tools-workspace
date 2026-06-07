@@ -11,10 +11,9 @@ const isMobile = usePlatformLayout()
 
 const loadedCount = computed(() => jobs.value.filter((j) => j.loaded).length)
 
-function jobTitle(label: string): string {
-  return label
-    .replace(/^com\.user\./, '')
-    .replace(/-/g, ' ')
+function jobTitle(job: LaunchdJob): string {
+  if (job.title?.trim()) return job.title.trim()
+  return job.label.replace(/^com\.user\./, '').replace(/-/g, ' ')
 }
 
 function entryBase(entry: string): string {
@@ -47,7 +46,7 @@ onMounted(async () => {
   <div class="page" :class="{ mobile: isMobile }">
     <header class="page-head">
       <h1>定时任务</h1>
-      <p class="sub">launchd 本机计划任务</p>
+      <p class="sub">launchd 本机任务 + Docker stock-ai-scheduler 定时（盘后链 17:30→17:45→18:00）</p>
     </header>
 
     <p v-if="loading" class="hint">加载中…</p>
@@ -67,11 +66,12 @@ onMounted(async () => {
           :class="job.loaded ? 'job-up' : 'job-off'"
         >
           <div class="job-head">
-            <h3 class="job-name">{{ jobTitle(job.label) }}</h3>
+            <h3 class="job-name">{{ jobTitle(job) }}</h3>
             <span class="badge" :class="job.loaded ? 'ok' : 'off'">
               {{ job.loaded ? '运行' : '未加载' }}
             </span>
           </div>
+          <p v-if="job.description" class="job-desc">{{ job.description }}</p>
           <p class="job-label mono">{{ job.label }}</p>
           <dl class="job-meta">
             <div class="meta-row">
@@ -92,7 +92,8 @@ onMounted(async () => {
           <thead>
             <tr>
               <th>状态</th>
-              <th>Label</th>
+              <th>任务</th>
+              <th>说明</th>
               <th>调度</th>
               <th>入口</th>
             </tr>
@@ -104,7 +105,11 @@ onMounted(async () => {
                   {{ job.loaded ? '运行' : '未加载' }}
                 </span>
               </td>
-              <td class="mono">{{ job.label }}</td>
+              <td>
+                <span class="job-table-title">{{ jobTitle(job) }}</span>
+                <span class="job-table-label mono">{{ job.label }}</span>
+              </td>
+              <td class="job-table-desc">{{ job.description || '—' }}</td>
               <td>{{ job.schedule }}</td>
               <td class="entry">{{ job.entry }}</td>
             </tr>
@@ -200,11 +205,38 @@ onMounted(async () => {
   color: #e7ecf3;
 }
 
+.job-desc {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #a8b8d0;
+}
+
 .job-label {
   margin: 0 0 12px;
   font-size: 11px;
   color: #6b7d94;
   word-break: break-all;
+}
+
+.job-table-title {
+  display: block;
+  font-weight: 600;
+  color: #e7ecf3;
+  margin-bottom: 4px;
+}
+
+.job-table-label {
+  display: block;
+  font-size: 11px;
+  color: #6b7d94;
+}
+
+.job-table-desc {
+  font-size: 13px;
+  color: #a8b8d0;
+  line-height: 1.45;
+  max-width: 280px;
 }
 
 .job-meta {

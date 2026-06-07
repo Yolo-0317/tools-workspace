@@ -167,11 +167,131 @@ def humanize_mp_text(text: str) -> str:
     from scripts.tools.wechat_mp_rich_html import strip_journal_title_lines
 
     merged = strip_journal_title_lines(merged.strip())
+    merged = demote_numbered_section_lines(merged)
     return sanitize_public_mp_text(merged)
 
 
 def mp_section_header(title: str) -> str:
-    return title
+    """公众号分节标题（`> 标题` → 富文本居中样式）。"""
+    bare = title.strip().lstrip("> ").strip()
+    return f"> {bare}" if bare else title
+
+
+_CN_NUMBERED_SECTION_RE = re.compile(r"^[一二三四五六七八九十]+、(.+)$")
+
+
+def demote_numbered_section_lines(text: str) -> str:
+    """「一、标题」→ `> 标题`（公众号小标题禁止一二三序号）。"""
+    out: list[str] = []
+    for line in text.splitlines():
+        bare = line.strip()
+        m = _CN_NUMBERED_SECTION_RE.match(bare)
+        if m:
+            out.append(mp_section_header(m.group(1).strip()))
+        else:
+            out.append(line)
+    return "\n".join(out)
+
+
+def ensure_blockquote_sections(text: str, titles: tuple[str, ...]) -> str:
+    """将裸节标题行规范为 `> 标题`，供 text_to_html 渲染居中小标题。"""
+    text = demote_numbered_section_lines(text)
+    title_set = set(titles)
+    out: list[str] = []
+    for line in text.splitlines():
+        bare = line.strip().lstrip("> ").strip()
+        if bare in title_set:
+            out.append(mp_section_header(bare))
+        else:
+            out.append(line)
+    return "\n".join(out)
+
+
+MARKET_SECTION_TITLES: tuple[str, ...] = ("盘面速览", "外围与资金", "结构判断")
+SECTOR_SECTION_TITLES: tuple[str, ...] = (
+    "为什么现在看",
+    "产业链怎么拆",
+    "盘面里谁在用价格说话",
+    "和指数情绪怎么联动",
+    "向后看要验证什么",
+)
+
+# 「结构判断」内段首小结：独立成段，移动端更易跳读
+_STRUCTURE_VIEW_BREAK_PHRASES: tuple[str, ...] = (
+    "我们认为",
+    "值得关注的是",
+    "向后看",
+    "第一条逻辑链",
+    "第二条逻辑链",
+    "第三条逻辑链",
+    "第一条",
+    "第二条",
+    "第三条",
+    "第一，",
+    "第二，",
+    "第三，",
+    "具体看三条逻辑链：",
+)
+
+
+def _split_text_at_phrases(text: str, phrases: tuple[str, ...]) -> str:
+    """在段中指定短语前插入空行（短语已在段首则不动）。"""
+    out = text.strip()
+    if not out:
+        return out
+    for phrase in sorted(phrases, key=len, reverse=True):
+        # 句号/分号后的小结另起段
+        out = re.sub(
+            rf"([。；！？])\s*{re.escape(phrase)}",
+            rf"\1\n\n{phrase}",
+            out,
+        )
+        # 无标点但句中突然出现的小结
+        out = re.sub(
+            rf"(?<=[^\n。；！？])\s*{re.escape(phrase)}",
+            rf"\n\n{phrase}",
+            out,
+        )
+    out = re.sub(r"\n{3,}", "\n\n", out)
+    return out
+
+
+def reflow_market_structure_section(text: str) -> str:
+    """「> 结构判断」块内：我们认为 / 值得关注的是 / 向后看 等分段。"""
+    lines = text.splitlines()
+    out: list[str] = []
+    in_view = False
+
+    for line in lines:
+        stripped = line.strip()
+        bare = stripped.lstrip("> ").strip()
+
+        if bare == "结构判断":
+            in_view = True
+            out.append(line)
+            continue
+
+        if in_view and stripped.startswith("> ") and bare != "结构判断":
+            in_view = False
+
+        if in_view and stripped and not stripped.startswith("> ") and not stripped.startswith("[[fig:"):
+            for sub in _split_text_at_phrases(stripped, _STRUCTURE_VIEW_BREAK_PHRASES).splitlines():
+                out.append(sub)
+            continue
+
+        out.append(line)
+
+    return "\n".join(out)
+
+
+NEWS_SECTION_TITLES: tuple[str, ...] = ("要闻精选",)
+TOP5_SECTION_TITLES: tuple[str, ...] = ("筛选名单", "个股拆解", "组合特征", "待验证事项")
+DRAGON_SECTION_TITLES: tuple[str, ...] = (
+    "情绪与盘面",
+    "龙头拆解",
+    "主线与梯队",
+    "明日计划与纪律",
+)
 
 
 def format_top5_list_prose(
@@ -183,13 +303,9 @@ def format_top5_list_prose(
     for_public: bool = True,
 ) -> str:
     """选股列表（公众号专用，无 emoji）。for_public=True 时不暴露作者持仓。"""
-    from scripts.tools.selection_watchlist import (
-        _sop_watch_map,
-        load_sop_reviews,
-    )
+    from scripts.tools.selection_watchlist import load_sop_reviews
 
     sop_reviews = sop_reviews if sop_reviews is not None else load_sop_reviews()
-    worthy = _sop_watch_map(sop_reviews)
     review_by_code = {str(r["code"]).zfill(6): r for r in sop_reviews}
     use_sop = bool(sop_reviews)
 
@@ -197,38 +313,30 @@ def format_top5_list_prose(
     wd = f"{watch_date.month}月{watch_date.day}日"
     lines = [
         (
-            f"{td}收盘后，多策略候选按总分重选 {len(picks)} 只观察标的"
-            f"（综合/五因子/MA5 等合并）；次日（{wd}）按纪律跟踪。"
+            f"{td}收盘后，多策略候选合并筛选 {len(picks)} 只标的"
+            f"（综合/五因子/MA5 等）；结构跟踪日（{wd}）核对量价与板块。"
         ),
         "",
     ]
     for i, p in enumerate(picks, 1):
         lines.append(f"{i}. {p.name}（{p.code}）")
         lines.append(
-            f"   标签 {p.label}；评分 {p.score:.0f}；"
-            f"收盘 {p.close:.2f} 元（{p.change_pct:+.2f}%）；建议 {p.action}"
+            f"   策略标签 {p.label}；收盘 {p.close:.2f} 元（{p.change_pct:+.2f}%）"
         )
         if use_sop:
             sop = review_by_code.get(p.code, {})
-            if worthy.get(p.code):
-                decision = sop.get("decision") or "买入观察"
-                lines.append(f"   SOP倾向关注：{decision}")
-            else:
-                decision = sop.get("decision") or "暂不操作"
-                lines.append(f"   暂不纳入监控：{decision}")
-        else:
-            dip = round(p.close * 0.97, 2)
-            lines.append(f"   次日：涨幅超 5% 不追；回落至 {dip} 元附近再观察")
+            theme = str(sop.get("theme") or sop.get("sector") or "").strip()
+            if theme:
+                lines.append(f"   库内审查主题：{theme}")
 
-    watch_count = len([p for p in picks if p.code in worthy]) if use_sop else len(picks)
     lines.extend(
         [
             "",
-            f"说明：其中 {watch_count} 只纳入次日观察池；"
+            "说明：以上为收盘选股结果的结构清单，供复盘对照；"
             + (
-                "以上为收盘选股结果，供复盘参考，与任何个人持仓无关；建议不追高、控制单票仓位。"
+                "与任何个人持仓无关，不含买卖建议。"
                 if for_public
-                else "仍遵守不追高、不满仓新开仓。"
+                else "不含买卖建议。"
             ),
         ]
     )

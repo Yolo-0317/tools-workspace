@@ -98,21 +98,173 @@ https://sub.yoloworld.site {
 	}
 }
 
+http://hub.yoloworld.site {
+	# 微信域名验证仅支持 80/443 标准端口（不支持 :8883）
+	handle /c4de45255be91b51cd4b88b52fb77956.txt {
+		root * /srv
+		header Cache-Control "no-cache, no-store, must-revalidate"
+		file_server
+	}
+	handle {
+		respond 404
+	}
+}
+
 https://hub.yoloworld.site {
 	tls /etc/caddy/certs/fullchain.cer /etc/caddy/certs/key.key
 	encode gzip
-	reverse_proxy host.docker.internal:8780 {
-		flush_interval -1
-		transport http {
-			read_timeout 0
-			write_timeout 0
+
+	# 微信域名验证（Caddy 静态直出，优先于反代）
+	handle /c4de45255be91b51cd4b88b52fb77956.txt {
+		root * /srv
+		header Cache-Control "no-cache, no-store, must-revalidate"
+		file_server
+	}
+
+	# English Buddy — 少儿英文语音通话（launchd :18787，路径前缀 /english）
+	handle /english {
+		redir * /english/ permanent
+	}
+	handle_path /english/* {
+		reverse_proxy host.docker.internal:18787 {
+			flush_interval -1
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+			header_up X-Forwarded-For {remote_host}
 		}
-		header_up X-Forwarded-Proto {scheme}
-		header_up X-Forwarded-Host {host}
-		header_up X-Forwarded-For {remote_host}
+	}
+
+	# Readalong — 有声书句级带读（launchd :8791，不经 Home Hub 登录）
+	handle /readalong {
+		redir * /readalong/web/ permanent
+	}
+	handle /readalong/web {
+		redir * /readalong/web/ permanent
+	}
+	handle_path /readalong/* {
+		reverse_proxy host.docker.internal:8791 {
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	# Home Hub 看板（launchd :8780，路径前缀 /hub）
+	handle /hub {
+		redir * /hub/ permanent
+	}
+	handle_path /hub/* {
+		reverse_proxy host.docker.internal:8780 {
+			flush_interval -1
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	# 旧书签 /login、/m → /hub/...
+	@legacy_hub {
+		not path /english /english/* /readalong /readalong/* /hub /hub/*
+		not path /c4de45255be91b51cd4b88b52fb77956.txt
+	}
+	handle @legacy_hub {
+		redir * /hub{uri} permanent
 	}
 	header {
 		-Server
 		X-Content-Type-Options nosniff
+	}
+}
+
+# 兜底：内网用 IP 访问时 Host 不是 hub 子域，仍返回微信验证文件
+:80 {
+	handle /c4de45255be91b51cd4b88b52fb77956.txt {
+		root * /srv
+		header Cache-Control "no-cache, no-store, must-revalidate"
+		file_server
+	}
+}
+
+:443 {
+	tls /etc/caddy/certs/fullchain.cer /etc/caddy/certs/key.key
+	handle /c4de45255be91b51cd4b88b52fb77956.txt {
+		root * /srv
+		header Cache-Control "no-cache, no-store, must-revalidate"
+		file_server
+	}
+}
+
+# 局域网 IP 直连 HTTPS（mkcert 或 openssl；LAN_IP_HTTPS_SITE）
+https://192.168.1.13 { # LAN_IP_HTTPS_SITE
+	tls /etc/caddy/certs/lan-ip/cert.pem /etc/caddy/certs/lan-ip/key.pem
+	encode gzip
+
+	handle /english {
+		redir * /english/ permanent
+	}
+	handle_path /english/* {
+		reverse_proxy host.docker.internal:18787 {
+			flush_interval -1
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	handle /readalong {
+		redir * /readalong/web/ permanent
+	}
+	handle /readalong/web {
+		redir * /readalong/web/ permanent
+	}
+	handle_path /readalong/* {
+		reverse_proxy host.docker.internal:8791 {
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	handle /hub {
+		redir * /hub/ permanent
+	}
+	handle_path /hub/* {
+		reverse_proxy host.docker.internal:8780 {
+			flush_interval -1
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	@legacy_hub {
+		not path /english /english/* /readalong /readalong/* /hub /hub/*
+	}
+	handle @legacy_hub {
+		redir * /hub{uri} permanent
 	}
 }

@@ -26,8 +26,8 @@ def _job_command(name: str, body: dict) -> list[str] | None:
         return ["/bin/bash", str(ROOT / "push_holdings_monitor.sh"), "--push"]
     if name == "news-sync":
         return ["/bin/bash", str(ROOT / "sync_macro_news.sh")]
-    if name == "emotion-intraday":
-        return ["/bin/bash", str(ROOT / "sync_emotion_cycle.sh"), "intraday"]
+    if name == "advisor-weekly":
+        return ["/bin/bash", str(ROOT / "push_advisor_weekly_review.sh")]
     return None
 
 

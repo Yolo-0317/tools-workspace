@@ -1,5 +1,7 @@
 # emquant-sim — 东财掘金仿真量化（独立子项目）
 
+> **2026-06-02 已下线**：东财量化需个人专业投资者门槛（约 300w）。`EMQUANT_ENABLED=0`，自动 deploy/push 已停。详见 **[OFFLINE.md](OFFLINE.md)**。情绪周期 / home-hub 看板不受影响。
+
 与 **`stock-ai`** 隔离：不改选股调度、MySQL 同步、微信监控等现有能力。
 
 ## 边界

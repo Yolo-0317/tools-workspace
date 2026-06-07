@@ -67,6 +67,12 @@ def main() -> int:
     print(f"  EMQUANT_ACCOUNT_ID   {account or '(空)'}")
     print(f"  EMQUANT_RUN_MODE     {mode}")
 
+    enabled = os.environ.get("EMQUANT_ENABLED", "0").strip()
+    print(f"  EMQUANT_ENABLED      {enabled}")
+    if enabled != "1":
+        print("\n⚠️ 量化已下线（EMQUANT_ENABLED≠1）。见 emquant-sim/OFFLINE.md", file=sys.stderr)
+        return 0
+
     if not token or not strategy_id:
         print("\n请先在 Win11 量化终端复制 Token / 策略 ID，写入 .env.emquant", file=sys.stderr)
         return 2

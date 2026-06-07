@@ -7,9 +7,10 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 
 from backend.config import ROOT, settings
+from backend.middleware.url_prefix import StripUrlPrefixMiddleware
 from backend.routers import auth, dashboard, services
 from backend.services import hub_auth, public_news_guard, session_store
 
@@ -22,6 +23,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Home Hub", lifespan=lifespan)
+
+if settings.url_prefix:
+    app.add_middleware(StripUrlPrefixMiddleware, prefix=settings.url_prefix)
 
 app.add_middleware(
     CORSMiddleware,
@@ -62,7 +66,9 @@ async def hub_session_auth(request: Request, call_next):
     request.state.hub_role = role
 
     path = request.url.path
-    if public_news_guard.is_public_news_path(path):
+    from backend.config import settings
+
+    if settings.news_enabled and public_news_guard.is_public_news_path(path):
         blocked = public_news_guard.check_public_news_request(
             request,
             authenticated=role is not None,
@@ -98,6 +104,7 @@ _STATIC_MEDIA_TYPES = {
     ".svg": "image/svg+xml",
     ".png": "image/png",
     ".ico": "image/x-icon",
+    ".txt": "text/plain; charset=utf-8",
 }
 
 
@@ -124,9 +131,24 @@ async def health():
 
 if FRONTEND_DIST.is_dir():
     dist_root = FRONTEND_DIST.resolve()
+    _PREFIX = settings.url_prefix
+
+    def _serve_index(request: Request) -> FileResponse:
+        index = FRONTEND_DIST / "index.html"
+        return FileResponse(
+            index,
+            headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+        )
+
+    @app.get("/")
+    async def spa_root(request: Request):
+        if _PREFIX and not request.scope.get("hub_stripped_prefix"):
+            if not request.headers.get("x-forwarded-host"):
+                return RedirectResponse(url=f"{_PREFIX}/", status_code=307)
+        return _serve_index(request)
 
     @app.get("/{full_path:path}")
-    async def spa(full_path: str):
+    async def spa(full_path: str, request: Request):
         if full_path.startswith("api/"):
             return JSONResponse(status_code=404, content={"detail": "Not Found"})
 
@@ -138,14 +160,7 @@ if FRONTEND_DIST.is_dir():
                 candidate = None
             if candidate is not None and candidate.is_file():
                 return _static_file_response(candidate)
-            # 哈希资源缺失时勿回退 index.html，否则动态 import 会拿到 HTML 报 Failed to fetch
             if full_path.startswith("assets/"):
                 return JSONResponse(status_code=404, content={"detail": "asset not found"})
 
-        index = FRONTEND_DIST / "index.html"
-        if index.is_file():
-            return FileResponse(
-                index,
-                headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
-            )
-        return JSONResponse(status_code=404, content={"detail": "frontend not built"})
+        return _serve_index(request)

@@ -61,14 +61,13 @@ uv run python scripts/sync_tushare_daily_to_mysql.py --mode by_date --days 7
 
 ## 每日综合选股 + 收盘甄选战报（17:30 · scheduler → host-jobs）
 
-工作日 **17:30** 由 Docker scheduler 触发本机 host-jobs：**日线补缺 → 综合选股 Top5 → 东财 SOP → DeepSeek → 次日监控 → 收盘甄选战报 → 微信**（需已登录 [wechat-cursor-acp](../wechat-cursor-acp)）：
+工作日 **17:30** 由 Docker scheduler 触发本机 host-jobs：**日线补缺 → 综合选股 Top5 → 东财 SOP → DeepSeek → 次日监控 → 微信推送**（需 wechat-acp token 有效，见 [wechat-cursor-acp](../wechat-cursor-acp)）：
 
 ```bash
 ./scripts/install-stock-ai-scheduler.sh          # 安装统一调度（含 17:30）
 curl -s -X POST http://127.0.0.1:9876/run/selection -H 'Content-Type: application/json' -d '{}'  # 手动
 ./push_selection_wechat.sh                       # 或直接跑脚本
-REPORT_ONLY=1 ./push_selection_wechat.sh       # 跳过选股/SOP，重生成战报并推送
-FETCH_ONLY=1 ./push_daily_briefing_wechat.sh 17:30
+REPORT_ONLY=1 ./push_selection_wechat.sh       # 跳过选股/SOP，仅推送已有产物
 DISABLE_SOP_TOP5=1 ./push_selection_wechat.sh    # 紧急跳过 SOP（改用轻量简评）
 ```
 
@@ -77,16 +76,13 @@ DISABLE_SOP_TOP5=1 ./push_selection_wechat.sh    # 紧急跳过 SOP（改用轻�
 
 默认 `WECHAT_PUSH_BACKEND=wechat-acp`。请在 QClaw 中关闭 cron `daily_stock_selection_17:30`，避免重复推送。
 
-## 每日战报（09 / 12 / 15 / 20 点 · scheduler → host-jobs）
+## 快讯与 AI 解读（每 15 分钟 · launchd）
 
 ```bash
-./scripts/install-stock-ai-scheduler.sh        # 与选股/监控一并安装
-curl -s -X POST http://127.0.0.1:9876/run/briefing -H 'Content-Type: application/json' -d '{"slot":"15:00"}'
-FETCH_ONLY=1 ./push_daily_briefing_wechat.sh 15:00
-./push_daily_briefing_wechat.sh 15:00
+./sync_macro_news.sh    # 与 com.user.stock-macro-news-sync 相同
 ```
 
-战报内容：DeepSeek AI 综合解读 + 大盘 + 东财 7×24 + 国际 + 持仓。非交易日自动标注「休市简报」。
+东财 7×24 落库 + AI 解读（看板 `/news`）。**09/12/15/20 战报微信推送已停用**；手动战报仍可用 `scripts/tools/daily_briefing_report.py`。
 
 ## 选股策略（盘后 / 研究）
 

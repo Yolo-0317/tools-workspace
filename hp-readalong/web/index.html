@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HP Read-Along POC</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --text: #e8eef7;
+      --muted: #8aa0b8;
+      --active: #f6c453;
+      --accent: #5eb3ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    header {
+      padding: 1.25rem 1.5rem 0.5rem;
+      border-bottom: 1px solid #2a3a52;
+    }
+    h1 {
+      margin: 0 0 0.25rem;
+      font-size: 1.35rem;
+      font-weight: 600;
+    }
+    .meta { color: var(--muted); font-size: 0.9rem; }
+    main { max-width: 52rem; margin: 0 auto; padding: 1rem 1.25rem 5rem; }
+    .controls {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: color-mix(in srgb, var(--bg) 92%, transparent);
+      backdrop-filter: blur(8px);
+      padding: 0.75rem 0 1rem;
+      border-bottom: 1px solid #243246;
+      margin-bottom: 1rem;
+    }
+    audio { width: 100%; margin-top: 0.5rem; }
+    .stats { font-size: 0.85rem; color: var(--muted); margin-top: 0.35rem; }
+    .line {
+      padding: 0.55rem 0.75rem;
+      border-radius: 0.5rem;
+      margin: 0.2rem 0;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .line:hover { background: #1f2c40; }
+    .line.active {
+      background: #2a3548;
+      box-shadow: inset 3px 0 0 var(--active);
+    }
+    .line .time {
+      display: inline-block;
+      min-width: 4.5rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-right: 0.5rem;
+    }
+    .line.active .time { color: var(--active); }
+    .warn {
+      background: #3a2a12;
+      border: 1px solid #6a4d1a;
+      color: #f2d7a0;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="title">Loading…</h1>
+    <div class="meta" id="subtitle">Harry Potter read-along POC</div>
+  </header>
+  <main>
+    <div class="warn" id="warn" hidden>
+      Open via a local server from <code>hp-readalong/</code>, e.g.
+      <code>python3 -m http.server 8765</code>, then visit
+      <code>http://127.0.0.1:8765/web/</code>
+    </div>
+    <div class="controls">
+      <audio id="player" controls preload="metadata"></audio>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div id="text"></div>
+  </main>
+  <script>
+    // transcript = whisper segments (best sync); epub = original text (experimental)
+    const MANIFEST = new URLSearchParams(location.search).get("mode") === "epub"
+      ? "../manifests/chapter01.json"
+      : "../manifests/chapter01_transcript.json";
+    const AUDIO = "../samples/chapter01.mp3";
+
+    const titleEl = document.getElementById("title");
+    const statsEl = document.getElementById("stats");
+    const textEl = document.getElementById("text");
+    const player = document.getElementById("player");
+    const warnEl = document.getElementById("warn");
+
+    let lines = [];
+    let activeIdx = -1;
+
+    function fmt(sec) {
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60).toString().padStart(2, "0");
+      return `${m}:${s}`;
+    }
+
+    function renderLines() {
+      textEl.innerHTML = "";
+      lines.forEach((line, i) => {
+        const div = document.createElement("div");
+        div.className = "line" + (i === activeIdx ? " active" : "");
+        div.dataset.idx = String(i);
+        div.innerHTML = `<span class="time">${fmt(line.start)}</span>${line.text}`;
+        div.addEventListener("click", () => {
+          player.currentTime = line.start + 0.02;
+          void player.play();
+        });
+        textEl.appendChild(div);
+      });
+    }
+
+    function setActive(idx) {
+      if (idx === activeIdx) return;
+      activeIdx = idx;
+      renderLines();
+      const el = textEl.querySelector(`[data-idx="${idx}"]`);
+      if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+
+    function onTimeUpdate() {
+      const t = player.currentTime;
+      let idx = -1;
+      for (let i = 0; i < lines.length; i++) {
+        if (t >= lines[i].start && t < lines[i].end) idx = i;
+      }
+      if (idx >= 0) setActive(idx);
+    }
+
+    async function boot() {
+      try {
+        const res = await fetch(MANIFEST);
+        if (!res.ok) throw new Error(`manifest ${res.status}`);
+        const data = await res.json();
+        lines = data.lines || [];
+        titleEl.textContent = data.title;
+        statsEl.textContent =
+          `Aligned ${data.aligned_lines}/${data.total_sentences} sentences · ` +
+          `body starts ${fmt(data.intro_skipped_to_sec)} · duration ${fmt(data.duration)}`;
+        player.src = AUDIO;
+        renderLines();
+        player.addEventListener("timeupdate", onTimeUpdate);
+      } catch (e) {
+        warnEl.hidden = false;
+        titleEl.textContent = "Could not load manifest";
+        statsEl.textContent = String(e);
+      }
+    }
+
+    boot();
+  </script>
+</body>
+</html>

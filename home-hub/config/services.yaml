@@ -27,8 +27,8 @@ categories:
       - id: home-hub
         name: Home Hub
         description: 本看板 + Cursor 聊天（launchd 单服务 :8780）
-        local_url: http://127.0.0.1:8780
-        public_url: https://hub.yoloworld.site:8883
+        local_url: http://127.0.0.1:8780/hub/
+        public_url: https://hub.yoloworld.site:8883/hub/
         health:
           type: http
           url: http://127.0.0.1:8780/api/health
@@ -36,6 +36,30 @@ categories:
           - HUB_API_TOKEN
           - HUB_BASIC_AUTH_USER
           - HUB_BASIC_AUTH_PASSWORD
+
+      - id: english-buddy
+        name: English Buddy
+        description: 少儿英文语音带读（Ollama + Whisper + edge-tts，hub 子路径 /english）
+        local_url: http://192.168.1.13:18787/english/
+        public_url: https://hub.yoloworld.site:8883/english/
+        compose_dir: ~/dev/yolo/tools-workspace/english-buddy
+        doc: english-buddy/README.md
+        health:
+          type: http
+          url: http://127.0.0.1:18787/english/api/health
+        credentials_env: []
+
+      - id: readalong
+        name: Readalong
+        description: 有声书句级带读（EPUB + MP3 同步高亮，hub 子路径 /readalong，不经 Hub 登录）
+        local_url: http://192.168.1.13:8791/web/
+        public_url: https://hub.yoloworld.site:8883/readalong/web/
+        compose_dir: ~/dev/yolo/tools-workspace/readalong
+        doc: readalong/README.md
+        health:
+          type: http
+          url: http://127.0.0.1:8791/api/health
+        credentials_env: []
 
       - id: wechat-acp
         name: 微信 ↔ Cursor

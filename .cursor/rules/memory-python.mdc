@@ -59,18 +59,24 @@ Hermes Step 3：处理 `stock-ai/` 内代码时与本文件、`project-memory.md
   - **核心**：`stock_ai/emotion_cycle_compute.py` — `infer_phase`（冰点/启动/发酵/高潮/分歧/退潮）、`_score_dragon`（7 项简化为 pass 分，≥5 入池）、`sync_emotion_cycle`。
   - **CLI**：`scripts/tools/emotion_cycle_checklist.py`（template/save/show/list）；`scripts/tools/sync_emotion_cycle_daily.py`；shell `./sync_emotion_cycle.sh`。
   - **DB API**：`portfolio_db.save/load_emotion_cycle_checklist`、`list_emotion_cycle_trade_dates`、`latest_emotion_trade_date`。
-  - **调度**：`docker/scheduler/crontab` — 09:26 `pre_market`、17:00 Tushare、**17:10** `eod`；日志 `stock-ai/logs/emotion_cycle.log`。
+  - **调度**：`docker/scheduler/crontab` — 17:30 Tushare、17:45 选股、**18:00** `eod`（无盘前 `pre_market`）；日志 `emotion_cycle.log`。
   - **文档纪律**：`investment-agent/情绪周期日检卡.md`（与执行卡并行，冲突以执行卡为准）。
 
 ### 2026-06-02 个股分析现价：OpenCLI 实时 vs Tushare 昨收
 
 - **Context**: 用户盘中问「南网储能」，Agent 用 MCP `analyze_and_suggest` 报 16.34 当现价；东财实时约 15.47～15.50，口径错误。
-- **Pitfall/Error**: `analyze_and_suggest` / `get_stock_daily_data` 取 Tushare `pro.daily` **最后一根已收盘 K 线**（常为前一交易日或当日未收盘前的上一根）；`持仓执行卡.md` 现价若未 jywg 同步也会过期。勿把「最新收盘价」写成「现价」。
+- **Pitfall/Error**: `analyze_and_suggest` / `get_stock_daily_data` 取 Tushare `pro.daily` **最后一根已收盘 K 线**（常为前一交易日或当日未收盘前的上一根）；`持仓执行卡.md` 现价若未从 **东方财富证券** 同步也会过期。勿把「最新收盘价」写成「现价」。
 - **Solution/Rule**:
   - **盘中现价 / 涨跌幅 / 操作建议**：`uv run python scripts/tools/fetch_eastmoney_quotes.py <code>` 或 `fetch_sop_snapshots` / `intraday_trade_signal`（OpenCLI 东财）。
   - **历史日线 / 回测 / 均线（收盘口径）**：MySQL `stock_daily` 或 Tushare MCP；报告中须标注「最近交易日收盘（非实时）」。
   - **输出模板**：并列三列——**昨收**、**今价（OpenCLI）**、**执行卡触发价**；持仓盈亏用今价重算。
   - **MCP 文案**：`tushare_mcp.py` 的 `analyze_and_suggest` 已改为「最近交易日收盘」；改后需重启 `user-tushare-stock-advisor` MCP。
+
+### 2026-06-02 投顾模式选股过滤（advisor_selection）
+
+- **Context**: 6 万账户投顾阶段 0；用户要求选股与投顾一致，非仅执行卡复述。
+- **Pitfall/Error**: 阶段 0 `selection_watchlist --sync` 会推送「像要买」的监控，与 A 档降仓矛盾；但跳过 Top5 SOP 会拖累公众号 `top5` 稿质量。
+- **Solution/Rule**: `stock_ai/advisor_selection.py` 读 `投顾主策略.md` 阶段；阶段 0：`combined` 买入类→「继续观察」、Top5 仅情报、**仍跑 Top5 SOP**（`sop_review_enabled` 恒真）、跳过 AI 简评、`--sync` 跳过 alert_rules。进阶段 1 改主策略阶段标记。
 
 ### 2026-06-02 财经快讯利好/利空标记（每 15 分钟）
 
@@ -82,3 +88,61 @@ Hermes Step 3：处理 `stock-ai/` 内代码时与本文件、`project-memory.md
   - **调度**：`sync_macro_news.sh` + `com.user.stock-macro-news-sync`（900s）；AI 解读仍 `news_ai_interpret.save_news_ai_snapshot`，快讯行前缀 `[利好]` 等。
   - **看板**：home-hub `/news` — `NewsItem.sentiment`、`meta.sentiment_counts`；公开 AI 解读无持仓段（`news_ai_interpret.sanitize_public_ai_summary` + 生成 prompt 禁止 P0～P4）。
   - **迁移**：`cd stock-mysql && bash scripts/init-db.sh`（含 011）。
+
+### 2026-06-03 微信公众号成稿（evening 三篇 + wechat_mp_*）
+
+- **Context**: `stock-ai/scripts/tools/wechat_mp_*.py` 推日更草稿；**晚间金标准**见 skill `evening-trilogy-templates.md`；调度见 `project-memory.mdc` §2026-06-03 微信公众号。
+- **Pitfall/Error**: ① `render_article_content_html` / `sync_article_content_from_body` 若 `upload_figures=False` 且无 banner 缓存 → 丢顶栏。② 正文 LLM 免责段 + `disclaimer_html` → 双免责。③ CPS 勿再用 `_CPS_AFTER_SECTION` 分节定位（已删，统一 2/3）。
+- **Solution/Rule**:
+  - **入口**：`wechat_mp_draft` / `wechat_mp_draft_batch`；`build_article` → `wechat_mp_content.py`。
+  - **market 后处理**：`finalize_market_body`（开篇 + 结构三分段 + 拆长段）→ `inject_market_figures`。
+  - **HTML**：`text_to_html(article_kind=)`；`opening_lede_paragraph_style`；`attach_footer_product` → `inject_cpsad_at_body_ratio`。
+  - **SEO/话题**：`wechat_mp_seo.py`；`append_hashtag_inline_to_body`；`WECHAT_MP_READ_SOURCE_URL` 默认 0。
+  - **测试**：`pytest tests/unit/test_wechat_mp_*.py -q`（含 `test_cps_at_two_thirds_*`、`test_*_opening_lede_*`）。
+  - **Skill**：`.cursor/skills/wechat-mp-drafts/`（带货用 `wechat-mp-commerce-drafts`）。
+
+### 2026-06-04 公众号 evening 封面（top5 / dragons）
+
+- **Context**: 用户要求选股、龙头草稿封面改为亮色 A 股相关图，定稿后留档。
+- **Pitfall/Error**: 仅改素材库名仍会命中旧暗色图（如 K线暗色）；OpenCLI 行业榜误抓「资金流」等 Tab 词。
+- **Solution/Rule**: `wechat_mp_client._DEFAULT_KIND_THUMB_ASSETS` — **top5**=`cover-financial-screen-dual.jpg`，**dragons**=`cover-multi-screen-dual.jpg`；`WECHAT_MP_KIND_THUMB_FROM_ASSETS=1` 优先上传本地图。换图删 `data/wechat_mp_thumb_{top5,dragons}.json` 再 `wechat_mp_draft --kind …`。真源 `stock-ai/assets/wechat_mp/COVER_THUMBS.md`。
+
+### 2026-06-04 晚间完读钩子 + 移动排版（wechat_mp_*）
+
+- **Context**: 晚间 `sector`/`top5`/`dragons` 完读与手机阅读体验代码化；用户定稿后更新金模版。运营规则见 `project-memory.mdc` §2026-06-04 晚间三篇金模版。
+- **Pitfall/Error**: Top5 标题 echo 进正文（`wechat_mp_monetization` / LLM）；`inject_closing_suspense` 重复行需 `split(marker)` 插入；勿在 polish 里写「往下看」「→」。
+- **Solution/Rule**:
+  - **钩子**：`wechat_mp_read_hooks.py` → `wechat_mp_sector_polish.finalize_sector_body`、`wechat_mp_top5_polish.finalize_top5_body`、`wechat_mp_dragons_polish.finalize_dragons_body`；`build_top5_article` 末步 `strip_top5_title_echo`。
+  - **排版**：`wechat_mp_readability`（`polish_mobile_readability`、`reflow_inline_numbered_lists`）← `wechat_mp_public.finalize_public_body_text`；env `WECHAT_MP_PARA_MAX_CHARS`、`WECHAT_MP_READ_HOOKS`。
+  - **变现 prompt**：`wechat_mp_monetization` 要求勿写「往下看」；钩子由 polish 补。
+  - **测试**：`test_wechat_mp_read_hooks.py`、`test_wechat_mp_top5_polish.py`、`test_wechat_mp_readability.py`（若有）。
+  - **金模版**：`.cursor/skills/wechat-mp-drafts/evening-trilogy-templates.md`（2026-06-04）。
+
+### 2026-06-05 公众号 top5 · 东财人气榜（流量优先）
+
+- **Context**: 搜一搜搜索词为个股名；top5 默认改东财 A 股人气榜选题。
+- **Pitfall/Error**: 多策略总分与热搜票错位；纯热股须滤 ST/禁码；`emappdata` 裸 HTTP 常异常，须 OpenCLI 打开 vipmoney 人气页解析 DOM。
+- **Solution/Rule**: `WECHAT_MP_TOP5_POOL=hot`（默认）· `WECHAT_MP_TOP5_HOT_N=10` · `fetch_hot_stocks_opencli` · `wechat_mp_hot_stocks.load_wechat_top5_hot_picks`；失败回退 `load_wechat_top5_selection_picks`。测试 `test_wechat_mp_hot_stocks.py`。
+
+### 2026-06-03 定时去重（scheduler vs launchd）
+
+- **Context**: 持仓监控与文档/安装脚本对齐。
+- **Pitfall/Error**: `holdings-monitor` launchd 与 Docker `*/5 monitor` 重复；战报 09/12/15/20 文档过时。
+- **Solution/Rule**: 仅 Docker 触发监控；快讯用 `com.user.stock-macro-news-sync`；重装 `./scripts/install-stock-ai-scheduler.sh` 会删除旧 plist。见 `project-memory.mdc` §2026-06-03 stock-ai 定时任务去重。
+
+### 2026-06-04 综合选股前日线门禁（ensure_daily_bars）
+
+- **Context**: 17:30 四轨选股依赖 MySQL `stock_daily`；若 17:00 容器 sync 未完成或条数不足，combined 会用旧 K 线扫全市场。
+- **Pitfall/Error**: 仅看 `MAX(trade_date)` 不够（可能日期到了但当日行数极少）；`ensure_daily_bars` 以前补同步失败仍 exit 0，流水线继续跑。
+- **Solution/Rule**:
+  - **模块**：`scripts/tools/ensure_daily_bars.py` — `check_daily_bars_ready()`（期望交易日 + 当日 `COUNT(*)≥3500`，阈值 `DAILY_BARS_MIN_COUNT`）；`ensure_daily_bars_at_selection_start()`（落后则 `by_date` 补同步，仍不满足 **exit 1**）。
+  - **期望日**：工作日 17:00 前 = 上一交易日，17:00 后 = 当天（`tushare_ready_hour=17`）。
+  - **入口**：`run_selection_daily.sh` → `--sync-if-stale --require-ready`；`run_parallel_selection.main()` 与 `stock_selection_combined.main()`（无 `target_date` 时）开头各调一次；跳过 `SKIP_DAILY_BARS_CHECK=1`。
+  - **CLI**：`uv run python -m scripts.tools.ensure_daily_bars`（只读状态）；`--sync-if-stale --require-ready`（与自动化一致）。
+  - **调度**：`docs/SCHEDULING.md` — 工作日 **17:30** sync、`17:45` 选股、`18:00` 龙头 eod（`--days 2` 两交易日）；容器 `sync_emotion_cycle.sh` 用 `/usr/local/bin/uv`；改 crontab 后 **rebuild** scheduler。
+
+### 2026-06-05 dragons 标题 echo 进正文
+
+- **Context**: 龙头 evening 稿标题「情绪发酵怎么玩？大有能源5板还在榜」被 LLM 贴在「> 情绪与盘面」之前。
+- **Pitfall/Error**: top5 已有 `strip_top5_title_echo`，dragons 未做对称处理；变现 prompt 只写标题模板未禁正文复述。
+- **Solution/Rule**: `strip_dragon_title_echo`（`wechat_mp_dragons_article.py`）— 精确 title 匹配 + `怎么玩…还在榜` 正则；`build_dragons_article` 与 LLM 返回后各调一次；prompt/变现块补禁句。测试 `test_strip_dragon_title_echo_removes_title_line`；skill `rules-implemented.md` · `evening-trilogy-templates.md`。

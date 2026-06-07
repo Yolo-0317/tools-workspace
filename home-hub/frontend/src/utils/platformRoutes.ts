@@ -12,19 +12,24 @@ export function isMobileRoutePath(path: string): boolean {
 export function toMobileRoute(path: string): string {
   if (path === '/login') return path
   if (isMobileRoutePath(path)) return path
-  if (path === '/') return '/m'
+  if (path === '/' || path === '/advisor') return '/m/advisor'
   return `/m${path}`
 }
 
 /** H5 路径 → 桌面路径 */
 export function toDesktopRoute(path: string): string {
   if (!isMobileRoutePath(path)) return path
-  if (path === '/m') return '/'
-  return path.slice(2) || '/'
+  if (path === '/m' || path === '/m/advisor') return '/advisor'
+  return path.slice(2) || '/advisor'
 }
 
 export function defaultHomePath(mobile = isMobileViewport()): string {
-  return mobile ? '/m' : '/'
+  return mobile ? '/m/advisor' : '/advisor'
+}
+
+/** 投顾总览（与 defaultHomePath 一致，便于链接） */
+export function advisorPath(mobile = isMobileViewport()): string {
+  return defaultHomePath(mobile)
 }
 
 export function defaultSelectionPath(mobile = isMobileViewport()): string {

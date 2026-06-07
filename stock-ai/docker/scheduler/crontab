@@ -4,20 +4,19 @@
 SHELL=/bin/sh
 PATH=/usr/local/bin:/usr/bin:/bin
 
-# 工作日 17:00 Tushare → MySQL
-0 17 * * 1-5 /bin/sh /app/run_sync_daily.sh >> /app/logs/sync_daily.log 2>&1
+# 工作日 17:30 Tushare → MySQL（先于选股/龙头）
+30 17 * * 1-5 /bin/sh /app/run_sync_daily.sh >> /app/logs/sync_daily.log 2>&1
 
-# 工作日 17:30 选股 + SOP（本机 OpenCLI）
-30 17 * * 1-5 /bin/sh /app/docker/scheduler/run-host-job.sh selection >> /app/logs/selection.log 2>&1
+# 工作日 17:45 选股 + SOP（本机 OpenCLI；日线 17:30 同步后）
+45 17 * * 1-5 /bin/sh /app/docker/scheduler/run-host-job.sh selection >> /app/logs/selection.log 2>&1
 
-# 工作日 17:10 情绪周期日检（Tushare 17:00 入库后再算 → emotion_cycle_*）
-10 17 * * 1-5 /bin/sh /app/sync_emotion_cycle.sh eod >> /app/logs/emotion_cycle.log 2>&1
+# 工作日 18:00 收盘龙头 eod（须在 stock_daily 与选股之后 → emotion_cycle_*）
+0 18 * * 1-5 /bin/sh /app/sync_emotion_cycle.sh eod >> /app/logs/emotion_cycle.log 2>&1
 
-# 工作日 09:26 盘前复阅（同一数据日，slot=pre_market）
-26 9 * * 1-5 /bin/sh /app/sync_emotion_cycle.sh pre_market >> /app/logs/emotion_cycle.log 2>&1
+# 盘前 pre_market 已下线（2026-06-04）
 
-# 盘中龙头/情绪：本机 launchd com.user.stock-emotion-intraday（OpenCLI，每 15min）
-# 手动触发：curl -X POST http://127.0.0.1:9876/run/emotion-intraday
+# 盘中监控 — 已停用（2026-06-04：OpenCLI 抢 Chrome；用户不再需要）
+# */5 * * * 1-5 /bin/sh /app/docker/scheduler/run-host-job.sh monitor >> /app/logs/monitor.log 2>&1
 
-# 盘中监控（本机 OpenCLI；非交易时段脚本内跳过）
-*/5 * * * 1-5 /bin/sh /app/docker/scheduler/run-host-job.sh monitor >> /app/logs/monitor.log 2>&1
+# 周五 20:30 投顾周复盘 → MySQL + 看板
+30 20 * * 5 /bin/sh /app/docker/scheduler/run-host-job.sh advisor-weekly >> /app/logs/advisor_weekly.log 2>&1

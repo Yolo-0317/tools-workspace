@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Ultraman">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef3c7"/>
+      <stop offset="100%" stop-color="#fee2e2"/>
+    </linearGradient>
+    <linearGradient id="silver" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="100" fill="url(#bg)"/>
+  <ellipse cx="100" cy="108" rx="58" ry="64" fill="url(#silver)"/>
+  <path d="M42 98c8-34 34-52 58-52s50 18 58 52" fill="#dc2626"/>
+  <path d="M56 72c12-8 26-12 44-12s32 4 44 12c-10-4-22-6-44-6s-34 2-44 6z" fill="#b91c1c"/>
+  <ellipse cx="78" cy="108" rx="16" ry="20" fill="#fef08a"/>
+  <ellipse cx="122" cy="108" rx="16" ry="20" fill="#fef08a"/>
+  <ellipse cx="78" cy="110" rx="7" ry="9" fill="#fef08a"/>
+  <ellipse cx="122" cy="110" rx="7" ry="9" fill="#fef08a"/>
+  <path d="M100 128v34" stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
+  <path d="M72 152h56" stroke="#dc2626" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="100" cy="52" r="8" fill="#fca5a5"/>
+</svg>

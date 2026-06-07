@@ -1,10 +1,16 @@
 #!/bin/sh
-# 持仓盘中监控（交易时段每 5 分钟由 launchd 调用）
+# 持仓盘中监控（原：Docker scheduler 每 5 分钟 → host-jobs；2026-06-04 起默认停用）
 set -eu
 set -o pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
+
+# 恢复：在 .env 设 HOLDINGS_MONITOR_ENABLED=1，并取消 docker/scheduler/crontab 里 monitor 行注释
+if [ "${HOLDINGS_MONITOR_ENABLED:-0}" != "1" ]; then
+  echo "持仓盘中监控已停用（设 HOLDINGS_MONITOR_ENABLED=1 可恢复）" >&2
+  exit 0
+fi
 
 # launchd 定时任务可能不注入 HOME，导致 ~/.local/bin/uv 找不到
 if [ -z "${HOME:-}" ]; then

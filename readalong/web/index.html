@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <base id="base" href="/readalong/web/" />
+  <title>Readalong</title>
+  <style>
+    :root {
+      --bg: #11151c;
+      --text: #e8edf4;
+      --muted: #8b9cb3;
+      --active: #f0b429;
+      --line: #2a3548;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Iowan Old Style", serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    header {
+      padding: 1.2rem 1.4rem 0.6rem;
+      border-bottom: 1px solid var(--line);
+    }
+    h1 { margin: 0 0 0.2rem; font-size: 1.3rem; }
+    .meta { color: var(--muted); font-size: 0.88rem; }
+    main { max-width: 46rem; margin: 0 auto; padding: 0.8rem 1.2rem 5rem; }
+    .controls {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: color-mix(in srgb, var(--bg) 90%, transparent);
+      backdrop-filter: blur(6px);
+      padding: 0.7rem 0 0.9rem;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 0.8rem;
+    }
+    audio { width: 100%; }
+    .stats { font-size: 0.82rem; color: var(--muted); margin-top: 0.3rem; }
+    .sentence {
+      display: grid;
+      grid-template-columns: 3.25rem 1fr;
+      column-gap: 0.65rem;
+      align-items: start;
+      padding: 0.5rem 0.65rem;
+      border-radius: 0.4rem;
+      margin: 0.15rem 0;
+      cursor: pointer;
+    }
+    .sentence:hover { background: #1a2330; }
+    .sentence.active {
+      background: #243044;
+      box-shadow: inset 3px 0 0 var(--active);
+    }
+    .sentence.low { opacity: 0.55; }
+    .time {
+      grid-column: 1;
+      grid-row: 1;
+      font-family: ui-monospace, Menlo, monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-align: right;
+      line-height: 1.7;
+      padding-top: 0.05rem;
+    }
+    .sentence.active .time { color: var(--active); }
+    .sentence__body {
+      grid-column: 2;
+      grid-row: 1;
+      min-width: 0;
+    }
+    .sentence .en {
+      display: block;
+      margin: 0;
+    }
+    .sentence .zh {
+      display: block;
+      margin: 0.4rem 0 0;
+      padding: 0;
+      font-size: 0.92rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .sentence.active .zh { color: #b8c9de; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="title">Readalong</h1>
+    <div class="meta" id="meta">Sentence-level sync</div>
+  </header>
+  <main>
+    <div class="controls">
+      <audio id="player" controls preload="metadata"></audio>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div id="lines"></div>
+  </main>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const chapter = (params.get("ch") || "01").padStart(2, "0");
+    const hubBase = (location.pathname.match(/^(\/readalong)(?=\/|$)/) || [])[1] || "";
+    const baseEl = document.getElementById("base");
+    if (baseEl) {
+      baseEl.href = hubBase ? `${hubBase}/web/` : "/web/";
+    }
+    const root = hubBase || "";
+    const MANIFEST = `${root}/output/ch${chapter}.json`;
+    const AUDIO = `${root}/samples/chapter${chapter}.mp3`;
+
+    const titleEl = document.getElementById("title");
+    const metaEl = document.getElementById("meta");
+    const statsEl = document.getElementById("stats");
+    const linesEl = document.getElementById("lines");
+    const player = document.getElementById("player");
+
+    let lines = [];
+    let active = -1;
+    let lineEls = [];
+    let userScrolling = false;
+    let scrollIdleTimer = 0;
+
+    function fmt(sec) {
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60).toString().padStart(2, "0");
+      return `${m}:${s}`;
+    }
+
+    function render() {
+      linesEl.innerHTML = "";
+      lineEls = [];
+      lines.forEach((line, i) => {
+        const div = document.createElement("div");
+        const low = line.confidence != null && line.confidence < 0.6;
+        div.className = "sentence" + (i === active ? " active" : "") + (low ? " low" : "");
+        div.dataset.idx = String(i);
+        const zh = line.zh ? `<p class="zh">${line.zh}</p>` : "";
+        div.innerHTML =
+          `<span class="time">${fmt(line.start)}</span>` +
+          `<div class="sentence__body">` +
+          `<p class="en">${line.text}</p>${zh}</div>`;
+        div.addEventListener("click", () => {
+          userScrolling = false;
+          player.currentTime = line.start + 0.02;
+          void player.play();
+          setActive(i, { forceScroll: true });
+        });
+        linesEl.appendChild(div);
+        lineEls.push(div);
+      });
+    }
+
+    function isInView(el) {
+      const controls = document.querySelector(".controls");
+      const top = controls ? controls.getBoundingClientRect().bottom + 12 : 96;
+      const bottom = window.innerHeight - 24;
+      const rect = el.getBoundingClientRect();
+      return rect.top >= top && rect.bottom <= bottom;
+    }
+
+    function scrollToLine(el) {
+      const controls = document.querySelector(".controls");
+      const top = controls ? controls.getBoundingClientRect().bottom + 12 : 96;
+      const rect = el.getBoundingClientRect();
+      const target =
+        window.scrollY + rect.top - top - (window.innerHeight - top) * 0.35;
+      window.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
+    }
+
+    function setActive(idx, opts = {}) {
+      if (idx === active) return;
+      if (active >= 0 && lineEls[active]) {
+        lineEls[active].classList.remove("active");
+      }
+      active = idx;
+      const el = lineEls[idx];
+      if (!el) return;
+      el.classList.add("active");
+      if ((opts.forceScroll || !userScrolling) && !isInView(el)) {
+        scrollToLine(el);
+      }
+    }
+
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (!player.paused) {
+          userScrolling = true;
+          clearTimeout(scrollIdleTimer);
+          scrollIdleTimer = window.setTimeout(() => {
+            userScrolling = false;
+          }, 2500);
+        }
+      },
+      { passive: true },
+    );
+
+    player.addEventListener("play", () => {
+      userScrolling = false;
+    });
+
+    let lastTick = 0;
+    player.addEventListener("timeupdate", () => {
+      const now = performance.now();
+      if (now - lastTick < 120) return;
+      lastTick = now;
+      const t = player.currentTime;
+      let idx = -1;
+      for (let i = 0; i < lines.length; i++) {
+        if (t >= lines[i].start && t < lines[i].end) idx = i;
+      }
+      if (idx >= 0) setActive(idx);
+    });
+
+    async function boot() {
+      const res = await fetch(MANIFEST);
+      const data = await res.json();
+      lines = data.lines || [];
+      titleEl.textContent = data.title;
+      metaEl.textContent = "EPUB + 中文译本 · word-level alignment";
+      const conf = lines.filter((l) => l.confidence >= 0.75).length;
+      const zhN = lines.filter((l) => l.zh).length;
+      statsEl.textContent =
+        `${data.aligned_sentences}/${data.total_sentences} EN · ` +
+        `${zhN} ZH · high conf ${conf} · body ${fmt(data.body_start_sec)}`;
+      player.src = AUDIO;
+      render();
+    }
+
+    boot().catch((e) => {
+      titleEl.textContent = "Load failed";
+      statsEl.textContent = String(e);
+    });
+  </script>
+</body>
+</html>

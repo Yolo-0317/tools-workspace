@@ -107,36 +107,45 @@ def load_wechat_top5_picks(
     trade_date: date | None = None,
 ) -> tuple[date, list[SelectionPick], str]:
     """
-    公众号 Top5：合并多策略（combined / five_factor / ma5 / watch 等）后按总分重选。
-    返回 (trade_date, picks, source_tag)。
+    公众号 Top5 候选池（默认流量优先）。
+
+    WECHAT_MP_TOP5_POOL：
+    - hot（默认）：东财 A 股人气榜 Top10 → 过滤 ST/禁码 → 取 5
+    - selection：多策略合并后按总分重选（旧逻辑）
+    - blend：先 hot，不足再补 selection
+
+    热股抓取失败时自动回退 selection。
     """
-    from scripts.tools.selection_results import merge_selection_strategies_df, pick_wechat_top5
+    from scripts.tools.wechat_mp_hot_stocks import (
+        load_wechat_top5_hot_picks,
+        load_wechat_top5_selection_picks,
+        top5_pool_mode,
+    )
 
-    td, universe, source = merge_selection_strategies_df(trade_date=trade_date)
-    top_df = pick_wechat_top5(universe, top_n=top_n)
-    if top_df.empty:
-        raise ValueError(f"合并候选后 Top{top_n} 为空（{source}）")
+    mode = top5_pool_mode()
+    if mode == "selection":
+        return load_wechat_top5_selection_picks(top_n=top_n, trade_date=trade_date)
 
-    picks: list[SelectionPick] = []
-    for _, row in top_df.iterrows():
-        code = str(row["代码"]).split(".")[0].zfill(6)
-        label = str(row.get("策略标签", "") or "")
-        src = str(row.get("策略来源", "") or "")
-        if src and src not in label:
-            label = f"{label}·{src}" if label else src
-        picks.append(
-            SelectionPick(
-                code=code,
-                name="",
-                close=float(row["收盘价"]),
-                change_pct=float(row["涨幅%"]),
-                score=float(row.get("总分", 0)),
-                label=label,
-                action=str(row.get("建议动作", "")),
-                in_holdings=False,
-            )
-        )
-    return td, picks, source
+    hot_err: Exception | None = None
+    if mode in ("hot", "blend"):
+        try:
+            return load_wechat_top5_hot_picks(top_n=top_n, trade_date=trade_date)
+        except Exception as e:
+            hot_err = e
+            if mode == "hot":
+                import sys
+
+                print(
+                    f"[wechat_mp] 东财人气榜不可用，回退多策略选股: {e}",
+                    file=sys.stderr,
+                )
+
+    td, sel_picks, source = load_wechat_top5_selection_picks(
+        top_n=top_n, trade_date=trade_date
+    )
+    if mode == "blend" and hot_err is not None:
+        source = f"{source}+hot_fallback"
+    return td, sel_picks, source
 
 
 def _load_names(codes: list[str]) -> dict[str, str]:
@@ -207,8 +216,17 @@ def format_briefing_section(
                 decision = sop.get("decision") or "暂不操作"
                 lines.append(f"   ⏸ SOP暂不监控（{decision}）")
         else:
-            dip = round(p.close * 0.97, 2)
-            lines.append(f"   次日监控：涨>5%不追；回调≤{dip}元观察区")
+            try:
+                from stock_ai.advisor_selection import selection_watch_sync_enabled
+
+                if not selection_watch_sync_enabled():
+                    lines.append("   📋 情报观察（阶段0·非监控/非必买）")
+                else:
+                    dip = round(p.close * 0.97, 2)
+                    lines.append(f"   次日监控：涨>5%不追；回调≤{dip}元观察区")
+            except ImportError:
+                dip = round(p.close * 0.97, 2)
+                lines.append(f"   次日监控：涨>5%不追；回调≤{dip}元观察区")
 
     if ai_excerpt.strip():
         lines.extend(["", "── SOP / AI 投资决策 ──", "", ai_excerpt.strip(), ""])
@@ -219,9 +237,23 @@ def format_briefing_section(
             "含支撑/止损/目标位提醒。红线仍适用（禁追高、禁满仓新开仓）。"
         )
     else:
-        monitor_note = (
-            "说明：Top5 已写入次日盘中监控（非持仓标的）；红线仍适用（禁追高、禁满仓新开仓）。"
-        )
+        try:
+            from stock_ai.advisor_selection import selection_watch_sync_enabled
+
+            if not selection_watch_sync_enabled():
+                monitor_note = (
+                    "说明：投顾阶段0 — Top5 为情报池，未写入次日监控；"
+                    "本周以持仓减仓为主（见投顾主策略）。"
+                )
+            else:
+                monitor_note = (
+                    "说明：Top5 已写入次日盘中监控（非持仓标的）；"
+                    "红线仍适用（禁追高、禁满仓新开仓）。"
+                )
+        except ImportError:
+            monitor_note = (
+                "说明：Top5 已写入次日盘中监控（非持仓标的）；红线仍适用（禁追高、禁满仓新开仓）。"
+            )
     lines.extend(["", monitor_note])
     return lines
 
@@ -395,6 +427,19 @@ def sync_watch_alerts(
 ) -> dict:
     from scripts.tools.portfolio_db import load_holding_codes, sync_selection_payload
 
+    try:
+        from stock_ai.advisor_selection import phase_label, selection_watch_sync_enabled
+
+        if not selection_watch_sync_enabled():
+            return {
+                "skipped": True,
+                "reason": f"{phase_label()}：选股池不写次日监控（仅情报）",
+                "rules": [],
+                "db_sync": {"selection_watch_picks": 0, "alert_rules": 0},
+            }
+    except ImportError:
+        pass
+
     holdings_codes = load_holding_codes()
     if not holdings_codes:
         from scripts.tools.holdings_context import load_holdings_card
@@ -477,6 +522,10 @@ def main() -> int:
     except Exception as exc:  # noqa: BLE001
         print(f"❌ 同步失败: {exc}", file=sys.stderr)
         return 1
+
+    if payload.get("skipped"):
+        print(f"⏭️ {payload.get('reason', '选股监控同步已跳过')}")
+        return 0
 
     n_rules = len(payload.get("rules") or [])
     n_watch = len(payload.get("watch_codes") or [])

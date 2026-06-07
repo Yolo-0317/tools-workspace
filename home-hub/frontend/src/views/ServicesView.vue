@@ -122,6 +122,11 @@ onMounted(load)
               <a :href="item.dev_url" target="_blank" rel="noopener">{{ item.dev_url }}</a>
               <button type="button" class="copy" @click="copyText(item.dev_url!)">复制</button>
             </li>
+            <li v-if="item.internal_url">
+              内网
+              <a :href="item.internal_url" target="_blank" rel="noopener">{{ item.internal_url }}</a>
+              <button type="button" class="copy" @click="copyText(item.internal_url!)">复制</button>
+            </li>
             <li v-if="item.public_url">
               公网
               <a :href="item.public_url" target="_blank" rel="noopener">{{ item.public_url }}</a>

@@ -19,7 +19,7 @@
 
 或作为模块导入：
    from scripts.sync.sync_tushare_daily_to_mysql import sync_daily_data
-   sync_daily_data(mode="by_date", days=7)
+   sync_daily_data(mode="by_date", days=2)
 
 环境变量：
 - TUSHARE_TOKEN: Tushare API Token（必需）
@@ -32,7 +32,8 @@ import os
 import sys
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from collections import deque
 
@@ -47,6 +48,23 @@ from dotenv import load_dotenv
 # 加载环境变量（项目根目录 stock-ai/.env）
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(dotenv_path=_REPO_ROOT / ".env")
+
+
+def _strip_proxy_env() -> None:
+    """Tushare 直连 api.waditu.com；勿走本机 Clash 等 HTTP 代理（易超时）。"""
+    for key in (
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "ALL_PROXY",
+        "http_proxy",
+        "https_proxy",
+        "all_proxy",
+    ):
+        os.environ.pop(key, None)
+    os.environ["NO_PROXY"] = "*"
+
+
+_strip_proxy_env()
 
 import pandas as pd
 from sqlalchemy import create_engine, text
@@ -158,8 +176,26 @@ def get_mysql_engine():
         print("请在 .env 文件中设置：MYSQL_URL=mysql+pymysql://user:pass@host/db")
         sys.exit(1)
 
-    mysql_url = mysql_url.replace("host.docker.internal", "127.0.0.1")
+    # 本机直跑：host.docker.internal → 127.0.0.1；scheduler 容器内须保留 host.docker.internal
+    if not Path("/.dockerenv").is_file():
+        mysql_url = mysql_url.replace("host.docker.internal", "127.0.0.1")
     return create_engine(mysql_url, pool_pre_ping=True, pool_recycle=3600)
+
+
+_TZ = ZoneInfo("Asia/Shanghai")
+
+
+def recent_trading_date_strs(count: int, *, anchor: date | None = None) -> list[str]:
+    """最近 count 个 A 股交易日（YYYYMMDD），从旧到新。anchor 默认今天（上海时区）。"""
+    anchor = anchor or datetime.now(_TZ).date()
+    d = anchor
+    out: list[str] = []
+    while len(out) < count:
+        if d.weekday() < 5:
+            out.append(d.strftime("%Y%m%d"))
+        d -= timedelta(days=1)
+    out.reverse()
+    return out
 
 
 def generate_date_range(start_date: str, end_date: str) -> list[str]:
@@ -553,7 +589,7 @@ def sync_daily_data(
     sleep_seconds: float = DEFAULT_SLEEP_SECONDS,
     max_calls_per_minute: int = MAX_CALLS_PER_MINUTE,
     limit: int | None = None,
-    days: int = 7,
+    days: int = 2,
     use_db_list: bool = False,
 ) -> int:
     """
@@ -569,7 +605,7 @@ def sync_daily_data(
     - sleep_seconds: API 调用间隔秒数（建议 ≥ 1.5）
     - max_calls_per_minute: 每分钟最大 API 调用次数（Tushare 限制 50）
     - limit: 限制处理股票数量（用于测试，仅 incremental 模式）
-    - days: by_date 模式的回溯天数（默认 7 天）
+    - days: by_date 模式同步最近 N 个交易日（默认 2：上一交易日 + 今日）
     - use_db_list: 保留参数（兼容性，incremental 模式自动从数据库读取）
     
     返回：
@@ -583,7 +619,7 @@ def sync_daily_data(
     print(f"模式：{mode}")
     
     if mode == "by_date":
-        print(f"回溯天数：{days} 天")
+        print(f"同步交易日数：{days} 个（上一交易日 + 今日）")
         print("💡 按日期批量拉取，无需 stock_basic 接口")
     elif mode == "full":
         today = datetime.now().strftime("%Y%m%d")
@@ -615,19 +651,9 @@ def sync_daily_data(
     # 按日期批量拉取模式（推荐，无需股票列表）
     if mode == "by_date" or mode == "full":
         if mode == "by_date":
-            print(f"\n开始按日期批量同步（最近 {days} 天）...")
+            dates_to_sync = recent_trading_date_strs(days)
+            print(f"\n开始按日期批量同步（{dates_to_sync[0]} → {dates_to_sync[-1]}，共 {len(dates_to_sync)} 个交易日）...")
             print("-" * 80)
-            
-            # 生成日期列表（最近 N 天）
-            end_date = datetime.now()
-            dates_to_sync = []
-            
-            for i in range(days):
-                date = end_date - timedelta(days=i)
-                date_str = date.strftime("%Y%m%d")
-                dates_to_sync.append(date_str)
-            
-            dates_to_sync.reverse()  # 从旧到新
         else:  # full 模式
             print(f"\n开始全量初始化（从 {start_date} 到今天）...")
             print("-" * 80)
@@ -799,8 +825,8 @@ def _parse_cli_args():
     parser.add_argument(
         "--days",
         type=int,
-        default=7,
-        help="by_date 模式回溯天数（默认 7）",
+        default=2,
+        help="by_date 模式同步最近 N 个交易日（默认 2）",
     )
     parser.add_argument(
         "--start-date",

@@ -2,8 +2,11 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 
-/** 仅用于 `npm run build`；日常访问 launchd 单服务 :8780（见 ../README.md） */
+const base = process.env.VITE_BASE_PATH || '/hub/'
+
+/** 生产构建走 launchd :8780 + Caddy /hub/*；开发可 `VITE_BASE_PATH=/ npm run dev` */
 export default defineConfig({
+  base,
   plugins: [
     vue(),
     VitePWA({
@@ -18,8 +21,8 @@ export default defineConfig({
         background_color: '#0b1016',
         display: 'standalone',
         orientation: 'portrait-primary',
-        start_url: '/m',
-        scope: '/',
+        start_url: `${base}m`,
+        scope: base,
         icons: [
           {
             src: 'pwa-192.png',
@@ -40,13 +43,13 @@ export default defineConfig({
         ],
       },
       workbox: {
-        navigateFallback: '/index.html',
+        navigateFallback: `${base}index.html`,
         navigateFallbackDenylist: [/^\/api\//],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,webmanifest}'],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
-            urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
+            urlPattern: ({ url }) => url.pathname.includes('/api/'),
             handler: 'NetworkOnly',
           },
         ],

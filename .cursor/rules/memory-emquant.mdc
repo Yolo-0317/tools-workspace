@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Memory: emquant-sim（东财掘金 Win11）
 
-处理 `emquant-sim/` 或用户问东财量化/掘金仿真时，与本文件、`project-memory.mdc` 一并检索。完整运维见 `emquant-sim/docs/PLAYBOOK.md`。
+处理 `emquant-sim/` 或用户问东财量化/掘金仿真时，与本文件、`project-memory.mdc` 一并检索。**2026-06-02 起默认下线**，见 `emquant-sim/OFFLINE.md`。
 
 ## 记忆条目
 
@@ -32,3 +32,9 @@ alwaysApply: false
   - **买**：阶段∈启动/发酵/高潮、`allow_new_open`、溢价≥1%、炸板<40%、`-3%<daily_pct≤5%`、`checklist_pass≥5`；单龙 1 手、最多 3 龙、总仓≤`position_cap_pct`。
   - **卖**：阶段冰点/退潮清仓；浮亏≤-5%；持仓≥5 日时间止损。日志：`[dragon] reload|BUY|EXIT|SESSION_EXIT`。
   - **切回主轨**：`strategy_entry.json` 改 `"combined"` 再 deploy。文档 `docs/emquant-dragon-strategy.md`。
+
+### 2026-06-02 量化下线（专业投资者 / 约 300w）
+
+- **Context**: 用户不再使用东财掘金自动仿真；情绪周期与 home-hub 仍需要。
+- **Pitfall/Error**: `sync_emotion_cycle.sh` 成功后仍会 `export_emotion_dragons` + `push_dragons_to_win11`；Agent 可能误 deploy。
+- **Solution/Rule**: `.env.emquant` 设 **`EMQUANT_ENABLED=0`**（默认）；`scripts/_offline_guard.sh` 拦截 deploy/push；`sync_emotion_cycle.sh` 仅写 MySQL。恢复：`EMQUANT_ENABLED=1` + 手动 deploy。说明 `emquant-sim/OFFLINE.md`。

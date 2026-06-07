@@ -271,7 +271,7 @@ def run_fetch(
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="东财 jywg 网页持仓（OpenCLI）；首次手动登录，会话最长约 3 小时。"
+        description="东方财富证券网页持仓（jywg.18.cn · OpenCLI）；首次手动登录，会话最长约 3 小时。"
     )
     parser.add_argument(
         "--wait-login",
@@ -361,7 +361,7 @@ def main() -> int:
 
         stats = sync_jywg_payload(payload)
         print(
-            f"💾 MySQL: positions={stats['positions']} account={stats['account']} (source=jywg)",
+            f"💾 MySQL: positions={stats['positions']} account={stats['account']} (东方财富证券)",
             file=sys.stderr,
         )
         if args.snapshot:

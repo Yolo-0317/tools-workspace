@@ -20,12 +20,14 @@ SHARE_API_PREFIXES: tuple[str, ...] = (
     "/api/dashboard/selection",
 )
 
-PUBLIC_API_PREFIXES: tuple[str, ...] = (
-    "/api/health",
-    "/api/auth/login",
-    # 财经快讯（东财 7×24 + AI 解读快照，只读）
-    "/api/dashboard/news",
-)
+def public_api_prefixes() -> tuple[str, ...]:
+    base = (
+        "/api/health",
+        "/api/auth/login",
+    )
+    if settings.news_enabled:
+        return base + ("/api/dashboard/news",)
+    return base
 
 
 @dataclass(frozen=True)
@@ -63,7 +65,7 @@ def authenticate(username: str, password: str) -> HubAccount | None:
 
 
 def public_api_allowed(path: str) -> bool:
-    return any(path.startswith(prefix) for prefix in PUBLIC_API_PREFIXES)
+    return any(path.startswith(prefix) for prefix in public_api_prefixes())
 
 
 def share_api_allowed(path: str, method: str) -> bool:

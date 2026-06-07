@@ -27,6 +27,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
+      - "80:80"
+      - "443:443"
       - "${INTERNAL_HTTPS_PORT:-8443}:443"
       - "${EXTERNAL_HTTPS_PORT:-8883}:443"
     volumes:

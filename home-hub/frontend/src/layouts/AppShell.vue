@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { hubAuth, logout } from '../auth/hubAuth'
+import { NEWS_ENABLED } from '../config/features'
 
 interface NavLink {
   to: string
@@ -10,22 +11,27 @@ interface NavLink {
 
 const router = useRouter()
 
-const navLinks: NavLink[] = [
-  { to: '/', label: '总览' },
-  { to: '/portfolio', label: '持仓' },
-  { to: '/selection', label: '选股' },
-  { to: '/monitor', label: '监控' },
-  { to: '/news', label: '财经' },
-  { to: '/emotion', label: '龙头' },
-  { to: '/jobs', label: '任务' },
-  { to: '/services', label: '服务' },
-]
+const navLinks = computed<NavLink[]>(() => {
+  const links: NavLink[] = [
+    { to: '/advisor', label: '投顾' },
+    { to: '/portfolio', label: '持仓' },
+    { to: '/selection', label: '情报' },
+    { to: '/monitor', label: '监控' },
+  ]
+  if (NEWS_ENABLED) links.push({ to: '/news', label: '财经' })
+  links.push(
+    { to: '/emotion', label: '龙头' },
+    { to: '/jobs', label: '任务' },
+    { to: '/services', label: '服务' },
+  )
+  return links
+})
 
 const shareOnly = computed(() => hubAuth.value.shareOnly)
 const username = computed(() => hubAuth.value.username)
 const authenticated = computed(() => hubAuth.value.authenticated)
 const brand = computed(() => {
-  if (!authenticated.value) return '财经快讯'
+  if (!authenticated.value) return NEWS_ENABLED ? '财经快讯' : 'Home Hub'
   return shareOnly.value ? '选股分享' : 'Home Hub'
 })
 

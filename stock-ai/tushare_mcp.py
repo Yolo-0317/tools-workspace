@@ -329,6 +329,12 @@ def analyze_and_suggest(stock_code: str):
         {"建议关注买入机会，趋势走强。" if "金叉" in ma_signal or "多头" in ma_signal else "建议观望或减仓，趋势偏弱。"}
         (注：盘中现价请用 intraday_trade_signal 或 fetch_eastmoney_quotes；本分析仅供参考，股市有风险，入市需谨慎。)
         """
+        try:
+            from stock_ai.advisor_selection import advisor_signal_disclaimer
+
+            suggestion += advisor_signal_disclaimer()
+        except ImportError:
+            pass
         return suggestion
     except Exception as e:
         return f"分析过程中出错: {str(e)}"
@@ -479,6 +485,12 @@ def realtime_trade_signal(code: str, trade_date: Optional[str] = None):
             **提示**:
             - 本信号为均线策略的简化版，仅供参考；盘中数据会变化，建议结合成交量、指数环境与基本面共同判断。
             """
+        try:
+            from stock_ai.advisor_selection import advisor_signal_disclaimer
+
+            suggestion += advisor_signal_disclaimer()
+        except ImportError:
+            pass
         return suggestion
     except Exception as e:
         return f"分析过程中出错: {str(e)}"
@@ -609,6 +621,12 @@ def intraday_trade_signal(code: str, mysql_url: Optional[str] = None):
             **提示**:
             - 历史基线来自 MySQL `stock_daily`，盘中价来自东财接口；盘中信号会随价格波动而变化。
             """
+        try:
+            from stock_ai.advisor_selection import advisor_signal_disclaimer
+
+            report += advisor_signal_disclaimer()
+        except ImportError:
+            pass
         return report
     except Exception as e:
         return f"分析过程中出错: {str(e)}"

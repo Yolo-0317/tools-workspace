@@ -20,10 +20,15 @@ echo "==> 2/4 停用旧 stock-ai launchd 定时任务（改由 Docker scheduler 
 for label in \
   com.user.stock-ai-daily-selection \
   com.user.stock-ai-daily-briefing \
-  com.user.stock-holdings-monitor; do
+  com.user.stock-holdings-monitor \
+  com.user.stock-watch-reminder-20260601 \
+  com.user.stock-macro-news-sync; do
   plist="${AGENTS}/${label}.plist"
-  if launchctl print "${UID_GUI}/${label}" &>/dev/null; then
-    launchctl bootout "${UID_GUI}" "${plist}" 2>/dev/null || true
+  launchctl bootout "${UID_GUI}" "${plist}" 2>/dev/null || true
+  if [[ -f "${plist}" ]]; then
+    rm -f "${plist}"
+    echo "    已移除 ${label}"
+  elif launchctl print "${UID_GUI}/${label}" &>/dev/null 2>&1; then
     echo "    已停用 ${label}"
   fi
 done
@@ -35,14 +40,12 @@ docker rm stock-daily-sync 2>/dev/null || true
 echo "==> 4/5 构建并启动 stock-ai-scheduler"
 (cd "${ROOT}/docker/scheduler" && docker compose up -d --build)
 
-echo "==> 5/5 安装盘中龙头 launchd（OpenCLI 每 15 分钟）"
-"${ROOT}/scripts/install-emotion-intraday-launchd.sh"
+echo "==> 5/5 移除已下线的盘中情绪 launchd（仅保留收盘 eod）"
+"${ROOT}/scripts/uninstall-emotion-intraday-launchd.sh" 2>/dev/null || true
 
 echo ""
 echo "完成。验证："
 echo "  curl -s http://127.0.0.1:${HOST_JOB_PORT:-9876}/health"
-echo "  curl -s -X POST http://127.0.0.1:${HOST_JOB_PORT:-9876}/run/emotion-intraday -H 'Content-Type: application/json' -d '{}'"
-echo "  launchctl print ${UID_GUI}/com.user.stock-emotion-intraday"
 echo ""
 echo "可选：在 stock-ai/.env 设置 HOST_JOB_TOKEN=随机字符串（容器与 host-jobs 共用）"
 echo "若容器 curl 失败，设 HOST_JOB_BIND=0.0.0.0 后重启 host-jobs"

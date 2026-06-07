@@ -1,5 +1,20 @@
 # Strategy playbook
 
+## 投顾门控（所有策略共用）
+
+Before any screening command:
+
+1. Read `investment-agent/投顾主策略.md` for current phase (0/1/2)
+2. After CSV/DB output, actions are capped by `stock_ai/advisor_selection.py`
+3. Phase 0: Top5 = intel only; skip SOP; no selection `alert_rules`; no「候选新开仓」in reports
+4. Parallel tracks (`ma5`, `five_factor`, `watch`) also advisor-capped on persist (`selection_strategy_bridge.py`)
+
+| Phase | combined Top5 | aux pools (ma5/五因子/watch) | Monitor selection rules |
+|-------|---------------|------------------------------|-------------------------|
+| 0 | 继续观察 | 情报标注 | 关闭 |
+| 1 | 小仓试探 | 同左 + 可监控 | 启用 |
+| 2 | 进攻试探 | 同左 | 启用 |
+
 ## Choose the right workflow
 
 ### 1) Broad daily stock picking
@@ -33,12 +48,13 @@ Useful columns from the combined strategy output:
 
 Hard daily runbook:
 
+- **Check advisor phase** in `投顾主策略.md` first
 - Check `SELECT MAX(trade_date) FROM stock_daily` first.
 - Sync daily bars only when requested target date is missing.
 - Run capital-flow sync when available (allow partial Eastmoney page failures if enough rows land).
 - If import path issues appear, rerun from `/Users/yolo/dev/yolo/tools-workspace/stock-ai/core_v2`.
-- After first-pass CSV, do browser-based Eastmoney second-pass filtering before final advice.
-- Final advice should be interpreted shortlist (keep/observe/drop), not raw CSV dump.
+- After first-pass CSV, Eastmoney second pass = **context only**; final advice must respect advisor phase.
+- Final advice: 投顾五段 + interpreted shortlist, not raw CSV dump.
 
 ### 2) Momentum / breakout watchlist
 

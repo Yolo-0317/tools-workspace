@@ -3,7 +3,7 @@ import AppShell from '../layouts/AppShell.vue'
 import MobileShell from '../layouts/MobileShell.vue'
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/login',
@@ -15,7 +15,12 @@ const router = createRouter({
       path: '/',
       component: AppShell,
       children: [
-        { path: '', name: 'home', component: () => import('../views/HomeView.vue') },
+        { path: '', redirect: { name: 'advisor' } },
+        {
+          path: 'advisor',
+          name: 'advisor',
+          component: () => import('../views/HomeView.vue'),
+        },
         {
           path: 'portfolio',
           name: 'portfolio',
@@ -35,7 +40,7 @@ const router = createRouter({
           path: 'news',
           name: 'news',
           component: () => import('../views/NewsView.vue'),
-          meta: { public: true },
+          meta: { public: true, feature: 'news' },
         },
         {
           path: 'emotion',
@@ -55,9 +60,10 @@ const router = createRouter({
       component: MobileShell,
       meta: { mobile: true },
       children: [
+        { path: '', redirect: { name: 'm-advisor' } },
         {
-          path: '',
-          name: 'm-home',
+          path: 'advisor',
+          name: 'm-advisor',
           component: () => import('../views/HomeView.vue'),
           meta: { mobile: true },
         },

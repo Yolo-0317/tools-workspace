@@ -21,7 +21,7 @@ from scripts.analysis.sop_review_top5_concurrent import (
     _load_names,
     _technical_supplement,
 )
-from scripts.tools.deepseek_client import call_deepseek, is_llm_configured
+from scripts.tools.deepseek_client import call_deepseek, is_sop_llm_configured, sop_llm_backend
 from scripts.tools.holdings_context import load_full_decision_context
 from scripts.tools.sop_watch_parse import parse_sop_review_text
 
@@ -144,6 +144,7 @@ WATCH: 是|否 | DECISION: 买入观察|暂不操作|持有|减仓 | SUPPORT: x,
         temperature=0.3,
         max_tokens=5000,
         timeout=(10, 240),
+        backend=sop_llm_backend(),
     )
     return code, content
 
@@ -180,8 +181,10 @@ def review_single_and_push_wechat(
     push: bool = True,
 ) -> dict:
     """执行单股 SOP，可选推微信。返回摘要与报告路径。"""
-    if not is_llm_configured():
-        raise RuntimeError("未配置 DeepSeek（DEEPSEEK_API_KEY 或 LLM_BACKEND）")
+    if not is_sop_llm_configured():
+        raise RuntimeError(
+            f"未配置 SOP LLM（SOP_LLM_BACKEND={sop_llm_backend()}；deepseek 需 DEEPSEEK_API_KEY）"
+        )
 
     load_dotenv(ROOT / ".env")
     os.environ["MYSQL_URL"] = os.environ.get("MYSQL_URL", "").replace(

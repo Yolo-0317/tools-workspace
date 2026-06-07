@@ -19,7 +19,8 @@ ensure_repo_root_on_path()
 from scripts.analysis.eastmoney_sop_extract import build_fast_preliminary_report
 from scripts.tools.deepseek_client import call_deepseek, is_llm_configured
 from scripts.tools.portfolio_db import load_stock_names_by_codes
-from scripts.tools.wechat_mp_public import PUBLIC_MP_WRITER_RULE
+from scripts.tools.wechat_mp_public import PUBLIC_MP_WRITER_RULE, RESEARCHER_VOICE_RULE
+from scripts.tools.wechat_mp_monetization import monetization_prompt_block
 
 TZ = ZoneInfo("Asia/Shanghai")
 ROOT = Path(__file__).resolve().parents[2]
@@ -47,6 +48,11 @@ def dragon_sop_enabled() -> bool:
 
 def dragon_sop_max() -> int:
     return max(1, min(3, _env_int("WECHAT_MP_DRAGON_SOP_MAX", 3)))
+
+
+def dragons_write_max() -> int:
+    """正文「龙头拆解」深度写的只数（默认 2，利于完读与搜一搜）。"""
+    return max(1, min(3, _env_int("WECHAT_MP_DRAGON_WRITE_MAX", 2)))
 
 
 def dragon_sop_cache_hours() -> float:
@@ -256,23 +262,108 @@ def collect_dragon_sop_packages(
     return packs
 
 
+_DRAGON_PUBLIC_BANNED = """
+【筛选用分】checklist_pass（X/7）为情绪周期脚本内部计数，**禁止**出现在公众号正文、标题、摘要。
+禁止写法：6/7、7/7、X/7、系统筛选用分、龙头确认、内部认可、系统认可、值得推荐、可买 等。
+正文只写连板高度、板块地位、量价与博弈结构。
+"""
+
+
 def _sop_context_blob(packs: list[DragonSopPack]) -> str:
     if not packs:
         return "（龙头池为空，无 SOP 数据）"
     chunks: list[str] = []
     for p in packs:
-        confirm = (
-            f"{p.checklist_pass}/7" if p.checklist_pass is not None else "未评分"
-        )
         boards_s = f"{p.boards}板" if p.boards is not None else "连板未知"
         chunks.append(
             f"### {p.rank}. {p.name}（{p.code}）\n"
-            f"池内标签：{boards_s}，主线 {p.theme or '—'}，龙头确认 {confirm}\n"
+            f"池内标签：{boards_s}，主线 {p.theme or '—'}\n"
             f"池内备注：{p.notes or '无'}\n"
             f"技术面（OpenCLI）：\n{_truncate(p.technical, 1200)}\n"
             f"东财 SOP 初步报告：\n{_truncate(p.preliminary, 3600)}"
         )
     return "\n\n".join(chunks)
+
+
+_DRAGON_CHECKLIST_BAD_RE = re.compile(
+    r"(?:内部(?:系统)?(?:认可|确认)|系统认可|龙头确认(?:通过|满分)?|"
+    r"系统筛选用分|值得推荐|值得跟踪买入|可(?:以)?(?:买入|关注)|通过确认)"
+)
+
+_DRAGON_SCORE_FRACTION_RE = re.compile(
+    r"(?:系统筛选用分\s*)?\d+\s*/\s*7(?:\s*[（(][^）)]*[）)])?"
+)
+# 标题句式误入正文（LLM 常把「情绪发酵怎么玩？XX5板还在榜」写在「情绪与盘面」前）
+_DRAGON_TITLE_ECHO_RE = re.compile(
+    r"^[\s>]*.{0,14}怎么玩[？?].*(?:还在榜|还在线)"
+)
+_DRAGON_TITLE_ECHO_LOOSE_RE = re.compile(
+    r"^[\s>]*(?:情绪|A股龙头|连板梯队|情绪周期).*(?:怎么玩|还在榜)"
+)
+
+
+def _normalize_title_echo_line(line: str) -> str:
+    s = re.sub(r"^[\s>]+", "", (line or "").strip())
+    s = re.sub(r"[！!？?，,。.\s｜|]", "", s)
+    return s
+
+
+def strip_dragon_title_echo(text: str, *, title: str = "") -> str:
+    """去掉正文中误贴的公众号龙头标题句式（与 `_dragon_title` 生成的标题同构）。"""
+    if not text:
+        return text
+    title_norm = _normalize_title_echo_line(title) if title else ""
+    out: list[str] = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line:
+            out.append(raw)
+            continue
+        if title_norm and _normalize_title_echo_line(line) == title_norm:
+            continue
+        if _DRAGON_TITLE_ECHO_RE.match(line):
+            continue
+        if _DRAGON_TITLE_ECHO_LOOSE_RE.match(line) and (
+            "怎么玩" in line or "还在榜" in line
+        ):
+            continue
+        out.append(raw)
+    merged = "\n".join(out)
+    # 正文须以「> 情绪与盘面」起笔；其前的标题 echo 行一并剔除
+    marker = "> 情绪与盘面"
+    if marker in merged:
+        head, tail = merged.split(marker, 1)
+        head_lines = [ln for ln in head.splitlines() if ln.strip()]
+        if head_lines and all(
+            _DRAGON_TITLE_ECHO_RE.match(ln.strip())
+            or _DRAGON_TITLE_ECHO_LOOSE_RE.match(ln.strip())
+            or (title_norm and _normalize_title_echo_line(ln) == title_norm)
+            for ln in head_lines
+        ):
+            merged = marker + tail
+    return re.sub(r"\n{3,}", "\n\n", merged).strip()
+
+
+def sanitize_dragons_public_text(text: str) -> str:
+    """龙头公开稿：剔除 X/7 筛选用分及内部认可类表述。"""
+    from scripts.tools.wechat_mp_public import finalize_public_body_text, sanitize_public_mp_text
+
+    cleaned = sanitize_public_mp_text(text or "")
+    cleaned = finalize_public_body_text(cleaned)
+    out: list[str] = []
+    for raw in cleaned.splitlines():
+        line = raw
+        line = _DRAGON_SCORE_FRACTION_RE.sub("", line)
+        line = re.sub(r"龙头确认\s*\d+\s*/\s*7", "", line)
+        line = _DRAGON_CHECKLIST_BAD_RE.sub("", line)
+        line = re.sub(r"[，,；;：:]\s*[，,；;：:]", "，", line)
+        line = re.sub(r"\s{2,}", " ", line).strip()
+        line = line.strip("，,；;：:")
+        if line:
+            out.append(line)
+    merged = "\n".join(out)
+    merged = re.sub(r"\n{3,}", "\n\n", merged)
+    return merged.strip()
 
 
 def _plan_context(hdr: dict[str, Any]) -> str:
@@ -299,7 +390,7 @@ def _template_trader_body(
     phase = hdr.get("phase") or "—"
     theme = hdr.get("main_theme") or "—"
     lines = [
-        "一、情绪与盘面",
+        "> 情绪与盘面",
         f"数据日 {td_s}（{slot_label}）",
         "",
         metrics_block,
@@ -310,7 +401,7 @@ def _template_trader_body(
             "此时高位龙头更宜观察分歧而非盲目追涨。"
         ),
         "",
-        "二、龙头拆解",
+        "> 龙头拆解",
     ]
     if not packs:
         lines.append("今日龙头池为空，暂无逐只拆解。")
@@ -318,7 +409,9 @@ def _template_trader_body(
         for p in packs:
             boards_s = f"{p.boards}板" if p.boards is not None else "高度待核"
             lines.append(f"{p.rank}. {p.name}（{p.code}）")
-            lines.append(f"   地位：{boards_s}，{p.theme or '主线待核'}方向核心观察标的。")
+            lines.append(
+                f"   地位：{boards_s}，{p.theme or '主线待核'}方向池内标的。"
+            )
             if p.sop_ok:
                 snippet = _first_nonempty_line(p.preliminary, min_len=12)
                 lines.append(
@@ -330,20 +423,20 @@ def _template_trader_body(
                 lines.append("   量价资金：东财 SOP 未获取，仅依据池内标签跟踪。")
             lines.append(
                 "   博弈：高位接力需量能与板块共振；分歧日关注换手与回封质量，"
-                "不满足则按情绪退潮处理。"
+                "结构不满足时情绪易退潮。"
             )
-            lines.append("   结论：观察为主，不追高；待配置 DEEPSEEK 后输出完整交易员稿。")
+            lines.append("   待核实：次日核对量能、板块联动与龙头地位是否仍成立。")
             lines.append("")
 
     lines.extend(
         [
-            "三、主线与梯队",
+            "> 主线与梯队",
             (
                 f"当前主线 {theme}：龙头负责打开空间，补涨与跟风决定持续性。"
                 "若龙头断板而跟风仍强，多为轮动而非新周期；若全线退潮，应收缩试错仓位。"
             ),
             "",
-            "四、明日计划与纪律",
+            "> 明日计划与纪律",
             _plan_context(hdr),
             "",
             "纪律：单日涨幅超 5% 不追；炸板率抬升时减少高位接力；参考情绪风控仓位，控制试错仓位。",
@@ -374,23 +467,41 @@ def generate_dragons_trader_body(
     td_s = _trade_date_str(hdr)
     metrics_block = build_metrics_block(hdr)
 
-    packs = collect_dragon_sop_packages(dragons, hdr) if dragons else []
+    packs_all = collect_dragon_sop_packages(dragons, hdr) if dragons else []
+    write_n = min(len(packs_all), dragons_write_max())
+    packs = packs_all[:write_n]
     sop_blob = _sop_context_blob(packs)
     plan_ctx = _plan_context(hdr)
+    align = ""
+    try:
+        from scripts.tools.wechat_mp_evening_align import sector_alignment_prompt_block
+
+        align = sector_alignment_prompt_block()
+    except Exception:
+        align = ""
 
     if not is_llm_configured():
-        return _template_trader_body(
-            hdr=hdr,
-            metrics_block=metrics_block,
-            packs=packs,
-            td_s=td_s,
-            slot_label=slot_label,
+        return sanitize_dragons_public_text(
+            _template_trader_body(
+                hdr=hdr,
+                metrics_block=metrics_block,
+                packs=packs,
+                td_s=td_s,
+                slot_label=slot_label,
+            )
         )
 
     n = len(packs)
-    prompt = f"""你是有 10 年经验的 A 股短线游资交易员，为微信公众号撰写「龙头跟踪」盘后稿。
-读者是活跃交易者，需要博弈框架，不是研报摘抄。
+    pool_extra = ""
+    if len(packs_all) > n:
+        names = "、".join(f"{p.name}{p.boards}板" if p.boards else p.name for p in packs_all[n:])
+        pool_extra = f"\n（池内另有 {names}，仅在「主线与梯队」一句带过，**勿**在「龙头拆解」展开。）"
+    prompt = f"""你是有 10 年经验的 A 股情绪周期与龙头策略研究员，为微信公众号撰写「龙头跟踪」盘后观察稿。
+读者是活跃交易者：用博弈框架写清梯队与情绪位置，语言偏研究备忘录，不是游资喊单体。
 {PUBLIC_MP_WRITER_RULE}
+{RESEARCHER_VOICE_RULE}
+{_DRAGON_PUBLIC_BANNED}
+{align}
 
 ## 数据日与时段
 {td_s}（{slot_label}）
@@ -402,38 +513,42 @@ def generate_dragons_trader_body(
 {chr(10).join(
     f"- {p.rank}. {p.name}（{p.code}）"
     + (f" {p.boards}板" if p.boards is not None else "")
-    + (f" 龙头确认 {p.checklist_pass}/7" if p.checklist_pass is not None else "")
     for p in packs
 ) or "- （池为空）"}
 
 ## 东财 SOP + 技术面（事实来源，禁止大段粘贴原文）
 {sop_blob}
 
-## 情绪周期库内备注（须改写成第三人称市场语言，勿写成作者个人计划）
+## 情绪周期库内备注（须改写成第三人称市场语言，勿写成作者个人计划；勿把「库内」写成「内部认可」）
 {plan_ctx}
 
-## 输出结构（严格按节，禁止 emoji、禁止 markdown 表格、禁止「研究员札记 |」抬头）
-一、情绪与盘面
-（2～4 段：用指标解读今日情绪位置、接力环境、仓位纪律；像交易员收盘笔记）
+## 输出结构（严格按节，禁止 emoji、禁止 markdown 表格、禁止「研究员札记 |」；**小标题禁止「一、二、三」序号**，只用 `> 标题`）
+> 情绪与盘面
+（**开篇 2～3 句必须含至少 2 个数字**：涨停/跌停、炸板率、涨跌比、连板高度等；再写 1～2 短段解读接力环境；总篇幅控制在 4 段以内，不给买卖意见）
 
-二、龙头拆解
-（每只独立 4 行块，标题行格式必须为「1. 股票名（000001）」这种序号开头）
-地位：（连板高度、板块核心度、与主线关系）
-量价资金：（从 SOP/技术面提炼主力、换手、关键价位，写判断不写原文）
-博弈：（追涨/分歧/兑现风险，明日一进二或高位接力需满足的条件）
-结论：（观察 / 低吸试错 / 仅情绪标 / 回避，一句）
+> 龙头拆解
+（**仅**前 {n} 只独立 4 行块，标题行格式必须为「1. 股票名（000001）」；每只「量价资金」≤3 句）
+地位：（连板高度、板块核心度、与主线关系；禁止写 X/7 或筛选用分）
+量价资金：（从 SOP/技术面提炼主力、换手、关键价位，写事实不写原文）
+博弈：（追涨/分歧/兑现风险，结构描述）
+待核实：（还缺哪些结构信息，禁止观察买入/内部认可类措辞）
 
-三、主线与梯队
-（板块联动、补涨与跟风、龙头断板后的应对）
+> 主线与梯队
+（板块联动、补涨与跟风、龙头断板后的结构变化）
 
-四、明日计划与纪律
-（结合盘面跟踪要点 + 通用纪律：不追高、炸板率、情绪风控仓位）
+> 明日计划与纪律
+（盘面跟踪要点 + 通用纪律表述，禁止个人仓位计划）
 
 ## 硬性要求
-1. 必须覆盖龙头池中前 {n} 只（不足 {n} 只则全覆盖）；SOP 缺失的标的注明「数据未获取」但仍给交易员推演
+1. 必须覆盖龙头池中前 {n} 只（不足 {n} 只则全覆盖）；SOP 缺失的标的注明「数据未获取」但仍给结构推演
 2. 禁止逐段复述东财网页原文；每条「量价资金」不超过 3 句
-3. 禁止投资建议口吻；用「观察」「条件满足再看」等条件式表述
-4. 全文 800～1400 字，中文，只使用上文数据，勿编造数字"""
+3. 禁止投资建议、内部认可、系统认可、推荐买入；**禁止**「龙头确认」及 **任何 X/7 筛选用分**
+4. 全文 **650～1100 字**（短于旧版，优先完读率），中文，只使用上文数据，勿编造数字
+5. **移动端排版**：叙述段每段约 120 字内；`1. 2. 3.` 列表每项单独一行，禁止同一行多个序号
+6. **标题由系统单独生成**；正文禁止出现「情绪XX怎么玩？XXN板还在榜」或与之同构的问句
+7. 「情绪与盘面」开篇只写数据日、涨停/炸板率等数字事实，勿写标题党钩子
+8. 「龙头拆解」只写前 {n} 只；其余标的仅在「主线与梯队」一句点名{pool_extra}
+{monetization_prompt_block("dragons")}"""
 
     try:
         content = call_deepseek(
@@ -441,10 +556,13 @@ def generate_dragons_trader_body(
                 {
                     "role": "system",
                     "content": (
-                        "你是短线游资交易员，文风干脆、有盘口感。"
+                        "你是情绪周期与龙头策略研究员，文风干脆、有盘感但有论证链条。"
                         "从 SOP 数据里提炼结论，绝不粘贴网页。"
                         "面向公开读者，禁止作者持仓与第一人称仓位。"
-                        "输出直接从「一、情绪与盘面」开始。"
+                        "禁止正文出现 X/7、系统筛选用分、龙头确认、内部认可。"
+                        "小标题用 `> 标题`，禁止「一、二、三」序号。"
+                        "输出直接从「> 情绪与盘面」开始。"
+                        "禁止把公众号标题句式写进正文首段。"
                     ),
                 },
                 {"role": "user", "content": prompt},
@@ -453,7 +571,7 @@ def generate_dragons_trader_body(
             max_tokens=3200,
             timeout=(10, 240),
         )
-        return content.strip()
+        return sanitize_dragons_public_text(strip_dragon_title_echo(content.strip()))
     except Exception as exc:  # noqa: BLE001
         base = _template_trader_body(
             hdr=hdr,
@@ -462,4 +580,6 @@ def generate_dragons_trader_body(
             td_s=td_s,
             slot_label=slot_label,
         )
-        return f"{base}\n\n（交易员成稿失败：{exc}，以上为模板正文）"
+        return sanitize_dragons_public_text(
+            f"{base}\n\n（交易员成稿失败：{exc}，以上为模板正文）"
+        )

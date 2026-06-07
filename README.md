@@ -43,9 +43,9 @@
 
 | 脚本 / 任务 | 频率 | 内容 |
 |-------------|------|------|
-| `push_holdings_monitor.sh` | 交易时段每 **5 分钟** | 持仓 + SOP 选股池条件监控（OpenCLI 东财现价 → 触发推微信） |
-| `push_daily_briefing_wechat.sh` | **09 / 12 / 15 / 20** 点 | 大盘 + 快讯 + 持仓 + DeepSeek |
-| `push_selection_wechat.sh` | 工作日 **17:30** | Top5 东财 SOP → 收盘甄选战报 → 次日监控规则 |
+| `push_holdings_monitor.sh` | 交易时段每 **5 分钟**（Docker scheduler） | 持仓 + 选股池监控（勿再装 `holdings-monitor` launchd） |
+| `sync_macro_news.sh` | **每 15 分钟**（launchd） | 东财快讯落库 + AI 解读 |
+| `push_selection_wechat.sh` | 工作日 **17:30** | Top5 SOP → 微信推送 + 次日监控规则 |
 | `push_macro_news_wechat.sh` | 按需 | 东财 7×24 宏观快讯 |
 | `push_stock_watch_reminder_wechat.sh` | 一次性 / 按需 | 个股关注提醒 |
 
@@ -107,12 +107,12 @@ launchd：`com.user.sidestore-infra`、`com.user.sidestore-certs`、`com.user.al
 |------|----------|------|
 | `com.user.docker-stacks` | `./scripts/install-docker-launchd.sh` | 登录后 Docker compose 幂等 `up -d` |
 | `com.user.stock-ai-host-jobs` | `stock-ai/scripts/install-stock-ai-scheduler.sh` | 本机任务 API（scheduler 触发 OpenCLI/微信） |
-| `stock-ai-scheduler`（Docker） | 同上 | cron：sync / 选股 / 战报 / 监控 |
+| `stock-ai-scheduler`（Docker） | 同上 | cron：sync / 选股 / 监控 / 情绪 eod |
+| `com.user.stock-macro-news-sync` | `launchd/com.user.stock-macro-news-sync.plist` | 快讯 15min |
+| `com.user.wechat-mp-draft-scheduled` | `stock-ai/scripts/install-wechat-mp-launchd.sh` | 公众号 19:00 |
 | `com.user.wechat-cursor-acp` | `wechat-cursor-acp/scripts/install-launchd.sh` | 微信桥自启 |
 | `com.user.home-hub` | `home-hub/scripts/install-launchd.sh` | 投资看板 |
-| `com.user.stock-watch-reminder-*` | `stock-ai/scripts/install-stock-watch-reminder-launchd.sh` | 一次性个股提醒 |
-
-**已停用（回滚用）**：`stock-ai-daily-selection` / `daily-briefing` / `holdings-monitor` launchd → 改由 scheduler 触发。
+**已停用**：`daily-briefing` / `holdings-monitor` / `daily-selection` launchd；09/12/15/20 战报微信推送 → 改 `macro-news-sync`。
 
 Docker 自启栈（`scripts/docker-autostart.sh`）：MySQL、Jellyfin、sidestore-infra、substore-clash、**stock-ai-scheduler**。
 

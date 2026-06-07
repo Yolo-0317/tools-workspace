@@ -2,6 +2,11 @@
 # 部署 stock_ai_sim_bridge 目录下全部 .py 到 Win11 掘金策略目录
 set -euo pipefail
 
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+# shellcheck disable=SC1091
+source "$ROOT/scripts/_offline_guard.sh"
+emquant_require_enabled || exit 1
+
 VM_NAME="${EMQUANT_VM_NAME:-Windows 11}"
 STRATEGY_ID="${1:-}"
 if [[ -z "$STRATEGY_ID" ]]; then
@@ -9,7 +14,6 @@ if [[ -z "$STRATEGY_ID" ]]; then
   exit 1
 fi
 
-ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 SRC_DIR="$ROOT/scripts/win/stock_ai_sim_bridge"
 RULES="${EMQUANT_RULES:-$ROOT/output/emquant/rules.json}"
 DRAGONS="${EMQUANT_DRAGONS:-$ROOT/output/emquant/dragons.json}"

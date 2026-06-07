@@ -79,15 +79,16 @@ def parse_stock_positions(text: str) -> list[CardPosition]:
             code = _cell(line, 2)
             if not re.fullmatch(r"\d{6}", code):
                 continue
+            # 列：股票|代码|股数|可卖|成本价|现价|市值|持仓盈亏|状态|操作建议
             positions.append(
                 CardPosition(
                     name=_cell(line, 1),
                     code=code,
                     shares=_parse_int(_cell(line, 3)),
-                    cost=_parse_num(_cell(line, 4)) or 0.0,
-                    price=_parse_num(_cell(line, 5)),
-                    status=_cell(line, 8),
-                    action=_cell(line, 9),
+                    cost=_parse_num(_cell(line, 5)) or 0.0,
+                    price=_parse_num(_cell(line, 6)),
+                    status=_cell(line, 9),
+                    action=_cell(line, 10),
                     asset_type="stock",
                 )
             )
@@ -163,6 +164,19 @@ def _msg_pct(name: str, code: str) -> str:
     return f"⛔ {name}({code}) 当日涨幅 {{pct}}%（>5%）。纪律：严禁追高，不加仓。"
 
 
+def _leq_is_price_trigger(block: str, match: re.Match[str]) -> bool:
+    """「≤X 元」仅作股价触发；排除「亏损约 ≤125 元」等金额表述。"""
+    start = match.start()
+    prefix = block[max(0, start - 12) : start]
+    if re.search(r"亏损|盈亏|损失|约|不超", prefix):
+        return False
+    try:
+        price = float(match.group(1))
+    except ValueError:
+        return False
+    return price <= 50
+
+
 def _rules_from_block(
     block: str,
     *,
@@ -206,6 +220,8 @@ def _rules_from_block(
         )
 
     for m in re.finditer(r"≤([\d.]+)\s*元", block):
+        if not _leq_is_price_trigger(block, m):
+            continue
         price = float(m.group(1))
         rid = _rule_id(code, "price_below", price=price)
         rules.append(

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
+import DashboardLoadingSkeleton from '../components/DashboardLoadingSkeleton.vue'
 import { fetchEmotionCycle, fetchEmotionCycleDates, fmtNum } from '../api/dashboard'
 import { usePlatformLayout } from '../composables/usePlatformLayout'
 import { shanghaiToday } from '../utils/date'
@@ -15,7 +16,6 @@ import type {
 const data = ref<EmotionCyclePayload | null>(null)
 const dates = ref<string[]>([])
 const selectedDate = ref('')
-const selectedSlot = ref<'pre_market' | 'intraday' | 'eod'>('intraday')
 const loading = ref(true)
 const error = ref('')
 const isMobile = usePlatformLayout()
@@ -24,25 +24,13 @@ const today = shanghaiToday()
 
 const activeRecord = computed((): EmotionCycleRecord | null => {
   if (!data.value) return null
-  if (data.value.intraday || data.value.pre_market || data.value.eod) {
-    if (selectedSlot.value === 'intraday') return data.value.intraday ?? null
-    if (selectedSlot.value === 'eod') return data.value.eod ?? null
-    return data.value.pre_market ?? null
-  }
-  return data.value.record
+  return data.value.record ?? data.value.eod ?? null
 })
 
 const header = computed((): EmotionCycleHeader | null => activeRecord.value?.header ?? null)
 const dragons = computed((): EmotionDragonItem[] => activeRecord.value?.dragon_items ?? [])
 const execCard = computed((): DragonExecutionCard | null => data.value?.dragon_execution_card ?? null)
 const dataSource = computed(() => data.value?.data_source)
-
-const hasAnySlot = computed(
-  () =>
-    Boolean(data.value?.intraday)
-    || Boolean(data.value?.pre_market)
-    || Boolean(data.value?.eod),
-)
 
 const phaseClass = computed(() => {
   const phase = header.value?.phase
@@ -87,10 +75,7 @@ async function loadData() {
   loading.value = true
   error.value = ''
   try {
-    data.value = await fetchEmotionCycle(selectedDate.value)
-    if (data.value.intraday) selectedSlot.value = 'intraday'
-    else if (data.value.pre_market && !data.value.eod) selectedSlot.value = 'pre_market'
-    else if (data.value.eod && !data.value.pre_market) selectedSlot.value = 'eod'
+    data.value = await fetchEmotionCycle(selectedDate.value, 'eod')
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
     data.value = null
@@ -107,21 +92,10 @@ onMounted(async () => {
   try {
     await loadDates()
     await loadData()
-    refreshTimer = window.setInterval(() => {
-      if (selectedSlot.value === 'intraday' && selectedDate.value === today) {
-        void loadData()
-      }
-    }, 5 * 60 * 1000)
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
     loading.value = false
   }
-})
-
-let refreshTimer: number | undefined
-
-onUnmounted(() => {
-  if (refreshTimer) window.clearInterval(refreshTimer)
 })
 </script>
 
@@ -131,7 +105,9 @@ onUnmounted(() => {
       <div>
         <h1>情绪周期 · 龙头执行卡</h1>
         <p class="sub">
-          MySQL 定时入库 · 仿真 emquant；实盘见
+          MySQL 定时入库 · 看板只读；<strong>6 万投顾阶段 0：龙头零实盘</strong>，回本主路径见
+          <RouterLink to="/advisor" class="inline-link">投顾总览</RouterLink>
+          · 实盘
           <RouterLink to="/portfolio" class="inline-link">持仓执行卡</RouterLink>
         </p>
       </div>
@@ -140,39 +116,17 @@ onUnmounted(() => {
           <option v-if="!dates.length" :value="today">{{ today }}</option>
           <option v-for="d in dates" :key="d" :value="d">{{ d }}</option>
         </select>
-        <div v-if="hasAnySlot" class="slot-tabs">
-          <button
-            type="button"
-            class="slot-btn"
-            :class="{ active: selectedSlot === 'intraday' }"
-            @click="selectedSlot = 'intraday'"
-          >
-            盘中
-          </button>
-          <button
-            type="button"
-            class="slot-btn"
-            :class="{ active: selectedSlot === 'pre_market' }"
-            @click="selectedSlot = 'pre_market'"
-          >
-            盘前
-          </button>
-          <button
-            type="button"
-            class="slot-btn"
-            :class="{ active: selectedSlot === 'eod' }"
-            @click="selectedSlot = 'eod'"
-          >
-            收盘
-          </button>
-        </div>
+        <span class="slot-label">收盘 eod</span>
         <button type="button" class="refresh-btn" :disabled="loading" @click="loadData">
           刷新
         </button>
       </div>
     </header>
 
-    <p v-if="loading" class="hint">加载中…</p>
+    <DashboardLoadingSkeleton v-if="loading && !header" variant="block" label="加载情绪周期" />
+    <p v-if="loading && header" class="hint reload-hint">
+      <span class="reload-spinner" aria-hidden="true" />刷新中…
+    </p>
     <p v-if="error" class="error">{{ error }}</p>
 
     <template v-if="!loading && header">
@@ -462,6 +416,12 @@ onUnmounted(() => {
   font-size: 14px;
 }
 
+.slot-label {
+  font-size: 13px;
+  color: #8b9cb3;
+  padding: 8px 4px;
+}
+
 .slot-tabs {
   display: flex;
   border: 1px solid #314158;
@@ -500,6 +460,29 @@ onUnmounted(() => {
 
 .hint {
   color: #8b9cb3;
+}
+
+.reload-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+
+.reload-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(125, 211, 252, 0.2);
+  border-top-color: #7dd3fc;
+  border-radius: 50%;
+  animation: reloadSpin 0.75s linear infinite;
+}
+
+@keyframes reloadSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error {

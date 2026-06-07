@@ -61,7 +61,15 @@ def prune_obsolete_drafts(*, dry_run: bool = False) -> int:
             continue
         derr = draft_delete(media_id=media_id)
         if derr:
-            print(f"    ❌ {derr}", file=sys.stderr)
+            if derr.get("errcode") == 53407:
+                print(
+                    "    ⚠️ 该稿处于「定时发布」状态，API 无法删除。"
+                    "请登录 mp.weixin.qq.com → 内容与互动 → 草稿箱 →"
+                    "找到本篇 → 取消定时发表 → 再执行本脚本。",
+                    file=sys.stderr,
+                )
+            else:
+                print(f"    ❌ {derr}", file=sys.stderr)
             return 1
 
     if dry_run:
