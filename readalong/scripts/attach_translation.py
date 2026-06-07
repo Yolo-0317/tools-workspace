@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+from chapters import zh_epub_path  # noqa: E402
 
 _ANCHORS: list[tuple[list[str], list[str]]] = [
     (["privet"], ["女贞路"]),
@@ -138,7 +139,7 @@ def _find_sentence_index(en_sentences: list[str], text: str) -> int:
     return -1
 
 
-def attach(manifest: dict, en_data: dict, zh_data: dict) -> dict:
+def attach(manifest: dict, en_data: dict, zh_data: dict, *, translation_source: str) -> dict:
     en_sents = en_data["sentences"]
     zh_sents = zh_data["sentences"]
     en_to_zh = _align_sentences_dp(en_sents, zh_sents)
@@ -158,7 +159,7 @@ def attach(manifest: dict, en_data: dict, zh_data: dict) -> dict:
         elif "zh" in line:
             del line["zh"]
 
-    manifest["translation_source"] = "samples/book_zh.epub"
+    manifest["translation_source"] = translation_source
     manifest["translation_method"] = "sentence_dp_anchors"
     manifest["translated_lines"] = attached
     return manifest
@@ -166,6 +167,7 @@ def attach(manifest: dict, en_data: dict, zh_data: dict) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--book", default="hp01")
     parser.add_argument("--chapter", type=int, default=1)
     args = parser.parse_args()
 
@@ -173,12 +175,13 @@ def main() -> None:
     manifest_path = ROOT / "output" / f"ch{ch_pad}.json"
     en_path = ROOT / "output" / f"ch{ch_pad}_sentences.json"
     zh_path = ROOT / "output" / f"ch{ch_pad}_zh.json"
+    zh_src = str(zh_epub_path(args.book).relative_to(ROOT))
 
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     en_data = json.loads(en_path.read_text(encoding="utf-8"))
     zh_data = json.loads(zh_path.read_text(encoding="utf-8"))
 
-    manifest = attach(manifest, en_data, zh_data)
+    manifest = attach(manifest, en_data, zh_data, translation_source=zh_src)
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     print(
         f"Wrote {manifest_path} — zh on {manifest['translated_lines']}/"

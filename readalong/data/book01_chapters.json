@@ -1,0 +1,25 @@
+{
+  "book_id": "hp01",
+  "book_title_en": "Harry Potter and the Sorcerer's Stone",
+  "book_title_zh": "哈利·波特与魔法石",
+  "chapter_count": 17,
+  "chapters": [
+    { "id": 1, "title_en": "The Boy Who Lived", "title_zh": "大难不死的男孩", "en_file": "OEBPS/hp01_watermarkval001_en-ushtml", "zh_file": "index_split_005.html" },
+    { "id": 2, "title_en": "The Vanishing Glass", "title_zh": "悄悄消失的玻璃", "en_file": "OEBPS/hp01_watermarkval002_en-ushtml", "zh_file": "index_split_006.html" },
+    { "id": 3, "title_en": "The Letters from No One", "title_zh": "猫头鹰传书", "en_file": "OEBPS/hp01_watermarkval003_en-ushtml", "zh_file": "index_split_007.html" },
+    { "id": 4, "title_en": "The Keeper of the Keys", "title_zh": "钥匙保管员", "en_file": "OEBPS/hp01_watermarkval004_en-ushtml", "zh_file": "index_split_008.html" },
+    { "id": 5, "title_en": "Diagon Alley", "title_zh": "对角巷", "en_file": "OEBPS/hp01_watermarkval005_en-ushtml", "zh_file": "index_split_009.html" },
+    { "id": 6, "title_en": "The Journey from Platform Nine and Three-quarters", "title_zh": "从9又3/4站台开始的旅程", "en_file": "OEBPS/hp01_watermarkval006_en-ushtml", "zh_file": "index_split_010.html" },
+    { "id": 7, "title_en": "The Sorting Hat", "title_zh": "分院帽", "en_file": "OEBPS/hp01_watermarkval007_en-ushtml", "zh_file": "index_split_011.html" },
+    { "id": 8, "title_en": "The Potions Master", "title_zh": "魔药课老师", "en_file": "OEBPS/hp01_watermarkval008_en-ushtml", "zh_file": "index_split_012.html" },
+    { "id": 9, "title_en": "The Midnight Duel", "title_zh": "午夜决斗", "en_file": "OEBPS/hp01_watermarkval009_en-ushtml", "zh_file": "index_split_013.html" },
+    { "id": 10, "title_en": "Halloween", "title_zh": "万圣节前夜", "en_file": "OEBPS/hp01_watermarkval010_en-ushtml", "zh_file": "index_split_014.html" },
+    { "id": 11, "title_en": "Quidditch", "title_zh": "魁地奇比赛", "en_file": "OEBPS/hp01_watermarkval011_en-ushtml", "zh_file": "index_split_015.html" },
+    { "id": 12, "title_en": "The Mirror of Erised", "title_zh": "厄里斯魔镜", "en_file": "OEBPS/hp01_watermarkval012_en-ushtml", "zh_file": "index_split_016.html" },
+    { "id": 13, "title_en": "Nicolas Flamel", "title_zh": "尼可·勒梅", "en_file": "OEBPS/hp01_watermarkval013_en-ushtml", "zh_file": "index_split_017.html" },
+    { "id": 14, "title_en": "Norbert the Norwegian Ridgeback", "title_zh": "挪威脊背龙——诺伯", "en_file": "OEBPS/hp01_watermarkval014_en-ushtml", "zh_file": "index_split_018.html" },
+    { "id": 15, "title_en": "The Forbidden Forest", "title_zh": "禁林", "en_file": "OEBPS/hp01_watermarkval015_en-ushtml", "zh_file": "index_split_019.html" },
+    { "id": 16, "title_en": "Through the Trapdoor", "title_zh": "穿越活板门", "en_file": "OEBPS/hp01_watermarkval016_en-ushtml", "zh_file": "index_split_020.html" },
+    { "id": 17, "title_en": "The Man with Two Faces", "title_zh": "双面人", "en_file": "OEBPS/hp01_watermarkval017_en-ushtml", "zh_file": "index_split_021.html" }
+  ]
+}

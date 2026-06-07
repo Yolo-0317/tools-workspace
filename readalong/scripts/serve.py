@@ -4,9 +4,12 @@
 from __future__ import annotations
 
 import json
+import mimetypes
 import os
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+
+mimetypes.add_type("application/manifest+json", ".webmanifest")
 
 ROOT = Path(__file__).resolve().parents[1]
 PORT = int(os.environ.get("READALONG_PORT", "8791"))
@@ -31,6 +34,12 @@ class Handler(SimpleHTTPRequestHandler):
         if path == "/web" or path == "/web/":
             self.path = "/web/index.html"
         super().do_GET()
+
+    def end_headers(self) -> None:
+        path = self.path.split("?", 1)[0]
+        if path.endswith("/sw.js"):
+            self.send_header("Cache-Control", "no-cache")
+        super().end_headers()
 
     def log_message(self, fmt: str, *args) -> None:
         # Quieter logs for launchd.

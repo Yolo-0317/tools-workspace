@@ -15,6 +15,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
+from chapters import audio_path, audio_rel  # noqa: E402
+
 
 def _ascii_quotes(text: str) -> str:
     return (
@@ -76,19 +78,55 @@ def _find_body_word_index(words: list[dict]) -> int:
 def _fuzzy_eq(a: str, b: str) -> bool:
     if a == b:
         return True
-    # US/UK spelling & STT quirks
+    # US/UK spelling, STT quirks, US EPUB vs UK audiobook (Stephen Fry)
     pairs = {
         ("mustache", "moustache"),
         ("blonde", "blond"),
         ("dursleyish", "undursleyish"),
         ("sorcerers", "philosophers"),
         ("sorcerer's", "philosopher's"),
+        ("airplane", "aeroplane"),
+        ("video", "cine"),
+        ("mail", "post"),
+        ("neighbor", "neighbour"),
+        ("favorite", "favourite"),
+        ("canceled", "cancelled"),
+        ("vacationing", "holidaying"),
+        ("vacationing", "holiday"),
+        ("sweater", "jumper"),
+        ("cookies", "biscuits"),
+        ("mom", "mum"),
+        ("apartment", "flat"),
+        ("trunk", "boot"),
+        ("elevator", "lift"),
+        ("figg", "fig"),
+        ("surrey", "surrey"),
+        ("toilet's", "toilets"),
+        ("toilet's", "toilet"),
+        ("aaaaarrrgh", "aaaah"),
+        ("aaaaarrrgh", "arrgh"),
+        ("4", "four"),
     }
     return (a, b) in pairs or (b, a) in pairs
 
 
+def _tokens_match(spoken: str, expected: str) -> bool:
+    if _fuzzy_eq(spoken, expected):
+        return True
+    # Prefix match for STT truncation: "holiday" vs "holidaying"
+    if len(expected) >= 5 and spoken.startswith(expected[:4]):
+        return True
+    if len(spoken) >= 5 and expected.startswith(spoken[:4]):
+        return True
+    return False
+
+
 def _match_sentence_tokens(
-    sent_tokens: list[str], words: list[dict], start_i: int
+    sent_tokens: list[str],
+    words: list[dict],
+    start_i: int,
+    *,
+    min_coverage: float = 0.55,
 ) -> tuple[int, int, float] | None:
     """Find ordered token subsequence in word stream; return word indices + coverage."""
     if not sent_tokens or start_i >= len(words):
@@ -96,7 +134,7 @@ def _match_sentence_tokens(
 
     ti = 0
     first_i = last_i = start_i
-    max_lookahead = max(len(sent_tokens) * 6, 40)
+    max_lookahead = max(len(sent_tokens) * 10, 80)
 
     for j in range(start_i, min(len(words), start_i + max_lookahead)):
         w_tokens = _word_tokens(words[j]["word"])
@@ -104,7 +142,7 @@ def _match_sentence_tokens(
             continue
         matched_any = False
         for w in w_tokens:
-            if ti < len(sent_tokens) and _fuzzy_eq(w, sent_tokens[ti]):
+            if ti < len(sent_tokens) and _tokens_match(w, sent_tokens[ti]):
                 if ti == 0:
                     first_i = j
                 last_i = j
@@ -115,48 +153,142 @@ def _match_sentence_tokens(
         if ti >= len(sent_tokens):
             break
         if not matched_any and ti > 0:
-            # Allow skipping stray filler words in the audio stream.
             continue
 
     coverage = ti / len(sent_tokens)
-    if coverage < 0.55:
+    if coverage < min_coverage:
         return None
     return first_i, last_i, coverage
 
 
-def _align_sentences(sentences: list[str], words: list[dict], start_i: int) -> list[dict]:
-    """Map each EPUB sentence to start/end word timestamps via ordered subsequence match."""
-    lines: list[dict] = []
+def _find_chapter_start(words: list[dict], sentences: list[str]) -> int:
+    """Anchor on first EPUB sentence (skip 'CHAPTER N' audiobook intro)."""
+    if not sentences:
+        return 0
+    probe = _tokens(sentences[0])[:10]
+    if not probe:
+        return _find_body_word_index(words)
+    for i in range(min(len(words), 120)):
+        hit = _match_sentence_tokens(probe, words, i, min_coverage=0.7)
+        if hit:
+            return hit[0]
+    return _find_body_word_index(words)
+
+
+def _line_from_hit(sent: str, words: list[dict], hit: tuple[int, int, float]) -> dict:
+    first_i, last_i, coverage = hit
+    spoken = " ".join(words[k]["word"].strip() for k in range(first_i, last_i + 1))
+    return {
+        "text": sent,
+        "start": round(float(words[first_i]["start"]), 3),
+        "end": round(float(words[last_i]["end"]), 3),
+        "spoken": spoken,
+        "confidence": round(coverage, 3),
+    }
+
+
+def _interpolate_gaps(
+    sentences: list[str], slots: list[dict | None], duration: float
+) -> list[dict]:
+    n = len(sentences)
+    out: list[dict | None] = list(slots)
+
+    def _fill_range(gap_start: int, gap_end: int, t0: float, t1: float, conf: float) -> None:
+        if gap_end <= gap_start or t1 <= t0:
+            return
+        weights = [max(len(_tokens(sentences[j])), 1) for j in range(gap_start, gap_end)]
+        total_w = sum(weights) or len(weights)
+        cursor = t0
+        for j, w in zip(range(gap_start, gap_end), weights):
+            seg = (t1 - t0) * (w / total_w)
+            out[j] = {
+                "text": sentences[j],
+                "start": round(cursor, 3),
+                "end": round(cursor + seg, 3),
+                "spoken": "",
+                "confidence": conf,
+                "interpolated": True,
+            }
+            cursor += seg
+
+    i = 0
+    while i < n:
+        if out[i] is not None:
+            i += 1
+            continue
+        gap_start = i
+        while i < n and out[i] is None:
+            i += 1
+        gap_end = i
+        prev = out[gap_start - 1] if gap_start > 0 else None
+        nxt = out[gap_end] if gap_end < n else None
+        if prev and nxt:
+            t0, t1 = prev["end"], nxt["start"]
+            if t1 <= t0:
+                t1 = min(t0 + 0.8, duration)
+            _fill_range(gap_start, gap_end, t0, t1, 0.35)
+        elif prev:
+            t1 = max(duration, prev["end"] + 0.5)
+            _fill_range(gap_start, gap_end, prev["end"], t1, 0.25)
+        elif nxt:
+            _fill_range(gap_start, gap_end, 0.0, nxt["start"], 0.25)
+
+    remaining = [i for i in range(n) if out[i] is None]
+    if remaining:
+        anchors = [i for i in range(n) if out[i] is not None]
+        t0 = out[anchors[0]]["start"] if anchors else 0.0
+        t1 = out[anchors[-1]]["end"] if anchors else duration
+        if t1 <= t0:
+            t1 = duration
+        weights = [max(len(_tokens(sentences[j])), 1) for j in remaining]
+        total_w = sum(weights) or len(weights)
+        span = max(t1 - t0, len(remaining) * 0.4)
+        cursor = t0
+        for idx, w in zip(remaining, weights):
+            seg = span * (w / total_w)
+            out[idx] = {
+                "text": sentences[idx],
+                "start": round(cursor, 3),
+                "end": round(min(cursor + seg, duration), 3),
+                "spoken": "",
+                "confidence": 0.2,
+                "interpolated": True,
+            }
+            cursor += seg
+
+    return [out[i] for i in range(n)]
+
+
+def _align_sentences(
+    sentences: list[str], words: list[dict], start_i: int, duration: float
+) -> list[dict]:
+    """Map EPUB sentences to timestamps; interpolate gaps when audiobook wording diverges."""
+    n = len(sentences)
+    slots: list[dict | None] = [None] * n
     wi = start_i
 
-    for sent in sentences:
+    for idx, sent in enumerate(sentences):
         st = _tokens(sent)
         if not st:
             continue
         hit = None
-        for skip in range(0, 20):
+        for skip in range(0, 30):
             if wi + skip >= len(words):
                 break
-            hit = _match_sentence_tokens(st, words, wi + skip)
+            for cov in (0.55, 0.45):
+                hit = _match_sentence_tokens(st, words, wi + skip, min_coverage=cov)
+                if hit:
+                    if skip:
+                        wi += skip
+                    break
             if hit:
-                if skip:
-                    wi += skip
                 break
         if not hit:
             continue
-        first_i, last_i, coverage = hit
-        spoken = " ".join(words[k]["word"].strip() for k in range(first_i, last_i + 1))
-        lines.append(
-            {
-                "text": sent,
-                "start": round(float(words[first_i]["start"]), 3),
-                "end": round(float(words[last_i]["end"]), 3),
-                "spoken": spoken,
-                "confidence": round(coverage, 3),
-            }
-        )
-        wi = last_i + 1
+        slots[idx] = _line_from_hit(sent, words, hit)
+        wi = hit[1] + 1
 
+    lines = _interpolate_gaps(sentences, slots, duration)
     return lines
 
 
@@ -203,6 +335,7 @@ def transcribe_words(mp3: Path, model: str, cache: Path) -> tuple[list[dict], fl
 
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--book", default="hp01")
     parser.add_argument("--chapter", type=int, default=1)
     parser.add_argument("--audio", type=Path, default=None)
     parser.add_argument("--text", type=Path, default=None)
@@ -214,27 +347,30 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    book_id = args.book
     ch = args.chapter
-    audio = args.audio or ROOT / "samples" / f"chapter{ch:02d}.mp3"
-    text_path = args.text or ROOT / "output" / f"ch{ch:02d}_sentences.json"
-    word_cache = args.word_cache or ROOT / "output" / f"ch{ch:02d}_words.json"
-    output = args.output or ROOT / "output" / f"ch{ch:02d}.json"
+    ch_pad = f"{ch:02d}"
+    audio = args.audio or audio_path(book_id, ch)
+    text_path = args.text or ROOT / "output" / f"ch{ch_pad}_sentences.json"
+    word_cache = args.word_cache or ROOT / "output" / f"ch{ch_pad}_words.json"
+    output = args.output or ROOT / "output" / f"ch{ch_pad}.json"
 
     text_data = json.loads(text_path.read_text(encoding="utf-8"))
     sentences = text_data["sentences"]
     words, duration = transcribe_words(audio, args.model, word_cache)
 
-    start_i = _find_body_word_index(words)
+    start_i = _find_chapter_start(words, sentences) if ch > 1 else _find_body_word_index(words)
     print(
-        f"Chapter {ch}: {len(sentences)} sentences, {len(words)} words, "
+        f"{book_id} ch{ch}: {len(sentences)} sentences, {len(words)} words, "
         f"body @ {words[start_i]['start']:.1f}s, audio {duration/60:.1f} min"
     )
 
-    lines = _align_sentences(sentences, words, start_i)
+    lines = _align_sentences(sentences, words, start_i, duration)
     manifest = {
+        "book_id": book_id,
         "chapter": ch,
         "title": f"Chapter {ch} — {text_data['title']}",
-        "audio": f"samples/chapter{ch:02d}.mp3",
+        "audio": audio_rel(book_id, ch),
         "duration": round(duration, 3),
         "aligned_sentences": len(lines),
         "total_sentences": len(sentences),

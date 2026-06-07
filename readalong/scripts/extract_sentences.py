@@ -11,11 +11,9 @@ from html import unescape
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_EPUB = ROOT / "samples" / "book.epub"
+DEFAULT_EPUB = ROOT / "samples" / "epub" / "en" / "hp01.epub"
 
-CHAPTER_FILES: dict[int, tuple[str, str]] = {
-    1: ("OEBPS/hp01_watermarkval001_en-ushtml", "The Boy Who Lived"),
-}
+from chapters import en_epub_path, get_chapter  # noqa: E402
 
 _PROTECTED = {
     "Mr.": "§MR§",
@@ -78,10 +76,9 @@ def _split_sentences(block: str) -> list[str]:
     return out
 
 
-def extract_chapter(epub_path: Path, chapter: int) -> dict:
-    if chapter not in CHAPTER_FILES:
-        raise SystemExit(f"Chapter {chapter} not mapped in CHAPTER_FILES")
-    rel, title = CHAPTER_FILES[chapter]
+def extract_chapter(epub_path: Path, book_id: str, chapter: int) -> dict:
+    meta = get_chapter(book_id, chapter)
+    rel, title = meta["en_file"], meta["title_en"]
     with zipfile.ZipFile(epub_path) as zf:
         html = zf.read(rel).decode("utf-8", errors="replace")
 
@@ -114,12 +111,14 @@ def extract_chapter(epub_path: Path, chapter: int) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--epub", type=Path, default=DEFAULT_EPUB)
+    parser.add_argument("--book", default="hp01")
+    parser.add_argument("--epub", type=Path, default=None)
     parser.add_argument("--chapter", type=int, required=True)
     parser.add_argument("-o", "--output", type=Path, required=True)
     args = parser.parse_args()
 
-    data = extract_chapter(args.epub, args.chapter)
+    epub = args.epub or en_epub_path(args.book)
+    data = extract_chapter(epub, args.book, args.chapter)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Chapter {args.chapter}: {data['sentence_count']} sentences → {args.output}")

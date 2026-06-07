@@ -11,12 +11,9 @@ from html import unescape
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_EPUB = ROOT / "samples" / "book_zh.epub"
+DEFAULT_EPUB = ROOT / "samples" / "epub" / "zh" / "collection.epub"
 
-# Book 1 chapter 1 — 第一章　大难不死的男孩
-CHAPTER_FILES: dict[int, str] = {
-    1: "index_split_005.html",
-}
+from chapters import get_chapter, zh_epub_path  # noqa: E402
 
 
 def _clean_html(raw: str) -> str:
@@ -31,10 +28,9 @@ def _split_zh_sentences(text: str) -> list[str]:
     return [p.strip() for p in parts if p.strip()]
 
 
-def extract_chapter(epub_path: Path, chapter: int) -> dict:
-    rel = CHAPTER_FILES.get(chapter)
-    if not rel:
-        raise SystemExit(f"Chapter {chapter} not mapped in CHAPTER_FILES")
+def extract_chapter(epub_path: Path, book_id: str, chapter: int) -> dict:
+    meta = get_chapter(book_id, chapter)
+    rel = meta["zh_file"]
 
     with zipfile.ZipFile(epub_path) as zf:
         html = zf.read(rel).decode("utf-8", errors="replace")
@@ -56,7 +52,7 @@ def extract_chapter(epub_path: Path, chapter: int) -> dict:
 
     return {
         "chapter": chapter,
-        "title": "大难不死的男孩",
+        "title": meta["title_zh"],
         "paragraph_count": len(paragraphs),
         "sentence_count": len(sentences),
         "paragraphs": paragraphs,
@@ -66,12 +62,14 @@ def extract_chapter(epub_path: Path, chapter: int) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--epub", type=Path, default=DEFAULT_EPUB)
+    parser.add_argument("--book", default="hp01")
+    parser.add_argument("--epub", type=Path, default=None)
     parser.add_argument("--chapter", type=int, required=True)
     parser.add_argument("-o", "--output", type=Path, required=True)
     args = parser.parse_args()
 
-    data = extract_chapter(args.epub, args.chapter)
+    epub = args.epub or zh_epub_path(args.book)
+    data = extract_chapter(epub, args.book, args.chapter)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     print(
