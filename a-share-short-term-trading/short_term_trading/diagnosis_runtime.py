@@ -9,7 +9,7 @@ from typing import Callable, Protocol
 from .contracts import ReleaseMode
 from .daily_sync import DailyBar, DailyBarRepository, bar_is_complete, normalize_code
 from .diagnosis import RiskProfile, TradePlanDraft, build_eod_trade_plan
-from .evidence import EvidenceRepository
+from .evidence import EvidenceRepository, is_chip_snapshot_for_trade_date
 from .intraday import IntradayDecision, IntradayRiskGate, verify_intraday_plan
 from .session import TradingCalendar, TradingSession, classify_trading_session
 from .session_diagnosis import SessionAwareDiagnosis, diagnose_for_session
@@ -49,6 +49,7 @@ class DiagnosisRuntime:
     frozen_plan: TradePlanDraft | None = None
     risk_gate: IntradayRiskGate | None = None
     intraday_refresh: Callable[[str], None] | None = None
+    chip_refresh: Callable[[str], None] | None = None
 
 
 def _safe_plan(code: str, now: datetime, reason: str) -> TradePlanDraft:
@@ -123,12 +124,24 @@ def build_runtime_diagnosis(
         if bars is None:
             bars = runtime.daily_repository.get_recent_bars(selected, 120)
         chip = runtime.evidence_repository.get_latest_valid_snapshot(selected, "chip")
+        expected_trade_date = context.diagnosis_trade_date
+        if (
+            expected_trade_date is not None
+            and not is_chip_snapshot_for_trade_date(chip, expected_trade_date)
+            and runtime.chip_refresh is not None
+        ):
+            try:
+                runtime.chip_refresh(selected)
+            except Exception:  # noqa: BLE001
+                pass
+            chip = runtime.evidence_repository.get_latest_valid_snapshot(selected, "chip")
         return build_eod_trade_plan(
             selected,
             bars,
             chip,
             profile=runtime.risk_profile,
             now=context.now_utc,
+            expected_trade_date=expected_trade_date,
         )
 
     def intraday_diagnose(selected: str, _context) -> IntradayDecision:

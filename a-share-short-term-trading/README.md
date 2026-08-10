@@ -48,6 +48,8 @@ stock-ai/.venv/bin/python a-share-short-term-trading/scripts/daily_bar_sync.py \
 
 统一个股诊断入口会根据上海时区和 SSE 交易日历自动识别盘前、盘中、午间休市、盘后或非交易日，不接受手工指定时段。盘前和非交易日使用最近完整收盘数据；盘中可刷新行情与资金流；午间只读取已保存证据；盘后若今日完整日线尚未入库，会明确回退到最近完整收盘日。
 
+静态诊断缺少目标交易日筹码时，会按需通过 OpenCLI 获取东财日 K 与换手率并计算一次 CYQ 估算快照，写入采集审计后重新诊断。该快照是成交与换手衰减模型的估算值，不是交易所披露的真实持仓成本；其有效性按最近完整交易日判断，不使用固定 24 小时过期。盘中和午间不会临时重算收盘筹码，也不会定时批量抓取。
+
 默认是 `SHADOW`，且市场和组合风控默认不放行，因此不会仅凭命令调用产生可执行买入信号：
 
 ```bash
@@ -62,6 +64,14 @@ JSON 输出和关闭盘中实时采集：
 PYTHONPATH=a-share-short-term-trading:stock-ai \
 stock-ai/.venv/bin/python a-share-short-term-trading/scripts/diagnose_stock.py \
   --code 600000 --output json --no-intraday-refresh
+```
+
+完全离线复现时可以同时关闭筹码补采：
+
+```bash
+PYTHONPATH=a-share-short-term-trading:stock-ai \
+stock-ai/.venv/bin/python a-share-short-term-trading/scripts/diagnose_stock.py \
+  --code 600000 --output json --no-intraday-refresh --no-chip-refresh
 ```
 
 只有同时提供已冻结的收盘计划、明确的市场状态、组合风控放行和 `LIVE` 模式，盘中五项证据全部通过后才可能输出可执行的 `BUY_ALLOWED`。`--at` 仅用于带时区的历史复现和测试，不用于手工选择交易时段。

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 import importlib.util
 from pathlib import Path
 
@@ -8,6 +8,7 @@ from short_term_trading.contracts import ReleaseMode
 from short_term_trading.daily_sync import DailyBar
 from short_term_trading.diagnosis import RiskProfile, TradePlanDraft
 from short_term_trading.diagnosis_runtime import DiagnosisRuntime, build_runtime_diagnosis
+from short_term_trading.evidence import EvidenceSnapshot
 from short_term_trading.intraday import IntradayRiskGate
 from short_term_trading.session import TradingSession
 
@@ -42,12 +43,13 @@ class FakeDailyRepository:
 
 
 class FakeEvidenceRepository:
-    def __init__(self) -> None:
+    def __init__(self, latest: dict[str, EvidenceSnapshot] | None = None) -> None:
         self.calls: list[tuple[str, str]] = []
+        self.latest = latest or {}
 
     def get_latest_valid_snapshot(self, code: str, kind: str):
         self.calls.append((code, kind))
-        return None
+        return self.latest.get(kind)
 
     def get_valid_snapshots_since(self, code: str, kind: str, since: datetime):
         self.calls.append((code, kind))
@@ -89,21 +91,50 @@ def plan() -> TradePlanDraft:
     )
 
 
+def chip_snapshot(trade_date: date) -> EvidenceSnapshot:
+    return EvidenceSnapshot(
+        snapshot_id=f"chip-{trade_date.isoformat()}",
+        code="600000",
+        kind="chip",
+        as_of=datetime.combine(trade_date, datetime.min.time(), tzinfo=timezone.utc),
+        source="eastmoney-opencli",
+        parser_version="chip-cyq-v1",
+        data={
+            "source_trade_date": trade_date.isoformat(),
+            "cost_90_low": 9.0,
+            "cost_90_high": 10.0,
+            "average_cost": 9.5,
+            "profit_ratio": 70.0,
+            "concentration": 5.0,
+            "input_bar_count": 210,
+            "method": "eastmoney-cyq-v1",
+        },
+        raw_evidence_ref=f"fixture:chip:{trade_date.isoformat()}",
+    )
+
+
+def thirty_bars_ending_on(end: date) -> list[DailyBar]:
+    return [bar(end - timedelta(days=offset)) for offset in reversed(range(30))]
+
+
 def runtime(
     *,
     now_bars: list[DailyBar] | None = None,
     calendar_status: bool | None = True,
     refresh=None,
+    chip_refresh=None,
     frozen_plan: TradePlanDraft | None = None,
+    evidence_repository: FakeEvidenceRepository | None = None,
 ) -> DiagnosisRuntime:
     return DiagnosisRuntime(
         calendar=FakeCalendar(calendar_status),
         daily_repository=FakeDailyRepository(now_bars or []),
-        evidence_repository=FakeEvidenceRepository(),
+        evidence_repository=evidence_repository or FakeEvidenceRepository(),
         risk_profile=RiskProfile(),
         frozen_plan=frozen_plan,
         risk_gate=IntradayRiskGate("FREEZE", False, 0),
         intraday_refresh=refresh,
+        chip_refresh=chip_refresh,
     )
 
 
@@ -147,6 +178,20 @@ def test_midday_break_uses_persisted_evidence_without_refresh() -> None:
 
     assert result.session is TradingSession.MIDDAY_BREAK
     assert refresh_calls == []
+
+
+def test_intraday_and_midday_never_refresh_the_close_chip_snapshot() -> None:
+    chip_refresh_calls: list[str] = []
+    for now in (SHANGHAI_INTRADAY, SHANGHAI_MIDDAY):
+        subject = runtime(
+            chip_refresh=chip_refresh_calls.append,
+            frozen_plan=plan(),
+        )
+        build_runtime_diagnosis(
+            "600000", subject, now=now, release_mode=ReleaseMode.LIVE
+        )
+
+    assert chip_refresh_calls == []
 
 
 def test_missing_frozen_plan_never_starts_external_refresh() -> None:
@@ -194,6 +239,62 @@ def test_post_market_ignores_an_incomplete_today_bar() -> None:
     assert result.data_label == "最近完整收盘（2026-08-07）"
 
 
+def test_post_market_refreshes_a_missing_chip_once_and_rereads_it() -> None:
+    repository = FakeEvidenceRepository()
+    refresh_calls: list[str] = []
+
+    def refresh(code: str) -> None:
+        refresh_calls.append(code)
+        repository.latest["chip"] = chip_snapshot(date(2026, 8, 10))
+
+    subject = runtime(
+        now_bars=thirty_bars_ending_on(date(2026, 8, 10)),
+        chip_refresh=refresh,
+        evidence_repository=repository,
+    )
+
+    result = build_runtime_diagnosis(
+        "600000", subject, now=SHANGHAI_POST_MARKET, release_mode=ReleaseMode.SHADOW
+    )
+
+    assert refresh_calls == ["600000"]
+    assert repository.calls.count(("600000", "chip")) == 2
+    assert "缺少最近收盘筹码快照" not in result.reason
+
+
+def test_post_market_reuses_a_current_chip_without_refresh() -> None:
+    repository = FakeEvidenceRepository(
+        {"chip": chip_snapshot(date(2026, 8, 10))}
+    )
+    refresh_calls: list[str] = []
+    subject = runtime(
+        now_bars=thirty_bars_ending_on(date(2026, 8, 10)),
+        chip_refresh=refresh_calls.append,
+        evidence_repository=repository,
+    )
+
+    build_runtime_diagnosis(
+        "600000", subject, now=SHANGHAI_POST_MARKET, release_mode=ReleaseMode.SHADOW
+    )
+
+    assert refresh_calls == []
+    assert repository.calls.count(("600000", "chip")) == 1
+
+
+def test_failed_chip_refresh_stays_a_safe_no_trade() -> None:
+    subject = runtime(
+        now_bars=thirty_bars_ending_on(date(2026, 8, 10)),
+        chip_refresh=lambda code: (_ for _ in ()).throw(RuntimeError("detached")),
+    )
+
+    result = build_runtime_diagnosis(
+        "600000", subject, now=SHANGHAI_POST_MARKET, release_mode=ReleaseMode.LIVE
+    )
+
+    assert result.signal == "NO_TRADE"
+    assert "筹码" in result.reason
+
+
 def test_cli_auto_detects_session_and_emits_json(capsys) -> None:
     script = Path(__file__).parents[1] / "scripts" / "diagnose_stock.py"
     spec = importlib.util.spec_from_file_location("diagnose_stock", script)
@@ -226,6 +327,7 @@ def test_cli_has_no_manual_session_override() -> None:
         for option in action.option_strings
     }
     assert "--session" not in option_strings
+    assert "--no-chip-refresh" in option_strings
 
 
 def test_cli_masks_runtime_configuration_errors(capsys) -> None:

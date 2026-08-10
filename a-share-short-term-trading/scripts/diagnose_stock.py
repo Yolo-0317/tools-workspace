@@ -16,7 +16,7 @@ WORKSPACE_ROOT = PROJECT_ROOT.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(WORKSPACE_ROOT / "stock-ai"))
 
-from short_term_trading.capture import capture_quote_and_fund
+from short_term_trading.capture import capture_chip, capture_quote_and_fund
 from short_term_trading.contracts import ReleaseMode
 from short_term_trading.daily_sync import SqlAlchemyDailyBarRepository, normalize_code
 from short_term_trading.diagnosis import RiskProfile, TradePlanDraft
@@ -42,6 +42,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--is-holding", action="store_true")
     parser.add_argument("--release-mode", choices=("SHADOW", "LIVE"), default="SHADOW")
     parser.add_argument("--no-intraday-refresh", action="store_true")
+    parser.add_argument("--no-chip-refresh", action="store_true")
     parser.add_argument("--at", help="仅用于复现的带时区 ISO 时间；不指定时使用当前时间")
     parser.add_argument("--risk-budget", type=float, default=500.0)
     parser.add_argument("--ticket-limit", type=float, default=4000.0)
@@ -68,10 +69,13 @@ def default_runtime(args: argparse.Namespace) -> DiagnosisRuntime:
         raise RuntimeError("MYSQL_URL 未配置")
     daily_repository = SqlAlchemyDailyBarRepository(mysql_url)
     evidence_repository = SqlAlchemyEvidenceRepository(mysql_url)
+    recorder = CaptureRecorder(evidence_repository)
     refresh = None
     if not args.no_intraday_refresh:
-        recorder = CaptureRecorder(evidence_repository)
         refresh = lambda code: capture_quote_and_fund(code, recorder)
+    chip_refresh = None
+    if not args.no_chip_refresh:
+        chip_refresh = lambda code: capture_chip(code, recorder)
     return DiagnosisRuntime(
         calendar=StockAiTradingCalendar(),
         daily_repository=daily_repository,
@@ -85,6 +89,7 @@ def default_runtime(args: argparse.Namespace) -> DiagnosisRuntime:
             "命令参数未明确放行组合风险" if not args.portfolio_approved else "",
         ),
         intraday_refresh=refresh,
+        chip_refresh=chip_refresh,
     )
 
 
