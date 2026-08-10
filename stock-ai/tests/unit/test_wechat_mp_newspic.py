@@ -639,3 +639,325 @@ def test_newspic_main_dry_run_never_calls_wechat_api(
     output = capsys.readouterr().out
     assert "DRY-RUN" in output
     assert str(images[0]) in output
+
+
+def test_virtual_lifestyle_main_requires_topic_card(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from scripts.tools import wechat_mp_newspic_draft as draft_cli
+
+    character = tmp_path / "character.jpg"
+    topic = tmp_path / "topic.jpg"
+    Image.new("RGB", (640, 960), color=(30, 60, 90)).save(character)
+    Image.new("RGB", (640, 960), color=(60, 90, 120)).save(topic)
+    sources = tmp_path / "sources.json"
+    sources.write_text(
+        json.dumps(
+            {
+                character.name: {
+                    "source_type": "original",
+                    "fallback_reason": "栀夏作者卡",
+                    "visual_role": "character",
+                    "position_role": "author",
+                    "capture_mode": "author_card",
+                    "allow_zhixia_watermark": True,
+                },
+                topic.name: {
+                    "source_type": "original",
+                    "fallback_reason": "原创主题图",
+                    "visual_role": "topic",
+                    "position_role": "hook",
+                    "allow_zhixia_watermark": True,
+                },
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    copy = "栀夏是 AI 虚拟角色；图片为 AI 生成示意图。" + "甲" * 180
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "wechat_mp_newspic_draft",
+            "--slot",
+            "virtual_lifestyle",
+            "--title",
+            "这是一个合规栀夏标题",
+            "--content",
+            copy,
+            "--images",
+            str(character),
+            str(topic),
+            "--image-sources",
+            str(sources),
+            "--dry-run",
+        ],
+    )
+
+    assert draft_cli.main() == 1
+    assert "--topic-card" in capsys.readouterr().err
+
+
+def test_virtual_lifestyle_dry_run_accepts_valid_a_topic_card(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from scripts.tools import wechat_mp_newspic_draft as draft_cli
+
+    character = tmp_path / "character.jpg"
+    topic = tmp_path / "topic.jpg"
+    Image.new("RGB", (640, 960), color=(30, 60, 90)).save(character)
+    Image.new("RGB", (640, 960), color=(60, 90, 120)).save(topic)
+    sources = tmp_path / "sources.json"
+    sources.write_text(
+        json.dumps(
+            {
+                character.name: {
+                    "source_type": "original",
+                    "fallback_reason": "栀夏作者卡",
+                    "visual_role": "character",
+                    "position_role": "author",
+                    "capture_mode": "author_card",
+                    "allow_zhixia_watermark": True,
+                },
+                topic.name: {
+                    "source_type": "original",
+                    "fallback_reason": "原创主题图",
+                    "visual_role": "topic",
+                    "position_role": "hook",
+                    "allow_zhixia_watermark": True,
+                },
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    card = tmp_path / "topic-card.json"
+    card.write_text(
+        json.dumps(
+            {
+                "topic": "一个热点",
+                "observed_at": datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(),
+                "discovery_platform": "百度热搜",
+                "content_type": "A",
+                "fact_sources": [{"url": "https://example.com/a", "title": "报道"}],
+                "contrast": "一个具体反差",
+                "zhixia_observation": "一句只有栀夏会说的具体观察",
+                "click_reason": "值得点开的原因",
+                "image_plan": ["主题图", "角色图"],
+                "risks": [],
+                "scores": {
+                    "timing": 20,
+                    "worker_relevance": 20,
+                    "zhixia_observation": 20,
+                    "visuals": 15,
+                    "persona_fit": 10,
+                },
+                "character_image_policy": "default_one",
+                "visual_exception": "",
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(draft_cli, "load_virtual_history", lambda: {"posts": []}, raising=False)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "wechat_mp_newspic_draft",
+            "--slot",
+            "virtual_lifestyle",
+            "--topic-card",
+            str(card),
+            "--title",
+            "这是一个合规栀夏标题",
+            "--content",
+            "栀夏是 AI 虚拟角色；图片为 AI 生成示意图。" + "甲" * 180,
+            "--images",
+            str(character),
+            str(topic),
+            "--image-sources",
+            str(sources),
+            "--dry-run",
+        ],
+    )
+
+    assert draft_cli.main() == 0
+    output = capsys.readouterr().out
+    assert "类型 A" in output
+    assert "评分 85" in output
+
+
+def test_virtual_lifestyle_rejects_content_type_out_of_current_mix(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from scripts.tools import wechat_mp_newspic_draft as draft_cli
+
+    card = tmp_path / "topic-card.json"
+    card.write_text(
+        json.dumps(
+            {
+                "topic": "一个热点",
+                "observed_at": datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(),
+                "discovery_platform": "百度热搜",
+                "content_type": "A+C",
+                "fact_sources": [{"url": "https://example.com/a", "title": "报道"}],
+                "contrast": "一个具体反差",
+                "zhixia_observation": "一句只有栀夏会说的具体观察",
+                "click_reason": "值得点开的原因",
+                "image_plan": ["主题图", "角色图"],
+                "risks": [],
+                "scores": {
+                    "timing": 20,
+                    "worker_relevance": 20,
+                    "zhixia_observation": 20,
+                    "visuals": 15,
+                    "persona_fit": 10,
+                },
+                "character_image_policy": "default_one",
+                "visual_exception": "",
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(draft_cli, "load_virtual_history", lambda: {"posts": []}, raising=False)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "wechat_mp_newspic_draft",
+            "--slot",
+            "virtual_lifestyle",
+            "--topic-card",
+            str(card),
+            "--title",
+            "这是一个合规栀夏标题",
+            "--content",
+            "栀夏是 AI 虚拟角色；图片为 AI 生成示意图。" + "甲" * 180,
+            "--images",
+            str(tmp_path / "character.jpg"),
+            str(tmp_path / "topic.jpg"),
+            "--image-sources",
+            str(tmp_path / "sources.json"),
+            "--dry-run",
+        ],
+    )
+
+    assert draft_cli.main() == 1
+    assert "当前比例下一条须为 A" in capsys.readouterr().err
+
+
+def test_virtual_lifestyle_verified_draft_records_pending_entry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from scripts.tools import wechat_mp_newspic_draft as draft_cli
+    from scripts.tools.wechat_mp_virtual_ledger import record_pending_draft
+
+    character = tmp_path / "character.jpg"
+    topic = tmp_path / "topic.jpg"
+    Image.new("RGB", (640, 960), color=(30, 60, 90)).save(character)
+    Image.new("RGB", (640, 960), color=(60, 90, 120)).save(topic)
+    sources = tmp_path / "sources.json"
+    sources.write_text(
+        json.dumps(
+            {
+                character.name: {
+                    "source_type": "original",
+                    "fallback_reason": "栀夏作者卡",
+                    "visual_role": "character",
+                    "position_role": "author",
+                    "capture_mode": "author_card",
+                    "allow_zhixia_watermark": True,
+                },
+                topic.name: {
+                    "source_type": "original",
+                    "fallback_reason": "原创主题图",
+                    "visual_role": "topic",
+                    "position_role": "hook",
+                    "allow_zhixia_watermark": True,
+                },
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    card = tmp_path / "topic-card.json"
+    card.write_text(
+        json.dumps(
+            {
+                "topic": "一个热点",
+                "observed_at": datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(),
+                "discovery_platform": "百度热搜",
+                "content_type": "A",
+                "fact_sources": [{"url": "https://example.com/a", "title": "报道"}],
+                "contrast": "一个具体反差",
+                "zhixia_observation": "一句只有栀夏会说的具体观察",
+                "click_reason": "值得点开的原因",
+                "image_plan": ["主题图", "角色图"],
+                "risks": [],
+                "scores": {
+                    "timing": 20,
+                    "worker_relevance": 20,
+                    "zhixia_observation": 20,
+                    "visuals": 15,
+                    "persona_fit": 10,
+                },
+                "character_image_policy": "default_one",
+                "visual_exception": "",
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    pending_path = tmp_path / "pending.json"
+    monkeypatch.setattr(draft_cli, "load_virtual_history", lambda: {"posts": []})
+    monkeypatch.setattr(
+        draft_cli,
+        "upsert_newspic_draft",
+        lambda **_kwargs: ("verified-media-id", "updated"),
+    )
+    monkeypatch.setattr(
+        draft_cli,
+        "record_pending_draft",
+        lambda **kwargs: record_pending_draft(**kwargs, pending_path=pending_path),
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "wechat_mp_newspic_draft",
+            "--slot",
+            "virtual_lifestyle",
+            "--topic-card",
+            str(card),
+            "--title",
+            "这是一个合规栀夏标题",
+            "--content",
+            "栀夏是 AI 虚拟角色；图片为 AI 生成示意图。" + "甲" * 180,
+            "--images",
+            str(character),
+            str(topic),
+            "--image-sources",
+            str(sources),
+        ],
+    )
+
+    assert draft_cli.main() == 0
+    pending = json.loads(pending_path.read_text(encoding="utf-8"))
+    assert pending["media_id"] == "verified-media-id"
+    assert pending["content_type"] == "A"
+    assert pending["topic_card_sha256"]

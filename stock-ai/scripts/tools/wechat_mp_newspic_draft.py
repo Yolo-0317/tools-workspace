@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import sys
 from pathlib import Path
 
@@ -19,6 +20,16 @@ from scripts.tools.wechat_mp_newspic import (
     upsert_newspic_draft,
     validate_newspic_image_sources,
     validate_newspic_input,
+)
+from scripts.tools.wechat_mp_virtual_editorial import (
+    load_topic_card,
+    next_content_type,
+    validate_opinion_copy,
+    validate_topic_card,
+)
+from scripts.tools.wechat_mp_virtual_ledger import (
+    load_virtual_history,
+    record_pending_draft,
 )
 
 
@@ -72,6 +83,17 @@ def main() -> int:
         help="每张图的来源与原创补位原因 JSON",
     )
     parser.add_argument("--slot", default="newspic")
+    parser.add_argument(
+        "--topic-card",
+        type=Path,
+        help="栀夏观点型贴图选题卡 JSON；virtual_lifestyle 必填",
+    )
+    parser.add_argument(
+        "--allow-mix-override",
+        default="",
+        metavar="REASON",
+        help="有明确原因时覆盖当前 7:2:1 内容比例门禁",
+    )
     parser.add_argument("--author", default="")
     parser.add_argument(
         "--watermark",
@@ -86,9 +108,13 @@ def main() -> int:
     )
     args = parser.parse_args()
     content_path = Path(args.content)
+    try:
+        content_is_file = content_path.is_file()
+    except OSError:
+        content_is_file = False
     content = (
         content_path.read_text(encoding="utf-8").strip()
-        if content_path.is_file()
+        if content_is_file
         else args.content.strip()
     )
     watermark = (
@@ -96,8 +122,48 @@ def main() -> int:
         if args.watermark is not None
         else ("栀夏 · ZHI XIA" if args.slot == "virtual_lifestyle" else "")
     )
+    topic_card: dict[str, object] | None = None
+    required_content_type = ""
     try:
+        if args.slot == "virtual_lifestyle":
+            if args.topic_card is None:
+                raise ValueError("virtual_lifestyle 草稿必须提供 --topic-card")
+            topic_card = validate_topic_card(load_topic_card(args.topic_card))
+            history = load_virtual_history()
+            required_content_type = next_content_type(history.get("posts", []))
+            if (
+                topic_card["content_type"] != required_content_type
+                and not args.allow_mix_override.strip()
+            ):
+                raise ValueError(f"当前比例下一条须为 {required_content_type}")
         image_paths, image_sources_path = _resolve_newspic_images(args)
+        validate_newspic_input(
+            title=args.title,
+            content=content,
+            image_paths=image_paths,
+            draft_profile=args.slot,
+        )
+        image_sources = validate_newspic_image_sources(
+            image_paths=image_paths,
+            sources_path=image_sources_path,
+            content=content,
+            draft_profile=args.slot,
+            content_type=str(topic_card["content_type"]) if topic_card else "",
+            character_image_policy=(
+                str(topic_card["character_image_policy"])
+                if topic_card
+                else "default_one"
+            ),
+            visual_exception=(
+                str(topic_card.get("visual_exception") or "") if topic_card else ""
+            ),
+        )
+        if topic_card is not None:
+            has_report_images = any(
+                str(source.get("source_type") or "") == "report"
+                for source in image_sources.values()
+            )
+            validate_opinion_copy(content, has_report_images=has_report_images)
     except CodexImageGenerationRequired as exc:
         print(f"需要 Codex 原创补图: {exc}", file=sys.stderr)
         return 2
@@ -105,16 +171,14 @@ def main() -> int:
         print(f"错误: {exc}", file=sys.stderr)
         return 1
     if args.dry_run:
-        validate_newspic_input(
-            title=args.title,
-            content=content,
-            image_paths=image_paths,
-        )
-        validate_newspic_image_sources(
-            image_paths=image_paths,
-            sources_path=image_sources_path,
-        )
-        print(f"DRY-RUN [{args.slot}] 图片 {len(image_paths)} 张 · {args.title}")
+        if topic_card is not None:
+            print(
+                f"DRY-RUN [{args.slot}] 类型 {topic_card['content_type']} · "
+                f"评分 {topic_card['score_total']} · 下一条 {required_content_type} · "
+                f"图片 {len(image_paths)} 张 · {args.title}"
+            )
+        else:
+            print(f"DRY-RUN [{args.slot}] 图片 {len(image_paths)} 张 · {args.title}")
         for image_path in image_paths:
             print(image_path)
         print(f"来源清单: {image_sources_path}")
@@ -129,6 +193,14 @@ def main() -> int:
         force_reupload=args.force_reupload,
         watermark=watermark,
     )
+    if topic_card is not None and args.topic_card is not None:
+        record_pending_draft(
+            media_id=media_id,
+            title=args.title,
+            topic_card=topic_card,
+            topic_card_sha256=hashlib.sha256(args.topic_card.read_bytes()).hexdigest(),
+            mix_override_reason=args.allow_mix_override,
+        )
     print(f"OK [{args.slot}] {action} media_id={media_id} · {args.title}")
     return 0
 
