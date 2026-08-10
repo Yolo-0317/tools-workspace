@@ -1,0 +1,444 @@
+---
+description: tools-workspace 通用历史记忆 — 仅按主题读取
+globs: *
+alwaysApply: false
+---
+
+# Project Memory (tools-workspace)
+
+本文件由 Hermes 协议维护：跨会话可复用的经验、陷阱与命令。子项目专项记忆见 `memory-python.mdc`（stock-ai）、`memory-infra.mdc`（sidestore-infra）、`memory-emquant.mdc`（东财掘金）、`memory-english-buddy.mdc`（少儿带读/ORT）、`memory-xiaozhi.mdc`（语音网关/夸克）。
+
+## 工作空间速览
+
+| 子项目 | 路径 | 用途 |
+|--------|------|------|
+| stock-ai | `stock-ai/` | A 股数据、选股、MCP、investment-agent |
+| sidestore-infra | `sidestore-infra/` | SideStore、Caddy、DDNS、Docker |
+| substore-clash | `substore-clash/` | Sub-Store + Mihomo 订阅合并（西部世界 + 一元机场） |
+| home-hub | `home-hub/` | 投资/运维 H5 看板（Vue3 + FastAPI，无内置聊天） |
+| wechat-cursor-acp | `wechat-cursor-acp/` | 微信 ↔ Cursor CLI（`agent acp`，与历史 home-hub 聊天同栈） |
+| english-buddy | `english-buddy/` | 少儿英语带读 / ORT 听读（Ollama + edge-tts + Whisper） |
+
+### 主题索引（检索用）
+
+| 主题 | 条目日期 | 子项目记忆 |
+|------|----------|------------|
+| monorepo / Superpowers | 2026-05-29 | — |
+| substore-clash / Stash / TLS | 2026-05-29 | — |
+| stock-ai 数据主链路 | 2026-05-30 | `memory-python.mdc` |
+| home-hub 无聊天 | 2026-06-01 | — |
+| emquant / 龙头战法 | 2026-06-02 | `memory-emquant.mdc` |
+| 投顾 / 双执行卡 | 2026-06-02 | `memory-python.mdc` |
+| **公众号晚间三篇** | **2026-06-04** | `memory-python.mdc` §2026-06-04 晚间完读钩子 · `evening-trilogy-templates.md` |
+| **公众号内容分析复盘** | **2026-06-05** | 本节 §2026-06-05 · `sousou-analytics-sop.md` |
+| **公众号 top5 人气榜** | **2026-06-05** | `memory-python.mdc` §2026-06-05 top5 人气榜 |
+| **选股前日线门禁** | **2026-06-04** | `memory-python.mdc` §2026-06-04 · `SCHEDULING.md` §3/§9 |
+| **HarryPutter 开源引流 / 公网试听** | **2026-06-07** | 本节 §2026-06-07 · `harryputter/docs/PRODUCT-STRATEGY.md` · `memory-infra.mdc` |
+| **Immich NAS 照片库 / Caddy 外网访问** | **2026-08-04** | `memory-infra.mdc` §2026-08-04 |
+| **HarryPutter hp01 全书 QA / 中英音对齐** | **2026-06-08** | 本节 §2026-06-08 · `harryputter/scripts/audit_book.py` · `PIPELINE-NOTES.md` §11–12 |
+| **readalong → harryputter 重命名** | **2026-06-08** | 本节 §2026-06-08-rename |
+| **English Buddy ORT 听读/带读** | **2026-06-07** | `memory-english-buddy.mdc` · `english-buddy/docs/ORT_READ_ALONG.md` |
+| **公众号平台推荐安全（财产风险）** | **2026-06-12** | 本节 §2026-06-12 · `memory-python.mdc` §2026-06-12 · `wechat_mp_public.py` |
+| **公众号【说明】开篇重复** | **2026-06-14** | 本节 §2026-06-14 · `memory-python.mdc` §2026-06-14 |
+| **公众号 hotspot 深评转向** | **2026-07-30** | 本节 §2026-07-30 · `wechat-mp-writing/hotspot-deep-review.md` |
+| **公众号影视剧评试跑** | **2026-07-31** | 本节 §2026-07-31 · `wechat-mp-writing/tv-review-voice.md` |
+| **公众号阅读复盘/认证判断** | **2026-07-31** | 本节 §2026-07-31-analytics |
+| **xiaozhi 夸克/冰雪奇缘映射** | **2026-07-25** | `memory-xiaozhi.mdc` |
+| **xiaozhi 云端+HTTP 播夸克** | **2026-07-26** | `memory-xiaozhi.mdc` · `DESIGN_CLOUD_HTTP_QUARK_PLAY.md` · `FIRMWARE_HTTP_MP3_PLAY.md` |
+| **xiaozhi 固件 HTTP MP3 / 大分区** | **2026-07-26** | `memory-xiaozhi.mdc` §固件 HTTP MP3 |
+| **xiaozhi MCP 卡死无反馈 / speak_hint** | **2026-07-29** | `memory-xiaozhi.mdc` §2026-07-29 |
+
+---
+
+## 记忆条目（按时间追加）
+
+### 2026-07-31 公众号影视剧评 · 蜘蛛侠试跑定稿规则
+
+- **Context**: 用户要求影视稿也按 hotspot 新流程优化：从热搜找热门影视，不局限美剧；蜘蛛侠稿多轮改到可用。
+- **Pitfall/Error**: 标题像机器话；正文有小标题、单句成段、第一人称叙事、评分开头打断阅读；「戏眼」「话却接不到以前那种熟」「脸上是信的」等词句不像人话；剧照/封面缺失会让草稿观感崩。
+- **Solution/Rule**:
+  - 影视稿优先读 `wechat-mp-writing/tv-review-voice.md`、`tv-review-template.md`、`data/wechat_mp_tv_review_golden/`；成稿走 `wechat_mp_tv_polish.finalize_tv_review_body()`。
+  - 单片院线剧评用纯段落，不用小标题，不用 `>`，禁止第一人称叙事；情绪放在镜头、表演、场面与观影后的客观感受里，不写「我看的晚场」。
+  - 开头顺序：画面/核心意象先行，再自然交代上映、票房、评分；评分用数字如 `7.8`，不要中文数字。
+  - 段落不要碎成连续短句；过短段并回上一段，避免一排一句话。
+  - 封面和文中图必须拉官方剧照或 TMDB/豆瓣可引用剧照，推前确认 `media_id`。
+
+### 2026-07-31 公众号阅读复盘 · 7/15-7/30 数据与认证判断
+
+- **Context**: 抓取内容分析页得到 `stock-ai/output/wechat_mp_analytics_daily_20260715_20260730.json`，并讨论个人号、个体户认证、流量主与推荐流。
+- **Pitfall/Error**: 公众号不是「300 粉丝 = 每天 300 阅读」；认证不是推荐流量开关；为了认证新开个体户号会丢搜一搜历史、粉丝和常读关系，短期可能更差。
+- **Solution/Rule**:
+  - 7/15-7/30 复盘口径：16 日「阅读总人数」逐日合计 638，日均约 40；最近 7 天总读 334，日均约 48；7/30 hotspot 首发约 60 人，在当月深评里算不错。
+  - 流量结构从 6 月「搜一搜为主」转成 7 月「聊天/朋友圈转发为主」；重点盯搜一搜是否回到 20%+、交易日流量块是否稳定 60+。
+  - 低阅读正常阈值：不过百正常；从 80 掉到 40 才值得盯，主要看搜一搜变弱、周末黑洞、推荐起不来。
+  - 涨粉节奏现实预期：认真做每周净增 3-10 粉正常，每月 +30-50 已经不错；可每周 2 次群/朋友圈转头条，带一句结论和链接。
+  - 个体户路径：先个体户执照，再开组织类订阅号并认证；旧个人号不能直接改主体，只能新开或迁移。主要目标若是涨推荐占比，认证优先级靠后。
+
+### 2026-07-30 公众号 hotspot 深评 · 每天只推一篇
+
+- **Context**: 用户明确放弃每天热评流水账和 evening 多篇，要求每天只推 `hotspot` 一篇，题源从微博/百度热搜找，并写成有质量的深度分析。
+- **Pitfall/Error**: 自动稿曾出现标题怪、内容简单、套话、机械小标题、指数涨跌重复、强行凑字数、未先查资料就套模板；OpenCLI 拉盘面数据可能卡 15 分钟，导致推稿等待过久。
+- **Solution/Rule**:
+  - `evening_mode=hotspot_only` 为默认节奏；交易日每天只推 1 篇 `hotspot`，封面用牛马主图 `banner.png`/sector 槽。
+  - hotspot 成稿必须先找微博/百度热搜与财经报道参考，再写「事实链 + 市场链 + 人话判断」，不要写清单型快评。
+  - 正文纯段落、无小标题；长文目标 2000 字以上，至少 5 段；禁用「我们认为」「值得关注的是」「公开报道里有一条值得先记住」「硬验证」等 AI/研报口播。
+  - 标题硬禁：股名重复、`背景下`、榜位当事件、半截人名、`升温A股` 粘连；规则真源 `wechat-mp-writing/sousou-content-rules.md` 与 `hotspot-deep-review.md`。
+  - 推稿卡住时先检查 OpenCLI profile；本轮确认默认 profile 应用 `axn42ugy`，多余桥 `npyuc2aq` 可能干扰自动任务。
+
+### 2026-07-29 xiaozhi · MCP 卡死无反馈
+
+- **Context**: 点播失败时小智沉默，误以为 MCP/设备卡死。
+- **Pitfall/Error**: 业务 miss 回 HTTP 404、token 过期后 CLI 长超时、无 `speak_hint` → 云端不说话或死磕重试。
+- **Solution/Rule**: 见 **`memory-xiaozhi.mdc`** §2026-07-29；失败须 HTTP 200 + `speak_hint`；改代码后 kickstart media + mcp-pipe。
+
+### 2026-07-26 xiaozhi · 云端+HTTP 运维切换
+
+- **Context**: 对话走 xiaozhi.me，故事走 Mac HTTP + 设备 `play_url`。
+- **Pitfall/Error**: 设备若仍 OTA 本地 `:8766` 会连 `:8765`（Mode A）；与 media/mcp_pipe 混用会误连。
+- **Solution/Rule**: OTA 官方 `https://api.tenclass.net/xiaozhi/ota/`（`flash-cloud-ota.sh`）；Mac `com.user.xiaozhi-media` + `com.user.xiaozhi-mcp-pipe`；提示词 `CLOUD_HTTP_AGENT_PROMPT.md`。
+
+### 2026-07-26 xiaozhi · 固件 HTTP MP3 + Pyramid 大分区
+
+- **Context**: Phase B：设备 MCP `play_url` 拉 Mac `device.mp3` 解码出声。
+- **Pitfall/Error**: 原 8MB OTA（`0x2f0000`）装不下 simple_dec；`release.py` 有 zip 会跳过重建；Agent 未代烧须确认。
+- **Solution/Rule**: 专项 **`memory-xiaozhi.mdc`** §固件 HTTP MP3；分区 `8m-large-app.csv`；实现 `http_mp3_player.cc`；文档 `xiaozhi-atoms3r/docs/FIRMWARE_HTTP_MP3_PLAY.md`。
+
+### 2026-07-26 xiaozhi · 云端对话 + HTTP URL 播夸克（设计草案）
+
+- **Context**: 想用原机云端模型，又要播夸克故事；SD/Mode B 推流均不理想。
+- **Pitfall/Error**: 云端 MCP 不推长 Opus；设备需固件支持按 URL 播 MP3。
+- **Solution/Rule**: 见 **`xiaozhi-mac-server/docs/DESIGN_CLOUD_HTTP_QUARK_PLAY.md`** 与 `memory-xiaozhi.mdc`。Mac media + 固件 `play_url` 均已有实现；联调云端编排。
+
+### 2026-07-25 xiaozhi · 玥玥目录 + 冰雪奇缘第一集映射
+
+- **Context**: 语音播「冰雪奇缘」曾落到最后一集；需目录总览与 curated 集数真源。
+- **Pitfall/Error**: 四位 `0001-` 排序失效 + 选片 `reverse=True`；「一」误匹配「第一部完结」。
+- **Solution/Rule**: 专项记忆 **`memory-xiaozhi.mdc`**；真源 `xiaozhi-mac-server/data/quark_series_maps/frozen.json`、总览 `data/quark_yueyue_catalog_overview.json`；重建 `python scripts/build_series_maps.py`。
+
+### 2026-06-07 English Buddy · ORT 听读/带读稳定化
+
+- **Context**: 牛津树专题按页带读；需区分听读（自动）与带读（跟读），并修复图音同步、同页多句、听读翻页停读等问题。
+- **Pitfall/Error**: 数据 `pages[]` 与书不符、句子框高度裁切、听读 `hold`、图/句 state 双索引抢状态、过期 `teacher_playback_done`、长句 chunk TTS 缓存错位。
+- **Solution/Rule**: 专项记忆 **`memory-english-buddy.mdc`**；运行时真源 **`english-buddy/docs/ORT_READ_ALONG.md`**。改 `books.json` → `build_lessons_v5.py` → `restart.sh --build` + PWA 硬刷新。
+
+---
+
+### 2026-05-29 tools-workspace 物理迁移
+
+- **Context**: 将 `stock-ai` 与 `sidestore-infra` 迁入 `tools-workspace/`，统一根目录操作。
+- **Pitfall/Error**: `sidestore-infra` 原在 `$HOME/sidestore-infra`，launchd plist 与脚本含绝对路径；直接移动会破坏自启动。
+- **Solution/Rule**: 真实目录为 `tools-workspace/sidestore-infra`；`~/sidestore-infra` 与 `~/dev/yolo/stock-ai` 保留为符号链接。更新 launchd 后执行 `sidestore-infra/scripts/install-launchd.sh`。
+
+### 2026-05-29 tools-workspace 单仓库 monorepo
+
+- **Context**: 远程只维护一个 `tools-workspace` 仓库，归档独立 `stock-ai` remote。
+- **Pitfall/Error**: 根 `.gitignore` 的 `/stock-ai` 与嵌套 `stock-ai/.git` 会导致子项目不进父仓库。
+- **Solution/Rule**: 移除子目录 `.git` 后在根目录 `git add stock-ai/ sidestore-infra/`；各子项目 `.env`、`certs/` 仍不提交。
+
+### 2026-05-29 Superpowers 工作空间安装
+
+- **Context**: 在 tools-workspace 启用 Superpowers 开发工作流。
+- **Pitfall/Error**: 仅写规则不启用 Cursor 插件时，Agent 可能拿不到官方 skills 列表。
+- **Solution/Rule**: 聊天执行 `/add-plugin superpowers`；项目已配置 `.cursor/hooks.json`（sessionStart）与 `superpowers.mdc`。与 Hermes 分工：Superpowers=怎么做，Hermes=记忆持久化。
+
+### 2026-05-29 stock-ai scripts 重组
+
+- **Context**: 整理 `stock-ai` 脚本目录，建立 `stock_ai` 共享库。
+- **Pitfall/Error**: 脚本移入 `scripts/sync/` 等子目录后，`from _bootstrap import` 失效（`sys.path[0]` 变为子目录）。
+- **Solution/Rule**: 子目录脚本使用 `from scripts._bootstrap import ensure_repo_root_on_path`。同步入口：`uv run python scripts/sync/sync_tushare_daily_to_mysql.py`。结构见 `stock-ai/docs/PROJECT_LAYOUT.md`。
+
+### 2026-05-29 substore-clash 双机场 → Mihomo
+
+- **Context**: 在 `substore-clash/` 合并西部世界、一元机场订阅，生成带 blackmatrix7 规则的 Clash Meta 配置；计划域名 `sub.yoloworld.site`（Caddy 片段见 `substore-clash/caddy/Caddyfile.snippet`）。
+- **Pitfall/Error**: Sub-Store 只出节点无规则；OpenAI 须单独策略组且节点名须含 `chatgpt`，否则 `ChatGPT` 组为空。订阅 URL 含 token，勿提交 git。
+- **Solution/Rule**: 真实链接写在 `substore-clash/.env` 的 `SUBSCRIPTION_URLS`（`西部世界|一元机场` 标签对应 `SUB_SOURCE_LABELS`）。启动：`cd substore-clash && docker compose up -d --build`。客户端订阅：`http://127.0.0.1:8787/clash.yaml` 或外网 `https://sub.yoloworld.site:8883/clash.yaml`（`EXTERNAL_HTTPS_PORT=8883`，勿省略端口）。OpenAI 规则 → 策略组 `ChatGPT`（`filter: "(?i)chatgpt"`）。机场源：西部世界 `xb1821.com/rss/...`；一元机场 `sub3.smallstrawberry.com/...`（完整 URL 仅 `.env`）。
+
+### 2026-05-29 substore-clash Stash 导入兼容
+
+- **Context**: Stash（iOS/macOS）从 `clash.yaml` 订阅 URL 导入配置失败。
+- **Pitfall/Error**: 机场订阅含占位节点（`0.0.0.0` / `127.0.0.x`、流量/官网 banner）；一元机场部分节点用 `network: xhttp`；VLESS 带 `alterId`/`cipher`；Mihomo 策略组顶层 `default` 字段与 Stash 语义冲突。外网 `8883` 超时则是端口映射/DNS 问题，与 YAML 无关。
+- **Solution/Rule**: `clash-gen/main.py` 已过滤占位节点、剔除 xhttp、清理 VLESS 无效字段、去掉 select 组 `default`（默认项放 `proxies` 首位）。改后重建：`cd substore-clash && docker compose up -d --build clash-gen`。Stash 订阅：同 WiFi 用 **`https://sub.yoloworld.site:8443/clash.yaml`**；外网/蜂窝用 **`https://sub.yoloworld.site:8883/clash.yaml`**（须路由器映射 8883→Mac）。iPhone 不能访问 Mac 的 `127.0.0.1:8787`。
+
+### 2026-05-29 sub.yoloworld.site TLS 证书缺 SAN
+
+- **Context**: Stash 从 `https://sub.yoloworld.site:8883/clash.yaml` 下载失败（非 YAML 内容问题）。
+- **Pitfall/Error**: `sidestore-infra/certs/fullchain.cer` 仅含 ani/config/alist/www，**无 `sub.yoloworld.site`**；HTTPS 握手被客户端拒绝。`DDNS_SUBDOMAINS` 含 `sub` 不等于证书已覆盖。
+- **Solution/Rule**: `scripts/issue-certs.sh` 已加入 `-d sub.${DOMAIN}`；重签：`cd sidestore-infra && bash scripts/issue-certs.sh && docker compose restart caddy`。验证：`curl --resolve sub.yoloworld.site:8443:127.0.0.1 https://sub.yoloworld.site:8443/clash.yaml | head -1` 应返回 `mixed-port:`。
+
+### 2026-05-30 stock-ai 弃用脚本清理（DB + OpenCLI 主链路）
+
+- **Context**: 完成 MySQL 持仓/选股入库与 OpenCLI 战报/SOP 迁移后，删除仍引用东财 HTTP、Playwright、AkShare 的旧脚本，避免 Agent 误调。
+- **Pitfall/Error**: 文档与 `~/.codex/skills/stock-strategy-selector` 仍指向 `ingest_eastmoney_*`、`ai_review_top5.py` 等已删入口；`analyze_holdings_v2 --csv` 与 CSV 兜底易与 `portfolio_positions` 双轨混淆。
+- **Solution/Rule**: **日线**仅 `scripts/sync/sync_tushare_daily_to_mysql.py` + `ensure_daily_bars`（17:30 选股前 `--require-ready` 门禁，见 `memory-python.mdc` §2026-06-04）；**实时/SOP/战报**仅 `scripts/tools/fetch_eastmoney_quotes.py`（OpenCLI）；**选股结果** MySQL `selection_daily_results`；**持仓** MySQL `portfolio_positions`；**看板历史** `portfolio_*_daily` + `sop_review_*`（`dashboard_data.py`）。细节见 `memory-python.mdc` §2026-05-31。
+
+### 2026-05-31 home-hub 看板 + 聊天（agent acp）— 已废弃
+
+> **Superseded** by §2026-06-01：home-hub 已删除 `/api/chat` 与 `agent_acp.py`；勿按本节恢复 Web 聊天。
+
+- **Context**: `tools-workspace/home-hub` — Vue3 看板 + Cursor 聊天；公网 `hub.yoloworld.site`（Caddy Basic Auth）。Web 聊天需对齐微信 wechat-acp 能力。
+- **Pitfall/Error**: 初版用 `cursor-sdk` 需 API Key；后改 `agent -p` 仍弱于微信（缺 MCP 批准、工具事件、长会话）。浏览器页面测试勿用 Playwright 替代 OpenCLI。
+- **Solution/Rule**: （历史）聊天曾走 `agent acp` + `home-hub/backend/services/agent_acp.py`；**现行**见下节 `wechat-cursor-acp/`。
+
+### 2026-06-02 东财掘金仿真 emquant-sim（Win11）
+
+- **Context**: 东财量化在 Parallels Win11 跑仿真策略 `stock_ai_sim_bridge`；纪律与 `stock-ai/investment-agent/持仓执行卡.md` 对齐，运行与 stock-ai 主链路隔离。
+- **Pitfall/Error**: 终端重启策略不自启；`on_bar` 勿 `bar.get()`；仿真空仓会对执行卡「全标的」减仓规则打日志；Mac 不能 `import gm`；控制台日志用 API `127.0.0.1:7002/v3/strategy-logs/<uuid>` 或 UI，无独立 console.log 文件。
+- **Solution/Rule**: 运维入口 `emquant-sim/docs/PLAYBOOK.md`；改卡后 `export_emquant_rules` + `deploy_emquant_strategy.sh` + 终端停止→运行；`holdings_rules` 仅仿真持仓≥100 股；P-买股数在 `export_emquant_rules.py` 的 `BUY_TRIGGERS`（皖能默认 200）。专项记忆 `memory-emquant.mdc`；**龙头战法**见 §2026-06-02 游资轨龙头战法。
+
+### 2026-06-02 游资轨龙头战法（全链路）
+
+- **Context**: 与主账户 **并行** 的游资/情绪/龙头轨：Mac 从 `stock_daily` 算情绪+龙头池 → MySQL → home-hub 看板 + Win11 掘金仿真验证；纪律文档 `stock-ai/investment-agent/情绪周期日检卡.md`。
+- **Pitfall/Error**: ① home-hub `/emotion` 曾缺 `latest_emotion_trade_date()` 导致 API ImportError；测试日 2026-06-02 脏数据（600000 示例龙）导致看板选错日。② scheduler 容器内 `sync_emotion_cycle` 若把 `host.docker.internal` 换成 `127.0.0.1` 会连不上 MySQL；`pipefail` 在 `/bin/sh` 下报错。③ EOD 若在 17:00 Tushare 前跑，只能写入上一交易日。④ 掘金终端固定跑 `main.py`，不能只在 UI 改 `dragon_main.py`。
+- **Solution/Rule**:
+  - **层级**（冲突自上而下）：`持仓执行卡.md` > `trading-strategies.md` > 情绪日检卡（主轨收息/不追连板不变；游资轨仅试探预算≤40%）。
+  - **MySQL**：`emotion_cycle_daily` + `emotion_cycle_dragon_watch`（迁移 `stock-mysql/sql/010_emotion_cycle.sql`）；读写 `portfolio_db.load/save_emotion_cycle_checklist`、`latest_emotion_trade_date`。
+  - **计算**：`stock_ai/emotion_cycle_compute.py`（涨跌停/连板/炸板率/阶段/Top3 龙，`checklist_pass`≥5 入池）；CLI `scripts/tools/emotion_cycle_checklist.py`；自动 `scripts/tools/sync_emotion_cycle_daily.py` + `./sync_emotion_cycle.sh`。
+  - **调度**（`stock-ai/docker/scheduler/crontab`）：工作日 **18:00** 仅 `eod`（`pre_market`/`intraday` 已下线，2026-06-04）；改 crontab 须 `docker compose up -d --build`。
+  - **看板**：home-hub `/emotion`；API `stock_bridge.load_emotion_cycle`；默认日期取最新 **eod** 交易日。
+  - **交叉规则**：综合选股 Top5 ∩ 龙头池 → 提高关注；仅龙头池有 → 最多 1 手高风险试探。
+  - **掘金仿真**：`emquant-sim` 读 `dragons.json`（Mac `export_emotion_dragons`）；`main.py` 路由 + `strategy_entry.json`（`dragon`|`combined`）；策略 ID `5aa6af16-5da8-11f1-996b-001c42c700fc`；60s `on_bar` 盯订阅龙头，阶段退潮/冰点 **只卖不买**。详见 `emquant-sim/docs/emquant-dragon-strategy.md`、`memory-emquant.mdc` §龙头战法。
+
+### 2026-06-02 6 万投顾模式 · 阶段 0 止血降仓
+
+- **Context**: 用户本金 6 万、现净资产约 5.3 万，要求投顾主导回本（非听持仓熬仓）；选股须与投顾一致。
+- **Pitfall/Error**: 原体系以 `持仓执行卡` 为最高，17:30 Top5/SOP/选股监控仍像「找机会买」，与 A 档降仓冲突；用户易把 Top5 当必买。
+- **Solution/Rule**:
+  - **决策最高**：`stock-ai/investment-agent/投顾主策略.md`（阶段 0/1/2）；Agent `agent.mdc` 先读投顾五段再附执行卡。
+  - **阶段 0** = 止血降仓（用户 2026-06-02 确认「按投顾执行」）；本周：减梅花/广州/锁南网，禁新开。
+  - **选股代码**：`stock_ai/advisor_selection.py` → `combined` 压买入动作为「继续观察」、排除 600873；阶段 0 **仍跑 Top5 SOP**、不写 `alert_rules`；`selection_watchlist --sync` 阶段 0 跳过。
+  - **进阶段 1**：改投顾主策略标题为阶段 1 + 仓位 ≤65% 且梅花化解后，选股才恢复 SOP/监控试探。
+  - **看板（2026-06-02）**：home-hub `AdvisorPanel` + `/api/dashboard/advisor`；总览/持仓/选股情报页；`dashboard_data` 的 Top5 走投顾 `pick_selection_top`；战报首行投顾横幅。
+
+### 2026-06-02 双执行卡（实盘 vs 仿真龙头）
+
+- **Context**: 维护两套执行卡：① **持仓执行卡** — **东方财富证券**实盘、stock-ai 主轨（监控/看板/Agent）；② **龙头执行卡** — 游资轨，**当前仅 emquant 仿真**。
+- **Pitfall/Error**: 混用两卡会导致 Agent 用龙头纪律指导实盘，或仿真误绑 `alert_rules`；`情绪周期日检卡.md` 与可执行卡职责重叠。
+- **Solution/Rule**:
+  - **持仓执行卡**：`investment-agent/持仓执行卡.md` → `alert_rules` / 微信 / 可选 `export_emquant_rules`（combined）。
+  - **龙头执行卡**：`investment-agent/龙头执行卡.md` → `emotion_cycle_*` → `export_emotion_dragons` → `dragon_main`；**不进** `alert_rules`，**不**绑东方财富证券实盘。
+  - **方法论**：`情绪周期日检卡.md`；冲突 **实盘以持仓执行卡为准**。
+  - **stock-ai 后续**：大盘/震荡识别写入 `emotion_cycle_daily`，home-hub 可并列展示两卡。
+  - **看板（2026-06-02）**：`/emotion` 合并 **龙头执行卡** 区块；API 增 `dragon_execution_card` + `data_source`；导航改「龙头」。持仓执行卡 → `/portfolio` 读 `portfolio_*` / `alert_rules`。
+
+### 2026-06-01 home-hub 移除内置聊天，Agent 仅走微信
+
+- **Context**: 整理提交 `154d838`：`home-hub` 专注投资/运维看板（持仓、选股、任务、服务），不再在 H5 内嵌 Cursor Agent 聊天。
+- **Pitfall/Error**: 旧记忆与 `home-hub/TOOLS.md` 仍指向 `HUB_AGENT_*`、`/api/chat`、`agent_acp.py`；Agent 可能误加聊天路由或与微信双开争用 CLI 额度。
+- **Solution/Rule**: **home-hub** 无聊天：已删 `backend/routers/chat.py`、`backend/services/agent_*.py`、前端 `ChatView`；`.env.example` 无 `HUB_AGENT_MODEL` / `HUB_ACP_PROMPT_TIMEOUT`。**Cursor Agent 对话**仅用 `wechat-cursor-acp/`（`agent acp`，同历史 wechat-acp 栈）。公网看板仍为 `hub.yoloworld.site`（鉴权 `HUB_REQUIRE_AUTH`）。勿在 home-hub 恢复 Web 聊天，除非用户明确要求并单独设计。
+
+### 2026-06-04 公众号 = 牛马也智能（命名约定）
+
+- **Context**: 用户全力运营财经公众号 **牛马也智能**；简选小电 / 小红书摄影已搁置。
+- **Solution/Rule**: 用户说 **「公众号」** → 仅 [wechat-mp-drafts](.cursor/skills/wechat-mp-drafts/)（`WECHAT_MP_*`）；真源 [brand.md](.cursor/skills/wechat-mp-drafts/brand.md)、[operations-sop.md](.cursor/skills/wechat-mp-drafts/operations-sop.md)。简选 → commerce skill，默认不执行。
+
+### 2026-06-04 OpenCLI · 少标签分组、用完关 tab
+
+- **Context**: Chrome 里堆很多 OpenCLI **标签分组**；用户要求用完关 tab、别再建分组。
+- **Pitfall/Error**: 默认 `OPENCLI_BROWSER_IF_EXISTS=tab` 每次 `tab new`；`tab close` 失败后会话 id 失效，分组/标签只增不减；`browser close` 不关 Chrome 物理标签。
+- **Solution/Rule**: 默认改 **`IF_EXISTS=navigate`** + **`CLOSE_TABS_ON_RELEASE=1`** → `release_browser_session()` 先 `tab close` 全部再 `browser close`。清理：`bash stock-ai/scripts/opencli_browser_cleanup.sh`；Chrome 内残留分组需手动「解散分组」。
+
+### 2026-06-04 公众号看稿 · 只进草稿箱
+
+- **Context**: 用户要求试看稿件时 **直接推 mp 草稿箱**，不要本地 HTML 预览。
+- **Solution/Rule**: 「看一下 / 做一版稿件」→ `uv run python -m scripts.tools.wechat_mp_draft_batch --batch evening` 或 `wechat_mp_draft --kind …`（**无** `--dry-run`）；**禁止**默认写 `output/wechat_mp_*_preview.html`。校验清单可用 `--dry-run`；版式在 mp.weixin.qq.com 草稿预览。
+
+### 2026-06-04 晚间三篇金模版 · 完读钩子与移动排版（定稿）
+
+- **Context**: 用户审阅 `sector`/`dragons`/`top5` 推稿后确认「这一版可以」，要求金模版与代码一致：完读由 **代码注入**（非 LLM「往下看」导流），移动端段长与序号排版。
+- **Pitfall/Error**: ① LLM/变现把 Top5 **标题句式**（「XX领衔N只！收盘信号出炉…」）写进「筛选名单」正文。② 曾用「往下看」「→」做段间导流，观感像营销号。③ 单段过长、同行多个 `1. 2. 3.` 手机难读。
+- **Solution/Rule**:
+  - **金标准文档（2026-06-04）**：`.cursor/skills/wechat-mp-drafts/evening-trilogy-templates.md`（**· 轻过渡**、段长/序号、三稿骨架/勿回退）；五槽 `templates.md`；`rules-implemented.md` 脚注同日期。
+  - **完读钩子**：节间/股间/条间用 **`·` + 对比/验证口吻**；**禁止**「往下看」「接着读」「→」。共享 `wechat_mp_read_hooks.py`（`BRIDGE_MARK = "· "`）；`WECHAT_MP_READ_HOOKS=1`（分稿型可 `WECHAT_MP_*_READ_HOOKS=0`）。
+  - **成稿链**：`finalize_sector_body` / `finalize_top5_body` / `finalize_dragons_body`（+ market/news 手动稿）；Top5 另 `strip_top5_title_echo` in `wechat_mp_top5_article.py`。
+  - **移动排版**：`wechat_mp_readability.polish_mobile_readability` via `finalize_public_body_text`；`WECHAT_MP_PARA_MAX_CHARS`（默认 120）；`1. 2. 3.` **一行一项**；Top5 四字段各占一行。
+  - **标题示例（定稿）**：sector `A股行业｜资金流+沪深京板块：产业链怎么拆？` · top5 `新安股份领衔5只！收盘信号出炉，明日盯啥？`（**仅标题栏**）· dragons `情绪冰点怎么玩？郑州煤电3板还在榜`。
+  - **勿回退**：恢复「往下看/→」；Top5 标题句式进正文；去掉 `finalize_*_body` 或 `polish_mobile_readability`。
+  - **测试**：`pytest tests/unit/test_wechat_mp_read_hooks.py tests/unit/test_wechat_mp_top5_polish.py -q`。
+
+### 2026-06-03 微信公众号 · 晚间三篇金标准 + 19:00 定时
+
+- **Context**: 交易日 **19:00** 推 `evening` 三篇（**`sector` + `dragons` + `top5`**）；休市 `weekend` 仅 `sector`。版式见 skill 模板。
+- **Pitfall/Error**: ① 重建 HTML 时 `upload_images=False` **丢顶栏 banner**。② `WECHAT_MP_SOURCE_URL` 未关会出现「阅读原文」链 home-hub。③ LLM 内联免责 + 文末红框 = **双免责**。④ 曾按分节末插 CPS（结构判断/待验证事项）→ 用户要求改 **正文约 2/3**。⑤ `context_token ret=-2` 时 API 报错但草稿仍可能 `OK created`（wechat-acp token 过期，给机器人发一条消息后重试）。
+- **Solution/Rule**:
+  - **金标准文档（Agent 优先读）**：`.cursor/skills/wechat-mp-drafts/evening-trilogy-templates.md`；五槽总表 `templates.md`；代码映射 `rules-implemented.md`。
+  - **定时**：`evening` = `sector`+`dragons`+`top5`；`weekend` = `sector` 1 篇；`scripts/wechat_mp_draft_scheduled.sh` + plist `com.user.wechat-mp-draft-scheduled`；`stock-ai/docs/WECHAT_MP_SCHEDULING.md`。
+  - **行业封面**：与正文顶栏同源 **`assets/wechat_mp/banner.png`（牛马图）**；优先素材库 `封面-牛马品牌-双封面`，否则 `pick_sector_thumb_from_banner` 自动上传永久素材（`WECHAT_MP_SECTOR_THUMB_FROM_BANNER=1`）。勿用交易所屏顶替。
+  - **覆写命令**：`cd stock-ai && uv run python -m scripts.tools.wechat_mp_draft_batch --batch evening`。
+  - **版式（三篇共用）**：顶栏 banner + slogan；分节 `> 标题`（禁止「一、二、三」）；首节后才插图（200px）；文末 **1 处**红框免责 + 上一行 `#A股 #…`；默认 **无**阅读原文（`WECHAT_MP_READ_SOURCE_URL=0`）。
+  - **彩色开篇**（17px 居中 `#1a5276`）：`market` = `inject_market_opening_lede` 后在 `> 盘面速览` **前**；`top5` = `> 筛选名单` 首段；`dragons` = `> 情绪与盘面` 首段 → `opening_lede_paragraph_style` + `text_to_html(..., article_kind=)`。
+  - **返佣 CPS**：`inject_cpsad_at_body_ratio`（`cps_injection_index`，ratio **2/3**）；`WECHAT_MP_FOOTER_PRODUCT=1` + `WECHAT_MP_DAIHUO_UIN`；真机制 `mp-common-cpsad data-pid`，非 `getcardinfo product_key`（JD 10170001）。
+  - **免责**：`strip_inline_disclaimer_blocks` + `disclaimer_html`；market 勿在正文写「不构成投资建议」垫句（`wechat_mp_market_article` prompt）。
+  - **搜一搜 / 口吻**：`wechat_mp_seo.enrich_title_for_search`；标题池 `wechat_mp_market_titles --edition close`；正文 `RESEARCHER_VOICE_RULE` → `researcher-voice.md`。
+  - **标题示例**：见 **§2026-06-04 晚间三篇金模版**（钩子/排版以该节为准）。
+  - **统计**：`fetch_wechat_mp_analytics_opencli.py` → `output/wechat_mp_analytics_latest.json`（非官方 datacube）。
+  - **勿回退**：CPS 改回分节末；恢复双免责；去掉彩色开篇；默认开阅读原文外链；完读/段长见 §2026-06-04。
+
+### 2026-06-03 stock-ai 定时任务去重与文档对齐
+
+- **Context**: 检查股票相关 launchd/Docker cron；用户要求处理重复监控、废弃战报文档、一次性坏任务。
+- **Pitfall/Error**: ① `com.user.stock-holdings-monitor` 与 Docker `*/5 monitor` 双轨，OpenCLI 争抢。② `SCHEDULING.md` 仍写 09/12/15/20 `push_daily_briefing_wechat.sh`，但 crontab/host-jobs 已无 briefing。③ 选股 pipeline 常 `exit 1` 因 `微信 ret=-2`（数据已入库）。④ `install-stock-ai-scheduler.sh` 只 bootout 不删 plist，重启登录会再加载 holdings-monitor。
+- **Solution/Rule**:
+  - **监控唯一入口**：Docker scheduler → `run/monitor`；**勿**装 `holdings-monitor` launchd。
+  - **快讯定时**：`com.user.stock-macro-news-sync`（15min）替代战报微信推送；`install-daily-briefing-launchd.sh` 已废弃。
+  - **安装脚本**：`install-stock-ai-scheduler.sh` 会 `rm` 旧 plist（含 `watch-reminder-20260601`）。
+  - **文档真源**：[SCHEDULING.md](stock-ai/docs/SCHEDULING.md)（2026-06-03 更新）。
+  - **微信 token**：推送/选股失败时给 wechat-acp 发消息刷新；非 cron 配置问题。
+
+### 2026-06-05 公众号内容分析 · sector 标题勿用资金流
+
+- **Context**: OpenCLI 抓取 `daily_v2` 内容分析（昨日口径 2026-06-04），对照 `sousou-analytics-sop.md` 解读牛马也智能运营数据。
+- **Pitfall/Error**: ① 手动 `market`「收盘复盘：XX牵动哪些线」阅读/完读远高于 evening 三篇，**勿抄为标题模板**（SOP outlier）。② sector 标题「资金流+沪深京板块」系东财行业榜 **Tab 误抓**，阅读偏低且不利于搜一搜。③ `*ST`+代码标题阅读高但合规风险，**禁止复用**。④ 内容分析页「搜一搜%」≠ 搜一搜看板「搜索后阅读/关注」— **口径勿混**。
+- **Solution/Rule**:
+  - **保持**：`dragons`「情绪…怎么玩？…还在榜」— 样例稿（2026-06-02）单篇流量来源 **搜一搜 90.4%**。
+  - **本周只调一类**：`sector` 前 15 字写 **当日主线行业名** +「产业链怎么拆」；**禁「资金流」作主词**；推稿前 `wechat_mp_eval --kind sector --traffic`；选题见 `sector-discovery.md` / `wechat_mp_hot_theme.py`。
+  - **勿当模板**：高阅读 `market` 稿、`*ST`/代码标题、`workspace` 技术稿（完读常低、聊天直达）。
+  - **抓取**：`uv run python -m scripts.tools.fetch_wechat_mp_analytics_opencli --analytics-url '…token=…' -o output/wechat_mp_analytics_latest.json`；搜一搜看板另 `fetch_wechat_mp_sousou_opencli`（Chrome 看板 tab + `pluginuin=10071` bind）。
+  - **全号昨日参考（2026-06-04）**：阅读 253；来源 朋友圈 41.1% / 搜一搜 23.8% / 聊天 21.4% / 推荐 1.3%。
+  - **标题示例修正**：§2026-06-04 金模版中 sector 示例「资金流+沪深京板块」**仅作排版参照，勿再用于生产标题**；改以「A股行业｜{主线}：产业链怎么拆？」为准。
+
+### 2026-06-05 公众号 top5 · 东财人气榜（流量优先）
+
+- **Context**: 搜一搜搜索词与点击榜以 **票名** 为主；top5 改从东财人气榜选题以对齐流量。
+- **Pitfall/Error**: 多策略总分名单与热搜票错位；纯热股需滤 ST/禁码；勿用 `emappdata` 裸 HTTP（易异常）。
+  - **Solution/Rule**: 默认 `WECHAT_MP_TOP5_POOL=hot` · `fetch_hot_stocks_opencli` · `wechat_mp_hot_stocks.py`；失败回退 selection。详见 `memory-python.mdc` §2026-06-05 top5 人气榜。
+
+### 2026-06-08 evening 封面槽位与正文解耦
+
+- **Context**: 用户要求封面顺序永不变（1 牛马 → 2 多屏 → 3 财经），正文改为 news→dragons→sector 后，封面不能随 kind 绑定。
+- **Solution/Rule**: `cover_kind_for_content()` — 头条 news 用 `sector` 封面资源，次条 dragons 不变，三条 sector 用 `top5` 财经亮屏封面；`pick_thumb_for_draft_kind(cover_kind)` 在 `wechat_mp_draft_batch.run_batch` 写入各草稿 thumb。
+
+### 2026-06-08 evening 第三篇 top5 → 热股 news
+
+- **Context**: 用户定调：10 热股 news 清单比 top5 深拆更吃搜一搜/流量；不再默认定时 top5。
+- **Solution/Rule**: `SCHEDULE_BATCHES.evening.kinds` = `sector, dragons, news`；`_apply_batch_env` 设 `WECHAT_MP_HOT_STOCK_NEWS=1`（evening/weekend）；交易日快讯窗 `WECHAT_MP_WEEKDAY_HOT_NEWS_HOURS=36`。`top5` 仅手动 `--kind top5`。
+
+### 2026-06-11 牛马也智能 · wechat-mp-growth-ops Skill
+
+- **Context**: 用户要求增长运营 skill：带着牛马也智能持续涨阅读/变现，并整合草稿撰写流程。
+- **Solution/Rule**: 真源 `.cursor/skills/wechat-mp-growth-ops/` + `stock-ai/scripts/tools/wechat_mp_growth.py` + `data/wechat_mp_growth_focus.json`。18:20 notify 附增长块；`wechat_mp_growth_check` 判大行情；news 标题热股前置 + 开篇 eod 主线（`WECHAT_MP_GROWTH_THEME_LEDE=1`）。**人工必做**：每周 2 次控群转发头条（distribution）。
+
+### 2026-06-09 牛马也智能 · 321 读 market 稿为群聊分发特例
+
+- **Context**: 「收盘复盘：油价+半导体牵动哪些线？」近 30 天阅读 **321**，曾被 Agent 当作 market 自然流量上限 / 大行情标杆。
+- **Pitfall/Error**: 该篇高阅读主因是用户当日**手动转发到很多群聊**（聊天会话导流），**非**标题模板或盘面条线带来的常态 organic 表现；勿用于预测「发 market 就能 300+」或评估 evening 三篇策略成败。
+- **Solution/Rule**: 运营分析、定 KPI、讲「大行情日 market 预期」时 **排除 321 为 outlier**；organic 参考改用 evening 三篇合计（~60–100）、dragons/sector 单篇（~40–55）、英语 workspace（~235，破圈但低频）。群聊群发属**人工运营动作**，不计入脚本/定时批次效果。
+
+### 2026-06-08 牛马也智能 · 一天一次通知（禁止错开发表）
+
+- **Context**: 流量优化方案曾建议 evening 三篇 18:30/18:42/18:54 错开发表；用户确认为**个人号**，每天只能推送**一次**通知。
+- **Pitfall/Error**: Agent 或 SOP 若写「错开发表/分时段发表」，与微信平台能力冲突；多篇拆发也做不到（仅 1 次通知配额）。
+- **Solution/Rule**: 交易日 evening **同一次群发** sector+dragons+top5（2～3 篇在同一消息内）；**头条**放完读/结构最强稿；不达标篇从本批剔除。真源 `operations-sop.md` §写稿 18:20；`SKILL.md` / `INDEX.md`「后台发表」；**勿**再建议分时段发表。
+
+### 2026-06-08 readalong → HarryPutter 重命名
+
+- **Context**: 项目目录、Hub 路由、launchd、PWA 品牌统一改为 `harryputter`。
+- **Pitfall/Error**: 旧书签 `/readalong/web/` 与 `com.user.readalong` launchd 会 404；`.env` 若仍用 `READALONG_*` 需靠 `env_config.py` 回退或改 `HARRYPUTTER_*`。
+- **Solution/Rule**:
+  - **目录**：`harryputter/`（原 `readalong/`）；Skill：`harryputter-import`。
+  - **路由**：Caddy `/harryputter/*`；旧 `/readalong/*` 301 → `/harryputter/*`。
+  - **launchd**：`com.user.harryputter` · `harryputter/scripts/install-launchd.sh`。
+  - **URL**：`https://hub.yoloworld.site:8883/harryputter/web/` · 本机 `http://127.0.0.1:8791/web/`。
+
+### 2026-06-07 HarryPutter · 开源引流策略 + 公网试听须先加固
+
+- **Context**: HP 句级带读 PWA（`harryputter/`）拟用于技术分享引流，非卖听书；用户定调：**试读链接 + Git 开源，读者自备素材自建**。
+- **Pitfall/Error**: ① 若走「关注换全本账号」运维成本高且与开源定位不符。② **公网试听会扩大攻击面**：8883 映射整台 Caddy Hub（SideStore / home-hub / english-buddy / harryputter），不能只做 harryputter 半套防护。③ HP MP3/EPUB **不可进公开仓库**。
+- **Solution/Rule**:
+  - **策略真源**：`harryputter/docs/PRODUCT-STRATEGY.md`。
+  - **漏斗**：公众号/小红书技术文 → 试读 URL（外网 **仅 ch1**）+ GitHub → BYO 素材 `pipeline.sh` 本地玩。
+  - **admin 登录**：仅本人外网听全本（`.env` 勿提交）；**不**给读者发全本账号。
+  - **推广门禁**：完成 `PRODUCT-STRATEGY.md` §4.1 网络安全清单（+ 建议限速）**之前**，不主动推公网试读。
+  - **infra 联动**：见 `memory-infra.mdc` §2026-06-07 Hub 公网暴露检查项。
+
+### 2026-06-08 HarryPutter · hp01 全书 17 章中英音 QA
+
+- **Context**: 导入 hp01 ch12–17 后，用户要求全书检查英文 EPUB、中文、音频三者对齐。
+- **Pitfall/Error**: ① `attach_translation.py` 段落内 EN 句数 > ZH 句数时，旧逻辑只给前 N 句挂中文 → ch04/ch13–17 中文缺失 35%–38%。② `align_words.py` 插值区间过窄时 `start==end`（ch03 `Potter?` 0 秒）。③ ch05/ch11 美版 EPUB + Fry 英音词差大，插值句比例仍高（43%–67%），属预期半透明句。④ `verify_chapter.py` 只验 EPUB 词数 + manifest 行数，不验中文覆盖率与时间轴。
+- **Solution/Rule**:
+  - **全书审计**：`cd harryputter && python3 scripts/audit_book.py --book hp01`（EPUB/manifest/MP3/zh%/插值/时间轴）；`verify_chapter.py --book hp01 --chapter 1..17`。
+  - **修复后状态（2026-06-08）**：17/17 ready；中文 100%；0 FAIL；WARN 仅 ch05/ch11/ch16（插值或轻微 overlap）。
+  - **代码修复**：`attach_translation.py` 段落内按比例映射 ZH；`align_words.py` 插值每句最少 0.12s。
+  - **批量重对齐**（复用 Whisper 缓存）：`./scripts/realign_range.sh 1 17`；单章 `BOOK=hp01 ./scripts/pipeline.sh N`。
+  - **通过标准**：merged ≥95%；manifest lines=total_sentences；MP3 为 `samples/` 真实文件非外链 symlink；`audit_book.py` 无 FAIL。
+
+### 2026-06-08 HarryPutter · bilingual_clips 三步对齐（hp01 ch01 试点）
+
+- **Context**: ch01 0:31 音频已是「格朗宁/钻机」，中文却带「高大魁梧」——EPUB 索引挂译与音频细句不一致；用户提议 Agent 先分双语段再对音频。
+- **Pitfall/Error**: `en_to_zh_text` 按美版 EPUB 索引挂中文，当 EPUB 句数 ≠ 珍藏版句数 ≠ Whisper 切分时必错位；`line_zh_overrides` 只能补丁，难维护整章。
+- **Solution/Rule**:
+  - **三步**：① Agent 写 `fixes.bilingual_clips[]`（`{en, zh}` 叙事节拍）→ ② `align_words.py` 只对 `clips[].en` → ③ `attach_translation.py` 1:1 贴 `zh`（`translation_method: bilingual_clips`）。
+  - **试点**：`data/translation_fixes/hp01_ch01.json`（248 clips）；导出 `python3 scripts/export_bilingual_clips.py --book hp01 --chapter 1`。
+  - **无 clips 章**：仍走 `en_to_zh` + `line_splits`（ch04 等）。真源 `harryputter/docs/TRANSLATION-ALIGNMENT.md` · `harryputter-import` SKILL。
+
+### 2026-06-12 牛马也智能 · 平台「财产安全 / 不适合推荐」
+
+- **Context**: 6/12 evening 批（news/dragons/sector）发文后未进微信推荐；后台提示**财产安全风险 / 不适合推荐**。根因是标题与免责用语像「投资操作 / 推荐名单 / 理财日记」，而非正文数据本身。
+- **Pitfall/Error**: ① 标题 **`怎么玩` `还在榜` `领衔` `热股N条`** 是高频触发词（6/12 四篇全中）。② 免责声明写 **「投资日记」** 易被归理财类。③ 正文全局替换 **`明日计划`→`次日验证`** 会误伤 dragons 小节 **`> 明日计划与纪律`**（已撤销）。④ **代码只保护下一批草稿**；已发布稿须后台改标题或等 18:20 新批。
+- **Solution/Rule**:
+  - **标题禁/改**：禁 `怎么玩` `还在榜` `明日盯` `收盘信号出炉` `领衔`；`热股`→`人气`；`投资日记`→`复盘笔记`。
+  - **安全模板**：dragons `{phase}梯队｜{lead}{N}板结构` · sector `{lead}关联观察` · news `A股人气{n}条` · top5 `A股观察｜{lead}等{n}只，结构怎么读？`
+  - **6/12 对照**：news「热股10条」→「人气10条」；dragons「怎么玩…还在榜」→「高潮梯队｜中化国际4板结构」；sector「领衔」→「等/关联观察」。
+  - **推稿门禁**：`wechat_mp_draft_batch` 推前 `audit_recommendation_safety(title,digest,body)`，不过则 stderr 拒推；`_article_shell` 必经 `sanitize_public_title`。
+  - **真源代码**：`stock-ai/scripts/tools/wechat_mp_public.py`（`PLATFORM_PROPERTY_RISK_CHECKS` · `sanitize_public_title` · `INFORMATION_NOTICE`）；SEO 负分见 `wechat_mp_seo.title_sousou_hook_score`。
+  - **验证**：`cd stock-ai && uv run pytest tests/unit/test_wechat_mp_public.py tests/unit/test_wechat_mp_seo.py -q`；单篇 `uv run python -m scripts.tools.wechat_mp_eval --kind sector --traffic`。
+  - **技术细节**：`memory-python.mdc` §2026-06-12。
+
+### 2026-06-14 牛马也智能 · 【说明】开篇重复叠加
+
+- **Context**: 6/14 news 草稿文首出现 **3 段相同【说明】**；与 6/12 平台审核优化同属合规成稿链路。
+- **Pitfall/Error**: 多次 `render_article_content_html`（含 hashtag sync、CTA 二次渲染）+ 合规清洗改写说明内「投资操作/收益判断」→ 旧说明无法被 `notice not in core` 识别 → 叠段。
+- **Solution/Rule**:
+  - **代码**：`strip_information_notices()` 渲染前剥旧说明；说明行不参与 `sanitize_platform_property_risk`；每篇终稿 **仅 1 段**标准 `INFORMATION_NOTICE`。
+  - **已污染草稿**：抽 HTML 正文 → strip → 重渲染 → `upsert_draft_article`（6/14 news 已执行）。
+  - **验证**：`pytest tests/unit/test_wechat_mp_disclaimer_render.py -q`；草稿箱 `text.count('【说明】') == 1`。
+  - **技术细节**：`memory-python.mdc` §2026-06-14 · `rules-implemented.md` 平台推荐安全表。
+
+### 2026-06-16 牛马也智能 · 内容分析页面抓取 + 渠道底盘（限推后）
+
+- **Context**: 复盘 6/2 起每日 **推荐 / 搜一搜** 占比；用户要求 **只读页面柱图**，不用 `get_article_stat_tendency_and_source` API（API 单日与柱图口径不一致，如 6/15 API 18.5% vs 页面 3.9%）。
+- **Pitfall/Error**: ① 点「昨日」**不会**改流量分析 picker（常仍 5/17–6/15）→ 柱图 推荐 **7.3%** 是 **30 天累计**，非单日。② 日历 picker 头栏**无右箭头**，须点 **「MM月」** 选月再点日。③ 「不适合推荐」≠ 推荐渠道归零（6/10 仍可有 11.4% 存量推荐读）。
+- **Solution/Rule**:
+  - **抓取**：OpenCLI 设 picker **D–D** → `EXTRACT_HIGHCHARTS_TRAFFIC_JS`；`fetch_wechat_mp_analytics_opencli --daily-series --series-begin … --series-end …`；输出 `output/wechat_mp_recommend_daily_page_*.json`。
+  - **6/2–6/15 页面单日（节选）**：搜一搜交易日常 **30%–63%**（6/5、6/8–6/10）；推荐 **2%–12%** 波动，6/15 **3.9%**（76 读）；6/3 大读 733 靠聊天 49.9% 非 SEO。
+  - **账号状态**：**搜一搜主引擎** + 推荐 **偏弱未恢复**；限推窗口约 6/5–6/12；新稿合规后推荐回升 **滞后 1–2 周**；须 **后台改已发违规标题** + 盯 picker=单日 推荐% 是否从 ~4% 缓升。
+  - **Skill**：`content-analytics-sop.md` · `wechat-mp-growth-ops/analytics-sop.md` §渠道底盘 · `stock-opencli` reference。
+  - **技术细节**：`memory-python.mdc` §2026-06-16。
+
+### 2026-06-08 牛马也智能 · 影视试跑模板 tv_review_v1
+
+- **Context**: HBO《亢奋》S3 剧评试跑定稿；需锁定结构、后处理与敏感词策略，换片不重发明模板。
+- **Pitfall/Error**: ① 改稿若重跑 DeepSeek 会全文漂移。② R 级词（毒品/性场面/血腥）易触发限流。③ 财经号文末「推荐 ♡ / 复盘」会误注入 tv_review。④ 评分开头、两图相邻、第三节重复「人物」bullet 曾出排版 bug。
+- **Solution/Rule**:
+  - **真源**：`stock-ai/data/wechat_mp_tv_review_template.json` · `docs/WECHAT_MP_TV_REVIEW.md` · golden `data/wechat_mp_tv_review_golden/euphoria.body_core.md` · cache `data/wechat_mp_tv_body_cache.json`。
+  - **5 节口语小标题**（定稿示例见 JSON）；评分插在第一节第一段后；3 张豆瓣剧照；无 banner / 无财经免责。
+  - **敏感词**：正文避免毒品/成瘾/性场面/血腥等直白词，替换表见 template `sensitive_words`；DeepSeek prompt 经 `template_prompt_block()` 注入。
+  - **工作流**：新片 `wechat_mp_draft --kind tv_review`；微调 `wechat_mp_repush_tv_review_draft`（禁止 LLM 全文重写）。
+  - **Skill 导航**：`.cursor/skills/wechat-mp-drafts/INDEX.md` §影视试跑。
+  - **2026-07-31 院线单片大白话/排版**：见 `memory-python.mdc` §2026-07-31；金样 `spider_man_brand_new_day.body_core.md`；skill `tv-review-template.md` §固化规则。
+
+### 2026-08-02 11:00 话题讨论稿 · 完整踩坑清单
+
+- **Context**: 11:00 社会/文娱话题讨论稿（`content_mode=discussion`）；金样口吻 `data/wechat_mp_tv_review_golden/spider_man_brand_new_day.body_core.md`（先事实、后议论，像朋友转述报道）。
+- **Pitfall/Error**:
+  - **取材**：东财泛搜「婚姻/试管婴儿」→ K 线、财报图，与事件无关；社会话题须 **360 新闻搜热搜原句** + 缓存 `research_urls` 手补。
+  - **配图**：新浪小图（~26KB）糊；须全页候选 **≥80KB** 按体积取 Top3，**网易 dingyue.ws.126.net** 优先；下载 Referer 用**报道页 URL**（非图片 URL，否则 403）。
+  - **封面 vs 正文**：**封面 = sector 牛马主图**；**正文插图 = 同题报道事件图**（勿混用）。
+  - **AI 结构套话**：「第一/二条线」「一块盯…另一块…」「不是 A 而是 B」「惹眼…其实是」「吵得最凶」「说到底」「二次发酵」。
+  - **AI 导读/meta**：「刷到这条热搜」「第一反应是」「往下翻才知道」「不是几句口水能收场」「热搜底下吵归吵」——首段须**直接写人+事**。
+  - **假口语/空词**：挺寒的、从别的口子、惹另一拨人起火、基本盘、落锤、条线上、掰扯一摞、这茬、拆不掉的账。
+  - **纯 LLM 成稿**：即使 prompt 写了规则仍 AI 味重 → 须仿同题报道 + 手改 `body_core` 缓存后 `wechat_mp_repush_tv_review_draft`。
+- **Solution/Rule**:
+  - **代码**：`wechat_mp_discussion_research.py`（360 检索+仿写块）· `wechat_mp_discussion_figures.py`（≥80KB 配图池）· `wechat_mp_tv_review_article.py`（`_discussion_voice_prompt_block`）· `tv_topic_uses_brand_cover` → sector 封面。
+  - **SOP**：`.cursor/skills/wechat-mp-drafts/tv-morning-discussion-sop.md` §三·§五·§六。
+  - **人工定稿**：`data/wechat_mp_tv_body_cache/{cover_slug}.json`（`body_core` + `research_urls` + `content_mode=discussion`）。
+  - **重推**：`WECHAT_MP_DISCUSSION_FIGURES_FORCE=1 uv run python -m scripts.tools.wechat_mp_repush_tv_review_draft --title-en {cover_slug}`。
+
+### 2026-08-02 话题讨论稿 · 推荐流量复盘（胚胎案 / 八仙 vs 罗正）
+
+- **Context**: 牛马也智能发 11:00 话题讨论稿；用户反馈「伪造结婚证/胚胎案」「暑期档·八仙」有**推荐流量**，「罗正哭穷」几乎无推荐。
+- **Pitfall/Error**: ① 仅用 `discussion_score` / 微博在榜选题，会选中**小众明星八卦**（罗正、赞达亚耳环）——微博有吵，但微信推荐池「路人盘」小。② 标题依赖人名（罗正）→ 路人 CTR 低。③ 三线艺人 + 卖惨争议 → 路人反感划走，完读/互动差。④ 单榜「新」档、无百度，衰减快。⑤ 配图 junk（网易文末推荐图）会进一步伤完读。
+- **Solution/Rule**:
+  - **有推荐流量的共性**：国民议题（婚育/医院/法律）或大众片名+公共数据（八仙、70亿）；标题**不点开也懂**（伪造结婚证、患癌、传票 / 黑马压蜘蛛侠）；**可站队**（原配 vs 劝和 / 国产动画 vs 好莱坞）；双榜或持续发酵。
+  - **难起推荐的共性**：小众明星、抽象行业议论、需先认识人名；情绪以「质疑卖惨」为主；与账号财经标签弱相关。
+  - **推稿前四关**（见 `tv-morning-discussion-sop.md` §八）：路人测试 · 站队测试 · 双榜/热档测试 · 搜索实体测试。
+  - **实证对照**：有推荐 — `chugui-shiguan-yuanpei`（伪造结婚证做试管）、`2026暑期档总票房`（八仙黑马）；无推荐 — `男演员因穷翻红`（罗正跪谢）。

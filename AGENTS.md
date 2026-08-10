@@ -5,12 +5,20 @@
 ## 必须遵守
 
 - 用户可见内容、UI 与汇报禁止 emoji。
-- 先读 `.cursor/rules/project-memory.mdc` 前 60 行主题索引；用 `rg` 定位相关条目，再按需读 **一个**子项目记忆。不要整份加载任何 `memory-*.mdc`。
+- 先用 `project-registry/projects.json` 或 `scripts/workspace_preflight.py` 定位项目，再读项目入口文档。
+- 再读 `.cursor/rules/project-memory.mdc` 的短索引；用 `rg` 在命中的 **一个**专项 Memory 中定位相关条目。不要整份加载任何 `memory-*.mdc`。
+- 跨项目稳定知识先查 `docs/wiki/`；`draft`、过期或涉及当前外部状态时必须回源。
 - 新功能先做简短设计和计划；修改后运行最相关的验证。
 - 不提交 `.env`、证书、订阅链接、持仓或个人记忆。
 - 复杂流程可用 Superpowers；其规则在 `.cursor/rules/superpowers.mdc`。
 
 ## 项目路由
+
+不确定子项目时先运行：
+
+```bash
+python3 scripts/workspace_preflight.py --project <project-id> --risk normal
+```
 
 | 任务 | 先读 |
 |---|---|
