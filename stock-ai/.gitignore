@@ -49,3 +49,4 @@ data/
 
 # Codex 公众号补图续跑请求（运行时生成）
 assets/wechat_mp/inline-discussion/*/codex-image-request.json
+assets/wechat_mp/inline-discussion/*/codex-images-ready.json

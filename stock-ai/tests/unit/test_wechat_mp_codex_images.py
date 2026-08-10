@@ -168,3 +168,43 @@ def test_prepare_hotspot_accepts_generated_cover_and_body_images(
     )
 
     assert not (out_dir / "codex-image-request.json").exists()
+
+
+def test_prepare_hotspot_resume_skips_completed_network_fetch(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    out_dir = tmp_path / "topic"
+    _patch_report_fetch(monkeypatch, root=tmp_path, report_names=())
+    monkeypatch.setattr(
+        images_mod.figures_mod,
+        "ensure_discussion_body_figures",
+        lambda _topic, *, max_images: [],
+    )
+    topic = {"cover_slug": "topic", "trend_title": "事件"}
+    with pytest.raises(CodexImageGenerationRequired):
+        prepare_hotspot_topic_images(topic, body_count=3)
+    _valid_image(out_dir / "cover.jpg")
+    for index in range(1, 4):
+        _valid_image(out_dir / f"manual-{index:02d}.jpg")
+
+    monkeypatch.setattr(
+        images_mod.figures_mod,
+        "ensure_discussion_figures",
+        lambda _topic, *, max_images: pytest.fail("补图完成后不应再次联网抓图"),
+    )
+    monkeypatch.setattr(
+        images_mod.figures_mod,
+        "ensure_discussion_body_figures",
+        lambda _topic, *, max_images: [
+            {
+                "rel": f"discussion/topic/manual-{index:02d}.jpg",
+                "cap": "原创新闻插画",
+            }
+            for index in range(1, max_images + 1)
+        ],
+    )
+
+    prepare_hotspot_topic_images(topic, body_count=3)
+
+    assert (out_dir / "codex-images-ready.json").is_file()

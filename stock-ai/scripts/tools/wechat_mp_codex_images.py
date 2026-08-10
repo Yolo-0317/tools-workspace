@@ -10,6 +10,7 @@ from typing import Any, Iterable
 from scripts.tools import wechat_mp_discussion_figures as figures_mod
 
 REQUEST_FILENAME = "codex-image-request.json"
+READY_FILENAME = "codex-images-ready.json"
 SOURCES_FILENAME = "image-sources.json"
 SAFETY_RULES = (
     "原创新闻插画，不得伪造新闻现场",
@@ -155,6 +156,58 @@ def _clear_request(out_dir: Path) -> None:
     (out_dir / REQUEST_FILENAME).unlink(missing_ok=True)
 
 
+def _completed_request(out_dir: Path, *, article_type: str) -> bool:
+    request_path = out_dir / REQUEST_FILENAME
+    try:
+        payload = json.loads(request_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    if payload.get("article_type") != article_type:
+        return False
+    slots = payload.get("slots")
+    if not isinstance(slots, list) or not slots:
+        return False
+    root = out_dir.resolve()
+    for slot in slots:
+        if not isinstance(slot, dict):
+            return False
+        output_path = Path(str(slot.get("output_path") or ""))
+        if output_path.parent.resolve() != root or not _valid_image(output_path):
+            return False
+    return True
+
+
+def _mark_ready(out_dir: Path, *, article_type: str, topic: str) -> None:
+    (out_dir / READY_FILENAME).write_text(
+        json.dumps(
+            {"schema_version": 1, "article_type": article_type, "topic": topic},
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    _clear_request(out_dir)
+
+
+def _clear_ready(out_dir: Path) -> None:
+    (out_dir / READY_FILENAME).unlink(missing_ok=True)
+
+
+def _cached_report_figures(out_dir: Path, *, slug: str) -> list[dict[str, str]]:
+    meta = figures_mod._load_figure_sources(out_dir)
+    return [
+        {
+            "rel": f"discussion/{slug}/{path.name}",
+            "cap": "图源：公开报道（引用）",
+        }
+        for path in sorted(out_dir.glob("still-*.*"))
+        if _valid_image(path)
+        and str((meta.get(path.name) or {}).get("page_url") or "").startswith(
+            ("http://", "https://")
+        )
+    ]
+
+
 def prepare_newspic_topic_images(
     *,
     topic: str,
@@ -174,7 +227,18 @@ def prepare_newspic_topic_images(
         slug=slug,
     )
     out_dir = _out_dir(topic_dict)
-    figures = figures_mod.ensure_discussion_figures(topic_dict, max_images=target_count)
+    resumed = _completed_request(out_dir, article_type="newspic")
+    if resumed:
+        _mark_ready(out_dir, article_type="newspic", topic=normalized_topic)
+        figures = _cached_report_figures(
+            out_dir,
+            slug=figures_mod._slug(topic_dict),
+        )
+    else:
+        figures = figures_mod.ensure_discussion_figures(
+            topic_dict,
+            max_images=target_count,
+        )
     report_paths, sources = _report_assets(figures, out_dir=out_dir)
     manual_paths = _manual_paths(
         out_dir,
@@ -187,6 +251,7 @@ def prepare_newspic_topic_images(
             "fallback_reason": "同题公开报道图不足，由 Codex ImageGen 原创补位",
         }
     if len(image_paths) < target_count:
+        _clear_ready(out_dir)
         missing = target_count - len(image_paths)
         slots: list[dict[str, str]] = []
         next_index = 1
@@ -220,7 +285,7 @@ def prepare_newspic_topic_images(
             request_path=request_path,
             missing_count=missing,
         )
-    _clear_request(out_dir)
+    _mark_ready(out_dir, article_type="newspic", topic=normalized_topic)
     sources_path = out_dir / SOURCES_FILENAME
     sources_path.write_text(
         json.dumps(sources, ensure_ascii=False, indent=2),
@@ -243,10 +308,18 @@ def prepare_hotspot_topic_images(
     if not normalized_topic:
         raise ValueError("长图文自动取图须提供非空 topic")
     out_dir = _out_dir(topic)
-    report_figures = figures_mod.ensure_discussion_figures(
-        topic,
-        max_images=max(4, body_count + 2),
-    )
+    resumed = _completed_request(out_dir, article_type="hotspot")
+    if resumed:
+        _mark_ready(out_dir, article_type="hotspot", topic=normalized_topic)
+        report_figures = _cached_report_figures(
+            out_dir,
+            slug=figures_mod._slug(topic),
+        )
+    else:
+        report_figures = figures_mod.ensure_discussion_figures(
+            topic,
+            max_images=max(4, body_count + 2),
+        )
     report_paths, _sources = _report_assets(report_figures, out_dir=out_dir)
     cover_ready = _valid_image(out_dir / "cover.jpg") or bool(report_paths)
     body_figures = figures_mod.ensure_discussion_body_figures(
@@ -297,6 +370,7 @@ def prepare_hotspot_topic_images(
         )
         missing_body -= 1
     if slots:
+        _clear_ready(out_dir)
         request_path = _write_request(
             out_dir=out_dir,
             article_type="hotspot",
@@ -309,4 +383,4 @@ def prepare_hotspot_topic_images(
             request_path=request_path,
             missing_count=len(slots),
         )
-    _clear_request(out_dir)
+    _mark_ready(out_dir, article_type="hotspot", topic=normalized_topic)

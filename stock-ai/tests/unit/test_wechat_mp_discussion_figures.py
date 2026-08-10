@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from scripts.tools.wechat_mp_discussion_figures import (
     _is_event_image_url,
     _looks_like_content_photo,
@@ -178,6 +180,25 @@ def test_force_refetch_keeps_generated_cover_when_reports_still_missing(
     )
 
     assert result == cover
+
+
+def test_codex_ready_marker_skips_repeated_report_search(tmp_path, monkeypatch) -> None:
+    from scripts.tools import wechat_mp_discussion_figures as mod
+
+    out_dir = tmp_path / "demo-topic"
+    out_dir.mkdir()
+    (out_dir / "codex-images-ready.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(mod, "INLINE_DISCUSSION_ROOT", tmp_path)
+    monkeypatch.setattr(
+        mod,
+        "fetch_discussion_research",
+        lambda *_args, **_kwargs: pytest.fail("ready 标记存在时不应重新检索报道"),
+    )
+
+    assert mod.ensure_discussion_figures(
+        {"cover_slug": "demo-topic", "trend_title": "演示事件"},
+        max_images=3,
+    ) == []
 
 
 def test_paragraph_blocks_skips_figure_lines() -> None:

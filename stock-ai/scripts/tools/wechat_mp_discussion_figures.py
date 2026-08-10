@@ -1123,6 +1123,12 @@ def ensure_discussion_figures(topic: dict[str, Any], *, max_images: int = 3) -> 
         return []
     slug = _slug(topic)
     out_dir = INLINE_DISCUSSION_ROOT / slug
+    if (out_dir / "codex-images-ready.json").is_file():
+        return _figure_dicts_from_dir(
+            out_dir,
+            slug=slug,
+            max_images=max_images,
+        )
     keywords = _topic_figure_keywords(topic)
     figure_meta = _load_figure_sources(out_dir)
     existing = sorted(out_dir.glob("still-*.*")) if out_dir.is_dir() else []
