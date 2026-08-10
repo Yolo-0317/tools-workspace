@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, timezone
-from decimal import Decimal
 from enum import Enum
 from typing import Literal
 
@@ -40,6 +39,7 @@ class ReleaseMode(str, Enum):
 
 
 class EvidenceKind(str, Enum):
+    MARKET = "MARKET"
     DAILY_BAR = "DAILY_BAR"
     STOCK_BASIC = "STOCK_BASIC"
     QUOTE = "QUOTE"
@@ -59,7 +59,6 @@ class ContractModel(BaseModel):
         extra="forbid",
         frozen=True,
         str_strip_whitespace=True,
-        json_encoders={Decimal: lambda value: format(value, "f")},
     )
 
     schema_version: Literal["1.1"] = "1.1"
