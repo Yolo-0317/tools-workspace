@@ -51,7 +51,7 @@ JSON.stringify((() => {
     const hasHeader = body.includes("证券代码") || body.includes("证券名称");
     const hasRow = [...document.querySelectorAll("table tr")].some(tr => {
       const cells = [...tr.querySelectorAll("td")].map(td => (td.innerText || "").trim());
-      return cells.length >= 10 && /^\\d{6}$/.test(cells[0]);
+      return cells.length >= 11 && /^\\d{6}$/.test(cells[0]);
     });
     return { logged_in: hasHeader || hasRow, page: "position", url: location.href };
   }
@@ -76,7 +76,7 @@ JSON.stringify((() => {
     const cells = [...tr.querySelectorAll("td")].map(td =>
       (td.innerText || "").replace(/\s+/g, " ").trim()
     );
-    if (cells.length >= 10 && /^\d{6}$/.test(cells[0])) {
+    if (cells.length >= 11 && /^\d{6}$/.test(cells[0])) {
       positions.push({
         code: cells[0], name: cells[1], qty: cells[2], available: cells[3],
         cost: cells[4], price: cells[5], market_value: cells[6], pnl: cells[7],
@@ -227,7 +227,7 @@ def run_fetch(
 ) -> dict[str, Any]:
     cached = load_session_cache()
     if cached and _now() >= cached.expires_at:
-        print(f"⚠️ {session_status_message(cached)}", file=sys.stderr)
+        print(f"警告：{session_status_message(cached)}", file=sys.stderr)
 
     _open_page(JYWG_POSITION_URL)
     time.sleep(1.5)
@@ -344,7 +344,7 @@ def main() -> int:
             open_login_first=args.open_login,
         )
     except (RuntimeError, FileNotFoundError, json.JSONDecodeError) as exc:
-        print(f"❌ {exc}", file=sys.stderr)
+        print(f"失败：{exc}", file=sys.stderr)
         return 2
 
     text = json.dumps(payload, ensure_ascii=False, indent=2)
@@ -354,14 +354,14 @@ def main() -> int:
     print(f"已写入 {out_path}", file=sys.stderr)
 
     n = len(payload.get("positions") or [])
-    print(f"✅ 持仓 {n} 条；{session_status_message(load_session_cache())}", file=sys.stderr)
+    print(f"持仓 {n} 条；{session_status_message(load_session_cache())}", file=sys.stderr)
 
     if args.sync_db:
         from scripts.tools.jywg_portfolio_sync import sync_jywg_payload
 
         stats = sync_jywg_payload(payload)
         print(
-            f"💾 MySQL: positions={stats['positions']} account={stats['account']} (东方财富证券)",
+            f"MySQL: positions={stats['positions']} account={stats['account']} (东方财富证券)",
             file=sys.stderr,
         )
         if args.snapshot:
@@ -370,7 +370,7 @@ def main() -> int:
             for slot in ("sync", "eod"):
                 snap = save_portfolio_daily_snapshot(snapshot_slot=slot)
                 print(
-                    f"📸 快照 {slot}/{snap['snapshot_date']} "
+                    f"快照 {slot}/{snap['snapshot_date']} "
                     f"positions={snap['positions']}",
                     file=sys.stderr,
                 )

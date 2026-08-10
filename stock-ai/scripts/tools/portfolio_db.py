@@ -8,7 +8,7 @@ import os
 import re
 import sys
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -659,6 +659,150 @@ def sync_positions_and_account(
             acct_n = 1
 
     return {"positions": pos_n, "account": acct_n, "rules": 0}
+
+
+def _broker_timestamp(value: datetime) -> datetime:
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("broker_captured_at must be timezone-aware")
+    return value.astimezone(timezone.utc).replace(tzinfo=None)
+
+
+def _sync_broker_facts_with_connection(
+    positions, account, *, source: str, conn
+) -> dict[str, int]:
+    active_codes = [position.code for position in positions]
+    if active_codes:
+        placeholders = ", ".join(f":c{i}" for i in range(len(active_codes)))
+        params = {f"c{i}": code for i, code in enumerate(active_codes)}
+        conn.execute(
+            text(
+                f"UPDATE portfolio_positions SET is_active = 0 "
+                f"WHERE ts_code NOT IN ({placeholders})"
+            ),
+            params,
+        )
+    else:
+        conn.execute(text("UPDATE portfolio_positions SET is_active = 0"))
+
+    for position in positions:
+        conn.execute(
+            text(
+                """
+                INSERT INTO portfolio_positions
+                  (ts_code, name, asset_type, shares, available_shares, cost_price,
+                   current_price, market_value, position_pnl, position_pnl_pct,
+                   daily_pnl, daily_pnl_pct, broker_captured_at,
+                   status_note, action_note, source, is_active)
+                VALUES
+                  (:code, :name, :atype, :shares, :available, :cost,
+                   :price, :market, :pnl, :pnl_pct, :daily_pnl, :daily_pnl_pct,
+                   :captured_at, :status, :action, :source, 1)
+                ON DUPLICATE KEY UPDATE
+                  name = VALUES(name),
+                  asset_type = VALUES(asset_type),
+                  shares = VALUES(shares),
+                  available_shares = VALUES(available_shares),
+                  cost_price = VALUES(cost_price),
+                  current_price = VALUES(current_price),
+                  market_value = VALUES(market_value),
+                  position_pnl = VALUES(position_pnl),
+                  position_pnl_pct = VALUES(position_pnl_pct),
+                  daily_pnl = VALUES(daily_pnl),
+                  daily_pnl_pct = VALUES(daily_pnl_pct),
+                  broker_captured_at = VALUES(broker_captured_at),
+                  status_note = VALUES(status_note),
+                  action_note = VALUES(action_note),
+                  source = VALUES(source),
+                  is_active = 1
+                """
+            ),
+            {
+                "code": position.code,
+                "name": position.name,
+                "atype": position.asset_type,
+                "shares": position.shares,
+                "available": position.available_shares,
+                "cost": position.cost_price,
+                "price": position.current_price,
+                "market": position.market_value,
+                "pnl": position.position_pnl,
+                "pnl_pct": position.position_pnl_pct,
+                "daily_pnl": position.daily_pnl,
+                "daily_pnl_pct": position.daily_pnl_pct,
+                "captured_at": _broker_timestamp(position.broker_captured_at),
+                "status": position.status,
+                "action": position.action,
+                "source": source,
+            },
+        )
+
+    account_count = 0
+    if account.total_assets is not None or account.available_cash is not None:
+        conn.execute(
+            text(
+                """
+                INSERT INTO portfolio_account
+                  (id, total_assets, available_cash, cash_balance, withdrawable_cash,
+                   frozen_cash, market_value, position_ratio, holding_pnl, daily_pnl,
+                   snapshot_date, broker_captured_at)
+                VALUES
+                  (1, :total, :available, :balance, :withdrawable, :frozen,
+                   :market, :ratio, :holding_pnl, :daily_pnl, :snapshot_date, :captured_at)
+                ON DUPLICATE KEY UPDATE
+                  total_assets = VALUES(total_assets),
+                  available_cash = VALUES(available_cash),
+                  cash_balance = VALUES(cash_balance),
+                  withdrawable_cash = VALUES(withdrawable_cash),
+                  frozen_cash = VALUES(frozen_cash),
+                  market_value = VALUES(market_value),
+                  position_ratio = VALUES(position_ratio),
+                  holding_pnl = VALUES(holding_pnl),
+                  daily_pnl = VALUES(daily_pnl),
+                  snapshot_date = VALUES(snapshot_date),
+                  broker_captured_at = VALUES(broker_captured_at)
+                """
+            ),
+            {
+                "total": account.total_assets,
+                "available": account.available_cash,
+                "balance": account.cash_balance,
+                "withdrawable": account.withdrawable_cash,
+                "frozen": account.frozen_cash,
+                "market": account.market_value,
+                "ratio": account.position_ratio,
+                "holding_pnl": account.holding_pnl,
+                "daily_pnl": account.daily_pnl,
+                "snapshot_date": account.broker_captured_at.astimezone(timezone.utc).date(),
+                "captured_at": _broker_timestamp(account.broker_captured_at),
+            },
+        )
+        account_count = 1
+    return {"positions": len(positions), "account": account_count, "rules": 0}
+
+
+def sync_broker_positions_and_account(
+    positions,
+    account,
+    *,
+    source: str = "jywg",
+    engine: Engine | None = None,
+    connection=None,
+) -> dict[str, int]:
+    """保存完整券商事实，不读取或修改 alert_rules。"""
+
+    normalized_source = (source or "jywg").strip() or "jywg"
+    if connection is not None:
+        return _sync_broker_facts_with_connection(
+            positions, account, source=normalized_source, conn=connection
+        )
+
+    target_engine = engine or get_engine()
+    if target_engine is None:
+        raise RuntimeError("未配置 MYSQL_URL，无法同步")
+    with target_engine.begin() as conn:
+        return _sync_broker_facts_with_connection(
+            positions, account, source=normalized_source, conn=conn
+        )
 
 
 def upsert_alert_rules(rules: list[dict], *, source: str, conn) -> int:
@@ -2501,4 +2645,3 @@ def list_advisor_weekly_reviews(*, limit: int = 12) -> list[dict[str, Any]]:
 def latest_advisor_weekly_review() -> dict[str, Any] | None:
     rows = list_advisor_weekly_reviews(limit=1)
     return rows[0] if rows else None
-
