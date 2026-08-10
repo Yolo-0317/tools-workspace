@@ -157,6 +157,29 @@ def test_manual_figures_are_used_as_original_illustration_fallback(tmp_path) -> 
     ]
 
 
+def test_force_refetch_keeps_generated_cover_when_reports_still_missing(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    from PIL import Image
+    from scripts.tools import wechat_mp_discussion_figures as mod
+
+    out_dir = tmp_path / "demo-topic"
+    out_dir.mkdir()
+    cover = out_dir / "cover.jpg"
+    Image.effect_noise((900, 383), 100).convert("RGB").save(cover, quality=94)
+    monkeypatch.setattr(mod, "INLINE_DISCUSSION_ROOT", tmp_path)
+    monkeypatch.setattr(mod, "ensure_discussion_figures", lambda _topic, max_images: [])
+    monkeypatch.setattr(mod, "_pick_discussion_cover_source", lambda _out, _topic: None)
+    monkeypatch.setenv("WECHAT_MP_DISCUSSION_FIGURES_FORCE", "1")
+
+    result = mod.ensure_discussion_cover(
+        {"cover_slug": "demo-topic", "trend_title": "演示事件"}
+    )
+
+    assert result == cover
+
+
 def test_paragraph_blocks_skips_figure_lines() -> None:
     paragraphs = _split_body_paragraphs("段落一。\n\n[[fig:x|]]\n\n段落二。")
     text_idxs = _text_paragraph_indices(paragraphs)

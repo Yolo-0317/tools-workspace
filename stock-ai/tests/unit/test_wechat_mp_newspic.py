@@ -1,3 +1,4 @@
+from argparse import Namespace
 from pathlib import Path
 
 import pytest
@@ -6,6 +7,10 @@ from scripts.tools import wechat_mp_newspic
 from PIL import Image
 
 from scripts.tools.wechat_mp_newspic import add_image_watermark, build_newspic_article, upsert_newspic_draft, validate_newspic_image_sources, validate_newspic_input
+from scripts.tools.wechat_mp_codex_images import (
+    CodexImageGenerationRequired,
+    PreparedTopicImages,
+)
 
 
 def test_build_newspic_article_uses_image_message_shape() -> None:
@@ -59,3 +64,165 @@ def test_upsert_newspic_draft_creates_slot_record(tmp_path: Path, monkeypatch: p
     assert (media_id, action) == ("draft-media-id", "created")
     assert captured["article"]["article_type"] == "newspic"
     assert captured["slot"] == "newspic_test"
+
+
+def test_resolve_newspic_images_uses_topic_preparer(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from scripts.tools import wechat_mp_newspic_draft as draft_cli
+
+    first = tmp_path / "still-01.jpg"
+    second = tmp_path / "manual-01.jpg"
+    sources = tmp_path / "image-sources.json"
+    captured: dict[str, object] = {}
+
+    def fake_prepare(**kwargs) -> PreparedTopicImages:
+        captured.update(kwargs)
+        return PreparedTopicImages((first, second), sources)
+
+    monkeypatch.setattr(draft_cli, "prepare_newspic_topic_images", fake_prepare)
+    args = Namespace(
+        topic="具体事件",
+        research_url=["https://example.com/report"],
+        image_count=6,
+        images=None,
+        image_sources=None,
+    )
+
+    image_paths, sources_path = draft_cli._resolve_newspic_images(args)
+
+    assert image_paths == [first, second]
+    assert sources_path == sources
+    assert captured == {
+        "topic": "具体事件",
+        "research_urls": ["https://example.com/report"],
+        "target_count": 6,
+    }
+
+
+@pytest.mark.parametrize(
+    ("args", "message"),
+    [
+        (
+            Namespace(
+                topic="具体事件",
+                research_url=[],
+                image_count=6,
+                images=[Path("a.jpg")],
+                image_sources=None,
+            ),
+            "不能同时",
+        ),
+        (
+            Namespace(
+                topic="",
+                research_url=[],
+                image_count=6,
+                images=[Path("a.jpg")],
+                image_sources=None,
+            ),
+            "必须同时",
+        ),
+        (
+            Namespace(
+                topic="",
+                research_url=[],
+                image_count=6,
+                images=None,
+                image_sources=Path("sources.json"),
+            ),
+            "必须同时",
+        ),
+    ],
+)
+def test_resolve_newspic_images_rejects_invalid_mode_combinations(
+    args: Namespace,
+    message: str,
+) -> None:
+    from scripts.tools import wechat_mp_newspic_draft as draft_cli
+
+    with pytest.raises(ValueError, match=message):
+        draft_cli._resolve_newspic_images(args)
+
+
+def test_newspic_main_returns_recoverable_status_for_codex_image_request(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from scripts.tools import wechat_mp_newspic_draft as draft_cli
+
+    request_path = tmp_path / "codex-image-request.json"
+    request_path.write_text("{}", encoding="utf-8")
+
+    def require_generation(**_kwargs) -> PreparedTopicImages:
+        raise CodexImageGenerationRequired(
+            request_path=request_path,
+            missing_count=2,
+        )
+
+    monkeypatch.setattr(draft_cli, "prepare_newspic_topic_images", require_generation)
+    monkeypatch.setattr(
+        draft_cli,
+        "upsert_newspic_draft",
+        lambda **_kwargs: pytest.fail("缺图时不应调用微信公众号草稿 API"),
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "wechat_mp_newspic_draft",
+            "--title",
+            "具体事件为什么引发争议？",
+            "--content",
+            "这是贴图说明。",
+            "--topic",
+            "具体事件",
+        ],
+    )
+
+    assert draft_cli.main() == 2
+    error = capsys.readouterr().err
+    assert "需要 Codex 原创补图" in error
+    assert str(request_path) in error
+
+
+def test_newspic_main_dry_run_never_calls_wechat_api(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from scripts.tools import wechat_mp_newspic_draft as draft_cli
+
+    image = tmp_path / "image.jpg"
+    sources = tmp_path / "image-sources.json"
+    Image.new("RGB", (640, 960), color=(30, 60, 90)).save(image)
+    sources.write_text(
+        '{"image.jpg":{"source_type":"report","page_url":"https://example.com/a"}}',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        draft_cli,
+        "upsert_newspic_draft",
+        lambda **_kwargs: pytest.fail("dry-run 不应调用微信公众号草稿 API"),
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "wechat_mp_newspic_draft",
+            "--title",
+            "标题",
+            "--content",
+            "说明",
+            "--images",
+            str(image),
+            "--image-sources",
+            str(sources),
+            "--dry-run",
+        ],
+    )
+
+    assert draft_cli.main() == 0
+    output = capsys.readouterr().out
+    assert "DRY-RUN" in output
+    assert str(image) in output

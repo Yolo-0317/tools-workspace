@@ -935,6 +935,7 @@ def build_hotspot_article(
             ensure_discussion_cover,
             inject_discussion_figures,
         )
+        from scripts.tools.wechat_mp_codex_images import prepare_hotspot_topic_images
 
         topic_dict = topic_override or hotspot_topic_as_discussion(topics[0])
         hotspot_mod._LAST_BUILT_HOTSPOT_TOPIC = topic_dict
@@ -950,11 +951,16 @@ def build_hotspot_article(
                 or (codex_draft.slot_key if codex_draft else "")
             ),
         )
-        body_core = inject_discussion_figures(polished, topic_dict)
         figure_target = discussion_body_figure_target()
-        if body_core.count("[[fig:") < figure_target and os.getenv(
+        figures_required = os.getenv(
             "WECHAT_MP_HOTSPOT_REQUIRE_FIGURES", "1"
-        ).strip().lower() not in {"0", "false", "no", "off"}:
+        ).strip().lower() not in {"0", "false", "no", "off"}
+        prepare_hotspot_topic_images(
+            topic_dict,
+            body_count=figure_target if figures_required else 0,
+        )
+        body_core = inject_discussion_figures(polished, topic_dict)
+        if body_core.count("[[fig:") < figure_target and figures_required:
             raise RuntimeError(
                 f"热点深评正文配图不足 {figure_target} 张可用事件图（当前 {body_core.count('[[fig:')}），"
                 f"已拒绝推送：{topic_dict.get('title_zh') or ''}"

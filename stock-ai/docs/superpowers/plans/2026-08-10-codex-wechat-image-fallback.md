@@ -155,7 +155,7 @@ Expected: all focused long-form image tests pass.
 
 **Interfaces:**
 - Produces: `_resolve_newspic_images(args: argparse.Namespace) -> tuple[list[Path], Path]`.
-- CLI adds `--topic`, repeatable `--research-url`, and `--image-count` constrained to 6 through 9.
+- CLI adds `--topic`, repeatable `--research-url`, `--image-count` constrained to 6 through 9, and a no-upload `--dry-run` validation mode.
 
 - [ ] **Step 1: Write failing CLI resolution tests**
 
@@ -249,4 +249,3 @@ git add \
   .cursor/skills/wechat-mp-drafts/SKILL.md
 git commit -m "feat: automate wechat image fallback"
 ```
-

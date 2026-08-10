@@ -106,6 +106,29 @@ uv run python -m scripts.tools.wechat_mp_draft \
 
 `--codex-draft` 只支持单篇 `hotspot`。该路径跳过 Composer、自动选题和模板兜底，但仍执行正文清洗、质量门禁、事件配图、封面、合规检查与草稿槽位更新。`output/` 中的成稿 JSON 不提交。
 
+### Codex 图片续跑协议
+
+长图文与贴图都先由 Python 自动抓同题公开报道图。若命令提示 `需要 Codex 原创补图`，或抛出包含 `codex-image-request.json` 的错误：
+
+1. 读取请求 JSON 的全部 `slots` 与 `safety_rules`。
+2. 每个 slot 单独调用一次内置 ImageGen，不使用额外 API 或 Composer。
+3. 从 `$CODEX_HOME/generated_images/` 选取结果，复制到该 slot 的绝对 `output_path`；不得覆盖请求未列出的图片。
+4. 重跑原命令，直到不再返回缺图请求；随后才允许进入草稿上传。
+
+贴图自动入口：
+
+```bash
+cd stock-ai
+uv run python -m scripts.tools.wechat_mp_newspic_draft \
+  --slot newspic_hotspot \
+  --title "具体事件为什么引发争议？" \
+  --content output/newspic_copy.txt \
+  --topic "具体事件检索词" \
+  --dry-run
+```
+
+自动模式默认 6 图，支持 `--image-count 6..9` 与可重复的 `--research-url`。先用 `--dry-run` 完成素材与来源校验，确认后去掉该参数才写草稿。完整细则见 `newspic-sop.md`。
+
 ## 流水线（摘要）
 
 `build_article` → 各 kind 后处理（`humanize` / `finalize_*` / `sanitize`）→ `text_to_html` → 可选 `attach_footer_product`（CPS 正文约 2/3）→ `upsert_draft_article`。

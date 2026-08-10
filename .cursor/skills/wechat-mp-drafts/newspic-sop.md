@@ -20,20 +20,47 @@
 ## 固定链路
 
 1. 拉取双榜热搜，确认至少一条可核验来源，再确定“事实—判断”主轴。
-2. 先抓 6 张同题报道图；不足的图位才生成原创插画，并写入 `image-sources.json`。
-3. 按图数写 600～1000 字说明，逐项删掉未经证实的指控和情绪化结论。
-4. 逐张核对图片对应的叙事位置和来源记录，再运行 `wechat_mp_newspic_draft.py`；CLI 会拒绝缺来源或缺原创补位原因的图片。
-5. 脚本以槽位优先更新草稿，首次则创建；回读草稿确认 `article_type=newspic`、图片数与说明长度。
-6. 草稿箱人工预览后再发表；贴图占当天一次群发机会，勿与长图文重复群发。
+2. 运行 `--topic` 自动素材模式，先抓 6 张同题报道图；不足时程序写出 `codex-image-request.json` 并以退出码 2 暂停。
+3. Codex 逐项读取请求中的 `slots`，每个图位单独调用一次内置 ImageGen；生成后从 `$CODEX_HOME/generated_images/` 复制到对应的绝对 `output_path`。只生成请求列出的缺口，不覆盖报道图。
+4. Codex 重跑原命令；脚本识别 `manual-*` 原创图，自动生成 `image-sources.json`，再继续上传与草稿更新。
+5. 按图数写 600～1000 字说明，逐项删掉未经证实的指控和情绪化结论。
+6. 逐张核对图片对应的叙事位置和来源记录；CLI 会拒绝缺来源或缺原创补位原因的图片。
+7. 脚本以槽位优先更新草稿，首次则创建；回读草稿确认 `article_type=newspic`、图片数与说明长度。
+8. 草稿箱人工预览后再发表；贴图占当天一次群发机会，勿与长图文重复群发。
 
 ```bash
 cd stock-ai
 uv run python -m scripts.tools.wechat_mp_newspic_draft \
   --slot newspic_consumer --title "手机壳材料从哪来？" \
   --content output/newspic_copy.txt \
+  --topic "手机壳 材料 来源" \
+  --dry-run
+```
+
+首次先保留 `--dry-run`：它会完成取图、来源和内容校验，但绝不上传微信。Codex 补图并确认通过后，去掉 `--dry-run` 才创建或更新草稿。
+
+可核验的报道页用重复参数优先提供，默认自动准备 6 图，允许 `--image-count 6..9`：
+
+```bash
+uv run python -m scripts.tools.wechat_mp_newspic_draft \
+  --slot newspic_consumer --title "手机壳材料从哪来？" \
+  --content output/newspic_copy.txt \
+  --topic "手机壳 材料 来源" \
+  --research-url https://example.com/report-a \
+  --dry-run
+```
+
+原手工传图模式继续支持：
+
+```bash
+uv run python -m scripts.tools.wechat_mp_newspic_draft \
+  --slot newspic_consumer --title "手机壳材料从哪来？" \
+  --content output/newspic_copy.txt \
   --images assets/a.jpg assets/b.jpg assets/c.jpg assets/d.jpg assets/e.jpg assets/f.jpg \
   --image-sources assets/image-sources.json
 ```
+
+`codex-image-request.json` 的每个 `prompt` 已包含稿型构图和新闻插画安全限制。Codex 不得改写为现场照片，不得增加可识别真人、机构标识、数字、文字、水印或未经核实的细节。内置 ImageGen 不接收目标路径参数；必须先生成，再把选定结果复制到请求给出的项目路径。
 
 ## 贴图与长图文的发布分工
 

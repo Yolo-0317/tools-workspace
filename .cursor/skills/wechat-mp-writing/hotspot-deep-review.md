@@ -125,7 +125,7 @@ JSON 必填 `title`、`digest`、`body`、`topic`；可选 `research_urls`、`sl
 | 门禁 | `WECHAT_MP_HOTSPOT_REQUIRE_FIGURES=1`：正文少于 3 张或封面缺失即拒推；调试可 `=0` |
 | 扩源 | 360/搜狗/百度新闻检索 + 多门户 CDN；见 `wechat_mp_discussion_figures.py` |
 
-配图失败常见原因：选题太新、门户反爬、报道页无大图。处理顺序：换同题更热的检索词 → `WECHAT_MP_DISCUSSION_FIGURES_FORCE=1` 重抓 → 用 imagegen 生成缺少的图位。生成封面落盘为 `cover.jpg`，正文补图依次落盘为 `manual-01.jpg`、`manual-02.jpg`、`manual-03.jpg`；脚本会把 `manual-*` 识别为「原创新闻插画」并只补足正文缺口，再重推。不要因找不到图退回默认品牌封面。
+配图失败常见原因：选题太新、门户反爬、报道页无大图。现在入口会先自动扩源抓图；仍不足时写出同一话题目录下的 `codex-image-request.json` 并拒推。Codex 必须逐项读取 `slots`，每个缺口单独调用一次内置 ImageGen，然后从 `$CODEX_HOME/generated_images/` 复制到请求给出的绝对 `output_path`，再重跑原命令。生成封面为 `cover.jpg`，正文补图为 `manual-01.jpg`、`manual-02.jpg`、`manual-03.jpg`；脚本把 `manual-*` 识别为「原创新闻插画」，只补缺口，不替换已找到的报道图。不要因找不到图退回默认品牌封面。
 
 ---
 

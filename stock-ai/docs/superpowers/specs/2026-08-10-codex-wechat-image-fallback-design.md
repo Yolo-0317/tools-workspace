@@ -52,6 +52,7 @@ uv run python -m scripts.tools.wechat_mp_newspic_draft \
 - `--research-url` 可重复，作为优先报道来源。
 - 自动模式由程序生成 `image-sources.json`，不再要求用户传 `--image-sources`。
 - 手工模式继续要求 `--images` 与 `--image-sources` 同时出现。
+- `--dry-run` 完成图片、来源和内容校验，但不调用微信公众号上传接口。
 
 ### 长图文入口
 
@@ -117,4 +118,3 @@ uv run python -m scripts.tools.wechat_mp_newspic_draft \
 3. 单元测试证明长图文缺正文图或封面时生成正确请求，补齐后不再抛异常。
 4. CLI 测试覆盖自动模式、手工兼容模式和非法参数组合。
 5. 聚焦公众号测试、Python 编译、CLI `--help` 与一次不调用微信 API 的素材准备演练均通过。
-

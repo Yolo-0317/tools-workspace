@@ -803,6 +803,8 @@ def ensure_discussion_cover(topic: dict[str, Any]) -> Path:
     ensure_discussion_figures(topic, max_images=3)
     src_path = _pick_discussion_cover_source(out_dir, topic)
     if src_path is None or not src_path.is_file():
+        if cover.is_file() and cover.stat().st_size > 8000:
+            return cover
         raise FileNotFoundError(f"话题讨论封面缺事件配图: {slug}")
 
     from PIL import Image

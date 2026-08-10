@@ -115,6 +115,60 @@ def test_build_hotspot_article_uses_codex_body_without_generator(monkeypatch) ->
     assert "第1组公开信息记录于2026年8月10日" in article["body_text"]
 
 
+def test_build_hotspot_article_surfaces_codex_image_request(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import sys
+    import types
+
+    news_ai_stub = types.ModuleType("scripts.tools.news_ai_interpret")
+    news_ai_stub.sanitize_public_ai_summary = lambda text: text  # type: ignore[attr-defined]
+    portfolio_stub = types.ModuleType("scripts.tools.portfolio_db")
+    portfolio_stub.load_emotion_cycle_checklist = lambda: {}  # type: ignore[attr-defined]
+    news_db_stub = types.ModuleType("scripts.tools.news_db")
+    news_db_stub.pick_top_news_by_attention = lambda **_kwargs: []  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "scripts.tools.news_ai_interpret", news_ai_stub)
+    monkeypatch.setitem(sys.modules, "scripts.tools.portfolio_db", portfolio_stub)
+    monkeypatch.setitem(sys.modules, "scripts.tools.news_db", news_db_stub)
+
+    from scripts.tools import wechat_mp_codex_images as images_mod
+    from scripts.tools import wechat_mp_content as content_mod
+    from scripts.tools import wechat_mp_discussion_figures as figures_mod
+    from scripts.tools import wechat_mp_hotspot_article as hotspot_mod
+
+    request_path = tmp_path / "codex-image-request.json"
+    request_path.write_text("{}", encoding="utf-8")
+    draft = CodexHotspotDraft(
+        title="具体事件为什么引发争议？",
+        digest="这篇文章梳理事件、规则与争议焦点。",
+        body=_valid_hotspot_body(),
+        topic="具体事件",
+    )
+    monkeypatch.setattr(hotspot_mod, "hotspot_social_layout_enabled", lambda: True)
+    monkeypatch.setattr(
+        figures_mod,
+        "inject_discussion_figures",
+        lambda body, _topic: body
+        + "\n\n[[fig:a|cap=x]]\n\n[[fig:b|cap=x]]\n\n[[fig:c|cap=x]]",
+    )
+    monkeypatch.setattr(figures_mod, "ensure_discussion_cover", lambda _topic: tmp_path / "cover.jpg")
+
+    def require_generation(_topic: dict[str, object], *, body_count: int = 3) -> None:
+        raise images_mod.CodexImageGenerationRequired(
+            request_path=request_path,
+            missing_count=2,
+        )
+
+    monkeypatch.setattr(images_mod, "prepare_hotspot_topic_images", require_generation)
+
+    with pytest.raises(images_mod.CodexImageGenerationRequired) as caught:
+        content_mod.build_hotspot_article(codex_draft=draft)
+
+    assert caught.value.request_path == request_path
+    assert caught.value.missing_count == 2
+
+
 def test_validate_codex_hotspot_body_rejects_short_body() -> None:
     from scripts.tools.wechat_mp_hotspot_article import validate_codex_hotspot_body
 
