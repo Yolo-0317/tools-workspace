@@ -37,7 +37,8 @@ paths:
 ├─ 推草稿 / 定时 / env / 报错     → INDEX「工程」→ operations-sop + reference
 ├─ 改 sector|top5|dragons 文案    → evening-trilogy-templates（先读）→ researcher-voice
 ├─ 改 market|news|workspace       → templates + writing-guide
-├─ 影视试跑 / tv_review / 剧评稿   → [tv-review-template.md](tv-review-template.md)（v2·《铁拳教育》）
+├─ 栀夏贴图 / 电影分享 / 经典片单  → [wechat-mp-virtual-lifestyle](../wechat-mp-virtual-lifestyle/SKILL.md) + newspic-sop
+├─ 长图文影视试跑 / tv_review      → [tv-review-template.md](tv-review-template.md)（v2·《铁拳教育》）
 ├─ 关注引流 / 星标 / 写作笔记 / 关注回复  → follow-growth-copy + account-packaging + operations-sop §二点六
 ├─ 运营增长 / 复盘 / 涨阅读 / 流量主  → [wechat-mp-growth-ops](../wechat-mp-growth-ops/SKILL.md)
 ├─ 阅读量 / 搜一搜 / 标题优化      → traffic-optimization + sousou-analytics-sop

@@ -1,6 +1,8 @@
 # 公众号热点深评贴图（newspic）草稿
 
-本项目里，用户只说“贴图、图片消息、小绿书”时，默认先按栀夏虚拟生活方式贴图处理，使用 `wechat-mp-virtual-lifestyle` 与 `virtual_lifestyle` 槽位。只有用户明确说“热点深评贴图、新闻图集、事件现场图集”时，才使用本文的通用热点 `newspic` 流程。两者底层都是 `draft/add` 的 `article_type="newspic"`，但选题、图源、字数门禁和草稿槽位不同，均不是长图文 `news`。
+本项目里，用户只说“贴图、图片消息、小绿书、电影分享、经典片单”时，默认先按栀夏虚拟生活方式贴图处理，使用 `wechat-mp-virtual-lifestyle` 与 `virtual_lifestyle` 槽位。栀夏影视贴图按 `popular_film`、`classic_single`、`classic_list`、`ai_film` 的专用图数、字数与剧透门禁执行，允许没有栀夏角色图。只有用户明确说“热点深评贴图、新闻图集、事件现场图集”时，才使用本文的通用热点 `newspic` 流程。两者底层都是 `draft/add` 的 `article_type="newspic"`，但选题、图源、字数门禁和草稿槽位不同，均不是长图文 `news`。
+
+电影官方图和媒体图分别记录 `source_type=film_official/film_media`，同时保存 `film_title`、原始 `page_url`、`page_title`、`source_name`，并固定 `allow_zhixia_watermark=false`。不得把搜索缩略图当原图，不得给海报、宣传剧照或报道图加栀夏水印。
 
 ## 稿型定位
 

@@ -60,7 +60,7 @@ look_id / HA编号 / E编号 / J编号 / B编号 / S编号 / P编号：
 
 栀夏贴图不是人物写真集。默认每组只用 1 张栀夏角色图负责人物识别，其余图片直接服务主题：优先使用来源可追溯、允许采用的官方或媒体实际图；实际图不足、授权边界不清或主题更适合解释时，再生成原创主题视觉。纯穿搭、角色设定、连续行程等必须靠人物动作讲清的题材，才增加角色图占比。
 
-- `image-sources.json` 每张图都标注 `visual_role`：栀夏图为 `character`，报道实图或原创主题图为 `topic`；每组至少有一张 `character`。
+- `image-sources.json` 每张图都标注 `visual_role`：栀夏图为 `character`，报道实图或原创主题图为 `topic`。非影视内容默认每组至少一张 `character`；影视内容使用 `optional_one`，允许 0～1 张角色图且至少一张主题图。
 - 主题图不要求出现栀夏，也不套用角色母版；只有 `character` 图必须引用 `assets/character-master.png` 并通过身份一致性检查。
 - 热点实际图先核验原页、图片与事件对应关系及采用边界，保存 `page_url`、`page_title`、来源名与时间；搜索榜、微博和百度只负责发现，不把搜索结果缩略图当正式来源。
 - 原创主题图必须与角色图在色温、比例和叙事顺序上协调，但不得伪装新闻现场或真实截图；正文仍标注“AI 生成示意图”。
@@ -80,13 +80,20 @@ look_id / HA编号 / E编号 / J编号 / B编号 / S编号 / P编号：
 
 ## 观点型 AI 生活主理人内容结构
 
-| 比例 | 内容 | 目标 |
-|---|---|---|
-| 70% | A：`下班前刷到一条` | 从当下高关注话题切入，给出一条与打工人生活有关的具体观察 |
-| 20% | A+C：`AI 还是没想明白` | 借热点观察一种人类习惯，形成栀夏独有的轻量 AI 视角 |
-| 10% | C：`栀夏系统日志` | 分享虚拟身份、内容生成、角色成长和理解人类的过程 |
+每 10 条有效正式发表内容为一轮，执行以下八通道比例；顺序随热点变化，不机械排期。
 
-只统计公众号后台已经正式发表的内容：每 10 条为一轮，目标为 7 条 A、2 条 A+C、1 条 C；草稿、预览、更新失败和未发表内容都不计数。顺序随热点变化，但草稿入口会提示当前缺口；确需偏离时必须用 `--allow-mix-override "原因"` 留痕。每轮只调整一个实验变量。
+| 数量 | `content_lane` | 内容任务 |
+|---|---|---|
+| 2 | `popular_film` | `下班前刷到一部`：热门电影上映、定档、口碑节点 |
+| 1 | `classic_single` | `今晚翻一部旧电影`：经典单片 |
+| 1 | `classic_list` | 同主题经典片单 |
+| 1 | `ai_film` | 借电影观察一种人类习惯 |
+| 2 | `nonfilm_hotspot` | 非影视高关注话题与具体生活观察 |
+| 1 | `zhixia_daily` | 栀夏日常、文化兴趣与城市生活 |
+| 1 | `ai_human` | 非影视的 AI 与人类观察 |
+| 1 | `system_log` | 虚拟角色成长与系统日志 |
+
+汇总为影视 50%、生活及其他热点 40%、系统日志 10%；叙事类型兼容汇总为 A 4 条、B 3 条、A+C 2 条、C 1 条。真正的比例门禁以八个 `content_lane` 为准。只统计公众号后台已经正式发表且状态有效的内容；草稿、预览、更新失败、未发表和标记无效的内容都不计数。确需使用已满通道时必须用 `--allow-mix-override "原因"` 留痕。每轮只调整一个实验变量。
 
 这不是“前多少条”的临时策略。每篇先判断有没有一条非栀夏不可的具体观察；没有真实必要，不强行加入步骤、清单、建议、问题、商品或人物写真。
 
@@ -99,6 +106,19 @@ look_id / HA编号 / E编号 / J编号 / B编号 / S编号 / P编号：
 | 专题贴图 | 5～6 图、600～800 字 | 周末旅行、完整穿搭、可收藏清单、问答复盘 |
 
 专题贴图可按“生活钩子、感受或困扰、细节展开、片段收束”推进；只有方法型选题才加入选择过程和使用结果。快贴与标准日更只保留与主题有关的 2～4 个镜头。
+
+### 双影视栏目
+
+| 通道 | 图片与字数 | 默认剧透 |
+|---|---|---|
+| `popular_film`：下班前刷到一部 | 4～6 图、180～320 字 | S0，只谈官方已公开设定 |
+| `classic_single`：今晚翻一部旧电影 | 5～7 图、250～450 字 | S1；涉及结局改为 S2 并在首行写“含结局讨论” |
+| `classic_list` | 6～9 图、300～600 字，3～5 部电影 | S0 |
+| `ai_film` | 4～6 图、180～320 字 | 按内容选择 S0～S2 |
+
+单片标题必须出现片名；片单标题必须写明 3～5 的具体数量。正文可以融合普通影评口吻与栀夏观察，但不得出现提示词、检索过程、评分规则、生成规则、内部推理或“作为 AI，我分析了”等过程语言，也不得虚构“刚从电影院出来、昨晚二刷”等真人观影经历。AI 身份在文末稳定披露，不把规则写进正文。
+
+影视组图可以完全不出现栀夏。素材优先使用电影官方账号、片方、发行方或可追溯媒体页面的海报与宣传剧照；每张记录 `source_type=film_official/film_media`、`film_title`、`page_url`、`page_title`、`source_name`、`visual_role`、`position_role` 和 `allow_zhixia_watermark=false`。官方图、媒体图和报道图禁止添加栀夏水印。原创补图不得生成演员近似脸或伪剧照，并在正文标注“AI 生成示意图”。
 
 ## 分享表达与标题
 
@@ -197,7 +217,7 @@ look_id / HA编号 / E编号 / J编号 / B编号 / S编号 / P编号：
 
 - 常态为每天 1 条标准日更或日常快贴；重要周末、可转化热点或专题日最多准备 2 条草稿，但对外发布仍遵守公众号人工群发的每日一次批次，不开启自动发表。
 - 推荐节奏：周一 `下班两小时`、周二/周三 `上海日常快贴`、周四 `衣橱设定集`、周五 `周末预告/轻行李`、周六 `城市日常`、周日 `返程/居家恢复`。热点或复杂事实链长文优先时，虚拟角色稿让位，不硬凑日更。
-- 所有 `virtual_lifestyle` 图片在上传前由草稿命令自动添加右下角 `栀夏 · ZHI XIA` 水印。水印只用于该槽位，原始素材保持不变。
+- `virtual_lifestyle` 槽位只给来源清单明确允许的栀夏角色图或原创主题图添加右下角 `栀夏 · ZHI XIA` 水印；官方图、媒体图和报道图保持原样。
 
 ## 参考的视觉表达
 
@@ -219,14 +239,14 @@ look_id / HA编号 / E编号 / J编号 / B编号 / S编号 / P编号：
 ## 每次执行
 
 1. 读取 `references/persona.md`、`references/wardrobe.md`、`references/story-bible.md`、`references/operations-benchmarks.md` 与上次内容，先确定一个可复述的主题钩子和一句非栀夏不可的观察，再选择一条长期故事线；需要角色出镜时才选择未重复的 `look_id`，并记录 `HA编号 + E编号 + A编号 + P编号` 和鞋编号。
-2. 查看正式发表台账的当前缺口，选择 A / A+C / C；产品推荐仅在需求与商品强相关时出现。
-3. 先写行程连续性卡，再按“默认 1 张栀夏角色图 + 1～5 张主题图”组织混合组图；角色图从自拍、镜前、定时器或第三视角中选择真实机位，主题图优先可追溯实图、缺失时才原创生成。保存每张图的 `visual_role`、来源、生成提示与拍摄方式。
+2. 查看正式发表台账的当前缺口，从尚未满额的八个 `content_lane` 中选择一个；产品推荐仅在需求与商品强相关时出现。
+3. 非影视稿先写行程连续性卡，再按“默认 1 张栀夏角色图 + 1～5 张主题图”组织混合组图。影视稿允许 0～1 张角色图，以可追溯的电影官方图或媒体图为主。保存每张图的 `visual_role`、来源、生成提示与拍摄方式。
 4. 按内容颗粒度写 150～800 字，首段先交代生活场景；分享型不强塞方法，涉及商品时加披露与适用边界。
 5. 草稿质检后再由用户决定是否发布；使用独立槽位 `virtual_lifestyle`，不得覆盖热点或长文草稿。
 
 ### 选题卡与命令
 
-写稿前创建 JSON 选题卡，字段必须完整：`topic`、带时区的 `observed_at`、`discovery_platform`、`content_type`、`fact_sources`、`contrast`、`zhixia_observation`、`click_reason`、`image_plan`、`risks`、五项 `scores`、`character_image_policy`，多角色图例外再填写 `visual_exception`。五项评分为 `timing`、`worker_relevance`、`zhixia_observation`、`visuals`、`persona_fit`；总分至少 70，`zhixia_observation` 至少 15。A / A+C 的榜单与事实须在 6 小时内重新核验。
+写稿前创建 JSON 选题卡，字段必须完整：`topic`、带时区的 `observed_at`、`discovery_platform`、`content_type`、`content_lane`、`fact_sources`、`contrast`、`zhixia_observation`、`click_reason`、`image_plan`、`risks`、五项 `scores`、`character_image_policy`，多角色图例外再填写 `visual_exception`。影视稿还必须填写 `film_titles`、`spoiler_level`、`release_status`、`image_rights_status`。五项评分为 `timing`、`worker_relevance`、`zhixia_observation`、`visuals`、`persona_fit`；总分至少 70，`zhixia_observation` 至少 15。只有 `popular_film` 和 `nonfilm_hotspot` 执行六小时重新核验；经典电影仍须核验片名、版本、年份、主创和素材原页。
 
 ```bash
 cd stock-ai
@@ -237,6 +257,20 @@ cd stock-ai
   --content output/zhixia-copy.txt \
   --images assets/zhixia/01.png assets/zhixia/02.png \
   --image-sources assets/zhixia/image-sources.json \
+  --dry-run
+```
+
+经典单片的精确 dry-run：
+
+```bash
+cd stock-ai
+.venv/bin/python -m scripts.tools.wechat_mp_newspic_draft \
+  --slot virtual_lifestyle \
+  --topic-card output/zhixia-classic-film-card.json \
+  --title "《一部旧电影》最难的不是告别" \
+  --content output/zhixia-classic-film-copy.txt \
+  --images assets/zhixia-film/01.jpg assets/zhixia-film/02.jpg assets/zhixia-film/03.jpg assets/zhixia-film/04.jpg assets/zhixia-film/05.jpg \
+  --image-sources assets/zhixia-film/image-sources.json \
   --dry-run
 ```
 
