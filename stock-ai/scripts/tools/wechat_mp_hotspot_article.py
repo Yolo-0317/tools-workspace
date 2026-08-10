@@ -1121,6 +1121,19 @@ def _hotspot_body_reject_reasons(
     return reasons
 
 
+def validate_codex_hotspot_body(body: str, *, topic: str) -> str:
+    """清洗 Codex 成稿并复用热点正文硬门禁；失败时不做生成兜底。"""
+
+    polished = _polish_hotspot_llm_body(body)
+    reasons = _hotspot_body_reject_reasons(
+        polished,
+        bucket=_theme_bucket(topic),
+    )
+    if reasons:
+        raise ValueError(f"Codex 热点正文未通过质量门禁：{'、'.join(reasons)}")
+    return polished
+
+
 def _hotspot_body_usable(
     body: str, *, bucket: str, min_chars: int | None = None
 ) -> bool:

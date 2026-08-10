@@ -27,7 +27,7 @@
 ```text
 双榜热搜选题（自动避当日已用标题）
   → fetch_discussion_research（360/搜狗/百度新闻 + 报道页正文补摘要）
-  → LLM 社会热点深评（Composer；读【联网事实】【参考文章·仿写】）
+  → Codex 社会热点深评 JSON（推荐手动入口）或旧自动 Composer 成稿
   → 可选：对照参考二次仿写（WECHAT_MP_HOTSPOT_IMITATE_REWRITE，默认关）
   → scan_report_voice 门禁 → 不足则重写（最多 2 轮）
   → 清洗元叙述 + 拆短段（reflow_hotspot_layout）
@@ -85,9 +85,23 @@ uv run python -m scripts.tools.wechat_mp_eval --kind hotspot --traffic
 
 ---
 
-## 写稿 LLM（Composer）
+## Codex 成稿入口（推荐）
 
-公众号长文 **固定 Composer**（`call_wechat_mp_llm` → `agent --model composer-2.5`），不经 DeepSeek API。须本机 `agent login`。
+当前手动长图文由 Codex 完成联网取材、标题、摘要和正文，然后通过结构化 JSON 交给发布脚本：
+
+```bash
+cd stock-ai
+uv run python -m scripts.tools.wechat_mp_draft \
+  --kind hotspot \
+  --codex-draft output/hotspot_codex.json \
+  --dry-run
+```
+
+JSON 必填 `title`、`digest`、`body`、`topic`；可选 `research_urls`、`slot_key`。去掉 `--dry-run` 后才写入公众号草稿箱。该入口不调用 Composer，不自动扩写或模板兜底；正文未过字数、段落、套话、配图或合规门禁时直接拒绝，由 Codex 修改源 JSON 后重试。
+
+## 旧自动写稿 LLM（兼容路径）
+
+未传 `--codex-draft` 的旧自动生成路径仍使用 Composer（`call_wechat_mp_llm` → `agent --model composer-2.5`），不经 DeepSeek API。该路径仅作兼容；当前热点定时已暂停。
 
 | 变量 | 默认 | 含义 |
 |------|------|------|

@@ -18,6 +18,10 @@ from scripts.tools.wechat_mp_client import (
     pick_thumb_for_draft_kind,
 )
 from scripts.tools.wechat_mp_content import DRAFT_KINDS, build_article
+from scripts.tools.wechat_mp_codex_hotspot import (
+    CodexHotspotDraft,
+    load_codex_hotspot_draft,
+)
 from scripts.tools.wechat_mp_draft_slots import upsert_draft_article
 
 
@@ -51,11 +55,16 @@ def _build_for_kind(
     edition: str | None,
     market_title: str | None,
     variant: str | None,
+    codex_draft: CodexHotspotDraft | None = None,
 ) -> dict[str, str]:
     if kind == "news" and market_title:
         return build_article(kind, peer_market_title=market_title)
     if kind in {"market", "sector", "hotspot"}:
-        return build_article(kind, edition=edition)
+        return build_article(
+            kind,
+            edition=edition,
+            codex_draft=codex_draft if kind == "hotspot" else None,
+        )
     if kind == "temp":
         return build_article(kind, variant=variant)
     if kind == "workspace":
@@ -63,6 +72,41 @@ def _build_for_kind(
     if kind == "guba":
         return build_article(kind, edition=edition or "close")
     return build_article(kind)
+
+
+def _validate_codex_draft_kinds(kinds: list[str], path: Path | None) -> None:
+    if path is not None and kinds != ["hotspot"]:
+        raise ValueError("--codex-draft 仅允许与单篇 hotspot 一起使用")
+
+
+def _resolve_codex_slot_key(draft: CodexHotspotDraft | None) -> str | None:
+    if draft is None:
+        return None
+    return (
+        os.getenv("WECHAT_MP_HOTSPOT_SLOT_KEY", "").strip()
+        or draft.slot_key
+        or None
+    )
+
+
+def _pick_cover_for_kind(
+    *,
+    kind: str,
+    cover_kind: str,
+) -> tuple[str, str | None, dict[str, object] | None]:
+    if kind == "hotspot":
+        from scripts.tools.wechat_mp_hotspot_article import (
+            get_last_built_hotspot_topic,
+            hotspot_social_layout_enabled,
+        )
+        from scripts.tools.wechat_mp_tv_cover import pick_discussion_draft_thumb
+
+        topic = get_last_built_hotspot_topic()
+        if hotspot_social_layout_enabled() and topic:
+            thumb, error = pick_discussion_draft_thumb(topic)
+            return "discussion", thumb, error
+    thumb, error = pick_thumb_for_draft_kind(cover_kind)
+    return cover_kind, thumb, error
 
 
 def main() -> int:
@@ -77,6 +121,13 @@ def main() -> int:
         default=None,
         metavar="NAME",
         help="稿变体：temp 默认 lark_cli；workspace 可选 english_buddy（见 wechat_mp_temp_article.list_temp_variants）",
+    )
+    parser.add_argument(
+        "--codex-draft",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help="读取 Codex 准备的 hotspot JSON，跳过 Composer 与自动选题",
     )
     parser.add_argument("--dry-run", action="store_true", help="只打印标题与正文预览")
     parser.add_argument(
@@ -113,9 +164,20 @@ def main() -> int:
 
     try:
         kinds = _resolve_kinds(args.kind)
+        _validate_codex_draft_kinds(kinds, args.codex_draft)
+        codex_draft = (
+            load_codex_hotspot_draft(args.codex_draft)
+            if args.codex_draft is not None
+            else None
+        )
     except ValueError as exc:
-        print(f"❌ {exc}", file=sys.stderr)
+        print(f"错误: {exc}", file=sys.stderr)
         return 1
+    except OSError as exc:
+        print(f"错误: 无法读取 Codex 热点草稿: {exc}", file=sys.stderr)
+        return 1
+
+    codex_slot_key = _resolve_codex_slot_key(codex_draft)
 
     if args.list_materials:
         from scripts.tools.wechat_mp_list_materials import main as list_main
@@ -147,7 +209,7 @@ def main() -> int:
         return prune_obsolete_drafts(dry_run=args.dry_run)
 
     if not mp_configured() and not args.dry_run:
-        print("❌ 未配置 WECHAT_MP_APPID / WECHAT_MP_SECRET", file=sys.stderr)
+        print("错误: 未配置 WECHAT_MP_APPID / WECHAT_MP_SECRET", file=sys.stderr)
         return 1
 
     if args.dry_run:
@@ -161,9 +223,13 @@ def main() -> int:
                     edition=edition,
                     market_title=market_title,
                     variant=args.variant,
+                    codex_draft=codex_draft,
                 )
             except Exception as exc:
-                print(f"❌ [{kind}] {exc}", file=sys.stderr)
+                if codex_draft is not None:
+                    print(f"错误 [{kind}]: {exc}", file=sys.stderr)
+                else:
+                    print(f"❌ [{kind}] {exc}", file=sys.stderr)
                 ok = False
                 continue
             if kind == "market":
@@ -220,9 +286,13 @@ def main() -> int:
                 edition=edition,
                 market_title=market_title,
                 variant=args.variant,
+                codex_draft=codex_draft,
             )
         except Exception as exc:
-            print(f"❌ [{kind}] 跳过: {exc}", file=sys.stderr)
+            if codex_draft is not None:
+                print(f"错误 [{kind}]: {exc}", file=sys.stderr)
+            else:
+                print(f"❌ [{kind}] 跳过: {exc}", file=sys.stderr)
             continue
 
         if kind == "market":
@@ -244,7 +314,10 @@ def main() -> int:
                 continue
 
         cover_kind = _resolve_cover_kind(kind)
-        thumb, terr = pick_thumb_for_draft_kind(cover_kind)
+        cover_kind, thumb, terr = _pick_cover_for_kind(
+            kind=kind,
+            cover_kind=cover_kind,
+        )
         if kind == "workspace" and (args.variant or "").strip().lower() == "english_buddy":
             from scripts.tools.wechat_mp_english_buddy_article import (
                 pick_english_buddy_workspace_thumb,
@@ -279,7 +352,10 @@ def main() -> int:
             )
 
         media_id, action, err = upsert_draft_article(
-            kind, article, thumb_media_id=thumb or ""
+            kind,
+            article,
+            thumb_media_id=thumb or "",
+            slot_key=codex_slot_key if kind == "hotspot" else None,
         )
         if err:
             print(f"❌ [{kind}] 失败: {err}", file=sys.stderr)

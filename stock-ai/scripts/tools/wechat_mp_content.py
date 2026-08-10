@@ -7,7 +7,7 @@ import os
 import re
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo
 
 from scripts._bootstrap import ensure_repo_root_on_path
@@ -21,6 +21,9 @@ from scripts.tools.portfolio_db import load_emotion_cycle_checklist
 from scripts.tools.wechat_format import normalize_wechat_spacing
 from scripts.tools.wechat_mp_client import text_to_html
 from scripts.tools.wechat_mp_prose import humanize_mp_text
+
+if TYPE_CHECKING:
+    from scripts.tools.wechat_mp_codex_hotspot import CodexHotspotDraft
 
 TZ = ZoneInfo("Asia/Shanghai")
 TITLE_MAX = 32
@@ -872,44 +875,68 @@ def sanitize_top5_public_text(text: str) -> str:
     return normalize_wechat_spacing(cleaned.strip())
 
 
-def build_hotspot_article(*, edition: str | None = None) -> dict[str, str]:
+def build_hotspot_article(
+    *,
+    edition: str | None = None,
+    codex_draft: CodexHotspotDraft | None = None,
+) -> dict[str, str]:
     from scripts.tools import wechat_mp_hotspot_article as hotspot_mod
     from scripts.tools.wechat_mp_figures import inject_market_figures
     from scripts.tools.wechat_mp_hotspot_article import (
         build_hotspot_digest,
         build_hotspot_title,
+        format_hotspot_trade_label,
         generate_hotspot_body,
         hotspot_social_layout_enabled,
         hotspot_topic_as_discussion,
+        resolve_hotspot_trade_date,
+        validate_codex_hotspot_body,
     )
     from scripts.tools.wechat_mp_hotspot_polish import finalize_hotspot_body
 
     ed = edition or "close"
     now = datetime.now(TZ)
-    raw_body, topics, trade_label = generate_hotspot_body(now=now, edition=ed)
+    if codex_draft is None:
+        raw_body, topics, trade_label = generate_hotspot_body(now=now, edition=ed)
+        title_override = ""
+        digest_override = ""
+        topic_override: dict[str, object] | None = None
+    else:
+        raw_body = validate_codex_hotspot_body(
+            codex_draft.body,
+            topic=codex_draft.topic,
+        )
+        topics = []
+        trade_label = format_hotspot_trade_label(
+            resolve_hotspot_trade_date(),
+            edition=ed,
+        )
+        title_override = codex_draft.title
+        digest_override = codex_draft.digest
+        topic_override = codex_draft.as_discussion_topic()
     polished = humanize_mp_text(raw_body)
     from scripts.tools.wechat_mp_hotspot_polish import reflow_hotspot_body
 
     polished = reflow_hotspot_body(polished)
-    primary = topics[0].section_title if topics else ""
+    primary = topics[0].section_title if topics else (codex_draft.topic if codex_draft else "")
     polished = finalize_hotspot_body(
         polished,
         trade_label=trade_label,
         primary_theme=primary,
     )
-    title = build_hotspot_title(topics, body=polished)
-    digest = build_hotspot_digest(topics, trade_label=trade_label)
+    title = title_override or build_hotspot_title(topics, body=polished)
+    digest = digest_override or build_hotspot_digest(topics, trade_label=trade_label)
 
     body_core = polished
     hotspot_mod._LAST_BUILT_HOTSPOT_TOPIC = None
-    if hotspot_social_layout_enabled() and topics:
+    if hotspot_social_layout_enabled() and (topics or topic_override):
         from scripts.tools.wechat_mp_discussion_figures import (
             discussion_body_figure_target,
             ensure_discussion_cover,
             inject_discussion_figures,
         )
 
-        topic_dict = hotspot_topic_as_discussion(topics[0])
+        topic_dict = topic_override or hotspot_topic_as_discussion(topics[0])
         hotspot_mod._LAST_BUILT_HOTSPOT_TOPIC = topic_dict
         from scripts.tools.wechat_mp_hotspot_body_cache import save_hotspot_body_cache
 
@@ -918,7 +945,10 @@ def build_hotspot_article(*, edition: str | None = None) -> dict[str, str]:
             body_core=polished,
             title=title,
             digest=digest,
-            slot_key=os.getenv("WECHAT_MP_HOTSPOT_SLOT_KEY", "").strip(),
+            slot_key=(
+                os.getenv("WECHAT_MP_HOTSPOT_SLOT_KEY", "").strip()
+                or (codex_draft.slot_key if codex_draft else "")
+            ),
         )
         body_core = inject_discussion_figures(polished, topic_dict)
         figure_target = discussion_body_figure_target()
@@ -1311,10 +1341,14 @@ def build_article(
     peer_market_title: str | None = None,
     edition: str | None = None,
     variant: str | None = None,
+    codex_draft: CodexHotspotDraft | None = None,
 ) -> dict[str, str]:
     k = kind.strip().lower()
     if k in {"hotspot", "hot_topic", "topic_pulse"}:
-        return build_hotspot_article(edition=edition or "close")
+        return build_hotspot_article(
+            edition=edition or "close",
+            codex_draft=codex_draft,
+        )
     if k in {"sector", "industry", "theme"}:
         return build_sector_article(edition=edition or "close")
     if k == "market":

@@ -67,6 +67,7 @@ paths:
 cd stock-ai
 uv run python -m scripts.tools.wechat_mp_draft --dry-run
 uv run python -m scripts.tools.wechat_mp_draft --kind top5
+uv run python -m scripts.tools.wechat_mp_draft --kind hotspot --codex-draft output/hotspot_codex.json --dry-run
 uv run python -m scripts.tools.wechat_mp_draft_batch --batch evening --dry-run
 bash scripts/wechat_mp_draft_scheduled.sh
 
@@ -77,6 +78,33 @@ uv run pytest tests/unit/test_wechat_mp_*.py -q
 ```
 
 **质量建议**：总分 ≥75、AI 味 ≤20、无合规红线 → 可进草稿箱。改稿流程见 [wechat-mp-writing](../wechat-mp-writing/SKILL.md)。
+
+### Codex 长图文交接
+
+手动热点长图文优先由 Codex 完成取材与成稿，再保存为本地 JSON：
+
+```json
+{
+  "title": "具体事件为什么引发争议？",
+  "digest": "一到两句话说明文章回答的问题。",
+  "body": "不少于 2000 字的纯段落正文。",
+  "topic": "事件检索词",
+  "research_urls": ["https://example.com/report"],
+  "slot_key": "hotspot_afternoon"
+}
+```
+
+```bash
+cd stock-ai
+uv run python -m scripts.tools.wechat_mp_draft \
+  --kind hotspot \
+  --codex-draft output/hotspot_codex.json \
+  --dry-run
+
+# 人工确认后去掉 --dry-run，写入草稿箱
+```
+
+`--codex-draft` 只支持单篇 `hotspot`。该路径跳过 Composer、自动选题和模板兜底，但仍执行正文清洗、质量门禁、事件配图、封面、合规检查与草稿槽位更新。`output/` 中的成稿 JSON 不提交。
 
 ## 流水线（摘要）
 

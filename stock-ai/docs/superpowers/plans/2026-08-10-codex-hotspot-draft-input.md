@@ -149,7 +149,7 @@ In `build_hotspot_article`, use the Codex title, digest, topic object, and valid
 
 - [ ] **Step 4: Run focused builder tests and verify GREEN**
 
-Run: `uv run pytest tests/unit/test_wechat_mp_codex_hotspot.py tests/unit/test_wechat_mp_hotspot_article.py tests/unit/test_wechat_mp_hotspot_polish.py -q`
+Run: `uv run pytest tests/unit/test_wechat_mp_codex_hotspot.py tests/unit/test_wechat_mp_hotspot_article.py tests/unit/test_wechat_mp_discussion_polish.py -q`
 
 Expected: all focused tests pass.
 
@@ -200,6 +200,7 @@ Expected: all Codex input and CLI tests pass.
 **Files:**
 - Modify: `.cursor/skills/wechat-mp-drafts/SKILL.md`
 - Modify: `.cursor/skills/wechat-mp-writing/hotspot-deep-review.md`
+- Create: `tests/fixtures/wechat_mp_codex_hotspot_valid.json`
 
 **Interfaces:**
 - Documents the exact JSON contract and dry-run/publish commands.
@@ -216,7 +217,7 @@ Run:
 uv run pytest \
   tests/unit/test_wechat_mp_codex_hotspot.py \
   tests/unit/test_wechat_mp_hotspot_article.py \
-  tests/unit/test_wechat_mp_hotspot_polish.py \
+  tests/unit/test_wechat_mp_discussion_polish.py \
   tests/unit/test_wechat_mp_newspic.py -q
 ```
 
