@@ -7,7 +7,7 @@ from decimal import Decimal
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import AwareDatetime, Field, field_validator, model_validator
+from pydantic import AwareDatetime, Field, ValidationInfo, field_validator, model_validator
 
 from .base import ContractModel, EvidenceKind, MarketStatus, validate_code
 
@@ -72,6 +72,16 @@ class EvidenceSnapshotV1(ContractModel):
     quality_flags: list[str]
 
     _validate_evidence_id = field_validator("evidence_id")(_uuid_string)
+
+    @field_validator("payload")
+    @classmethod
+    def normalize_kind_payload_numbers(
+        cls, value: dict[str, Any], info: ValidationInfo
+    ) -> dict[str, Any]:
+        normalized = dict(value)
+        if info.data.get("kind") is EvidenceKind.QUOTE and "last_price" in normalized:
+            normalized["last_price"] = Decimal(str(normalized["last_price"]))
+        return normalized
 
     @field_validator("code")
     @classmethod

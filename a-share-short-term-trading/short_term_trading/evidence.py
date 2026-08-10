@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-import json
 from typing import Any, Literal, Protocol
 from uuid import uuid4
 
@@ -207,70 +206,22 @@ class CaptureRecorder:
 
 
 class SqlAlchemyEvidenceRepository:
-    """MySQL repository for evidence and capture-attempt records."""
+    """Compatibility adapter backed by the focused repository package."""
 
     def __init__(self, mysql_url: str):
-        from sqlalchemy import create_engine
+        from .repositories import EvidenceRepository as Repository
+        from .repositories import create_mysql_engine
 
-        self._engine = create_engine(mysql_url)
+        self._repository = Repository(create_mysql_engine(mysql_url))
 
     def save_snapshot(self, snapshot: EvidenceSnapshot) -> None:
-        from sqlalchemy import text
-
-        statement = text(
-            "INSERT INTO stt_evidence_snapshots (snapshot_id, code, kind, as_of, source, parser_version, "
-            "data_json, raw_evidence_ref, data_status) VALUES (:snapshot_id, :code, :kind, :as_of, :source, "
-            ":parser_version, :data_json, :raw_evidence_ref, :data_status)"
-        )
-        values = asdict(snapshot)
-        values["data_json"] = json.dumps(values.pop("data"), ensure_ascii=False)
-        with self._engine.begin() as connection:
-            connection.execute(statement, values)
+        self._repository.save_snapshot(snapshot)
 
     def save_capture_attempt(self, attempt: CaptureAttempt) -> None:
-        from sqlalchemy import text
-
-        statement = text(
-            "INSERT INTO stt_capture_attempts (attempt_id, code, kind, source, started_at, finished_at, status, "
-            "retry_count, field_completeness, parser_version, raw_evidence_ref, error_class, error_message) VALUES "
-            "(:attempt_id, :code, :kind, :source, :started_at, :finished_at, :status, :retry_count, "
-            ":field_completeness, :parser_version, :raw_evidence_ref, :error_class, :error_message)"
-        )
-        with self._engine.begin() as connection:
-            connection.execute(statement, asdict(attempt))
+        self._repository.save_capture_attempt(attempt)
 
     def get_latest_valid_snapshot(self, code: str, kind: SnapshotKind) -> EvidenceSnapshot | None:
-        from sqlalchemy import text
-
-        statement = text(
-            "SELECT snapshot_id, code, kind, as_of, source, parser_version, data_json, raw_evidence_ref, data_status "
-            "FROM stt_evidence_snapshots WHERE code = :code AND kind = :kind AND data_status = 'VALID' "
-            "ORDER BY as_of DESC LIMIT 1"
-        )
-        with self._engine.connect() as connection:
-            row = connection.execute(statement, {"code": _normalize_code(code), "kind": kind}).mappings().first()
-        if row is None:
-            return None
-        values = dict(row)
-        values["data"] = json.loads(values.pop("data_json"))
-        return EvidenceSnapshot(**values)
+        return self._repository.get_latest_valid_snapshot(code, kind)
 
     def get_valid_snapshots_since(self, code: str, kind: SnapshotKind, since: datetime) -> list[EvidenceSnapshot]:
-        from sqlalchemy import text
-
-        statement = text(
-            "SELECT snapshot_id, code, kind, as_of, source, parser_version, data_json, raw_evidence_ref, data_status "
-            "FROM stt_evidence_snapshots WHERE code = :code AND kind = :kind AND data_status = 'VALID' "
-            "AND as_of >= :since ORDER BY as_of ASC"
-        )
-        with self._engine.connect() as connection:
-            rows = connection.execute(
-                statement,
-                {"code": _normalize_code(code), "kind": kind, "since": since},
-            ).mappings()
-            snapshots = []
-            for row in rows:
-                values = dict(row)
-                values["data"] = json.loads(values.pop("data_json"))
-                snapshots.append(EvidenceSnapshot(**values))
-            return snapshots
+        return self._repository.get_valid_snapshots_since(code, kind, since)
