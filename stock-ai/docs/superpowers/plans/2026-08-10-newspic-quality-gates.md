@@ -4,7 +4,7 @@
 
 **Goal:** 让贴图草稿在上传前符合写作规范，并在写入后自动回读验收。
 
-**Architecture:** 在 `wechat_mp_newspic.py` 集中实现内容、来源与远端回读校验，CLI 保持素材解析职责并将来源清单传入发布函数。复用现有微信草稿查询接口，不新增依赖。
+**Architecture:** 在 `wechat_mp_newspic.py` 集中实现内容、来源与远端回读校验，按普通热点和 `virtual_lifestyle` 两个 profile 选择门禁；CLI 保持素材解析职责并将来源清单传入发布函数。复用现有微信草稿查询接口，不新增依赖。
 
 **Tech Stack:** Python、pytest、微信公众号 draft API
 
@@ -24,9 +24,9 @@
 
 **Interfaces:**
 - Consumes: `validate_newspic_input(...)`、`validate_newspic_image_sources(...)`
-- Produces: 与 SOP 一致的标题、正文、来源和原创标识校验。
+- Produces: 与热点及栀夏两个 SOP 分别一致的标题、正文、来源和原创标识校验。
 
-- [ ] 写标题、按图数正文字数、报道页标题及原创标识的失败测试。
+- [ ] 写标题、按 profile/图数正文字数、报道页标题及原创标识的失败测试。
 - [ ] 运行聚焦测试并确认因缺少新行为而失败。
 - [ ] 实现最小校验逻辑。
 - [ ] 运行聚焦测试并确认通过。
@@ -56,6 +56,6 @@
 - Produces: 一个经 dry-run 和远端回读确认的 `newspic` 草稿。
 
 - [ ] 运行贴图、Codex 图片和真实报道图测试集。
-- [ ] 为“武康路积水”准备合规文案和 6 张来源可追溯图片。
+- [ ] 为“下班两小时”准备合规的栀夏文案和 2～3 张角色一致图片。
 - [ ] 执行 dry-run。
 - [ ] 正式写入草稿并记录回读结果，不执行发布。

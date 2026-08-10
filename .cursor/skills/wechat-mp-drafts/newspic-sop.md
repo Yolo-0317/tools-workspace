@@ -1,6 +1,6 @@
 # 公众号热点深评贴图（newspic）草稿
 
-用户说“贴图、图片消息、小绿书、图集草稿”时使用。它是 `draft/add` 的 `article_type="newspic"`，不是长图文 `news`。
+本项目里，用户只说“贴图、图片消息、小绿书”时，默认先按栀夏虚拟生活方式贴图处理，使用 `wechat-mp-virtual-lifestyle` 与 `virtual_lifestyle` 槽位。只有用户明确说“热点深评贴图、新闻图集、事件现场图集”时，才使用本文的通用热点 `newspic` 流程。两者底层都是 `draft/add` 的 `article_type="newspic"`，但选题、图源、字数门禁和草稿槽位不同，均不是长图文 `news`。
 
 ## 稿型定位
 

@@ -119,7 +119,9 @@ uv run python -m scripts.tools.wechat_mp_draft \
 
 已有 Codex 补图完成标记时，普通续跑不重复联网。需要重新寻找真实现场图时使用 `--force-figures` 或 `WECHAT_MP_DISCUSSION_FIGURES_FORCE=1`；强制刷新会绕过 ready 标记，但应保留 `manual-*` 和可用原创封面作为失败兜底。
 
-贴图自动入口：
+贴图路由：未限定类型的“贴图”默认是栀夏生活分享，先读 `wechat-mp-virtual-lifestyle/SKILL.md`，使用 `virtual_lifestyle` 槽位和角色母版生成图片；明确要求“热点深评贴图 / 新闻图集”时才使用下面的自动报道图入口。不得把社会热点报道图直接写入栀夏槽位。
+
+热点深评贴图自动入口：
 
 ```bash
 cd stock-ai
