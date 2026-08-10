@@ -20,6 +20,7 @@ def _valid_card() -> dict[str, object]:
     return {
         "topic": "一个热点",
         "content_type": "A",
+        "content_lane": "nonfilm_hotspot",
         "score_total": 82,
         "observed_at": "2026-08-10T17:30:00+08:00",
     }
@@ -30,6 +31,7 @@ def _pending(**overrides: object) -> dict[str, object]:
         "media_id": "draft-1",
         "title": "这是一个标题",
         "content_type": "A",
+        "content_lane": "nonfilm_hotspot",
         "topic": "一个热点",
         "topic_card_sha256": "abc123",
         "drafted_at": NOW.isoformat(),
@@ -64,6 +66,7 @@ def test_record_pending_draft_does_not_create_publication_history(tmp_path: Path
 
     assert pending["media_id"] == "draft-1"
     assert pending["content_type"] == "A"
+    assert pending["content_lane"] == "nonfilm_hotspot"
     assert pending["drafted_at"] == "2026-08-10T17:45:00+08:00"
     assert pending_path.is_file()
     assert not history_path.exists()
@@ -80,6 +83,35 @@ def test_verified_publication_assigns_first_number(tmp_path: Path) -> None:
     assert ledger["round"] == 1
     assert ledger["posts"][0]["post_no"] == "ZX-001"
     assert ledger["posts"][0]["status"] == "published"
+    assert ledger["posts"][0]["content_lane"] == "nonfilm_hotspot"
+
+
+def test_film_metadata_survives_pending_and_publication_ledger(tmp_path: Path) -> None:
+    pending_path = tmp_path / "pending.json"
+    card = _valid_card() | {
+        "content_lane": "popular_film",
+        "film_titles": ["一部电影"],
+        "spoiler_level": "S0",
+    }
+    pending = record_pending_draft(
+        media_id="draft-1",
+        title="这是一个标题",
+        topic_card=card,
+        topic_card_sha256="abc123",
+        drafted_at=NOW,
+        pending_path=pending_path,
+    )
+
+    ledger = record_verified_publication(
+        pending=pending,
+        publication=_published(),
+        ledger_path=tmp_path / "history.json",
+    )
+
+    assert pending["film_titles"] == ["一部电影"]
+    assert pending["spoiler_level"] == "S0"
+    assert ledger["posts"][0]["film_titles"] == ["一部电影"]
+    assert ledger["posts"][0]["spoiler_level"] == "S0"
 
 
 def test_same_article_id_is_idempotent(tmp_path: Path) -> None:
@@ -119,7 +151,7 @@ def test_invalid_post_keeps_number_but_is_excluded_from_mix(tmp_path: Path) -> N
 
     assert ledger["posts"][0]["post_no"] == "ZX-001"
     assert ledger["posts"][0]["status"] == "invalid"
-    assert content_mix_counts(ledger["posts"]) == {"A": 0, "A+C": 0, "C": 0}
+    assert content_mix_counts(ledger["posts"]) == {"A": 0, "B": 0, "A+C": 0, "C": 0}
 
 
 def test_round_allows_only_one_experiment_variable(tmp_path: Path) -> None:

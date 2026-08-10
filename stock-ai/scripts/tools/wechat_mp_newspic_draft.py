@@ -22,10 +22,15 @@ from scripts.tools.wechat_mp_newspic import (
     validate_newspic_input,
 )
 from scripts.tools.wechat_mp_virtual_editorial import (
+    FILM_LANES,
+    available_content_lanes,
     load_topic_card,
-    next_content_type,
     validate_opinion_copy,
     validate_topic_card,
+)
+from scripts.tools.wechat_mp_virtual_film import (
+    validate_film_copy,
+    validate_film_topic_card,
 )
 from scripts.tools.wechat_mp_virtual_ledger import (
     load_virtual_history,
@@ -71,9 +76,9 @@ def main() -> int:
     parser.add_argument(
         "--image-count",
         type=int,
-        choices=range(6, 10),
+        choices=range(2, 10),
         default=6,
-        metavar="6..9",
+        metavar="2..9",
         help="自动素材模式的目标图片数，默认 6",
     )
     parser.add_argument("--images", nargs="+", type=Path)
@@ -92,7 +97,7 @@ def main() -> int:
         "--allow-mix-override",
         default="",
         metavar="REASON",
-        help="有明确原因时覆盖当前 7:2:1 内容比例门禁",
+        help="有明确原因时覆盖当前十条八通道内容比例门禁",
     )
     parser.add_argument("--author", default="")
     parser.add_argument(
@@ -123,25 +128,30 @@ def main() -> int:
         else ("栀夏 · ZHI XIA" if args.slot == "virtual_lifestyle" else "")
     )
     topic_card: dict[str, object] | None = None
-    required_content_type = ""
+    available_lanes: list[str] = []
     try:
         if args.slot == "virtual_lifestyle":
             if args.topic_card is None:
                 raise ValueError("virtual_lifestyle 草稿必须提供 --topic-card")
             topic_card = validate_topic_card(load_topic_card(args.topic_card))
             history = load_virtual_history()
-            required_content_type = next_content_type(history.get("posts", []))
+            available_lanes = available_content_lanes(history.get("posts", []))
+            content_lane = str(topic_card["content_lane"])
             if (
-                topic_card["content_type"] != required_content_type
+                content_lane not in available_lanes
                 and not args.allow_mix_override.strip()
             ):
-                raise ValueError(f"当前比例下一条须为 {required_content_type}")
+                raise ValueError(f"{content_lane} 本轮名额已满")
+            if content_lane in FILM_LANES:
+                topic_card = topic_card | validate_film_topic_card(topic_card)
         image_paths, image_sources_path = _resolve_newspic_images(args)
+        content_lane = str(topic_card["content_lane"]) if topic_card else ""
         validate_newspic_input(
             title=args.title,
             content=content,
             image_paths=image_paths,
             draft_profile=args.slot,
+            content_lane=content_lane,
         )
         image_sources = validate_newspic_image_sources(
             image_paths=image_paths,
@@ -149,6 +159,7 @@ def main() -> int:
             content=content,
             draft_profile=args.slot,
             content_type=str(topic_card["content_type"]) if topic_card else "",
+            content_lane=content_lane,
             character_image_policy=(
                 str(topic_card["character_image_policy"])
                 if topic_card
@@ -163,7 +174,19 @@ def main() -> int:
                 str(source.get("source_type") or "") == "report"
                 for source in image_sources.values()
             )
-            validate_opinion_copy(content, has_report_images=has_report_images)
+            if content_lane in FILM_LANES:
+                validate_film_copy(
+                    title=args.title,
+                    content=content,
+                    card=topic_card,
+                    image_count=len(image_paths),
+                    has_original_images=any(
+                        str(source.get("source_type") or "") == "original"
+                        for source in image_sources.values()
+                    ),
+                )
+            else:
+                validate_opinion_copy(content, has_report_images=has_report_images)
     except CodexImageGenerationRequired as exc:
         print(f"需要 Codex 原创补图: {exc}", file=sys.stderr)
         return 2
@@ -174,7 +197,8 @@ def main() -> int:
         if topic_card is not None:
             print(
                 f"DRY-RUN [{args.slot}] 类型 {topic_card['content_type']} · "
-                f"评分 {topic_card['score_total']} · 下一条 {required_content_type} · "
+                f"通道 {topic_card['content_lane']} · 评分 {topic_card['score_total']} · "
+                f"可用通道 {','.join(available_lanes)} · "
                 f"图片 {len(image_paths)} 张 · {args.title}"
             )
         else:
@@ -192,6 +216,16 @@ def main() -> int:
         author=args.author,
         force_reupload=args.force_reupload,
         watermark=watermark,
+        content_type=str(topic_card["content_type"]) if topic_card else "",
+        content_lane=str(topic_card["content_lane"]) if topic_card else "",
+        character_image_policy=(
+            str(topic_card["character_image_policy"])
+            if topic_card
+            else "default_one"
+        ),
+        visual_exception=(
+            str(topic_card.get("visual_exception") or "") if topic_card else ""
+        ),
     )
     if topic_card is not None and args.topic_card is not None:
         record_pending_draft(

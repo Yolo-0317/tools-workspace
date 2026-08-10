@@ -55,14 +55,30 @@ def record_pending_draft(
         "media_id": media_id.strip(),
         "title": title.strip(),
         "content_type": str(topic_card.get("content_type") or "").strip(),
+        "content_lane": str(topic_card.get("content_lane") or "").strip(),
         "topic": str(topic_card.get("topic") or "").strip(),
+        "film_titles": [
+            str(title).strip()
+            for title in topic_card.get("film_titles", [])
+            if str(title).strip()
+        ]
+        if isinstance(topic_card.get("film_titles", []), list)
+        else [],
+        "spoiler_level": str(topic_card.get("spoiler_level") or "").strip(),
         "topic_card_sha256": topic_card_sha256.strip(),
         "drafted_at": timestamp.isoformat(timespec="seconds"),
         "mix_override_reason": mix_override_reason.strip(),
     }
     if not all(
         payload[field]
-        for field in ("media_id", "title", "content_type", "topic", "topic_card_sha256")
+        for field in (
+            "media_id",
+            "title",
+            "content_type",
+            "content_lane",
+            "topic",
+            "topic_card_sha256",
+        )
     ):
         raise ValueError("栀夏待发表记录字段不完整")
     _write_json_atomic(pending_path, payload)
@@ -161,13 +177,16 @@ def record_verified_publication(
         "article_id": article_id,
         "post_no": f"ZX-{sequence:03d}",
         "content_type": str(pending.get("content_type") or "").strip(),
+        "content_lane": str(pending.get("content_lane") or "").strip(),
+        "film_titles": list(pending.get("film_titles") or []),
+        "spoiler_level": str(pending.get("spoiler_level") or "").strip(),
         "title": str(pending.get("title") or "").strip(),
         "published_at": published_at.isoformat(timespec="seconds"),
         "status": status,
         "round": round_number,
         "experiment_variable": active_experiment,
     }
-    if not post["content_type"] or not post["title"]:
+    if not post["content_type"] or not post["content_lane"] or not post["title"]:
         raise ValueError("栀夏正式发表记录字段不完整")
     ledger["posts"].append(post)
     ledger["sequence"] = sequence

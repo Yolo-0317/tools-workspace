@@ -890,6 +890,7 @@ def test_virtual_lifestyle_dry_run_accepts_valid_a_topic_card(
                 "observed_at": datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(),
                 "discovery_platform": "百度热搜",
                 "content_type": "A",
+                "content_lane": "nonfilm_hotspot",
                 "fact_sources": [{"url": "https://example.com/a", "title": "报道"}],
                 "contrast": "一个具体反差",
                 "zhixia_observation": "一句只有栀夏会说的具体观察",
@@ -934,11 +935,115 @@ def test_virtual_lifestyle_dry_run_accepts_valid_a_topic_card(
 
     assert draft_cli.main() == 0
     output = capsys.readouterr().out
-    assert "类型 A" in output
+    assert "通道 nonfilm_hotspot" in output
     assert "评分 85" in output
 
 
-def test_virtual_lifestyle_rejects_content_type_out_of_current_mix(
+def test_virtual_lifestyle_dry_run_accepts_popular_film_without_character(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from scripts.tools import wechat_mp_newspic_draft as draft_cli
+
+    images = [tmp_path / f"film-{index}.jpg" for index in range(4)]
+    for image in images:
+        Image.new("RGB", (640, 960), color=(30, 60, 90)).save(image)
+    sources = tmp_path / "sources.json"
+    sources.write_text(
+        json.dumps(
+            {
+                image.name: {
+                    "source_type": "film_official",
+                    "film_title": "一部电影",
+                    "page_url": f"https://example.com/film/{index}",
+                    "page_title": "官方剧照",
+                    "source_name": "影片官方",
+                    "visual_role": "topic",
+                    "position_role": "hook" if index == 0 else "evidence",
+                    "allow_zhixia_watermark": False,
+                }
+                for index, image in enumerate(images)
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    card = tmp_path / "topic-card.json"
+    card.write_text(
+        json.dumps(
+            {
+                "topic": "一部电影正在上映",
+                "observed_at": datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(),
+                "discovery_platform": "猫眼电影",
+                "content_type": "A",
+                "content_lane": "popular_film",
+                "fact_sources": [
+                    {"url": "https://example.com/film", "title": "影片官方页"}
+                ],
+                "contrast": "热闹讨论里更值得看的是安静选择",
+                "zhixia_observation": "技术越响，人物沉默越有重量",
+                "click_reason": "给出不剧透的当下观看理由",
+                "image_plan": ["官方海报", "官方剧照"],
+                "risks": [],
+                "scores": {
+                    "timing": 20,
+                    "worker_relevance": 15,
+                    "zhixia_observation": 20,
+                    "visuals": 20,
+                    "persona_fit": 15,
+                },
+                "character_image_policy": "optional_one",
+                "visual_exception": "",
+                "film_titles": ["一部电影"],
+                "spoiler_level": "S0",
+                "release_status": "released",
+                "image_rights_status": [
+                    {
+                        "film_title": "一部电影",
+                        "source_name": "影片官方",
+                        "page_url": "https://example.com/film",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    disclosure = (
+        "栀夏是 AI 虚拟角色；本文为基于影片公开资料形成的原创内容，"
+        "不对应真人观影经历。"
+    )
+    content = "甲" * (220 - len(disclosure) - 2) + "\n\n" + disclosure
+    monkeypatch.setattr(draft_cli, "load_virtual_history", lambda: {"posts": []})
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "wechat_mp_newspic_draft",
+            "--slot",
+            "virtual_lifestyle",
+            "--topic-card",
+            str(card),
+            "--title",
+            "《一部电影》最安静的不是结尾",
+            "--content",
+            content,
+            "--images",
+            *(str(image) for image in images),
+            "--image-sources",
+            str(sources),
+            "--dry-run",
+        ],
+    )
+
+    assert draft_cli.main() == 0
+    assert "通道 popular_film" in capsys.readouterr().out
+
+
+def test_virtual_lifestyle_rejects_content_lane_already_full_in_current_mix(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -956,6 +1061,7 @@ def test_virtual_lifestyle_rejects_content_type_out_of_current_mix(
                 "observed_at": datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(),
                 "discovery_platform": "百度热搜",
                 "content_type": "A+C",
+                "content_lane": "ai_human",
                 "fact_sources": [{"url": "https://example.com/a", "title": "报道"}],
                 "contrast": "一个具体反差",
                 "zhixia_observation": "一句只有栀夏会说的具体观察",
@@ -976,7 +1082,12 @@ def test_virtual_lifestyle_rejects_content_type_out_of_current_mix(
         ),
         encoding="utf-8",
     )
-    monkeypatch.setattr(draft_cli, "load_virtual_history", lambda: {"posts": []}, raising=False)
+    monkeypatch.setattr(
+        draft_cli,
+        "load_virtual_history",
+        lambda: {"posts": [{"content_lane": "ai_human", "status": "published"}]},
+        raising=False,
+    )
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -999,7 +1110,7 @@ def test_virtual_lifestyle_rejects_content_type_out_of_current_mix(
     )
 
     assert draft_cli.main() == 1
-    assert "当前比例下一条须为 A" in capsys.readouterr().err
+    assert "ai_human 本轮名额已满" in capsys.readouterr().err
 
 
 def test_virtual_lifestyle_verified_draft_records_pending_entry(
@@ -1048,6 +1159,7 @@ def test_virtual_lifestyle_verified_draft_records_pending_entry(
                 "observed_at": datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(),
                 "discovery_platform": "百度热搜",
                 "content_type": "A",
+                "content_lane": "nonfilm_hotspot",
                 "fact_sources": [{"url": "https://example.com/a", "title": "报道"}],
                 "contrast": "一个具体反差",
                 "zhixia_observation": "一句只有栀夏会说的具体观察",
@@ -1104,4 +1216,5 @@ def test_virtual_lifestyle_verified_draft_records_pending_entry(
     pending = json.loads(pending_path.read_text(encoding="utf-8"))
     assert pending["media_id"] == "verified-media-id"
     assert pending["content_type"] == "A"
+    assert pending["content_lane"] == "nonfilm_hotspot"
     assert pending["topic_card_sha256"]
