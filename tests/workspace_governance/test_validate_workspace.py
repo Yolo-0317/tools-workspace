@@ -84,6 +84,43 @@ print(json.dumps(validate_wiki(Path(sys.argv[1]), {'known'}, date(2026, 8, 10)))
         self.assertTrue(any("duplicate wiki topic: duplicate-topic" in error for error in errors))
         self.assertTrue(any("unknown related project: missing" in error for error in errors))
 
+    def test_wiki_validation_rejects_an_empty_source_list(self) -> None:
+        page = """---
+title: Untraceable Page
+type: knowledge
+topic: untraceable-page
+aliases: [untraceable]
+tags: [workspace]
+scope: workspace
+status: draft
+owner: workspace-maintainer
+source: []
+related_projects: [known]
+review_at: 2026-11-10
+---
+
+# Untraceable Page
+"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            wiki_root = Path(temp_dir)
+            knowledge = wiki_root / "workspace" / "knowledge"
+            knowledge.mkdir(parents=True)
+            (knowledge / "page.md").write_text(page, encoding="utf-8")
+            source = """
+from datetime import date
+import json
+from pathlib import Path
+import sys
+sys.path.insert(0, 'scripts')
+from validate_workspace import validate_wiki
+print(json.dumps(validate_wiki(Path(sys.argv[1]), {'known'}, date(2026, 8, 10))))
+"""
+            result = self.run_python(source, str(wiki_root))
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        errors = json.loads(result.stdout)
+        self.assertTrue(any("source must not be empty" in error for error in errors), errors)
+
     def test_real_workspace_passes_the_aggregate_validator(self) -> None:
         result = subprocess.run(
             [sys.executable, str(SCRIPT), "--format", "json"],

@@ -92,6 +92,8 @@ def validate_wiki(root: Path, project_ids: set[str], today: date) -> list[str]:
         status = metadata["status"]
         if status not in WIKI_STATUSES:
             errors.append(f"{path}: unknown wiki status: {status}")
+        if not metadata["source"]:
+            errors.append(f"{path}: source must not be empty")
         try:
             date.fromisoformat(str(metadata["review_at"]))
         except ValueError:
