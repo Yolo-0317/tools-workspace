@@ -92,6 +92,18 @@ def _ensure_date_cached(d: date) -> None:
     refresh_trade_cal_cache(date(d.year, 1, 1), date(d.year, 12, 31))
 
 
+def trading_day_status(d: date, *, refresh: bool = True) -> bool | None:
+    """严格返回交易日状态；无法确认的工作日返回 None。"""
+
+    if d.weekday() >= 5:
+        return False
+    flag = _lookup_cached(d)
+    if flag is None and refresh:
+        refresh_trade_cal_cache(date(d.year, 1, 1), date(d.year, 12, 31))
+        flag = _lookup_cached(d)
+    return None if flag is None else flag == 1
+
+
 def is_a_share_trading_day(d: date | None = None) -> bool:
     """是否 A 股交易日。周末恒为 False；工作日查 SSE 日历（无缓存且无 token 时工作日暂按开市）。"""
     d = d or datetime.now(TZ).date()
@@ -102,6 +114,38 @@ def is_a_share_trading_day(d: date | None = None) -> bool:
     if flag is None:
         return True
     return flag == 1
+
+
+def latest_confirmed_a_share_trade_date(
+    on_or_before: date,
+) -> date | None:
+    """返回不晚于指定日期的已确认交易日；遇到未知工作日即停止。"""
+
+    current = on_or_before
+    for _ in range(366):
+        status = trading_day_status(current)
+        if status is None:
+            return None
+        if status:
+            return current
+        current -= timedelta(days=1)
+    return None
+
+
+def next_confirmed_a_share_trade_date(
+    on_or_after: date,
+) -> date | None:
+    """返回不早于指定日期的已确认交易日；遇到未知工作日即停止。"""
+
+    current = on_or_after
+    for _ in range(366):
+        status = trading_day_status(current)
+        if status is None:
+            return None
+        if status:
+            return current
+        current += timedelta(days=1)
+    return None
 
 
 def is_off_market_day(d: date | None = None) -> bool:

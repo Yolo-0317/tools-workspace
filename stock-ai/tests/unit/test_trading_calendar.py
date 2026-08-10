@@ -12,7 +12,13 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from stock_ai.trading_calendar import is_a_share_trading_day, is_off_market_day
+from stock_ai.trading_calendar import (
+    is_a_share_trading_day,
+    is_off_market_day,
+    latest_confirmed_a_share_trade_date,
+    next_confirmed_a_share_trade_date,
+    trading_day_status,
+)
 
 
 @pytest.fixture
@@ -47,6 +53,57 @@ def test_weekday_holiday_from_cache(trade_cal_cache) -> None:
     assert holiday.weekday() < 5
     assert is_a_share_trading_day(holiday) is False
     assert is_off_market_day(holiday) is True
+
+
+def test_strict_status_distinguishes_cached_days_from_an_unknown_weekday(
+    trade_cal_cache, monkeypatch
+) -> None:
+    trade_cal_cache.write_text(
+        json.dumps({"days": {"2026-08-07": 1, "2026-08-10": 0}}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "stock_ai.trading_calendar.refresh_trade_cal_cache", lambda *args: 0
+    )
+
+    assert trading_day_status(date(2026, 8, 7)) is True
+    assert trading_day_status(date(2026, 8, 10)) is False
+    assert trading_day_status(date(2026, 8, 11)) is None
+
+
+def test_confirmed_dates_cross_known_closed_days(trade_cal_cache, monkeypatch) -> None:
+    trade_cal_cache.write_text(
+        json.dumps(
+            {
+                "days": {
+                    "2026-08-07": 1,
+                    "2026-08-10": 0,
+                    "2026-08-11": 1,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "stock_ai.trading_calendar.refresh_trade_cal_cache", lambda *args: 0
+    )
+
+    assert latest_confirmed_a_share_trade_date(date(2026, 8, 10)) == date(2026, 8, 7)
+    assert next_confirmed_a_share_trade_date(date(2026, 8, 8)) == date(2026, 8, 11)
+
+
+def test_confirmed_date_stops_when_an_intervening_weekday_is_unknown(
+    trade_cal_cache, monkeypatch
+) -> None:
+    trade_cal_cache.write_text(
+        json.dumps({"days": {"2026-08-07": 1}}), encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        "stock_ai.trading_calendar.refresh_trade_cal_cache", lambda *args: 0
+    )
+
+    assert latest_confirmed_a_share_trade_date(date(2026, 8, 10)) is None
+    assert next_confirmed_a_share_trade_date(date(2026, 8, 10)) is None
 
 
 def test_resolve_batch_holiday_weekday(trade_cal_cache, monkeypatch) -> None:
