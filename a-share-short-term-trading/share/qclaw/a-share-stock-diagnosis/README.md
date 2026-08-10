@@ -5,6 +5,7 @@
 ## 环境
 
 - Python 3.10 或更高版本
+- 系统 `curl`，仅在 Python `urllib` 被行情服务端断开时作为受限降级传输；现代 macOS、Windows 和常见 Linux 通常已自带
 - 可访问东财公开行情域名
 - 不需要 MySQL、Tushare、OpenCLI、`.env` 或第三方 Python 包
 
