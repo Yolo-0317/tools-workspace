@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import json
 import math
 from typing import Any, Mapping
@@ -11,6 +11,7 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
+from .cache import PublicDataCache
 from .models import DailyBar, Quote, Security
 from .validation import market_for_code, normalize_code
 
@@ -88,8 +89,14 @@ def _finite_number(value: Any, field: str, *, positive: bool = False) -> float:
 
 
 class EastmoneyClient:
-    def __init__(self, transport: Any | None = None) -> None:
+    def __init__(
+        self,
+        transport: Any | None = None,
+        *,
+        cache: PublicDataCache | None = None,
+    ) -> None:
         self.transport = transport or JsonHttpClient()
+        self.cache = cache
 
     def _quote_payload(self, security: Security) -> dict[str, Any]:
         payload = self.transport.get_json(
@@ -123,20 +130,29 @@ class EastmoneyClient:
         query = str(value).strip()
         if not query:
             raise ValueError("股票名称不能为空")
-        payload = self.transport.get_json(
-            STOCK_LIST_URL,
-            {
-                "pn": "1",
-                "pz": "6000",
-                "po": "1",
-                "np": "1",
-                "fltt": "2",
-                "invt": "2",
-                "fid": "f12",
-                "fs": "m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23",
-                "fields": "f12,f13,f14",
-            },
+        payload = None if self.cache is None else self.cache.read(
+            "symbols", "all", max_age=timedelta(hours=24)
         )
+        if payload is None:
+            payload = self.transport.get_json(
+                STOCK_LIST_URL,
+                {
+                    "pn": "1",
+                    "pz": "6000",
+                    "po": "1",
+                    "np": "1",
+                    "fltt": "2",
+                    "invt": "2",
+                    "fid": "f12",
+                    "fs": "m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23",
+                    "fields": "f12,f13,f14",
+                },
+            )
+            if self.cache is not None:
+                try:
+                    self.cache.write("symbols", "all", payload)
+                except OSError:
+                    pass
         data = payload.get("data") if isinstance(payload, dict) else None
         rows = data.get("diff") if isinstance(data, dict) else None
         if not isinstance(rows, list):
@@ -193,18 +209,27 @@ class EastmoneyClient:
     def fetch_daily_bars(self, security: Security, limit: int = 210) -> list[DailyBar]:
         if not 20 <= limit <= 1000:
             raise ValueError("日线数量必须在 20..1000")
-        payload = self.transport.get_json(
-            DAILY_URL,
-            {
-                "secid": _secid(security),
-                "klt": "101",
-                "fqt": "0",
-                "lmt": str(limit),
-                "end": "20500101",
-                "fields1": "f1,f2,f3,f4,f5,f6",
-                "fields2": "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61",
-            },
+        payload = None if self.cache is None else self.cache.read(
+            "daily", security.code, max_age=timedelta(hours=12)
         )
+        if payload is None:
+            payload = self.transport.get_json(
+                DAILY_URL,
+                {
+                    "secid": _secid(security),
+                    "klt": "101",
+                    "fqt": "0",
+                    "lmt": str(limit),
+                    "end": "20500101",
+                    "fields1": "f1,f2,f3,f4,f5,f6",
+                    "fields2": "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61",
+                },
+            )
+            if self.cache is not None:
+                try:
+                    self.cache.write("daily", security.code, payload)
+                except OSError:
+                    pass
         data = payload.get("data") if isinstance(payload, dict) else None
         if not isinstance(data, dict) or str(data.get("code") or "") != security.code:
             raise DataValidationError("SYMBOL_MISMATCH", "日线代码与请求不一致")

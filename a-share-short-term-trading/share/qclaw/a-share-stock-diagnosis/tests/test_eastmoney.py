@@ -39,6 +39,11 @@ class FixtureTransport:
         return self.quote
 
 
+class FailingTransport:
+    def get_json(self, url, params, timeout=10.0):
+        raise DataSourceError("NETWORK_ERROR", "fixture offline")
+
+
 class FakeResponse:
     def __init__(self, body: bytes, content_length: int | None = None) -> None:
         self.body = body
@@ -123,6 +128,23 @@ class EastmoneyClientTests(unittest.TestCase):
                 client = EastmoneyClient(FixtureTransport(daily=payload))
                 with self.assertRaises(DataValidationError):
                     client.fetch_daily_bars(Security("603011", "SH", "合锻智能"))
+
+    def test_public_symbol_and_daily_cache_supports_a_second_offline_read(self) -> None:
+        with TemporaryDirectory() as directory:
+            cache = PublicDataCache(Path(directory))
+            online = EastmoneyClient(
+                FixtureTransport(
+                    search=load_fixture("search_unique.json"),
+                    daily=load_fixture("daily_603011.json"),
+                ),
+                cache=cache,
+            )
+            security = online.resolve_symbol("合锻智能")
+            expected_bars = online.fetch_daily_bars(security)
+
+            offline = EastmoneyClient(FailingTransport(), cache=cache)
+            self.assertEqual(offline.resolve_symbol("合锻智能"), security)
+            self.assertEqual(offline.fetch_daily_bars(security), expected_bars)
 
 
 class PublicDataCacheTests(unittest.TestCase):
