@@ -89,6 +89,7 @@ class EvidenceRepository:
 
     def save_capture_attempt(self, attempt: Any) -> None:
         values = asdict(attempt)
+        values["raw_reference"] = values.pop("raw_evidence_ref")
         values["idempotency_key"] = attempt.attempt_id
         values["started_at"] = utc_naive(attempt.started_at)
         values["finished_at"] = utc_naive(attempt.finished_at)

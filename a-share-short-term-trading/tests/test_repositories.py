@@ -11,6 +11,7 @@ from short_term_trading.contracts import (
 from short_term_trading.repositories.evidence import EvidenceRepository
 from short_term_trading.repositories.planning import PlanningRepository
 from short_term_trading.repositories.review import ReviewRepository
+from short_term_trading.evidence import CaptureAttempt
 
 
 AS_OF = datetime(2026, 8, 10, 7, 0, tzinfo=timezone.utc)
@@ -83,6 +84,32 @@ def test_evidence_repository_binds_enum_utc_decimal_and_unicode_json() -> None:
     assert values["as_of"] == datetime(2026, 8, 10, 7, 0)
     assert values["expires_at"] == datetime(2026, 8, 10, 7, 5)
     assert json.loads(str(values["payload_json"])) == {"last_price": "12.30", "名称": "浦发银行"}
+
+
+def test_legacy_capture_attempt_maps_evidence_reference_to_the_mysql_column() -> None:
+    engine = RecordingEngine()
+    attempt = CaptureAttempt(
+        attempt_id="30000000-0000-4000-8000-000000000099",
+        code="603011",
+        kind="chip",
+        source="eastmoney-opencli",
+        started_at=AS_OF,
+        finished_at=AS_OF + timedelta(seconds=2),
+        status="SUCCESS",
+        retry_count=0,
+        field_completeness=1.0,
+        parser_version="chip-cyq-v1",
+        raw_evidence_ref="eastmoney-opencli:kline:603011:2026-08-10",
+        error_class=None,
+        error_message=None,
+    )
+
+    EvidenceRepository(engine).save_capture_attempt(attempt)
+    statement, values = engine.connection.calls[0]
+
+    assert "raw_reference" in statement
+    assert "raw_evidence_ref" not in statement
+    assert values["raw_reference"] == "eastmoney-opencli:kline:603011:2026-08-10"
 
 
 def test_planning_repository_serializes_nested_fields_without_mutating_contracts() -> None:
