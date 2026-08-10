@@ -311,12 +311,17 @@ WECHAT_MP_ONLY_FANS_COMMENT=0     # 1=仅粉丝可留言
 
 **红线不变**：互动问句禁荐股、禁「点赞在看」套路；文末仍有免责声明。
 
+## 深度与见解（2026-06 写作标准）
+
+- **财经**：不止报数 — 接宏观/政策传导 + 「我们认为」「值得关注的是」「向后看」；详见 [wechat-mp-writing/depth-and-opinion.md](../wechat-mp-writing/depth-and-opinion.md)
+- **影视**：不止梗概 — 点出立意 + 至少 2 处主观判断；代码 `TV_DEPTH_RULE`
+
 ## 自动评分（`wechat_mp_eval`）
 
 ```bash
 cd stock-ai
 uv run python -m scripts.tools.wechat_mp_eval --kind all
-uv run python -m scripts.tools.wechat_mp_eval --kind workspace --min-score 70 --max-ai-flavor 40
+uv run python -m scripts.tools.wechat_mp_eval --kind workspace --min-score 70 --max-ai-flavor 20
 ```
 
 | 维度 | 满分 | 要点 |
@@ -327,7 +332,7 @@ uv run python -m scripts.tools.wechat_mp_eval --kind workspace --min-score 70 --
 | 去 AI | 30 | 禁词/连接词/程度词（另报 AI 味 0–100） |
 | 结尾 | 10 | 合规句、少模板互动 |
 
-**判定**：无合规失败 + 总分 ≥75 + AI 味 ≤40 → `可进草稿箱`；否则按终端建议改稿。
+**判定**：无合规失败 + 总分 ≥75 + AI 味 ≤20 → `可进草稿箱`；否则按终端建议改稿。
 
 **阅读量清单**：`wechat_mp_eval --traffic` 或 `wechat_mp_draft --dry-run`（见上节「冲阅读量清单」）。
 

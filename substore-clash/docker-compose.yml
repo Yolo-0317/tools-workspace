@@ -21,7 +21,8 @@ services:
     container_name: substore-clash-gen
     restart: unless-stopped
     ports:
-      - "127.0.0.1:${CLASH_GEN_PORT:-8787}:8787"
+      # 局域网可直连 http://<LAN-IP>:8787/clash-verge.yaml（勿对公网映射此端口）
+      - "0.0.0.0:${CLASH_GEN_PORT:-8787}:8787"
     environment:
       SUBSCRIPTION_URLS: ${SUBSCRIPTION_URLS:-}
       SUBSTORE_COLLECTION_URL: ${SUBSTORE_COLLECTION_URL:-}

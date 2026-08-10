@@ -42,8 +42,6 @@ def _pages_for_book(book: dict) -> list[dict]:
         out: list[dict] = []
         for i, page in enumerate(explicit, start=1):
             lines = [str(ln).strip() for ln in page.get("lines") or [] if str(ln).strip()]
-            if not lines:
-                continue
             img = page.get("image") or f"{book['id']}/p{i:02d}.jpg"
             out.append({"index": i, "lines": lines, "image": img})
         return out
@@ -122,6 +120,16 @@ def enrich_catalog_images(data: dict) -> dict:
 def load_catalog() -> dict:
     if CATALOG_JSON.is_file():
         data = json.loads(CATALOG_JSON.read_text(encoding="utf-8"))
+        if BOOKS_JSON.is_file():
+            books_mtime = BOOKS_JSON.stat().st_mtime
+            catalog_mtime = CATALOG_JSON.stat().st_mtime
+            if books_mtime > catalog_mtime + 1:
+                import logging
+
+                logging.getLogger(__name__).warning(
+                    "books.json newer than catalog.json — run: "
+                    "cd english-buddy/backend && python3 teaching/build_lessons_v5.py"
+                )
     else:
         data = build_catalog(0)
     return enrich_catalog_images(data)

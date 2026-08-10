@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# 安装公众号：白名单监控（每小时）+ 每日 18:20 草稿（工作日三篇 / 周末要闻）
+# 安装公众号：白名单监控（每小时）
+# 草稿：由 Docker scheduler 11:00 影视 / 15:00 股市热点 host-jobs 触发
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -30,6 +31,10 @@ uninstall_one() {
 
 chmod +x "${ROOT}/scripts/wechat_mp_check_whitelist.sh"
 chmod +x "${ROOT}/scripts/wechat_mp_draft_scheduled.sh"
+chmod +x "${ROOT}/scripts/wechat_mp_tv_draft_scheduled.sh"
+chmod +x "${ROOT}/scripts/wechat_mp_hotspot_draft_scheduled.sh"
+chmod +x "${ROOT}/scripts/wechat_mp_growth_remind.sh"
+chmod +x "${ROOT}/scripts/wechat_mp_guba_scheduled.sh"
 
 install_one "com.user.wechat-mp-whitelist-check" \
   "${WS}/launchd/com.user.wechat-mp-whitelist-check.plist"
@@ -39,22 +44,25 @@ for legacy in \
   com.user.wechat-mp-daily-draft \
   com.user.wechat-mp-draft-morning \
   com.user.wechat-mp-draft-noon \
-  com.user.wechat-mp-draft-evening; do
+  com.user.wechat-mp-draft-evening \
+  com.user.wechat-mp-draft-scheduled \
+  com.user.wechat-mp-guba-scheduled; do
   uninstall_one "${legacy}"
 done
 
-install_one "com.user.wechat-mp-draft-scheduled" \
-  "${WS}/launchd/com.user.wechat-mp-draft-scheduled.plist"
+# 增长提醒已停用（2026-06-16）
+uninstall_one "com.user.wechat-mp-growth-remind"
 
 echo ""
 echo "OK com.user.wechat-mp-whitelist-check（每小时）"
 echo "   日志: ${ROOT}/logs/launchd-wechat-mp-check.{out,err}.log"
-echo "OK com.user.wechat-mp-draft-scheduled（每日 18:20）"
-echo "   交易日: sector + top5 + dragons(eod)"
-echo "   周日/法定节假日休市: news 1 篇(热股Top10×周末快讯,OpenCLI按需拉)"
-echo "   周六休市: 跳过"
-echo "   日志: ${ROOT}/logs/launchd-wechat-mp-draft-scheduled.{out,err}.log"
+echo "已停用 com.user.wechat-mp-draft-scheduled / com.user.wechat-mp-guba-scheduled"
+echo "草稿定时: Docker scheduler → host-jobs（热点深评 09:00 / 11:00 / 15:00 / 18:00）"
+echo "   09:00: ${ROOT}/logs/host-job-wechat-mp-hotspot-early.log"
+echo "   11:00: ${ROOT}/logs/host-job-wechat-mp-hotspot-morning.log"
+echo "   15:00: ${ROOT}/logs/host-job-wechat-mp-hotspot-afternoon.log"
+echo "   18:00: ${ROOT}/logs/host-job-wechat-mp-hotspot-evening.log"
 echo ""
-echo "手动: ${ROOT}/scripts/wechat_mp_draft_scheduled.sh"
-echo "      ${ROOT}/scripts/wechat_mp_draft_scheduled.sh --dry-run"
-echo "      ${ROOT}/scripts/wechat_mp_draft_scheduled.sh weekend --dry-run"
+echo "手动:"
+echo "  ${ROOT}/scripts/wechat_mp_tv_draft_scheduled.sh --dry-run"
+echo "  ${ROOT}/scripts/wechat_mp_hotspot_draft_scheduled.sh --dry-run"

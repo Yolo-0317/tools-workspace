@@ -1,0 +1,28 @@
+---
+description: english-buddy 专项记忆 — ORT 听读/带读、WS 协议、分页数据
+alwaysApply: false
+---
+
+# English Buddy Memory
+
+**真源文档**：`english-buddy/docs/ORT_READ_ALONG.md`（架构）· `english-buddy/docs/AUTH.md`（账号/听读入口）
+
+## 2026-06-07 ORT 牛津树听读/带读（现行逻辑）
+
+- **Context**: 专题按页插图带读；书上同页可有多句（如 L3 Sniff p06）；分 **听读**（自动往下）与 **带读**（叮叮跟读）。
+- **Pitfall/Error**: ① `pages[]` 一句一页 → 本页只显示/只念一句。② 听读翻页后 `listen_only_hold` 停自动读（须 `resume_listen_auto`）。③ 句子框 `max-height` 过小裁切第二句。④ 长句多 chunk：`opening_line` 只念首 chunk；重读整句 TTS 缓存错位。⑤ 插图跟 `assistant_text` 走会图快于音；跟 `ortViewPageIndex` 走句子栏与 server line 抢状态。⑥ 过期 `teacher_playback_done` 导致听读双跳句。
+- **Solution/Rule**:
+  - **数据真源**：`teaching/ort_oxford_owl/books.json` 的 `pages[].lines`（同页多句写进同一 page）；L3 分页参考 `ort_l3_page_groups.json`。改后：`cd english-buddy/backend && python3 teaching/build_lessons_v5.py` → `./scripts/restart.sh`（`catalog.json` 落后时启动 warning）。
+  - **前端双索引**：`readAlongLineIndex` ← `assistant_text.line_index`（句子栏+高亮）；`ortViewPageIndex` ← TTS `onplaying` 或手动翻页；`ortScriptPageIndex = ortLinePageIndex(book, readAlongLineIndex)`。
+  - **图音同步**：自动流程插图仅在 `syncOrtImageOnSpeechStart`（TTS onplaying）更新，不在 `assistant_text` 时翻页。
+  - **听读**：播完 → `dwellOrtIllustrationPages`（纯插图页停留 `ORT_ILLUSTRATION_PAGE_MS`）→ `teacher_playback_done` + `playback_generation`；翻页/滑动 `reread_line` 带 `resume_listen_auto:true`；点「下一句」设 hold 停一次自动读。
+  - **带读**：播完 → 叮叮 → `utterance_end`；片段不足 `is_sufficient_child_attempt` 时累积 `child_spoken_buffer`（「继续说这一句…」）；并发 utterance 用 `utterance_queued` 重试。
+  - **服务端**：`_prepare_*` 持 `turn_lock` 改 index；`_deliver_teacher_read_along` 锁外 TTS；`playback_generation` 校验 `teacher_playback_done`；`interrupt` 递增 generation；`reset_read_along_session_state()` 于 `end_call`/`start_call`。
+  - **入口**：专题 `ortSessionListenOnly`；`ENGLISH_BUDDY_STT_USERS` 内账号可选跟读/听读；未登录或非 STT 只听。
+  - **部署**：`./scripts/restart.sh --build`；PWA 硬刷新 `https://hub…/english/`。
+
+## 2026-06-04 带读基础（仍有效）
+
+- **按句重读**：`reread_line` + `jump_to_line` / `material_line_text`；读完 `lesson_complete`；`speakReply.stopSpeaking` 须 resolve Promise；服务端 `reread_line` 勿在 TTS 已结束后把 phase 设回 speaking。
+- **语速**：0.85 / 1.0 / 1.15 → `localStorage` `english-buddy-tts-speed`。
+- **预热**：内置课 `BUILTIN_PREWARM`；ORT 须 `images_ready` 才在专题展示。

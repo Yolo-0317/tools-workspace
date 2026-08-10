@@ -1,0 +1,717 @@
+{
+  "catalog_key": "tong_laoshi",
+  "title": "童老师 牛津树精讲",
+  "path_hint": "玥玥/童老师精讲音频/童老师音频课1阶",
+  "folder_fid": "~16uKjA4ZBahgTrVLLdQH_7agPHQ2N7eHdpFgVhQTjR86AZysxeKMInrHTt4mFJqW_POvH6NtxEhE0EDejKeglGU",
+  "built_at": "2026-07-29T17:51:22+08:00",
+  "source": "listed from Quark folder 童老师音频课1阶",
+  "rules": {
+    "default_play": "global_n=1 → 01【正课】Look at Me-双语讲解.mp3",
+    "skip": "发刊词 / 奖励音频 / 经验分享 不在本 map",
+    "scope": "仅 1 阶 mp3（正课+磨耳朵）"
+  },
+  "default_start": {
+    "global_n": 1,
+    "season": 1,
+    "season_ep": 1,
+    "filename": "01【正课】Look at Me-双语讲解.mp3",
+    "title": "Look at Me-双语讲解",
+    "fid": "~1uGR0EgNq-tM0XjvxYM7pD48DtpwXE37XOjwG954PSVJeRcCuqnV9MQ3ceDBtiZ6JohpE2AKM5yYMbpUi4bxKtM",
+    "fids": [
+      "~1uGR0EgNq-tM0XjvxYM7pD48DtpwXE37XOjwG954PSVJeRcCuqnV9MQ3ceDBtiZ6JohpE2AKM5yYMbpUi4bxKtM"
+    ]
+  },
+  "seasons": [
+    {
+      "id": 1,
+      "label": "音频课1阶",
+      "aliases": [
+        "1阶",
+        "一阶",
+        "第一阶"
+      ],
+      "episode_count": 56,
+      "global_range": [
+        1,
+        56
+      ],
+      "first_filename": "01【正课】Look at Me-双语讲解.mp3",
+      "last_filename": "56【磨耳朵】Hide and Seek-绘本有声剧.mp3"
+    }
+  ],
+  "episode_count": 56,
+  "episodes": [
+    {
+      "global_n": 1,
+      "season": 1,
+      "season_ep": 1,
+      "filename": "01【正课】Look at Me-双语讲解.mp3",
+      "title": "Look at Me-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1uGR0EgNq-tM0XjvxYM7pD48DtpwXE37XOjwG954PSVJeRcCuqnV9MQ3ceDBtiZ6JohpE2AKM5yYMbpUi4bxKtM"
+      ],
+      "fid": "~1uGR0EgNq-tM0XjvxYM7pD48DtpwXE37XOjwG954PSVJeRcCuqnV9MQ3ceDBtiZ6JohpE2AKM5yYMbpUi4bxKtM"
+    },
+    {
+      "global_n": 2,
+      "season": 1,
+      "season_ep": 2,
+      "filename": "02【磨耳朵】Look at Me.mp3",
+      "title": "磨耳朵 Look at Me",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1_V_voS6XmrUSD8eji6dYTdRwObNPlKTqngpx3OdvQ-IkP989hDzplHkEJ1ivZDADgWUJghPR7kZJe3gMxopS0U"
+      ],
+      "fid": "~1_V_voS6XmrUSD8eji6dYTdRwObNPlKTqngpx3OdvQ-IkP989hDzplHkEJ1ivZDADgWUJghPR7kZJe3gMxopS0U"
+    },
+    {
+      "global_n": 3,
+      "season": 1,
+      "season_ep": 3,
+      "filename": "03【正课】Go on, Mum!-双语讲解.mp3",
+      "title": "Go on, Mum!-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1AYqJkwrWN-s6XZgDveWGq3QvIlkrUPCwuAb1AEn6ELZfGavkqalNHZC1nti4XPVt5PDUn2tW-qnVfiskRHKGh0"
+      ],
+      "fid": "~1AYqJkwrWN-s6XZgDveWGq3QvIlkrUPCwuAb1AEn6ELZfGavkqalNHZC1nti4XPVt5PDUn2tW-qnVfiskRHKGh0"
+    },
+    {
+      "global_n": 4,
+      "season": 1,
+      "season_ep": 4,
+      "filename": "04【磨耳朵】Go on, Mum!.mp3",
+      "title": "磨耳朵 Go on, Mum!",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1PXzeX_ocEMEHmYOTf0_eX0d-m-Elb3UJTIgqz8hxrRHapgc9r-Y0Ma4cvFcE3aBv__ACsk0fsBU2fT7pqHw_EI"
+      ],
+      "fid": "~1PXzeX_ocEMEHmYOTf0_eX0d-m-Elb3UJTIgqz8hxrRHapgc9r-Y0Ma4cvFcE3aBv__ACsk0fsBU2fT7pqHw_EI"
+    },
+    {
+      "global_n": 5,
+      "season": 1,
+      "season_ep": 5,
+      "filename": "05【正课】Kipper's Diary-双语讲解.mp3",
+      "title": "Kipper's Diary-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1rPVRu4Z4aEsyDCo8ZGDBsPu2AkRVa_fsu-STqghU4mfrvaNvFvvqeynUzf9CJ4CGV2RSvK1zWvbK-_MeS9Gtoc"
+      ],
+      "fid": "~1rPVRu4Z4aEsyDCo8ZGDBsPu2AkRVa_fsu-STqghU4mfrvaNvFvvqeynUzf9CJ4CGV2RSvK1zWvbK-_MeS9Gtoc"
+    },
+    {
+      "global_n": 6,
+      "season": 1,
+      "season_ep": 6,
+      "filename": "06【磨耳朵】Kipper's Diary.mp3",
+      "title": "磨耳朵 Kipper's Diary",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1fnh02k3LP1EfgZgNvhyJMBngHdeHLP1XM79NcYwehp-4k4o_KIcUPGgJhR-jA2xJdWJkf8IAHRk4gHzFySvacw"
+      ],
+      "fid": "~1fnh02k3LP1EfgZgNvhyJMBngHdeHLP1XM79NcYwehp-4k4o_KIcUPGgJhR-jA2xJdWJkf8IAHRk4gHzFySvacw"
+    },
+    {
+      "global_n": 7,
+      "season": 1,
+      "season_ep": 7,
+      "filename": "07【正课】Big Feet-双语讲解.mp3",
+      "title": "Big Feet-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~12hTfS2sFSs8ZNDiGF8BVDs1awW7jEVfG-a--DSlMfqMtLMBP5jpSsl2IPumaI2nSHrfbh2RIqwN0vbX89EF4Rc"
+      ],
+      "fid": "~12hTfS2sFSs8ZNDiGF8BVDs1awW7jEVfG-a--DSlMfqMtLMBP5jpSsl2IPumaI2nSHrfbh2RIqwN0vbX89EF4Rc"
+    },
+    {
+      "global_n": 8,
+      "season": 1,
+      "season_ep": 8,
+      "filename": "08【磨耳朵】Big Feet.mp3",
+      "title": "磨耳朵 Big Feet",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1CVW4Pxz24LULhCPLZPWpEW_EW2Yr58698uvsXiAq1A_VptMMkmNHsTTi1zB_l5-xX4evScjexxZ7fJB5hLzNpg"
+      ],
+      "fid": "~1CVW4Pxz24LULhCPLZPWpEW_EW2Yr58698uvsXiAq1A_VptMMkmNHsTTi1zB_l5-xX4evScjexxZ7fJB5hLzNpg"
+    },
+    {
+      "global_n": 9,
+      "season": 1,
+      "season_ep": 9,
+      "filename": "09【正课】Look After Me-双语讲解.mp3",
+      "title": "Look After Me-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1StVgY4U18KQojSKT7OLEPmSZ4KiEMrrBYlDq5yRd_HSfLwp_z-LrT7lwH1ayR8Kac2tHjAEi7CL6pi5YnT1XjY"
+      ],
+      "fid": "~1StVgY4U18KQojSKT7OLEPmSZ4KiEMrrBYlDq5yRd_HSfLwp_z-LrT7lwH1ayR8Kac2tHjAEi7CL6pi5YnT1XjY"
+    },
+    {
+      "global_n": 10,
+      "season": 1,
+      "season_ep": 10,
+      "filename": "10【磨耳朵】Look After Me.mp3",
+      "title": "磨耳朵 Look After Me",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1NWSbsQvIBYYzYJam82fo8WvFpoDEtz0gcVSDgGuPcP5xhlB3XyrtNvxdBIPFSGUAXrzxSyVxHb_S2hZjal_VVI"
+      ],
+      "fid": "~1NWSbsQvIBYYzYJam82fo8WvFpoDEtz0gcVSDgGuPcP5xhlB3XyrtNvxdBIPFSGUAXrzxSyVxHb_S2hZjal_VVI"
+    },
+    {
+      "global_n": 11,
+      "season": 1,
+      "season_ep": 11,
+      "filename": "11【正课】Presents for Dad-双语讲解.mp3",
+      "title": "Presents for Dad-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1hWd6iOLF6UMrNH7kb1LiCFgj1I35zoAwd_k230eyEczpLIBzMZcli_knS0nT2snJMDmZesgMziqrds96ubWGsw"
+      ],
+      "fid": "~1hWd6iOLF6UMrNH7kb1LiCFgj1I35zoAwd_k230eyEczpLIBzMZcli_knS0nT2snJMDmZesgMziqrds96ubWGsw"
+    },
+    {
+      "global_n": 12,
+      "season": 1,
+      "season_ep": 12,
+      "filename": "12【磨耳朵】Presents for Dad.mp3",
+      "title": "磨耳朵 Presents for Dad",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1KRjygkHhRmcppR1mE8xZkLP9lOYHRn9Wg-B8lgIiKMNf4N3TKXqjA7WRGaUPXJr0850XW1NYhSFuzjiC4CykGo"
+      ],
+      "fid": "~1KRjygkHhRmcppR1mE8xZkLP9lOYHRn9Wg-B8lgIiKMNf4N3TKXqjA7WRGaUPXJr0850XW1NYhSFuzjiC4CykGo"
+    },
+    {
+      "global_n": 13,
+      "season": 1,
+      "season_ep": 13,
+      "filename": "13【正课】What Dogs Like-双语讲解.mp3",
+      "title": "What Dogs Like-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1iXTOFhIf0gousQ6wckH5wtxRy29xw3AW0G0pwghmiTmSo97M08TMISJ0U00RSSa9k7nLydtO_dUzYbkHFaVtNc"
+      ],
+      "fid": "~1iXTOFhIf0gousQ6wckH5wtxRy29xw3AW0G0pwghmiTmSo97M08TMISJ0U00RSSa9k7nLydtO_dUzYbkHFaVtNc"
+    },
+    {
+      "global_n": 14,
+      "season": 1,
+      "season_ep": 14,
+      "filename": "14【磨耳朵】What Dogs Like.mp3",
+      "title": "磨耳朵 What Dogs Like",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1BtGfrhQOlBcdtzrVS5fvmfLYXfnRJSvZ7W6W0EsaSXMVAaFZfwMcAlDLEVulrzAPrDjIzYH0dsFwCcIwY-phKo"
+      ],
+      "fid": "~1BtGfrhQOlBcdtzrVS5fvmfLYXfnRJSvZ7W6W0EsaSXMVAaFZfwMcAlDLEVulrzAPrDjIzYH0dsFwCcIwY-phKo"
+    },
+    {
+      "global_n": 15,
+      "season": 1,
+      "season_ep": 15,
+      "filename": "15【正课】The Box of Treasure-双语讲解.mp3",
+      "title": "The Box of Treasure-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~19LoAlXD-pXI6SKdTmNW0l4pu_aFM_Eb__cpXFRaRA3RbmdF4GTo_0R6qH1Lvn4i4O7XIGfcPI3Ft9SF90ORlRk"
+      ],
+      "fid": "~19LoAlXD-pXI6SKdTmNW0l4pu_aFM_Eb__cpXFRaRA3RbmdF4GTo_0R6qH1Lvn4i4O7XIGfcPI3Ft9SF90ORlRk"
+    },
+    {
+      "global_n": 16,
+      "season": 1,
+      "season_ep": 16,
+      "filename": "16【磨耳朵】The Box of Treasure.mp3",
+      "title": "磨耳朵 The Box of Treasure",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1-6ws5vKLm2Uo9hk3i_TuVEafny4xiwPvH50M4eS1UdoquFxR6jll0eUmj5TmtwedADEEBHLIhDyDqbdaQQSshQ"
+      ],
+      "fid": "~1-6ws5vKLm2Uo9hk3i_TuVEafny4xiwPvH50M4eS1UdoquFxR6jll0eUmj5TmtwedADEEBHLIhDyDqbdaQQSshQ"
+    },
+    {
+      "global_n": 17,
+      "season": 1,
+      "season_ep": 17,
+      "filename": "17【正课】Chip's Robot-双语讲解.mp3",
+      "title": "Chip's Robot-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1JMkrct5LZeQGj6KEAgtxeyc9Fi97ZzUJTLXahRF6qCsr5_BtXEwB25QiPBG3QE1JxnDuDNCd_jsyYdnAGGQTbs"
+      ],
+      "fid": "~1JMkrct5LZeQGj6KEAgtxeyc9Fi97ZzUJTLXahRF6qCsr5_BtXEwB25QiPBG3QE1JxnDuDNCd_jsyYdnAGGQTbs"
+    },
+    {
+      "global_n": 18,
+      "season": 1,
+      "season_ep": 18,
+      "filename": "18【磨耳朵】Chip's Robot.mp3",
+      "title": "磨耳朵 Chip's Robot",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1tgyJeLSG1JsVevJGGQAcBjvNhpyZV8EkQGgyVgwekUOuxI3iouMJX8rb8HI6GqTUsfkMm_si8v7cLe_cxOVuVE"
+      ],
+      "fid": "~1tgyJeLSG1JsVevJGGQAcBjvNhpyZV8EkQGgyVgwekUOuxI3iouMJX8rb8HI6GqTUsfkMm_si8v7cLe_cxOVuVE"
+    },
+    {
+      "global_n": 19,
+      "season": 1,
+      "season_ep": 19,
+      "filename": "19【正课】Floppy's Bone-双语讲解_.mp3",
+      "title": "Floppy's Bone-双语讲解_",
+      "kind": "正课",
+      "fids": [
+        "~1QqFDpwYQlyQE6mikQ_YBmLNAONKXOFAgaVTz15YUDXoQY4EMxlmWgKKvqtXRzarGXxFXVxemc7R5AlObD_WZHI"
+      ],
+      "fid": "~1QqFDpwYQlyQE6mikQ_YBmLNAONKXOFAgaVTz15YUDXoQY4EMxlmWgKKvqtXRzarGXxFXVxemc7R5AlObD_WZHI"
+    },
+    {
+      "global_n": 20,
+      "season": 1,
+      "season_ep": 20,
+      "filename": "20【磨耳朵】Floppy's Bone.mp3",
+      "title": "磨耳朵 Floppy's Bone",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1sHRCIv3ViUEq4D5Lk0LVaV2JSqEILZEEBGvytPyUiCGAyyv3QLF7jokrNQ52pKYvuGh0WaogATZKpAReb-UvUw"
+      ],
+      "fid": "~1sHRCIv3ViUEq4D5Lk0LVaV2JSqEILZEEBGvytPyUiCGAyyv3QLF7jokrNQ52pKYvuGh0WaogATZKpAReb-UvUw"
+    },
+    {
+      "global_n": 21,
+      "season": 1,
+      "season_ep": 21,
+      "filename": "21【正课】Hook a Duck-双语讲解.mp3",
+      "title": "Hook a Duck-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1_rMG0pwUw48IkD13ANUmb84NQyA188lL6aSqTcZdq5RWE1KZA4Bxg2Wzf6UPIe_XGm0GwLxNQyeUgpjelXriWk"
+      ],
+      "fid": "~1_rMG0pwUw48IkD13ANUmb84NQyA188lL6aSqTcZdq5RWE1KZA4Bxg2Wzf6UPIe_XGm0GwLxNQyeUgpjelXriWk"
+    },
+    {
+      "global_n": 22,
+      "season": 1,
+      "season_ep": 22,
+      "filename": "22【磨耳朵】Hook a Duck.mp3",
+      "title": "磨耳朵 Hook a Duck",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1wWLpXkDXxO0NchV4s0vh9H9npPZ_CdZDFADX5f4wV925BdOrb3Bo_5p2tBJWfW6kZv4D4FeqUB863Uvuzzx_iU"
+      ],
+      "fid": "~1wWLpXkDXxO0NchV4s0vh9H9npPZ_CdZDFADX5f4wV925BdOrb3Bo_5p2tBJWfW6kZv4D4FeqUB863Uvuzzx_iU"
+    },
+    {
+      "global_n": 23,
+      "season": 1,
+      "season_ep": 23,
+      "filename": "23【正课】One Wheel-双语讲解.mp3",
+      "title": "One Wheel-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1cdf6AFpk-gkiCZqRIJQ8GA7Wv_x1ZWOMAhljICdiopPjzFPlwRVB4LzzzlOegnEUShwoxrpY05BjPhMODIBP4U"
+      ],
+      "fid": "~1cdf6AFpk-gkiCZqRIJQ8GA7Wv_x1ZWOMAhljICdiopPjzFPlwRVB4LzzzlOegnEUShwoxrpY05BjPhMODIBP4U"
+    },
+    {
+      "global_n": 24,
+      "season": 1,
+      "season_ep": 24,
+      "filename": "24【磨耳朵】One Wheel.mp3",
+      "title": "磨耳朵 One Wheel",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1-hLze62Krx0ZkWv53vuLahUe76w5KGT6Kygr9SrUJNTenJXvjrXYgXVEp49CNQ4Dp-Mhh-DL1V0KwPyL20XmfA"
+      ],
+      "fid": "~1-hLze62Krx0ZkWv53vuLahUe76w5KGT6Kygr9SrUJNTenJXvjrXYgXVEp49CNQ4Dp-Mhh-DL1V0KwPyL20XmfA"
+    },
+    {
+      "global_n": 25,
+      "season": 1,
+      "season_ep": 25,
+      "filename": "25【正课】The Sandcastle-双语讲解.mp3",
+      "title": "The Sandcastle-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1ZNgK-n8i6gETJpnOqthr5DKd6Wo38jpBdXxtqXQxyaAwTiq8poWRUpeObWsp2hPDOP6maQeOCG-PBEcDv9RzJA"
+      ],
+      "fid": "~1ZNgK-n8i6gETJpnOqthr5DKd6Wo38jpBdXxtqXQxyaAwTiq8poWRUpeObWsp2hPDOP6maQeOCG-PBEcDv9RzJA"
+    },
+    {
+      "global_n": 26,
+      "season": 1,
+      "season_ep": 26,
+      "filename": "26【磨耳朵】The Sandcastle.mp3",
+      "title": "磨耳朵 The Sandcastle",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1txPLScijemE6iR2IomKJQJEc_cyZI25IfYDKnSx1xWZfqzEIeFrlpvlt6ieP36ui0dhLA356IN8Jtif8xjzoI8"
+      ],
+      "fid": "~1txPLScijemE6iR2IomKJQJEc_cyZI25IfYDKnSx1xWZfqzEIeFrlpvlt6ieP36ui0dhLA356IN8Jtif8xjzoI8"
+    },
+    {
+      "global_n": 27,
+      "season": 1,
+      "season_ep": 27,
+      "filename": "27【正课】Can You See Me.mp3",
+      "title": "Can You See Me",
+      "kind": "正课",
+      "fids": [
+        "~1nz18L_TXzZs0cEHl0vBU1JMkB_DKUUy8FWB2cGcOyxHZsWhmT9ZqeSp1QZCoO4vraUYXA2Tf-31Y7_ZshTqHUQ"
+      ],
+      "fid": "~1nz18L_TXzZs0cEHl0vBU1JMkB_DKUUy8FWB2cGcOyxHZsWhmT9ZqeSp1QZCoO4vraUYXA2Tf-31Y7_ZshTqHUQ"
+    },
+    {
+      "global_n": 28,
+      "season": 1,
+      "season_ep": 28,
+      "filename": "28【磨耳朵】Can You See Me.mp3",
+      "title": "磨耳朵 Can You See Me",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1dR4vFWXpDVI21UMSG6Y7lXyDAsUw1M7ecM8tqVBeY-7RFDfqhxYm0h9TIWIaYRKRj9EPQ6MPFVAKaDKiW3hhg4"
+      ],
+      "fid": "~1dR4vFWXpDVI21UMSG6Y7lXyDAsUw1M7ecM8tqVBeY-7RFDfqhxYm0h9TIWIaYRKRj9EPQ6MPFVAKaDKiW3hhg4"
+    },
+    {
+      "global_n": 29,
+      "season": 1,
+      "season_ep": 29,
+      "filename": "29【正课】Good Dog-双语讲解.mp3",
+      "title": "Good Dog-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1CNNQOPO2CpgK98xE1eGUQZVuou2NXJE7dAzZpt_CtftrnM69L7SwXRocsEvZ2zcXkT5LKCckUPNRNqiRHIqIVs"
+      ],
+      "fid": "~1CNNQOPO2CpgK98xE1eGUQZVuou2NXJE7dAzZpt_CtftrnM69L7SwXRocsEvZ2zcXkT5LKCckUPNRNqiRHIqIVs"
+    },
+    {
+      "global_n": 30,
+      "season": 1,
+      "season_ep": 30,
+      "filename": "30【磨耳朵】Good Dog.mp3",
+      "title": "磨耳朵 Good Dog",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1Kb5WuyVSNRwLEUNInX_6FdV7EniwOzJH6Ihd2xU2_eQRdv4nHt1E82Cu6udNb9eA-syuiiwzhxcwkotZFGnYM4"
+      ],
+      "fid": "~1Kb5WuyVSNRwLEUNInX_6FdV7EniwOzJH6Ihd2xU2_eQRdv4nHt1E82Cu6udNb9eA-syuiiwzhxcwkotZFGnYM4"
+    },
+    {
+      "global_n": 31,
+      "season": 1,
+      "season_ep": 31,
+      "filename": "31【正课】The Ice Cream-双语讲解.mp3",
+      "title": "The Ice Cream-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1tQE1zVnIHzYUAxoBhEokPbYAo-H13j2Yt81HW42JDP8sLiiEyTmuwBBTAXZ_cGt1CgRs6zm6KLYNYUczXSF7rk"
+      ],
+      "fid": "~1tQE1zVnIHzYUAxoBhEokPbYAo-H13j2Yt81HW42JDP8sLiiEyTmuwBBTAXZ_cGt1CgRs6zm6KLYNYUczXSF7rk"
+    },
+    {
+      "global_n": 32,
+      "season": 1,
+      "season_ep": 32,
+      "filename": "32【磨耳朵】The Ice Cream.mp3",
+      "title": "磨耳朵 The Ice Cream",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1ADtoTUuu45QhRwCJA2YUe8YvzWWWcO1lKeYc6YuNHP2O9gdO9UVjP3IROuRWRkD-bAlhUWgW1oqfjeyUtbdJoo"
+      ],
+      "fid": "~1ADtoTUuu45QhRwCJA2YUe8YvzWWWcO1lKeYc6YuNHP2O9gdO9UVjP3IROuRWRkD-bAlhUWgW1oqfjeyUtbdJoo"
+    },
+    {
+      "global_n": 33,
+      "season": 1,
+      "season_ep": 33,
+      "filename": "33【正课】The Mud Pie-双语讲解.mp3",
+      "title": "The Mud Pie-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1Bi9YhsjLHZ0mZqR5f-bT6t9zKnW_M80Cm_JDiNRoeslMtoePl7jZyStPB9sh-SgHoWvgK68rReWaocwqM2s8lY"
+      ],
+      "fid": "~1Bi9YhsjLHZ0mZqR5f-bT6t9zKnW_M80Cm_JDiNRoeslMtoePl7jZyStPB9sh-SgHoWvgK68rReWaocwqM2s8lY"
+    },
+    {
+      "global_n": 34,
+      "season": 1,
+      "season_ep": 34,
+      "filename": "34【磨耳朵】The Mud Pie.mp3",
+      "title": "磨耳朵 The Mud Pie",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1PJT2rx_nzxMozXnQEHsfle6HCgVB0uAMVx9ePXxqniP2eUaKglPhI2oVfAHCt2w-3ChF6nBiTzlSzcT7MN5r9o"
+      ],
+      "fid": "~1PJT2rx_nzxMozXnQEHsfle6HCgVB0uAMVx9ePXxqniP2eUaKglPhI2oVfAHCt2w-3ChF6nBiTzlSzcT7MN5r9o"
+    },
+    {
+      "global_n": 35,
+      "season": 1,
+      "season_ep": 35,
+      "filename": "35【正课】See Me Skip-双语讲解.mp3",
+      "title": "See Me Skip-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1iYMQpF-gf1EKtcEVjHlND2vd4dK_1NSbU8VftlO9ZD5dL047FRzWx0OfBvD2djHR9aqAMYMKT_EHEe3fn7s-2U"
+      ],
+      "fid": "~1iYMQpF-gf1EKtcEVjHlND2vd4dK_1NSbU8VftlO9ZD5dL047FRzWx0OfBvD2djHR9aqAMYMKT_EHEe3fn7s-2U"
+    },
+    {
+      "global_n": 36,
+      "season": 1,
+      "season_ep": 36,
+      "filename": "36【磨耳朵】See Me Skip.mp3",
+      "title": "磨耳朵 See Me Skip",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1bEEqk9SRygk9bLovFeBlLNp4uE2hrjR9nq2dEaZDigENsgzffJU_okSrQDiDL3qsmf5-cLm6Cicqh_MJu8DMKk"
+      ],
+      "fid": "~1bEEqk9SRygk9bLovFeBlLNp4uE2hrjR9nq2dEaZDigENsgzffJU_okSrQDiDL3qsmf5-cLm6Cicqh_MJu8DMKk"
+    },
+    {
+      "global_n": 37,
+      "season": 1,
+      "season_ep": 37,
+      "filename": "37【正课】What a DIN!-双语讲解.mp3",
+      "title": "What a DIN!-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~15EOJbd6NIYgYRYjVONgVXEY6PAjhTCshOiShtwtW5OSkT7SSGcBOmgx5gunVd9bTNcf3Q0UMki3G-HdLz3eOvA"
+      ],
+      "fid": "~15EOJbd6NIYgYRYjVONgVXEY6PAjhTCshOiShtwtW5OSkT7SSGcBOmgx5gunVd9bTNcf3Q0UMki3G-HdLz3eOvA"
+    },
+    {
+      "global_n": 38,
+      "season": 1,
+      "season_ep": 38,
+      "filename": "38【磨耳朵】What a DIN!.mp3",
+      "title": "磨耳朵 What a DIN!",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1zGpFtIdG10gUAYCeFSECf6osWTq9dYuIXqUaBXwlkNaRCVLJiYbFmComPJccDuYnUaVV-VVud7ChxIKmxnvFuo"
+      ],
+      "fid": "~1zGpFtIdG10gUAYCeFSECf6osWTq9dYuIXqUaBXwlkNaRCVLJiYbFmComPJccDuYnUaVV-VVud7ChxIKmxnvFuo"
+    },
+    {
+      "global_n": 39,
+      "season": 1,
+      "season_ep": 39,
+      "filename": "39【正课】At the Park-双语讲解.mp3",
+      "title": "At the Park-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1u-NA22KZdEwa29cqBChW-tjDjYT9vkfq9Cm1kd_PEG6rh5wxbekdbu2DwpEAsXvgTu3uTTS32pgavF2bQlIizo"
+      ],
+      "fid": "~1u-NA22KZdEwa29cqBChW-tjDjYT9vkfq9Cm1kd_PEG6rh5wxbekdbu2DwpEAsXvgTu3uTTS32pgavF2bQlIizo"
+    },
+    {
+      "global_n": 40,
+      "season": 1,
+      "season_ep": 40,
+      "filename": "40【磨耳朵】At the Park.mp3",
+      "title": "磨耳朵 At the Park",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1EFW9sQzudOYF8MNveQKgjyriB76Kh9sfDc00W9O0NAun34Boqh515ZRPmwcZNmPtOnal8KG-7QhAK3XlFr9EPE"
+      ],
+      "fid": "~1EFW9sQzudOYF8MNveQKgjyriB76Kh9sfDc00W9O0NAun34Boqh515ZRPmwcZNmPtOnal8KG-7QhAK3XlFr9EPE"
+    },
+    {
+      "global_n": 41,
+      "season": 1,
+      "season_ep": 41,
+      "filename": "41【正课】Fancy Dress-双语讲解.mp3",
+      "title": "Fancy Dress-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1JJtp2fIH7184nnnQ1C0JVOzZMgTMoKL2w_sx-4_-Wv9o4czTiaZbdNuSy92YKUN-RJ84CuSNfMnkBlUWqyZ48U"
+      ],
+      "fid": "~1JJtp2fIH7184nnnQ1C0JVOzZMgTMoKL2w_sx-4_-Wv9o4czTiaZbdNuSy92YKUN-RJ84CuSNfMnkBlUWqyZ48U"
+    },
+    {
+      "global_n": 42,
+      "season": 1,
+      "season_ep": 42,
+      "filename": "42【磨耳朵】Fancy Dress.mp3",
+      "title": "磨耳朵 Fancy Dress",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1WxCMTRuHWykGDtKFP6YgRR6TTRF66kOxOq-9ulh9yoOhRt4qs8bM1kVlJ4Kkes4h4v2NZumU6Qv3YTyys16nLk"
+      ],
+      "fid": "~1WxCMTRuHWykGDtKFP6YgRR6TTRF66kOxOq-9ulh9yoOhRt4qs8bM1kVlJ4Kkes4h4v2NZumU6Qv3YTyys16nLk"
+    },
+    {
+      "global_n": 43,
+      "season": 1,
+      "season_ep": 43,
+      "filename": "43【正课】Good Old Mum-双语讲解.mp3",
+      "title": "Good Old Mum-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1FVN1upqNy-Q9MRDmdcNvbdOJXbcnH20YQBgseuxHbvY8u5Fto49HPIfIf200e448m086i-IMqfLrqAqWEZVygE"
+      ],
+      "fid": "~1FVN1upqNy-Q9MRDmdcNvbdOJXbcnH20YQBgseuxHbvY8u5Fto49HPIfIf200e448m086i-IMqfLrqAqWEZVygE"
+    },
+    {
+      "global_n": 44,
+      "season": 1,
+      "season_ep": 44,
+      "filename": "44【磨耳朵】Good Old Mum.mp3",
+      "title": "磨耳朵 Good Old Mum",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1elVupJik2YoENTwKy-8Zv0Ah1s_GkwDdk7Qv5DAgcytZDXrFkMCIje3ukw2AmKxmr3uV3gXv625EYP34jPdSho"
+      ],
+      "fid": "~1elVupJik2YoENTwKy-8Zv0Ah1s_GkwDdk7Qv5DAgcytZDXrFkMCIje3ukw2AmKxmr3uV3gXv625EYP34jPdSho"
+    },
+    {
+      "global_n": 45,
+      "season": 1,
+      "season_ep": 45,
+      "filename": "45【正课】The Headache-双语讲解.mp3",
+      "title": "The Headache-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1S_TkA0lc4QMthLzpXvbe1wscXBOwcUtejrHZge8kSo_LMwpyISewR22JxM65joWHfuAtZ0Ej_s9gw_EjoyFjLs"
+      ],
+      "fid": "~1S_TkA0lc4QMthLzpXvbe1wscXBOwcUtejrHZge8kSo_LMwpyISewR22JxM65joWHfuAtZ0Ej_s9gw_EjoyFjLs"
+    },
+    {
+      "global_n": 46,
+      "season": 1,
+      "season_ep": 46,
+      "filename": "46【磨耳朵】The Headache.mp3",
+      "title": "磨耳朵 The Headache",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1VPbe6W_OlwQSFIHVJX11KhbHYVFM6dfJkpur71Lowx_a7exxbZYAU02nD69aZSd8E7c9lV2fdae-yn8RG2Hm94"
+      ],
+      "fid": "~1VPbe6W_OlwQSFIHVJX11KhbHYVFM6dfJkpur71Lowx_a7exxbZYAU02nD69aZSd8E7c9lV2fdae-yn8RG2Hm94"
+    },
+    {
+      "global_n": 47,
+      "season": 1,
+      "season_ep": 47,
+      "filename": "47【正课】The Pet Shop-双语讲解.mp3",
+      "title": "The Pet Shop-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1DnDZGnsctc8adN7G1_I7snzW3_XWzPGJ8AMl-lO7fI3mFb0k5bR4t8SKD10VhztCKS7xwCLSCwAPL32gOthVXc"
+      ],
+      "fid": "~1DnDZGnsctc8adN7G1_I7snzW3_XWzPGJ8AMl-lO7fI3mFb0k5bR4t8SKD10VhztCKS7xwCLSCwAPL32gOthVXc"
+    },
+    {
+      "global_n": 48,
+      "season": 1,
+      "season_ep": 48,
+      "filename": "48【磨耳朵】The Pet Shop.mp3",
+      "title": "磨耳朵 The Pet Shop",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1UU0k6Cs5zk0ZV60j-4bp0xHoq_kkMvNJRUL56ebj-5ma_9veYvQw880Nmp8IQXkMRXaNWdQ-DMiq7d_273uEpQ"
+      ],
+      "fid": "~1UU0k6Cs5zk0ZV60j-4bp0xHoq_kkMvNJRUL56ebj-5ma_9veYvQw880Nmp8IQXkMRXaNWdQ-DMiq7d_273uEpQ"
+    },
+    {
+      "global_n": 49,
+      "season": 1,
+      "season_ep": 49,
+      "filename": "49【正课】Push!-双语讲解.mp3",
+      "title": "Push!-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1H7V1th_4OxYUvwXgLY1FBZatnpsOqelXeExF2-q4D2R1-fwNyhKZErsSwxHYwIwDq_KIxvvQuwIy67prtUiyOE"
+      ],
+      "fid": "~1H7V1th_4OxYUvwXgLY1FBZatnpsOqelXeExF2-q4D2R1-fwNyhKZErsSwxHYwIwDq_KIxvvQuwIy67prtUiyOE"
+    },
+    {
+      "global_n": 50,
+      "season": 1,
+      "season_ep": 50,
+      "filename": "50【磨耳朵】Push!.mp3",
+      "title": "磨耳朵 Push!",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1o2wXTUzBS8IjQc1Ai8wPhFdmQjnbJLX-2lI4l-5uNhcsW_PXcdB-WLDAN7EC9XglBj_oY9wvRR01_hT5SjAitE"
+      ],
+      "fid": "~1o2wXTUzBS8IjQc1Ai8wPhFdmQjnbJLX-2lI4l-5uNhcsW_PXcdB-WLDAN7EC9XglBj_oY9wvRR01_hT5SjAitE"
+    },
+    {
+      "global_n": 51,
+      "season": 1,
+      "season_ep": 51,
+      "filename": "51【正课】Reds and Blues-双语讲解.mp3",
+      "title": "Reds and Blues-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~10zPs2d4EpmYEHVPo45NUxM-kn1HaIr1BdvqqigBUQAhyy9FgmnvpRxk_z6q_CPElRZ-sc9zSVWO68hBDAAyt9w"
+      ],
+      "fid": "~10zPs2d4EpmYEHVPo45NUxM-kn1HaIr1BdvqqigBUQAhyy9FgmnvpRxk_z6q_CPElRZ-sc9zSVWO68hBDAAyt9w"
+    },
+    {
+      "global_n": 52,
+      "season": 1,
+      "season_ep": 52,
+      "filename": "52【磨耳朵】Reds and Blues-绘本有声剧.mp3",
+      "title": "磨耳朵 Reds and Blues-绘本有声剧",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1LkoFliiIgPoxM2GSv3V9RQHluPHi_OwpB54mJa3ZYKkUDyFtUeARg8EOF3KEy7acoowlGBKEVhCqh8HoKHUlaU"
+      ],
+      "fid": "~1LkoFliiIgPoxM2GSv3V9RQHluPHi_OwpB54mJa3ZYKkUDyFtUeARg8EOF3KEy7acoowlGBKEVhCqh8HoKHUlaU"
+    },
+    {
+      "global_n": 53,
+      "season": 1,
+      "season_ep": 53,
+      "filename": "53【正课】Go Away, Floppy-双语讲解.mp3",
+      "title": "Go Away, Floppy-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1IQ6TS_upWbYhmrGn_Rtp-Mg5bl9-T1Epl1rnHDhdocl5PqlmmAmq_9c3p17KTEHPl_iELhSqV2b89GCOob7MMU"
+      ],
+      "fid": "~1IQ6TS_upWbYhmrGn_Rtp-Mg5bl9-T1Epl1rnHDhdocl5PqlmmAmq_9c3p17KTEHPl_iELhSqV2b89GCOob7MMU"
+    },
+    {
+      "global_n": 54,
+      "season": 1,
+      "season_ep": 54,
+      "filename": "54【磨耳朵】Go Away, Floppy-绘本有声剧.mp3",
+      "title": "磨耳朵 Go Away, Floppy-绘本有声剧",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1vfppSSa5r-wf0JD49XD0G58PxVUfYT5mqn6VsZaTKshKbVATPdI9QrUUCte4cbdsd8p8GnPqHLSIpEn0dmCiUk"
+      ],
+      "fid": "~1vfppSSa5r-wf0JD49XD0G58PxVUfYT5mqn6VsZaTKshKbVATPdI9QrUUCte4cbdsd8p8GnPqHLSIpEn0dmCiUk"
+    },
+    {
+      "global_n": 55,
+      "season": 1,
+      "season_ep": 55,
+      "filename": "55【正课】Hide and Seek-双语讲解.mp3",
+      "title": "Hide and Seek-双语讲解",
+      "kind": "正课",
+      "fids": [
+        "~1wTZNdCKui00i8614XZczrpvAfzu0wLFP2xKhY5r3dAW03pgUR28YUZ-vl-_KKxp2Oc1JAvEeuvz6zWQXeVVeWI"
+      ],
+      "fid": "~1wTZNdCKui00i8614XZczrpvAfzu0wLFP2xKhY5r3dAW03pgUR28YUZ-vl-_KKxp2Oc1JAvEeuvz6zWQXeVVeWI"
+    },
+    {
+      "global_n": 56,
+      "season": 1,
+      "season_ep": 56,
+      "filename": "56【磨耳朵】Hide and Seek-绘本有声剧.mp3",
+      "title": "磨耳朵 Hide and Seek-绘本有声剧",
+      "kind": "磨耳朵",
+      "fids": [
+        "~1zPfSVhsx7lwziryccPc_l_vO3_lIwoFFmeBHpHhrFq8-u4peSyyoWCxsHl4yuloWKBj7a_t-I2iXP4houJ-YKo"
+      ],
+      "fid": "~1zPfSVhsx7lwziryccPc_l_vO3_lIwoFFmeBHpHhrFq8-u4peSyyoWCxsHl4yuloWKBj7a_t-I2iXP4houJ-YKo"
+    }
+  ]
+}

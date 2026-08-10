@@ -43,7 +43,10 @@ def test_attach_footer_product_injects_cpsad(monkeypatch: pytest.MonkeyPatch) ->
     monkeypatch.setenv("WECHAT_MP_FOOTER_PRODUCT_ID", "10195600087007")
     article = {
         "title": "t",
-        "content": "<p>正文</p><p>本文为作者个人投资日记与信息整理。</p>",
+        "content": (
+            "<p>正文1</p><p>正文2</p><p>正文3</p><p>正文4</p>"
+            "<p>本文为作者个人复盘笔记与信息整理。</p>"
+        ),
     }
     out = attach_footer_product(article, kind="market")
     assert "mp-common-cpsad" in out["content"]
@@ -123,7 +126,7 @@ def test_footer_product_auto_pick_explicit_off(monkeypatch: pytest.MonkeyPatch) 
 
 def test_pick_keywords_for_kind_uses_mapping() -> None:
     assert "机械键盘" in pick_keywords_for_kind("workspace")
-    assert pick_keywords_for_kind("market") == ["理财", "基金", "记账本", "财经"]
+    assert pick_keywords_for_kind("market") == ["办公", "读书", "科技", "财经"]
 
 
 def test_pick_keywords_for_kind_env_override(monkeypatch: pytest.MonkeyPatch) -> None:

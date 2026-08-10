@@ -111,7 +111,7 @@ Agent 排查「是否漏接 DB/OpenCLI」时，先对号入座；**只有第一�
 | 任务 | 调度 | 执行位置 | 入口 |
 |------|------|----------|------|
 | Tushare 日线同步 | 工作日 **17:30** | scheduler **容器内** | `run_sync_daily.sh` |
-| 选股 + SOP + 战报 | 工作日 **17:45** | 本机 host-jobs | `push_selection_wechat.sh`（默认不推微信） |
+| 选股入库 | 工作日 **17:45** | 本机 host-jobs | `push_selection_wechat.sh` → `run_selection_daily.sh`（SOP/战报默认关） |
 | 东财快讯 + AI 解读 | **每 15 分钟** | launchd | `sync_macro_news.sh` |
 | 持仓 + 选股池监控 | 工作日 **每 5 分钟** | Docker → host-jobs | `push_holdings_monitor.sh`（勿装 `holdings-monitor` launchd） |
 | 情绪周期 / 收盘龙头 | 工作日 **18:00 eod** 容器（盘前 pre_market 已下线） | `sync_emotion_cycle.sh eod` |
@@ -122,9 +122,9 @@ Agent 排查「是否漏接 DB/OpenCLI」时，先对号入座；**只有第一�
 
 **已停用定时**：09/12/15/20 战报微信推送 → 改快讯 `com.user.stock-macro-news-sync`。详见 [SCHEDULING.md](SCHEDULING.md)。
 
-**仍用 launchd**：`host-jobs`、`macro-news-sync`、`docker-stacks`、`wechat-mp-draft-scheduled` 等 — 见 SCHEDULING.md §7。
+**仍用 launchd**：`host-jobs`、`docker-stacks`、`wechat-mp-guba-scheduled` 等 — 见 SCHEDULING.md §7。
 
-**微信公众号草稿（每日 19:00）**：`com.user.wechat-mp-draft-scheduled` — 交易日三篇 / 休市日要闻（见 [WECHAT_MP_SCHEDULING.md](WECHAT_MP_SCHEDULING.md)）；安装 `scripts/install-wechat-mp-launchd.sh`。
+**微信公众号草稿**：工作日 **18:00 eod 成功后** + 周日 18:00 → host-jobs `wechat-mp-draft`（见 [WECHAT_MP_SCHEDULING.md](WECHAT_MP_SCHEDULING.md)）。
 
 **旧 launchd 安装脚本**（仅回滚）：`install-daily-selection-launchd.sh`、`install-daily-briefing-launchd.sh`、`install-holdings-monitor-launchd.sh`。
 
@@ -181,7 +181,8 @@ push_selection_wechat.sh
 
 **环境变量**
 
-- `DISABLE_SOP_TOP5=1` — 跳过 SOP，改用轻量 DeepSeek 简评（不推荐）
+- `DISABLE_SOP_TOP5=1`（**默认**）— 跳过 Top5 东财 SOP；阶段 ≥1 可改用轻量 AI 简评
+- `DISABLE_SELECTION_REPORT=1`（**默认**）— 跳过 `daily_selection_report` 与 `daily_selection_full_latest.txt` 落盘
 - `SOP_WORKERS` — 已弃用（OpenCLI 单会话）；`DEEPSEEK_WORKERS` — 并发数（默认 3）
 - `REPORT_ONLY=1` — 不重跑选股，仅战报+推送
 
@@ -193,7 +194,7 @@ push_selection_wechat.sh
 
 | 模块 | 说明 |
 |------|------|
-| `sync_macro_news.sh` | launchd `com.user.stock-macro-news-sync` |
+| `sync_macro_news.sh` | **定时已停用**；需时手动 `./sync_macro_news.sh` |
 | `scripts/tools/fetch_eastmoney_macro_news.py` | OpenCLI 抓东财 7×24 |
 | `scripts/tools/news_ai_interpret.py` | 快讯 AI 解读落库 |
 | `scripts/tools/daily_briefing_report.py` | **手动/看板**用；09/12/15/20 微信战报已停用 |

@@ -1,0 +1,5 @@
+# Optional speaker verification (声纹锁). Install after requirements.txt:
+#   pip install -r requirements-speaker.txt
+resemblyzer>=0.1.1
+librosa>=0.10
+torch>=2.0

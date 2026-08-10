@@ -1,0 +1,941 @@
+{
+  "comment": "hp01 ch16 · paragraph bilingual_clips (bilingual_pdf)",
+  "source": "bilingual_pdf",
+  "granularity": "paragraph",
+  "zh_variant": "zh-cn",
+  "bilingual_clips": [
+    {
+      "en": "Chapter 16 · Through the Trapdoor",
+      "zh": "第16章 · 穿越活板门",
+      "kind": "heading"
+    },
+    {
+      "en": "In years to come, Harry would never quite remember how he had managed to get through his exams when he half expected Voldemort to come bursting through the door at any moment. Yet the days crept by, and there could be no doubt that Fluffy was still alive and well behind the locked door.",
+      "zh": "哈利恐怕永远也记不清，他是怎样通过那些考试的，因为当时他整天提心吊胆，随时提防 着伏地魔破门而入。不过随着时间一天天地过去，似乎路威仍然在那扇紧锁的门后面，安然无恙 地活着。"
+    },
+    {
+      "en": "It was sweltering hot, especially in the large classroom where they did their written papers. They had been given special, new quills for the exams, which had been bewitched with an AntiCheating spell.",
+      "zh": "天气十分闷热，他们答题的大教室里更是热得难受。老师发给他们专门用于考试的新羽毛笔， 都是念了防作弊的咒语的。"
+    },
+    {
+      "en": "They had practical exams as well. Professor Flitwick called them one by one into his class to see if they could make a pineapple tapdance across a desk. Professor McGonagall watched them turn a mouse into a snuffbox -- points were given for how pretty the snuffbox was, but taken away if it had whiskers. Snape made them all nervous, breathing down their necks while they tried to remember how to make a Forgetfulness potion.",
+      "zh": "另外还有实际操作的考试。弗立维教授叫他们挨个儿走进教室，看他们能不能使一只凤梨跳 着踢踏舞走过一张书桌。麦格教授看着他们把一只老鼠变成一个鼻烟盒——盒子越精美，分数就 越高；如果盒子上还留着老鼠的胡须，就要扣分。考魔药学时，他们拼命回忆遗忘药水的调配程 序。斯内普站在背后密切注视着，他们脖子后面都能感觉到他的呼吸，这使他们心里非常紧张。"
+    },
+    {
+      "en": "Harry did the best he could, trying to ignore the stabbing pains in his forehead, which had been bothering him ever since his trip into the forest. Neville thought Harry had a bad case of exam nerves because Harry couldn't sleep, but the truth was that Harry kept being woken by his old nightmare, except that it was now worse than ever because there was a hooded figure dripping blood in it.",
+      "zh": "哈利全心全意地投入考试，尽量忘记前额上剧烈的刺痛。自从他上次从森林里回来，这种疼 痛的感觉就一直纠缠着他。纳威看到哈利整夜睡不好觉，以为他患了严重的考试恐惧症。实际上， 哈利是不断被过去的那个噩梦惊醒，而且现在比过去更糟，因为噩梦里又多了一个戴着兜帽、嘴 角滴着鲜血的身影。"
+    },
+    {
+      "en": "Maybe it was because they hadn't seen what Harry had seen in the forest, or because they didn't have scars burning on their foreheads, but Ron and Hermione didn't seem as worried about the Stone as Harry. The idea of Voldemort certainly scared them, but he didn't keep visiting them in dreams, and they were so busy with their studying they didn't have much time to fret about what Snape or anyone else might be up to.",
+      "zh": "罗恩和赫敏倒并不像哈利这样整日为魔法石担心，这也许是因为他们没有看见哈利在森林里 遭遇的情景，也许是因为他们的前额上没有那道烧灼般疼痛的伤疤。伏地魔确实令他们害怕，但 他只是一个抽象的概念，并没有来纠缠他们的梦境，而且他们整天忙着复习功课，也没有时间去 操心斯内普或其他什么人可能会采取什么行动。"
+    },
+    {
+      "en": "Their very last exam was History of Magic. One hour of answering questions about batty old wizards who'd invented selfstirring cauldrons and they'd be free, free for a whole wonderful week until their exam results came out. When the ghost of Professor Binns told them to put down their quills and roll up their parchment, Harry couldn't help cheering with the rest.",
+      "zh": "最后一门考的是魔法史。只要再坚持一个小时，回答出是哪几个古怪的老巫师发明了自动搅 拌坩埚，他们就自由了，就可以轻轻松松地玩上整整一个星期，直到考试成绩公布。当宾斯教授 的幽灵叫他们放下羽毛笔把答题的羊皮纸卷起来时，哈利忍不住和其他同学一道欢呼起来。"
+    },
+    {
+      "en": "\"That was far easier than I thought it would be,\" said Hermione as they joined the crowds flocking out onto the sunny grounds. \"I needn't have learned about the 1637 Werewolf Code of Conduct or the uprising of Elfric the Eager.\"",
+      "zh": "“比我原先以为的容易多了，”当他们随着人群一起来到外面阳光灿烂的场地上时，赫敏说 道，“我其实不需要去记‘一六三七年的狼人行为准则’，以及小精灵叛乱的经过。”"
+    },
+    {
+      "en": "Hermione always liked to go through their exam papers afterward, but Ron said this made him feel ill, so they wandered down to the lake and flopped under a tree. The Weasley twins and Lee Jordan were tickling the tentacles of a giant squid, which was basking in the warm shallows. \"No more studying,\" Ron sighed happily, stretching out on the grass. \"You could look more cheerful, Harry, we've got a week before we find out how badly we've done, there's no need to worry yet.\"",
+      "zh": "赫敏总喜欢在考完之后再重温一遍考试内容，但罗恩说这使他感到恶心。于是他们慢悠悠地 顺坡而下，来到湖边，扑通一声坐在树下。那边，一只大鱿鱼躺在温暖的浅水里晒太阳，韦斯莱 孪生兄弟和李·乔丹正在轻轻拨弄它的触须。 “多好啊，再也不用复习了。”罗恩快活地吐 了口气，伸展四肢躺在草地上。“哈利，高兴一点嘛，一个星期以后我们才会知道考得多么糟糕， 没必要现在就为这个操心。”"
+    },
+    {
+      "en": "Harry was rubbing his forehead.",
+      "zh": "哈利揉着他的前额。"
+    },
+    {
+      "en": "\"I wish I knew what this means!\" he burst out angrily. \"My scar keeps hurting -- it's happened before, but never as often as this.\"",
+      "zh": "“我真想知道这是什么意思!”他突然恼火地说，“我的伤疤一直在疼——以前曾经疼过， 但从来不像现在这样频繁发作。”"
+    },
+    {
+      "en": "\"Go to Madam Pomfrey,\" Hermione suggested.",
+      "zh": "“去找庞弗雷夫人看看吧。”赫敏提议道。"
+    },
+    {
+      "en": "\"I'm not ill,\" said Harry. \"I think it's a warning... it means danger's coming....\"",
+      "zh": "“我没有生病，”哈利说，“我认为这是一个警告……意味着危险即将来临……”"
+    },
+    {
+      "en": "Ron couldn't get worked up, it was too hot.",
+      "zh": "罗恩打不起精神来，天气实在太热了。"
+    },
+    {
+      "en": "\"Harry, relax, Hermione's right, the Stone's safe as long as Dumbledore's around. Anyway, we've never had any proof Snape found out how to get past Fluffy. He nearly had his leg ripped off once, he's not going to try it again in a hurry. And Neville will play Quidditch for England before Hagrid lets Dumbledore down.\"",
+      "zh": "“哈利，放松一点儿，赫敏说得对，只要有邓布利多在，魔法石就不会有危险。不管怎么说， 我们没有发现任何证据，能够确定斯内普打听到了制服路威的办法。他上次差点被咬断了腿，不 会匆匆忙忙再去冒险尝试的。如果连海格都背叛了邓布利多，那么纳威就可以入选英格兰魁地奇 球队了。”"
+    },
+    {
+      "en": "Harry nodded, but he couldn't shake off a lurking feeling that there was something he'd forgotten to do, something important. When he tried to explain this, Hermione said, \"That's just the exams. I woke up last night and was halfway through my Transfiguration notes before I remembered we'd done that one.\"",
+      "zh": "哈利点了点头，但他怎么也摆脱不了一种隐隐约约的感觉，似乎他忘了做一件事，一件非常 重要的事。当他想对两个朋友解释这种感觉时，赫敏说：“这都是考试在作怪。我昨天夜里醒来， 忙着复习变形课的笔记，然后才突然想起来，那门课我们已经考过了。”"
+    },
+    {
+      "en": "Harry was quite sure the unsettled feeling didn't have anything to do with work, though. He watched an owl flutter toward the school across the bright blue sky, a note clamped in its mouth. Hagrid was the only one who ever sent him letters. Hagrid would never betray Dumbledore. Hagrid would never tell anyone how to get past Fluffy... never... but -- Harry suddenly jumped to his feet.",
+      "zh": "然而，哈利可以确定，那种不安的感觉与考试没有丝毫关系。他望着一只猫头鹰扑扇着翅膀 掠过蔚蓝色的天空，往学校的方向飞去，嘴里叼着一张纸条。只有海格一个人给他写过信。海格 是永远不会背叛邓布利多的。海格决不会告诉任何人制服路威的办法……决不会的……可是—— 哈利突然一跃而起。"
+    },
+    {
+      "en": "\"Where're you going?\" said Ron sleepily.",
+      "zh": "“你到哪儿去?”罗恩带着困意问。"
+    },
+    {
+      "en": "\"I've just thought of something,\" said Harry. He had turned white. \"We've got to go and see Hagrid, now.\"",
+      "zh": "“我突然想起了一件事。”哈利说。他的脸色变得煞白。“我们必须马上去找海格。”"
+    },
+    {
+      "en": "\"Why?\" panted Hermione, hurrying to keep up.",
+      "zh": "“为什么?”赫敏喘着气问，竭力赶上他。"
+    },
+    {
+      "en": "\"Don't you think it's a bit odd,\" said Harry, scrambling up the grassy slope, \"that what Hagrid wants more than anything else is a dragon, and a stranger turns up who just happens to have an egg in his pocket? How many people wander around with dragon eggs if it's against wizard law? Lucky they found Hagrid, don't you think? Why didn't I see it before?\"",
+      "zh": "“你们难道不觉得有些奇怪吗？”哈利一边匆匆跑下草坡，一边说道，“海格最希望得到的 是一条龙，而一个陌生人的口袋里偏巧就装着一只龙蛋?有多少人整天带着龙蛋走来走去?要知道 那是违反巫师法律的呀!你们难道不觉得，他们能找到海格不是太幸运了吗?我怎么以前没有想到 这点呢?”"
+    },
+    {
+      "en": "\"What are you talking about?\" said Ron, but Harry, sprinting across the grounds toward the forest, didn't answer.",
+      "zh": "“你到底想做什么?”罗恩问，但是哈利只顾飞跑着穿过场地，往森林的方向奔去，没有回 答他的问题。"
+    },
+    {
+      "en": "Hagrid was sitting in an armchair outside his house; his trousers and sleeves were rolled up, and he was shelling peas into a large bowl.",
+      "zh": "海格坐在小屋外面的一把椅子上，裤管高高地挽起，对着一只大碗，忙着剥豌豆荚。"
+    },
+    {
+      "en": "\"Hullo,\" he said, smiling. \"Finished yer exams? Got time fer a drink?\"",
+      "zh": "“你好，”他笑着说，“考试结束了?有时间喝杯茶吗?”"
+    },
+    {
+      "en": "\"Yes, please,\" said Ron, but Harry cut him off.",
+      "zh": "“好的，谢谢。”罗恩说，可是哈利打断了他。"
+    },
+    {
+      "en": "\"No, we're in a hurry. Hagrid, I've got to ask you something. You know that night you won Norbert? What did the stranger you were playing cards with look like?\" \"Dunno,\" said Hagrid casually, \"he wouldn' take his cloak off.\" He saw the three of them look stunned and raised his eyebrows.",
+      "zh": "“不了，我们有急事。海格，我有一件事要问你。你还记得你玩牌赢得诺伯的那天晚上吗? 和你一起玩牌的那个陌生人长得什么样儿?”“不知道，”海格漫不经心地说，“他不肯脱掉他 的斗篷。”他看见三个孩子脸上立刻显出惊愕的神情，不由吃惊地扬起了眉毛。"
+    },
+    {
+      "en": "\"It's not that unusual, yeh get a lot o' funny folk in the Hog's Head -- that's the pub down in the village. Mighta bin a dragon dealer, mightn' he? I never saw his face, he kept his hood up.\"",
+      "zh": "“这有什么好奇怪的，猪头酒吧——就是村里的那个酒吧，总是有一些稀奇古怪的家伙光顾。 那家伙兴许是个卖龙的小贩吧。我一直没有看清他的脸，他戴着兜帽呢。”"
+    },
+    {
+      "en": "Harry sank down next to the bowl of peas. \"What did you talk to him about, Hagrid? Did you mention Hogwarts at all?\"",
+      "zh": "哈利扑通跌坐在那一碗豌豆旁边。 “你当时跟他说了什么，海格?你提到霍格沃茨没有?”"
+    },
+    {
+      "en": "\"Mighta come up,\" said Hagrid, frowning as he tried to remember. \"Yeah... he asked what I did, an' I told him I was gamekeeper here.... He asked a bit about the sorta creatures I took after... so I told him... an' I said what I'd always really wanted was a dragon... an' then... I can' remember too well, 'cause he kept buyin' me drinks.... Let's see... yeah, then he said he had the dragon egg an' we could play cards fer it if I wanted... but he had ter be sure I could handle it, he didn' want it ter go ter any old home.... So I told him, after Fluffy, a dragon would be easy...\"",
+      "zh": "“兴许提到了吧。”海格皱着眉头使劲回忆，“对了……他问我是做什么的，我就告诉他我 是这里的狩猎场看守……他又稍微问了问我照看的是哪些动物……我就告诉他了……然后我说 我一直特别想要一条龙……后来……我记不太清了，他不停地买酒给我喝……让我再想想……对 了，后来他说他手里有一颗龙蛋，如果我想要，我们可以玩牌赌一赌……但他必须弄清我有没有 能力对付这条龙，他可不希望龙到时候跑出去惹是生非……于是我就对他说，我连路威都管得服 服帖帖，一条龙根本不算什么……”"
+    },
+    {
+      "en": "\"And did he -- did he seem interested in Fluffy?\" Harry asked, try ing to keep his voice calm.",
+      "zh": "“他是不是显得——显得对路威很感兴趣?”哈利问，竭力使自己的口吻保持平静。"
+    },
+    {
+      "en": "\"Well -- yeah -- how many three-headed dogs d'yeh meet, even around Hogwarts? So I told him, Fluffy's a piece o' cake if yeh know how to calm him down, jus' play him a bit o' music an' he'll go straight off ter sleep --\"",
+      "zh": "“没错——挺感兴趣的——你能碰到几只三个脑袋的狗呢，即使在霍格沃茨附近?所以我就 告诉他，路威其实很容易对付，你只要知道怎样使它安静下来，放点音乐给它听听，它就马上睡 着了——”"
+    },
+    {
+      "en": "Hagrid suddenly looked horrified.",
+      "zh": "海格脸上一下子露出惊恐的表情。"
+    },
+    {
+      "en": "\"I shouldn'ta told yeh that!\" he blurted out. \"Forget I said it! Hey -- where're yeh goin'?\"",
+      "zh": "“我不应该把这个告诉你们的!”他脱口说道，“把我说的话忘掉吧!喂——你们上哪儿去?”"
+    },
+    {
+      "en": "Harry, Ron, and Hermione didn't speak to each other at all until they came to a halt in the entrance hall, which seemed very cold and gloomy after the grounds.",
+      "zh": "哈利、罗恩和赫敏一路上没有交换一句话，一直跑进门厅才停住脚步。刚从外面的场地上进 来，门厅里显得格外阴冷、黑暗。"
+    },
+    {
+      "en": "\"We've got to go to Dumbledore,\" said Harry. \"Hagrid told that stranger how to get past Fluffy, and it was either Snape or Voldemort under that cloak -- it must've been easy, once he'd got Hagrid drunk. I just hope Dumbledore believes us. Firenze might back us up if Bane doesn't stop him. Where's Dumbledore's office?\"",
+      "zh": "“我们必须去找邓布利多，”哈利说，“海格把制服路威的方法告诉了一个陌生人，那个穿 斗篷的不是斯内普，就是伏地魔——他只要把海格灌醉了，就很容易套出他的话来。我只希望邓 布利多能相信我们。如果贝恩不出来阻拦，费伦泽是会为我们作证的。邓布利多的办公室在哪里?”"
+    },
+    {
+      "en": "They looked around, as if hoping to see a sign pointing them in the right direction. They had never been told where Dumbledore lived, nor did they know anyone who had been sent to see him.",
+      "zh": "他们环顾四周，似乎指望着看到一个指示牌为他们指点方向。从来没有人告诉他们邓布剃多 住在哪里，他们也不知道有谁曾被带去见过校长。"
+    },
+    {
+      "en": "\"We'll just have to --\" Harry began, but a voice suddenly rang across the hall.",
+      "zh": "“我们只好——”哈利的话没说完，门厅那头突然响起一个声音。"
+    },
+    {
+      "en": "\"What are you three doing inside?\"",
+      "zh": "“你们三个待在屋里做什么?”"
+    },
+    {
+      "en": "It was Professor McGonagall, carrying a large pile of books.",
+      "zh": "是麦格教授，怀里抱着一大摞书。"
+    },
+    {
+      "en": "\"We want to see Professor Dumbledore,\" said Hermione, rather bravely, Harry and Ron thought.",
+      "zh": "“我们想见邓布利多教授。”赫敏说。哈利和罗恩认为她的表现非常勇敢。"
+    },
+    {
+      "en": "\"See Professor Dumbledore?\" Professor McGonagall repeated, as though this was a very fishy thing to want to do. \"Why?\"",
+      "zh": "“想见邓布利多教授?”麦格教授重复了一句，似乎他们有这样的想法是非常可疑的。“为 什么?”"
+    },
+    {
+      "en": "Harry swallowed -- now what? \"It's sort of secret,\" he said, but he wished at once he hadn't, because Professor McGonagall's nostrils flared.",
+      "zh": "哈利咽了一口唾沫——怎么说呢?“这是一个秘密。”话一出口，他立刻就希望自己没有这 么说，因为麦格教授生气了，她的鼻翼扇动着。"
+    },
+    {
+      "en": "\"Professor Dumbledore left ten minutes ago,\" she said coldly. \"He received an urgent owl from the Ministry of Magic and flew off for London at once.\"",
+      "zh": "“邓布利多教授十分钟前离开了。”她冷冰冰她说，“他收到猫头鹰从魔法部送来的紧急信 件，立刻飞往伦敦去了。”"
+    },
+    {
+      "en": "\"He's gone?\" said Harry frantically. \"Now?\"",
+      "zh": "“他走了?”哈利万分焦急地说，“在这个时候?”"
+    },
+    {
+      "en": "\"Professor Dumbledore is a very great wizard, Potter, he has many demands on his time --",
+      "zh": "“邓布利多教授是一个非常了不起的巫师，日理万机，时间宝贵——”"
+    },
+    {
+      "en": "\"But this is important.\"",
+      "zh": "“可是这件事非常重要。”"
+    },
+    {
+      "en": "\"Something you have to say is more important than the Ministry of Magic, Potter.",
+      "zh": "“你们要说的事比魔法部还重要吗，哈利?”"
+    },
+    {
+      "en": "\"Look,\" said Harry, throwing caution to the winds, \"Professor -- it's about the Sorcerer's tone --\"",
+      "zh": "“是这样，”哈利说，他把谨慎抛到了九霄云外，“教授——是关于魔法石的——”"
+    },
+    {
+      "en": "Whatever Professor McGonagall had expected, it wasn't that. The books she was carrying tumbled out of her arms, but she didn't pick them up. \"How do you know --?\" she spluttered.",
+      "zh": "麦格教授无论如何也没有想到会是这件事。她怀里的书稀里哗啦地掉到地板上，她没有去捡。 “你们怎么知道——”她结结巴巴地问。"
+    },
+    {
+      "en": "\"Professor, I think -- I know -- that Sn- that someone's going to try and steal the Stone. I've got to talk to Professor Dumbledore.\"",
+      "zh": "“教授，我认为——我知道——斯内——有人试图去偷魔法石。我必须和邓布利多教授谈谈。”"
+    },
+    {
+      "en": "She eyed him with a mixture of shock and suspicion.",
+      "zh": "麦格教授用交织着惊愕和怀疑的目光看着他。"
+    },
+    {
+      "en": "\"Professor Dumbledore will be back tomorrow,\" she said finally. I don't know how you found out about the Stone, but rest assured, no one can possibly steal it, it's too well protected.\"",
+      "zh": "“邓布利多教授明天回来。”她最后说道，“我不知道你是怎么打听到魔法石的，不过请放 心，没有人能够把它偷走，它受到严密的保护，万无一失。”"
+    },
+    {
+      "en": "\"But Professor --\"",
+      "zh": "“可是教授——”"
+    },
+    {
+      "en": "\"Potter, I know what I'm talking about,\" she said shortly. She bent down and gathered up the fallen books. I suggest you all go back outside and enjoy the sunshine.\"",
+      "zh": "“波特，我知道自己在说什么。”她不耐烦地说，然后弯下腰去，拾起掉在地上的书。“我 建议你们到户外去晒晒太阳。”"
+    },
+    {
+      "en": "But they didn't.",
+      "zh": "但是他们没有这么做。"
+    },
+    {
+      "en": "\"It's tonight,\" said Harry, once he was sure Professor McGonagall was out of earshot. \"Snape's going through the trapdoor tonight. He's found out everything he needs, and now he's got Dumbledore out of the way. He sent that note, I bet the Ministry of Magic will get a real shock when Dumbledore turns up.\"",
+      "zh": "“就在今晚，”哈利确定麦格教授走远了听不见时，便赶紧说道，“斯内普今晚就要穿越活 板门了。他所需要的东西都弄到了，现在又把邓布利多骗离了学校。那封信准是他送来的，我敢 说魔法部看到邓布利多突然出现，一定会大吃一惊的。”"
+    },
+    {
+      "en": "\"But what can we --\"",
+      "zh": "“可是我们能有什么——”"
+    },
+    {
+      "en": "Hermione gasped. Harry and Ron wheeled round.",
+      "zh": "赫敏猛地吸了一口冷气。哈利和罗恩转过身来。"
+    },
+    {
+      "en": "Snape was standing there.",
+      "zh": "斯内普站在那里。"
+    },
+    {
+      "en": "\"Good afternoon,\" he said smoothly.",
+      "zh": "“下午好。”他用圆滑的口吻说。"
+    },
+    {
+      "en": "They stared at him.",
+      "zh": "他们呆呆地盯着他。"
+    },
+    {
+      "en": "\"You shouldn't be inside on a day like this,\" he said, with an odd, twisted smile. \"We were --\" Harry began, without any idea what he was going to say. \"You want to be more careful,\" said Snape. \"Hanging around like this, people will think you're up to something. And Gryffindor really can't afford to lose any more points, can it?\" Harry flushed. They turned to go outside, but Snape called them back. \"Be warned, Potter -- any more nighttime wanderings and I will personally make sure you are expelled. Good day to you.\"",
+      "zh": "“在这样的天气，你们不应该待在屋里。”他说，脸上肌肉扭曲，露出一个古怪的笑容。“我 们刚才在——”哈利说，其实他也不知道自己要说什么。“你们需要小心一些，”斯内普说，“像 这样到处乱逛，别人会以为你们想干什么坏事呢。格兰芬多可经不起再丢分了，是吗?”哈利脸 红了。他们转身朝外面走，可是斯内普又把他们叫了回去。“提醒你一句，波特——如果你再在 半夜三更到处乱逛，我要亲自把你开除。祝你愉快。”"
+    },
+    {
+      "en": "He strode off in the direction of the staffroom.",
+      "zh": "他大步朝着教工休息室的方向走去。"
+    },
+    {
+      "en": "Out on the stone steps, Harry turned to the others. \"Right, here's what we've got to do,\" he whispered urgently. \"One of us has got to keep an eye on Snape -- wait outside the staff room and follow him if he leaves it. Hermione, you'd better do that.\"",
+      "zh": "三个人一来到外面的石阶上，哈利就对罗恩和赫敏说：“好吧，我们现在必须这么做，”他 急切地小声说，“一个人负责监视斯内普——等在教工休息室外面，如果他出来，就跟着他。赫 敏，这件事最好由你来办。”"
+    },
+    {
+      "en": "\"Why me?\"",
+      "zh": "“为什么是我?”"
+    },
+    {
+      "en": "\"It's obvious,\" said Ron. \"You can pretend to be waiting for Professor Flitwick, you know.\" He put on a high voice, \"'Oh Professor Flitwick, I'm so worried, I think I got question fourteen b wrong....'\"",
+      "zh": "“那还用说，”罗恩说，“你可以假装在等弗立维教授。”他装出一种尖细的女声，“哦， 弗立维教授，我太担心了，我觉得我第十四题选B 可能选错了……”"
+    },
+    {
+      "en": "\"Oh, shut up,\" said Hermione, but she agreed to go and watch out for Snape.",
+      "zh": "“呸，闭嘴。”赫敏说，但她还是同意去盯住斯内普。"
+    },
+    {
+      "en": "\"And we'd better stay outside the third-floor corridor,\" Harry told Ron. \"Come on.\"",
+      "zh": "“我们俩最好待在四楼的走廊外面。”哈利对罗恩说，“走吧。”"
+    },
+    {
+      "en": "But that part of the plan didn't work. No sooner had they reached the door separating Fluffy from the rest of the school than Professor McGonagall turned up again and this time, she lost her temper.",
+      "zh": "但是这一部分计划没有执行成功。他们刚来到那道把路威与学校其他地方隔开的门口，麦格 教授就突然出现了，这次她忍不住大发脾气。"
+    },
+    {
+      "en": "\"I suppose you think you're harder to get past than a pack of enchantments!\" she stormed. \"Enough of this nonsense! If I hear you 've come anywhere near here again, I'll take another fifty points from Gryffindor! Yes, Weasley, from my own house!\" Harry and Ron went back to the common room, Harry had just said, \"At least Hermione's on Snape's tail,\" when the portrait of the Fat Lady swung open and Hermione came in.",
+      "zh": "“我想，你们大概以为自己比一大堆魔法咒语还要厉害吧?”她咆哮着说，“够了，别胡闹 了!如果下次我听说你们又跑到这儿来，就要给格兰芬多扣掉五十分!是的，韦斯莱，给我自己的 学院扣掉五十分!” 哈利和罗恩灰溜溜地返回公共休息室。哈利刚说了一句“至少有赫敏盯 着斯内普呢”，就看见胖夫人的肖像猛地转开，赫敏钻了进来。"
+    },
+    {
+      "en": "\"I'm sorry, Harry!\" she wailed. \"Snape came out and asked me what I was doing, so I said I was waiting for Flitwick, and Snape went to get him, and I've only just got away, I don't know where Snape went.\"",
+      "zh": "“对不起，哈利!”她呜咽着说，“斯内普出来了，他问我在那里做什么，我说我在等弗立 维。斯内普就去找他，我只好赶紧跑开了。我不知道斯内普现在去哪儿了。”"
+    },
+    {
+      "en": "\"Well, that's it then, isn't it?\" Harry said. The other two stared at him. He was pale and his eyes were glittering. \"I'm going out of here tonight and I'm going to try and get to the Stone first.\"",
+      "zh": "“好吧，看来只能这样了，是吧?”哈利说。赫敏和罗恩都盯着他，只见他脸色苍白，眼睛 炯炯发亮。“我今晚偷偷从这里溜出去，我要争取先把魔法石弄到手。”"
+    },
+    {
+      "en": "\"You're mad!\" said Ron. \"You can't!\" said Hermione. \"After what McGonagall and Snape have said? You'll be expelled!\"",
+      "zh": "“你疯了!”罗恩说。“你不能这样做!”赫敏说，“你没听见麦格和斯内普说的话吗?你会 被开除的!”"
+    },
+    {
+      "en": "\"SO WHAP\" Harry shouted. \"Don't you understand? If Snape gets hold of the Stone, Voldemort's coming back! Haven't you heard what it was like when he was trying to take over? There won't be any Hogwarts to get expelled from! He'll flatten it, or turn it into a school for the Dark Arts! Losing points doesn't matter anymore, can't you see? D'you think he'll leave you and your families alone if Gryffindor wins the house cup? If I get caught before I can get to the Stone, well, I'll have to go back to the Dursleys and wait for Voldemort to find me there, it's only dying a bit later than I would have, because I'm never going over to the Dark Side! I'm going through that trapdoor tonight and nothing you two say is going to stop me! Voldemort killed my parents, remember?\"",
+      "zh": "“那又怎么样?”哈利大声说，“你们难道不明白吗?如果斯内普弄到了魔法石，伏地魔就会 回来!你们难遭没有听说，当年他想独霸天下时，这里是个什么情形吗?如果让他得手，霍格沃茨 就不会存在了，也就无所谓开除不开除了!他会把学校夷为平地，或者把它变成一所专门传授黑 魔法的学校!你们难道看不出来，现在丢不丢分已经无关紧要了!你们难道以为，只要格兰芬多赢 得了学院杯，他就会放过你和你的全家吗?如果我没来得及拿到魔法石就被抓住了，那么，我就 只好回到德思礼家，等着伏地魔到那儿去找我。那也只是比现在晚死一点而已，因为我是绝不会 去投靠黑势力的!我今晚一定要穿越那道活板门，你们俩说什么都拦不住我!伏地魔杀死了我的父 母，记得吗?”"
+    },
+    {
+      "en": "He glared at them.",
+      "zh": "他气冲冲地瞪着他们。"
+    },
+    {
+      "en": "\"You're right Harry,\" said Hermione in a small voice.",
+      "zh": "“你是对的，哈利。”赫敏细声细气地说。"
+    },
+    {
+      "en": "\"I'll use the invisibility cloak,\" said Harry. \"It's just lucky I got it back.\"",
+      "zh": "“我要用上我的隐形衣，”哈利说，“幸亏我又把它找了回来。”"
+    },
+    {
+      "en": "\"But will it cover all three of us?\" said Ron. \"All -- all three of us?\"",
+      "zh": "“但是它能把我们三个人都罩住吗?”“我们——我们三个人?”"
+    },
+    {
+      "en": "\"Oh, come off it, you don't think we'd let you go alone?\"",
+      "zh": "“哦，别傻了，你难道以为我们会让你单独行动吗?”"
+    },
+    {
+      "en": "\"Of course not,\" said Hermione briskly. \"How do you think you'd get to the Stone without us? I'd better go and took through my books, there might be something useful...\"",
+      "zh": "“当然不会，”赫敏泼辣地说，“你怎么会想到撇下我们，独自一个人去找魔法石呢?我最 好去翻翻我的那些书，也许能找到一些有用的东西……”"
+    },
+    {
+      "en": "\"But if we get caught, you two will be expelled, too.\"",
+      "zh": "“可是如果我们被抓住了，你们两个也会被开除的。”"
+    },
+    {
+      "en": "\"Not if I can help it,\" said Hermione grimly. \"Flitwick told me in secret that I got a hundred and twelve percent on his exam. They're not throwing me out after that.\"",
+      "zh": "“也许不会，”赫敏十分坚决地说，“弗立维偷偷告诉我说，我在他那门功课的考试中得了 一百十二分。这么高的分数，他们是舍不得把我赶走的。”"
+    },
+    {
+      "en": "After dinner the three of them sat nervously apart in the common room. Nobody bothered them; none of the Gryffindors had anything to say to Harry any more, after all. This was the first night he hadn't been upset by it. Hermione was skimming through all her notes, hoping to come across one of the enchantments they were about to try to break. Harry and Ron didn't talk much. Both of them were thinking about what they were about to do.",
+      "zh": "吃过晚饭，他们三个紧张地避开别人，坐在公共休息室里。没有人来理会他们；实际上，格 兰芬多的学生们现在都没有话要对哈利说了。很多天来，这是哈利第一次不为这件事感到难过。 赫敏忙着翻阅她所有的笔记，希望能碰巧看到一条他们待会儿要去解除的魔咒。哈利和罗恩很少 开口说话，心里都在想着他们即将要做的事情。"
+    },
+    {
+      "en": "Slowly, the room emptied as people drifted off to bed.",
+      "zh": "同学们一个个地上床睡觉去了，公共休息室里的人渐渐减少。"
+    },
+    {
+      "en": "\"Better get the cloak,\" Ron muttered, as Lee Jordan finally left, stretching and yawning. Harry ran upstairs to their dark dormitory. He putted out the cloak and then his eyes fell on the flute Hagrid had given him for Christmas. He pocketed it to use on Fluffy -- he didn't feel much like singing.",
+      "zh": "“可以去拿隐形衣了。”罗恩说。这时，李·乔丹也终于伸着懒腰，打着哈欠离去了。哈利 跑到楼上，冲进他们漆黑的宿舍，取出隐形衣，就在这时，他无意间看见了圣诞节时海格送给他 的那支笛子。他把笛子装进口袋，准备用它去对付路威——他觉得自己没有心情唱歌给那只大狗 听。"
+    },
+    {
+      "en": "He ran back down to the common room. \"We'd better put the cloak on here, and make sure it covers all three of us -- if Filch spots one of our feet wandering along on its own --\"",
+      "zh": "他快步跑回公共休息室。“我们最好在这里就穿上隐形衣，看看它是不是能把我们三个人都 遮住——如果费尔奇看见一双脚自己在地上走——”"
+    },
+    {
+      "en": "\"What are you doing?\" said a voice from the corner of the room. Neville appeared from behind an armchair, clutching Trevor the toad, who looked as though he'd been making another bid for freedom.",
+      "zh": "“你们在做什么?”房间的一个角落响起了一个人的声音。纳威从一把扶手椅后面闪了出来， 手里抓着他的那只癞蛤蟆莱福。看样子，刚才莱福又为获得自由而抗争了一番。"
+    },
+    {
+      "en": "\"Nothing, Neville, nothing,\" said Harry, hurriedly putting the cloak behind his back.",
+      "zh": "“没什么，纳威，没什么。”哈利说着，赶紧把隐形衣藏在背后。"
+    },
+    {
+      "en": "Neville stared at their guilty faces.",
+      "zh": "纳威盯着他们做贼心虚的脸。"
+    },
+    {
+      "en": "\"You're going out again,\" he said.",
+      "zh": "“你们又打算出去。”他说。"
+    },
+    {
+      "en": "\"No, no, no,\" said Hermione. \"No, we're not. Why don't you go to bed, Neville?\" Harry looked at the grandfather clock by the door. They couldn't afford to waste any more time, Snape might even now be playing Fluffy to sleep.",
+      "zh": "“没有，没有，”赫敏说，“我们才不想出去呢。纳威，你为什么不去睡觉呢?”哈利看了 看门边的那台老爷钟。他们不能再耽搁时间了，斯内普大概已经在奏音乐，哄路威入睡了。"
+    },
+    {
+      "en": "\"You can't go out,\" said Neville, \"you'll be caught again. Gryffindor will be in even more trouble.\"",
+      "zh": "“你们不能出去，”纳威说，“你们还会被抓住的。那样的话，格兰芬多可就变得更倒霉了。”"
+    },
+    {
+      "en": "\"You don't understand,\" said Harry, \"this is important.\"",
+      "zh": "“你不明白，”哈利说，“这件事非常重要。”"
+    },
+    {
+      "en": "But Neville was clearly steeling himself to do something desperate.",
+      "zh": "可是纳威这次像是铁了心，不顾一切地要阻拦他们。"
+    },
+    {
+      "en": "I won't let you do it,\" he said, hurrying to stand in front of the portrait hole. \"I'll -- I'll fight you!\" \"Neville, \"Ron exploded, \"get away from that hole and don't be an idiot --\" \"Don't you call me an idiot!\" said Neville. I don't think you should be breaking any more rules! And you were the one who told me to stand up to people!\" \"Yes, but not to us,\" said Ron in exasperation. \"Neville, you don't know what you're doing.\"",
+      "zh": "“我不让你们这样做。”他说着，赶过去挡在肖像洞口前面，“我要——我要跟你们较量一 下!”“纳威，”罗恩勃然大怒，“快从那洞口闪开，别做一个白痴——”“不许你叫我白痴!” 纳威说，“我认为你们不应该再违反校规了!而且当初是你们鼓励我勇敢地反抗别人的!”“没错， 但不是反抗我们呀。”罗恩气急败坏地说，“纳威，你根本不知道你在做什么。”"
+    },
+    {
+      "en": "He took a step forward and Neville dropped Trevor the toad, who leapt out of sight.",
+      "zh": "他向前跨了一步，纳威扔掉手里的癞蛤蟆莱福，那小东西三跳两跳就不见了。"
+    },
+    {
+      "en": "\"Go on then, try and hit me!\" said Neville, raising his fists. \"I'm ready!\" Harry turned to Hermione. \"Do something,\" he said desperately. Hermione stepped forward. \"Neville,\" she said, \"I'm really, really sorry about this.\" She raised her wand. \"Petrificus Totalus!\" she cried, pointing it at Neville. Neville's arms snapped to his sides. His legs sprang together. His whole body rigid, he swayed where he stood and then fell flat on his face, stiff as a board. Hermione ran to turn him over. Neville's jaws were jammed together so he couldn't speak. Only his eyes were moving, looking at them in horror. \"What've you done to him?\" Harry whispered. \"It's the full Body-Bind,\" said Hermione miserably. \"Oh, Neville, I'm so sorry.\" \"We had to, Neville, no time to explain,\" said Harry. \"You'll understand later, Neville,\" said Ron as they stepped over him and pulled on the invisibility cloak.",
+      "zh": "“来吧，过来打我呀!”纳威举起两只拳头，说道。“我准备好了!”哈利转向赫敏。“想想 办法吧。”他焦急地说。赫敏走上前来。“纳威，”她说，“这么做我真是非常非常的抱歉。” 她举起魔杖。“统统——石化!”她把魔杖对准纳威，大喊一声。纳威的手臂啪地贴在身体两侧， 双腿立正，站得笔直。他的整个身体变得僵硬了，原地摇摆了几下，便扑通一声扑倒在地，看上 去像木板一样硬邦邦的。赫敏跑过去把他翻转过来。纳威的上下牙床锁在一起，说不出话来。只 有他的眼珠在转动，惊恐地望着他们。“你把他怎么了?”哈利小声问道。“这是全身束缚咒。” 赫敏难过地说，“哦，纳威，我真是太抱歉了。”“你以后会明白的，纳威。”罗恩说，然后他 们从纳威身上跨过去，穿上了隐形衣。"
+    },
+    {
+      "en": "But leaving Neville lying motionless on the floor didn't feel like a very good omen. In their nervous state, every statue's shadow looked like Filch, every distant breath of wind sounded like Peeves swooping down on them. At the foot of the first set of stairs, they spotted Mrs. Norris skulking near the top.",
+      "zh": "可是，撇下纳威动弹不得地躺在地板上，他们总觉得这不是一个好兆头。在情绪高度紧张的 情况下，阴影里的每一座雕塑都像是费尔奇的身影，而远处传来的每一丝风声，听上去都像是皮 皮鬼在朝他们猛扑过来。 就在他们准备登上第一道楼梯时，突然看见洛丽丝夫人躲藏在楼梯 顶层。"
+    },
+    {
+      "en": "\"Oh, let's kick her, just this once,\" Ron whispered in Harry's ear, but Harry shook his head. As they climbed carefully around her, Mrs. Norris turned her lamplike eyes on them, but didn't do anything.",
+      "zh": "“哦，我们踢它一脚吧，就踢这一次。”罗恩在哈利耳边悄悄说，可是哈利摇了摇头。他们 小心地绕过它，洛丽丝夫人用两只贼亮亮的眼睛朝他们望来，但是什么也没有看见。"
+    },
+    {
+      "en": "They didn't meet anyone else until they reached the staircase up to the third floor. Peeves was bobbing halfway up, loosening the carpet so that people would trip.",
+      "zh": "他们一路没有碰到一个人，顺利地来到通往四楼的楼梯口。只见皮皮鬼正蹦蹦跳跳地往楼上 走，一边把楼梯上铺的地毯扯松，想害得别人摔倒。"
+    },
+    {
+      "en": "\"Who's there?\" he said suddenly as they climbed toward him. He narrowed his wicked black eyes. \"Know you're there, even if I can't see you. Are you ghoulie or ghostie or wee student beastie?\"",
+      "zh": "“那边是谁?”他们踏上楼梯，迎面向他走去时，皮皮鬼突然眯起那双总喜欢恶作剧的黑眼 睛说道，“我知道你就在那儿，虽然我看不见。你是食尸鬼，还是还魂鬼，还是学生小鬼头?”"
+    },
+    {
+      "en": "He rose up in the air and floated there, squinting at them.",
+      "zh": "他升到半空中停住，眯起眼朝他们这边望着。"
+    },
+    {
+      "en": "\"Should call Filch, I should, if something's a-creeping around unseen.\" Harry had a sudden idea. \"Peeves,\" he said, in a hoarse whisper, \"the Bloody Baron has his own reasons for being invisible.\" Peeves almost fell out of the air in shock. He caught himself in time and hovered about a foot off the stairs.",
+      "zh": "“有个看不见的东西在这里鬼鬼祟祟地乱蹿，我应该去向费尔奇汇报。”哈利灵机一动，有 了个主意。“皮皮鬼，”他用嘶哑的声音轻轻说，“血人巴罗不想被别人看见，自然是有他的道 理的。”皮皮鬼大吃一惊，差点从空中摔下来。他及时稳住身子，在楼梯上方一英尺的地方盘旋 着。"
+    },
+    {
+      "en": "\"So sorry, your bloodiness, Mr. Baron, Sir,\" he said greasily. \"My mistake, my mistake -- I didn't see you -- of course I didn't, you're invisible -- forgive old Peevsie his little joke, sir.\"",
+      "zh": "“对不起，血人大人，巴罗先生，爵爷，”他甜言蜜语地说，“都怪我，都怪我——我没有 看见您——我当然看不见，您隐形了嘛——请原谅小皮皮鬼的这个小小玩笑吧，爵爷。”"
+    },
+    {
+      "en": "\"I have business here, Peeves,\" croaked Harry. \"Stay away from this place tonight.\" \"I will, sir, I most certainly will,\" said Peeves, rising up in the air again. \"Hope your business goes well, Baron, I'll not bother you.\" And he scooted off \"Brilliant, Harry!\" whispered Ron.",
+      "zh": "“我在这里有事要办，皮皮鬼，”哈利低声吼道，“今晚不许再到这里来。”“遵命，爵爷， 我一定遵命。”皮皮鬼说着，又重新升到空中。“希望您事情办得顺利，巴罗大人，我就不打扰 您了。”他说完便飞快地逃走了。“真精彩，哈利!”罗恩小声说。"
+    },
+    {
+      "en": "A few seconds later, they were there, outside the third-floor corridor -- and the door was already ajar. \"Well, there you are,\" Harry said quietly, \"Snape's already got past Fluffy.\" Seeing the open door somehow seemed to impress upon all three of them what was facing them. Underneath the cloak, Harry turned to the other two. \"If you want to go back, I won't blame you,\" he said. \"You can take the cloak, I won't need it now.\" \"Don't be stupid,\" said Ron. \"We're coming,\" said Hermione. Harry pushed the door open.",
+      "zh": "几秒钟后，他们就来到了四搂的走廊外面——那扇门已经开了一道缝。“怎么样。看到了吧，” 哈利悄声说道，“斯内普已经顺利通过了路威。”看到那扇半开的门，他们似乎更明确地意识到 了他们即将面临的一切。哈利在隐形衣下对罗恩和赫敏说：“如果你们现在想打退堂鼓，我不会 怪你们的。”他说，“你们可以把隐形衣带走，我已经不需要它了。”“别说傻话。”罗恩说。 “我们一起去吧。”赫敏说。哈利把门推开了。"
+    },
+    {
+      "en": "As the door creaked, low, rumbling growls met their ears. All three of the dog's noses sniffed madly in their direction, even though it couldn't see them. \"What's that at its feet?\" Hermione whispered.",
+      "zh": "随着吱吱嘎嘎的开门声，他们耳边立刻响起了低沉的狂吠。大狗虽然看不见他们，但它那三 个鼻子全朝着他们这边疯狂地抽动、嗅吸着。“它脚边那是什么东西?”赫敏小声问道。"
+    },
+    {
+      "en": "\"Looks like a harp,\" said Ron. \"Snape must have left it there.\"",
+      "zh": "“看样子像是一把竖琴，”罗恩说，“肯定是斯内普留下来的。”"
+    },
+    {
+      "en": "\"It must wake up the moment you stop playing,\" said Harry. \"Well, here goes...\" He put Hagrid's flute to his lips and blew. It wasn't really a tune, but from the first note the beast's eyes began to droop. Harry hardly drew breath. Slowly, the dog's growls ceased -- it tottered on its paws and fell to its knees, then it slumped to the ground, fast asleep.",
+      "zh": "“显然只要音乐一停止，它就会马上醒来。”哈利说，“好吧，你听着吧……”他把海格的 笛子放到嘴边，吹了起来。他吹得不成调子，但他刚吹出第一个音符，大狗的眼睛就开始往下耷 拉。哈利几乎是不歇气地吹着。慢慢地，大狗的狂吠声停止了——它摇摇摆摆地晃了几晃，膝盖 一软跪下了，然后就丰卜通倒在地板上，沉沉睡去。"
+    },
+    {
+      "en": "\"Keep playing,\" Ron warned Harry as they slipped out of the cloak and crept toward the trapdoor. They could feel the dog's hot, smelly breath as they approached the giant heads. \"I think we'll be able to pull the door open,\" said Ron, peering over the dog's back. \"Want to go first, Hermione?\"",
+      "zh": "“接着吹，别停下。”罗恩提醒哈利，与此同时，他们脱去隐形衣，蹑手蹑脚地朝活板门走 去。他们靠近那三只巨大的脑袋时，可以感觉到大狗那热乎乎、臭烘烘的气息。“我想我们可以 把活板门拉开了。”罗恩说，一边望着大狗的身后，“赫敏，你愿意第一个下去吗?”"
+    },
+    {
+      "en": "\"No, I don't!\" \"All right.\" Ron gritted his teeth and stepped carefully over the dog's legs. He bent and pulled the ring of the trapdoor, which swung up and open. \"What can you see?\" Hermione said anxiously.",
+      "zh": "“不，我可不愿意!”“好吧。”罗恩咬了咬牙，小心地从大狗的腿上跨过去。他弯下腰， 拉动活板门上的拉环，门一下子敞开了。“你能看见什么?”赫敏着急地问道。"
+    },
+    {
+      "en": "\"Nothing -- just black -- there's no way of climbing down, we'll just have to drop.\"",
+      "zh": "“什么也看不见——一片漆黑——也没有梯子可以下去，我们只好跳了。”"
+    },
+    {
+      "en": "Harry, who was still playing the flute, waved at Ron to get his attention and pointed at himself. \"You want to go first? Are you sure?\" said Ron. \"I don't know how deep this thing goes. Give the flute to Hermione so she can keep him asleep.\" Harry handed the flute over. In the few seconds' silence, the dog growled and twitched, but the moment Hermione began to play, it fell back into its deep sleep. Harry climbed over it and looked down through the trapdoor. There was no sign of the bottom.",
+      "zh": "哈利一边仍在吹着笛子，一边朝罗恩挥了挥手，引起他的注意，又甩手指了指自己。“你想 第一个下去?真的吗?”罗恩说，“我不知道这个洞有多深。把笛子给赫敏，让她继续哄大狗睡觉。” 哈利把笛子递了过去。在音乐停顿的这几秒钟里，大狗又咆哮起来，并开始扭动身子， 可是赫 敏刚把笛子吹响，它就又沉沉地睡去了。哈利从大狗身上爬过去，透过那个洞口往下看。下面深 不见底。"
+    },
+    {
+      "en": "He lowered himself through the hole until he was hanging on by his fingertips. Then he looked up at Ron and said, \"If anything happens to me, don't follow. Go straight to the owlery and send Hedwig to Dumbledore, right?\"",
+      "zh": "他慢慢顺着洞口滑下去，最后只靠十个手指攀住洞口边缘。他抬头看着罗恩说：“如果我出 了什么意外，你们别跟着下来。直接到猫头鹰住的橱屋，派海德薇给邓布利多送信，行吗?”"
+    },
+    {
+      "en": "\"Right,\" said Ron.",
+      "zh": "“好吧。”罗恩说。"
+    },
+    {
+      "en": "\"See you in a minute, I hope...",
+      "zh": "“过会儿见，我希望……”"
+    },
+    {
+      "en": "And Harry let go. Cold, damp air rushed past him as he fell down, down, down and -- FLUMP. With a funny, muffled sort of thump he landed on something soft. He sat up and felt around, his eyes not used to the gloom. It felt as though he was sitting on some sort of plant.",
+      "zh": "哈利松开了手，寒冷、潮湿的空气在他耳边呼呼掠过。他向下坠落，坠落，坠落，然后—— 扑通。随着一声奇怪而沉闷的撞击声，哈利落到了一个柔软的东西上面。他坐起来，朝四下里摸 索着。他的眼睛还没有适应这里昏暗的光线。他觉得自己仿佛是坐在某种植物上面。"
+    },
+    {
+      "en": "\"It's okay!\" he called up to the light the size of a postage stamp, which was the open trapdoor, \"it's a soft landing, you can jump!\"",
+      "zh": "“没问题!”他冲着洞口喊道，现在洞口看上去只是邮票大小的一块光斑。“是软着陆，你 们可以跳了!”"
+    },
+    {
+      "en": "Ron followed right away. He landed, sprawled next to Harry.",
+      "zh": "罗恩紧接着就跳了下来。他四肢着地，落在哈利身边。"
+    },
+    {
+      "en": "\"What's this stuff?\" were his first words.",
+      "zh": "“这是什么玩艺儿?”他一开口就问。"
+    },
+    {
+      "en": "\"Dunno, some sort of plant thing. I suppose it's here to break the fall. Come on, Hermione!\"",
+      "zh": "“不知道，好像是一种植物。大概是铺在这里减轻坠落时的碰撞的。来吧，赫敏!”"
+    },
+    {
+      "en": "The distant music stopped. There was a loud bark from the dog, but Hermione had already jumped. She landed on Harry's other side.",
+      "zh": "远处的笛声停止了。大狗又发出了响亮的狂吠，但是赫敏已经跳下来了。她降落在哈利的另 一边。"
+    },
+    {
+      "en": "\"We must be miles under the school , she said.",
+      "zh": "“我们一定离学校很远很远了。”她说。"
+    },
+    {
+      "en": "\"Lucky this plant thing's here, really,\" said Ron.",
+      "zh": "“说实在的，幸好有这堆植物铺在这里。”罗恩说。"
+    },
+    {
+      "en": "\"Lucky!\" shrieked Hermione. \"Look at you both!\"",
+      "zh": "“幸好什么!”赫敏尖叫起来，“看看你们两个!”"
+    },
+    {
+      "en": "She leapt up and struggled toward a damp wall. She had to struggle because the moment she had landed, the plant had started to twist snakelike tendrils around her ankles. As for Harry and Ron, their legs had already been bound tightly in long creepers without their noticing.",
+      "zh": "她猛地跳起来，挣扎着朝一面潮湿的墙壁移动。她之所以这样挣扎，是因为她刚一落下，那 植物就伸出蛇一般的卷须，缠绕住她的脚踝。而哈利和罗恩呢，他们不知不觉中已经被长长的藤 蔓缠住了双腿。"
+    },
+    {
+      "en": "Hermione had managed to free herself before the plant got a firm grip on her. Now she watched in horror as the two boys fought to pull the plant off them, but the more they strained against it, the tighter and faster the plant wound around them.",
+      "zh": "赫敏在藤蔓还没来及把她牢牢抓住之前，总算挣脱了出去。此刻她惊恐地看着两个男孩拼命 扯掉那些藤蔓，但是他们越是挣脱，藤蔓就缠得越快、越紧。"
+    },
+    {
+      "en": "\"Stop moving!\" Hermione ordered them. \"I know what this is -- it's Devil's Snare!\"",
+      "zh": "“别动了!”赫敏对他们喝道，“我知道这是什么了——这是魔鬼网!”"
+    },
+    {
+      "en": "\"Oh, I'm so glad we know what it's called, that's a great help,\" snarled Ron, leaning back, trying to stop the plant from curling around his neck. \"Shut up, I'm trying to remember how to kill it!\" said Hermione.",
+      "zh": "“哦，我真高兴，我们总算知道它叫什么名字了，这对我们大有帮助。”罗恩气呼呼地说， 向后躲闪着，不让藤蔓缠住他的脖子。 “你给我闭嘴，我正在回想怎么把它杀死!”赫敏说。"
+    },
+    {
+      "en": "\"Well, hurry up, I can't breathe!\" Harry gasped, wrestling with it as it curled around his chest.",
+      "zh": "“拜托你快点想，我透不过气来了!”哈利大喘着气说，拼命扯住那根要缠住他胸脯的藤蔓。"
+    },
+    {
+      "en": "\"Devil's Snare, Devil's Snare... what did Professor Sprout say? -- it likes the dark",
+      "zh": "“魔鬼网，魔鬼网……斯普劳特教授是怎么说的?说它喜欢阴暗和潮湿——”"
+    },
+    {
+      "en": "\"So light a fire!\" Harry choked.",
+      "zh": "“那么就点火烧它!”哈利几乎要窒息了。"
+    },
+    {
+      "en": "\"Yes -- of course -- but there's no wood!\" Hermione cried, wringing her hands.",
+      "zh": "“是啊——当然可以——可是这里没有木柴啊!”赫敏大声说道，焦急地扭着双手"
+    },
+    {
+      "en": "\"HAVE YOU GONE MAD?\" Ron bellowed. \"ARE YOU A WITCH OR NOT?\"",
+      "zh": "“你疯了吗?，’罗恩吼道，“你到底是不是女巫?”"
+    },
+    {
+      "en": "\"Oh, right!\" said Hermione, and she whipped out her wand, waved it, muttered something, and sent a jet of the same bluebell flames she had used on Snape at the plant. In a matter of seconds, the two boys felt it loosening its grip as it cringed away from the light and warmth. Wriggling and flailing, it unraveled itself from their bodies, and they were able to pull free.",
+      "zh": "“哦，对了!”赫敏说着，一把抽出魔杖，挥动着，嘴里念念有词，然后就像那次对付斯内 普一样，让魔杖头上射出一道蓝色风铃草般的火焰。在短短几秒钟内，两个男孩就觉得藤蔓在退 缩着躲避光明和温暖，松开了对他们的纠缠。植物扭曲着，抽动着，自动松开缠绕在他们身上的 卷须，哈利和罗恩终于完全挣脱了出来。"
+    },
+    {
+      "en": "\"Lucky you pay attention in Herbology, Hermione,\" said Harry as he joined her by the wall, wiping sweat off his face. \"Yeah,\" said Ron, \"and lucky Harry doesn't lose his head in a crisis -- 'there's no wood,' honestly.\" \"This way,\" said Harry, pointing down a stone passageway, which was the only way forward.",
+      "zh": "“幸亏你在草药课上听得很认真，赫敏。”哈利和赫敏一样退到墙边，擦着脸上的汗水，说 道。“是啊，”罗恩说，“也幸亏哈利在关键时刻没有像你一样慌了手脚——‘可是这里没有木 柴啊’，瞧你说的什么话!”“这边走。”哈利指着一条石头走廊说道。这是惟一可走的道路。"
+    },
+    {
+      "en": "All they could hear apart from their footsteps was the gentle drip of water trickling down the walls. The passageway sloped downward, and Harry was reminded of Gringotts. With an unpleasant jolt of the heart, he remembered the dragons said to be guarding vaults in the wizards' bank. If they met a dragon, a fully-grown dragon -- Norbert had been bad enough... \"Can you hear something?\" Ron whispered.",
+      "zh": "他们听见，除了他们自己的脚步声外，还有水珠顺着墙壁缓缓滴落的声音。这个走廊顺坡而 下，这使哈利联想到了古灵阁。他的心猛地跳动了一下，他想起了传说中看守巫师银行金库的那 些巨龙。如果他们碰到一条龙，一条完全成年的大龙——诺伯就已经够难对付的了……“你能听 见什么动静吗?”罗恩小声问。"
+    },
+    {
+      "en": "Harry listened. A soft rustling and clinking seemed to be coming from up ahead.",
+      "zh": "哈利侧耳细听。前面似乎传来了轻轻的沙沙声和叮叮当当的声音。"
+    },
+    {
+      "en": "\"Do you think it's a ghost?\"",
+      "zh": "“会不会是一个幽灵?”"
+    },
+    {
+      "en": "\"I don't know... sounds like wings to me.\"",
+      "zh": "“我不知道……好像是翅膀扇动的声音。”"
+    },
+    {
+      "en": "\"There's light ahead -- I can see something moving.\"",
+      "zh": "“前面有亮光——我看见有什么东西在动。”"
+    },
+    {
+      "en": "They reached the end of the passageway and saw before them a brilliantly lit chamber, its ceiling arching high above them. It was full of small, jewel-bright birds, fluttering and tumbling all around the room. On the opposite side of the chamber was a heavy wooden door.",
+      "zh": "他们来到走廊尽头，面前是一间灯火通明的房间，上面是高高的拱顶形天花板。无数只像宝 石一般光彩夺目的小鸟儿，扑扇着翅膀在房间里到处飞来飞去。房间对面有一扇厚重的木门。"
+    },
+    {
+      "en": "\"Do you think they'll attack us if we cross the room?\" said Ron.",
+      "zh": "“你说，如果我们穿过房间，它们会朝我们发动进攻吗?”罗恩问。"
+    },
+    {
+      "en": "\"Probably,\" said Harry. \"They don't look very vicious, but I suppose if they all swooped down at once... well, there's no other choice... I'll run.\"",
+      "zh": "“有可能。”哈利说，“它们看样子倒并不凶恶，但如果它们一下子全部冲过来，恐怕…… 管它呢，反正也没有别的办法……我跑过去了。”"
+    },
+    {
+      "en": "He took a deep breath, covered his face with his arms, and sprinted across the room. He expected to feel sharp beaks and claws tearing at him any second, but nothing happened. He reached the door untouched. He pulled the handle, but it was locked.",
+      "zh": "他深深吸了口气，用手臂挡住面孔，飞快地冲到房间的另一头。他以为随时都会有尖利的嘴 巴和爪子来撕扯他，结果却平安无事。他毫发无损地来到那扇门边，拉了拉把手，门是锁着的。"
+    },
+    {
+      "en": "The other two followed him. They tugged and heaved at the door, but it wouldn't budge, not even when Hermione tried her Alohomora charm. \"Now what?\" said Ron.",
+      "zh": "罗恩和赫敏也跟了过来。他们一起又拉又推，可是木门纹丝不动，赫敏又试了试她的阿拉霍 洞开咒，也无济于事。“怎么办?”罗恩问。"
+    },
+    {
+      "en": "\"These birds... they can't be here just for decoration,\" said Hermione. They watched the birds soaring overhead, glittering -- glittering? \"They're not birds!\" Harry said suddenly. \"They're keys! Winged keys -- look carefully. So that must mean...\" he looked around the chamber while the other two squinted up at the flock of keys. \"... yes -- look! Broomsticks! We've got to catch the key to the door!\"",
+      "zh": "“这些鸟……它们不可能只是用来作装饰的。”赫敏说。三个人注视着那些小鸟在头顶上飞 来飞去，闪闪发亮——闪闪发亮?“它们根本不是什么鸟!”哈利突然说道，“它们是钥匙!带翅 膀的钥匙——你们仔细看看。显然这意味着……”哈利环顾着房间的每个角落，而罗恩和赫敏则 仰头凝视着那一大群飞舞的钥匙。“……有了，你们瞧!飞天扫帚!我们必须上去逮住那扇门的钥 匙!”"
+    },
+    {
+      "en": "\"But there are hundreds of them!\"",
+      "zh": "“可是那上面有好几百把钥匙呢!”"
+    },
+    {
+      "en": "Ron examined the lock on the door.",
+      "zh": "罗恩仔细查看那扇门的锁。"
+    },
+    {
+      "en": "\"We're looking for a big, old-fashioned one -- probably silver, like the handle.\"",
+      "zh": "“我们要寻找一把古色古香的大钥匙——可能是银色的，形状像个门把手。”"
+    },
+    {
+      "en": "They each seized a broomstick and kicked off into the air, soaring into the midst of the cloud of keys. They grabbed and snatched, but the bewitched keys darted and dived so quickly it was almost impossible to catch one.",
+      "zh": "他们每人抓起一把扫帚，双脚一蹬，升到半空，冲进那一群密集的钥匙阵。他们拼命地又抓 又捞，可是那些施了魔法的钥匙躲闪得太快了，简直不可能抓得住。"
+    },
+    {
+      "en": "Not for nothing, though, was Harry the youngest Seeker in a century. He had a knack for spotting things other people didn't. After a minute's weaving about through the whirl of rainbow feathers, he noticed a large silver key that had a bent wing, as if it had already been caught and stuffed roughly into the keyhole.",
+      "zh": "不过，哈利作为一个世纪以来最年轻的魁地奇找球手，并不是徒有虚名的。他在搜寻飞行目 标方面有着过人的技巧。他在五彩缤纷的小翅膀的漩涡中穿行了一分钟后，就注意到一把大大的 银钥匙的翅膀耷拉着，就好像它曾经被人抓住、粗暴地塞进了钥匙孔里。"
+    },
+    {
+      "en": "\"That one!\" he called to the others. \"That big one -- there -- no, there -- with bright blue wings -- the feathers are all crumpled on one side.\"",
+      "zh": "“就是它!”他对罗恩和赫敏喊道，“那把大钥匙——在那儿——不，不是这儿，是那儿— —带着天蓝色翅膀的那个——羽毛全都倒向了一边。”"
+    },
+    {
+      "en": "Ron went speeding in the direction that Harry was pointing, crashed into the ceiling, and nearly fell off his broom.",
+      "zh": "罗恩飞快地朝哈利所指的方向冲去，结果一头撞在天花板上，差点从飞天扫帚上掉下来。"
+    },
+    {
+      "en": "\"We've got to close in on it!\" Harry called, not taking his eyes off the key with the damaged wing. \"Ron, you come at it from above -- Hermione, stay below and stop it from going down and I'll try and catch it. Right, NOW!\"",
+      "zh": "“我们得把它包围起来!”哈利喊道，眼睛一直盯着那只翅膀被折断的钥匙。“罗恩，你从 上面堵住它——赫敏，你守在下面，别让它往下飞——我来把它抓住。好了，现在开始!”"
+    },
+    {
+      "en": "Ron dived, Hermione rocketed upward, the key dodged them both, and Harry streaked after it; it sped toward the wall, Harry leaned forward and with a nasty, crunching noise, pinned it against the stone with one hand. Ron and Hermione's cheers echoed around the high chamber.",
+      "zh": "罗恩向下俯冲，赫敏朝上一蹿，钥匙躲闪着避开他俩的上下堵截，哈利紧紧跟在后面。钥匙 迅疾地往墙上飞去，哈利向前一扑，随着一阵刺耳难听的嘎吱声，他用一只手把钥匙按在了石墙 上。罗恩和赫敏的欢呼声在高高的房间里回荡。"
+    },
+    {
+      "en": "They landed quickly, and Harry ran to the door, the key struggling in his hand. He rammed it into the lock and turned -- it worked. The moment the lock had clicked open, the key took flight again, looking very battered now that it had been caught twice.",
+      "zh": "他们迅速降落，哈利向那扇门跑去，钥匙还在他手里挣扎着。他把它塞进锁眼，用力一拧— —没错，就是它。咔哒一声，门锁刚一弹开，钥匙就又飞走了。它一连被抓住了两次，样子显得 憔悴不堪。"
+    },
+    {
+      "en": "\"Ready?\" Harry asked the other two, his hand on the door handle. They nodded. He pulled the door open.",
+      "zh": "“准备好了吗?”哈利用手握住门把手，向罗恩和赫敏问道。他们俩点了点头。于是，他把 门推开了。"
+    },
+    {
+      "en": "The next chamber was so dark they couldn't see anything at all. But as they stepped into it, light suddenly flooded the room to reveal an astonishing sight.",
+      "zh": "第二个房间里一片漆黑，什么也看不见。可是他们刚跨进去，屋里突然灯火通明，照亮了一 幕令人震惊的景象。"
+    },
+    {
+      "en": "They were standing on the edge of a huge chessboard, behind the black chessmen, which were all taller than they were and carved from what looked like black stone. Facing them, way across the chamber, were the white pieces. Harry, Ron and Hermione shivered slightly -- the towering white chessmen had no faces.",
+      "zh": "他们站在一副巨大的棋盘边上，前面是黑色的棋子，那些棋子都比他们还要高，似乎是甩黑 石头之类的东西刻成的。在房间的那一头，与他们面对面的，是一些白色的棋子。哈利、罗恩和 赫敏吓得浑身发抖——那些高耸的白棋子的脸上都没有五官。"
+    },
+    {
+      "en": "\"Now what do we do?\" Harry whispered.",
+      "zh": "“现在怎么办呢?”哈利小声说。"
+    },
+    {
+      "en": "\"It's obvious, isn't it?\" said Ron. \"We've got to play our way across the room.\"",
+      "zh": "“这还不明显?”罗恩说，“我们必须下棋才能走到房间那头。”"
+    },
+    {
+      "en": "Behind the white pieces they could see another door.",
+      "zh": "他们看见白棋子后面有一扇门。"
+    },
+    {
+      "en": "\"How?\" said Hermione nervously.",
+      "zh": "“怎么下法?”赫敏紧张地问。"
+    },
+    {
+      "en": "\"I think,\" said Ron, \"we're going to have to be chessmen.\"",
+      "zh": "“依我看，”罗恩说，“我们必须充当棋子。”"
+    },
+    {
+      "en": "He walked up to a black knight and put his hand out to touch the knight's horse. At once, the stone sprang to life. The horse pawed the ground and the knight turned his helmeted head to look down at Ron. \"Do we -- er -- have to join you to get across?\" The black knight nodded. Ron turned to the other two. \"This needs thinking about he said. I suppose we've got to take the place of three of the black pieces....\" Harry and Hermione stayed quiet, watching Ron think. Finally he said, \"Now, don't be offended or anything, but neither of you are that good at chess --\"",
+      "zh": "他走到一个黑骑士身旁，伸手摸了摸骑士的马。立刻，石头就活了过来，马用蹄子刨着地上 的土，骑士转过戴着头盔的脑袋，望着罗恩。 “我们是不是——嗯——必须跟你们一起才能过去？” 黑骑士点了点头。罗恩转身对哈利和赫敏说：“需要好好考虑一下……”他说，“恐怕我们必须 取代这里的三个黑棋子……”哈利和赫敏没有说话，看着罗恩在那里思索。最后罗恩说：“是这 样，你们可别生气，怪我说话不客气，不过说实话，你们两个下棋都不怎么样——”"
+    },
+    {
+      "en": "\"We're not offended,\" said Harry quickly. \"Just tell us what to do.\"",
+      "zh": "“我们没有生气，”哈利赶紧说道，“快告诉我们怎么做。”"
+    },
+    {
+      "en": "\"Well, Harry, you take the place of that bishop, and Hermione, YOU 90 next to him instead of that castle.\"",
+      "zh": "“好吧，哈利，你就代替那个主教的位置；赫敏，你站在他旁边，代替那个城堡。”"
+    },
+    {
+      "en": "\"What about you?\" \"I'm going to be a knight,\" said Ron.",
+      "zh": "“那么你呢?”“我来做一个骑士。”罗恩说。"
+    },
+    {
+      "en": "The chessmen seemed to have been listening, because at these words a knight, a bishop, and a castle turned their backs on the white pieces and walked off the board, leaving three empty squares that Harry, Ron, and Hermione took.",
+      "zh": "。那些棋子似乎都在听他们说话，他话音刚落，一个骑士、一个主教和一个城堡就转了个身， 背对着白棋子，走出了棋盘，留出了三个空位子，让给哈利、罗恩和赫敏。"
+    },
+    {
+      "en": "\"White always plays first in chess,\" said Ron, peering across the board. \"Yes... look...\" A white pawn had moved forward two squares. Ron started to direct the black pieces. They moved silently wherever he sent them. Harry's knees were trembling. What if they lost? \"Harry -- move diagonally four squares to the right.\"",
+      "zh": "“下棋的规矩是白棋先走。”罗恩说，朝棋盘对面望过去，“对了……你们看……”一个白 色的卒子向前移动了两格。“罗恩开始指挥黑棋作战。哈利和赫敏默默地听从他的调遣。哈利的 膝盖在发抖。万一他们输了呢?“哈利——往右前方移动四格。”"
+    },
+    {
+      "en": "Their first real shock came when their other knight was taken. The white queen smashed him to the floor and dragged him off the board, where he lay quite still, facedown.",
+      "zh": "当他们的另一个骑士被吃掉时，他们才开始真正感到了恐惧。白王后凶狠地把那个骑士打翻 在地板上，拖出了棋盘。他面朝下躺在那里，一动也不动。"
+    },
+    {
+      "en": "\"Had to let that happen,\" said Ron, looking shaken. \"Leaves you free to take that bishop, Hermione, go on.\"",
+      "zh": "“没办法，只好如此，”罗恩说，他看上去很震惊，“这样你才能去吃掉那个主教。赫敏， 去吧。”"
+    },
+    {
+      "en": "Every time one of their men was lost, the white pieces showed no mercy. Soon there was a huddle of limp black players slumped along the wall. Twice, Ron only just noticed in time that Harry and Hermione were in danger. He himself darted around the board, taking almost as many white pieces as they had lost black ones.",
+      "zh": "每次他们的棋子被吃掉时，白棋子都表现得心狠手辣，毫不留情。很快，墙边就横七竖八地 倒了一大堆毫无生气的黑棋子。有两次，多亏罗恩及时发现哈利和赫敏处境危急，想办法替他们 解了围。罗恩自己在棋盘上冲锋陷阵，吃掉的白棋子差不多和他们失去的黑棋子一榉多。"
+    },
+    {
+      "en": "\"We're nearly there,\" he muttered suddenly. \"Let me think let me think...\"",
+      "zh": "“快要到了，”他突然低声说道，“让我想想——让我想想——.”"
+    },
+    {
+      "en": "The white queen turned her blank face toward him.",
+      "zh": "白王后把她没有五官的脸转向他。"
+    },
+    {
+      "en": "\"Yes...\" said Ron softly, \"It's the only way... I've got to be taken.\"",
+      "zh": "“是的……”罗恩低声说，“只有这个办法了……我必须被吃掉。”"
+    },
+    {
+      "en": "\"NOF Harry and Hermione shouted.",
+      "zh": "“不行!”哈利和赫敏同时喊道。"
+    },
+    {
+      "en": "\"That's chess!\" snapped Ron. \"You've got to make some sacrifices! I take one step forward and she'll take me -- that leaves you free to checkmate the king, Harry!\"",
+      "zh": "“这是下棋!”罗恩厉声地说，“总是需要做出一些牺牲的!我向前走一步，她就会把我吃掉 ——你就可以把国王将死了，哈利!”"
+    },
+    {
+      "en": "\"But --\"",
+      "zh": "“可是——”"
+    },
+    {
+      "en": "\"Do you want to stop Snape or not?\"",
+      "zh": "“你到底想不想去阻止斯内普?”"
+    },
+    {
+      "en": "\"Ron --\"",
+      "zh": "“罗恩——”"
+    },
+    {
+      "en": "\"Look, if you don't hurry up, he'll already have the Stone!\"",
+      "zh": "“快点，如果再不抓紧时间，他就已经把魔法石拿到手了!”"
+    },
+    {
+      "en": "There was no alternative.",
+      "zh": "哈利不再犹豫了。"
+    },
+    {
+      "en": "\"Ready?\" Ron called, his face pale but determined. \"Here I go - now, don't hang around once you've won.\"",
+      "zh": "“准备好了吗?”罗恩喊道，脸色苍白，但神情十分坚决。“我去了——注意，赢了以后立 即行动，别在这里耽搁。”"
+    },
+    {
+      "en": "He stepped forward, and the white queen pounced. She struck Ron hard across the head with her stone arm, and he crashed to the floor - Hermione screamed but stayed on her square - the white queen dragged Ron to one side. He looked as if he'd been knocked out.",
+      "zh": "他向前跨了一步，白王后立刻扑了过来。她举起石头手臂，朝罗恩的脑袋上重重打了一拳， 罗恩一下子摔倒在地板上——赫敏失声尖叫，但并没有离开她的格子——白王后把罗恩拖到一 边。看样子，罗恩好像被打昏了。"
+    },
+    {
+      "en": "Shaking, Harry moved three spaces to the left.",
+      "zh": "浑身颤抖的哈利向左边移动了三格。"
+    },
+    {
+      "en": "The white king took off his crown and threw it at Harry's feet. They had won. The chessmen parted and bowed, leaving the door ahead clear. With one last desperate look back at Ron, Harry and Hermione charged through the door and up the next passageway.",
+      "zh": "白国王摘掉头上的王冠，扔在哈利脚下。他们赢了。白棋子纷纷鞠躬后退，让出路来，使他 们能够顺利地走向那扇门。哈利和赫敏悲哀地回头看了罗恩最后一眼，便冲过门去，顺着下一条 走廊往前走。"
+    },
+    {
+      "en": "\"What if he's --?\"",
+      "zh": "“他会不会——”"
+    },
+    {
+      "en": "\"He'll be all right,\" said Harry, trying to convince himself. \"What do you reckon's next?\" \"We've had Sprout's, that was the Devil's Snare; Flitwick must've put charms on the keys; McGonagall transfigured the chessmen to make them alive; that leaves Quirrell's spell, and Snape's.\" They had reached another door. \"All right?\" Harry whispered. \"Go on.\" Harry pushed it open. A disgusting smell filled their nostrils, making both of them pull their robes up over their noses. Eyes watering, they saw, flat on the floor in front of them, a troll even larger than the one they had tackled, out cold with a bloody lump on its head.",
+      "zh": "“他不会有事的。”哈利说，同时也在努力使自己相信这一点，“你认为接下来会是什么呢?” “我们已经通过了斯普劳特的机关，就是那道魔鬼网——给那些钥匙施魔法的肯定是弗立维—— 麦格教授把棋子变形了，使它们活了起来——下面就剩下奇洛的魔法，还有斯内普的……”他们 又来到一扇门口。“行吗?”哈利小声问。“进去吧。”哈利把门推开了。一股令人作呕的臭味 扑鼻而来，他们只好撩起衣服挡住鼻子。两人的眼睛也被熏出了眼泪，他们透过模糊的泪眼，看 见一个巨怪，比他们上次较量过的那个还要庞大，一动不动地躺在面前的地板上，失去了知觉， 脑袋上有一个血淋淋的大肿块。"
+    },
+    {
+      "en": "\"I'm glad we didn't have to fight that one,\" Harry whispered as they stepped carefully over one of its massive legs. \"Come on, I can't breathe.\"",
+      "zh": "“太好了，我们用不着同这个巨怪搏斗了。”哈利低声说。他们小心翼翼地跨过巨怪粗壮的 双腿。“快走吧，我气都喘不过来了。”"
+    },
+    {
+      "en": "He pulled open the next door, both of them hardly daring to look at what came next - but there was nothing very frightening in here, just a table with seven differently shaped bottles standing on it in a line.",
+      "zh": "他拉开下一道门，一时间，两人简直不敢看接下来是什么在等待他们——然而这里并没有什 么可怕的东西，只有一张桌子，上面排放着七个形状各异的瓶子。"
+    },
+    {
+      "en": "\"Snape's,\" said Harry. \"What do we have to do?\"",
+      "zh": "“斯内普的魔法，”哈利说，“我们应该怎么做?”"
+    },
+    {
+      "en": "They stepped over the threshold, and immediately a fire sprang up behind them in the doorway. It wasn't ordinary fire either; it was purple. At the same instant, black flames shot up in the doorway leading onward. They were trapped.",
+      "zh": "两人刚跨过门槛，身后就腾地升起一股火焰，封住了门口。这火焰不同寻常：是紫色的。与 此同时，通往前面的门口也蹿起了黑色的火苗。他们被困在了中间。"
+    },
+    {
+      "en": "\"Look!\" Hermione seized a roll of paper lying next to the bottles. Harry looked over her shoulder to read it:",
+      "zh": "“看!”赫敏抓起放在瓶子旁边的一卷羊皮纸。哈利站在她背后，和她一起读道："
+    },
+    {
+      "en": "Danger lies before you, while safety lies behind, Two of us will help you, which ever you would find,",
+      "zh": "危险在眼前，安全在后方。我们中间有两个可以给你帮忙。"
+    },
+    {
+      "en": "One among us seven will let you move ahead, Another will transport the drinker back instead,",
+      "zh": "把它们喝下去，一个领你向前，另一个把你送回原来的地方。"
+    },
+    {
+      "en": "Two among our number hold only nettle wine, Three of us are killers, waiting bidden in line.",
+      "zh": "两个里面装的是荨麻酒。三个是杀手，正排着队等候。"
+    },
+    {
+      "en": "Choose, unless you wish to stay here forevermore,",
+      "zh": "选择吧，除非你希望永远在此耽搁。"
+    },
+    {
+      "en": "To help you in your choice, we give you these clues four:",
+      "zh": "我们还提供四条线索帮你选择："
+    },
+    {
+      "en": "First, however slyly the poison tries to hide You will always find some on nettle wine's left side;",
+      "zh": "第一，不论毒药怎样狡猾躲藏，其实它们都站在荨麻酒的左方；"
+    },
+    {
+      "en": "Second, different are those who stand at either end, But if you would move onward, neither is your friend;",
+      "zh": "第二，左右两端的瓶里内容不同，如果你想前进，它们都不会对你有用；"
+    },
+    {
+      "en": "Third, as you see clearly, all are different size, Neither dwarf nor giant holds death in their insides;",
+      "zh": "第三，你会发现瓶子大小各不相等，在巨人和侏儒里没有藏着死神；"
+    },
+    {
+      "en": "Fourth, the second left and the second on the right Are twins once you taste them, though different at first sight.",
+      "zh": "第四，左边第二和右边第二，虽然模样不同，味道却是一样。"
+    },
+    {
+      "en": "Hermione let out a great sigh and Harry, amazed, saw that she was smiling, the very last thing he felt like doing.",
+      "zh": "赫敏长长地嘘了口气，哈利惊讶地看见她居然露出了笑容，他自己是无论如何笑不出来的。"
+    },
+    {
+      "en": "\"Brilliant,\" said Hermione. \"This isn't magic -- it's logic -- a puzzle. A lot of the greatest wizards haven't got an ounce of logic, they'd be stuck in here forever.\"",
+      "zh": "“太妙了，”赫敏说，“这不是魔法——这是逻辑推理——是一个谜语。许多最伟大的巫师 都没有丝毫逻辑推理的本领，他们只好永远被困在这里。”"
+    },
+    {
+      "en": "\"But so will we, won't we?\" \"Of course not,\" said Hermione. \"Everything we need is here on this paper. Seven bottles: three are poison; two are wine; one will get us safely through the black fire, and one will get us back through the purple.\"",
+      "zh": "“我们呢，我们也出不去了，是吗?” “当然不会，”赫敏说，“我们所要知道的都写 在这张纸上呢。七个瓶子：三个是毒药；两个是酒；一个能使我们安全穿过黑色火焰，另一个能 送我们通过紫色火焰返回。”"
+    },
+    {
+      "en": "\"But how do we know which to drink?\"",
+      "zh": "“但我们怎么知道该喝哪一种呢?”"
+    },
+    {
+      "en": "\"Give me a minute.\"",
+      "zh": "“给我一分钟时间。”"
+    },
+    {
+      "en": "Hermione read the paper several times. Then she walked up and down the line of bottles, muttering to herself and pointing at them. At last, she clapped her hands. \"Got it,\" she said. \"The smallest bottle will get us through the black fire -- toward the Stone.\"",
+      "zh": "赫敏把那张纸又读了几遍。她在那排瓶子前走来走去，嘴里自言自语，一边还指点着这个或 那个瓶子。终于，她高兴地拍起手来。“知道了，”她说，“这只最小的瓶子能帮助我们穿过黑 色火焰——拿到魔法石。”"
+    },
+    {
+      "en": "Harry looked at the tiny bottle.",
+      "zh": "哈利看着那只不起眼的小瓶子。"
+    },
+    {
+      "en": "\"There's only enough there for one of us,\" he said. \"That's hardly one swallow.\"",
+      "zh": "“里面只够一个人喝的了，”他说，“还不到一口呢。”"
+    },
+    {
+      "en": "They looked at each other.",
+      "zh": "他们互相望着对方。"
+    },
+    {
+      "en": "\"Which one will get you back through the purple flames?\"",
+      "zh": "“哪个瓶子能使你穿过紫色火焰返回?”"
+    },
+    {
+      "en": "Hermione pointed at a rounded bottle at the right end of the line.",
+      "zh": "赫敏指指最右边的一只圆溜溜的瓶子。"
+    },
+    {
+      "en": "\"You drink that,\" said Harry. \"No, listen, get back and get Ron. Grab brooms from the flying- key room, they'll get you out of the trapdoor and past Fluffy -- go straight to the owlery and send Hedwig to Dumbledore, we need him. I might be able to hold Snape off for a while, but I'm no match for him, really.\"",
+      "zh": "“你喝那一瓶。”哈利说，“你先别插嘴，听我说——你回去找到罗恩——从飞舞着钥匙的 房间里抓两把扫帚，它们会载着你们穿越活板门，从路威身边通过——直接去猫兰鹰住的棚屋， 派海德薇去给邓布利多送信，我们需要他来援救。我也许可以暂时牵制住斯内普，但我决不是他 的对手。”"
+    },
+    {
+      "en": "\"But Harry -- what if You-Know-Who's with him?\"",
+      "zh": "“可是哈利——如果神秘人和他在一起怎么办？”"
+    },
+    {
+      "en": "\"Well -- I was lucky once, wasn't I?\" said Harry, pointing at his scar. \"I might get lucky again.\" Hermione's lip trembled, and she suddenly dashed at Harry and threw her arms around him. \"Hermione!\"",
+      "zh": "“嗯——我以前侥幸逃脱过一次，记得吗?”哈利指着他额头上的伤疤说，“我说不定还能 逢凶化吉的。”赫敏的嘴唇颤抖着，她突然冲向哈利，伸出双臂搂住了他。“赫敏!”"
+    },
+    {
+      "en": "\"Harry -- you're a great wizard, you know.\"",
+      "zh": "“哈利——你知道吗，你是个了不起的巫师。”"
+    },
+    {
+      "en": "\"I'm not as good as you,\" said Harry, very embarrassed, as she let go of him.",
+      "zh": "“我不如你出色。”哈利非常难为情地说，赫敏松开了他。"
+    },
+    {
+      "en": "\"Me!\" said Hermione. \"Books! And cleverness! There are more important things -- friendship and bravery and -- oh Harry -- be careful!\"",
+      "zh": "“我!”赫敏说，“不过是死读书，再靠一点儿小聪明!除此之外，还有许多更重要的东西呢 ——友谊和勇气——哦，哈利——可要小心啊!”"
+    },
+    {
+      "en": "\"You drink first,\" said Harry. \"You are sure which is which, aren't you?\"",
+      "zh": "“你先喝，”哈利说，“你能肯定是这两个瓶子吗，不会弄错吧?”"
+    },
+    {
+      "en": "\"Positive,\" said Hermione. She took a long drink from the round bottle at the end, and shuddered.",
+      "zh": "“绝对不会。”赫敏说。她从右边那个圆瓶子里喝了一大口，浑身打了个激灵。"
+    },
+    {
+      "en": "\"It's not poison?\" said Harry anxiously.",
+      "zh": "“不是毒药吧?”哈利担心地问。"
+    },
+    {
+      "en": "\"No -- but it's like ice.\"",
+      "zh": "“不是——但是像冰一样，寒冷刺骨。”"
+    },
+    {
+      "en": "\"Quick, go, before it wears off.\"",
+      "zh": "“快点儿，走吧，过一会儿它就失效了。”"
+    },
+    {
+      "en": "\"Good luck -- take care.\"",
+      "zh": "“祝你好运——千万小心——”"
+    },
+    {
+      "en": "\"GO!\"",
+      "zh": "“快走!”"
+    },
+    {
+      "en": "Hermione turned and walked straight through the purple fire.",
+      "zh": "赫敏转过身，径直穿过了紫色火焰。"
+    },
+    {
+      "en": "Harry took a deep breath and picked up the smallest bottle. He turned to face the black flames.",
+      "zh": "哈利深深吸了口气，抓起那只最小的瓶子。他转身面对着黑色的火苗。"
+    },
+    {
+      "en": "\"Here I come,\" he said, and he drained the little bottle in one gulp.",
+      "zh": "“我来了。”他说完，一口喝光了小瓶子里的液体。"
+    },
+    {
+      "en": "It was indeed as though ice was flooding his body. He put the bottle down and walked forward; he braced himself, saw the black flames licking his body, but couldn't feel them -- for a moment he could see nothing but dark fire -- then he was on the other side, in the last chamber.",
+      "zh": "它确实像冰一样，一下子渗透到他的全身。他放下瓶子，向前走去。他鼓起勇气，看见黑色 的火苗舔着他的身体，但是他毫无感觉——在那一刹那问，他什么也看不见，眼前只有黑色的火 焰——接着，他就顺利地来到另一边，进入了最后一个房间。"
+    },
+    {
+      "en": "There was already someone there -- but it wasn't Snape. It wasn't even Voldemort.",
+      "zh": "那里面已经有一个人了——不是斯内普，甚至也不是伏地魔。"
+    }
+  ]
+}

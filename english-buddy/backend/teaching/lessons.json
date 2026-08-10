@@ -2,7 +2,7 @@
   "version": 12,
   "curriculum": "上海幼儿园启蒙 + 沪教牛津小学 + 牛津阅读树 ORT",
   "source": "小学目录参考沪教牛津版(六三制)；牛津阅读树为 Oxford Reading Tree — Oxford Owl for Home 免费电子书库 读本原文（见 teaching/ort_oxford_owl/books.json）。",
-  "note": "Stage 1 / Level 1+ / Level 2（Red）/ Level 3（Yellow）/ Level 4（Blue）经典 Biff·Chip·Kipper 读本原文（按页分句，供带读）。需在 Oxford Owl 注册后在线阅读完整电子版与插图。 三年级起 8 单元/册，一二年级 12 单元/册。",
+  "note": "ORT 课文真源：橙果 PDF 官方页底 OCR（extract_ort_pdf_lines.py）；页图 extract_ort_pdf_pages.py。Level 2 勿用爱贝 i-bei。 三年级起 8 单元/册，一二年级 12 单元/册。",
   "grades": [
     {
       "id": "kg_small",
@@ -66,7 +66,7 @@
       "subtitle": "Blue · 长篇故事",
       "stage": "kindergarten",
       "stage_label": "牛津阅读树",
-      "book": "ORT · 24 本"
+      "book": "ORT · 30 本"
     },
     {
       "id": "g1_up",
@@ -385,7 +385,7 @@
         "id": "ort_the_toys_party",
         "title": "第1课 · The Toys' Party",
         "unit": 1,
-        "text": "Kipper wanted a party.\nNobody wanted to come.\nHe got his toys.\nHe wanted a cake.\nHe put in cornflakes.\nHe put in tomato sauce.\nHe put in milk.\nHe put in jam.\nHe put in sugar.\nHe put in baked beans.\nMum was cross.\nFloppy."
+        "text": "Kipper wanted a party.\nNobody wanted to come.\nHe got his toys.\nHe wanted a cake.\nHe put in cornflakes.\nHe put in tomato sauce.\nHe put in milk.\nHe put in jam.\nHe put in sugar.\nHe put in baked beans.\nMum was cross.\nKipper was sorry."
       },
       {
         "id": "ort_new_trainers",
@@ -397,19 +397,19 @@
         "id": "ort_a_new_dog",
         "title": "第3课 · A New Dog",
         "unit": 3,
-        "text": "Kipper wanted a dog.\nEveryone wanted a dog.\nThey went to Dog's home.\nThey looked at the dogs.\nKipper wanted this dog.\nIt was too big.\nBiff wanted this dog.\nIt was too little.\nMum wanted this dog.\nIt was too strong.\nEveryone liked this dog.\nThey took the dog home."
+        "text": "Kipper wanted a dog.\nEveryone wanted a dog.\nThey went to the dogs' home.\nThey looked at the dogs.\nKipper wanted this dog.\nIt was too big.\nBiff wanted this dog.\nIt was too little.\nMum wanted this dog.\nIt was too strong.\nEveryone liked this dog.\nThey took the dog home."
       },
       {
         "id": "ort_what_a_bad_dog",
         "title": "第4课 · What a Bad Dog!",
         "unit": 4,
-        "text": "Floppy went on the concrete.\nFloppy went in the mud.\nFloppy pulled the washing down.\nFloppy pushed the lego over.\nWhat a bad dog!\"Said Mum.\nFloppy barked and barked.\nDad couldn't sleep.\nDad was cross.\nWhat a bad dog!\" said Dad.\nThe tray was on fire."
+        "text": "Floppy went on the concrete.\nFloppy went in the mud.\nFloppy pulled the washing down.\nFloppy pushed the Lego over.\n\"What a bad dog!\" said Mum.\nFloppy barked and barked.\nDad couldn't sleep.\nDad was cross.\n\"What a bad dog!\" said Dad.\nThe tray was on fire.\nWhat a good dog!"
       },
       {
         "id": "ort_the_go_kart",
         "title": "第5课 · The Go-Kart",
         "unit": 5,
-        "text": "Dad made a go-kart.\nBiff wanted the go-kart.\nChip wanted the go-kart.\nBiff wanted a go.\nChip wanted a go.\nBiff pushed.\nChip pulled.\nThey had a fight.\nStop it,&rdquo;said Dad.\nStop it,&rdquo;said ��um.\nDad put the go-kart away.\nThey made a swing.\nOh no!"
+        "text": "Dad made a go-kart.\nBiff wanted the go-kart.\nChip wanted the go-kart.\nBiff wanted a go.\nChip wanted a go.\nBiff pushed.\nChip pulled.\nThey had a fight.\n\"Stop it,\" said Dad.\n\"Stop it,\" said Mum.\nDad put the go-kart away.\nThey made a swing.\nGAB DEN SWING\nOh no!"
       },
       {
         "id": "ort_the_dream",
@@ -421,181 +421,181 @@
         "id": "ort_floppys_bath",
         "title": "第7课 · Floppy's Bath",
         "unit": 7,
-        "text": "Floppy saw a rabbit.\nFloppy chased it.\nIt went under a fence.\nFloppy got wet.\nFloppy got muddy.\nThey took Floppy home.\nKipper.\nThey put Floppy in the bath.\nMum and Dad washed him.\nBiff and Chip dried Floppy.\nFloppy looked clean.\nOh no!"
+        "text": "Floppy saw a rabbit.\nFloppy chased it.\nIt went under a fence.\nFloppy got wet.\nFloppy got muddy.\nThey took Floppy home.\n\"What a soggy doggy!\" said Kipper.\nThey put Floppy in the bath.\nMum and Dad washed him.\nBiff and Chip dried Floppy.\nFloppy looked clean.\n\"What a good dog!\" said Kipper.\nOh no!"
       },
       {
         "id": "ort_the_baby_sitter",
         "title": "第8课 · The Baby-sitter",
         "unit": 8,
-        "text": "The baby-sitter came.\nThe children came downstairs.\nWe couldn't sleep,\"they said.\nKipper got his book.\nHe wanted a story.\nBiff was hungry.\nThey made a sandwich.\nChip wanted a pillow fight.\nEveryone joined in.\nThe children went back bed.\nWhat a mess!\"said the baby-sitter.\nMum and Dad came back.\nWas everyone good?\"said Mum.\nYes and no\",said the baby-sitter."
+        "text": "The baby-sitter came.\n\"Go back to bed,\" said Dad.\nThe children came downstairs.\n\"We couldn't sleep,\" they said.\nKipper got his books.\nHe wanted a story.\nBiff was hungry.\nThey made a sandwich.\nChip wanted a pillow fight.\nEveryone joined in.\nThe children went back to bed.\n\"What a mess!\" said the baby-sitter.\nMum and Dad came back.\n\"Was everyone good?\" said Mum.\n\"Yes and no,\" said the baby-sitter."
       },
       {
         "id": "ort_the_water_fight",
         "title": "第9课 · The Water Fight",
         "unit": 9,
-        "text": "Everyone was hot.\nThe children wanted to go swimming.\nBiff got the paddling pool.\nKipper filled it with water.\nChip pushed Biff in the water.\nHe grabbed the hose.\nThey had a water fight.\nMum got wet.\nStop it !&rdquo;said Dad.\nDad got a bucket of water.\nHe chased Chip.\nChip.\nDad threw the water at Chip.\nOh no!\nSorry!&rdquo;said Dad."
+        "text": "Everyone was hot.\nThe children wanted to go swimming.\nDad said \"No!\"\nBiff got the paddling pool.\nKipper filled it with water.\nChip pushed Biff in the water.\nHe grabbed the hose.\nThey had a water fight.\nMum got wet.\n\"Stop it!\" said Dad.\nDad got a bucket of water.\nHe chased Chip.\nDad threw the water at Chip.\nOh no!\n\"Sorry!\" said Dad."
       },
       {
         "id": "ort_kippers_balloon",
         "title": "第10课 · Kipper's Balloon",
         "unit": 10,
-        "text": "Mum and Dad went shopping.\nKipper bought a balloon.\nThey went to the supermarket.\nThe balloon went bang.\nKipper baught a new balloon.\nDad went to the toilet.\nDad saw a balloon.\nKipper's balloon!&rdquo;he said.\nDad ran after it.\nThe balloon flew away.\nDad chased it.\nThe balloon was on a statue.\nDad got it down.\nOh no !&rdquo;said Dad.\nOh no!"
+        "text": "Mum and Dad went shopping.\nKipper bought a balloon.\nThey went to the supermarket.\nThe balloon went bang.\nKipper bought a new balloon.\nDad went to the toilet.\nDad saw a balloon.\n\"Kipper's balloon!\" he said.\nDad ran after it.\nThe balloon flew away.\nDad chased it.\nThe balloon was on a statue.\nDad got it down.\n\"Oh no!\" said Dad."
       },
       {
         "id": "ort_spots",
         "title": "第11课 · Spots",
         "unit": 11,
-        "text": "Kipper had spots.\nBiff and Chip had spots too.\nStay in bed,\" she said.\nMum had spots.\nStay in bed, too,\" said the doctor.\nDad looked after everyone.\nHe put the washing out.\nHe went shopping.\nWhat a job!\" said Dad.\nEveryone got better.\nOh,no!\" said Mum.\nDad had spots."
+        "text": "Kipper had spots.\nBiff and Chip had spots too.\nThe doctor came.\n\"Stay in bed,\" she said.\nMum had spots.\n\"Stay in bed, too,\" said the doctor.\nDad looked after everyone.\nHe put the washing out.\nHe went shopping.\n\"What a job!\" said Dad.\nEveryone got better.\n\"Oh, no!\" said Mum.\nDad had spots."
       },
       {
         "id": "ort_kippers_birthday",
         "title": "第12课 · Kipper's Birthday",
         "unit": 12,
-        "text": "It was kipper's birthday.\nKipper wanted a party.\nEveryone wanted to come.\nMum made a cake.\nDad took a sandwich.\nStop it ,\"said Mum.\nEveryone came to the party.\nDad wanted to play a game.\nBut Kipper put the television on.\nThe children played with the bubbles."
+        "text": "It was Kipper's birthday.\nKipper wanted a party.\nEveryone wanted to come.\nBiff put up balloons.\nMum made a cake.\nDad took a sandwich.\n\"Stop it,\" said Mum.\nEveryone came to the party.\nDad wanted to play a game.\nBut Kipper put the television on.\n\"Oh no!\" said Mum, \"What a mess!\"\nThe children played with the bubbles.\n\"What a good party!\" everyone said."
       },
       {
         "id": "ort_kippers_laces",
         "title": "第13课 · Kipper's Laces",
         "unit": 13,
-        "text": "Kipper wanted new shoes.\nHe couldn't tie his laces.\nDad helped him.\nKipper was at school.\nThe class had P.\nKipper couldn't tie his laces.\nMiss Green helped him.\nKipper was upset.\nHe told Dad.\nDad made a block.\nKipper tried.\nHooray!\" said Kipper.\nHe did up his laces.\nOh no!\" said Kipper.\nOh no!"
+        "text": "Kipper wanted new shoes.\nHe couldn't tie his laces.\nDad helped him.\nKipper was at school.\nThe class had P.E.\nKipper couldn't tie his laces.\nMiss Green helped him.\nKipper was upset.\nHe told Dad.\nDad made a block.\nKipper tried...\nand tried...\nand tried and tried.\n\"Hooray!\" said Kipper.\nKipper was at school.\nHe did up his laces.\n\"Oh no!\" said Kipper."
       },
       {
         "id": "ort_the_wobbly_tooth",
         "title": "第14课 · The Wobbly Tooth",
         "unit": 14,
-        "text": "Kipper had a wobbly tooth.\nMum wanted to pull it out.\nNo��&rdquo;said Kipper.\nDad wanted to pull it out.\nNo,no,no��&rdquo;said Kipper.\nBiff went on the swing.\nKipper pushed her.\nOh no!\nThe swing hit Kipper.\nThe tooth was gone.\nKipper had swallowed it.\nKipper was upset.\nSorry��&rdquo;said Biff and Chip.\nNever mind,&rdquo;said Mum.\nNever mind,&rdquo;said Dad.\nI'm not sad,&rdquo;said Kipper.\nI'm glad."
+        "text": "Kipper had a wobbly tooth.\nMum wanted to pull it out.\n\"No!\" said Kipper.\nDad wanted to pull it out.\n\"No, no, no!\" said Kipper.\nBiff went on the swing.\nKipper pushed her.\nOh no!\nThe swing hit Kipper.\nThe tooth was gone.\nKipper had swallowed it.\nKipper was upset.\n\"Sorry,\" said Biff and Chip.\n\"Never mind,\" said Mum.\n\"Never mind,\" said Dad.\n\"I'm not sad,\" said Kipper.\n\"I'm glad.\""
       },
       {
         "id": "ort_the_foggy_day",
         "title": "第15课 · The Foggy Day",
         "unit": 15,
-        "text": "It was foggy.\nDad wanted to go shopping.\nOh no,\" said the children.\nOh no!\nThey got into the car.\nThey were fed up.\nThe fog got worse.\nDad couldn't see.\nDad stopped the car.\nThey had to walk home.\nThey were lost.\nThis way,\" said Biff.\nNo, this way,\" said Chip.\nThey saw a light.\nA monster!\" said Dad.\nIt's Mum!\" said the children."
+        "text": "It was foggy.\nDad wanted to go shopping.\n\"Oh no,\" said the children.\nThey got into the car.\nThey were fed up.\nThe fog got worse.\nDad couldn't see.\nDad stopped the car.\nThey had to walk home.\nThe fog got worse.\nThey were lost.\n\"This way,\" said Biff.\n\"No, this way,\" said Chip.\nThey saw a light.\n\"A monster!\" said Dad.\n\"It's Mum!\" said the children."
       },
       {
         "id": "ort_biffs_aeroplane",
         "title": "第16课 · Biff's Aeroplane",
         "unit": 16,
-        "text": "Biff made an aeroplane.\nThe aeroplane looked good.\nBiff wanted to fly it.\nThe aeroplane flew up.\nIt went over the trees.\nIt went over the houses.\nBiff looked for the aeroplane.\nEveryone helped.\nBiff looked and looked.\nThe aeroplane was on the bed ."
+        "text": "Biff made an aeroplane.\nMum helped her.\nThe aeroplane looked good.\nBiff wanted to fly it.\nShe went to the park.\nThe aeroplane flew up.\nIt went over the trees.\nIt went over the houses.\nBiff looked for the aeroplane.\nEveryone helped.\nBiff looked and looked.\nShe couldn't find it.\nShe wanted to cry.\nShe went upstairs.\nThe aeroplane was on the bed."
       },
       {
         "id": "ort_floppy_the_hero",
         "title": "第17课 · Floppy the Hero",
         "unit": 17,
-        "text": "A fire engine went by.\nThere was a fire.\nEveryone ran to see.\nGet back\",said a fireman.\nA barn was on fire.\nA little dog ran to the barn.\nShe barked and barked.\nFloppy ran to the barn .\nThe firemen pushed the door down.\nFloppy ran out .\nHe had some puppies.\nEveryone looked at floppy.\nFloppy."
+        "text": "A fire engine went by.\nThere was a fire.\nEveryone ran to see.\n\"Get back,\" said a fireman.\nA barn was on fire.\nA little dog ran to the barn.\nShe barked and barked.\nFloppy ran to the barn.\nHe jumped in the window.\n\"Get Floppy,\" said Chip.\nThe firemen pushed the door down.\nFloppy ran out.\nHe had some puppies.\nEveryone looked at Floppy.\n\"What a good dog!\" everyone said.\nWhat a hero!"
       },
       {
         "id": "ort_the_chase",
         "title": "第18课 · The Chase",
         "unit": 18,
-        "text": "Everyone wanted to play.\nBiff wanted to play.\nChip wanted to play.\nKipper wanted to play.\nFloppy wanted to play.\nThey played chase.\nFloppy chased the cat.\nUp the tree went the cat.\nFloppy chased the ducks.\nInto the water went Floppy.\nOh no!"
+        "text": "Floppy wanted a new basket.\nMum and Biff went to the market.\nThey got a new basket.\nMum and Biff went to the toilet.\n\"Stay Floppy,\" said Biff.\nFloppy saw a cat.\nHe chased it.\nThe cat jumped over the oranges.\nCrash went the oranges.\nThe cat jumped over some plates.\nCrash went the plates.\nThe cat jumped over some clothes.\n\"Got you!\" said a man.\nEveryone was cross.\n\"What a bad dog!\" everyone said.\n\"What a good dog!\" said Mum."
       },
       {
         "id": "ort_the_big_egg",
         "title": "第19课 · The Big Egg",
         "unit": 19,
-        "text": "Biff and Chip went to the farm with Mum.\nThe farm had chicks to sell.\nIt had chicks in a pen.\nCan we get chicks,Mum?\"said Biff.\nWe can hatch chicks,\"said Mum.\nMum got the eggs.\nShe got an incubator to put the eggs in.\nIt's fun to hatch chicks,\"said Dad.\nThis is an odd egg,\"said Biff.\nThe incubator had a lamp and a fan.\nIt will turn the eggs,\"said Mum.\nTen eggs did hatch.\nThey had ten chicks.\nBut the odd egg did not hatch.\nAt last it did hatch.\nBut it was not a chick.\nIt was a duckling."
+        "text": "The children fed the hens.\nThey looked for eggs.\nThey put the eggs in a box.\nDad had an idea.\nKipper went on looking.\n\"Look at this egg,\" said Kipper.\n\"This is too big.\"\nKipper looked at the hen.\n\"This is too big for you,\" he said.\n\"Come and see this,\" said Dad.\n\"This is too big for you,\" said Mum.\n\"This is too big for me,\" said Dad."
       },
       {
         "id": "ort_poor_floppy",
         "title": "第20课 · Poor Floppy",
         "unit": 20,
-        "text": "Floppy was not well.\nHe lay on the bed.\n\"Mum,\" said Kipper.\n\"Floppy is poorly.\"\nMum looked at Floppy.\n\"He is not well,\" said Mum.\nThey took Floppy to the vet.\nThe vet looked at Floppy.\n\"Put him in the basket,\" she said.\nFloppy went in the basket.\nThey took him home.\nFloppy was better."
+        "text": "Floppy was not well.\nHe lay on his bed.\n\"He looks bad,\" said Kipper.\nBiff wanted Floppy to get well.\nKipper was sad.\nMum took Floppy to the vet.\nChip went, too.\nChip looked at the pets.\n\"I can see six cats,\" he said.\nFloppy just looked at the cats.\nHe was not well.\nThe vet looked at Floppy.\n\"Give him some pills,\" she said.\nMum took Floppy home\nFloppy had some pills.\nFloppy was soon better."
       },
       {
         "id": "ort_put_it_back",
         "title": "第21课 · Put it back",
         "unit": 21,
-        "text": "Kipper went on the logs.\n\"Put it back,\" said Mum.\nKipper put it back.\nKipper went on the rocks.\n\"Put it back,\" said Dad.\nKipper put it back.\nKipper went in the mud.\n\"Put it back,\" said Chip.\nKipper put it back.\nKipper went in the water.\n\"Put it back,\" said Biff.\nKipper put it back."
+        "text": "\"Look at this,\" said Biff.\nShe had a crab in her hand.\n\"Put it back,\" said Chip\n\"Let's look on the sand,\" said Dad.\n\"Come and see this,\" said Chip.\nHe had a net.\n\"Come and see this,\" said Mum.\nShe had a bit of wood.\n\"Look at this shell,\" said Kipper.\n\"This is the best of all.\"\nThe shell had legs.\n\"Oh no!\" said Kipper. \"What is it?\"\n\"It's a hermit crab,\" said Dad.\n\"It's a crab that lives in a shell.\"\n\"Put it back,\" said Kipper."
       },
       {
         "id": "ort_in_a_bit",
         "title": "第22课 · In a bit",
         "unit": 22,
-        "text": "\"Come and eat,\" said Mum.\n\"In a bit,\" said Biff.\n\"Come and eat,\" said Mum.\n\"In a bit,\" said Chip.\n\"Come and eat,\" said Mum.\n\"In a bit,\" said Kipper.\n\"In a bit,\" they said.\n\"In a bit,\" said Biff.\n\"In a bit,\" said Chip.\n\"In a bit,\" said Kipper."
+        "text": "\"Come and help,\" said Mum.\nBiff was looking at the TV.\n\"In a bit,\" she said.\nDad had a job for Chip.\n\"Come and help,\" he said.\nChip was looking at the TV.\n\"In a bit,\" he said.\nKipper's room was in a mess.\n\"Come and help,\" said Mum.\nKipper was looking at the TV.\n\"In a bit,\" he said.\n\"What can we do?\" said Dad.\nMum had an idea.\nBiff, Chip and Kipper wanted dinner.\n\"in a bit,\" said Mum and Dac"
       },
       {
         "id": "ort_a_present_for_mum",
         "title": "第23课 · A present for Mum",
         "unit": 23,
-        "text": "Dad got flowers for Mum.\nHe had a big bunch.\nFlowers for Mum,\" he said.\nHe put the flowers on the back.\nThe flowers fell off.\nOh no! Dad was upset.\nOh no!\nHe had lost the flowers.\nWilma saw the flowers.\nLost flowers,\" said her mum.\nShe put them on a bin.\nDad was in a rush.\nHe went back to the flower shop.\nHe got a big bunch of flowers.\nDad saw his lost flowers.\nWell, well,\" he said.\nFlowers for Mum,\" said Dad.\nMix them up,\" said Chip.\nThen it will be a big bunch.\nIt's an enormous bunch,\" said Mum.\nThank you."
+        "text": "Dad had a little box.\nIt was a present for Mum\nDad had an idea.\nHe wanted to make Mum laugh.\nMum and Dad had a party.\nMum gave Dad a present.\nDad gave Mum a big box.\nMum had a smaller box.\n\"What is it?\" she asked\nThe present got smaller.\n.and smaller\n..and smaller.\n\"'This is for you, \" said Dac\n\"And this is for you,\" said Mum.\n\"Oh Dad!\" said Mum. \"Oh Mum!\" said Dad.\n\"Oh\n\"Oh\n\"Oh\n\"Oh\n\"Oh"
       },
       {
         "id": "ort_a_hole_in_the_sand",
         "title": "第24课 · A hole in the sand",
         "unit": 24,
-        "text": "Dad dug a hole.\nBiff dug a hole.\nChip dug a hole.\nKipper dug a hole.\nDad put up the windbreak.\nMum put up the windbreak.\nThey went in the sea.\nThe tide came in.\nThe hole was full of water.\n\"Look at the pool,\" said Kipper."
+        "text": "Biff's spade was no good.\nDad got a big spade.\n\"Let me dig a hole,\" he said.\nDad dug a hole.\nThe children helped.\nThe hole got bigger...\n...and deeper.\nAll the children came.\nThey played in the hole.\nThe water came in.\n\"I can't stop it,\" said Dad.\nThe tide came in.\nDad's spade was in the hole.\nNext day, the hole had gone.\nDad's spade was under the sand.\n\"Let's dig,\" said Dad."
       },
       {
         "id": "ort_monkey_tricks",
         "title": "第25课 · Monkey Tricks",
         "unit": 25,
-        "text": "Lee had a monkey.\nIt did tricks.\nLin had a monkey.\nIt did tricks.\nKipper liked the monkeys.\nThe monkeys did tricks.\nEveryone liked the monkeys.\nThe monkeys did more tricks.\nOh no!\nThe monkeys ran away."
+        "text": "The children went to the zoo.\nThey looked at the giraffes.\nThe giraffes were tall.\nThey looked at the seals.\nThe seals were hungry.\nThey looked at the crocodiles.\nThe crocodiles were asleep.\nThey looked at the parrots.\nThe parrots were noisy.\nThey looked at the elephants.\nThe elephants were big.\nThey looked at the monkeys.\nThe monkeys were funny.\nThey looked for Kipper.\nKipper looked like a monkey."
       },
       {
         "id": "ort_hey_presto",
         "title": "第26课 · Hey Presto!",
         "unit": 26,
-        "text": "Wilf had a box.\nWilma had a wand.\n\"Hey presto!\" said Wilma.\nA rabbit was in the box.\n\"Hey presto!\" said Wilf.\nA bird was in the box.\n\"Hey presto!\" said Wilma.\nA frog was in the box.\nOh no!\nFloppy was in the box."
+        "text": "The children went to a show. Mum and Dad took them.\nA conjuror was in the show.\nShe was called Sheena.\nShe took Dad's tie.\nShe put it in a bag.\nShe took Mum's ear-ring.\nShe put it in the bag.\nShe took Dad's watch.\nShe put it in the bag.\nShe took Dad on to the stage.\nShe put the bag on Dad's head.\nSheena took a big box.\nShe put Wilma inside.\nSheena took her wand.\n\"Hey presto!\" she said.\n\"Hey presto!\" said Wilma."
       },
       {
         "id": "ort_its_the_weather",
         "title": "第27课 · It's the Weather",
         "unit": 27,
-        "text": "It was the weather.\nIt rained and rained.\nThe children were bored.\nMum was cross.\nThe children were noisy.\nDad was cross.\nThe sun came out.\nEveryone was happy.\nThey went out to play.\nIt was a sunny day."
+        "text": "The children were noisy.\nThe children were silly.\nThe children were messy.\nThe children were untidy.\n\"Oh dear!\" said Mrs May.\n\"It's the weather.\"\nThe children were cross.\nThe children were grumpy.\nThe children were unhappy.\n\"Oh dear!\" said Mrs May.\n\"It's the weather.\"\nThe sun was shining.\nThe children were good.\n\"What a day!\" said Mrs May."
       },
       {
         "id": "ort_naughty_children",
         "title": "第28课 · Naughty Children",
         "unit": 28,
-        "text": "The children were naughty.\nBiff was naughty.\nChip was naughty.\nKipper was naughty.\nMum was cross.\nDad was cross.\nThe children said sorry.\nMum was not cross.\nDad was not cross.\nThe children were good."
+        "text": "Two children came.\nThey climbed on the furniture.\nThey jumped on the sofa.\nThey climbed up the curtains.\nThey jumped on the bed.\nThey climbed up the tree.\nThey jumped on the flowers.\n\"Oh no!\" said Mum.\nBiff had an idea.\nThey climbed up the ladder.\nThey jumped off the log.\nThey climbed on the net.\nThey jumped off the wall.\nEveryone was happy.\n\"What good children!\" said Mum.\nThe children went home."
       },
       {
         "id": "ort_a_sinking_feeling",
         "title": "第29课 · A Sinking Feeling",
         "unit": 29,
-        "text": "Wilf did not want to swim.\nWilma wanted to swim.\nChip wanted to swim.\nBiff wanted to swim.\nWilf had a sinking feeling.\nHe did not want to go in.\nEveryone went in the pool.\nWilf went in the pool.\nWilf liked the pool.\nWilf did not have a sinking feeling."
+        "text": "The children were in the pool.\nWilma climbed on the duck.\n\"Get on,\" said Wilma.\nWilf climbed on.\n\"Get on,\" said Wilf.\nChip climbed on.\n\"Get on,\" said Chip.\nBiff climbed on.\n\"Get on,\" said Biff.\nKipper couldn't get on.\n\"Get on,\" said everyone.\nKipper couldn't get on.\n\"Get on,\" said everyone.\nKipper climbed on.\nOh no!"
       },
       {
         "id": "ort_creepy_crawly",
         "title": "第30课 · Creepy-crawly!",
         "unit": 30,
-        "text": "Kipper had a bath.\nHe saw a creepy-crawly.\n\"A creepy-crawly!\" said Kipper.\nMum came to see.\nDad came to see.\nBiff came to see.\nChip came to see.\nThey looked at the creepy-crawly.\nThe creepy-crawly went away.\nKipper had his bath."
+        "text": "Wilma had a creepy-crawly. She put it in the bath.\nWilma called Dad.\n\"Get it out,\" said Wilf.\n\"Ugh! I couldn't,\" said Dad.\nWilf called Mum.\n\"Get it out,\" said Wilf.\n\"Ugh! I couldn't,\" said Mum.\nWilma called Chip.\n\"Get it out,\" said Wilf.\n\"Ugh! I couldn't,\" said Chip.\nWilf called Biff.\n\"Get it out,\" said Wilma.\n\"Ugh! I couldn't,\" said Biff.\nEveryone called Kipper.\n\"Get it out,\" said Wilf.\n\"Easy!\" said Kipper."
       },
       {
         "id": "ort_what_is_it",
         "title": "第31课 · What is it?",
         "unit": 31,
-        "text": "Mum and Dad went out.\nGran came to babysit.\nGran sat in the chair.\nShe went to sleep.\nThe children went out.\nThey saw something.\n\"What is it?\" said Biff.\n\"What is it?\" said Chip.\nIt was Gran's glasses.\nGran woke up."
+        "text": "Floppy barked.\nFloppy barked and barked.\n\"What is it?\" said Biff.\nBiff looked.\n\"What is it?\" she said.\nWilf looked.\n\"What is it?\" he said.\n\"What is it?\" said Wilma.\n\"Is it a frog?\"\n\"What is it?\" said Chip.\n\"Is it a lizard?\"\nMum looked at it.\n\"What is it?\" said the children.\n\"It's a salamander,\" said Mum.\n\"It's lost,\" she said.\nThe salamander was safe."
       },
       {
         "id": "ort_the_lost_puppy",
         "title": "第32课 · The Lost Puppy",
         "unit": 32,
-        "text": "A puppy was lost.\nThe children looked for it.\nThey looked in the garden.\nThey looked in the shed.\nThey looked in the park.\nThey could not find it.\nFloppy barked.\nThe puppy was under the bush.\nThey found the puppy.\nEveryone was happy."
+        "text": "Mrs May had a puppy.\nIt was called Sniff.\nSniff ran off.\nMrs May was upset.\nSniff was lost.\nBiff and Chip looked.\nThey couldn't find Sniff.\nWilf and Wilma looked.\nMum and Dad looked.\nThey couldn't find Sniff.\nEveryone looked.\nNobody could find Sniff.\nSniff was by the tree.\n\"What a clever dog!\" said everyone."
       },
       {
         "id": "ort_new_trees",
         "title": "第33课 · New Trees",
         "unit": 33,
-        "text": "The children planted trees.\nBiff planted a tree.\nChip planted a tree.\nKipper planted a tree.\nThey watered the trees.\nThe trees grew.\nThe trees grew tall.\nThe trees had leaves.\nEveryone liked the new trees.\nThe new trees were good."
+        "text": "The children went to the park.\nIt was \"Give a tree\" week.\nEveryone wanted to give trees.\nDad gave a tree.\nHe put it by the shed.\nChip gave a tree.\nHe put it by the stream.\nBiff gave a tree.\nShe put it by the pond.\nWilf gave a tree.\nHe put it by the bridge.\nWilma gave a tree.\nShe put it by the swing.\nFloppy gave a bone.\nHe put it in a hole.\n\"A funny tree,\" said Chip.\n\"A funny bone,\" said Dad."
       },
       {
         "id": "ort_up_and_down",
         "title": "第34课 · Up and Down",
         "unit": 34,
-        "text": "Mum and Dad went shopping.\nDad went up.\nMum went down.\nDad went down.\nMum went up.\nBiff went up.\nChip went down.\nKipper went up and down.\nThey were on the escalator.\nUp and down."
+        "text": "Mum and Dad went shopping.\nDad wanted a book.\nHe went up.\nMum wanted a paintbrush.\nShe went down.\nMum went up.\nDad went down.\nMum couldn't see Dad.\nShe went up.\nMum went down.\nDad went up.\nDad went down.\nMum went up.\nMum came down.\n\"Stop!\" she said.\n\"Up and down!\" said Dad."
       },
       {
         "id": "ort_the_little_dragon",
         "title": "第35课 · The Little Dragon",
         "unit": 35,
-        "text": "The children put on a play.\nBiff was a king.\nChip was a knight.\nKipper was a dragon.\nThe dragon was little.\nThe dragon roared.\nEveryone was scared.\nThe little dragon was funny.\nEveryone laughed.\nThe play was good."
+        "text": "The children put on a play.\n\"I am the king,\" said Chip.\n\"Fight the dragon.\"\n\"I am the knight,\" said Wilma.\n\"I will fight the dragon.\"\n\"I am the dragon,\" said Kipper.\n\"But I am a little dragon.\"\n\"I am the princess,\" said Biff.\n\"I like dragons.\"\nThe princess played with the dragon.\nThey played under the tree.\n\"I am the knight,\" said Wilma.\n\"I am frightened,\" said the dragon.\n\"I am cross,\" said the princess.\nShe pushed the knight in the pond.\n\"What a good play,\" said everyone."
       },
       {
         "id": "ort_the_band",
         "title": "第36课 · The Band",
         "unit": 36,
-        "text": "Dad had a band.\nMum had a band.\nBiff had a drum.\nChip had a trumpet.\nKipper had a horn.\nThey played music.\nEveryone liked the band.\nThe band played loudly.\nOh no!\nThe band stopped."
+        "text": "Dad played his trumpet.\nHe played in the house.\nFloppy barked at Dad.\nDad played in the garage.\nFloppy barked at Dad.\nDad played in the shed.\nFloppy barked at Dad.\nDad played in a band.\nThe band played in the park.\nFloppy went to the park.\nThe band played.\nFloppy barked.\nFloppy barked and barked.\nThe band couldn't play.\n\"What a bad dog!\" said Dad."
       }
     ],
     "ort_l3": [
@@ -609,7 +609,7 @@
         "id": "ort_sniff",
         "title": "第2课 · Sniff",
         "unit": 2,
-        "text": "\"Will you look after Sniff today?\" said Mrs May.\nWilf and Wilma were happy.\nThey wanted to look after the puppy.\nThey took Sniff to the park.\nThe puppy was excited.\nSniff liked to roll on her back.\nShe jumped up for a stick.\nShe ran after a ball.\nSniff went in the mud.\nShe ran after a duck.\nShe jumped in the pond.\nShe barked at a dog.\n\"I am hot,\" said Wilf. \"I want a rest.\"\n\"I am hot, too,\" said Wilma. \"I want a drink.\"\nMum couldn't find Sniff.\nShe couldn't find Wilf and Wilma.\nMum and Dad looked and looked.\n\"They must be lost,\" said Mum.\nThey were fast asleep.\n\"They are worn out,\" said Dad."
+        "text": "\"Will you look after Sniff today?\" said Mrs May.\nWilf and Wilma were happy.\nThey wanted to look after the puppy.\nThey took Sniff to the park.\nThe puppy was excited.\nSniff liked to roll on her back.\nShe jumped up for a stick.\nShe ran after a ball.\nShe barked at a cat.\nSniff went in the mud.\nShe ran after a duck.\nShe jumped in the pond.\nShe barked at a dog.\n\"I am hot,\" said Wilf. \"I want a rest.\"\n\"I am hot, too,\" said Wilma. \"I want a drink.\"\nMum couldn't find Sniff.\nShe couldn't find Wilf and Wilma.\nMum and Dad looked and looked.\n\"They must be lost,\" said Mum.\nThey were fast asleep.\n\"They are worn out,\" said Dad."
       },
       {
         "id": "ort_pond_dipping",
@@ -627,7 +627,7 @@
         "id": "ort_the_mud_bath",
         "title": "第5课 · The Mud Bath",
         "unit": 5,
-        "text": "Dad was playing football.\nHe ran with the ball.\n\"Go on Dad!\" called Chip. \"Kick it!\"\nDad fell over in the mud. Splat!\n\"Bad luck, Dad!\" said Biff.\n\"Oh Dad,\" said Mum. \"What a mess.\"\n\"I want a bath,\" said Dad.\nDad went up to the bathroom.\nHe ran a bath.\nDad came down.\nThere was football on TV.\nDad looked at the football.\n\"Go on!\" he called. \"Kick it!\"\nDad forgot the bath.\nDrip! Drip! Drip!\nPlop! Plop! Splat!\n\"What was that?\" said Dad.\nSplash! \"Oh no,\" said Dad."
+        "text": "Dad was playing football.\nHe ran with the ball.\n\"Go on Dad!\" called Chip. \"Kick it!\"\nDad fell over in the mud. Splat!\n\"Bad luck, Dad!\" said Biff.\n\"Oh Dad,\" said Mum. \"What a mess.\"\n\"I want a bath,\" said Dad.\nDad went up to the bathroom.\nHe ran a bath.\nDad came down.\nThere was football on TV.\nDad looked at the football.\n\"Go on!\" he called. \"Kick it!\"\nDad forgot the bath.\nDrip! Drop! Drip!\nPlop! Plop! Splat!\n\"What was that?\" said Dad.\nSplash! \"Oh no,\" said Dad."
       },
       {
         "id": "ort_the_steel_band",
@@ -674,147 +674,183 @@
     ],
     "ort_l4": [
       {
-        "id": "ort_house_for_sale",
-        "title": "第1课 · House for Sale",
+        "id": "ort_lucky_the_goat",
+        "title": "第1课 · Lucky the Goat",
         "unit": 1,
+        "text": "Grandmother had a party.\nGrandmother had a kid goat.\nShe gave her a bottle.\nYasmin was sad.\nAdam had spots.\n\"Come back in two weeks.\"\n\"Lucky!\" said Yasmin."
+      },
+      {
+        "id": "ort_adams_car",
+        "title": "第2课 · Adam's Car",
+        "unit": 2,
+        "text": "Adam had a new car.\nIt looked like his car.\nAdam had an idea.\nHe went to the flour bin.\nHe put flour on the car.\n\"Oh no!\" said Adam.\nHe couldn't find the car.\nThe flour went everywhere.\nMum was cross."
+      },
+      {
+        "id": "ort_yasmin_and_the_flood",
+        "title": "第3课 · Yasmin and the Flood",
+        "unit": 3,
+        "text": "Yasmin couldn't sleep.\nThe rain woke her up.\na (l\n\"Oh help!\" said Dad.\nEverything was wet.\nThe cloth was wet.\n\"Hang it up to dry,\" said Yasmin.\nThe sun came out.\n\"Let's have a party,\" said Yasmin.\nEveryone was happy."
+      },
+      {
+        "id": "ort_yasmins_dress",
+        "title": "第4课 · Yasmin's Dress",
+        "unit": 4,
+        "text": "Yasmin had a new dress.\nHer mum had made it.\nYasmin put it on.\n\"What a pretty dress!\" said Dad.\n\"What a pretty dress!\" said everyone.\nAdam got paint on his hands.\nAdam got paint on Yasmin's dress.\nAdam was upset."
+      },
+      {
+        "id": "ort_mosque_school",
+        "title": "第5课 · Mosque School",
+        "unit": 5,
+        "text": "But he was too little.\nHe wanted to look inside.\nHe climbed on the lamp post.\nAdam got stuck.\nEveryone ran to help.\nThe firemen came.\n\"Hooray!\" said Adam."
+      },
+      {
+        "id": "ort_adam_goes_shopping",
+        "title": "第6课 · Adam Goes Shopping",
+        "unit": 6,
+        "text": "Mum and Dad went shopping.\nThey took Adam and Yasmin.\nAdam wanted to go home.\nAdam was bored.\nAdam was fed up.\nHe went into a tent.\nThey couldn't find him.\nEveryone looked for Adam.\nAdam was fast asleep."
+      },
+      {
+        "id": "ort_house_for_sale",
+        "title": "第7课 · House for Sale",
+        "unit": 7,
         "text": "This house was for sale.\nDad liked the house.\nMum liked it too.\nBiff and Chip looked at the house.\nEveryone liked it.\nKipper pulled the wall paper.\nThey went into a room.\nEveryone liked this room.\nKipper looked up the chimney.\nBiff wanted this bedroom.\nIt was a big room.\nChip wanted this bedroom.\nIt was a big room.\nThey went down the garden.\nThey looked at the tree house.\nKipper climbed the tree.\nBiff and Chip climbed the tree.\nThey went in the tree house.\nEveryone liked the house.\nFloppy liked it too."
       },
       {
         "id": "ort_the_new_house",
-        "title": "第2课 · The New House",
-        "unit": 2,
-        "text": "A van came to the house.\nWhat a big van! \" said Chip.\nWhat b big man!\" said Kipper.\nThe man looked at the things.\nWhat a lot of things! \" he said.\nMum and Dad helped the man.\nThey put things in the van.\nWhat a job! \" said Dad.\nThe children helped too.\nKipper put his toys in the van.\nBiff and Chip put the go-kart in.\nThey put a box in the van.\nWhat a big box! \" said Biff.\nWhat a job!\" said everyone.\nGoodbye,\" said Biff.\nGoodbye,\" said Chip.\nCome and play soon,\" they said.\nThe van went to the new house.\nDad looked at Biff and Chip.\nOh no! \" said Biff and Chip.\nWhat a job! \" they said."
+        "title": "第8课 · The New House",
+        "unit": 8,
+        "text": "A van came to the house.\nWhat a big van! \" said Chip.\nWhat a big man!\" said Kipper.\nThe man looked at the things.\nWhat a lot of things! \" he said.\nMum and Dad helped the man.\nThey put things in the van.\nWhat a job! \" said Dad.\nThe children helped too.\nKipper put his toys in the van.\nBiff and Chip put the go-kart in.\nThey put a box in the van.\nWhat a big box! \" said Biff.\nWhat a job!\" said everyone.\nGoodbye,\" said Biff.\nGoodbye,\" said Chip.\nCome and play soon,\" they said.\nThe van went to the new house.\nDad looked at Biff and Chip.\nOh no! \" said Biff and Chip.\nWhat a job! \" they said."
       },
       {
         "id": "ort_come_in",
-        "title": "第3课 · Come In",
-        "unit": 3,
+        "title": "第9课 · Come In",
+        "unit": 9,
         "text": "Dad was painting the door.\nMum went out.\nWilf and Wilma came to play.\nCome in,\" said Dad.\nThree children came to the house.\nThey came to play with Biff.\nCome in,\" said Biff.\nFour children came to the house.\nThey came to play with Chip.\nCome in,\" said Chip.\nFive children came to the house.\nThey came to play with Kipper.\nCome in,\" said Kipper.\nMum looked for Biff, Chip, and Kipper.\nThey were watching television.\nMum was cross.\nMum gave the children some biscuits.\nThey all went home.\nMum went outside.\nOh no!\" said Mum."
       },
       {
         "id": "ort_the_secret_room",
-        "title": "第4课 · The Secret Room",
-        "unit": 4,
+        "title": "第10课 · The Secret Room",
+        "unit": 10,
         "text": "Biff and Chip liked the new house.\nThey helped Mum and Dad.\nMum put wallpaper on the wall.\nChip helped her.\nDad painted a door.\nBiff helped him.\nBiff was in her room.\nDad looked at the wallpaper.\nBiff wanted new wallpaper.\nThey went to the wallpaper shop.\nBiff looked at the wallpaper.\nShe liked this wallpaper.\nMum and Dad pulled the wallpaper off.\nBiff and Chip helped.\nWhat a job!\" said Chip.\nBiff found a door.\nThe door was stuck.\nMum opened the door.\nShe found a room.\nEveryone looked inside.\nMum went into the secret room.\nShe found a little house.\nIt looks like our house,\" said Mum.\nBiff opened the little house.\nEveryone looked inside.\nIt looks like our house inside,\" said Biff.\nKipper found a little dog.\nLook at this little dog,\" said Kipper.\nIt looks like our dog.\nIt looks like Floppy.\nChip found three little children.\nLook at the children,\" said Chip.\nThey look like us.\nBiff liked her bedroom.\nShe liked the secret room too.\nDad painted the secret room.\nBiff put things inside.\nBiff was in bed.\nShe was fast asleep.\nShe dreamed about the little children."
       },
       {
         "id": "ort_the_play",
-        "title": "第5课 · The Play",
-        "unit": 5,
-        "text": "Biff and Chip went to schoolBiff\nThey went with Wilf and Wilma.\nBiff and Chip liked Mrs May.\nThey were in her class.\nWilf liked Mrs May.\nHe was in her class too.\nIt was story time.\nThe story was The Wizard of Oz.\nIt was about a girl and her dog.\nThe girl was Dorothy.\nThere was a storm.\nThe wind blew the house away.\nDorothy met the Scarecrow. Dorothy\nShe met the Tin Man.\nShe met the lion.\nDorothy met a witch. Dorothy\nThere was a storm.\nIt was playtime.\nThe children couldn't play outside.\nThe children played inside.\nThey played The Wizard of Oz.\nMrs May liked the little play. May\nMrs May put on a play. May\nThe play was The Wizard of Oz.\nWilf's mum helped Mrs May.\nChip was the Tin Man.\nWilf was the lion.\nBiff was a witch.\nWilf's dad helped Mrs May.\nHe painted a house.\nThe Children helped him.\nThe mums and dads came.\nThey liked the play.\nWhat a good play!\" they said.\nThe children liked the play.\nThey gave Mrs May some flowers.\nIt was good fun,\" said Wilf.\nIt was time to go home.\nThere was a storm.\nIt's like the play,\" said Chip."
+        "title": "第11课 · The Play",
+        "unit": 11,
+        "text": "Biff and Chip went to schoolBiff\nThey went with Wilf and Wilma.\nBiff and Chip liked Mrs May.\nThey were in her class.\nWilf liked Mrs May.\nHe was in her class too.\nIt was story time.\nThe story was The Wizard of Oz.\nIt was about a girl and her dog.\nThe girl was Dorothy.\nThere was a storm.\nThe wind blew the house away.\nDorothy met the Scarecrow. Dorothy\nShe met the Tin Man.\nShe met the lion.\nDorothy met a witch. Dorothy\nThere was a storm.\nIt was playtime.\nThe children couldn't play outside.\nThe children played inside.\nThey played The Wizard of Oz.\nMrs May liked the little play. May\nMrs May put on a play. May\nThe play was The Wizard of Oz.\nWilf's mum helped Mrs May.\nChip was the Tin Man.\nWilf was the lion.\nBiff was a witch.\nWilf's dad helped Mrs May.\nHe painted a house.\nThe Children helped him.\nIt's like the play,\" said Chip.\nThe mums and dads came.\nThey liked the play.\nWhat a good play!\" they said.\nThere was a storm.\nThe children liked the play.\nThey gave Mrs May some flowers.\nIt was good fun,\" said Wilf.\nIt was time to go home."
       },
       {
         "id": "ort_the_storm",
-        "title": "第6课 · The Storm",
-        "unit": 6,
+        "title": "第12课 · The Storm",
+        "unit": 12,
         "text": "Wilf and Wilma came to the house.\nThey came to play.\nThe children went outside.\nThey climbed the tree.\nThey looked in the tree house.\n\"What a mess!\" said Biff.\nDad helped the children.\nHe mended the roof.\nBiff and Wilma mended the door.\nChip and Wilf painted the tree house.\nWilf painted the door.\nChip painted the walls.\nThe tree house looked good.\nThe children put things inside.\nThey had a party in the tree house.\nIt was bed time.\nBiff was in her room.\nBiff looked outside.\nThere was a storm.\nIt was time for school.\nWilf and Wilma came.\n'What a storm! said Mum.\nThe wind blew.\nThe rain came down.\n\"What a storm!\" said Mrs May.\nIt was time to go home.\nThe mums and dads came.\n\"What a wind!\" they said.\n\"Oh no!\" said Biff.\nThe tree was down.\n\"What a mess!\" said Kipper.\nThe children climbed on the tree.\nFloppy barked and barked.\nFloppy found something.\nIt was a box.\nEveryone looked at the box.\nMum opened it.\nThey found a key inside.\nChip wanted the box.\nHe put it in his room."
       },
       {
         "id": "ort_nobody_got_wet",
-        "title": "第7课 · Nobody Got Wet",
-        "unit": 7,
+        "title": "第13课 · Nobody Got Wet",
+        "unit": 13,
         "text": "Dad got a boat.\nEveryone sat in the boat.\nDad pushed the boat out.\nOh no! Dad was stuck.\nMum pulled Dad.\nWilma pushed the boat.\nThey went down the river.\nNobody got wet.\nWhat a good job!\" said Mum.\nThey had a picnic.\nIt began to rain.\nBut nobody got wet.\nThe boat floated away.\nOh no!\"gasped Mum.\nHelp me get the boat.\nMum pulled the boat in.\nDon't let me fall in,\" said Mum.\nMum didn't get wet.\nNobody got wet,\" said Dad.\nIt was time to go home.\nOh no! Everyone got wet."
       },
       {
         "id": "ort_the_weather_vane",
-        "title": "第8课 · The Weather Vane",
-        "unit": 8,
+        "title": "第14课 · The Weather Vane",
+        "unit": 14,
         "text": "Dad went to the building site.\nHe took Wilf and Wilma.\nThey looked at the crane.\nWilma spoke to the man in the cab.\nA van came to the building site.\nIt had a weather vane on the back.\nWilf looked at the weather vane.\nDad had an idea.\nWilf jumped over the weather vane.\nBe careful,\" said Dad.\nTake a photograph,\" said Wilma.\nShe jumped over the weather vane.\nThe weather vane went on the roof.\nWilf took a photograph.\nSee the weather vane,\" said Wilf.\nWe've jumped over it,\" said Wilma.\nWhat a tall story!\" said Biff.\nBut Wilf had a photograph.\nSee,\"he said."
       },
       {
         "id": "ort_poor_old_mum",
-        "title": "第9课 · Poor Old Mum",
-        "unit": 9,
+        "title": "第15课 · Poor Old Mum",
+        "unit": 15,
         "text": "Everyone went to the school fair.\nWilma wanted a book.\nHer dad bought it for her.\nWilf kicked the ball.\nHe won a goldfish.\nDad wanted to win a teddy.\nHe had to hit a bull's-eye.\nDad got cross.\nHe couldn't hit the bull's-eye.\nWilma was in the gym display.\nWilf and Dad forgot to watch her.\nwilma was cross.\nYou forgot to watch,\"she said.\nWilf and Wilma had a fight.\nThey bumped into Dad.\nBull's-eye! Dad won a teddy."
       },
       {
         "id": "ort_the_wedding",
-        "title": "第10课 · The Wedding",
-        "unit": 10,
+        "title": "第16课 · The Wedding",
+        "unit": 16,
         "text": "Dad bought a camcorder.\nThe children had a race.\nDad made a video .\nSmile everyone,\" said Dad.\nDad went to the sports day.\nHe made a video of Wilma.\nIt was Jo's wedding.\nDad took the camcorder.\nHe made a video of the wedding.\nIt was Mum and Dad's anniversary.\nWilma wanted to make a video.\nDad showed Wilma the camcorder.\nIt's easy,\"he said.\nWilma made the video.\nIt's easy,\"she said.\nSmile please!\" said Wilf.\nThe children watched the race.\nThey saw the sports day.\nThey looked at Jo's wedding.\nThey laughed at Wilma's video.\nThey went to the tree house.\nWilma wanted to make a video.\nDad let her use the camcorder.\nWilma made the video.\nShe saw two men.\nThey were burglars.\nThe burglars were running away.\nWilma made a video of them.\nCall the police,\"she shouted.\nDad got the phone.\nHe phoned the police.\nWilma got the burglars on video.\nThe police came. They looked at the video.\nWell done!\"they said.\nThe police caught the burglars.\nThanks to Wilma,\" said Dad."
       },
       {
         "id": "ort_the_camcorder",
-        "title": "第11课 · The Camcorder",
-        "unit": 11,
+        "title": "第17课 · The Camcorder",
+        "unit": 17,
         "text": "It was Dad's turn to do the washing.\nHe put the sheets in the washing machine.\nI need all the washing now!\"he shouted.\nKipper got his washing and so did Chip.\nPut it down there,\" said Dad.\nI will do it in a bit,\" said Biff.\nBiff had a look at her PE kit.\nIt had mud on it.\nBif\nThis needs washing,\"she said.\nWell, put it in the washing machine,\" said Mum.\nBiff put the PE kit in and Mum went to turn it on.\nBif\nAll the green ran out of Biff's shorts.\nOh no! All the washing was green.\nOh dear!\" said Mum.\nI die not mean this to happen.\nWell,I think green sheets look good,\" said Mum.\nBiff took her PE kit to school.\nWell,I think my green kit looks good,\" said Biff."
       },
       {
         "id": "ort_the_balloon",
-        "title": "第12课 · The Balloon",
-        "unit": 12,
+        "title": "第18课 · The Balloon",
+        "unit": 18,
         "text": "The children were outside.\nA hot air balloon went by.\nMrs May had a secret,May\nShe told Wilf what it was.\nShe wanted to go in a balloon.\nIt was time to watch televison,\nThe televison went wrong.\nOh no\" said Mrs May.\nThe photocopier went wrong.\nOh blow!\" said Mrs May.\nThe computer went wrong.\nOh bother!\" said Mrs May.\nWilf and Wilma came home.\nThey had a letter.\nThe school wanted money.\nWilf had an idea.\nEveryone liked Wilf's idea.\nIt's a good idea!\"everyone said.\nEveryone bought tickets.\nMrs May bought lots of ticketsMay\nShe wanted to go in the balloon.\nMrs May won the prize,May\nShe won a ride in the balloon.\nHooray!\" said Wilf.\nMrs May went up in the balloon. May\nHooray ,\"shouted everyone.\nIt's wonderful,\" said Mrs May.\nMrs May saw the stream. May\nShe saw the houses.\nShe looked down at the park.\nShe took this photograph.\nThe school made lots of money.\nThey bought lots of things.\nMrs May was pleased. May\nShe gave Wilf a present.\nThank you,\" said Wilf."
       },
       {
         "id": "ort_wet_paint",
-        "title": "第13课 · Wet Paint",
-        "unit": 13,
+        "title": "第19课 · Wet Paint",
+        "unit": 19,
         "text": "Dad was painting the back door.\nThe children were outside.\nFloppy wanted to come in.\nHe jumped up.\nHe put his paws on the paint.\nDad painted the door again.\nBiff kicked a ball. The ball hit the door.\nDad painted the door again.\nKipper pushed the door.\nHe got paint on his hands.\nDad was fed up.\nHe painted the door again.\nWhat a job!\" said Dad.\nBiff and Chip had a pillow fight.\nThe pillow split open.\nOh no!\" said Biff.\nThe wind blew. It blew the feathers.\nOh no!\" said Chip.\"Wet paint!\nThere was no wet paint.\nThe door had gone.\nDad had put up an old door.\nThe back door was inside.\nIt's safe here,\" said Dad."
       },
       {
         "id": "ort_swap",
-        "title": "第14课 · Swap",
-        "unit": 14,
-        "text": "Nadim found a bat.\nNadim\nIt was broken.\nNadim mended the bat.\nNadim\nHis dad helped.\nThe bat looked good.\nChip had a robot.\nThe robot was broken.\nChip liked Nadim's bat.\nHe swapped the robot for the bat.\nNadim mended the robot.\nNadim\nHe painted it silver.\nThe robot looked good.\nBiff had a skateboard.\nIt had no wheels.\nBiff swapped it for the robot.\nNadim mended the skateboard.\nNadim\nHe put on new wheels.\nIt's a good skateboard now,\"he said.\nWilma had a bike.\nThe bike was broken.\nShe swapped it for the skateboard.\nNadim mended the bike.\nNadim\nHe painted it black.\nThe bike looked good.\nNot bad,\" said Nadim."
+        "title": "第20课 · Swap",
+        "unit": 20,
+        "text": "Nadim found a bat.\nIt was broken.\nNadim mended the bat.\nHis dad helped.\nThe bat looked good.\nChip had a robot.\nThe robot was broken.\nChip liked Nadim's bat.\nHe swapped the robot for the bat.\nNadim mended the robot.\nHe painted it silver.\nThe robot looked good.\nBiff had a skateboard.\nIt had no wheels.\nBiff swapped it for the robot.\nNadim mended the skateboard.\nHe put on new wheels.\nIt's a good skateboard now,\"he said.\nWilma had a bike.\nThe bike was broken.\nShe swapped it for the skateboard.\nNadim mended the bike.\nHe painted it black.\nThe bike looked good.\nNot bad,\" said Nadim."
       },
       {
         "id": "ort_the_flying_elephant",
-        "title": "第15课 · The Flying Elephant",
-        "unit": 15,
+        "title": "第21课 · The Flying Elephant",
+        "unit": 21,
         "text": "Mum went shopping.\nShe took the children.\nThe children looked up.\nThere was an elephant on the roof.\nThe elephant looked funny.\nThe elephant was fat.\nThe children laughed.\nLook at that fat elephant\" they said.\nAn elephant\" said Mum\" Don't be silly.\nThere was a storm.\nThe wind blew.\nIt rained and rained.\nIt was a bad storm.\nThe wind was strong.\nIt blew the elephant away.\nThe children went to school.\nThe elephant was in the playground.\nThe children laughed.\nThe children told Mrs May.\nLook at that fat elephant, \" they said.\nAn elephant\" said Mrs May.\nDon't be silly.\nThe children liked the fat elephant.\nThey wanted it to stay.\nSorry, \"Said the man, \" We want it back.\nLook at the fat elephant, \" said Biff.\nIt's a flat elephant now, \" said Wilma."
       },
       {
         "id": "ort_the_scarf",
-        "title": "第16课 · The Scarf",
-        "unit": 16,
-        "text": "Anneena liked knitting.\nAnneena\nshe made a scarf.\nAnneena's mum helped her.\nAnneena\nThe scarf was long and warm.\nIt's a good scarf,\" said Anneena.\nBiff and Chip come to play.\nIt was a cold day.\nAnneena put on her scarf.\nAnneena\nWhat a cold day!\" she said.\nBiff looked at Anneena's scarf.\nWhat a long scarf!\" she said.\nI made it,\" said Anneena.\nI couldn't stop knitting.\nThe children went to the park.\nThey went to the pond.\nThe pond was frozen.\nIt had ice on it.\nSome children ran up.\nThey pulled Anneena's scarf.\nStop it!\"shouted Anneena.\nStop it!\"shouted Anneena's mum.\nA boy went on the ice.\nThe ice was dangerous.\nGet off,\"shouted Anneena's mum.\nThe ice is not safe.\nAnneena's mum couldn't get the boy.\nAnneena\nShe couldn't go on the ice.\nEveryone was frightened.\nHelp!\"shouted the boy.\nAnneena had a good idea.\nAnneena\nShe took off her scarf.\nMake a rope,\" she said.\nAnneena's mum made a rope.\nAnneena\nShe made it out of scarves and coats.\nShe threw it to the boy.\nEveryone pulled the rope.\nThey pulled the boy out of the pond.\nThe boy was safe.\nHooray!\"shouted Anneena.\nI am sorry!\" said the boy.\nThank you.\nIce is dangerous,\" said Anneena.\nAneema looked at her scarf.\nAneema\nI'm glad I made it long.\"she said."
+        "title": "第22课 · The Scarf",
+        "unit": 22,
+        "text": "Anneena liked knitting.\nAnneena\nThey pulled the boy out of the pond.\nAnneena\nThe boy was safe.\nEveryone pulled the rope.\nshe made a scarf.\nIce is dangerous,\" said Anneena.\nAnneena's mum helped her.\nAnneena\nThe scarf was long and warm.\nIt's a good scarf,\" said Anneena.\nBiff and Chip come to play.\nIt was a cold day.\nAnneena put on her scarf.\nAnneena\nWhat a cold day!\" she said.\nBiff looked at Anneena's scarf.\nWhat a long scarf!\" she said.\nI made it,\" said Anneena.\nI couldn't stop knitting.\nThe children went to the park.\nThey went to the pond.\nThe pond was frozen.\nIt had ice on it.\nSome children ran up.\nThey pulled Anneena's scarf.\nStop it!\"shouted Anneena.\nStop it!\"shouted Anneena's mum.\nA boy went on the ice.\nThe ice was dangerous.\nGet off,\"shouted Anneena's mum.\nThe ice is not safe.\nShe threw it to the boy.\nAnneena's mum couldn't get the boy.\nAnneena\nThank you.\nHooray!\"shouted Anneena.\nShe couldn't go on the ice.\nEveryone was frightened.\nHelp!\"shouted the boy.\nI am sorry!\" said the boy.\nAnneena had a good idea.\nAnneena\nShe took off her scarf.\nShe made it out of scarves and coats.\nMake a rope,\" she said.\nAnneena's mum made a rope.\nAneema looked at her scarf.\nI'm glad I made it long.\"she said."
       },
       {
         "id": "ort_the_dragon_dance",
-        "title": "第17课 · The Dragon Dance",
-        "unit": 17,
-        "text": "Mrs May made a dragon.\nThe children helped her.\nMay\nMrs May painted the head.\nMay\nThe children painted the body.\nThe dragon had a long body.\nThe children liked the dragon.\nThey wanted to do the dragon dance.\nThe children got inside the body.\nMrs May helped them.\nMay\nIt's made of paper\nsaid Mrs May. \"Be careful.\nAneena was inside the head.\nAneena\nBe careful.\" said Mrs May.\nDon't tear the paper.\nThe mums and dads came.\nThe children did the dragon dance.\nWhat a good dragon.\" said everyone.\nOh no! The dragon dance went wrong.\nThe dragon tore in half.\nThe children were upset.\nNever mind.\" said Mrs May.\nIt was only made of paper.\nAneena's mum had an idea.\nAneena\nShe told mums and dads.\nWhat a good idea !\" they said.\nThe mums and dads made a dragon.\nThey made a long body.\nThey made a big head.\nThe dragon looked wonderful.\nThe children were pleased.\nThey wanted to do the dragon dance.\nThe children went into town.\nThey did the dragon dance.\nCome to the school fair.\" said Chip.\nWhat a lot of people !\" said Mrs May.\nThanks to the dragon."
+        "title": "第23课 · The Dragon Dance",
+        "unit": 23,
+        "text": "Mrs May made a dragon.\nThe children helped her.\nMay\nMrs May painted the head.\nMay\nThe children painted the body.\nThe dragon had a long body.\nThe children liked the dragon.\nThey wanted to do the dragon dance.\nThe children got inside the body.\nMrs May helped them.\nMay\nIt's made of paper\nsaid Mrs May. \"Be careful.\nAneena was inside the head.\nAneena\nBe careful.\" said Mrs May.\nDon't tear the paper.\nThe mums and dads came.\nThe children did the dragon dance.\nWhat a good dragon.\" said everyone.\nOh no! The dragon dance went wrong.\nThe dragon tore in half.\nThe children were upset.\nNever mind.\" said Mrs May.\nIt was only made of paper.\nThanks to the dragon.\nAneena's mum had an idea.\nAneena\nShe told mums and dads.\nWhat a lot of people !\" said Mrs May.\nWhat a good idea !\" they said.\nCome to the school fair.\" said Chip.\nThe mums and dads made a dragon.\nThey made a long body.\nThey made a big head.\nThe dragon looked wonderful.\nThe children were pleased.\nThey did the dragon dance.\nThey wanted to do the dragon dance.\nThe children went into town."
       },
       {
         "id": "ort_everyone_got_wet",
-        "title": "第18课 · Everyone Got Wet",
-        "unit": 18,
+        "title": "第24课 · Everyone Got Wet",
+        "unit": 24,
         "text": "Dad looked at the water butt.\nThe water butt was leaking.\nMum looked at the hose.\nThe hose was leaking.\nOh bother!\" said Mum.\nDad mended the water butt.\nHe put a patch on it.\nWhat a tricky job!\" he said.\nThe water butt burst.\nAll the water came out.\nDad got wet.\nMum mended the hose.\nShe put a patch on it.\nWhat a tricky job!\" she said.\nMum put the hose on the tap.\nThe top of the tap came off.\nMum got very wet.\nDad got a new water butt.\nHe put it on the bricks.\nHe got the hose.\nHe filled up the water butt.\nThe water butt fell over.\nThe water poured out.\nDad got wet again.\nMum got a new hose.\nShe joined it to the old hose.\nShe wanted to water the roses.\nKipper wanted to help.\nHe turned the tap on.\nMum got wet again.\nOh no!\" said Mum.\nThe children got the paddling pool.\nThey put it on the grass.\nDad got the new hose.\nBiff turned on the tap.\nNo water came out of the hose.\nFunny !\" said Dad.\nHe looked down the hose.\nOh no! The children got wet!"
       },
       {
         "id": "ort_dad_s_jacket",
-        "title": "第19课 · Dad's Jacket",
-        "unit": 19,
+        "title": "第25课 · Dad's Jacket",
+        "unit": 25,
         "text": "Dad Jacket\nThe children put some tables outside.\nThey wanted to help children in Need.\nChip made a poster . It said,\"Help Children in Need.\nBiff and Nadim had some plants.\nKipper and Wilma had some clothes.\nWilf had some books.\nAnneena had a good idea.\nShe invented a game.\nDad looked at Anneena's game.\nLet me have a go.\"he said.\nAnneena\nA man put Dad's jacket on.\nIt's a good fit.\"he said.\nIt's five pounds,\" said Wilma.\nThe man bought the jacket.\nDad looked for his jacket.\nOh no!\" said Wilma.\nI'm sorry. A man bought it.\nDad ran after the man.\nStop!\"he called.\"That's my jacket.\nNo,it's my jacket.\" said the man .\nGive me ten pounds for it.\nOh no.\" said Dad.\nHe gave the man ten pounds.\nThe man gave the jacket to Dad.\nThe man gave Wilma ten pounds.\nIt's for Children in Need,\"he said."
       },
       {
         "id": "ort_stuck_in_the_mud",
-        "title": "第20课 · Stuck in the Mud",
-        "unit": 20,
+        "title": "第26课 · Stuck in the Mud",
+        "unit": 26,
         "text": "The children went for a walk.\nIt was a muddy walk.\nWhat a muddy path!\" said Biff.\nBaa! Baa!\nWhat was that?\" asked Chip.\nBaa! Baa!\nWhat was that?\" asked Wilma.\nIt's a sheep,\" said Dad.\nPut Floppy on a lead.\nOh no!\" said Chip.\nA sheep is stuck in the mud.\nThe sheep couldn't get out.\nThe mud was too deep.\nHelp me get it out,\" said Dad.\nDad went to help the sheep.\nHe sank into the mud.\nWilma and Chip went to help.\nThey sank into the mud.\nDad pushed.\nWilma and Chip pulled.\nThey got the sheep out.\nBaa! Baa!\" went the sheep.\nWilma and Chip were muddy.\nDad had lost a boot.\nWilma went to get Dad's boot.\nHelp!\" said Wilma.\nNow I'm stuck!"
       },
       {
         "id": "ort_the_den",
-        "title": "第21课 · The Den",
-        "unit": 21,
+        "title": "第27课 · The Den",
+        "unit": 27,
         "text": "The children were by the stream.\nWilf had an idea.\nWilf found some sticks.\nLet's make a den,\"he said.\nPut the sticks like this.\nThey all found some sticks.\nChip found lots of branches and Wilma found some straw.\nBiff found some logs.\nWe can sit on them inside the den,\"she said.\nThe children sat in the den but it began to rain.\nThe rain splashed into the den.\nI'm getting wet,\" said Kipper.\nWe're all getting wet,\" said Dad.\nIt's time to go.\nCan we come back soon?\"asked Biff.\nIt rained all week.\nThe children couldn't go out to play.\nThey wanted the rain to stop.\nThey wanted to go back to the den.\nThe rain stopped.\nThe children went back to the den.\nOh no!\" said Wilma.\nWe can't play in the den!\nShh!\" said Wilf."
       },
       {
         "id": "ort_look_smart",
-        "title": "第22课 · Look Smart",
-        "unit": 22,
+        "title": "第28课 · Look Smart",
+        "unit": 28,
         "text": "Mum had been shopping.\nBiff had a new dress.\nChip had a shirt and Kipper had a new top.\nBiff looked at the dress.\nPut it on,\" said Mum.\nI want you to look smart.\nKipper looked at the top.\nPut it on,\" said Mum.\nI want you to look smart.\nCome here,Chip,\" said Mum.\nPut on this shirt.\nI know,\" said Chip.\nYou want me to look smart.\nDad came in with a tray.\nHe fell over a bag.\nA cup fell over.\nSome chocolate went over Kipper's top.\nOh no!\" said Kipper.\nChocolate all over my top.\nBiff sat down.\nShe sat on Mum's lipstick.\nOh no!\" said Biff.\nLipstick on my dress!\nFloppy ran in with muddy paws.\nHe jumped up at Chip.\nOh Floppy!\" said Chip.\nMud all over my shirt.\nI can put on my old top,\" said Kipper.\nNo,\" said Mum.\nI want you all to look smart.\nSmart clothes,\" said Mum.\nPut them on.\nThe children put them on.\nThey set off for the party.\nA lorry went by.\nSplash!\nWhat a good job!\" said Dad.\nNobody looks smart."
       },
       {
         "id": "ort_tug_of_war",
-        "title": "第23课 · Tug of War",
-        "unit": 23,
+        "title": "第29课 · Tug of War",
+        "unit": 29,
         "text": "A seal pup was on the sand.\nIt has no mother!\" said Chip.\nPerhaps the mother is getting food,\" said Mum.\nBut what if the pup is lost?\"asked Biff.\nLet's wait to see if the mother comes back,\" said Dad.\nBut the mother did not come back.\nSo,in the end,Dad sent for help.\nAt last the Seal Rescue Teamcame.\nMrs, Hill looked at the seal pup.\nHill\nWe must get him into the boat,\"she said.\nMrs. Hill and her team got the seal pup into the boat.\nHill\nHe is not well,\" said Mrs Hill,\nHe needs food.\nThe children went to see the seal.\nThey called him Sinbad.\nHe is a lot better,\" said Mrs Hill.\nI am glad you called us.\nThe children went back to see Sinbad.\nHe was big and fit.\nNow he can go back in the sca,\" said Mrs. Hill.\nWe can let him go at last,\" said Mrs. Hill,\nThey took the seal out in aboat.\nSinbad went in with a splash!\nSinbad\nLook at Sinbad,\" said Kipper.\nHe's saying goodbye!"
       },
       {
         "id": "ort_an_important_case",
-        "title": "第24课 · An Important Case",
-        "unit": 24,
+        "title": "第30课 · An Important Case",
+        "unit": 30,
         "text": "The children were outside.\nThey were playing football.\nWilf kicked the ball.\nIt landed in a bush.\nSorry,\" said Wilf.\nWilf couldn't get the ball.\nI can get it,\" said Kipper.\nKipper found a case.\nLook at this,\"he said.\nI found it in the bush.\nDad looked at the case.\nHe couldn't open it.\nWilf looked at the case.\nWhat can be in it?\"he asked.\nIt looks important.\nWhat is in it?\"asked Wilma.\nI don't know,\" said Chip,\"but it looks very important.\nWhat is in the case?\"asked Kipper.\nI don't know,\" said Biff,\"but it looks very,very important.\nWhat is in this case?\"asked Dad.\nWe don't know,\" said the police officer,\"but it is very important.\nA man came in a big car.\nWho is he?\"asked Kipper.\nI don't know,\" said Dad,\"but he looks important.\nThe man look the case.\nIt's my case,\"he said,\"Thank you.\nIt was stolen. It is very important.\nThe man got in the car.\nExcuse me,\" said Wilma.\"What is in the case?\nAh!\" said the man.\"My sandwiches."
       }
     ],

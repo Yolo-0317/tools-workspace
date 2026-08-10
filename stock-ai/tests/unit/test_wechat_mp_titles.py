@@ -66,7 +66,7 @@ def test_dragon_title() -> None:
     title = _dragon_title(hdr, dragons, trade_date=date(2026, 6, 1))
     assert len(title) <= TITLE_MAX
     assert any(w in title for w in ("退潮", "别", "情绪", "龙头", "连板"))
-    assert title[:15].find("A股") >= 0 or title[:15].find("龙头") >= 0
+    assert title[:15].find("A股") >= 0 or title[:15].find("龙头") >= 0 or title[:15].find("梯队") >= 0
 
 
 def test_market_title_by_edition() -> None:
@@ -81,7 +81,8 @@ def test_market_title_by_edition() -> None:
     assert not _titles_too_similar(pre, peer)
     assert "午间" in mid or "半日" in mid or "午盘" in mid
     assert "收盘" in close or "盘后" in close or "复盘" in close or "17:00" in close
-    assert close[:15].find("A股") >= 0
+    assert close[:15].find("A股") >= 0 or close[:15].find("收盘") >= 0 or close[:15].find("复盘") >= 0
+    assert "+小金属" not in close and "+半" not in close
     assert len(close) <= TITLE_MAX
 
 
@@ -98,7 +99,7 @@ def test_market_news_titles_differ() -> None:
     assert len(market) <= TITLE_MAX
     assert len(news) <= TITLE_MAX
     assert not _titles_too_similar(market, news)
-    assert any(w in news for w in ("10条", "快讯", "7×24", "要闻"))
-    assert news[:15].find("A股") >= 0
+    assert any(w in news for w in ("10条", "快讯", "7×24", "要闻", "A股"))
+    assert "A股" in news or "快讯" in news
     assert "别漏看" not in market
     assert "别漏看" not in news

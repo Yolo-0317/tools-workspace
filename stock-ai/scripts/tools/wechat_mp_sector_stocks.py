@@ -68,9 +68,12 @@ def _push(
     theme: str,
     detail: str = "",
     theme_counts: dict[str, int],
+    exclude_codes: set[str] | None = None,
 ) -> None:
     c = str(code).split(".")[0].zfill(6)
     n = (name or "").strip()
+    if c in (exclude_codes or set()):
+        return
     if not re.fullmatch(r"\d{6}", c) or c in seen or not _is_eligible(c, n):
         return
     th = (theme or "").strip() or "主线"
@@ -89,6 +92,7 @@ def collect_sector_sample_stocks(
     board_rows: list[dict] | None = None,
     hot_rows: list | None = None,
     industry_map: dict[str, str] | None = None,
+    exclude_codes: set[str] | None = None,
 ) -> list[SectorSampleStock]:
     """纯函数：合并多源代表股（测试与成稿共用）。"""
     themes = [t for t in theme_names if t]
@@ -98,6 +102,7 @@ def collect_sector_sample_stocks(
     out: list[SectorSampleStock] = []
     seen: set[str] = set()
     per_theme: dict[str, int] = {t: 0 for t in themes}
+    skip_codes = exclude_codes or set()
 
     def theme_for_industry(industry: str) -> str | None:
         for t in themes:
@@ -128,6 +133,7 @@ def collect_sector_sample_stocks(
             theme=th,
             detail=" ".join(detail_parts),
             theme_counts=per_theme,
+            exclude_codes=skip_codes,
         )
         if len(out) >= sector_sample_max():
             return out[: sector_sample_max()]
@@ -156,6 +162,7 @@ def collect_sector_sample_stocks(
             theme=th,
             detail=detail,
             theme_counts=per_theme,
+            exclude_codes=skip_codes,
         )
         if len(out) >= sector_sample_max():
             return out[: sector_sample_max()]
@@ -184,6 +191,7 @@ def collect_sector_sample_stocks(
                     theme=th,
                     detail=f"连板{int(bh or 1)}",
                     theme_counts=per_theme,
+                    exclude_codes=skip_codes,
                 )
                 if len(out) >= sector_sample_max():
                     return out[: sector_sample_max()]
@@ -213,6 +221,7 @@ def collect_sector_sample_stocks(
                 theme=th,
                 detail=f"收盘{p.change_pct}%",
                 theme_counts=per_theme,
+                exclude_codes=skip_codes,
             )
             if len(out) >= sector_sample_max():
                 return out[: sector_sample_max()]
@@ -262,6 +271,7 @@ def collect_sector_sample_lines(theme_names: list[str]) -> list[str]:
         board_rows=board_rows,
         hot_rows=hot_rows,
         industry_map=industry_map,
+        exclude_codes=news_hot_exclude_codes() if sector_evening_dedup_enabled() else None,
     )
     if not stocks:
         return ["（暂无与主题直接对应的龙头/代表股，仅写产业链逻辑）"]
@@ -272,3 +282,107 @@ def hot_fetch_top_n() -> int:
     from scripts.tools.wechat_mp_hot_stocks import hot_fetch_top_n as _hot_n
 
     return _hot_n()
+
+
+HOT_WATCH_SECTION_TITLE = "当日人气观察（非荐股）"
+
+
+def sector_evening_dedup_enabled() -> bool:
+    """evening 批次：news 已扫热股快讯，sector 避免再插 Top10 表、避开头条票。"""
+    raw = os.getenv("WECHAT_MP_SECTOR_EVENING_DEDUP", "").strip().lower()
+    if raw in {"0", "false", "no", "off"}:
+        return False
+    if raw in {"1", "true", "yes", "on"}:
+        return True
+    return os.getenv("WECHAT_MP_NEWS_BATCH", "").strip() == "evening"
+
+
+def sector_exclude_news_hot_n() -> int:
+    """盘面代表股避开 news 头条已写的人气前几名。"""
+    return max(0, min(5, _env_int("WECHAT_MP_SECTOR_EXCLUDE_NEWS_HOT_N", 2)))
+
+
+def news_hot_exclude_codes() -> set[str]:
+    if not sector_evening_dedup_enabled():
+        return set()
+    n = sector_exclude_news_hot_n()
+    if n <= 0:
+        return set()
+    try:
+        from scripts.tools.wechat_mp_hot_stocks import fetch_hot_stock_rows
+
+        rows = fetch_hot_stock_rows(top_n=max(n, 3))
+        return {str(getattr(r, "code", "") or "").zfill(6) for r in rows[:n]}
+    except Exception:
+        return set()
+
+
+def sector_hot_watch_top_n() -> int:
+    """正文插入东财人气 TopN；0 关闭。evening 去重默认 0。"""
+    explicit = (os.getenv("WECHAT_MP_SECTOR_HOT_WATCH_TOP_N") or "").strip()
+    if explicit:
+        try:
+            return max(0, min(12, int(explicit)))
+        except ValueError:
+            pass
+    if sector_evening_dedup_enabled():
+        return 0
+    return max(0, min(12, _env_int("WECHAT_MP_SECTOR_HOT_WATCH_TOP_N", 10)))
+
+
+def fetch_hot_stock_watch_rows(*, top_n: int | None = None) -> list:
+    n = top_n if top_n is not None else sector_hot_watch_top_n()
+    if n <= 0:
+        return []
+    if os.getenv("WECHAT_MP_SECTOR_HOT_STOCKS", "1").strip().lower() in (
+        "0",
+        "false",
+        "no",
+        "off",
+    ):
+        return []
+    try:
+        from scripts.tools.wechat_mp_hot_stocks import fetch_hot_stock_rows
+
+        return fetch_hot_stock_rows(top_n=n)[:n]
+    except Exception:
+        return []
+
+
+def format_hot_stock_watch_line(row) -> str:
+    code = str(getattr(row, "code", "") or "").zfill(6)
+    name = (getattr(row, "name", None) or "").strip()
+    rank = getattr(row, "rank", None) or 0
+    chg = getattr(row, "change_pct", None)
+    tail = f" 涨跌{float(chg):+.1f}%" if chg is not None else ""
+    return f"- 人气第{rank} {name}（{code}）{tail}".rstrip()
+
+
+def format_hot_stock_watch_section(rows: list, *, trade_label: str = "") -> str:
+    if not rows:
+        return ""
+    label = (trade_label or "").strip()
+    intro = (
+        f"{label}东财人气榜 Top{len(rows)}，仅观察资金流向与舆情热度，非荐股。"
+        if label
+        else f"东财人气榜 Top{len(rows)}，仅观察资金流向与舆情热度，非荐股。"
+    )
+    lines = [f"> {HOT_WATCH_SECTION_TITLE}", intro]
+    lines.extend(format_hot_stock_watch_line(r) for r in rows)
+    return "\n".join(lines)
+
+
+def pick_hot_stock_for_sector_title(
+    rows: list,
+    *,
+    exclude_codes: set[str] | None = None,
+) -> str | None:
+    skip = exclude_codes or set()
+    for row in rows:
+        code = str(getattr(row, "code", "") or "").zfill(6)
+        if code in skip:
+            continue
+        name = (getattr(row, "name", None) or "").strip()
+        if name:
+            return name
+    return None

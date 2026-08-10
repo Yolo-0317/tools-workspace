@@ -32,21 +32,41 @@ opencli daemon stop            # 卡住时配合 cleanup 脚本
 
 ### 抓取内容分析
 
+真源模块：`wechat_mp_analytics_page.py`（`SET_FLOW_DATE_RANGE_JS` · `EXTRACT_HIGHCHARTS_TRAFFIC_JS`）。**不用 API**。
+
+**解读**：[content-analytics-sop.md](../wechat-mp-drafts/content-analytics-sop.md)
+
 ```bash
 cd stock-ai
+# 单日柱图（picker 设为 D–D）
 uv run python -m scripts.tools.fetch_wechat_mp_analytics_opencli \
-  --analytics-url 'https://mp.weixin.qq.com/misc/appmsganalysis?action=report&type=daily_v2&token=YOUR_TOKEN&lang=zh_CN' \
   --token YOUR_TOKEN \
-  --detail-top 3 \
-  --wait-login 0 \
+  --begin-date 2026-06-15 --end-date 2026-06-15 \
   -o output/wechat_mp_analytics_latest.json
+
+# 逐日全渠道（推荐 + 搜一搜 + …）
+uv run python -m scripts.tools.fetch_wechat_mp_analytics_opencli \
+  --token YOUR_TOKEN \
+  --daily-series --series-begin 2026-06-02 --series-end 2026-06-16 \
+  -o output/wechat_mp_recommend_daily_page.json
 ```
 
-输出字段见脚本内 `EXTRACT_DAILY_JS` / `EXTRACT_DETAIL_JS`：
+| CLI | 说明 |
+|-----|------|
+| `--begin-date` / `--end-date` | 设流量 picker；**单日复盘须 begin=end** |
+| `--daily-series` | 循环 D–D，输出 `days[]` |
+| `--series-begin` / `--series-end` | 配合 `--daily-series` |
+| `--period` | 仅点数据概况 tag（**不改**流量 picker） |
+| `--detail-top N` | 单篇详情页渠道 |
 
-- `daily.traffic_sources_pct` — 含 **搜一搜** 占比
-- `daily.articles[]` — `title`, `read_users`, `read_share_pct`
-- `article_details[]` — `finish_read_rate`, `follow_after_read`, 单篇渠道
+输出字段（2026-06，**页面**）：
+
+- `daily.traffic_sources_pct` / `days[].traffic_sources_pct` — **highcharts 柱图**
+- `daily.traffic_meta.from` — `highcharts-container`
+- `daily.overview.read_users_total` / `days[].read_users_total` — 流量块阅读总人数
+- `daily.date_set_result.dates` — 校验 picker 是否设对
+
+**勿混**：概况 tag 阅读 ≠ picker 柱图占比；**勿用 API** 对照柱图。
 
 ### 搜一搜看板（bind 复用已有 tab）
 

@@ -1,0 +1,105 @@
+{
+  "device_key": "cloud-media",
+  "current": {
+    "fid": "~1LNPh6USC_04sRRCHlrkIYLeTgjsW83YuPxvXpxH0iT9ykPt-rJSBx0fWSfiDr1GlEKbJjARXa9kpuU7O5N2CAk",
+    "filename": "01-冰雪奇缘1-英文音轨.mp3",
+    "query": "英文版的冰雪奇缘",
+    "media_hint": "story_audio",
+    "catalog_key": "frozen_movie",
+    "position_ms": 94828,
+    "completed": false,
+    "updated_at": 1786246442.3575811
+  },
+  "recent": [
+    {
+      "fid": "~1LNPh6USC_04sRRCHlrkIYLeTgjsW83YuPxvXpxH0iT9ykPt-rJSBx0fWSfiDr1GlEKbJjARXa9kpuU7O5N2CAk",
+      "filename": "01-冰雪奇缘1-英文音轨.mp3",
+      "query": "英文版的冰雪奇缘",
+      "media_hint": "story_audio",
+      "catalog_key": "frozen_movie",
+      "position_ms": 94828,
+      "completed": false,
+      "updated_at": 1786246442.3575811
+    },
+    {
+      "fid": "~1DdVj0SyysfEtqLPVqNfvpWdqBB90gGjF0ocgsTevF9J57KzbsAtVgc2DfaRU8EdyuUFfecpSi-Jv7gTZuVVrY0",
+      "filename": "0001-冰雪奇缘01 神奇的冰雪魔法.mp3",
+      "query": "冰雪奇缘",
+      "media_hint": "story_audio",
+      "catalog_key": "frozen",
+      "position_ms": 51660,
+      "completed": false,
+      "updated_at": 1786246410.746444
+    },
+    {
+      "fid": "~1c8knBQww3nIXbIza-4aFbnwvyaxFDa0TRDEchT1SrlH1huTyxiBL2CtaitGOAjndfBfynMYA3MvqOAasFJYtPE",
+      "filename": "0001-冰雪奇缘01 神奇的冰雪魔法.mp3",
+      "query": "冰雪奇缘",
+      "media_hint": "story_audio",
+      "catalog_key": "frozen",
+      "position_ms": 47753,
+      "completed": false,
+      "updated_at": 1786246388.177523
+    },
+    {
+      "fid": "~1vQvHkuS3-3Qd6poE_gXzXNfyZ5hh_mTLexMOuFcd3SLBQ9m02QFPscKdULmxt4ES3u-jeZPDhqElZYlT1YUFNg",
+      "filename": "0001-冰雪奇缘01 神奇的冰雪魔法.mp3",
+      "query": "播放一下冰雪奇缘。",
+      "media_hint": "story_audio",
+      "catalog_key": "frozen",
+      "position_ms": 26278,
+      "completed": false,
+      "updated_at": 1786246364.633564
+    },
+    {
+      "fid": "~1KIR1_hkZcy8fVgWPnSQkOW7Vgj4yq8kDME9Q3Lh0XqDTTyCk6kbmx22Ytn2XTatRllFYFg27r-Cvk9haHwi3AE",
+      "filename": "01-冰雪奇缘1-英文音轨.mp3",
+      "query": "英文版冰雪奇缘",
+      "media_hint": "story_audio",
+      "catalog_key": "frozen_movie",
+      "position_ms": 94828,
+      "completed": false,
+      "updated_at": 1786246221.084935
+    },
+    {
+      "fid": "~1Tz4I_jnQa9QXD12-uqx-_G4nrURhP5IdMQlaMiGm7TQBW_c_Hu42lM6jBq90pswVZPiyqSlFBObn_XjUXY6J8Y",
+      "filename": "01-冰雪奇缘1-英文音轨.mp3",
+      "query": "冰雪奇缘英文版",
+      "media_hint": "story_audio",
+      "catalog_key": "frozen_movie",
+      "position_ms": 93433,
+      "completed": false,
+      "updated_at": 1786246190.664808
+    },
+    {
+      "fid": "~1hV1Rxtrg3f8cDudZnT322-3gpiUmsyvU31wtYt3qbEql46wFAA6QW6bahOJIzJwhK0aj1VZ_-TR1ZHf4aXsD1A",
+      "filename": "01-冰雪奇缘1-英文音轨.mp3",
+      "query": "英文版的冰雪奇缘",
+      "media_hint": "story_audio",
+      "catalog_key": "frozen_movie",
+      "position_ms": 92158,
+      "completed": false,
+      "updated_at": 1786246110.512733
+    },
+    {
+      "fid": "~1LE_wEL2iVwQGfwbJzVmRvWoati_hi9wW-hZOYi4bLlzhU4hgYUMvtCos2bwjvo9M4zF9mCJHn9izQeMR7d4UZs",
+      "filename": "002.第一回 美猴王横空出世！.mp3",
+      "query": "西游记",
+      "media_hint": "story_audio",
+      "catalog_key": "journey_west",
+      "position_ms": 534102,
+      "completed": false,
+      "updated_at": 1785502984.065365
+    },
+    {
+      "fid": "~1eLaN0XIMPu8KSFcEQPwPNSKCvYlsTBt4FSjbS32JTc-YdYjdO5Ik9Yf4D2V9KDmwZpVIv-BSWon2lmr6ApUGMc",
+      "filename": "002.第一回 美猴王横空出世！.mp3",
+      "query": "西游记",
+      "media_hint": "story_audio",
+      "catalog_key": "journey_west",
+      "position_ms": 534102,
+      "completed": false,
+      "updated_at": 1785502932.428857
+    }
+  ]
+}

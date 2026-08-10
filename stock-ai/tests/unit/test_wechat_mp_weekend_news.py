@@ -18,6 +18,8 @@ from scripts.tools.wechat_mp_news_article import _sanitize_news_reader_meta
 from scripts.tools.wechat_mp_news_article import news_display_headline
 from scripts.tools.wechat_mp_weekend_news import (
     _news_matches_stock,
+    build_news_time_context,
+    fix_stale_auction_weekday,
     match_hot_stocks_to_news,
     synthetic_display_title,
     weekend_hot_stock_count,
@@ -39,11 +41,42 @@ def test_sanitize_news_reader_meta_strips_pipeline_jargon():
 
 def test_synthetic_display_title_uses_price_action_not_template():
     title = synthetic_display_title(
-        HotStockRow(rank=1, code="002421", name="达实智能", change_pct=9.92)
+        HotStockRow(rank=1, code="002421", name="达实智能", change_pct=9.92),
+        ctx=build_news_time_context(now=datetime(2026, 6, 7, 12, 0, tzinfo=TZ)),
     )
     assert "达实智能" in title
     assert "周五人气关注" not in title
     assert "榜首" in title or "涨停" in title
+    assert "周一怎么验" in title
+
+
+def test_synthetic_display_title_on_monday_evening_uses_tuesday():
+    import os
+
+    os.environ["WECHAT_MP_NEWS_BATCH"] = "evening"
+    try:
+        ctx = build_news_time_context(now=datetime(2026, 6, 8, 19, 0, tzinfo=TZ))
+        title = synthetic_display_title(
+            HotStockRow(rank=1, code="601991", name="大唐发电", change_pct=-3.2),
+            ctx=ctx,
+        )
+        assert "周二怎么验" in title
+        assert "周一怎么验" not in title
+    finally:
+        os.environ.pop("WECHAT_MP_NEWS_BATCH", None)
+
+
+def test_fix_stale_auction_weekday_on_monday_evening():
+    import os
+
+    os.environ["WECHAT_MP_NEWS_BATCH"] = "evening"
+    try:
+        ctx = build_news_time_context(now=datetime(2026, 6, 8, 19, 0, tzinfo=TZ))
+        out = fix_stale_auction_weekday("周一竞价是否止跌，看首小时量价。", ctx)
+        assert "周一竞价" not in out
+        assert "周二竞价" in out
+    finally:
+        os.environ.pop("WECHAT_MP_NEWS_BATCH", None)
 
 
 def test_news_display_headline_uses_kuaixun_title():
@@ -123,3 +156,4 @@ def test_match_uses_synthetic_when_no_news():
         assert bad not in summary, f"pipeline jargon in summary: {bad}"
     assert "周五" in summary
     assert "竞价" in summary
+    assert "休市" in summary

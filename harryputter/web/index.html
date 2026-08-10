@@ -1,0 +1,2740 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0e1116" />
+  <meta name="description" content="哈利波特有声书句级同步跟读，英文原文 + 中文对照" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="HarryPutter" />
+  <script>
+    (function () {
+      var m = location.pathname.match(/^(\/harryputter)(?=\/|$)/);
+      var webBase = (m ? m[1] + "/web" : "/web") + "/";
+      window.__HARRYPUTTER_WEB_BASE__ = webBase.replace(/\/$/, "");
+      var base = document.createElement("base");
+      base.id = "base";
+      base.href = webBase;
+      (document.head || document.documentElement).appendChild(base);
+    })();
+  </script>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="pwa-192.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <title>HarryPutter · 哈利波特带读</title>
+  <style>
+    :root {
+      --bg: #0e1116;
+      --surface: #171c24;
+      --surface2: #1f2630;
+      --text: #eef2f7;
+      --muted: #8b97a8;
+      --active: #f0b429;
+      --accent: #5b9dff;
+      --line: #2a3342;
+      --player-h: 11.5rem;
+      --safe-t: env(safe-area-inset-top, 0px);
+      --safe-b: env(safe-area-inset-bottom, 0px);
+      --topbar-h: calc(3.4rem + var(--safe-t));
+    }
+    * { box-sizing: border-box; }
+    html {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      overscroll-behavior-y: none;
+    }
+    button {
+      font: inherit;
+      touch-action: manipulation;
+    }
+    .app {
+      min-height: 100dvh;
+      padding-bottom: calc(var(--player-h) + var(--safe-b) + 1rem);
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding:
+        calc(0.65rem + var(--safe-t))
+        max(1rem, env(safe-area-inset-right, 0px))
+        0.65rem
+        max(1rem, env(safe-area-inset-left, 0px));
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar__info { min-width: 0; }
+    .topbar__book {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .topbar__ch {
+      margin: 0.15rem 0 0;
+      font-size: 0.8rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn-ghost {
+      flex-shrink: 0;
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      padding: 0.45rem 0.8rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+    .btn-ghost:hover { border-color: #3d4d63; }
+    .btn-ghost:disabled {
+      opacity: 0.55;
+      cursor: wait;
+    }
+    .lyrics {
+      max-width: 46rem;
+      margin: 0 auto;
+      padding: 0.5rem 0.85rem 1rem;
+      font-family: Georgia, "Iowan Old Style", serif;
+      line-height: 1.7;
+    }
+    .sentence {
+      display: grid;
+      grid-template-columns: 3.25rem 1fr;
+      column-gap: 0.65rem;
+      align-items: start;
+      padding: 0.5rem 0.55rem;
+      border-radius: 0.55rem;
+      margin: 0.12rem 0;
+      cursor: pointer;
+    }
+    .sentence:hover { background: #151b24; }
+    .sentence.active {
+      background: #1c2430;
+      box-shadow: inset 3px 0 0 var(--active);
+    }
+    .sentence.low { opacity: 0.55; }
+    .sentence.interpolated {
+      opacity: 0.72;
+      border: 1px dashed #3d4d63;
+    }
+    .sentence.interpolated .time {
+      font-style: italic;
+      opacity: 0.65;
+    }
+    .sentence.interpolated.active {
+      opacity: 0.88;
+      border-color: #5a6a82;
+    }
+    .sentence.heading {
+      text-align: center;
+      padding: 1.25rem 0.75rem 1rem;
+      margin: 0.25rem 0 0.75rem;
+      background: transparent;
+      border-left: none;
+      opacity: 1;
+    }
+    .sentence.heading:hover { background: #151b24; }
+    .sentence.heading.active {
+      background: rgba(96, 165, 250, 0.08);
+      border-left: none;
+    }
+    .sentence.heading .en {
+      font-size: 1.12rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: #dbeafe;
+    }
+    .sentence.heading .zh {
+      font-size: 1rem;
+      color: #94a3b8;
+      margin-top: 0.35rem;
+    }
+    .sentence.heading .time { opacity: 0.45; font-size: 0.72rem; }
+    .time {
+      font-family: ui-monospace, Menlo, monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-align: right;
+      padding-top: 0.1rem;
+    }
+    .sentence.active .time { color: var(--active); }
+    .sentence__body { min-width: 0; }
+    .sentence .en { margin: 0; }
+    .sentence .zh {
+      margin: 0.38rem 0 0;
+      font-size: 0.92rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .sentence.active .zh { color: #b8c9de; }
+    .sentence .zh.zh--carry { opacity: 0.88; }
+    .sentence .en .word {
+      cursor: pointer;
+      border-radius: 0.15rem;
+      padding: 0 0.05em;
+    }
+    .sentence .en .word:hover { background: rgba(91, 157, 255, 0.22); }
+    .sentence .en .word.selected {
+      background: rgba(240, 180, 41, 0.38);
+      box-shadow: 0 0 0 1px rgba(240, 180, 41, 0.45);
+    }
+
+    .dict-panel {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: calc(var(--player-h) + var(--safe-b));
+      z-index: 4;
+      max-height: min(44vh, 22rem);
+      display: flex;
+      flex-direction: column;
+      background: var(--surface2);
+      border-top: 1px solid var(--line);
+      box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
+      transform: translateY(110%);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.22s ease, opacity 0.18s ease;
+    }
+    .dict-panel.open {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .dict-panel__head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.85rem 1rem 0.55rem;
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+    }
+    .dict-panel__word {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+      font-family: Georgia, serif;
+    }
+    .dict-panel__meta {
+      margin: 0.2rem 0 0;
+      font-size: 0.82rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .dict-panel__zh {
+      color: #93c5fd;
+      font-size: 0.95rem;
+    }
+    .dict-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.35rem;
+    }
+    .dict-badge {
+      font-size: 0.68rem;
+      padding: 0.12rem 0.45rem;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      background: var(--surface);
+    }
+    .dict-badge--collins { color: #fcd34d; border-color: #854d0e; }
+    .dict-badge--oxford { color: #86efac; border-color: #166534; }
+    .dict-zh-list {
+      margin: 0.15rem 0 0.45rem;
+      padding-left: 1rem;
+      color: #bfdbfe;
+      font-size: 0.95rem;
+    }
+    .dict-zh-list li { margin: 0.12rem 0; }
+    .dict-exchange {
+      margin: 0 0 0.75rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .dict-panel__play {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 0.15rem 0.55rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .dict-panel__close {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 1.5rem;
+      line-height: 1;
+      padding: 0.1rem 0.35rem;
+      cursor: pointer;
+    }
+    .dict-panel__body {
+      overflow-y: auto;
+      padding: 0.65rem 1rem 0.9rem;
+      -webkit-overflow-scrolling: touch;
+    }
+    .dict-meaning { margin: 0 0 0.75rem; }
+    .dict-meaning__pos {
+      margin: 0 0 0.25rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-transform: lowercase;
+    }
+    .dict-meaning__list {
+      margin: 0;
+      padding-left: 1.1rem;
+      color: #dbe4ef;
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+    .dict-meaning__list li { margin: 0.25rem 0; }
+    .dict-meaning__ex {
+      display: block;
+      margin-top: 0.15rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+    .dict-panel__status {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .dict-panel__status.error { color: #f87171; }
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 3rem 1.5rem;
+      font-size: 0.95rem;
+    }
+
+    /* Chapter switch loading */
+    .chapter-busy {
+      padding: 2rem 1rem 1.5rem;
+      text-align: center;
+    }
+    .chapter-busy__spinner {
+      width: 2.25rem;
+      height: 2.25rem;
+      margin: 0 auto 1rem;
+      border: 3px solid #2a3342;
+      border-top-color: var(--active);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .chapter-busy__title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .chapter-busy__sub {
+      margin: 0.4rem 0 0;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .chapter-busy__bar {
+      height: 0.25rem;
+      margin: 1rem auto 0;
+      max-width: 12rem;
+      background: #2a3342;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .chapter-busy__bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--active);
+      border-radius: 999px;
+      transition: width 0.2s ease;
+    }
+    .chapter-busy__skeleton {
+      margin-top: 2rem;
+      text-align: left;
+      max-width: 46rem;
+      margin-inline: auto;
+      padding: 0 0.55rem;
+    }
+    .sk-line {
+      height: 0.72rem;
+      margin: 0.65rem 0;
+      border-radius: 0.35rem;
+      background: linear-gradient(90deg, #1a2130 25%, #243044 50%, #1a2130 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s ease-in-out infinite;
+    }
+    .sk-line:nth-child(odd) { width: 92%; }
+    .sk-line:nth-child(even) { width: 78%; margin-left: 3.8rem; }
+    @keyframes shimmer {
+      0% { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
+    }
+    .chapter-item.is-loading {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+    .chapter-item.is-loading .chapter-item__meta::after {
+      content: " …";
+      color: var(--active);
+    }
+
+    /* Bottom player — progress on top, play centered, chapter prev/next */
+    .player {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 4;
+      padding: 0.5rem 0.85rem calc(0.5rem + var(--safe-b));
+      background: color-mix(in srgb, var(--surface) 94%, transparent);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid var(--line);
+      box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
+    }
+    .player__inner { max-width: 46rem; margin: 0 auto; }
+    .player__controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      margin-top: 0.45rem;
+    }
+    .btn-ch-nav {
+      appearance: none;
+      border: none;
+      width: 3.25rem;
+      height: 3.25rem;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .btn-ch-nav svg {
+      display: block;
+      width: 1.85rem;
+      height: 1.85rem;
+      fill: currentColor;
+    }
+    .btn-ch-nav:hover:not(:disabled) { color: var(--active); }
+    .btn-ch-nav:active:not(:disabled) { transform: scale(0.94); }
+    .btn-ch-nav:disabled {
+      opacity: 0.28;
+      cursor: not-allowed;
+    }
+    .player__playbtns {
+      position: relative;
+      width: 4rem;
+      height: 4rem;
+      flex-shrink: 0;
+    }
+    .btn-play {
+      appearance: none;
+      border: none;
+      width: 4rem;
+      height: 4rem;
+      border-radius: 50%;
+      background: var(--active);
+      color: #1a1408;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 4px 16px rgba(240, 180, 41, 0.35);
+    }
+    .player__playbtns .btn-play {
+      position: absolute;
+      inset: 0;
+    }
+    .btn-play:active { transform: scale(0.96); }
+    .btn-play:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-play[hidden] { display: none; }
+    .btn-play__svg {
+      display: block;
+      width: 1.7rem;
+      height: 1.7rem;
+      fill: currentColor;
+    }
+    .player__timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .player__seek {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 0.45rem;
+      border-radius: 999px;
+      background: #2a3342;
+      outline: none;
+      cursor: pointer;
+    }
+    .player__seek::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 1.15rem;
+      height: 1.15rem;
+      border-radius: 50%;
+      background: var(--active);
+      border: 2px solid #1a1408;
+    }
+    .player__seek::-moz-range-thumb {
+      width: 1.15rem;
+      height: 1.15rem;
+      border-radius: 50%;
+      background: var(--active);
+      border: 2px solid #1a1408;
+    }
+    .player__times {
+      display: flex;
+      justify-content: space-between;
+      font-family: ui-monospace, Menlo, monospace;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .player__bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1rem;
+    }
+    .player__actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.9rem;
+      flex-wrap: wrap;
+      padding: 0 0.25rem;
+    }
+    .player__menu-wrap {
+      position: relative;
+    }
+    .player__tool-btn {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--surface2);
+      color: var(--text);
+      box-sizing: border-box;
+      width: 2.75rem;
+      height: 2.75rem;
+      min-width: 2.75rem;
+      max-width: 2.75rem;
+      padding: 0;
+      border-radius: 50%;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      font-size: 0.72rem;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    .player__tool-btn svg {
+      display: block;
+      width: 1.1rem;
+      height: 1.1rem;
+      fill: currentColor;
+    }
+    .player__tool-btn--label {
+      font-size: 0.68rem;
+      letter-spacing: -0.02em;
+    }
+    .player__tool-btn--countdown {
+      font-size: 0.58rem;
+    }
+    .player__tool-btn.active {
+      border-color: var(--active);
+      color: var(--active);
+    }
+    .player__tool-btn--sleep.active {
+      border-color: #7dcea0;
+      color: #7dcea0;
+    }
+    .player__popover {
+      position: absolute;
+      right: 0;
+      bottom: calc(100% + 0.45rem);
+      min-width: 7.5rem;
+      padding: 0.35rem;
+      border-radius: 0.65rem;
+      border: 1px solid var(--line);
+      background: var(--surface2);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+      display: none;
+      flex-direction: column;
+      gap: 0.2rem;
+      z-index: 5;
+    }
+    .player__popover.open { display: flex; }
+    .player__popover-label {
+      font-size: 0.68rem;
+      color: var(--muted);
+      padding: 0.15rem 0.45rem 0.05rem;
+    }
+    .speed__btn,
+    .sleep__btn {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.92rem;
+      padding: 0.55rem 0.7rem;
+      border-radius: 0.45rem;
+      cursor: pointer;
+      text-align: left;
+    }
+    .speed__btn:hover,
+    .sleep__btn:hover { background: #252d3a; }
+    .speed__btn.active {
+      color: var(--active);
+      background: #2a2418;
+    }
+    .sleep__btn.active {
+      color: #7dcea0;
+      background: #1a2e22;
+    }
+    .player__error {
+      margin: 0.3rem 0 0;
+      font-size: 0.74rem;
+      color: #f07178;
+      display: none;
+    }
+    .player__error.visible { display: block; }
+    .player audio { display: none; }
+    .player__stats {
+      margin: 0.25rem 0 0;
+      font-size: 0.68rem;
+      color: var(--muted);
+    }
+    .player__stats summary {
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+    }
+    .player__stats summary::-webkit-details-marker { display: none; }
+    .player__stats[open] summary { color: var(--accent); }
+    .player__stats p { margin: 0.2rem 0 0; line-height: 1.4; }
+
+    /* Chapter sheet */
+    .sheet-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      background: rgba(0, 0, 0, 0.55);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease;
+    }
+    .sheet-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .sheet {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 20;
+      max-height: min(78dvh, 640px);
+      background: var(--surface);
+      border-radius: 1rem 1rem 0 0;
+      transform: translateY(100%);
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding-bottom: var(--safe-b);
+      box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.42);
+    }
+    .sheet.open { transform: translateY(0); }
+    .sheet__top {
+      flex-shrink: 0;
+      background: var(--surface);
+      z-index: 2;
+      border-bottom: 1px solid var(--line);
+    }
+    .sheet__handle {
+      width: 2.5rem;
+      height: 0.28rem;
+      background: #3a4556;
+      border-radius: 999px;
+      margin: 0.55rem auto 0;
+    }
+    .sheet__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem 0.45rem;
+      border-bottom: none;
+    }
+    .sheet__head h2 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .sheet__head p {
+      margin: 0.2rem 0 0;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .sheet__close {
+      appearance: none;
+      border: none;
+      background: var(--surface2);
+      color: var(--muted);
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.1rem;
+    }
+    .chapter-list {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      padding: 0.35rem 0 0.75rem;
+    }
+    .chapter-item {
+      display: grid;
+      grid-template-columns: 2.5rem 1fr auto;
+      gap: 0.65rem;
+      align-items: center;
+      width: 100%;
+      text-align: left;
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: inherit;
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+    }
+    .chapter-item:hover:not(:disabled) { background: #1a2130; }
+    .chapter-item:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .chapter-item.active { background: #1c2430; }
+    .chapter-item__num {
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+    .chapter-item.active .chapter-item__num { color: var(--active); }
+    .chapter-item__title {
+      margin: 0;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    .chapter-item__sub {
+      margin: 0.15rem 0 0;
+      font-size: 0.76rem;
+      color: var(--muted);
+    }
+    .chapter-item__meta {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-align: right;
+      white-space: nowrap;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.68rem;
+      padding: 0.12rem 0.4rem;
+      border-radius: 999px;
+      background: #243044;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
+    .badge--ready { background: #1a2e22; color: #7dcea0; }
+    .badge--locked { background: #2e2438; color: #c4b5fd; }
+    .demo-banner {
+      margin: 0;
+      padding: 0.35rem 1rem;
+      font-size: 0.78rem;
+      color: #c4b5fd;
+      background: #1a1524;
+      border-bottom: 1px solid var(--line);
+      text-align: center;
+    }
+    .demo-banner button {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: #93c5fd;
+      text-decoration: underline;
+      cursor: pointer;
+      font: inherit;
+      padding: 0;
+    }
+    .topbar__actions {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex-shrink: 0;
+    }
+    .book-picker {
+      padding: 0 1rem 0.85rem;
+      border-bottom: none;
+    }
+    .book-picker label {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+    .book-picker select {
+      width: 100%;
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--surface2);
+      color: var(--text);
+      border-radius: 0.55rem;
+      padding: 0.6rem 0.7rem;
+      font: inherit;
+      font-size: max(16px, 0.88rem);
+    }
+    .auth-user {
+      font-size: 0.72rem;
+      color: var(--muted);
+      max-width: 5.5rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .auth-dialog {
+      position: fixed;
+      inset: 0;
+      z-index: 6;
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0.55);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease;
+    }
+    .auth-dialog.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .auth-dialog__panel {
+      width: min(22rem, 100%);
+      background: var(--surface2);
+      border: 1px solid var(--line);
+      border-radius: 0.85rem;
+      padding: 1.1rem 1rem 1rem;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+    }
+    .auth-dialog__title {
+      margin: 0 0 0.35rem;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .auth-dialog__sub {
+      margin: 0 0 0.85rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .auth-dialog label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin: 0.55rem 0 0.25rem;
+    }
+    .auth-dialog input {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 0.45rem;
+      padding: 0.55rem 0.65rem;
+      font: inherit;
+      font-size: max(16px, 1rem);
+    }
+    .auth-dialog__error {
+      min-height: 1.1rem;
+      margin: 0.45rem 0 0;
+      font-size: 0.78rem;
+      color: #f87171;
+    }
+    .auth-dialog__actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin-top: 0.85rem;
+    }
+    @media (max-width: 380px) {
+      .sentence {
+        grid-template-columns: 2.85rem 1fr;
+        column-gap: 0.45rem;
+        padding: 0.45rem 0.4rem;
+      }
+      .topbar__actions .btn-ghost {
+        padding: 0.4rem 0.65rem;
+        font-size: 0.78rem;
+      }
+      .player__controls { gap: 1.35rem; }
+      .player__actions { gap: 0.7rem; }
+    }
+    @media (max-width: 767px) {
+      .player__menu-wrap .player__popover {
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+      }
+    }
+    @media (min-width: 768px) {
+      .sheet {
+        left: auto;
+        width: 24rem;
+        max-height: 100dvh;
+        border-radius: 1rem 0 0 0;
+        transform: translateX(100%);
+        padding-top: var(--safe-t);
+      }
+      .sheet.open { transform: translateX(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="topbar__info">
+        <p class="topbar__book" id="book-title">HarryPutter</p>
+        <p class="topbar__ch" id="chapter-label">加载中…</p>
+      </div>
+      <div class="topbar__actions">
+        <span class="auth-user" id="auth-user" hidden></span>
+        <button type="button" class="btn-ghost" id="auth-btn">登录</button>
+        <button type="button" class="btn-ghost" id="open-chapters">目录</button>
+      </div>
+    </header>
+    <p class="demo-banner" id="demo-banner" hidden></p>
+    <main class="lyrics" id="lines"></main>
+  </div>
+
+  <footer class="player">
+    <div class="player__inner">
+      <div class="player__timeline">
+        <input type="range" class="player__seek" id="player-seek" min="0" max="1000" value="0" aria-label="播放进度" />
+        <div class="player__times">
+          <span id="time-cur">0:00</span>
+          <span id="time-dur">0:00</span>
+        </div>
+      </div>
+      <div class="player__controls">
+        <button type="button" class="btn-ch-nav" id="btn-prev-ch" aria-label="上一章" title="上一章" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h2v12H6V6zm4.5 6l8.5 6V6l-8.5 6z"/></svg>
+        </button>
+        <div class="player__playbtns">
+          <button type="button" class="btn-play" id="btn-play" aria-label="播放" disabled>
+            <svg class="btn-play__svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button type="button" class="btn-play" id="btn-pause" aria-label="暂停" hidden disabled>
+            <svg class="btn-play__svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+          </button>
+        </div>
+        <button type="button" class="btn-ch-nav" id="btn-next-ch" aria-label="下一章" title="下一章" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18l8.5-6L6 6v12zm10 0V6h2v12h-2z"/></svg>
+        </button>
+      </div>
+      <div class="player__bar">
+        <div class="player__actions">
+          <div class="player__menu-wrap">
+            <button type="button" class="player__tool-btn player__tool-btn--label" id="speed-trigger" aria-haspopup="true" aria-expanded="false" title="语速">1×</button>
+            <div class="player__popover" id="speed-popover" role="menu" aria-label="语速">
+              <span class="player__popover-label">语速</span>
+              <div id="speed" class="speed"></div>
+            </div>
+          </div>
+          <div class="player__menu-wrap">
+            <button type="button" class="player__tool-btn player__tool-btn--label player__tool-btn--sleep" id="sleep-trigger" aria-haspopup="true" aria-expanded="false" title="定时停止">定时</button>
+            <div class="player__popover" id="sleep-popover" role="menu" aria-label="定时停止">
+              <span class="player__popover-label">定时停止</span>
+              <div id="sleep-timer" class="sleep"></div>
+            </div>
+          </div>
+          <button type="button" class="player__tool-btn" id="open-chapters-2" title="章节目录" aria-label="章节目录">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>
+          </button>
+          <button type="button" class="player__tool-btn" id="force-refresh" title="清缓存并重新加载" aria-label="刷新">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+          </button>
+        </div>
+      </div>
+      <p class="player__error" id="player-error"></p>
+      <audio id="player" preload="auto"></audio>
+      <details class="player__stats">
+        <summary>字幕信息</summary>
+        <p id="stats"></p>
+      </details>
+    </div>
+  </footer>
+
+  <aside class="dict-panel" id="dict-panel" aria-label="词典" aria-hidden="true">
+    <div class="dict-panel__head">
+      <div>
+        <h3 class="dict-panel__word" id="dict-word">—</h3>
+        <p class="dict-panel__meta">
+          <span id="dict-phonetic"></span>
+          <span class="dict-panel__zh" id="dict-zh"></span>
+          <button type="button" class="dict-panel__play" id="dict-audio" hidden>发音</button>
+        </p>
+        <div class="dict-badges" id="dict-badges"></div>
+      </div>
+      <button type="button" class="dict-panel__close" id="dict-close" aria-label="关闭词典">×</button>
+    </div>
+    <div class="dict-panel__body" id="dict-body">
+      <p class="dict-panel__status">点击英文单词查释义</p>
+    </div>
+  </aside>
+
+  <div class="sheet-backdrop" id="sheet-backdrop"></div>
+  <aside class="sheet" id="chapter-sheet" aria-label="章节目录">
+    <div class="sheet__handle"></div>
+    <div class="sheet__top">
+      <div class="sheet__head">
+        <div>
+          <h2>章节目录</h2>
+          <p id="sheet-sub">魔法石 · 17 章</p>
+        </div>
+        <button type="button" class="sheet__close" id="close-chapters" aria-label="关闭">×</button>
+      </div>
+      <div class="book-picker">
+        <label for="book-select">书目</label>
+        <select id="book-select" aria-label="选择哈利波特部数"></select>
+      </div>
+    </div>
+    <div class="chapter-list" id="chapter-list"></div>
+  </aside>
+
+  <div class="auth-dialog" id="auth-dialog" aria-hidden="true">
+    <form class="auth-dialog__panel" id="auth-form" autocomplete="off" novalidate>
+      <h2 class="auth-dialog__title">管理员登录</h2>
+      <p class="auth-dialog__sub">管理员专用</p>
+      <div id="auth-fields"></div>
+      <p class="auth-dialog__error" id="auth-error"></p>
+      <div class="auth-dialog__actions">
+        <button type="button" class="btn-ghost" id="auth-cancel">取消</button>
+        <button type="submit" class="btn-ghost" id="auth-submit">登录</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    (function cleanCacheBustParam() {
+      const url = new URL(location.href);
+      if (!url.searchParams.has("_")) return;
+      url.searchParams.delete("_");
+      history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+    })();
+
+    const params = new URLSearchParams(location.search);
+    const hubBase = (location.pathname.match(/^(\/harryputter)(?=\/|$)/) || [])[1] || "";
+    const webBase = window.__HARRYPUTTER_WEB_BASE__ || (hubBase ? `${hubBase}/web` : "/web");
+    const baseEl = document.getElementById("base");
+    if (baseEl) baseEl.href = `${webBase}/`;
+    const root = hubBase || "";
+
+    let hardRefreshing = false;
+
+    async function clearAllCaches() {
+      if (!("caches" in window)) return;
+      const keys = await caches.keys();
+      await Promise.all(keys.map((key) => caches.delete(key)));
+    }
+
+    async function unregisterServiceWorkers() {
+      if (!("serviceWorker" in navigator)) return;
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((reg) => reg.unregister()));
+    }
+
+    async function forceRefresh() {
+      const btn = document.getElementById("force-refresh");
+      if (btn?.disabled) return;
+      if (btn) btn.disabled = true;
+      hardRefreshing = true;
+      try {
+        await clearAllCaches();
+        await unregisterServiceWorkers();
+      } catch {
+        /* ignore */
+      }
+      const url = new URL(location.href);
+      url.searchParams.delete("_");
+      url.searchParams.set("_", String(Date.now()));
+      location.replace(url.toString());
+    }
+
+    function registerServiceWorker() {
+      if (!("serviceWorker" in navigator)) return;
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register(`${webBase}/sw.js`, { scope: `${webBase}/` })
+          .then((registration) => {
+            registration.addEventListener("updatefound", () => {
+              const installing = registration.installing;
+              if (!installing) return;
+              installing.addEventListener("statechange", () => {
+                if (installing.state === "installed" && navigator.serviceWorker.controller && !hardRefreshing) {
+                  window.location.reload();
+                }
+              });
+            });
+            document.addEventListener("visibilitychange", () => {
+              if (document.visibilityState === "visible") void registration.update();
+            });
+            window.setInterval(() => void registration.update(), 60 * 60 * 1000);
+          })
+          .catch(() => {});
+      });
+    }
+    registerServiceWorker();
+
+    const bookTitleEl = document.getElementById("book-title");
+    const chapterLabelEl = document.getElementById("chapter-label");
+    const statsEl = document.getElementById("stats");
+    const speedTriggerEl = document.getElementById("speed-trigger");
+    const sleepTriggerEl = document.getElementById("sleep-trigger");
+    const speedPopoverEl = document.getElementById("speed-popover");
+    const sleepPopoverEl = document.getElementById("sleep-popover");
+    const linesEl = document.getElementById("lines");
+    const player = document.getElementById("player");
+    const btnPlay = document.getElementById("btn-play");
+    const btnPause = document.getElementById("btn-pause");
+    const btnPrevCh = document.getElementById("btn-prev-ch");
+    const btnNextCh = document.getElementById("btn-next-ch");
+    const playerSeek = document.getElementById("player-seek");
+    const timeCurEl = document.getElementById("time-cur");
+    const timeDurEl = document.getElementById("time-dur");
+    const playerErrorEl = document.getElementById("player-error");
+    const speedEl = document.getElementById("speed");
+    const sleepTimerEl = document.getElementById("sleep-timer");
+    const bookSelectEl = document.getElementById("book-select");
+    const chapterListEl = document.getElementById("chapter-list");
+    const sheetEl = document.getElementById("chapter-sheet");
+    const sheetBackdrop = document.getElementById("sheet-backdrop");
+    const sheetSubEl = document.getElementById("sheet-sub");
+    const dictPanel = document.getElementById("dict-panel");
+    const dictWordEl = document.getElementById("dict-word");
+    const dictPhoneticEl = document.getElementById("dict-phonetic");
+    const dictZhEl = document.getElementById("dict-zh");
+    const dictBodyEl = document.getElementById("dict-body");
+    const dictAudioBtn = document.getElementById("dict-audio");
+    const dictCloseBtn = document.getElementById("dict-close");
+    const dictBadgesEl = document.getElementById("dict-badges");
+
+    const SPEED_PRESETS = [
+      { label: "0.75×", rate: 0.75 },
+      { label: "1×", rate: 1 },
+      { label: "1.25×", rate: 1.25 },
+      { label: "1.5×", rate: 1.5 },
+    ];
+    const SPEED_KEY = "harryputter_playback_rate";
+    const BOOK_KEY = "harryputter_last_book";
+    const CHAPTER_KEY = "harryputter_last_chapter";
+    const PROGRESS_KEY = "harryputter_progress";
+    const SESSION_KEY = "harryputter_session_token";
+    const CLIENT_COOKIE = "ra_bearer";
+
+    function readClientCookie() {
+      const parts = document.cookie ? document.cookie.split("; ") : [];
+      for (const part of parts) {
+        if (part.startsWith(`${CLIENT_COOKIE}=`)) {
+          return decodeURIComponent(part.slice(CLIENT_COOKIE.length + 1));
+        }
+      }
+      return "";
+    }
+
+    function getSessionToken() {
+      try {
+        return localStorage.getItem(SESSION_KEY) || readClientCookie() || "";
+      } catch {
+        return readClientCookie() || "";
+      }
+    }
+
+    function saveSessionToken(token) {
+      try {
+        if (token) localStorage.setItem(SESSION_KEY, token);
+      } catch {
+        /* private mode */
+      }
+    }
+
+    function clearSessionToken() {
+      try {
+        localStorage.removeItem(SESSION_KEY);
+      } catch {
+        /* ignore */
+      }
+    }
+
+    function bareFetchOpts(extra = {}) {
+      return { credentials: "same-origin", ...extra };
+    }
+
+    function authFetchOpts(extra = {}, { noAuth = false } = {}) {
+      const headers = { ...(extra.headers || {}) };
+      if (!noAuth) {
+        const token = getSessionToken();
+        if (token) headers.Authorization = `Bearer ${token}`;
+      }
+      return { credentials: "same-origin", ...extra, headers };
+    }
+
+    async function ensureSession() {
+      const token = getSessionToken();
+      if (!token) return false;
+      try {
+        if (!localStorage.getItem(SESSION_KEY)) saveSessionToken(token);
+      } catch {
+        /* ignore */
+      }
+      try {
+        const res = await fetch(`${root}/api/auth/refresh`, authFetchOpts({ method: "POST" }));
+        if (res.ok) {
+          const data = await res.json().catch(() => ({}));
+          if (data.token) saveSessionToken(data.token);
+          return true;
+        }
+        if (res.status === 401) clearSessionToken();
+      } catch {
+        /* offline — bearer may still work */
+      }
+      return !!getSessionToken();
+    }
+    const SLEEP_PRESETS = [
+      { label: "关", minutes: 0 },
+      { label: "15分", minutes: 15 },
+      { label: "30分", minutes: 30 },
+      { label: "45分", minutes: 45 },
+      { label: "60分", minutes: 60 },
+      { label: "90分", minutes: 90 },
+    ];
+
+    let library = null;
+    let catalog = null;
+    let currentBookId = "hp01";
+    let currentChapter = null;
+    let lines = [];
+    let active = -1;
+    let lineEls = [];
+    let userScrolling = false;
+    let scrollIdleTimer = 0;
+    let playbackRate = 1;
+    let seeking = false;
+    let switching = false;
+    let switchSeq = 0;
+    const manifestCache = new Map();
+    const dictCache = new Map();
+    let selectedWordEl = null;
+    let dictAudio = null;
+    let sleepEndAt = 0;
+    let sleepTickTimer = 0;
+    let sleepActiveMinutes = 0;
+    const PUBLIC_DEMO_HINT = "各部试读第 1 章";
+    const LOCKED_CHAPTER_HINT = "该章未开放试读";
+    let appConfig = { fullAccess: true, maxPublicChapter: 0, demoHint: "", loggedIn: false, username: null };
+
+    function normalizeAppConfig() {
+      const demo = !appConfig.fullAccess && appConfig.maxPublicChapter > 0;
+      if (demo) {
+        appConfig.demoHint = PUBLIC_DEMO_HINT;
+      } else if (appConfig.demoHint && /登录|公众号|获取全本/.test(appConfig.demoHint)) {
+        appConfig.demoHint = "";
+      }
+    }
+
+    function sanitizeLockedHint(hint) {
+      if (!hint || /登录|公众号|获取全本/.test(hint)) return LOCKED_CHAPTER_HINT;
+      return hint;
+    }
+    let lastProgressSave = 0;
+
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function wrapEnWords(text) {
+      const wordRe = /^[A-Za-z]+(?:'[A-Za-z]+)?$/;
+      return String(text)
+        .split(/([A-Za-z]+(?:'[A-Za-z]+)?)/g)
+        .map((part) => {
+          if (!part) return "";
+          if (wordRe.test(part)) {
+            const w = part.toLowerCase();
+            return `<span class="word" data-word="${escapeHtml(w)}">${escapeHtml(part)}</span>`;
+          }
+          return escapeHtml(part);
+        })
+        .join("");
+    }
+
+    function chapterLocked(ch) {
+      if (!ch) return false;
+      if (ch.locked) return true;
+      if (appConfig.fullAccess || !appConfig.maxPublicChapter) return false;
+      return ch.id > appConfig.maxPublicChapter;
+    }
+
+    function firstPlayableChapter() {
+      if (!catalog) return null;
+      return catalog.chapters.find((c) => c.ready && !chapterLocked(c)) || null;
+    }
+
+    function applyDemoFromCatalog() {
+      if (appConfig.loggedIn || appConfig.fullAccess) return;
+      if (!catalog?.demo_max_chapter) return;
+      appConfig.maxPublicChapter = catalog.demo_max_chapter;
+      appConfig.fullAccess = false;
+      normalizeAppConfig();
+    }
+
+    function inDemoMode() {
+      return !appConfig.fullAccess && appConfig.maxPublicChapter > 0;
+    }
+
+    function showDemoBannerIfNeeded() {
+      const demoBanner = document.getElementById("demo-banner");
+      if (!demoBanner) return;
+      if (!inDemoMode()) {
+        demoBanner.hidden = true;
+        return;
+      }
+      demoBanner.hidden = false;
+      demoBanner.textContent = PUBLIC_DEMO_HINT;
+    }
+
+    function updateAuthChrome() {
+      const authBtn = document.getElementById("auth-btn");
+      const authUserEl = document.getElementById("auth-user");
+      if (!authBtn) return;
+      authBtn.hidden = false;
+      if (appConfig.loggedIn && appConfig.username) {
+        authBtn.textContent = "退出";
+        authBtn.dataset.mode = "logout";
+        if (authUserEl) {
+          authUserEl.hidden = false;
+          authUserEl.textContent = appConfig.username;
+        }
+      } else {
+        authBtn.textContent = "登录";
+        authBtn.dataset.mode = "login";
+        if (authUserEl) authUserEl.hidden = true;
+      }
+    }
+
+    function mountAuthFields() {
+      const wrap = document.getElementById("auth-fields");
+      if (!wrap || wrap.childElementCount) return;
+      wrap.innerHTML =
+        `<label for="auth-user-input">用户名</label>` +
+        `<input id="auth-user-input" name="harryputter_user" type="text" ` +
+        `inputmode="text" autocapitalize="off" autocomplete="off" spellcheck="false" required />` +
+        `<label for="auth-pass-input">密码</label>` +
+        `<input id="auth-pass-input" name="harryputter_pass" type="password" autocomplete="off" required />`;
+    }
+
+    function unmountAuthFields() {
+      const wrap = document.getElementById("auth-fields");
+      if (wrap) wrap.innerHTML = "";
+    }
+
+    function openAuthDialog() {
+      const dlg = document.getElementById("auth-dialog");
+      const err = document.getElementById("auth-error");
+      if (err) err.textContent = "";
+      mountAuthFields();
+      dlg?.classList.add("open");
+      dlg?.setAttribute("aria-hidden", "false");
+      window.setTimeout(() => document.getElementById("auth-user-input")?.focus(), 0);
+    }
+
+    function closeAuthDialog() {
+      const dlg = document.getElementById("auth-dialog");
+      dlg?.classList.remove("open");
+      dlg?.setAttribute("aria-hidden", "true");
+      unmountAuthFields();
+    }
+
+    function manifestCacheKey(pad) {
+      return `${currentBookId}:${pad}`;
+    }
+
+    async function fetchCatalog(bookId) {
+      const res = await fetch(`${root}/output/catalog.json?book=${encodeURIComponent(bookId)}`, authFetchOpts());
+      if (!res.ok) throw new Error(`catalog ${res.status}`);
+      return res.json();
+    }
+
+    function renderBookPicker() {
+      if (!bookSelectEl || !library?.books?.length) return;
+      bookSelectEl.innerHTML = library.books
+        .map(
+          (b) =>
+            `<option value="${b.book_id}">${b.book_title_zh}（${b.ready_count}/${b.chapter_count}）</option>`
+        )
+        .join("");
+      bookSelectEl.value = currentBookId;
+    }
+
+    async function loadBookCatalog(bookId, { keepChapterPad = null } = {}) {
+      currentBookId = bookId;
+      try {
+        localStorage.setItem(BOOK_KEY, bookId);
+      } catch {
+        /* ignore */
+      }
+      catalog = await fetchCatalog(bookId);
+      applyDemoFromCatalog();
+      bookTitleEl.textContent = catalog.book_title_zh;
+      sheetSubEl.textContent = `${catalog.book_title_zh} · ${catalog.ready_count}/${catalog.chapter_count} 章可播`;
+      renderBookPicker();
+      renderChapterList();
+      prefetchManifests();
+      const url = new URL(location.href);
+      url.searchParams.set("book", bookId);
+      if (keepChapterPad) url.searchParams.set("ch", keepChapterPad.padStart(2, "0"));
+      history.replaceState(null, "", url);
+      return catalog;
+    }
+
+    async function switchBook(bookId) {
+      if (!bookId || bookId === currentBookId) return;
+      manifestCache.clear();
+      switching = false;
+      switchSeq++;
+      await loadBookCatalog(bookId);
+      const wanted =
+        params.get("ch") ||
+        localStorage.getItem(`${CHAPTER_KEY}:${bookId}`) ||
+        catalog.chapters.find((c) => c.ready && !chapterLocked(c))?.pad ||
+        "01";
+      const ch = catalog.chapters.find((c) => c.pad === wanted.padStart(2, "0"));
+      if (ch?.ready && !chapterLocked(ch)) {
+        await switchChapter(ch, { force: true });
+      } else {
+        const first = catalog.chapters.find((c) => c.ready && !chapterLocked(c));
+        if (first) await switchChapter(first, { force: true });
+        else {
+          currentChapter = null;
+          lines = [];
+          linesEl.innerHTML = `<div class="empty">暂无可用章节<br>运行 BOOK=${bookId} ./scripts/pipeline.sh N</div>`;
+        }
+      }
+    }
+
+    async function reloadAfterAuth(opts = {}) {
+      const fetchOpts = opts.noAuth
+        ? () => bareFetchOpts()
+        : () => authFetchOpts();
+      const cfgRes = await fetch(`${root}/api/config`, fetchOpts());
+      if (cfgRes.ok) {
+        appConfig = await cfgRes.json();
+        normalizeAppConfig();
+      }
+      if (!appConfig.loggedIn && !opts.noAuth && getSessionToken()) clearSessionToken();
+      if (!library) {
+        const libRes = await fetch(`${root}/output/library.json`, fetchOpts());
+        library = libRes.ok ? await libRes.json() : { default_book_id: currentBookId, books: [] };
+      }
+      await loadBookCatalog(currentBookId);
+      showDemoBannerIfNeeded();
+      updateAuthChrome();
+      if (currentChapter && !currentChapter.ready && !chapterLocked(currentChapter)) {
+        /* keep */
+      } else if (currentChapter && chapterLocked(currentChapter)) {
+        const first = catalog.chapters.find((c) => c.ready && !chapterLocked(c));
+        if (first) await switchChapter(first, { force: true });
+      } else if (currentChapter?.ready) {
+        await switchChapter(currentChapter, { force: true });
+      }
+    }
+
+    async function loginAdmin(username, password) {
+      const res = await fetch(`${root}/api/auth/login`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error === "invalid_credentials" ? "用户名或密码错误" : "登录失败");
+      }
+      if (data.token) saveSessionToken(data.token);
+      manifestCache.clear();
+      await reloadAfterAuth();
+    }
+
+    async function logoutAdmin() {
+      clearSessionToken();
+      manifestCache.clear();
+      try {
+        await fetch(`${root}/api/auth/logout`, bareFetchOpts({ method: "POST" }));
+      } catch {
+        /* ignore */
+      }
+      await reloadAfterAuth({ noAuth: true });
+    }
+
+    function initAuthControls() {
+      const authBtn = document.getElementById("auth-btn");
+      const authForm = document.getElementById("auth-form");
+      const authCancel = document.getElementById("auth-cancel");
+      const authDialog = document.getElementById("auth-dialog");
+
+      authBtn?.addEventListener("click", () => {
+        if (authBtn.dataset.mode === "logout") {
+          void logoutAdmin();
+          return;
+        }
+        openAuthDialog();
+      });
+      authCancel?.addEventListener("click", closeAuthDialog);
+      authDialog?.addEventListener("click", (e) => {
+        if (e.target === authDialog) closeAuthDialog();
+      });
+      authForm?.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const errEl = document.getElementById("auth-error");
+        const user = document.getElementById("auth-user-input")?.value?.trim() || "";
+        const pass = document.getElementById("auth-pass-input")?.value || "";
+        if (errEl) errEl.textContent = "";
+        void loginAdmin(user, pass)
+          .then(() => {
+            closeAuthDialog();
+            authForm.reset();
+          })
+          .catch((err) => {
+            if (errEl) errEl.textContent = String(err.message || err);
+          });
+      });
+      updateAuthChrome();
+    }
+
+    function progressStorageKey(pad) {
+      const book = catalog?.book_id || "hp01";
+      return `${book}:${pad}`;
+    }
+
+    function getProgressStore() {
+      try {
+        return JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}");
+      } catch {
+        return {};
+      }
+    }
+
+    function getChapterProgress(pad) {
+      return getProgressStore()[progressStorageKey(pad)];
+    }
+
+    function saveChapterProgressFor(pad) {
+      if (!pad || !Number.isFinite(player.duration) || player.duration <= 0) return;
+      const t = player.currentTime;
+      if (t < 1) return;
+      let line = active;
+      if (line < 0) {
+        for (let i = 0; i < lines.length; i++) {
+          if (t >= lines[i].start && t < lines[i].end) line = i;
+        }
+      }
+      const store = getProgressStore();
+      store[progressStorageKey(pad)] = { time: t, line, at: Date.now() };
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify(store));
+    }
+
+    function saveChapterProgress() {
+      if (currentChapter) saveChapterProgressFor(currentChapter.pad);
+    }
+
+    function maybeSaveProgress() {
+      const now = Date.now();
+      if (now - lastProgressSave < 4000) return;
+      lastProgressSave = now;
+      saveChapterProgress();
+    }
+
+    function showDemoToast(msg) {
+      const text = msg || LOCKED_CHAPTER_HINT;
+      statsEl.textContent = text;
+      window.setTimeout(() => {
+        if (statsEl.textContent === text && currentChapter) {
+          updateChrome(currentChapter, { lines });
+        }
+      }, 3200);
+    }
+
+    function closeDictPanel() {
+      dictPanel.classList.remove("open");
+      dictPanel.setAttribute("aria-hidden", "true");
+      if (selectedWordEl) {
+        selectedWordEl.classList.remove("selected");
+        selectedWordEl = null;
+      }
+    }
+
+    function openDictPanel() {
+      dictPanel.classList.add("open");
+      dictPanel.setAttribute("aria-hidden", "false");
+    }
+
+    function renderDictLoading(word) {
+      dictWordEl.textContent = word;
+      dictPhoneticEl.textContent = "";
+      dictZhEl.textContent = "";
+      if (dictBadgesEl) dictBadgesEl.innerHTML = "";
+      dictAudioBtn.hidden = true;
+      dictBodyEl.innerHTML = `<p class="dict-panel__status">查询中…</p>`;
+      openDictPanel();
+    }
+
+    function renderDictBadges(data) {
+      if (!dictBadgesEl) return;
+      const badges = [];
+      if (data.collins > 0) {
+        badges.push(`<span class="dict-badge dict-badge--collins">Collins ${"★".repeat(data.collins)}</span>`);
+      }
+      if (data.oxford > 0) {
+        badges.push(`<span class="dict-badge dict-badge--oxford">Oxford 3000</span>`);
+      }
+      (data.tags || []).slice(0, 4).forEach((tag) => {
+        badges.push(`<span class="dict-badge">${escapeHtml(tag.toUpperCase())}</span>`);
+      });
+      dictBadgesEl.innerHTML = badges.join("");
+    }
+
+    function renderDictResult(data) {
+      dictWordEl.textContent = data.word || data.query || "—";
+      dictPhoneticEl.textContent = data.phonetic || "";
+      dictZhEl.textContent = "";
+      renderDictBadges(data);
+      if (data.audio) {
+        dictAudioBtn.hidden = false;
+        dictAudioBtn.onclick = () => {
+          if (!dictAudio) dictAudio = new Audio();
+          dictAudio.src = data.audio;
+          void dictAudio.play();
+        };
+      } else {
+        dictAudioBtn.hidden = true;
+      }
+
+      if (!data.ok) {
+        const hints = {
+          dict_api_unavailable: "词典服务未就绪，请运行 <code>./scripts/restart.sh</code>",
+          network_error: "联网查词失败，请检查网络后重试",
+          not_found: data.hint || `未找到「${escapeHtml(data.query || "")}」的释义`,
+        };
+        const hint =
+          hints[data.error] ||
+          (data.hint ? `${escapeHtml(data.hint)}` : `未找到「${escapeHtml(data.query || "")}」的释义`);
+        dictBadgesEl.innerHTML = "";
+        dictBodyEl.innerHTML = `<p class="dict-panel__status error">${hint}</p>`;
+        return;
+      }
+
+      const exchange = data.exchange
+        ? `<p class="dict-exchange">${Object.entries(data.exchange)
+            .map(([k, v]) => `${escapeHtml(k)}: ${escapeHtml(v)}`)
+            .join(" · ")}</p>`
+        : "";
+
+      const parts = (data.meanings || []).map((m) => {
+        const pos = m.pos ? `<p class="dict-meaning__pos">${escapeHtml(m.pos)}</p>` : "";
+        const zhItems = (m.zh || [])
+          .map((z) => `<li>${escapeHtml(z)}</li>`)
+          .join("");
+        const zhBlock = zhItems ? `<ul class="dict-zh-list">${zhItems}</ul>` : "";
+        const enDefs = (m.definitions || [])
+          .map((d) => {
+            const ex = d.example ? `<span class="dict-meaning__ex">${escapeHtml(d.example)}</span>` : "";
+            return `<li>${escapeHtml(d.def)}${ex}</li>`;
+          })
+          .join("");
+        const enBlock = enDefs ? `<ul class="dict-meaning__list">${enDefs}</ul>` : "";
+        return `<div class="dict-meaning">${pos}${zhBlock}${enBlock}</div>`;
+      });
+      dictBodyEl.innerHTML =
+        (exchange || "") + (parts.join("") || `<p class="dict-panel__status">暂无释义</p>`);
+    }
+
+    async function seekToLine(i, opts = {}) {
+      const line = lines[i];
+      if (!line || line.start == null || Number.isNaN(Number(line.start))) return;
+      userScrolling = false;
+      const t = Math.max(0, Number(line.start) + 0.02);
+      const shouldPlay = opts.play !== false;
+
+      if (player.readyState < 2) {
+        await waitAudioCanPlay(8000);
+      }
+
+      seeking = true;
+      await new Promise((resolve) => {
+        const tolerance = 0.35;
+        if (Math.abs(player.currentTime - t) <= tolerance) {
+          seeking = false;
+          resolve();
+          return;
+        }
+        let settled = false;
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          seeking = false;
+          player.removeEventListener("seeked", onSeeked);
+          clearTimeout(fallback);
+          resolve();
+        };
+        const onSeeked = () => finish();
+        const fallback = window.setTimeout(finish, 1500);
+        player.addEventListener("seeked", onSeeked);
+        try {
+          if (typeof player.fastSeek === "function") {
+            player.fastSeek(t);
+          } else {
+            player.currentTime = t;
+          }
+        } catch {
+          finish();
+        }
+      });
+
+      if (shouldPlay) {
+        try {
+          await player.play();
+        } catch (_) {
+          /* autoplay policy */
+        }
+      }
+      syncPlayButton();
+      setActive(i, { forceScroll: true });
+    }
+
+    async function lookupWord(rawWord, wordEl) {
+      const word = (rawWord || "").toLowerCase();
+      if (!word || word.length < 2) return;
+
+      if (selectedWordEl && selectedWordEl !== wordEl) {
+        selectedWordEl.classList.remove("selected");
+      }
+      selectedWordEl = wordEl;
+      wordEl.classList.add("selected");
+
+      if (dictCache.has(word)) {
+        renderDictResult(dictCache.get(word));
+        return;
+      }
+
+      renderDictLoading(word);
+      try {
+        const res = await fetch(`${root}/api/dict?word=${encodeURIComponent(word)}`);
+        const ct = res.headers.get("content-type") || "";
+        if (!ct.includes("json")) {
+          throw new Error("dict_api_unavailable");
+        }
+        const data = await res.json();
+        dictCache.set(word, data);
+        renderDictResult(data);
+      } catch (err) {
+        const msg =
+          err?.message === "dict_api_unavailable"
+            ? "词典 API 未就绪，请在本机执行：./scripts/restart.sh"
+            : null;
+        renderDictResult({ ok: false, query: word, error: msg || "lookup_failed" });
+      }
+    }
+
+    function initLineClicks() {
+      linesEl.addEventListener("click", (e) => {
+        const wordEl = e.target.closest(".word");
+        if (wordEl) {
+          e.preventDefault();
+          e.stopPropagation();
+          void lookupWord(wordEl.dataset.word, wordEl);
+          return;
+        }
+        const row = e.target.closest(".sentence");
+        if (!row) return;
+        e.preventDefault();
+        const i = Number(row.dataset.lineIdx);
+        if (Number.isInteger(i) && i >= 0) void seekToLine(i);
+      });
+    }
+
+    function fmt(sec) {
+      if (sec == null || Number.isNaN(sec)) return "—";
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60).toString().padStart(2, "0");
+      return `${m}:${s}`;
+    }
+
+    function scrollChapterListToCurrent() {
+      const activeBtn = chapterListEl.querySelector(".chapter-item.active");
+      if (!activeBtn) return;
+      const top = activeBtn.offsetTop;
+      const center = top - (chapterListEl.clientHeight - activeBtn.offsetHeight) / 2;
+      chapterListEl.scrollTo({ top: Math.max(0, center), behavior: "smooth" });
+    }
+
+    function openSheet() {
+      sheetEl.classList.add("open");
+      sheetBackdrop.classList.add("open");
+      document.body.style.overflow = "hidden";
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => scrollChapterListToCurrent());
+      });
+    }
+    function closeSheet() {
+      sheetEl.classList.remove("open");
+      sheetBackdrop.classList.remove("open");
+      document.body.style.overflow = "";
+    }
+
+    function loadSpeed() {
+      const saved = Number(localStorage.getItem(SPEED_KEY));
+      const hit = SPEED_PRESETS.find((p) => p.rate === saved);
+      return hit ? hit.rate : 1;
+    }
+    const MEDIA_ARTWORK = [
+      { src: `${webBase}/pwa-192.png`, sizes: "192x192", type: "image/png" },
+      { src: `${webBase}/pwa-512.png`, sizes: "512x512", type: "image/png" },
+      { src: `${webBase}/apple-touch-icon.png`, sizes: "180x180", type: "image/png" },
+    ];
+    let lastMediaSessionLine = -1;
+    let lastMediaPositionAt = 0;
+
+    function truncLockText(text, max = 80) {
+      if (!text) return "";
+      const t = String(text).replace(/\s+/g, " ").trim();
+      return t.length <= max ? t : `${t.slice(0, max - 1)}…`;
+    }
+
+    function zhForLine(idx) {
+      if (idx < 0) return "";
+      for (let i = idx; i >= 0; i--) {
+        const z = lines[i]?.zh;
+        if (z) return z;
+      }
+      return "";
+    }
+
+    function syncLineZhDisplay(idx) {
+      if (idx < 0 || !lineEls[idx]) return;
+      const line = lines[idx];
+      const el = lineEls[idx];
+      const body = el.querySelector(".sentence__body");
+      if (!body) return;
+      let zhEl = el.querySelector(".zh");
+      const own = line?.zh || "";
+      const display = own || zhForLine(idx);
+      if (!display) {
+        if (zhEl) zhEl.remove();
+        return;
+      }
+      const carry = !own;
+      if (!zhEl) {
+        body.insertAdjacentHTML("beforeend", `<p class="zh"></p>`);
+        zhEl = el.querySelector(".zh");
+      }
+      zhEl.textContent = display;
+      zhEl.classList.toggle("zh--carry", carry);
+    }
+
+    function clearCarriedZhDisplay(idx) {
+      if (idx < 0 || !lineEls[idx]) return;
+      const line = lines[idx];
+      if (line?.zh) return;
+      lineEls[idx].querySelector(".zh")?.remove();
+    }
+
+    function updateMediaSessionLine(idx) {
+      if (!("mediaSession" in navigator)) return;
+      if (idx === lastMediaSessionLine && idx >= 0) return;
+      lastMediaSessionLine = idx;
+      const line = idx >= 0 ? lines[idx] : null;
+      const ch = currentChapter;
+      const en = truncLockText(line?.text || "");
+      const zh = truncLockText(line?.zh || zhForLine(idx));
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: en || (ch ? `第 ${ch.id} 章` : "HarryPutter"),
+          artist: zh || ch?.title_zh || catalog?.book_title_zh || "",
+          album: ch ? `${catalog?.book_title_zh || ""} · 第 ${ch.id} 章` : "",
+          artwork: MEDIA_ARTWORK,
+        });
+      } catch (_) {
+        /* Safari may reject empty fields */
+      }
+    }
+
+    function updateMediaSessionChapter(ch) {
+      if (!("mediaSession" in navigator) || !ch) return;
+      lastMediaSessionLine = -1;
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: `第 ${ch.id} 章 · ${ch.title_zh}`,
+          artist: ch.title_en || catalog?.book_title_en || "",
+          album: catalog?.book_title_zh || "",
+          artwork: MEDIA_ARTWORK,
+        });
+      } catch (_) {
+        /* ignore */
+      }
+    }
+
+    function updateMediaSessionPosition() {
+      if (!("mediaSession" in navigator) || !player.duration || !Number.isFinite(player.duration)) return;
+      const now = performance.now();
+      if (now - lastMediaPositionAt < 900) return;
+      lastMediaPositionAt = now;
+      try {
+        navigator.mediaSession.setPositionState({
+          duration: player.duration,
+          playbackRate: player.playbackRate || 1,
+          position: Math.min(player.currentTime, player.duration),
+        });
+      } catch (_) {
+        /* iOS may not support setPositionState */
+      }
+    }
+
+    function syncMediaSessionPlayback() {
+      if (!("mediaSession" in navigator)) return;
+      navigator.mediaSession.playbackState =
+        !player.paused && !player.ended ? "playing" : "paused";
+    }
+
+    function initMediaSession() {
+      if (!("mediaSession" in navigator)) return;
+      const safe = (action, fn) => {
+        try {
+          navigator.mediaSession.setActionHandler(action, fn);
+        } catch (_) {
+          /* unsupported action */
+        }
+      };
+      safe("play", () => {
+        if (player.src && !switching) void player.play();
+      });
+      safe("pause", () => {
+        if (!player.paused) player.pause();
+      });
+      safe("previoustrack", () => {
+        const prev = getPrevReadyChapter();
+        if (prev && !switching) void switchChapter(prev);
+      });
+      safe("nexttrack", () => {
+        const next = getNextReadyChapter();
+        if (next && !switching) void switchChapter(next);
+      });
+      safe("stop", () => {
+        player.pause();
+        if (player.duration && Number.isFinite(player.duration)) {
+          player.currentTime = 0;
+        }
+      });
+    }
+
+    function closePlayerPopovers() {
+      [speedPopoverEl, sleepPopoverEl].forEach((el) => {
+        if (el) el.classList.remove("open");
+      });
+      if (speedTriggerEl) speedTriggerEl.setAttribute("aria-expanded", "false");
+      if (sleepTriggerEl) sleepTriggerEl.setAttribute("aria-expanded", "false");
+    }
+
+    function togglePlayerPopover(popover, trigger) {
+      if (!popover || !trigger) return;
+      const willOpen = !popover.classList.contains("open");
+      closePlayerPopovers();
+      if (willOpen) {
+        popover.classList.add("open");
+        trigger.setAttribute("aria-expanded", "true");
+      }
+    }
+
+    function initPlayerMenus() {
+      speedTriggerEl?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        togglePlayerPopover(speedPopoverEl, speedTriggerEl);
+      });
+      sleepTriggerEl?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (sleepEndAt > Date.now()) {
+          clearSleepTimer();
+          return;
+        }
+        togglePlayerPopover(sleepPopoverEl, sleepTriggerEl);
+      });
+      [speedPopoverEl, sleepPopoverEl].forEach((el) => {
+        el?.addEventListener("click", (e) => e.stopPropagation());
+      });
+      document.addEventListener("click", closePlayerPopovers);
+    }
+
+    function applySpeed(rate) {
+      playbackRate = rate;
+      player.playbackRate = rate;
+      localStorage.setItem(SPEED_KEY, String(rate));
+      const preset = SPEED_PRESETS.find((p) => p.rate === rate);
+      if (speedTriggerEl) {
+        speedTriggerEl.textContent = preset?.label || `${rate}×`;
+        speedTriggerEl.classList.toggle("active", rate !== 1);
+      }
+      speedEl.querySelectorAll(".speed__btn").forEach((btn) => {
+        btn.classList.toggle("active", Number(btn.dataset.rate) === rate);
+      });
+      closePlayerPopovers();
+    }
+    function initSpeedControls() {
+      SPEED_PRESETS.forEach((preset) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "speed__btn";
+        btn.dataset.rate = String(preset.rate);
+        btn.textContent = preset.label;
+        btn.addEventListener("click", () => applySpeed(preset.rate));
+        speedEl.appendChild(btn);
+      });
+      applySpeed(loadSpeed());
+    }
+
+    function formatSleepCountdown(ms) {
+      const total = Math.max(0, Math.ceil(ms / 1000));
+      const h = Math.floor(total / 3600);
+      const m = Math.floor((total % 3600) / 60);
+      const s = total % 60;
+      if (h > 0) {
+        return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+      }
+      return `${m}:${s.toString().padStart(2, "0")}`;
+    }
+
+    function updateSleepUi() {
+      sleepTimerEl.querySelectorAll(".sleep__btn").forEach((btn) => {
+        const mins = Number(btn.dataset.minutes);
+        btn.classList.toggle("active", sleepActiveMinutes === mins && mins > 0);
+      });
+      if (!sleepTriggerEl) return;
+      if (sleepEndAt > Date.now()) {
+        sleepTriggerEl.textContent = formatSleepCountdown(sleepEndAt - Date.now());
+        sleepTriggerEl.classList.add("active", "player__tool-btn--countdown");
+        sleepTriggerEl.title = "定时停止（点击取消）";
+      } else {
+        sleepTriggerEl.textContent = "定时";
+        sleepTriggerEl.classList.remove("active", "player__tool-btn--countdown");
+        sleepTriggerEl.title = "定时停止";
+      }
+    }
+
+    function clearSleepTimer() {
+      sleepEndAt = 0;
+      sleepActiveMinutes = 0;
+      if (sleepTickTimer) {
+        clearInterval(sleepTickTimer);
+        sleepTickTimer = 0;
+      }
+      updateSleepUi();
+    }
+
+    function tickSleepTimer() {
+      if (!sleepEndAt) return;
+      const left = sleepEndAt - Date.now();
+      if (left <= 0) {
+        clearSleepTimer();
+        player.pause();
+        syncPlayButton();
+        return;
+      }
+      updateSleepUi();
+    }
+
+    function setSleepTimer(minutes) {
+      if (!minutes) {
+        clearSleepTimer();
+        return;
+      }
+      sleepActiveMinutes = minutes;
+      sleepEndAt = Date.now() + minutes * 60 * 1000;
+      if (!sleepTickTimer) {
+        sleepTickTimer = window.setInterval(tickSleepTimer, 1000);
+      }
+      updateSleepUi();
+    }
+
+    function initSleepControls() {
+      SLEEP_PRESETS.forEach((preset) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "sleep__btn";
+        btn.dataset.minutes = String(preset.minutes);
+        btn.textContent = preset.label;
+        btn.addEventListener("click", () => {
+          if (preset.minutes === sleepActiveMinutes && sleepEndAt > Date.now()) {
+            clearSleepTimer();
+            return;
+          }
+          setSleepTimer(preset.minutes);
+          closePlayerPopovers();
+        });
+        sleepTimerEl.appendChild(btn);
+      });
+      updateSleepUi();
+    }
+
+    function setPlayerError(msg) {
+      if (!msg) {
+        playerErrorEl.textContent = "";
+        playerErrorEl.classList.remove("visible");
+        return;
+      }
+      playerErrorEl.textContent = msg;
+      playerErrorEl.classList.add("visible");
+    }
+
+    function syncPlayButton() {
+      const playing = !player.paused && !player.ended;
+      const canControl = !player.error && !!player.src;
+      btnPlay.hidden = playing;
+      btnPause.hidden = !playing;
+      btnPlay.disabled = !canControl || playing;
+      btnPause.disabled = !canControl || !playing;
+    }
+
+    function updateSeekUi() {
+      if (seeking) return;
+      const dur = player.duration;
+      if (!dur || !Number.isFinite(dur)) {
+        playerSeek.value = "0";
+        timeCurEl.textContent = "0:00";
+        timeDurEl.textContent = "0:00";
+        return;
+      }
+      playerSeek.value = String(Math.round((player.currentTime / dur) * 1000));
+      timeCurEl.textContent = fmt(player.currentTime);
+      timeDurEl.textContent = fmt(dur);
+    }
+
+    function getPrevReadyChapter() {
+      if (!catalog || !currentChapter) return null;
+      const idx = catalog.chapters.findIndex((c) => c.pad === currentChapter.pad);
+      if (idx < 0) return null;
+      for (let i = idx - 1; i >= 0; i--) {
+        const ch = catalog.chapters[i];
+        if (ch.ready && !chapterLocked(ch)) return ch;
+      }
+      return null;
+    }
+
+    function getNextReadyChapter() {
+      if (!catalog || !currentChapter) return null;
+      const idx = catalog.chapters.findIndex((c) => c.pad === currentChapter.pad);
+      if (idx < 0) return null;
+      for (let i = idx + 1; i < catalog.chapters.length; i++) {
+        const ch = catalog.chapters[i];
+        if (ch.ready && !chapterLocked(ch)) return ch;
+      }
+      return null;
+    }
+
+    function updateChapterNavButtons() {
+      const prev = getPrevReadyChapter();
+      const next = getNextReadyChapter();
+      if (btnPrevCh) {
+        btnPrevCh.disabled = !prev || switching;
+        btnPrevCh.title = prev ? `上一章：${prev.title_zh}` : "没有上一章";
+      }
+      if (btnNextCh) {
+        btnNextCh.disabled = !next || switching;
+        btnNextCh.title = next ? `下一章：${next.title_zh}` : "没有下一章";
+      }
+    }
+
+    function onChapterEnded() {
+      syncPlayButton();
+      if (switching) return;
+      const next = getNextReadyChapter();
+      if (next) void switchChapter(next, { autoplay: true });
+    }
+
+    function togglePlayPause() {
+      if (player.error || !player.src || switching) return;
+      if (player.paused || player.ended) {
+        void player.play();
+      } else {
+        player.pause();
+      }
+    }
+
+    function initPlayerControls() {
+      btnPlay.addEventListener("click", () => {
+        if (player.error || !player.src) return;
+        void player.play();
+      });
+      btnPause.addEventListener("click", () => {
+        if (player.error || !player.src) return;
+        player.pause();
+      });
+      btnPrevCh?.addEventListener("click", () => {
+        const prev = getPrevReadyChapter();
+        if (prev && !switching) void switchChapter(prev);
+      });
+      btnNextCh?.addEventListener("click", () => {
+        const next = getNextReadyChapter();
+        if (next && !switching) void switchChapter(next);
+      });
+
+      document.addEventListener("keydown", (e) => {
+        const tag = (e.target instanceof Element && e.target.tagName) || "";
+        if (/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(tag)) return;
+        if (e.target instanceof Element && e.target.isContentEditable) return;
+
+        if (e.code === "ArrowLeft") {
+          e.preventDefault();
+          if (lines.length && active > 0) void seekToLine(active - 1);
+          else if (lines.length && active < 0) void seekToLine(0);
+          return;
+        }
+        if (e.code === "ArrowRight") {
+          e.preventDefault();
+          if (active >= 0 && active < lines.length - 1) void seekToLine(active + 1);
+          return;
+        }
+        if (e.code !== "Space" && e.key !== " ") return;
+        e.preventDefault();
+        togglePlayPause();
+      });
+
+      playerSeek.addEventListener("input", () => {
+        seeking = true;
+        const dur = player.duration;
+        if (dur && Number.isFinite(dur)) {
+          const t = (Number(playerSeek.value) / 1000) * dur;
+          timeCurEl.textContent = fmt(t);
+        }
+      });
+      playerSeek.addEventListener("change", () => {
+        const dur = player.duration;
+        if (dur && Number.isFinite(dur)) {
+          player.currentTime = (Number(playerSeek.value) / 1000) * dur;
+        }
+        seeking = false;
+      });
+
+      player.addEventListener("play", () => {
+        userScrolling = false;
+        player.playbackRate = playbackRate;
+        syncPlayButton();
+        syncMediaSessionPlayback();
+      });
+      player.addEventListener("pause", () => {
+        saveChapterProgress();
+        syncPlayButton();
+        syncMediaSessionPlayback();
+      });
+      player.addEventListener("ended", onChapterEnded);
+      player.addEventListener("loadedmetadata", () => {
+        player.playbackRate = playbackRate;
+        btnPlay.disabled = false;
+        syncPlayButton();
+        updateSeekUi();
+      });
+      player.addEventListener("timeupdate", () => {
+        updateSeekUi();
+        updateMediaSessionPosition();
+      });
+      player.addEventListener("error", () => {
+        btnPlay.disabled = true;
+        btnPause.disabled = true;
+        syncPlayButton();
+        const code = player.error?.code;
+        setPlayerError(
+          code === 4
+            ? `音频无法加载，请确认 samples/${currentBookId}/chapterNN.mp3 在本机且非外链符号链接`
+            : "音频播放失败，请点「刷新」后重试"
+        );
+      });
+    }
+
+    function renderChapterList() {
+      chapterListEl.innerHTML = "";
+      if (!catalog) return;
+      catalog.chapters.forEach((ch) => {
+        const locked = chapterLocked(ch);
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.dataset.pad = ch.pad;
+        btn.className = "chapter-item" + (currentChapter?.pad === ch.pad ? " active" : "");
+        btn.disabled = !ch.ready || locked;
+        const badge = ch.ready
+          ? `<span class="badge badge--ready">可播放</span>`
+          : locked
+            ? `<span class="badge badge--locked">未开放试读</span>`
+            : `<span class="badge">${ch.has_audio ? "待对齐" : "待音频"}</span>`;
+        btn.innerHTML =
+          `<span class="chapter-item__num">${ch.pad}</span>` +
+          `<div>` +
+          `<p class="chapter-item__title">${ch.title_zh}</p>` +
+          `<p class="chapter-item__sub">${ch.title_en}</p>` +
+          badge +
+          `</div>` +
+          `<span class="chapter-item__meta">${ch.ready ? fmt(ch.duration_sec) : "—"}</span>`;
+        btn.addEventListener("click", () => {
+          if (locked) {
+            showDemoToast();
+            return;
+          }
+          if (!ch.ready || switching) return;
+          closeSheet();
+          void switchChapter(ch);
+        });
+        chapterListEl.appendChild(btn);
+      });
+    }
+
+    function updateChapterListActive(loadingPad) {
+      chapterListEl.querySelectorAll(".chapter-item").forEach((btn) => {
+        const pad = btn.dataset.pad;
+        btn.classList.toggle("active", pad === currentChapter?.pad);
+        btn.classList.toggle("is-loading", !!loadingPad && pad === loadingPad);
+      });
+    }
+
+    function showChapterLoading(ch, step, pct) {
+      const skeleton = Array.from({ length: 6 }, () => '<div class="sk-line"></div>').join("");
+      linesEl.innerHTML =
+        `<div class="chapter-busy" role="status" aria-live="polite">` +
+        `<div class="chapter-busy__spinner" aria-hidden="true"></div>` +
+        `<p class="chapter-busy__title">第 ${ch.id} 章 · ${ch.title_zh}</p>` +
+        `<p class="chapter-busy__sub" id="busy-sub">${step}</p>` +
+        `<div class="chapter-busy__bar"><div class="chapter-busy__bar-fill" id="busy-bar" style="width:${pct}%"></div></div>` +
+        `<div class="chapter-busy__skeleton">${skeleton}</div>` +
+        `</div>`;
+      lineEls = [];
+      active = -1;
+    }
+
+    function setChapterLoadingProgress(step, pct) {
+      const sub = document.getElementById("busy-sub");
+      const bar = document.getElementById("busy-bar");
+      if (sub) sub.textContent = step;
+      if (bar) bar.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+    }
+
+    async function loadManifest(ch) {
+      const key = manifestCacheKey(ch.pad);
+      if (manifestCache.has(key)) return manifestCache.get(key);
+      const res = await fetch(`${root}/${ch.manifest}`, authFetchOpts());
+      if (res.status === 403) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(sanitizeLockedHint(err.hint));
+      }
+      if (!res.ok) throw new Error(`manifest ${res.status}`);
+      const data = await res.json();
+      manifestCache.set(key, data);
+      return data;
+    }
+
+    function prefetchManifests() {
+      if (!catalog) return;
+      catalog.chapters.filter((c) => c.ready && !chapterLocked(c)).forEach((ch) => {
+        void loadManifest(ch).catch(() => {});
+      });
+    }
+
+    function buildLineElement(line, i) {
+      const div = document.createElement("div");
+      const isHeading = line.kind === "heading";
+      const low = !isHeading && line.confidence != null && line.confidence < 0.6;
+      const interp = !isHeading && !!line.interpolated;
+      div.className =
+        "sentence" +
+        (isHeading ? " heading" : "") +
+        (i === active ? " active" : "") +
+        (low ? " low" : "") +
+        (interp ? " interpolated" : "");
+      div.dataset.lineIdx = String(i);
+      const zh = line.zh ? `<p class="zh">${line.zh}</p>` : "";
+      const timeLabel = interp ? `~${fmt(line.start)}` : fmt(line.start);
+      div.innerHTML =
+        `<span class="time">${timeLabel}</span>` +
+        `<div class="sentence__body"><p class="en">${wrapEnWords(line.text)}</p>${zh}</div>`;
+      return div;
+    }
+
+    async function renderLinesAsync(onProgress) {
+      linesEl.innerHTML = "";
+      lineEls = [];
+      if (!lines.length) {
+        linesEl.innerHTML = `<div class="empty">本章暂无字幕数据<br>请运行 <code>./scripts/pipeline.sh ${currentChapter?.id || 1}</code></div>`;
+        return;
+      }
+      const CHUNK = 36;
+      for (let start = 0; start < lines.length; start += CHUNK) {
+        const frag = document.createDocumentFragment();
+        const end = Math.min(start + CHUNK, lines.length);
+        for (let i = start; i < end; i++) {
+          const div = buildLineElement(lines[i], i);
+          frag.appendChild(div);
+          lineEls.push(div);
+        }
+        linesEl.appendChild(frag);
+        onProgress?.(end, lines.length);
+        if (end < lines.length) {
+          await new Promise((r) => requestAnimationFrame(r));
+        }
+      }
+    }
+
+    function waitAudioReady(timeoutMs = 12000) {
+      return new Promise((resolve) => {
+        if (player.readyState >= 1) {
+          resolve();
+          return;
+        }
+        const timer = window.setTimeout(resolve, timeoutMs);
+        const onReady = () => {
+          clearTimeout(timer);
+          player.removeEventListener("loadedmetadata", onReady);
+          resolve();
+        };
+        player.addEventListener("loadedmetadata", onReady);
+      });
+    }
+
+    function waitAudioCanPlay(timeoutMs = 12000) {
+      return new Promise((resolve) => {
+        if (player.readyState >= 2) {
+          resolve();
+          return;
+        }
+        const timer = window.setTimeout(resolve, timeoutMs);
+        const onReady = () => {
+          clearTimeout(timer);
+          player.removeEventListener("canplay", onReady);
+          player.removeEventListener("loadeddata", onReady);
+          resolve();
+        };
+        player.addEventListener("canplay", onReady);
+        player.addEventListener("loadeddata", onReady);
+      });
+    }
+
+    function updateChrome(ch, data, extra) {
+      const label = `第 ${ch.id} 章 · ${ch.title_zh}`;
+      chapterLabelEl.textContent = label;
+      document.title = `${ch.title_zh} — HarryPutter`;
+      updateChapterNavButtons();
+      updateMediaSessionChapter(ch);
+      if (data) {
+        const conf = (data.lines || []).filter((l) => l.confidence >= 0.75).length;
+        const zhN = (data.lines || []).filter((l) => l.zh).length;
+        statsEl.textContent =
+          `${data.aligned_sentences || data.lines?.length || 0} 句 · ` +
+          `${zhN} 句中文 · 高置信 ${conf} · 起点 ${fmt(data.body_start_sec)}` +
+          (extra ? ` · ${extra}` : "");
+      }
+    }
+
+    async function switchChapter(ch, opts = {}) {
+      if (chapterLocked(ch)) {
+        showDemoToast();
+        return;
+      }
+      if (!ch.ready) return;
+      if (switching && !opts.force) return;
+      if (currentChapter?.pad === ch.pad && catalog?.book_id === currentBookId && lines.length && !opts.force) return;
+
+      if (currentChapter && currentChapter.pad !== ch.pad) {
+        saveChapterProgressFor(currentChapter.pad);
+      }
+
+      const seq = ++switchSeq;
+      switching = true;
+      closeDictPanel();
+      updateChapterListActive(ch.pad);
+
+      player.pause();
+      setPlayerError("");
+      btnPlay.disabled = true;
+      btnPause.disabled = true;
+      updateChapterNavButtons();
+      syncPlayButton();
+
+      chapterLabelEl.textContent = `第 ${ch.id} 章 · ${ch.title_zh}`;
+      showChapterLoading(ch, manifestCache.has(manifestCacheKey(ch.pad)) ? "读取缓存字幕…" : "下载字幕…", 8);
+      window.scrollTo({ top: 0, behavior: "auto" });
+
+      try {
+        const data = await loadManifest(ch);
+        if (seq !== switchSeq) return;
+
+        lines = data.lines || [];
+        setChapterLoadingProgress(`渲染 ${lines.length} 句…`, 35);
+
+        await renderLinesAsync((done, total) => {
+          if (seq !== switchSeq) return;
+          const pct = 35 + Math.round((done / total) * 45);
+          setChapterLoadingProgress(`渲染字幕 ${done}/${total}…`, pct);
+        });
+        if (seq !== switchSeq) return;
+
+        currentChapter = ch;
+        active = -1;
+        try {
+          localStorage.setItem(CHAPTER_KEY, ch.pad);
+          localStorage.setItem(`${CHAPTER_KEY}:${currentBookId}`, ch.pad);
+        } catch {
+          /* ignore */
+        }
+        const url = new URL(location.href);
+        url.searchParams.set("book", currentBookId);
+        url.searchParams.set("ch", ch.pad);
+        history.replaceState(null, "", url);
+
+        setChapterLoadingProgress("加载音频…", 88);
+        player.src = `${root}/${ch.audio}?v=${ch.pad}`;
+        player.load();
+        player.playbackRate = playbackRate;
+        updateChapterListActive(null);
+
+        await waitAudioReady();
+        if (seq !== switchSeq) return;
+
+        let resumeExtra = "";
+        if (!opts.fromStart && !opts.autoplay) {
+          const saved = getChapterProgress(ch.pad);
+          if (saved && saved.time > 3) {
+            player.currentTime = saved.time;
+            let idx = saved.line;
+            if (idx == null || idx < 0) {
+              for (let i = 0; i < lines.length; i++) {
+                if (saved.time >= lines[i].start && saved.time < lines[i].end) idx = i;
+              }
+            }
+            if (idx >= 0) setActive(idx, { forceScroll: true });
+            resumeExtra = `已从 ${fmt(saved.time)} 继续`;
+          }
+        }
+
+        setChapterLoadingProgress("完成", 100);
+        updateChrome(ch, data, resumeExtra);
+        if (opts.autoplay) {
+          await waitAudioCanPlay();
+          if (seq !== switchSeq) return;
+          try {
+            await player.play();
+          } catch (_) {
+            /* autoplay policy */
+          }
+          syncPlayButton();
+        }
+      } catch (e) {
+        if (seq !== switchSeq) return;
+        linesEl.innerHTML = `<div class="empty">章节加载失败<br>${String(e)}</div>`;
+        lineEls = [];
+        statsEl.textContent = String(e);
+      } finally {
+        if (seq === switchSeq) {
+          switching = false;
+          updateChapterListActive(null);
+          updateChapterNavButtons();
+        }
+      }
+    }
+
+    function isInView(el) {
+      const playerBar = document.querySelector(".player");
+      const bottom = playerBar ? playerBar.getBoundingClientRect().top - 16 : window.innerHeight - 120;
+      const top = document.querySelector(".topbar")?.offsetHeight ?? 72;
+      const rect = el.getBoundingClientRect();
+      return rect.top >= top && rect.bottom <= bottom;
+    }
+    function scrollToLine(el) {
+      const top = document.querySelector(".topbar")?.offsetHeight ?? 72;
+      const rect = el.getBoundingClientRect();
+      const playerBar = document.querySelector(".player");
+      const bottomPad = playerBar ? playerBar.offsetHeight + 24 : 160;
+      const target = window.scrollY + rect.top - top - (window.innerHeight - top - bottomPad) * 0.3;
+      window.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
+    }
+    function setActive(idx, opts = {}) {
+      if (idx === active) return;
+      const prev = active;
+      if (prev >= 0 && lineEls[prev]) {
+        lineEls[prev].classList.remove("active");
+        clearCarriedZhDisplay(prev);
+      }
+      active = idx;
+      const el = lineEls[idx];
+      if (!el) return;
+      el.classList.add("active");
+      syncLineZhDisplay(idx);
+      if ((opts.forceScroll || !userScrolling) && !isInView(el)) scrollToLine(el);
+      updateMediaSessionLine(idx);
+    }
+
+    window.addEventListener("scroll", () => {
+      if (!player.paused) {
+        userScrolling = true;
+        clearTimeout(scrollIdleTimer);
+        scrollIdleTimer = window.setTimeout(() => { userScrolling = false; }, 2500);
+      }
+    }, { passive: true });
+
+    let lastTick = 0;
+    player.addEventListener("timeupdate", () => {
+      maybeSaveProgress();
+      const now = performance.now();
+      if (now - lastTick < 120) return;
+      lastTick = now;
+      const t = player.currentTime;
+      let idx = -1;
+      for (let i = 0; i < lines.length; i++) {
+        if (t >= lines[i].start && t < lines[i].end) idx = i;
+      }
+      if (idx >= 0) setActive(idx);
+    });
+
+    bookSelectEl?.addEventListener("change", () => {
+      const bookId = bookSelectEl.value;
+      if (bookId && bookId !== currentBookId) void switchBook(bookId);
+    });
+
+    document.getElementById("open-chapters").addEventListener("click", openSheet);
+    document.getElementById("open-chapters-2").addEventListener("click", openSheet);
+    document.getElementById("close-chapters").addEventListener("click", closeSheet);
+    document.getElementById("force-refresh").addEventListener("click", () => void forceRefresh());
+    sheetBackdrop.addEventListener("click", closeSheet);
+
+    initMediaSession();
+    initPlayerMenus();
+    initSpeedControls();
+    initSleepControls();
+    initPlayerControls();
+    initAuthControls();
+    dictCloseBtn.addEventListener("click", closeDictPanel);
+    initLineClicks();
+
+    async function boot() {
+      await ensureSession();
+      const onPublicHub =
+        /yoloworld\.site$/i.test(location.hostname) || location.port === "8883";
+      try {
+        const cfgRes = await fetch(`${root}/api/config`, authFetchOpts());
+        if (cfgRes.ok) {
+          appConfig = await cfgRes.json();
+          if (!appConfig.loggedIn && getSessionToken()) clearSessionToken();
+          normalizeAppConfig();
+        } else if (onPublicHub) {
+          appConfig = {
+            fullAccess: false,
+            maxPublicChapter: 1,
+            requireAuth: true,
+            loggedIn: false,
+            demoHint: PUBLIC_DEMO_HINT,
+          };
+        }
+      } catch (_) {
+        if (onPublicHub) {
+          appConfig = {
+            fullAccess: false,
+            maxPublicChapter: 1,
+            requireAuth: true,
+            loggedIn: false,
+            demoHint: PUBLIC_DEMO_HINT,
+          };
+        }
+      }
+      normalizeAppConfig();
+      updateAuthChrome();
+
+      const libRes = await fetch(`${root}/output/library.json`, authFetchOpts());
+      library = libRes.ok ? await libRes.json() : { default_book_id: "hp01", books: [] };
+      currentBookId =
+        params.get("book") ||
+        localStorage.getItem(BOOK_KEY) ||
+        library.default_book_id ||
+        "hp01";
+      await loadBookCatalog(currentBookId);
+      showDemoBannerIfNeeded();
+
+      const wanted =
+        params.get("ch") ||
+        localStorage.getItem(`${CHAPTER_KEY}:${currentBookId}`) ||
+        localStorage.getItem(CHAPTER_KEY) ||
+        catalog.chapters.find((c) => c.ready)?.pad ||
+        "01";
+
+      const ch = catalog.chapters.find((c) => c.pad === wanted.padStart(2, "0"));
+      if (!ch?.ready || chapterLocked(ch)) {
+        const first = firstPlayableChapter();
+        if (!first) {
+          linesEl.innerHTML = `<div class="empty">暂无可用章节<br>运行 BOOK=${currentBookId} ./scripts/pipeline.sh N</div>`;
+          renderChapterList();
+          return;
+        }
+        await switchChapter(first);
+      } else {
+        await switchChapter(ch);
+      }
+    }
+
+    boot().catch((e) => {
+      chapterLabelEl.textContent = "加载失败";
+      statsEl.textContent = String(e);
+    });
+  </script>
+</body>
+</html>

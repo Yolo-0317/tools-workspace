@@ -286,8 +286,33 @@ class ReadAlongState:
     def current_expected(self) -> str | None:
         return expected_chunk_at(self.chunks, self.index)
 
+    def chunk_span_for_line(self, line_index: int) -> tuple[int, int] | None:
+        """Return [start, end) chunk indices for a material line."""
+        if (
+            not self.chunks
+            or line_index < 0
+            or line_index >= len(self.line_start_chunk)
+        ):
+            return None
+        start = self.line_start_chunk[line_index]
+        end = (
+            self.line_start_chunk[line_index + 1]
+            if line_index + 1 < len(self.line_start_chunk)
+            else len(self.chunks)
+        )
+        return start, end
+
+    def material_line_text(self, line_index: int) -> str | None:
+        """Full pasted-line text (joins multi-chunk lines)."""
+        span = self.chunk_span_for_line(line_index)
+        if not span:
+            return None
+        start, end = span
+        text = " ".join(self.chunks[start:end]).strip()
+        return text or None
+
     def opening_line(self) -> str:
-        return self.chunks[0] if self.chunks else ""
+        return self.material_line_text(0) or ""
 
     def material_line_index_at(self, chunk_index: int | None = None) -> int:
         """Map chunk index → pasted material line (0-based)."""
@@ -312,15 +337,13 @@ class ReadAlongState:
             self.line_start_chunk
         ):
             return None, line_index
-        start = self.line_start_chunk[line_index]
-        end = (
-            self.line_start_chunk[line_index + 1]
-            if line_index + 1 < len(self.line_start_chunk)
-            else len(self.chunks)
-        )
+        span = self.chunk_span_for_line(line_index)
+        if not span:
+            return None, line_index
+        start, _end = span
         self.index = start
-        text = " ".join(self.chunks[start:end]).strip()
-        return (text or None), line_index
+        text = self.material_line_text(line_index)
+        return (text, line_index)
 
     def after_child_spoke(self, spoken: str) -> tuple[str | None, bool, bool]:
         """

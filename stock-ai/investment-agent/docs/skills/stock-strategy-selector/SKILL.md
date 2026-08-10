@@ -114,7 +114,7 @@ Run two or more strategy scripts and compare:
 
 Use `scripts/analysis/ai_review_combined_top5.py` after screening, with `DEEPSEEK_API_KEY`.
 
-**投顾门控**：阶段 0 **仍跑 Top5 东财 SOP**（`sop_review_enabled()` 恒真）；跳过 AI 简评与次日监控（`ai_selection_review_enabled()` / `selection_watch_sync_enabled()`）。阶段 ≥1 恢复 DeepSeek 简评。
+**投顾门控**：阶段 0 跳过 AI 简评与次日监控（`ai_selection_review_enabled()` / `selection_watch_sync_enabled()`）。**Top5 东财 SOP 默认关**（`DISABLE_SOP_TOP5=1` / `sop_review_enabled()`）；恢复 SOP 设 `DISABLE_SOP_TOP5=0`。
 
 During AI review, inject `load_full_decision_context()` (投顾主策略 > 执行卡 > 通用策略).
 

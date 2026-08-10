@@ -10,6 +10,13 @@ export const AUTO_VOICE_BARGE_IN =
 
 /** After teacher TTS ends, ignore mic briefly (speaker echo / 外放). */
 export const POST_TTS_LISTEN_GRACE_MS = 950;
+/** ORT 听读：页末多停一会儿再自动下一句（图与语音已同步，不宜过长） */
+export const ORT_LISTEN_PAGE_TURN_MS = 120;
+/** ORT 听读：纯插图页默认停留（无上一句时长可参考时的兜底，约一句短句） */
+export const ORT_ILLUSTRATION_PAGE_MS = 2200;
+/** 纯插图页停留下限/上限（优先跟上一句 TTS 实际播放时长） */
+export const ORT_ILLUSTRATION_DWELL_MIN_MS = 1200;
+export const ORT_ILLUSTRATION_DWELL_MAX_MS = 6000;
 
 /** 带读：小朋友停顿多久后自动提交识别（VAD） */
 export const READ_ALONG_SILENCE_MS = 900;

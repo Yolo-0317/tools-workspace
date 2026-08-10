@@ -1,0 +1,166 @@
+{
+  "note": "ORT L4 PDF OCR 对齐分组（真源 books.json pages[]）",
+  "books": {
+    "ort_the_scarf": {
+      "pdf_story_pages": 24,
+      "groups": [
+        [
+          "Anneena liked knitting.",
+          "Anneena"
+        ],
+        [
+          "They pulled the boy out of the pond.",
+          "Anneena"
+        ],
+        [
+          "The boy was safe.",
+          "Everyone pulled the rope."
+        ],
+        [
+          "she made a scarf.",
+          "Ice is dangerous,\" said Anneena."
+        ],
+        [
+          "Anneena's mum helped her.",
+          "Anneena"
+        ],
+        [
+          "The scarf was long and warm.",
+          "It's a good scarf,\" said Anneena."
+        ],
+        [
+          "Biff and Chip come to play.",
+          "It was a cold day."
+        ],
+        [
+          "Anneena put on her scarf.",
+          "Anneena"
+        ],
+        [
+          "What a cold day!\" she said.",
+          "Biff looked at Anneena's scarf."
+        ],
+        [
+          "What a long scarf!\" she said.",
+          "I made it,\" said Anneena."
+        ],
+        [
+          "I couldn't stop knitting.",
+          "The children went to the park."
+        ],
+        [
+          "They went to the pond.",
+          "The pond was frozen."
+        ],
+        [
+          "It had ice on it.",
+          "Some children ran up."
+        ],
+        [
+          "They pulled Anneena's scarf.",
+          "Stop it!\"shouted Anneena."
+        ],
+        [
+          "Stop it!\"shouted Anneena's mum.",
+          "A boy went on the ice."
+        ],
+        [
+          "The ice was dangerous.",
+          "Get off,\"shouted Anneena's mum."
+        ],
+        [
+          "The ice is not safe.",
+          "She threw it to the boy."
+        ],
+        [
+          "Anneena's mum couldn't get the boy.",
+          "Anneena"
+        ],
+        [
+          "Thank you.",
+          "Hooray!\"shouted Anneena."
+        ],
+        [
+          "She couldn't go on the ice.",
+          "Everyone was frightened."
+        ],
+        [
+          "Help!\"shouted the boy.",
+          "I am sorry!\" said the boy."
+        ],
+        [
+          "Anneena had a good idea.",
+          "Anneena"
+        ],
+        [
+          "She took off her scarf.",
+          "She made it out of scarves and coats."
+        ],
+        [
+          "Make a rope,\" she said.",
+          "Anneena's mum made a rope.",
+          "Aneema looked at her scarf.",
+          "I'm glad I made it long.\"she said."
+        ]
+      ]
+    },
+    "ort_the_new_house": {
+      "pdf_story_pages": 16,
+      "groups": [
+        [
+          "A van came to the house."
+        ],
+        [
+          "What a big van! \" said Chip."
+        ],
+        [
+          "What a big man!\" said Kipper."
+        ],
+        [
+          "The man looked at the things."
+        ],
+        [
+          "What a lot of things! \" he said."
+        ],
+        [
+          "Mum and Dad helped the man.",
+          "They put things in the van."
+        ],
+        [
+          "What a job! \" said Dad."
+        ],
+        [
+          "The children helped too.",
+          "Kipper put his toys in the van."
+        ],
+        [
+          "Biff and Chip put the go-kart in."
+        ],
+        [
+          "They put a box in the van.",
+          "What a big box! \" said Biff."
+        ],
+        [
+          "What a job!\" said everyone."
+        ],
+        [],
+        [
+          "Goodbye,\" said Biff.",
+          "Goodbye,\" said Chip.",
+          "Come and play soon,\" they said."
+        ],
+        [
+          "The van went to the new house."
+        ],
+        [
+          "Dad looked at Biff and Chip.",
+          "Oh no! \" said Biff and Chip."
+        ],
+        [
+          "What a job! \" they said."
+        ]
+      ],
+      "note": "p12 纯插图（爸妈上车）；p13 三句告别与挥手图对齐"
+    }
+  }
+}

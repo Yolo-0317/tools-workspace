@@ -132,10 +132,21 @@ uv run python -m scripts.tools.wechat_mp_market_titles --edition close --tags �
 **单条格式（精华）**
 
 ```
-1. [利好/利空/中性] {原标题}
+1. [利好/利空/中性] {小标题 8–22 字，含热股名}
   {摘要 230–250 字：发生了什么、主体、与 A 股关联}
   AI点评：{120–220 字，像给同事发微信}
 ```
+
+**去重（2026-06-18 · 禁止 10 条雷同）**
+
+| 现象 | 根因 | 处理 |
+|------|------|------|
+| 10 条摘要尾段完全相同 | 热股无专属快讯 → 全 `synthetic`；`_SUMMARY_PAD` 统一垫到 230 字 | 代码：`wechat_mp_news_article._summary_pad_sentences` 按榜位/股名轮换垫句 |
+| 多条 AI 点评一字不差 | fallback 仅 2 套通用话术 | 代码：`_hot_stock_fallback_comment` 按 code/rank/chg 分叉 |
+| 小标题与摘要首句重复 | fallback 把 `title` 再拼进摘要 | 合成稿直接用 `item.summary`，不重复标题 |
+| 整批无真实快讯 | OpenCLI 7×24 池空或匹配失败 | 推稿前看 stderr `⚠️ news 快讯摘要重复`；修 OpenCLI / `fetch_weekend_kuaixun_pool` |
+
+**质检**：`generate_enriched_news_copy` 结束若 ≥3 条摘要或点评完全相同 → stderr 告警；人工发表前扫一眼第 1、5、10 条是否同构。
 
 **AI 点评好句范例（从现行稿摘）**
 

@@ -30,6 +30,11 @@ def test_lark_cli_variant_registered() -> None:
     assert resolve_temp_variant("lark_cli") == "lark_cli"
 
 
+def test_world_cup_variant_registered() -> None:
+    assert "world_cup" in list_temp_variants()
+    assert resolve_temp_variant("world_cup") == "world_cup"
+
+
 def test_lark_cli_body_has_sections_and_no_git_brand() -> None:
     body = generate_temp_article_body(variant="lark_cli")
     assert "> 为什么值得多一层" in body

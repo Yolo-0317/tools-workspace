@@ -15,7 +15,10 @@ DOMAIN="${DOMAIN:-yoloworld.site}"
 SUBDOMAINS=(
   "${ANI_SUBDOMAIN:-ani}"
   "${CONFIG_SUBDOMAIN:-config}"
+  "${ALIST_SUBDOMAIN:-alist}"
   "${HUB_SUBDOMAIN:-hub}"
+  "${SUB_SUBDOMAIN:-sub}"
+  "${PHOTOS_SUBDOMAIN:-photos}"
 )
 
 lan_ip() {

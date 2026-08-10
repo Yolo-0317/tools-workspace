@@ -57,7 +57,7 @@ export function stopSpeaking(): void {
   }
 }
 
-function playMp3Blob(blob: Blob): Promise<void> {
+function playMp3Blob(blob: Blob, onPlaybackStart?: () => void): Promise<void> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(blob);
     const audio = getSharedAudioElement();
@@ -65,9 +65,11 @@ function playMp3Blob(blob: Blob): Promise<void> {
     audio.muted = false;
     audio.volume = 1;
     currentAudio = audio;
+    let started = false;
 
     const cleanup = () => {
       if (playResolve === finish) playResolve = null;
+      audio.onplaying = null;
       URL.revokeObjectURL(url);
       if (currentAudio === audio) currentAudio = null;
     };
@@ -83,6 +85,12 @@ function playMp3Blob(blob: Blob): Promise<void> {
       cleanup();
       reject(new Error("Audio playback failed"));
     };
+    audio.onplaying = () => {
+      if (!started) {
+        started = true;
+        onPlaybackStart?.();
+      }
+    };
 
     audio.src = url;
     void audio.play().catch((err) => {
@@ -92,11 +100,15 @@ function playMp3Blob(blob: Blob): Promise<void> {
   });
 }
 
-function playMp3Base64(b64: string, mime = "audio/mpeg"): Promise<void> {
+function playMp3Base64(
+  b64: string,
+  mime = "audio/mpeg",
+  onPlaybackStart?: () => void,
+): Promise<void> {
   const binary = atob(b64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return playMp3Blob(new Blob([bytes], { type: mime }));
+  return playMp3Blob(new Blob([bytes], { type: mime }), onPlaybackStart);
 }
 
 async function fetchTtsMp3(text: string): Promise<Blob> {
@@ -112,12 +124,13 @@ async function fetchTtsMp3(text: string): Promise<Blob> {
   return res.blob();
 }
 
-function speakBrowser(text: string): Promise<void> {
+function speakBrowser(text: string, onPlaybackStart?: () => void): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!("speechSynthesis" in window)) {
       reject(new Error("Browser TTS not supported"));
       return;
     }
+    onPlaybackStart?.();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "en-US";
     u.rate = 0.78;
@@ -140,6 +153,7 @@ export async function speakAssistant(
   text: string,
   audioBase64?: string,
   audioMime = "audio/wav",
+  onPlaybackStart?: () => void,
 ): Promise<void> {
   const trimmed = text.trim();
   if (!trimmed) return;
@@ -152,14 +166,14 @@ export async function speakAssistant(
 
   try {
     if (audioBase64) {
-      await playMp3Base64(audioBase64, audioMime);
+      await playMp3Base64(audioBase64, audioMime, onPlaybackStart);
       return;
     }
     const blob = await fetchTtsMp3(trimmed);
     if (!stillActive()) return;
-    await playMp3Blob(blob);
+    await playMp3Blob(blob, onPlaybackStart);
   } catch {
     if (!stillActive()) return;
-    await speakBrowser(trimmed);
+    await speakBrowser(trimmed, onPlaybackStart);
   }
 }

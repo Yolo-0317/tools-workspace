@@ -81,6 +81,8 @@ cp frontend/.env.example frontend/.env   # 本地 dev：VITE_BASE_PATH=/
 
 **若一直重复同一句**：多半是外放被麦克风拾取；请用耳机或降低音量。
 
+**牛津阅读树**：拓展 → 专题选书 → 听读或跟读；分页与 WS 协议见 [docs/ORT_READ_ALONG.md](docs/ORT_READ_ALONG.md)。
+
 更多说明：[docs/AUTH.md](docs/AUTH.md) · [docs/CURRICULUM.md](docs/CURRICULUM.md)
 
 ## 公网（Home Hub 同域）
@@ -159,7 +161,8 @@ docker compose restart caddy
 |------|------|
 | **语速** | 首页与通话中：慢 `0.85` / 标准 `1.0` / 快 `1.15`；存 `localStorage` |
 | **按句重读** | 点课文行，或「老师再说一遍」「回到上一句」 |
-| **课文库** | 沪教牛津六三制上下册 + 幼儿园；见 [docs/CURRICULUM.md](docs/CURRICULUM.md) |
+| **牛津阅读树** | 按页插图 + 同页多句；听读/带读双模式；见 [docs/ORT_READ_ALONG.md](docs/ORT_READ_ALONG.md) |
+| **课文库** | 沪教牛津六三制上下册 + 幼儿园 + ORT；见 [docs/CURRICULUM.md](docs/CURRICULUM.md) |
 | **自定义课文** | 登录后隔离；须预热后带读 |
 
 ## WebSocket 协议（摘要）
@@ -168,8 +171,8 @@ docker compose restart caddy
 |------|------|
 | C→S | 二进制 PCM int16 16kHz |
 | C→S | `start_call`：`lesson_id`、`mode`、`program`、`tts_speed` |
-| C→S | `update_tts_speed` / `reread_line` / `text_message` / `utterance_end` / `interrupt` |
-| S→C | `transcript` / `assistant_text` / `lesson_complete` / `reread_line` |
+| C→S | `update_tts_speed` / `reread_line`（听读翻页可加 `resume_listen_auto`）/ `teacher_playback_done`（听读，带 `playback_generation`）/ `read_along_advance` / `utterance_end` / `interrupt` |
+| S→C | `transcript` / `assistant_text`（含 `line_index`、`playback_generation`）/ `lesson_complete` / `reread_line` / `pronunciation_result` |
 | S→C | 二进制音频分片 + `tts_end` |
 
 REST `POST /api/reply` 保留作调试。课文 REST：`/api/lessons`、`/api/grades`、`/api/programs`。

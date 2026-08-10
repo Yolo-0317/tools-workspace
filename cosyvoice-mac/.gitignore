@@ -1,0 +1,7 @@
+.env
+vendor/
+pretrained_models/
+outputs/
+__pycache__/
+*.pyc
+.DS_Store

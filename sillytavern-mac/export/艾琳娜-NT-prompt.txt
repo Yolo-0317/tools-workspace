@@ -1,0 +1,7 @@
+v3.0：Main 建议留空（规则已在 PNG 世界书里）。
+
+若必须填 Main，只用这一行：
+全程简体中文。只写 {{char}} 的一条回复。先回应 {{user}} 最新一句。
+
+Persona 名称：侄子
+勿绑 elena-yangsheng-world.json

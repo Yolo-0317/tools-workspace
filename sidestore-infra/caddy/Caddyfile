@@ -26,6 +26,25 @@
 	}
 }
 
+(ollama_proxy) {
+	# Ollama — 宿主机 :11434；须在 encode gzip 之前 import（流式 /api/chat）
+	handle /ollama {
+		redir * /ollama/ permanent
+	}
+	handle_path /ollama/* {
+		reverse_proxy host.docker.internal:11434 {
+			flush_interval -1
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+			header_up Host 127.0.0.1:11434
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+}
+
 (hub_apps) {
 	# English Buddy — launchd :18787
 	handle /english {
@@ -44,21 +63,29 @@
 		}
 	}
 
-    # Readalong — launchd :8791（web 静态直出；音频/manifest/API 反代 Python）
+	# 旧路径兼容 → HarryPutter
 	handle /readalong {
-		redir * /readalong/web/ permanent
+		redir * /harryputter/web/ permanent
 	}
-	handle /readalong/web {
-		redir * /readalong/web/ permanent
+	handle_path /readalong/* {
+		redir * /harryputter{uri} permanent
 	}
-	handle /readalong/web/* {
-		root * /readalong
-		uri strip_prefix /readalong
+
+	# HarryPutter — launchd :8791（web 静态直出；音频/manifest/API 反代 Python）
+	handle /harryputter {
+		redir * /harryputter/web/ permanent
+	}
+	handle /harryputter/web {
+		redir * /harryputter/web/ permanent
+	}
+	handle /harryputter/web/* {
+		root * /harryputter
+		uri strip_prefix /harryputter
 		header Cache-Control "no-cache" /web/index.html
 		header Cache-Control "no-cache" /web/sw.js
 		file_server
 	}
-	handle_path /readalong/* {
+	handle_path /harryputter/* {
 		reverse_proxy host.docker.internal:8791 {
 			transport http {
 				read_timeout 0
@@ -87,8 +114,29 @@
 		}
 	}
 
-	# 兼容旧前端 /api/*（勿 301：POST 跟重定向会变 GET → 登录报 Not Found）
-	handle /api/* {
+	# SillyTavern — launchd :8792（subpath /silly/；绝对路径 /api /scripts 等见 @st_hub_paths）
+	handle /silly {
+		redir * /silly/ permanent
+	}
+	handle_path /silly/* {
+		reverse_proxy host.docker.internal:8792 {
+			flush_interval -1
+			header_down Cache-Control "no-cache"
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	# Home Hub API（须先于 ST 的 /api/* 匹配）
+	@hub_api {
+		path /api/auth* /api/services* /api/dashboard*
+	}
+	handle @hub_api {
 		reverse_proxy host.docker.internal:8780 {
 			flush_interval -1
 			transport http {
@@ -101,8 +149,33 @@
 		}
 	}
 
+	# ST 在 hub 根路径的静态/API（base href=/ 时 /silly/ 页内资源走 hub 根）
+	@st_hub_paths {
+		path /login /login*
+		path /style.css /manifest.json /favicon.ico /st.ico /st-launcher.ico /robots.txt /script.js /lib.js /jsconfig.json
+		path /scripts* /css* /lib* /webpack* /webfonts* /img* /dist*
+		path /locales* /sounds*
+		path /version /csrf-token /callback* /thumbnail* /proxy*
+		path /backgrounds* /characters* /assets* /User* /user*
+		path /api/*
+		not path /api/auth* /api/services* /api/dashboard*
+	}
+	handle @st_hub_paths {
+		reverse_proxy host.docker.internal:8792 {
+			flush_interval -1
+			header_down Cache-Control "no-cache"
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
 	@legacy_hub {
-		not path /english /english/* /readalong /readalong/* /hub /hub/*
+		not path /ollama /ollama/* /english /english/* /harryputter /harryputter/* /readalong /readalong/* /hub /hub/* /silly /silly/*
 		not path /c4de45255be91b51cd4b88b52fb77956.txt
 	}
 	handle @legacy_hub {
@@ -171,6 +244,22 @@ https://alist.yoloworld.site {
 	import security_headers
 }
 
+https://photos.yoloworld.site {
+	import tls_le
+	reverse_proxy host.docker.internal:2283 {
+		flush_interval -1
+		transport http {
+			read_timeout 0
+			write_timeout 0
+		}
+		header_up Host {host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-Host {host}
+		header_up X-Forwarded-For {remote_host}
+	}
+	import security_headers
+}
+
 https://sub.yoloworld.site {
 	import tls_le
 	encode gzip
@@ -183,6 +272,14 @@ https://sub.yoloworld.site {
 		}
 	}
 	handle /clash-verge.yaml {
+		reverse_proxy host.docker.internal:8787 {
+			transport http {
+				read_timeout 120s
+			}
+		}
+		header Cache-Control "no-cache, no-store, must-revalidate"
+	}
+	handle /clash-android.yaml {
 		reverse_proxy host.docker.internal:8787 {
 			transport http {
 				read_timeout 120s
@@ -204,7 +301,7 @@ https://sub.yoloworld.site {
 	import security_headers
 }
 
-# --- Hub 聚合（english / readalong / home-hub）---
+# --- Hub 聚合（english / harryputter / home-hub）---
 http://hub.yoloworld.site {
 	import wechat_verify
 	handle {
@@ -214,9 +311,11 @@ http://hub.yoloworld.site {
 
 https://hub.yoloworld.site {
 	import tls_le
-	encode gzip
 	import wechat_verify
+	import ollama_proxy
+	# hub_apps（含 SillyTavern /api/backends 流式）须在 encode gzip 之前，否则外网/iPhone 看不到逐字输出甚至整段不回显
 	import hub_apps
+	encode gzip
 	import security_headers
 }
 
@@ -238,6 +337,7 @@ https://www.yoloworld.site {
 # 局域网 IP 直连（mkcert；scripts/mkcert-lan-ip.sh 维护地址行）
 https://192.168.1.13 { # LAN_IP_HTTPS_SITE
 	tls /etc/caddy/certs/lan-ip/cert.pem /etc/caddy/certs/lan-ip/key.pem
-	encode gzip
+	import ollama_proxy
 	import hub_apps
+	encode gzip
 }

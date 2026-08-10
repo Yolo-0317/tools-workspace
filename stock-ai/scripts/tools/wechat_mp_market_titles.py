@@ -9,7 +9,7 @@ from typing import Literal
 
 MarketEdition = Literal["pre", "midday", "close"]
 
-# 占位符：{wd} 周几；{tags} 当日钩子（如 油价+半导体）
+# 占位符：{wd} 周几；{tags} 当日钩子（如 油价与半导体，勿用 + 拼接）
 MARKET_TITLE_TEMPLATES: dict[MarketEdition, tuple[str, ...]] = {
     "pre": (
         "{wd}盘前｜{tags}，开局盯什么？",
@@ -56,8 +56,8 @@ MARKET_TITLE_TEMPLATES: dict[MarketEdition, tuple[str, ...]] = {
         "上午强、下午呢：{tags}？",
     ),
     "close": (
-        "A股收盘复盘｜{tags}怎么读？",
         "收盘复盘·A股｜{tags}牵动哪些线？",
+        "A股收盘复盘｜{tags}，结构怎么看？",
         "{wd}A股收盘｜{tags}，结构怎么看？",
         "A股收盘｜{tags}，结构怎么看？",
         "收盘复盘：{tags}牵动哪些线？",
@@ -73,8 +73,8 @@ MARKET_TITLE_TEMPLATES: dict[MarketEdition, tuple[str, ...]] = {
         "结构怎么走：{tags}？",
         "{wd}17:00｜{tags}与情绪？",
         "今日收评：{tags}牵哪线？",
-        "涨少跌多？{tags}怎么读？",
-        "收盘速览：{tags}与明日盯盘？",
+        "涨少跌多？{tags}，结构怎么看？",
+        "收盘速览：{tags}与待验证指标？",
         "{wd}盘后一页｜{tags}结构？",
         "今日三条验证：{tags}？",
         "指数与个股：{tags}同频吗？",
@@ -83,6 +83,16 @@ MARKET_TITLE_TEMPLATES: dict[MarketEdition, tuple[str, ...]] = {
 }
 
 _EDITION_ROTATE_OFFSET = {"pre": 1, "midday": 2, "close": 3}
+
+
+def join_market_title_tags(parts: list[str] | tuple[str, ...]) -> str:
+    """标题钩子：两主题用「与」，避免 LED+小金属 式拼接。"""
+    cleaned = [str(p).strip() for p in parts if str(p).strip()]
+    if not cleaned:
+        return ""
+    if len(cleaned) == 1:
+        return cleaned[0]
+    return f"{cleaned[0]}与{cleaned[1]}"
 
 
 def format_market_title(template: str, *, wd: str, tags: str) -> str:
@@ -196,7 +206,7 @@ def pick_rotated_market_title(
     return clip_fn(ranked[0] if ranked else options[0])
 
 
-def list_all_market_title_templates(*, wd: str = "周三", tags: str = "油价+半导体") -> str:
+def list_all_market_title_templates(*, wd: str = "周三", tags: str = "油价与半导体") -> str:
     """人工选标题时打印全表。"""
     lines = ["# market 标题轮换表（占位 {tags} / {wd} 成稿时自动替换）", ""]
     labels = {"pre": "盘前 pre", "midday": "午间 midday", "close": "盘后 close"}
@@ -221,7 +231,7 @@ def main() -> int:
 
     parser = argparse.ArgumentParser(description="market 标题模板轮换表")
     parser.add_argument("--wd", default="周三", help="示例周几")
-    parser.add_argument("--tags", default="油价+半导体", help="示例钩子")
+    parser.add_argument("--tags", default="油价与半导体", help="示例钩子")
     parser.add_argument(
         "--edition",
         choices=("pre", "midday", "close", "all"),

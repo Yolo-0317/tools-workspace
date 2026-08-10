@@ -1,12 +1,11 @@
 ---
 description: emquant-sim 东财掘金仿真 — Hermes 专项记忆
-globs: emquant-sim/**/*
 alwaysApply: false
 ---
 
 # Memory: emquant-sim（东财掘金 Win11）
 
-处理 `emquant-sim/` 或用户问东财量化/掘金仿真时，与本文件、`project-memory.mdc` 一并检索。**2026-06-02 起默认下线**，见 `emquant-sim/OFFLINE.md`。
+处理 `emquant-sim/` 或用户问东财量化/掘金仿真时，按主题索引精确检索本文件。**2026-06-02 起默认下线**，见 `emquant-sim/OFFLINE.md`。
 
 ## 记忆条目
 

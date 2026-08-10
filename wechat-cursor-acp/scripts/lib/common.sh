@@ -63,6 +63,27 @@ require_agent_cli() {
 
 export WECHAT_ACP_TELEMETRY
 
+instance_dir() {
+  printf '%s/.wechat-acp/instances/%s\n' "${HOME}" "${WECHAT_ACP_INSTANCE}"
+}
+
+daemon_pid_file() {
+  printf '%s/daemon.pid\n' "$(instance_dir)"
+}
+
+read_daemon_pid() {
+  local pid_file
+  pid_file="$(daemon_pid_file)"
+  [[ -f "${pid_file}" ]] || return 1
+  tr -d '[:space:]' < "${pid_file}"
+}
+
+daemon_running() {
+  local pid
+  pid="$(read_daemon_pid 2>/dev/null)" || return 1
+  [[ -n "${pid}" ]] && kill -0 "${pid}" 2>/dev/null
+}
+
 wechat_acp() {
   npx -y wechat-acp@latest \
     --instance "${WECHAT_ACP_INSTANCE}" \

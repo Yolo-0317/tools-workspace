@@ -31,6 +31,7 @@ def _load_service_env_files() -> None:
         ROOT.parent / "substore-clash" / ".env",
         Path.home() / "docker" / "jellyfin-stack" / ".env",
         ROOT.parent / "wechat-cursor-acp" / ".env",
+        ROOT.parent / "harryputter" / ".env",
     ]
     for path in candidates:
         if path.is_file():
@@ -48,10 +49,21 @@ def load_catalog_raw() -> dict[str, Any]:
         return yaml.safe_load(fh) or {}
 
 
+_CREDENTIAL_ALIASES: dict[str, list[str]] = {
+    "HARRYPUTTER_ADMIN_USER": ["READALONG_ADMIN_USER"],
+    "HARRYPUTTER_ADMIN_PASSWORD": ["READALONG_ADMIN_PASSWORD"],
+}
+
+
 def _env_credential_status(names: list[str] | None) -> dict[str, str]:
     out: dict[str, str] = {}
     for name in names or []:
         val = os.getenv(name, "")
+        if not val.strip():
+            for alt in _CREDENTIAL_ALIASES.get(name, []):
+                val = os.getenv(alt, "")
+                if val.strip():
+                    break
         out[name] = "已配置" if val.strip() else "未设置"
     return out
 
@@ -64,7 +76,7 @@ def _check_tcp(host: str, port: int, timeout: float = 2.0) -> bool:
         return False
 
 
-def _check_http(url: str, timeout: float = 3.0, *, insecure: bool = False) -> bool:
+def _check_http(url: str, timeout: float = 5.0, *, insecure: bool = False) -> bool:
     try:
         req = Request(url, method="GET", headers={"User-Agent": "home-hub/1.0"})
         ctx = None
@@ -102,7 +114,8 @@ def check_health(spec: dict[str, Any] | None) -> dict[str, Any]:
     if kind in ("http", "https"):
         url = str(spec.get("url", ""))
         insecure = bool(spec.get("insecure")) or kind == "https"
-        ok = _check_http(url, insecure=insecure) if url else False
+        timeout = float(spec.get("timeout", 5.0))
+        ok = _check_http(url, timeout=timeout, insecure=insecure) if url else False
         return {"status": "up" if ok else "down", "type": kind, "url": url}
     if kind == "process":
         pattern = str(spec.get("match", ""))

@@ -20,15 +20,15 @@ fi
 export MYSQL_URL="${MYSQL_URL//host.docker.internal/127.0.0.1}"
 
 SOP_ARGS="--sop-workers ${SOP_WORKERS:-3} --deepseek-workers ${DEEPSEEK_WORKERS:-3}"
-if [ "${DISABLE_SOP_TOP5:-0}" = "1" ]; then
+if [ "${DISABLE_SOP_TOP5:-1}" = "1" ]; then
   SOP_ARGS="--no-sop"
-  echo "⚠️ 已禁用东财 SOP（DISABLE_SOP_TOP5=1），改用轻量 DeepSeek 简评"
+  echo "已跳过 Top5 东财 SOP（DISABLE_SOP_TOP5=1；阶段≥1 可改用轻量 AI 简评）"
 else
   echo "东财 SOP 并发分析（Top5 → 战报 → 次日监控）workers=${SOP_WORKERS:-3}"
 fi
 
 echo "=========================================="
-echo "开始综合选股 + SOP..."
+echo "开始综合选股（SOP 默认关）..."
 echo "时间：$(date '+%Y-%m-%d %H:%M:%S')"
 echo "=========================================="
 
@@ -44,8 +44,12 @@ echo "并行选股（四轨 ProcessPool）：combined+watch / ma5 / 五因子 / 
 uv run python -m scripts.selection.run_parallel_selection 2>&1 \
   | tee "logs/selection_parallel_$(date '+%Y%m%d').log"
 
-uv run python -m scripts.selection.daily_selection_report --skip-selection $SOP_ARGS 2>&1 \
-  | tee -a "logs/selection_daily_$(date '+%Y%m%d').log"
+if [ "${DISABLE_SELECTION_REPORT:-1}" = "1" ]; then
+  echo "已跳过收盘甄选战报（DISABLE_SELECTION_REPORT=1）"
+else
+  uv run python -m scripts.selection.daily_selection_report --skip-selection $SOP_ARGS 2>&1 \
+    | tee -a "logs/selection_daily_$(date '+%Y%m%d').log"
+fi
 
 echo "OpenCLI 档案 enrich（五策略合并 Top5，按总分）..."
 uv run python -m scripts.tools.enrich_selection_profiles --trade-date latest 2>&1 \

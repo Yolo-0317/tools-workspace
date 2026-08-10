@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>小智 · 语音通话</title>
+  <style>
+    :root {
+      --bg: #070a10;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #3b82f6;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: "SF Pro Text", "PingFang SC", sans-serif;
+      background: radial-gradient(circle at 50% 18%, #172033 0%, var(--bg) 58%);
+      color: var(--text);
+      overflow: hidden;
+    }
+    #callApp {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
+    }
+    .call-top {
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      margin-top: 6px;
+    }
+    .call-top h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+    .call-top p { margin: 6px 0 0; font-size: 0.82rem; color: var(--muted); }
+    .call-stage {
+      flex: 1;
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      min-height: 0;
+    }
+    .orb-wrap {
+      position: relative;
+      width: 168px;
+      height: 168px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .orb-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      opacity: 0;
+      transform: scale(0.92);
+    }
+    .orb-wrap.state-listening .orb-ring,
+    .orb-wrap.state-speaking .orb-ring,
+    .orb-wrap.state-thinking .orb-ring {
+      opacity: 1;
+      animation: pulse 1.6s ease-out infinite;
+    }
+    .orb-wrap.state-listening .orb-ring { border-color: rgba(34, 197, 94, 0.45); }
+    .orb-wrap.state-speaking .orb-ring { border-color: rgba(59, 130, 246, 0.45); }
+    .orb-wrap.state-thinking .orb-ring { border-color: rgba(251, 191, 36, 0.45); }
+    .orb {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #1e293b, #0f172a);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.92); opacity: 0.85; }
+      70% { transform: scale(1.12); opacity: 0; }
+      100% { transform: scale(1.12); opacity: 0; }
+    }
+    #callStatus { font-size: 1rem; font-weight: 500; text-align: center; min-height: 1.5em; }
+    #callSubtitle {
+      width: 100%;
+      max-height: 32vh;
+      overflow-y: auto;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.6;
+      padding: 0 8px;
+    }
+    .line-user { color: #93c5fd; margin-bottom: 8px; }
+    .line-bot { color: var(--text); }
+    .call-actions {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .call-btn {
+      border: none;
+      cursor: pointer;
+      user-select: none;
+      transition: opacity 0.15s ease;
+    }
+    .call-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    #startCall {
+      background: var(--accent);
+      color: #fff;
+      border-radius: 999px;
+      padding: 14px 32px;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    #endCall {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: #7f1d1d;
+      color: #fecaca;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    #voiceHint { font-size: 0.78rem; color: var(--muted); text-align: center; min-height: 2.4em; }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+    .chip {
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: rgba(15, 23, 42, 0.65);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      cursor: pointer;
+    }
+    .chip:disabled { opacity: 0.4; cursor: not-allowed; }
+    .hidden { display: none !important; }
+    #voiceOut { display: none; }
+  </style>
+</head>
+<body>
+  <div id="callApp">
+    <div class="call-top">
+      <h1>小智 · 语音通话</h1>
+      <p>接通后直接说话，停顿后自动回复，无需按住按钮</p>
+    </div>
+
+    <div class="call-stage">
+      <div class="orb-wrap" id="orbWrap">
+        <div class="orb-ring"></div>
+        <div class="orb">智</div>
+      </div>
+      <div id="callStatus">点击开始通话</div>
+      <div id="callSubtitle"></div>
+    </div>
+
+    <div class="call-actions">
+      <button type="button" class="call-btn" id="startCall">开始通话</button>
+      <button type="button" class="call-btn hidden" id="endCall">挂断</button>
+      <div id="voiceHint"></div>
+      <div class="chips hidden" id="chips">
+        <button type="button" class="chip" data-text="想听儿童故事">想听儿童故事</button>
+        <button type="button" class="chip" data-text="想听冰雪奇缘">想听冰雪奇缘</button>
+      </div>
+    </div>
+  </div>
+
+  <audio id="voiceOut" preload="auto"></audio>
+
+  <script>
+    const startCallBtn = document.getElementById("startCall");
+    const endCallBtn = document.getElementById("endCall");
+    const callStatus = document.getElementById("callStatus");
+    const callSubtitle = document.getElementById("callSubtitle");
+    const voiceHint = document.getElementById("voiceHint");
+    const orbWrap = document.getElementById("orbWrap");
+    const chips = document.getElementById("chips");
+    const voiceOut = document.getElementById("voiceOut");
+
+    const SILENCE_MS = 1000;
+    const MIN_SPEECH_MS = 450;
+    const MAX_UTTERANCE_MS = 20000;
+    const VAD_INTERVAL_MS = 80;
+    const BARGE_IN_FRAMES = 8;
+    const START_SPEECH_FRAMES = 4;
+    const SPEECH_CONFIRM_FRAMES = 2;
+    const CAPTURE_ABORT_MS = 4000;
+    const MIN_BLOB_BYTES = 1200;
+
+    let inCall = false;
+    let phase = "idle"; // idle | listening | processing | speaking
+    let mediaStream = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let audioCtx = null;
+    let analyser = null;
+    let vadTimer = null;
+    let playAbort = null;
+
+    let noiseFloor = 0.008;
+    let speechThreshold = 0.028;
+    let levelEma = 0;
+    let preRollFrames = 0;
+    let speechLoudFrames = 0;
+    let capturing = false;
+    let heardSpeech = false;
+    let captureStartedAt = 0;
+    let silenceStartedAt = 0;
+    let loudFrames = 0;
+    let submitting = false;
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function setOrbState(state) {
+      orbWrap.className = "orb-wrap" + (state ? ` state-${state}` : "");
+    }
+
+    function setPhase(next, statusText, hintText) {
+      phase = next;
+      callStatus.textContent = statusText;
+      setOrbState(next === "listening" ? "listening" : next === "processing" ? "thinking" : next === "speaking" ? "speaking" : "");
+      if (hintText !== undefined) voiceHint.textContent = hintText;
+    }
+
+    function setSubtitle(userText, botText) {
+      const parts = [];
+      if (userText) parts.push(`<div class="line-user">你：${escapeHtml(userText)}</div>`);
+      if (botText) parts.push(`<div class="line-bot">小智：${escapeHtml(botText)}</div>`);
+      callSubtitle.innerHTML = parts.join("");
+    }
+
+    function stopSpeaking() {
+      if (playAbort) {
+        playAbort.aborted = true;
+        playAbort = null;
+      }
+      voiceOut.pause();
+      voiceOut.removeAttribute("src");
+      voiceOut.load();
+    }
+
+    async function unlockAudio() {
+      voiceOut.src =
+        "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+      try {
+        await voiceOut.play();
+      } catch {
+        /* ignore */
+      }
+      voiceOut.pause();
+      voiceOut.removeAttribute("src");
+      voiceOut.load();
+    }
+
+    function micLevel() {
+      if (!analyser) return 0;
+      const data = new Float32Array(analyser.fftSize);
+      analyser.getFloatTimeDomainData(data);
+      let sum = 0;
+      for (let i = 0; i < data.length; i += 1) sum += data[i] * data[i];
+      const rms = Math.sqrt(sum / data.length);
+      levelEma = levelEma ? levelEma * 0.82 + rms * 0.18 : rms;
+      return levelEma;
+    }
+
+    async function calibrateNoise() {
+      const samples = [];
+      for (let i = 0; i < 25; i += 1) {
+        samples.push(micLevel());
+        await new Promise((r) => setTimeout(r, 60));
+      }
+      samples.sort((a, b) => a - b);
+      const median = samples[Math.floor(samples.length / 2)] || 0.008;
+      const p90 = samples[Math.floor(samples.length * 0.9)] || median;
+      noiseFloor = Math.max(0.006, median);
+      speechThreshold = Math.max(0.02, Math.max(p90, noiseFloor) * 4.0);
+      levelEma = noiseFloor;
+    }
+
+    function cancelCapture() {
+      if (!capturing || !mediaRecorder) {
+        capturing = false;
+        preRollFrames = 0;
+        speechLoudFrames = 0;
+        heardSpeech = false;
+        audioChunks = [];
+        return;
+      }
+      const recorder = mediaRecorder;
+      mediaRecorder = null;
+      capturing = false;
+      preRollFrames = 0;
+      speechLoudFrames = 0;
+      heardSpeech = false;
+      audioChunks = [];
+      try {
+        recorder.onstop = null;
+        recorder.stop();
+      } catch {
+        /* ignore */
+      }
+      if (inCall && phase !== "processing" && phase !== "speaking") {
+        setPhase("listening", "通话中", "没听清完整一句，请再说一次");
+      }
+    }
+
+    function recorderMimeType() {
+      return MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : "audio/webm";
+    }
+
+    function startCapture() {
+      if (capturing || !mediaStream || phase === "processing") return;
+      audioChunks = [];
+      mediaRecorder = new MediaRecorder(mediaStream, { mimeType: recorderMimeType() });
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) audioChunks.push(e.data);
+      };
+      mediaRecorder.start(120);
+      capturing = true;
+      preRollFrames = 0;
+      speechLoudFrames = 0;
+      heardSpeech = false;
+      captureStartedAt = Date.now();
+      silenceStartedAt = 0;
+      setPhase("listening", "正在听…", "请直接说话");
+    }
+
+    function stopCapture() {
+      return new Promise((resolve) => {
+        if (!capturing || !mediaRecorder) {
+          resolve(null);
+          return;
+        }
+        const recorder = mediaRecorder;
+        mediaRecorder = null;
+        capturing = false;
+        recorder.onstop = () => {
+          if (!audioChunks.length) {
+            resolve(null);
+            return;
+          }
+          resolve(new Blob(audioChunks, { type: audioChunks[0].type || "audio/webm" }));
+        };
+        recorder.stop();
+      });
+    }
+
+    function playUrl(url) {
+      return new Promise((resolve, reject) => {
+        const token = { aborted: false };
+        playAbort = token;
+        voiceOut.src = url;
+        const cleanup = () => {
+          voiceOut.removeEventListener("ended", onEnded);
+          voiceOut.removeEventListener("error", onError);
+        };
+        const onEnded = () => {
+          cleanup();
+          if (playAbort === token) playAbort = null;
+          resolve();
+        };
+        const onError = () => {
+          cleanup();
+          if (playAbort === token) playAbort = null;
+          reject(new Error("audio play failed"));
+        };
+        voiceOut.addEventListener("ended", onEnded, { once: true });
+        voiceOut.addEventListener("error", onError, { once: true });
+        voiceOut.play().catch(onError);
+      });
+    }
+
+    async function playBotAudio(data) {
+      const urls = [];
+      if (data.mode === "play" && data.ack_stream_url) urls.push(data.ack_stream_url);
+      if ((data.mode === "chat" || data.mode === "clarify") && data.stream_url) urls.push(data.stream_url);
+      else if (data.mode === "play" && data.stream_url) urls.push(data.stream_url);
+      if (!urls.length) return;
+
+      setPhase("speaking", "小智正在说…", "你可以随时开口打断");
+      try {
+        for (const url of urls) {
+          if (playAbort && playAbort.aborted) break;
+          await playUrl(url);
+        }
+      } catch {
+        voiceHint.textContent = "播报失败，请检查浏览器是否允许自动播放";
+      }
+    }
+
+    async function sendVoiceBlob(blob) {
+      setPhase("processing", "小智正在想…", "识别与回复中…");
+      const form = new FormData();
+      form.append("audio", blob, "speech.webm");
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 45000);
+      let resp;
+      try {
+        resp = await fetch("/api/voice/turn", { method: "POST", body: form, signal: controller.signal });
+      } catch (err) {
+        setSubtitle("", "网络或服务异常：" + (err.message || "请重试"));
+        return;
+      } finally {
+        window.clearTimeout(timeout);
+      }
+      const raw = await resp.text();
+      let data = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = { message: raw };
+      }
+      const transcript = (data.transcript || "").trim();
+      if (!resp.ok || !data.ok) {
+        setSubtitle(transcript, data.reply || data.message || "没听清，请再说一次");
+        return;
+      }
+      setSubtitle(transcript, data.reply || "");
+      await playBotAudio(data);
+    }
+
+    async function finalizeCapture() {
+      if (submitting || !capturing) return;
+      submitting = true;
+      const blob = await stopCapture();
+      audioChunks = [];
+      if (!blob || blob.size < MIN_BLOB_BYTES) {
+        submitting = false;
+        setPhase("listening", "通话中", "声音太短，请靠近麦克风再说一次");
+        return;
+      }
+      try {
+        await sendVoiceBlob(blob);
+      } catch (err) {
+        setSubtitle("", "出错了：" + err.message);
+      } finally {
+        submitting = false;
+        if (inCall) {
+          setPhase("listening", "通话中", "请直接说话，停顿时我会自动回复");
+        }
+      }
+    }
+
+    function vadTick() {
+      if (!inCall || phase === "processing") return;
+
+      const level = micLevel();
+      const now = Date.now();
+      const isLoud = level >= speechThreshold;
+
+      if (phase === "speaking") {
+        if (isLoud) {
+          loudFrames += 1;
+          if (loudFrames >= BARGE_IN_FRAMES) {
+            stopSpeaking();
+            loudFrames = 0;
+            preRollFrames = START_SPEECH_FRAMES;
+            startCapture();
+          }
+        } else {
+          loudFrames = 0;
+        }
+        return;
+      }
+
+      if (!capturing) {
+        if (isLoud) {
+          preRollFrames += 1;
+          if (preRollFrames >= START_SPEECH_FRAMES) {
+            preRollFrames = 0;
+            startCapture();
+          }
+        } else {
+          preRollFrames = 0;
+        }
+        return;
+      }
+
+      if (!heardSpeech && now - captureStartedAt > CAPTURE_ABORT_MS) {
+        cancelCapture();
+        return;
+      }
+
+      if (isLoud) {
+        speechLoudFrames += 1;
+        if (speechLoudFrames >= SPEECH_CONFIRM_FRAMES) {
+          heardSpeech = true;
+        }
+        silenceStartedAt = 0;
+        if (now - captureStartedAt > MAX_UTTERANCE_MS) {
+          finalizeCapture();
+        }
+        return;
+      }
+
+      speechLoudFrames = 0;
+
+      if (!heardSpeech) return;
+      if (!silenceStartedAt) silenceStartedAt = now;
+      const silentFor = now - silenceStartedAt;
+      const spokeFor = now - captureStartedAt;
+      if (silentFor >= SILENCE_MS && spokeFor >= MIN_SPEECH_MS) {
+        finalizeCapture();
+      }
+    }
+
+    function startVadLoop() {
+      stopVadLoop();
+      vadTimer = window.setInterval(vadTick, VAD_INTERVAL_MS);
+    }
+
+    function stopVadLoop() {
+      if (vadTimer) {
+        clearInterval(vadTimer);
+        vadTimer = null;
+      }
+    }
+
+    async function setupMic() {
+      mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+      audioCtx = new AudioContext();
+      const source = audioCtx.createMediaStreamSource(mediaStream);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.92;
+      source.connect(analyser);
+      voiceHint.textContent = "正在校准环境噪音，请稍候保持安静…";
+      await calibrateNoise();
+    }
+
+    async function beginCall() {
+      startCallBtn.classList.add("hidden");
+      endCallBtn.classList.remove("hidden");
+      chips.classList.remove("hidden");
+      inCall = true;
+      setPhase("processing", "连接中…", "正在请求麦克风…");
+      try {
+        await unlockAudio();
+        await setupMic();
+        startVadLoop();
+        setPhase("listening", "通话中", "请直接说话，停顿时我会自动回复");
+        setSubtitle("", "通话已接通。像打电话一样自然说话即可。");
+      } catch (err) {
+        hangUp();
+        setPhase("idle", "无法开始通话", err.message || "请允许麦克风并重试");
+      }
+    }
+
+    function hangUp() {
+      inCall = false;
+      stopVadLoop();
+      stopSpeaking();
+      capturing = false;
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        try {
+          mediaRecorder.stop();
+        } catch {
+          /* ignore */
+        }
+      }
+      mediaRecorder = null;
+      audioChunks = [];
+      if (mediaStream) {
+        mediaStream.getTracks().forEach((t) => t.stop());
+        mediaStream = null;
+      }
+      if (audioCtx) {
+        audioCtx.close().catch(() => {});
+        audioCtx = null;
+      }
+      analyser = null;
+      endCallBtn.classList.add("hidden");
+      chips.classList.add("hidden");
+      startCallBtn.classList.remove("hidden");
+      setPhase("idle", "点击开始通话", "");
+      callSubtitle.innerHTML = "";
+      voiceHint.textContent = "";
+      setOrbState("");
+    }
+
+    startCallBtn.addEventListener("click", beginCall);
+    endCallBtn.addEventListener("click", hangUp);
+    chips.addEventListener("click", async (e) => {
+      const chip = e.target.closest(".chip");
+      if (!chip || chip.disabled || !inCall || phase === "processing") return;
+      stopSpeaking();
+      if (capturing) await stopCapture();
+      capturing = false;
+      try {
+        setPhase("processing", "小智正在想…", "");
+        const resp = await fetch("/api/story/play", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: chip.dataset.text || "" }),
+        });
+        const data = await resp.json();
+        setSubtitle(chip.dataset.text || "", data.reply || "");
+        if (data.ok) await playBotAudio(data);
+      } catch (err) {
+        setSubtitle("", "出错了：" + err.message);
+      } finally {
+        if (inCall) setPhase("listening", "通话中", "请直接说话，停顿时我会自动回复");
+      }
+    });
+
+    fetch("/api/status")
+      .then((r) => r.json())
+      .then((s) => {
+        if (!s.quark) voiceHint.textContent = "夸克未配置时无法点播，但仍可闲聊。";
+      })
+      .catch(() => {});
+  </script>
+</body>
+</html>

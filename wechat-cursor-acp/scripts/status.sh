@@ -11,4 +11,4 @@ echo "Instance:  ${WECHAT_ACP_INSTANCE}"
 echo "Agent cwd: ${AGENT_CWD_RESOLVED}"
 echo ""
 
-npx -y wechat-acp@latest --instance "${WECHAT_ACP_INSTANCE}" --agent cursor status
+npx -y wechat-acp@latest status --instance "${WECHAT_ACP_INSTANCE}"

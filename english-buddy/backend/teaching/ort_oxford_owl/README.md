@@ -2,6 +2,8 @@
 
 真源：`books.json` — 按 Level 分年级灌入 `lessons.json`（`ort_l1` / `ort_l1plus` / `ort_l3` / `ort_l4`）。
 
+听读/带读运行时约定见 [`docs/ORT_READ_ALONG.md`](../../docs/ORT_READ_ALONG.md)。
+
 ## 来源
 
 - [Oxford Owl 免费电子书库 · Oxford Reading Tree](https://www.oxfordowl.co.uk/for-home/find-a-book/library-page/?series=Oxford+Reading+Tree)
@@ -9,7 +11,9 @@
 
 ## 更新课文
 
-1. 编辑 `books.json`（增删 `books[]` 或改 `lines`）
+1. 编辑 `books.json`（增删 `books[]`、改 `lines` 或 **`pages[].lines` 同页多句**）
+   - L3/L4 分页对照 `ort_l3_page_groups.json` / `ort_l4_page_groups.json`（`scripts/apply_ort_pdf_page_groups.py --level 4`）
+   - 页图路径 `ort_{book_id}/pNN.jpg` 与 `pages[]` 顺序一致
 2. 重新生成：
 
 ```bash

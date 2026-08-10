@@ -7,7 +7,9 @@ ort/ort_who_is_it/p01.jpg
 ort/ort_who_is_it/p02.jpg
 ```
 
-缺图时专题页**不展示**该读本（须回首页纯课文带读）；配图通话中缺页会显示 `placeholder.svg`。
+缺图时专题页**不展示**该读本；配图通话中缺页会显示 `placeholder.svg`。
+
+**同页多句**：`books.json` 里同一 `pages[]` 项可含多个 `lines`（与书上排版一致）；带读时「本页句子」全部展示，老师按序念完。详见 `docs/ORT_READ_ALONG.md`。
 
 ## 从橙果 PDF 提取页图
 

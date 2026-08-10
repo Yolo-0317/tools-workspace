@@ -26,6 +26,7 @@ ALIST_DOMAIN="${ALIST_SUBDOMAIN:-alist}.${DOMAIN}"
 WWW_DOMAIN="${WWW_SUBDOMAIN:-www}.${DOMAIN}"
 SUB_DOMAIN="${SUB_SUBDOMAIN:-sub}.${DOMAIN}"
 HUB_DOMAIN="${HUB_SUBDOMAIN:-hub}.${DOMAIN}"
+PHOTOS_DOMAIN="${PHOTOS_SUBDOMAIN:-photos}.${DOMAIN}"
 
 export Ali_Key="$ALIBABA_CLOUD_ACCESS_KEY_ID"
 export Ali_Secret="$ALIBABA_CLOUD_ACCESS_KEY_SECRET"
@@ -37,7 +38,7 @@ if [[ ! -x "$ACME_BIN" ]]; then
   ACME_BIN="$HOME/.acme.sh/acme.sh"
 fi
 
-echo "签发证书: ${ANI_DOMAIN}, ${CONFIG_DOMAIN}, ${ALIST_DOMAIN}, ${WWW_DOMAIN}, ${SUB_DOMAIN}, ${HUB_DOMAIN} (DNS-01 / 阿里云)"
+echo "签发证书: ${ANI_DOMAIN}, ${CONFIG_DOMAIN}, ${ALIST_DOMAIN}, ${WWW_DOMAIN}, ${SUB_DOMAIN}, ${HUB_DOMAIN}, ${PHOTOS_DOMAIN} (DNS-01 / 阿里云)"
 
 "$ACME_BIN" --register-account -m "$ACME_EMAIL" --force 2>/dev/null || true
 "$ACME_BIN" --set-default-ca --server letsencrypt 2>/dev/null || true
@@ -48,6 +49,7 @@ echo "签发证书: ${ANI_DOMAIN}, ${CONFIG_DOMAIN}, ${ALIST_DOMAIN}, ${WWW_DOMA
   -d "$WWW_DOMAIN" \
   -d "$SUB_DOMAIN" \
   -d "$HUB_DOMAIN" \
+  -d "$PHOTOS_DOMAIN" \
   --keylength ec-256 \
   --force
 

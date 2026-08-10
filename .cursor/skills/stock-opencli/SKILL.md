@@ -17,6 +17,8 @@ paths:
 
 > **不必每次现查命令**。Agent 遇到下表场景时 **先读本 skill**，再调对应 Python 入口；东财 **十一维深度分析** 另读 [eastmoney-browser-sop](../../stock-ai/investment-agent/docs/skills/eastmoney-browser-sop/SKILL.md)。
 
+**上下文预算**：普通行情/后台抓取只用本页的场景路由和对应命令；仅在 SOP 深度分析或浏览器故障时再读取后续参考章节。
+
 ## 何时用 / 不用
 
 | 用 OpenCLI | 不用（改走别的） |
@@ -140,7 +142,7 @@ from scripts.tools.fetch_eastmoney_quotes import (
 
 | 用户需求 | 命令 | 输出 |
 |----------|------|------|
-| **内容分析**（流量来源、文章排行、Top3 详情） | 见 [reference.md](reference.md) §公众号 | `output/wechat_mp_analytics_latest.json` |
+| **内容分析**（流量来源、文章排行、Top3 详情） | 见 [reference.md](reference.md) §公众号 · [content-analytics-sop](../wechat-mp-drafts/content-analytics-sop.md) | `output/wechat_mp_analytics_*.json` |
 | 登录是否过期 | `uv run python -m scripts.tools.probe_wechat_mp_session_timeout` | 轮询 home |
 | **搜一搜看板**（`pluginloginpage?pluginuin=10071`） | `fetch_wechat_mp_sousou_opencli`（**bind**，不 `open`） | Chrome 看板 tab 前台 → 脚本 bind+eval+unbind；解读 [sousou-analytics-sop](../wechat-mp-drafts/sousou-analytics-sop.md) |
 
@@ -158,20 +160,29 @@ from scripts.tools.fetch_eastmoney_quotes import (
 
 ## 公众号内容分析 · 标准命令
 
+**解读 SOP**：[content-analytics-sop.md](../wechat-mp-drafts/content-analytics-sop.md)（**页面柱图真源** · picker=单日 · 弃 API）。
+
 ```bash
 cd stock-ai
 uv run python -m scripts.tools.fetch_wechat_mp_analytics_opencli \
-  --analytics-url 'https://mp.weixin.qq.com/misc/appmsganalysis?action=report&type=daily_v2&token=YOUR_TOKEN&lang=zh_CN' \
-  --detail-top 3 \
+  --token YOUR_TOKEN \
+  --begin-date 2026-06-15 --end-date 2026-06-15 \
   -o output/wechat_mp_analytics_latest.json
+
+uv run python -m scripts.tools.fetch_wechat_mp_analytics_opencli \
+  --token YOUR_TOKEN \
+  --daily-series --series-begin 2026-06-02 --series-end 2026-06-16 \
+  -o output/wechat_mp_recommend_daily_page.json
 ```
 
-未登录：`--wait-login 120`（OpenCLI 窗口扫码）。
+未登录：`--wait-login 120`。
 
 **局限（2026-06 实测）**：
 
-- 页签「最近 7 天」多为前端组件，eval 点击 **不可靠**；可让人工点 7 天后再跑，或看「周」环比字段。
-- 搜一搜插件页需单独开通运营者，否则无「搜索后阅读/关注」。
+- **数据概况 tag ≠ 流量 picker**；点「昨日」柱图仍可能是 30 天累计（如 推荐 7.3%）。
+- **单日占比**须 picker **D–D** 再读 highcharts（6/15 推荐 **3.9%**，非 7.3%）。
+- 日历 picker：点 **「MM月」** 选月（头栏常无右箭头）。
+- 搜一搜 plugin 看板 ≠ 内容分析页「搜一搜渠道%」。
 
 ---
 
@@ -194,6 +205,7 @@ uv run python -m scripts.tools.fetch_wechat_mp_analytics_opencli \
 | 文档 | 关系 |
 |------|------|
 | [reference.md](reference.md) | CLI 参数、URL 模板、扩展抓取 |
+| [wechat-mp-drafts/content-analytics-sop.md](../wechat-mp-drafts/content-analytics-sop.md) | 内容分析页 **日期 + 渠道占比** 解读 |
 | [wechat-mp-drafts/sousou-analytics-sop.md](../wechat-mp-drafts/sousou-analytics-sop.md) | 搜一搜数据 **怎么运营解读** |
 | [wechat-mp-drafts/operations-sop.md](../wechat-mp-drafts/operations-sop.md) | 牛马也智能发布节奏 |
 | `stock-ai/docs/CAPABILITIES.md` | 数据四档 · OpenCLI 不落库 |

@@ -151,6 +151,14 @@ def load_current_portfolio() -> dict[str, Any]:
     }
 
 
+def load_portfolio_workbench() -> dict[str, Any]:
+    """账户操作台：读取人工核对后的执行卡，不触发券商操作。"""
+    _ensure_stock_ai_path()
+    from stock_ai.portfolio_workbench import build_portfolio_workbench_payload
+
+    return build_portfolio_workbench_payload()
+
+
 def _attach_monitor_advisor(payload: dict[str, Any]) -> dict[str, Any]:
     """监控 API：附带投顾摘要与规则分轨统计。"""
     rules = payload.get("rules") or []

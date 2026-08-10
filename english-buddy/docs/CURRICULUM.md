@@ -22,12 +22,18 @@
 
 带读句为围绕单元主题的**原创短句**（每行 ≤10 词），**非教材原文**，便于跟读且避免版权问题。
 
-### 牛津阅读树（`ort_dialogue`）
+### 牛津阅读树（`ort_l1` / `ort_l1plus` / `ort_l3` / `ort_l4`）
 
-- **真源**：`backend/teaching/ort_oxford_owl/books.json`（Who Is It?、Get On、Six in a Bed、Big Feet 等 ORT 经典读本**原句**）。
-- **来源**：[Oxford Owl 免费电子书 · Oxford Reading Tree](https://www.oxfordowl.co.uk/for-home/find-a-book/library-page/?series=Oxford+Reading+Tree)（注册后可读完整插图版）。
-- **带读入口**：首页 → **「牛津阅读树」**（拓展）→ 选读本 → 预热 → **开始带读**。
-- **增删读本**：改 `books.json` → `python3 teaching/build_lessons_v5.py` → 重启；校验 `python3 scripts/sync_oxford_owl_ort.py`。
+- **真源**：`backend/teaching/ort_oxford_owl/books.json` — 每本书含扁平 `lines[]` 与按页 `pages[].lines`（**同页可多句**，与纸质书一致）。
+- **专题数据**：`catalog.json`（由 `build_lessons_v5.py` 生成）；页图 `frontend/public/ort/{book_id}/pNN.jpg`。
+- **来源**：[Oxford Owl 免费电子书 · Oxford Reading Tree](https://www.oxfordowl.co.uk/for-home/find-a-book/library-page/?series=Oxford+Reading+Tree)。
+- **入口**：拓展 → **牛津阅读树** → 选读本 → 预热 → **听读**（自动往下读）或 **跟读**（须 STT 账号 + 麦克风）。
+- **运行时约定**：见 **[ORT_READ_ALONG.md](ORT_READ_ALONG.md)**（图音同步、`playback_generation`、听读翻页等）。
+- **增删/改分页**：
+  1. 编辑 `books.json`（L3 对照 `ort_l3_page_groups.json`）
+  2. `cd backend && python3 teaching/build_lessons_v5.py`
+  3. `./scripts/restart.sh`
+  4. 可选校验 `python3 scripts/sync_oxford_owl_ort.py`
 
 ## 重生成课文 JSON
 

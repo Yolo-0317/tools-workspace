@@ -1,12 +1,11 @@
 ---
 description: stock-ai 子项目记忆 — Python / 数据 / 选股
-globs: stock-ai/**/*
 alwaysApply: false
 ---
 
 # Memory: stock-ai (Python)
 
-Hermes Step 3：处理 `stock-ai/` 内代码时与本文件、`project-memory.mdc` 一并检索。
+按 `project-memory.mdc` 的主题索引精确检索；不要因处理 `stock-ai/` 就整份加载。
 
 ## 关键路径
 
@@ -76,7 +75,7 @@ Hermes Step 3：处理 `stock-ai/` 内代码时与本文件、`project-memory.md
 
 - **Context**: 6 万账户投顾阶段 0；用户要求选股与投顾一致，非仅执行卡复述。
 - **Pitfall/Error**: 阶段 0 `selection_watchlist --sync` 会推送「像要买」的监控，与 A 档降仓矛盾；但跳过 Top5 SOP 会拖累公众号 `top5` 稿质量。
-- **Solution/Rule**: `stock_ai/advisor_selection.py` 读 `投顾主策略.md` 阶段；阶段 0：`combined` 买入类→「继续观察」、Top5 仅情报、**仍跑 Top5 SOP**（`sop_review_enabled` 恒真）、跳过 AI 简评、`--sync` 跳过 alert_rules。进阶段 1 改主策略阶段标记。
+- **Solution/Rule**: `stock_ai/advisor_selection.py` 读 `投顾主策略.md` 阶段；阶段 0：`combined` 买入类→「继续观察」、Top5 仅情报、**Top5 SOP 默认关**（`DISABLE_SOP_TOP5=1`）、跳过 AI 简评、`--sync` 跳过 alert_rules。进阶段 1 改主策略阶段标记；需 SOP 时设 `DISABLE_SOP_TOP5=0`。
 
 ### 2026-06-02 财经快讯利好/利空标记（每 15 分钟）
 
@@ -146,3 +145,50 @@ Hermes Step 3：处理 `stock-ai/` 内代码时与本文件、`project-memory.md
 - **Context**: 龙头 evening 稿标题「情绪发酵怎么玩？大有能源5板还在榜」被 LLM 贴在「> 情绪与盘面」之前。
 - **Pitfall/Error**: top5 已有 `strip_top5_title_echo`，dragons 未做对称处理；变现 prompt 只写标题模板未禁正文复述。
 - **Solution/Rule**: `strip_dragon_title_echo`（`wechat_mp_dragons_article.py`）— 精确 title 匹配 + `怎么玩…还在榜` 正则；`build_dragons_article` 与 LLM 返回后各调一次；prompt/变现块补禁句。测试 `test_strip_dragon_title_echo_removes_title_line`；skill `rules-implemented.md` · `evening-trilogy-templates.md`。
+
+### 2026-06-12 公众号 · 平台推荐安全（财产风险 / 不适合推荐）
+
+- **Context**: 微信后台对财经 evening 稿标注「财产安全 / 不适合推荐」；需在推稿前把标题、摘要、正文用语从「操作指引 / 推荐 / 理财」口吻改为「信息整理 / 结构观察」。
+- **Pitfall/Error**: ① `check_public_compliance` 原先未覆盖标题式触发词（`怎么玩` `还在榜` `领衔`）。② LLM/增长模板仍产出旧标题池。③ `sanitize_platform_property_risk` 勿替换正文固定小节名（如 `> 明日计划与纪律`）。④ `split_disclaimer` 仍识别旧 mark「投资日记」以便拆旧稿。
+- **Solution/Rule**:
+  - **模块**：`wechat_mp_public.py` — `PLATFORM_PROPERTY_RISK_RULE`（LLM prompt）、`PLATFORM_PROPERTY_RISK_CHECKS`（扫描）、`_TITLE_RISK_INLINE_REPLACEMENTS` + `sanitize_public_title(kind=…)`（标题终稿；dragons 可把「怎么玩…还在榜」重建为 `{phase}梯队｜{lead}{N}板结构`）、`audit_recommendation_safety`（标题+摘要+正文合并审计）、`INFORMATION_NOTICE`（finance kind 正文 prepend）。
+  - **免责常量**：`wechat_mp_content.DISCLAIMER` = 「市场信息整理与复盘笔记」；`wechat_mp_product` / `wechat_mp_stock_ai_cta` / `wechat_mp_monetization` 同步改 mark。
+  - **推稿**：`wechat_mp_draft_batch.run_batch` 用 `audit_recommendation_safety` 替代仅扫 `body_text`；`_article_shell` 写 title 前 `sanitize_public_title`。
+  - **SEO**：`wechat_mp_seo.title_sousou_hook_score` 对 `怎么玩/还在榜/领衔/明日盯` 负分；`enrich_title_for_search` 末步 `sanitize_public_title`。
+  - **勿回退**：正文小节 **`> 明日计划与纪律`** 保留原名；仅标题禁「明日盯/怎么玩」类问句。
+  - **测试**：`test_wechat_mp_public.py::test_sanitize_public_title_strips_old_winners`（含 6/12 四标题对照）；`pytest tests/unit/test_wechat_mp_public.py tests/unit/test_wechat_mp_seo.py tests/unit/test_wechat_mp_evening_align.py -q`。
+  - **运营索引**：`project-memory.mdc` §2026-06-12。
+
+### 2026-06-14 公众号 · 【说明】开篇重复叠加
+
+- **Context**: 6/14 周日 news 草稿箱预览，文首叠 **3 段相同【说明】**；用户反馈与平台审核优化同一轮处理。
+- **Pitfall/Error**: ① `_article_shell` / `attach_publish_hints` → `sync_article_content_from_body` 会 **多次** 调 `render_article_content_html`。② `sanitize_platform_property_risk` 把说明里的「投资操作」「收益判断」改成「市场观察」「量价表现」，导致 `notice not in core` 失效，每次 sync **再 prepend 一段**。③ 旧稿须手动重推或等下一批；代码 fix 不 retroactive 已上传 HTML。
+- **Solution/Rule**:
+  - **模块**：`wechat_mp_public.py` — `strip_information_notices()` + `_INFORMATION_NOTICE_LINE_RE`；`sanitize_platform_property_risk` **跳过**说明行；`_core_body_for_audit` 先 strip 说明。
+  - **渲染**：`wechat_mp_content.render_article_content_html` — finalize **前** strip 全部旧说明，finalize **后** 只 prepend **一次** `INFORMATION_NOTICE`（去掉 `notice not in core` 判断）。
+  - **测试**：`test_wechat_mp_disclaimer_render.py::test_information_notice_not_duplicated_on_re_render`。
+  - **已污染草稿修复**：从 draft HTML 抽正文 → `strip_information_notices` → `render_article_content_html` → `upsert_draft_article`。
+  - **运营索引**：`project-memory.mdc` §2026-06-14。
+
+### 2026-06-16 公众号 · 内容分析 OpenCLI（页面柱图 · 逐日渠道）
+
+- **Context**: `fetch_wechat_mp_analytics_opencli.py` 复盘流量来源；用户确认 **页面 highcharts 为准**，弃 API 交叉校验。
+- **Pitfall/Error**: ① `_fetch_source_api` / `begin=end` 与后台柱图 **不一致**（勿再默认调用）。② `SET_FLOW_DATE_RANGE_JS` 旧版点箭头导航失败（picker 头栏仅左键）；改 **点「MM月」→ 选月 → 点非 faded 的 `<a>` 日**。③ `CLICK_PERIOD_TAG_JS` 须 `f"({JS})({json.dumps(label)})"`，勿 `.replace("periodText", …)` 破坏参数名。④ 柱图 `%` 与 X 轴标签须 **按 cx 对齐**（`EXTRACT_HIGHCHARTS_TRAFFIC_JS`），勿固定渠道顺序。
+- **Solution/Rule**:
+  - **模块**：`wechat_mp_analytics_page.py` — `SET_FLOW_DATE_RANGE_JS` · `EXTRACT_HIGHCHARTS_TRAFFIC_JS`；`fetch_wechat_mp_analytics_opencli.py` — `fetch_daily_traffic_series_page()` · CLI `--daily-series --series-begin --series-end`；默认 `traffic_sources_pct` **来自 highcharts**。
+  - **单日抓取**：`--begin-date YYYY-MM-DD --end-date YYYY-MM-DD`（须相等才得单日柱图）。
+  - **逐日序列**：`--daily-series --series-begin 2026-06-02 --series-end 2026-06-16 -o output/wechat_mp_recommend_daily_page.json`；JSON 字段 `days[].traffic_sources_pct` · `days[].推荐` · `read_users_total`。
+  - **解读**：概况 tag 与流量 picker **独立**；复盘限推看 **picker=单日** 的推荐% 趋势，非默认 30 天柱图。
+  - **运营索引**：`project-memory.mdc` §2026-06-16 · `content-analytics-sop.md`。
+
+### 2026-07-31 公众号影视稿 tv_review（大白话 + 排版）
+
+- **Context**: 《蜘蛛侠：崭新之日》试跑定稿；用户反馈「戏眼」「意象」等影评腔不像人话，且 `polish_mobile_readability` 把 tv 稿拆成一句一段。
+- **Pitfall/Error**: ① 剧评腔/论文腔（戏眼、正向反馈、遮羞布、场面堆叠、拍实、耳目一新）。② `finalize_public_body_text` 对全稿 `split_long_paragraphs` 默认 120 字按句拆段。③ 首段正文写评分与竖排 bullet 重复。④ 剧照锚点「战衣」误匹配「缝战衣」插到开头。
+- **Solution/Rule**:
+  - **口吻**：`TV_DEPTH_RULE` + `anti-ai-voice.md` 影视大白话表；禁第一人称、禁百科式「剧情承接/梗概也熟」。
+  - **开头**：首段意象/票房 → 脚本注入评分 → 第二段观感；首段不写 7.8。
+  - **排版**：`finalize_tv_review_body` + `merge_tv_short_paragraphs`；`polish_mobile_readability(..., kind=tv_review)` **跳过** 120 字拆句。
+  - **配图**：`after_anchor` 锚点须与正文逐字匹配（`制服还在`、`台灯底下`）；末段可插第四张图；脚注 TMDB 片用「TMDB 宣传剧照」。
+  - **改稿**：`golden` → `save_tv_body_cache` → `wechat_mp_repush_tv_review_draft`。
+  - **Skill**：`tv-review-template.md` §院线单片剧评固化规则 · `wechat-mp-writing/tv-review-voice.md`（IGN 仿写）。

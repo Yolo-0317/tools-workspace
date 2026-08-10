@@ -49,6 +49,7 @@ Docker 跑 **anisette** + **Caddy**；证书用 **acme.sh DNS-01（阿里云）*
 | clash-gen | 8787 | `sub.*/clash.yaml` |
 | Sub-Store | 3001 | `sub.*/sub-store/*` |
 | Jellyfin | 8096 | `alist.*/jellyfin` |
+| Ollama | 11434 | `hub.*/ollama/*` → `/api`、`/v1` |
 
 clash-gen / Sub-Store 由 [substore-clash](../substore-clash/README.md) 维护；Jellyfin 在 `~/docker/jellyfin-stack`（仓库外）。
 
@@ -75,6 +76,8 @@ SideStore 设置 → Anisette List URL 填 **servers.json 外网地址** → 选
 | **sub** | https://sub.yoloworld.site:8883/clash.yaml | Clash 订阅 |
 | | https://sub.yoloworld.site:8883/clash.yaml?verge=1 | Verge 轻量订阅 |
 | | https://sub.yoloworld.site:8883/sub-store/… | Sub-Store 管理 |
+| **hub** | https://hub.yoloworld.site:8883/ollama/api/tags | Ollama 原生 API |
+| | https://hub.yoloworld.site:8883/ollama/v1 | OpenAI 兼容（iPhone 客户端 Base URL） |
 
 本机调试 Anisette：`curl http://127.0.0.1:6969/` 应含 `X-Apple-I-MD`。
 

@@ -66,13 +66,14 @@ TOP5_ELIGIBLE_ACTIONS = frozenset(
 )
 
 # 公众号 Top5：默认合并多策略候选后按总分重选（见 load_wechat_top5_picks）
-DEFAULT_WECHAT_TOP5_STRATEGIES = ("combined", "five_factor", "ma5", "watch")
+DEFAULT_WECHAT_TOP5_STRATEGIES = ("short_term_trade", "combined", "five_factor", "ma5", "watch")
 
 _STRATEGY_DISPLAY = {
     "combined": "综合",
     "five_factor": "五因子",
     "ma5": "MA5",
     "watch": "观察池",
+    "short_term_trade": "短线交易候选",
 }
 
 

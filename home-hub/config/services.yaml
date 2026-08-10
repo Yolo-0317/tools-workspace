@@ -47,19 +47,26 @@ categories:
         health:
           type: http
           url: http://127.0.0.1:18787/english/api/health
+          # /api/health 冷启动常 >3s（Whisper/导读检查），默认 3s 会误报 down
+          timeout: 8
         credentials_env: []
 
-      - id: readalong
-        name: Readalong
-        description: 有声书句级带读（EPUB + MP3 同步高亮，hub 子路径 /readalong，不经 Hub 登录）
-        local_url: http://192.168.1.13:8791/web/
-        public_url: https://hub.yoloworld.site:8883/readalong/web/
-        compose_dir: ~/dev/yolo/tools-workspace/readalong
-        doc: readalong/README.md
+      - id: harryputter
+        name: HarryPutter
+        description: 哈利波特句级带读 Demo（EPUB + MP3 同步对齐；各部试读第 1 章）
+        local_url: http://127.0.0.1:8791/web/
+        internal_url: https://hub.yoloworld.site:8443/harryputter/web/
+        public_url: https://hub.yoloworld.site:8883/harryputter/web/
+        public_note: 旧书签 /readalong/web/ 会 301 到 /harryputter/web/
+        compose_dir: ~/dev/yolo/tools-workspace/harryputter
+        doc: harryputter/README.md
         health:
           type: http
           url: http://127.0.0.1:8791/api/health
-        credentials_env: []
+        health_note: launchd com.user.harryputter · :8791 仅本机；Caddy 静态 web + 反代 samples/output/api
+        credentials_env:
+          - HARRYPUTTER_ADMIN_USER
+          - HARRYPUTTER_ADMIN_PASSWORD
 
       - id: wechat-acp
         name: 微信 ↔ Cursor
@@ -95,6 +102,18 @@ categories:
   - id: infra
     name: 基础设施
     items:
+      - id: ollama
+        name: Ollama
+        description: 本地 LLM API（Caddy 反代 /ollama → 宿主机 :11434）
+        local_url: http://127.0.0.1:11434
+        internal_url: https://hub.yoloworld.site:8443/ollama/
+        public_url: https://hub.yoloworld.site:8883/ollama/
+        public_note: OpenAI 兼容 Base URL 填 …/ollama/v1；原生 API 填 …/ollama/api/
+        health:
+          type: http
+          url: http://127.0.0.1:11434/api/tags
+        credentials_env: []
+
       - id: caddy
         name: Caddy (sidestore-infra)
         description: HTTPS 反代 + 证书；内网 8443 / 外网 8883 均映射容器 443
@@ -133,7 +152,7 @@ categories:
       - id: clash-verge
         name: Clash Verge 轻量订阅
         description: 无 rule-providers，避免 Verge 首次导入长时间转圈；与 clash-gen 同容器
-        local_url: http://127.0.0.1:8787/clash-verge.yaml
+        local_url: http://192.168.1.13:8787/clash-verge.yaml
         public_url: https://sub.yoloworld.site:8883/clash-verge.yaml
         docker_container: substore-clash-gen
         compose_dir: ~/dev/yolo/tools-workspace/substore-clash

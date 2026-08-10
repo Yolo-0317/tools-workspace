@@ -11,8 +11,8 @@ from scripts._bootstrap import ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
 
-from scripts.tools.deepseek_client import call_deepseek, is_llm_configured
-from scripts.tools.wechat_mp_public import PUBLIC_MP_WRITER_RULE, RESEARCHER_VOICE_RULE
+from scripts.tools.deepseek_client import call_wechat_mp_llm, is_wechat_mp_llm_configured
+from scripts.tools.wechat_mp_public import PUBLIC_MP_WRITER_RULE, RESEARCHER_VOICE_RULE, PLATFORM_PROPERTY_RISK_RULE
 from scripts.tools.wechat_mp_monetization import monetization_prompt_block
 from scripts.tools.market_session import detect_market_session
 
@@ -125,7 +125,7 @@ def generate_researcher_market_body(
     ed = normalize_market_edition(edition)
     context = build_market_context_blob(now=now, edition=ed)
 
-    if not is_llm_configured():
+    if not is_wechat_mp_llm_configured():
         return _template_market_body(now=now)
 
     view_min = _env_int("WECHAT_MP_MARKET_VIEW_MIN", 380)
@@ -134,6 +134,7 @@ def generate_researcher_market_body(
     prompt = f"""你是一位从业15年的A股宏观策略研究员，为公众号撰写「A股评论稿」。
 {PUBLIC_MP_WRITER_RULE}
 {RESEARCHER_VOICE_RULE}
+{PLATFORM_PROPERTY_RISK_RULE}
 
 {context}
 
@@ -166,7 +167,7 @@ def generate_researcher_market_body(
 {monetization_prompt_block("market")}"""
 
     try:
-        content = call_deepseek(
+        content = call_wechat_mp_llm(
             [
                 {
                     "role": "system",

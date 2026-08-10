@@ -36,7 +36,7 @@ services:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./certs:/etc/caddy/certs:ro
       - ./public:/srv:ro
-      - ../readalong:/readalong:ro
+      - ../harryputter:/harryputter:ro
     networks:
       - sidestore_net
     depends_on:

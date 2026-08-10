@@ -1,0 +1,1189 @@
+{
+  "catalog_key": "barbapapa",
+  "title": "巴巴爸爸",
+  "path_hint": "玥玥/巴巴爸爸",
+  "built_at": "2026-07-29T20:59:59+08:00",
+  "source": "merged Quark index",
+  "rules": {
+    "default_play": "global_n=1 → 001.01巴巴爸爸的诞生. .mp3",
+    "scope": "96 episodes"
+  },
+  "default_start": {
+    "global_n": 1,
+    "season": 1,
+    "season_ep": 1,
+    "filename": "001.01巴巴爸爸的诞生. .mp3",
+    "title": "001.01巴巴爸爸的诞生. .mp3",
+    "fid": "~1J72vP9A4GmIBu5S3x43CWSs8HYFmsASLQy_5H5TjO_OZl7WJnDh5W8_PKGzZVU2viPQs8aWTGCl0oKrDQz0nfg",
+    "fids": [
+      "~1J72vP9A4GmIBu5S3x43CWSs8HYFmsASLQy_5H5TjO_OZl7WJnDh5W8_PKGzZVU2viPQs8aWTGCl0oKrDQz0nfg"
+    ],
+    "size": 1700301
+  },
+  "seasons": [
+    {
+      "id": 1,
+      "label": "巴巴爸爸",
+      "episode_count": 96,
+      "global_range": [
+        1,
+        221
+      ]
+    }
+  ],
+  "episode_count": 96,
+  "episodes": [
+    {
+      "global_n": 1,
+      "season": 1,
+      "season_ep": 1,
+      "filename": "001.01巴巴爸爸的诞生. .mp3",
+      "title": "001.01巴巴爸爸的诞生. .mp3",
+      "fid": "~1J72vP9A4GmIBu5S3x43CWSs8HYFmsASLQy_5H5TjO_OZl7WJnDh5W8_PKGzZVU2viPQs8aWTGCl0oKrDQz0nfg",
+      "fids": [
+        "~1J72vP9A4GmIBu5S3x43CWSs8HYFmsASLQy_5H5TjO_OZl7WJnDh5W8_PKGzZVU2viPQs8aWTGCl0oKrDQz0nfg"
+      ],
+      "size": 1700301
+    },
+    {
+      "global_n": 2,
+      "season": 1,
+      "season_ep": 2,
+      "filename": "002.02巴巴爸爸找朋友. .mp3",
+      "title": "002.02巴巴爸爸找朋友. .mp3",
+      "fid": "~10TmvLe7P6jEUicG5a0EyGPnHj4TNjrjzXoJUrqG-nKsnCses9n5QJtYNQxsLXfCw9EnrCADoyaB36wXoXWOEek",
+      "fids": [
+        "~10TmvLe7P6jEUicG5a0EyGPnHj4TNjrjzXoJUrqG-nKsnCses9n5QJtYNQxsLXfCw9EnrCADoyaB36wXoXWOEek"
+      ],
+      "size": 1890055
+    },
+    {
+      "global_n": 3,
+      "season": 1,
+      "season_ep": 3,
+      "filename": "003.03巴巴爸爸来救火. .mp3",
+      "title": "003.03巴巴爸爸来救火. .mp3",
+      "fid": "~1_WsEPhhBW5E3kCfqgD_2WTuGZUZnaA0ovGxZiDxWnRvoh5B_rVGTU1C0ByPXZCDUPx2mC3AdMgrwOLcLPlh9Qw",
+      "fids": [
+        "~1_WsEPhhBW5E3kCfqgD_2WTuGZUZnaA0ovGxZiDxWnRvoh5B_rVGTU1C0ByPXZCDUPx2mC3AdMgrwOLcLPlh9Qw"
+      ],
+      "size": 2149608
+    },
+    {
+      "global_n": 4,
+      "season": 1,
+      "season_ep": 4,
+      "filename": "004.04巴巴爸爸找巴巴妈妈. .mp3",
+      "title": "004.04巴巴爸爸找巴巴妈妈. .mp3",
+      "fid": "~1oYeHXRsLMM04vF52PgT9AEPXsuHzDhP18jdJHUltEhn9P5KJNzmF7wMJ5PNpWmzBcn7AcBacEuMAxEMgCv7K10",
+      "fids": [
+        "~1oYeHXRsLMM04vF52PgT9AEPXsuHzDhP18jdJHUltEhn9P5KJNzmF7wMJ5PNpWmzBcn7AcBacEuMAxEMgCv7K10"
+      ],
+      "size": 1810016
+    },
+    {
+      "global_n": 5,
+      "season": 1,
+      "season_ep": 5,
+      "filename": "005.05巴巴爸爸的旅行. .mp3",
+      "title": "005.05巴巴爸爸的旅行. .mp3",
+      "fid": "~1LFHocydBI5YFUB9PCFkqGdl6wGDO6uthkvGp-EtQig0-HWIfNlNZEe-57PuLNmA6TWdPsCHhK_jvKn9vnSrQG0",
+      "fids": [
+        "~1LFHocydBI5YFUB9PCFkqGdl6wGDO6uthkvGp-EtQig0-HWIfNlNZEe-57PuLNmA6TWdPsCHhK_jvKn9vnSrQG0"
+      ],
+      "size": 2371126
+    },
+    {
+      "global_n": 7,
+      "season": 1,
+      "season_ep": 6,
+      "filename": "007.07巴巴爸爸建新家. .mp3",
+      "title": "007.07巴巴爸爸建新家. .mp3",
+      "fid": "~1MgKyCiC1SkgFFfqZOj0irBIeY6ycSNqUiJfjw1MFel8k6nBTUfZT6G78l4folBDLVYLNYHEeckuUUP5GV0FD54",
+      "fids": [
+        "~1MgKyCiC1SkgFFfqZOj0irBIeY6ycSNqUiJfjw1MFel8k6nBTUfZT6G78l4folBDLVYLNYHEeckuUUP5GV0FD54"
+      ],
+      "size": 2435283
+    },
+    {
+      "global_n": 8,
+      "season": 1,
+      "season_ep": 7,
+      "filename": "008.08巴巴爸爸遇拆迁. .mp3",
+      "title": "008.08巴巴爸爸遇拆迁. .mp3",
+      "fid": "~1qYYvjqyq48kRghtoxIbGuh8Q4hK4NONIrnnBB8Ympfcq8IOVhTM8qx7ppJg0x1X2yACcGM0IrL0l3uv6BWYeBk",
+      "fids": [
+        "~1qYYvjqyq48kRghtoxIbGuh8Q4hK4NONIrnnBB8Ympfcq8IOVhTM8qx7ppJg0x1X2yACcGM0IrL0l3uv6BWYeBk"
+      ],
+      "size": 2213555
+    },
+    {
+      "global_n": 9,
+      "season": 1,
+      "season_ep": 8,
+      "filename": "009.09巴巴爸爸保卫房子. .mp3",
+      "title": "009.09巴巴爸爸保卫房子. .mp3",
+      "fid": "~1ZHAr0nfhS7IZ8y4yN3Gsk-5jrvzZ36hmEglFc9yX4wItJC9Zg52Jyes1bUyDppxiCyhd9-EHNgnluqmHcItKww",
+      "fids": [
+        "~1ZHAr0nfhS7IZ8y4yN3Gsk-5jrvzZ36hmEglFc9yX4wItJC9Zg52Jyes1bUyDppxiCyhd9-EHNgnluqmHcItKww"
+      ],
+      "size": 2412922
+    },
+    {
+      "global_n": 10,
+      "season": 1,
+      "season_ep": 9,
+      "filename": "010.10巴巴爸爸的火星旅行. .mp3",
+      "title": "010.10巴巴爸爸的火星旅行. .mp3",
+      "fid": "~1wXeoqataA8w96K8RalJ3Ej95E0p1aqw3MXvGT_7bMJC1lzDmaQRsmk8GRk_av_kA_e97WTtnoEhfk8eEZj16YQ",
+      "fids": [
+        "~1wXeoqataA8w96K8RalJ3Ej95E0p1aqw3MXvGT_7bMJC1lzDmaQRsmk8GRk_av_kA_e97WTtnoEhfk8eEZj16YQ"
+      ],
+      "size": 2128710
+    },
+    {
+      "global_n": 11,
+      "season": 1,
+      "season_ep": 10,
+      "filename": "011.11巴巴爸爸遇到波波爸爸. .mp3",
+      "title": "011.11巴巴爸爸遇到波波爸爸. .mp3",
+      "fid": "~1qy47zBup2Y8WsmCXkpJuvM612ufhl-r-8XBl-4BhEZr28Q4dsdOQY6jdPxzxE3wPzdJIZvtlsIrkaKd9XN2ZXc",
+      "fids": [
+        "~1qy47zBup2Y8WsmCXkpJuvM612ufhl-r-8XBl-4BhEZr28Q4dsdOQY6jdPxzxE3wPzdJIZvtlsIrkaKd9XN2ZXc"
+      ],
+      "size": 2273741
+    },
+    {
+      "global_n": 12,
+      "season": 1,
+      "season_ep": 11,
+      "filename": "012.12巴巴爸爸大战菜豆. .mp3",
+      "title": "012.12巴巴爸爸大战菜豆. .mp3",
+      "fid": "~1tBbVX6UEsVwktQPNJfwJBKmPh2ghq6WW7KSxxKzhWPqjET7q1s0BLdGvWIyIHS1ICxKFU63I32k88M4T7kT6E4",
+      "fids": [
+        "~1tBbVX6UEsVwktQPNJfwJBKmPh2ghq6WW7KSxxKzhWPqjET7q1s0BLdGvWIyIHS1ICxKFU63I32k88M4T7kT6E4"
+      ],
+      "size": 2315537
+    },
+    {
+      "global_n": 13,
+      "season": 1,
+      "season_ep": 12,
+      "filename": "013.13巴巴爸爸的任务. .mp3",
+      "title": "013.13巴巴爸爸的任务. .mp3",
+      "fid": "~1XfhAZl8Tbj8oqUlACoapel85iAH-RZArmksk_HxlhSE3gS4aM0guG0kbjnXlEhONkhIa5XyzLgFaJfRtRA_yfM",
+      "fids": [
+        "~1XfhAZl8Tbj8oqUlACoapel85iAH-RZArmksk_HxlhSE3gS4aM0guG0kbjnXlEhONkhIa5XyzLgFaJfRtRA_yfM"
+      ],
+      "size": 1997470
+    },
+    {
+      "global_n": 14,
+      "season": 1,
+      "season_ep": 13,
+      "filename": "014.14巴巴爸爸的学校. .mp3",
+      "title": "014.14巴巴爸爸的学校. .mp3",
+      "fid": "~1A9yN-LEbIpckACEtwo3fyLfG5Es1z6ZlEBSYdV0HrEU7WBj20FCdyiVRAVYn8pz8c9eHlApp6rBhrkNjsPwPbI",
+      "fids": [
+        "~1A9yN-LEbIpckACEtwo3fyLfG5Es1z6ZlEBSYdV0HrEU7WBj20FCdyiVRAVYn8pz8c9eHlApp6rBhrkNjsPwPbI"
+      ],
+      "size": 2153160
+    },
+    {
+      "global_n": 15,
+      "season": 1,
+      "season_ep": 14,
+      "filename": "015.15巴巴爸爸的毕业晚会. .mp3",
+      "title": "015.15巴巴爸爸的毕业晚会. .mp3",
+      "fid": "~195WBmmyHd0cKOzVjIeLGtY8Geq4Sg9lyb9rtsYX4f65HubhXvmdFJSXER6_bPePh8YkfWppLGYGci82b9Dnq94",
+      "fids": [
+        "~195WBmmyHd0cKOzVjIeLGtY8Geq4Sg9lyb9rtsYX4f65HubhXvmdFJSXER6_bPePh8YkfWppLGYGci82b9Dnq94"
+      ],
+      "size": 1943345
+    },
+    {
+      "global_n": 16,
+      "season": 1,
+      "season_ep": 15,
+      "filename": "016.16巴巴爸爸去野餐. .mp3",
+      "title": "016.16巴巴爸爸去野餐. .mp3",
+      "fid": "~14KwnzL9mizkLkjoOUgrRtJIV21HkGgegvnep9aBQY6tiEqKHIDAXr0AEWS9iekCcubPMP7QWmtj_c9LPrZdl6w",
+      "fids": [
+        "~14KwnzL9mizkLkjoOUgrRtJIV21HkGgegvnep9aBQY6tiEqKHIDAXr0AEWS9iekCcubPMP7QWmtj_c9LPrZdl6w"
+      ],
+      "size": 2535593
+    },
+    {
+      "global_n": 17,
+      "season": 1,
+      "season_ep": 16,
+      "filename": "017.17巴巴爸爸的避难所. .mp3",
+      "title": "017.17巴巴爸爸的避难所. .mp3",
+      "fid": "~1xHDVRGgThs01fKwcUval7fIbq76ciam42tjYXx7F7RvukUoV3NMAMI2HD9omqGuBks41wRJWgnKqY295eMEKi8",
+      "fids": [
+        "~1xHDVRGgThs01fKwcUval7fIbq76ciam42tjYXx7F7RvukUoV3NMAMI2HD9omqGuBks41wRJWgnKqY295eMEKi8"
+      ],
+      "size": 2174476
+    },
+    {
+      "global_n": 18,
+      "season": 1,
+      "season_ep": 17,
+      "filename": "018.18巴巴爸爸回到地球. .mp3",
+      "title": "018.18巴巴爸爸回到地球. .mp3",
+      "fid": "~1ukC83tDA9d0IRjQpe3LV5Km0eOhwCP9d_gdB-YpI65bJnLd26nehqufzt3Xdhvnwi4duvGsrRmXXLKZMSa79Xk",
+      "fids": [
+        "~1ukC83tDA9d0IRjQpe3LV5Km0eOhwCP9d_gdB-YpI65bJnLd26nehqufzt3Xdhvnwi4duvGsrRmXXLKZMSa79Xk"
+      ],
+      "size": 2410414
+    },
+    {
+      "global_n": 19,
+      "season": 1,
+      "season_ep": 18,
+      "filename": "019.19巴巴爸爸采蓝莓. .mp3",
+      "title": "019.19巴巴爸爸采蓝莓. .mp3",
+      "fid": "~1fPBW1D8Voncjkig1k9f8A6sKjvjgxUKmfQVkIQhmAjaFd_oEn47NHfo7K5D_SEh0kK7-ItJ32MZ-PfLMn_jYWo",
+      "fids": [
+        "~1fPBW1D8Voncjkig1k9f8A6sKjvjgxUKmfQVkIQhmAjaFd_oEn47NHfo7K5D_SEh0kK7-ItJ32MZ-PfLMn_jYWo"
+      ],
+      "size": 1991201
+    },
+    {
+      "global_n": 20,
+      "season": 1,
+      "season_ep": 19,
+      "filename": "020.20巴巴爸爸搬大树. .mp3",
+      "title": "020.20巴巴爸爸搬大树. .mp3",
+      "fid": "~1gofmaxL4C5gLY1Ea2ThlouV_fD-ytTA_Oh288CCmmKElWbSHoLwh3UmCZIS7tmzy2Ogs_-vUIP1fCD-c__jKYE",
+      "fids": [
+        "~1gofmaxL4C5gLY1Ea2ThlouV_fD-ytTA_Oh288CCmmKElWbSHoLwh3UmCZIS7tmzy2Ogs_-vUIP1fCD-c__jKYE"
+      ],
+      "size": 2079599
+    },
+    {
+      "global_n": 21,
+      "season": 1,
+      "season_ep": 20,
+      "filename": "021.21巴巴爸爸做果酱. .mp3",
+      "title": "021.21巴巴爸爸做果酱. .mp3",
+      "fid": "~1UBBZ7DeDAN022ux_OcEb6NhL09KUA3RQOQqe6cDXrIXrlVcDVRhBOodLF3TAoJsy19O-840bNZZoZl40wGWdHY",
+      "fids": [
+        "~1UBBZ7DeDAN022ux_OcEb6NhL09KUA3RQOQqe6cDXrIXrlVcDVRhBOodLF3TAoJsy19O-840bNZZoZl40wGWdHY"
+      ],
+      "size": 2494633
+    },
+    {
+      "global_n": 22,
+      "season": 1,
+      "season_ep": 21,
+      "filename": "022.22巴巴祖的圣诞礼物. .mp3",
+      "title": "022.22巴巴祖的圣诞礼物. .mp3",
+      "fid": "~1csWRJsadUwUimMNn_0wJyWUH-ZYZnek9Jej1qM4fRF-g1HT2o_hb22VIYMgyP71065JIbXV1OKTVwXDkbGiHcg",
+      "fids": [
+        "~1csWRJsadUwUimMNn_0wJyWUH-ZYZnek9Jej1qM4fRF-g1HT2o_hb22VIYMgyP71065JIbXV1OKTVwXDkbGiHcg"
+      ],
+      "size": 2357960
+    },
+    {
+      "global_n": 24,
+      "season": 1,
+      "season_ep": 22,
+      "filename": "024.24巴巴爸爸一家去非洲. .mp3",
+      "title": "024.24巴巴爸爸一家去非洲. .mp3",
+      "fid": "~1URI_eMwET2MPqfKyh78v7cKp02UpvD2RtcHBGPrHmXEP3uYSZgqOx4lY2r0oFnfwdQz2u3L5kPFeBss_WEDac4",
+      "fids": [
+        "~1URI_eMwET2MPqfKyh78v7cKp02UpvD2RtcHBGPrHmXEP3uYSZgqOx4lY2r0oFnfwdQz2u3L5kPFeBss_WEDac4"
+      ],
+      "size": 2588047
+    },
+    {
+      "global_n": 25,
+      "season": 1,
+      "season_ep": 23,
+      "filename": "025.25巴巴爸爸去度假. .mp3",
+      "title": "025.25巴巴爸爸去度假. .mp3",
+      "fid": "~1CZgYigwQwMEPOo0WfNP6vOVjJjZQi3x9WhYOx0p4yZMoAYFELywSJZhdOKxW1jHAO5so61ttx_IBbOe8MyTaS4",
+      "fids": [
+        "~1CZgYigwQwMEPOo0WfNP6vOVjJjZQi3x9WhYOx0p4yZMoAYFELywSJZhdOKxW1jHAO5so61ttx_IBbOe8MyTaS4"
+      ],
+      "size": 1866231
+    },
+    {
+      "global_n": 28,
+      "season": 1,
+      "season_ep": 24,
+      "filename": "028.28巴巴爸爸的马戏团. .mp3",
+      "title": "028.28巴巴爸爸的马戏团. .mp3",
+      "fid": "~1C-C0_u886GgHuCmI93Yv35nRC_HDYHg-1fankKGHQvOk1FgYOR1qtIRHIjKSfNnaZzYffZS8zAlpxX7Ze_eC8w",
+      "fids": [
+        "~1C-C0_u886GgHuCmI93Yv35nRC_HDYHg-1fankKGHQvOk1FgYOR1qtIRHIjKSfNnaZzYffZS8zAlpxX7Ze_eC8w"
+      ],
+      "size": 1831750
+    },
+    {
+      "global_n": 30,
+      "season": 1,
+      "season_ep": 25,
+      "filename": "030.30巴巴爸爸一家的成功演出. .mp3",
+      "title": "030.30巴巴爸爸一家的成功演出. .mp3",
+      "fid": "~1UaYi9rWAp_EwQRakPmZM2xvr-diPQ0zqloLKt3esYgy9-sagvMN86GFm70w4tk-WphBBUXBcov3DKx6Yh9FK8A",
+      "fids": [
+        "~1UaYi9rWAp_EwQRakPmZM2xvr-diPQ0zqloLKt3esYgy9-sagvMN86GFm70w4tk-WphBBUXBcov3DKx6Yh9FK8A"
+      ],
+      "size": 2092765
+    },
+    {
+      "global_n": 31,
+      "season": 1,
+      "season_ep": 26,
+      "filename": "031.031巴巴爸爸一家去埃及. .mp3",
+      "title": "031.031巴巴爸爸一家去埃及. .mp3",
+      "fid": "~11MLYeWsU2GoN8oDaW_mXsexphYDdB640is0Qznds02hZxCVTHM1DrU30qkWBm96yBxBnQ4mvRu-FtszNQLB7q8",
+      "fids": [
+        "~11MLYeWsU2GoN8oDaW_mXsexphYDdB640is0Qznds02hZxCVTHM1DrU30qkWBm96yBxBnQ4mvRu-FtszNQLB7q8"
+      ],
+      "size": 2465376
+    },
+    {
+      "global_n": 32,
+      "season": 1,
+      "season_ep": 27,
+      "filename": "032.032巴巴爸爸一家遇到沙尘暴. .mp3",
+      "title": "032.032巴巴爸爸一家遇到沙尘暴. .mp3",
+      "fid": "~17MQBytnvCKIwwMkqNxRTSY4msuPQYKGoW8xwW9BA6C_wMw0mckCz2H31c9ptebDIUG0J9cWCOa4vTG9TeyRICI",
+      "fids": [
+        "~17MQBytnvCKIwwMkqNxRTSY4msuPQYKGoW8xwW9BA6C_wMw0mckCz2H31c9ptebDIUG0J9cWCOa4vTG9TeyRICI"
+      ],
+      "size": 2422326
+    },
+    {
+      "global_n": 37,
+      "season": 1,
+      "season_ep": 28,
+      "filename": "037.037巴巴布莱特做毛绒玩具. .mp3",
+      "title": "037.037巴巴布莱特做毛绒玩具. .mp3",
+      "fid": "~14WcgGGIsaYEXhUtCSIi_qrHpScNa3-pw-d9d3qAeKDgYLl2jOi5ftUy21wG4efhjTTTOhqdMynw8RXLTad84wg",
+      "fids": [
+        "~14WcgGGIsaYEXhUtCSIi_qrHpScNa3-pw-d9d3qAeKDgYLl2jOi5ftUy21wG4efhjTTTOhqdMynw8RXLTad84wg"
+      ],
+      "size": 2253053
+    },
+    {
+      "global_n": 38,
+      "season": 1,
+      "season_ep": 29,
+      "filename": "038.038巴巴爸爸一家救毛驴. .mp3",
+      "title": "038.038巴巴爸爸一家救毛驴. .mp3",
+      "fid": "~1YdDhnLyBNMclpP6RxOK2hE_8fi-c5RpSUyGLedZklyNmVB1mqs-XS5X-emtis-RQuGHPTn6Asch_ANvDTAz1bQ",
+      "fids": [
+        "~1YdDhnLyBNMclpP6RxOK2hE_8fi-c5RpSUyGLedZklyNmVB1mqs-XS5X-emtis-RQuGHPTn6Asch_ANvDTAz1bQ"
+      ],
+      "size": 2044491
+    },
+    {
+      "global_n": 39,
+      "season": 1,
+      "season_ep": 30,
+      "filename": "039.039巴巴爸爸一家盖谷仓. .mp3",
+      "title": "039.039巴巴爸爸一家盖谷仓. .mp3",
+      "fid": "~1O8ebGfl4hOoDW7LfhuoGz0l1gkhd1yGp54ZZlhCGtgAWJuN2Jg3YAeMWdSUqa6LV_-Z0HHz6hcyTkqvf5y8HVM",
+      "fids": [
+        "~1O8ebGfl4hOoDW7LfhuoGz0l1gkhd1yGp54ZZlhCGtgAWJuN2Jg3YAeMWdSUqa6LV_-Z0HHz6hcyTkqvf5y8HVM"
+      ],
+      "size": 2561506
+    },
+    {
+      "global_n": 43,
+      "season": 1,
+      "season_ep": 31,
+      "filename": "043.043巴巴祖向巴巴爸爸求助. .mp3",
+      "title": "043.043巴巴祖向巴巴爸爸求助. .mp3",
+      "fid": "~1Cb-EFhJ1V8UmBRYutXbECk1ePaya6jfCeKYg3KzrYrrid1zUF1f_jc56Qx_mj3APlOqnTMSFv-LnhoWAfNmfT8",
+      "fids": [
+        "~1Cb-EFhJ1V8UmBRYutXbECk1ePaya6jfCeKYg3KzrYrrid1zUF1f_jc56Qx_mj3APlOqnTMSFv-LnhoWAfNmfT8"
+      ],
+      "size": 1904893
+    },
+    {
+      "global_n": 45,
+      "season": 1,
+      "season_ep": 32,
+      "filename": "045.045巴巴爸爸邀请熊猫教授. .mp3",
+      "title": "045.045巴巴爸爸邀请熊猫教授. .mp3",
+      "fid": "~1C0BGsf_moS81ZOJZxR2P_7Gn6hoGepzocFtIaIN3-xSYf7JSHZ_igGOX8f6NqRf5ZQcuOc7jDbapxGdDZ8Lu5Y",
+      "fids": [
+        "~1C0BGsf_moS81ZOJZxR2P_7Gn6hoGepzocFtIaIN3-xSYf7JSHZ_igGOX8f6NqRf5ZQcuOc7jDbapxGdDZ8Lu5Y"
+      ],
+      "size": 2243230
+    },
+    {
+      "global_n": 46,
+      "season": 1,
+      "season_ep": 33,
+      "filename": "046.046巴巴爸爸营救草原动物. .mp3",
+      "title": "046.046巴巴爸爸营救草原动物. .mp3",
+      "fid": "~10e6EqWPpkWoVObeNujJ6UilMa2yH2zAZg_Mj_OYM78m14IjXLhkjnME-GHfQwCiUL_QyZN0hNaUp7lKycbTub8",
+      "fids": [
+        "~10e6EqWPpkWoVObeNujJ6UilMa2yH2zAZg_Mj_OYM78m14IjXLhkjnME-GHfQwCiUL_QyZN0hNaUp7lKycbTub8"
+      ],
+      "size": 2049297
+    },
+    {
+      "global_n": 47,
+      "season": 1,
+      "season_ep": 34,
+      "filename": "047.047巴巴爸爸扑救草原火灾. .mp3",
+      "title": "047.047巴巴爸爸扑救草原火灾. .mp3",
+      "fid": "~1MeMNFHBlFeIuNnMMpUeuEn3Q5ltI0I2N1k2ilGaFcNRghUeBu4nDiE0JsW_NA9je52aaXF7PW2nS8cM3-V6iYA",
+      "fids": [
+        "~1MeMNFHBlFeIuNnMMpUeuEn3Q5ltI0I2N1k2ilGaFcNRghUeBu4nDiE0JsW_NA9je52aaXF7PW2nS8cM3-V6iYA"
+      ],
+      "size": 2029026
+    },
+    {
+      "global_n": 49,
+      "season": 1,
+      "season_ep": 35,
+      "filename": "049.049巴巴爸爸乘木筏. .mp3",
+      "title": "049.049巴巴爸爸乘木筏. .mp3",
+      "fid": "~10Qg37o1ik68ti6RweHg4AxDjo3XMyi2x5KTaKJ48q9FCpUBL6I0j1nWoo7Spf-j3pVwOm8wck6ks3juj2IWojg",
+      "fids": [
+        "~10Qg37o1ik68ti6RweHg4AxDjo3XMyi2x5KTaKJ48q9FCpUBL6I0j1nWoo7Spf-j3pVwOm8wck6ks3juj2IWojg"
+      ],
+      "size": 2328912
+    },
+    {
+      "global_n": 51,
+      "season": 1,
+      "season_ep": 36,
+      "filename": "051.051巴巴爸爸养小动物大赛. .mp3",
+      "title": "051.051巴巴爸爸养小动物大赛. .mp3",
+      "fid": "~1wKKIMQle5Po8tNiv0koj04vtFcGR7pexCw3FaMXcgfmK5ZzNvmLUoSUDlle6qB5sMkPtrm5MkTwNEBoLuI1oPY",
+      "fids": [
+        "~1wKKIMQle5Po8tNiv0koj04vtFcGR7pexCw3FaMXcgfmK5ZzNvmLUoSUDlle6qB5sMkPtrm5MkTwNEBoLuI1oPY"
+      ],
+      "size": 2281892
+    },
+    {
+      "global_n": 53,
+      "season": 1,
+      "season_ep": 37,
+      "filename": "053.053巴巴爸爸一家颁奖杯. .mp3",
+      "title": "053.053巴巴爸爸一家颁奖杯. .mp3",
+      "fid": "~1gvlhQkMuRG4ezEMOut5gIXLR-4v004fi04t0V8fn-dDtsLcPq1IbpS1iTT1QX8aGRzwa82gge-lVZpSWIRgvnM",
+      "fids": [
+        "~1gvlhQkMuRG4ezEMOut5gIXLR-4v004fi04t0V8fn-dDtsLcPq1IbpS1iTT1QX8aGRzwa82gge-lVZpSWIRgvnM"
+      ],
+      "size": 2515113
+    },
+    {
+      "global_n": 62,
+      "season": 1,
+      "season_ep": 38,
+      "filename": "062.062巴巴爸爸一家去野餐. .mp3",
+      "title": "062.062巴巴爸爸一家去野餐. .mp3",
+      "fid": "~1bX82e5nJzLA4yu6VVHGo7EDohiW7E4aOl6jo8FIo7u6tLGCQGV9yCy9qZMlNixOTTg-pTT5CbyH1BpC-toHaEk",
+      "fids": [
+        "~1bX82e5nJzLA4yu6VVHGo7EDohiW7E4aOl6jo8FIo7u6tLGCQGV9yCy9qZMlNixOTTg-pTT5CbyH1BpC-toHaEk"
+      ],
+      "size": 2256187
+    },
+    {
+      "global_n": 66,
+      "season": 1,
+      "season_ep": 39,
+      "filename": "066.066巴巴爸爸一家的古堡演出. .mp3",
+      "title": "066.066巴巴爸爸一家的古堡演出. .mp3",
+      "fid": "~1iwirgzhT0-oeXETL39CsxbAz8QkTg2DqCVPR1mZfnbLgZ5eNZ69CzIob1v6pAJJvXWj9elhs0J2K32-eILyecc",
+      "fids": [
+        "~1iwirgzhT0-oeXETL39CsxbAz8QkTg2DqCVPR1mZfnbLgZ5eNZ69CzIob1v6pAJJvXWj9elhs0J2K32-eILyecc"
+      ],
+      "size": 2671639
+    },
+    {
+      "global_n": 67,
+      "season": 1,
+      "season_ep": 40,
+      "filename": "067.067巴巴爸爸一家的果园. .mp3",
+      "title": "067.067巴巴爸爸一家的果园. .mp3",
+      "fid": "~1FfliNr-2KPAIDUIcuWOa_gv1xY7vBHGAi4AlzCspiwOuqBO_Y-qhDXqwFJXo4rmskG0Gvs7fcyRvFQbSHgSp2M",
+      "fids": [
+        "~1FfliNr-2KPAIDUIcuWOa_gv1xY7vBHGAi4AlzCspiwOuqBO_Y-qhDXqwFJXo4rmskG0Gvs7fcyRvFQbSHgSp2M"
+      ],
+      "size": 2058701
+    },
+    {
+      "global_n": 69,
+      "season": 1,
+      "season_ep": 41,
+      "filename": "069.069巴巴爸爸的果园遭殃了. .mp3",
+      "title": "069.069巴巴爸爸的果园遭殃了. .mp3",
+      "fid": "~1VfH2w0uOpa0CY7FRqHovTzFMYul4iA_i9BCTXGd8-fj6ZsBdWqGuHLUSgHMASglMEcnN00otO11ZxNi2ph038Q",
+      "fids": [
+        "~1VfH2w0uOpa0CY7FRqHovTzFMYul4iA_i9BCTXGd8-fj6ZsBdWqGuHLUSgHMASglMEcnN00otO11ZxNi2ph038Q"
+      ],
+      "size": 2097990
+    },
+    {
+      "global_n": 71,
+      "season": 1,
+      "season_ep": 42,
+      "filename": "071.071巴巴爸爸一家去动物园. .mp3",
+      "title": "071.071巴巴爸爸一家去动物园. .mp3",
+      "fid": "~1W8WVMZVkkXIA6Kwyi09TF8g43FyyAGjeI2us-65bKhPLtiheQQl7akhWBrgZ6bd8F8x_P3Ufl3-XerOqtnDM5c",
+      "fids": [
+        "~1W8WVMZVkkXIA6Kwyi09TF8g43FyyAGjeI2us-65bKhPLtiheQQl7akhWBrgZ6bd8F8x_P3Ufl3-XerOqtnDM5c"
+      ],
+      "size": 2289206
+    },
+    {
+      "global_n": 72,
+      "season": 1,
+      "season_ep": 43,
+      "filename": "072.072巴巴爸爸拜访园长. .mp3",
+      "title": "072.072巴巴爸爸拜访园长. .mp3",
+      "fid": "~1s7SWklv21Ksz8IhFuIRFv8qjMrllgGieUPrlymkMXq6yhzNmH2tKPRylmtX-Y0z7v146HeNLSHtOFkxonOjTnE",
+      "fids": [
+        "~1s7SWklv21Ksz8IhFuIRFv8qjMrllgGieUPrlymkMXq6yhzNmH2tKPRylmtX-Y0z7v146HeNLSHtOFkxonOjTnE"
+      ],
+      "size": 2297565
+    },
+    {
+      "global_n": 73,
+      "season": 1,
+      "season_ep": 44,
+      "filename": "073.073巴巴爸爸召开动物大会. .mp3",
+      "title": "073.073巴巴爸爸召开动物大会. .mp3",
+      "fid": "~1uvwGs4YS69wAenT9edaHviYfvFSFkAmluUMWm7oGiSkPEPyRzzH7nUZjCdBhjSJZ7R3Fs2-rjdcLb4Mgi-yDlo",
+      "fids": [
+        "~1uvwGs4YS69wAenT9edaHviYfvFSFkAmluUMWm7oGiSkPEPyRzzH7nUZjCdBhjSJZ7R3Fs2-rjdcLb4Mgi-yDlo"
+      ],
+      "size": 2268726
+    },
+    {
+      "global_n": 81,
+      "season": 1,
+      "season_ep": 45,
+      "filename": "081.081巴巴爸爸农场动物变异. .mp3",
+      "title": "081.081巴巴爸爸农场动物变异. .mp3",
+      "fid": "~1mpk9c5rHBNIIZwxwCpYma7p1noMW96H4gMd0IFdW0f-APzrXaJk5Q5382qE1xiz_1Tbpn8iTQeNGzdqQEKIjBA",
+      "fids": [
+        "~1mpk9c5rHBNIIZwxwCpYma7p1noMW96H4gMd0IFdW0f-APzrXaJk5Q5382qE1xiz_1Tbpn8iTQeNGzdqQEKIjBA"
+      ],
+      "size": 2239678
+    },
+    {
+      "global_n": 83,
+      "season": 1,
+      "season_ep": 46,
+      "filename": "083.083巴巴爸爸抓住坏蛋. .mp3",
+      "title": "083.083巴巴爸爸抓住坏蛋. .mp3",
+      "fid": "~1dfJnrWdXUOUrkO2ESJCNftQBHMcH0RsL4949ZIdy_XC7fIWT6WVGEpthSWabIoTu70TewjqDWelgyGG7pGWaXE",
+      "fids": [
+        "~1dfJnrWdXUOUrkO2ESJCNftQBHMcH0RsL4949ZIdy_XC7fIWT6WVGEpthSWabIoTu70TewjqDWelgyGG7pGWaXE"
+      ],
+      "size": 2218989
+    },
+    {
+      "global_n": 92,
+      "season": 1,
+      "season_ep": 47,
+      "filename": "092.092巴巴爸爸一家的恶作剧. .mp3",
+      "title": "092.092巴巴爸爸一家的恶作剧. .mp3",
+      "fid": "~1dp3QXuLkezM2T49aVosibpB_ME-KyvY7uAJASI-U4MVsr-Zdr_ATI9MIOehcjj51V4CFG6zsXDZILbNnwOxHSQ",
+      "fids": [
+        "~1dp3QXuLkezM2T49aVosibpB_ME-KyvY7uAJASI-U4MVsr-Zdr_ATI9MIOehcjj51V4CFG6zsXDZILbNnwOxHSQ"
+      ],
+      "size": 2221915
+    },
+    {
+      "global_n": 100,
+      "season": 1,
+      "season_ep": 48,
+      "filename": "100.100巴巴布拉伯守护郁金香. .mp3",
+      "title": "100.100巴巴布拉伯守护郁金香. .mp3",
+      "fid": "~1oqcj0gouCocRdjqi407pXEse9wjDu5mYdO06LPzehspoXuxzA5bxAXtNcUuKq7JsyT9Le6Dl7Wr8gc1BxN_zYI",
+      "fids": [
+        "~1oqcj0gouCocRdjqi407pXEse9wjDu5mYdO06LPzehspoXuxzA5bxAXtNcUuKq7JsyT9Le6Dl7Wr8gc1BxN_zYI"
+      ],
+      "size": 2174476
+    },
+    {
+      "global_n": 104,
+      "season": 1,
+      "season_ep": 49,
+      "filename": "104.104巴巴爸爸一家的史前生活. .mp3",
+      "title": "104.104巴巴爸爸一家的史前生活. .mp3",
+      "fid": "~1VX-kAgOUXjAX0tdBvFA5QlauJOlPEZRl-2Vsv5YWpXQRnrsc-ef0B-uf8M_fYCF7lX9W5G1J4bUQrRH4dOGhBs",
+      "fids": [
+        "~1VX-kAgOUXjAX0tdBvFA5QlauJOlPEZRl-2Vsv5YWpXQRnrsc-ef0B-uf8M_fYCF7lX9W5G1J4bUQrRH4dOGhBs"
+      ],
+      "size": 2449075
+    },
+    {
+      "global_n": 110,
+      "season": 1,
+      "season_ep": 50,
+      "filename": "110.110巴巴爸爸举办飞行大赛. .mp3",
+      "title": "110.110巴巴爸爸举办飞行大赛. .mp3",
+      "fid": "~1JVSpMxSTVTE2oD6RJWlHSyvrU_FYdNbAmZOK2mMh8B7T0M0vB4xXVNLOxqbd3-7J4nKEZnNRfC5LsioUh4fzng",
+      "fids": [
+        "~1JVSpMxSTVTE2oD6RJWlHSyvrU_FYdNbAmZOK2mMh8B7T0M0vB4xXVNLOxqbd3-7J4nKEZnNRfC5LsioUh4fzng"
+      ],
+      "size": 2287952
+    },
+    {
+      "global_n": 120,
+      "season": 1,
+      "season_ep": 51,
+      "filename": "120.120巴巴爸爸遇见外星人. .mp3",
+      "title": "120.120巴巴爸爸遇见外星人. .mp3",
+      "fid": "~1cDn46V3EUwgKE7Qkft8ZtW13Q1NoXc0IaDlLSCu4Ic5tagj5x1UtKjqJM_RraPCGga6MuFayO5AsWJ6VBmu_Vs",
+      "fids": [
+        "~1cDn46V3EUwgKE7Qkft8ZtW13Q1NoXc0IaDlLSCu4Ic5tagj5x1UtKjqJM_RraPCGga6MuFayO5AsWJ6VBmu_Vs"
+      ],
+      "size": 2382829
+    },
+    {
+      "global_n": 121,
+      "season": 1,
+      "season_ep": 52,
+      "filename": "121.121巴巴爸爸救助外星人. .mp3",
+      "title": "121.121巴巴爸爸救助外星人. .mp3",
+      "fid": "~17dL8p0oXlsgsVgUnh2GIbnNO6nERPKHUNt505jB8ueJtJKb2jiWCvMQ8XYgcx309eyOpIJfYMz_8JCTci9pUs8",
+      "fids": [
+        "~17dL8p0oXlsgsVgUnh2GIbnNO6nERPKHUNt505jB8ueJtJKb2jiWCvMQ8XYgcx309eyOpIJfYMz_8JCTci9pUs8"
+      ],
+      "size": 2556073
+    },
+    {
+      "global_n": 122,
+      "season": 1,
+      "season_ep": 53,
+      "filename": "122.122巴巴爸爸一家去海岛. .mp3",
+      "title": "122.122巴巴爸爸一家去海岛. .mp3",
+      "fid": "~1ai2e2wFgvisecwcrJsXz7iUvSMOuqtaNNm2zouou2OujvFFGWk9Av-_nZbhVhmNGzpf5q_Vgnkxb92ovXbAxMI",
+      "fids": [
+        "~1ai2e2wFgvisecwcrJsXz7iUvSMOuqtaNNm2zouou2OujvFFGWk9Av-_nZbhVhmNGzpf5q_Vgnkxb92ovXbAxMI"
+      ],
+      "size": 2401010
+    },
+    {
+      "global_n": 123,
+      "season": 1,
+      "season_ep": 54,
+      "filename": "123.123巴巴爸爸一家建海岛实验室. .mp3",
+      "title": "123.123巴巴爸爸一家建海岛实验室. .mp3",
+      "fid": "~1wdsoliiJyfgMnLS_H54uKLJzSSHcDtrkYn-uEunGcmGaMZ3-GpcDk7P6zQwZqqHRf9qATWnave2bikRtd9gjYE",
+      "fids": [
+        "~1wdsoliiJyfgMnLS_H54uKLJzSSHcDtrkYn-uEunGcmGaMZ3-GpcDk7P6zQwZqqHRf9qATWnave2bikRtd9gjYE"
+      ],
+      "size": 2201853
+    },
+    {
+      "global_n": 132,
+      "season": 1,
+      "season_ep": 55,
+      "filename": "132.132巴巴爸爸一家过新年. .mp3",
+      "title": "132.132巴巴爸爸一家过新年. .mp3",
+      "fid": "~1pcJSgFFxKeYRYzg4gE_aTSjxVDcGjfzeU1KmCKf6Bdze6gaOuNBSEvH4Kikj6tOmT-MGWIChxW8qAQ1_v-JTjw",
+      "fids": [
+        "~1pcJSgFFxKeYRYzg4gE_aTSjxVDcGjfzeU1KmCKf6Bdze6gaOuNBSEvH4Kikj6tOmT-MGWIChxW8qAQ1_v-JTjw"
+      ],
+      "size": 2645516
+    },
+    {
+      "global_n": 135,
+      "season": 1,
+      "season_ep": 56,
+      "filename": "135.135巴巴爸爸拜访塞吉先生. .mp3",
+      "title": "135.135巴巴爸爸拜访塞吉先生. .mp3",
+      "fid": "~1mxJ5uV9GmRM45PyVpan_LFgMDwVipiwj0NBFbUvjEXg3INKFPF-osCHreHl08U-SmmGiG8lXWen5HFgtK6bkxA",
+      "fids": [
+        "~1mxJ5uV9GmRM45PyVpan_LFgMDwVipiwj0NBFbUvjEXg3INKFPF-osCHreHl08U-SmmGiG8lXWen5HFgtK6bkxA"
+      ],
+      "size": 2194538
+    },
+    {
+      "global_n": 136,
+      "season": 1,
+      "season_ep": 57,
+      "filename": "136.136巴巴爸爸拯救海底村庄. .mp3",
+      "title": "136.136巴巴爸爸拯救海底村庄. .mp3",
+      "fid": "~1pknUi2-5wFMyUw7oPuNkRfPdN98eQQ0JQGN9o5yIBwcxj6yaShDrH0HNjW959fSW47YuRdkAIPYmRyLZLcI47E",
+      "fids": [
+        "~1pknUi2-5wFMyUw7oPuNkRfPdN98eQQ0JQGN9o5yIBwcxj6yaShDrH0HNjW959fSW47YuRdkAIPYmRyLZLcI47E"
+      ],
+      "size": 2573000
+    },
+    {
+      "global_n": 137,
+      "season": 1,
+      "season_ep": 58,
+      "filename": "137.137巴巴爸爸营救大鲸鱼. .mp3",
+      "title": "137.137巴巴爸爸营救大鲸鱼. .mp3",
+      "fid": "~1KJEOOvmJI3ooDgDGXqonxcl2JG0lA9J3Mcck_p2SYyil8UuMPVnEG-uCs9vfM6x3qubCuW711AmXPuTb5Hgt7k",
+      "fids": [
+        "~1KJEOOvmJI3ooDgDGXqonxcl2JG0lA9J3Mcck_p2SYyil8UuMPVnEG-uCs9vfM6x3qubCuW711AmXPuTb5Hgt7k"
+      ],
+      "size": 2294639
+    },
+    {
+      "global_n": 138,
+      "season": 1,
+      "season_ep": 59,
+      "filename": "138.138巴巴爸爸捉弄大坏蛋. .mp3",
+      "title": "138.138巴巴爸爸捉弄大坏蛋. .mp3",
+      "fid": "~1ndgM32-C3wUizEElH3rVwXrlM4sDs3Y9uLFhDkqmbBamlPPmR3uvFLLtXdf2jlTTX3HnJT6hUH5tlfdSM4DZsc",
+      "fids": [
+        "~1ndgM32-C3wUizEElH3rVwXrlM4sDs3Y9uLFhDkqmbBamlPPmR3uvFLLtXdf2jlTTX3HnJT6hUH5tlfdSM4DZsc"
+      ],
+      "size": 2297356
+    },
+    {
+      "global_n": 139,
+      "season": 1,
+      "season_ep": 60,
+      "filename": "139.139巴巴爸爸寻找冰山. .mp3",
+      "title": "139.139巴巴爸爸寻找冰山. .mp3",
+      "fid": "~1SMC-K9d2jk08gYd6Z3o2cWuLg90nnocNZId4EVN1OLG5WtR2YC-jJxT0RbocS-ETTLEbcstAMmYF0EXFFfnjWs",
+      "fids": [
+        "~1SMC-K9d2jk08gYd6Z3o2cWuLg90nnocNZId4EVN1OLG5WtR2YC-jJxT0RbocS-ETTLEbcstAMmYF0EXFFfnjWs"
+      ],
+      "size": 2016070
+    },
+    {
+      "global_n": 141,
+      "season": 1,
+      "season_ep": 61,
+      "filename": "141.141巴巴爸爸一家踏上救援路. .mp3",
+      "title": "141.141巴巴爸爸一家踏上救援路. .mp3",
+      "fid": "~1v0ygfDoBT-wvqi8Z-s17TGndf4MbOenjFMNAHhwhUR-I8tO2jQE9pY-ahPn5QXywJST--OTnCa7Mzg5QYE9g8M",
+      "fids": [
+        "~1v0ygfDoBT-wvqi8Z-s17TGndf4MbOenjFMNAHhwhUR-I8tO2jQE9pY-ahPn5QXywJST--OTnCa7Mzg5QYE9g8M"
+      ],
+      "size": 2387217
+    },
+    {
+      "global_n": 142,
+      "season": 1,
+      "season_ep": 62,
+      "filename": "142.142巴巴爸爸找到智慧老人. .mp3",
+      "title": "142.142巴巴爸爸找到智慧老人. .mp3",
+      "fid": "~1rnj-yVeFb3MpZDomERfGWE6pHtYgb45NzRZzHEWPiJKJZ_WD7f1xu6eWoFhY6MDeLAEGcuZJ_26Dd1HAa1b6TU",
+      "fids": [
+        "~1rnj-yVeFb3MpZDomERfGWE6pHtYgb45NzRZzHEWPiJKJZ_WD7f1xu6eWoFhY6MDeLAEGcuZJ_26Dd1HAa1b6TU"
+      ],
+      "size": 2648233
+    },
+    {
+      "global_n": 146,
+      "season": 1,
+      "season_ep": 63,
+      "filename": "146.146巴巴祖被袋鼠参观. .mp3",
+      "title": "146.146巴巴祖被袋鼠参观. .mp3",
+      "fid": "~1TZfneG3R1iIhKrf7bLx9SZmoyMv_phxzcmXKPqcuKja7yLJDmHmahZJW1RGjbk90C_seYgUlLnUNJ97aH1it-w",
+      "fids": [
+        "~1TZfneG3R1iIhKrf7bLx9SZmoyMv_phxzcmXKPqcuKja7yLJDmHmahZJW1RGjbk90C_seYgUlLnUNJ97aH1it-w"
+      ],
+      "size": 2325359
+    },
+    {
+      "global_n": 149,
+      "season": 1,
+      "season_ep": 64,
+      "filename": "149.149巴巴爸爸一家去火山度假. .mp3",
+      "title": "149.149巴巴爸爸一家去火山度假. .mp3",
+      "fid": "~1E-gumHgdsokciLyeV26ZtqW8ZtVAZt4ycjkjuhcjbBYj5K1YbV5Nvpygy1cIrJJYPZbpKB63XnCVGbQjCWu1y4",
+      "fids": [
+        "~1E-gumHgdsokciLyeV26ZtqW8ZtVAZt4ycjkjuhcjbBYj5K1YbV5Nvpygy1cIrJJYPZbpKB63XnCVGbQjCWu1y4"
+      ],
+      "size": 2278966
+    },
+    {
+      "global_n": 150,
+      "season": 1,
+      "season_ep": 65,
+      "filename": "150.150巴巴妈妈火山探险. .mp3",
+      "title": "150.150巴巴妈妈火山探险. .mp3",
+      "fid": "~1gLdGsfRVLc4fS4nX0yjjjWig4h3v7e6MFvlFcROj1ny8c7K9XA88mnrBJ0KPAMUIt-T6pyFioPi4z9eyHWD2e8",
+      "fids": [
+        "~1gLdGsfRVLc4fS4nX0yjjjWig4h3v7e6MFvlFcROj1ny8c7K9XA88mnrBJ0KPAMUIt-T6pyFioPi4z9eyHWD2e8"
+      ],
+      "size": 2113663
+    },
+    {
+      "global_n": 153,
+      "season": 1,
+      "season_ep": 66,
+      "filename": "153.153巴巴爸爸去森林露营. .mp3",
+      "title": "153.153巴巴爸爸去森林露营. .mp3",
+      "fid": "~1DBX2yBjrxok0bSHWV7voNa4WMQWUf38rCjdUeO1Ag19h9Iuq9fZF5QP1tMQM2eUVsOJ0kg3e_e0O9uiEQRu4BU",
+      "fids": [
+        "~1DBX2yBjrxok0bSHWV7voNa4WMQWUf38rCjdUeO1Ag19h9Iuq9fZF5QP1tMQM2eUVsOJ0kg3e_e0O9uiEQRu4BU"
+      ],
+      "size": 2461196
+    },
+    {
+      "global_n": 154,
+      "season": 1,
+      "season_ep": 67,
+      "filename": "154.154巴巴爸爸遇到森林地震. .mp3",
+      "title": "154.154巴巴爸爸遇到森林地震. .mp3",
+      "fid": "~1eY1dwxOaJGMq4z29WphY_5hwKWVX7-0bRYSibBz4qAfypteCRO2wJJhbTVxRwJZ_cf1-B4p-1mk0vDznJ1HF3A",
+      "fids": [
+        "~1eY1dwxOaJGMq4z29WphY_5hwKWVX7-0bRYSibBz4qAfypteCRO2wJJhbTVxRwJZ_cf1-B4p-1mk0vDznJ1HF3A"
+      ],
+      "size": 2288997
+    },
+    {
+      "global_n": 155,
+      "season": 1,
+      "season_ep": 68,
+      "filename": "155.155巴巴爸爸遭遇愤怒驯鹿. .mp3",
+      "title": "155.155巴巴爸爸遭遇愤怒驯鹿. .mp3",
+      "fid": "~1zGFHHYbbhY0NQTV5rwyAo3O5yVker6t_7ncm45WcXyWHE2wpbZr1pTMkuqNJVSLan-XDfxYeiOh9tOdv8x_b_g",
+      "fids": [
+        "~1zGFHHYbbhY0NQTV5rwyAo3O5yVker6t_7ncm45WcXyWHE2wpbZr1pTMkuqNJVSLan-XDfxYeiOh9tOdv8x_b_g"
+      ],
+      "size": 2285653
+    },
+    {
+      "global_n": 156,
+      "season": 1,
+      "season_ep": 69,
+      "filename": "156.156巴巴爸爸瀑布救人. .mp3",
+      "title": "156.156巴巴爸爸瀑布救人. .mp3",
+      "fid": "~1Pez3ZTHRXkI1ieXvpyxf-MenUm8ghWQKEnIupDezL1QXSUZH9eCWXQa8y-lYO-_h9azGtFiX1lqCT-Oqk3-6Ic",
+      "fids": [
+        "~1Pez3ZTHRXkI1ieXvpyxf-MenUm8ghWQKEnIupDezL1QXSUZH9eCWXQa8y-lYO-_h9azGtFiX1lqCT-Oqk3-6Ic"
+      ],
+      "size": 2733288
+    },
+    {
+      "global_n": 161,
+      "season": 1,
+      "season_ep": 70,
+      "filename": "161.161巴巴爸爸帮河狸搭新家. .mp3",
+      "title": "161.161巴巴爸爸帮河狸搭新家. .mp3",
+      "fid": "~15i8h9RUY_fAYVkQT0pKhebtzBz8Fn4OzC00jwvQ7srBqLtPiIqMkoH4_UTgvCKEERevp49D3ovThNY6OsvQLkw",
+      "fids": [
+        "~15i8h9RUY_fAYVkQT0pKhebtzBz8Fn4OzC00jwvQ7srBqLtPiIqMkoH4_UTgvCKEERevp49D3ovThNY6OsvQLkw"
+      ],
+      "size": 2980093
+    },
+    {
+      "global_n": 168,
+      "season": 1,
+      "season_ep": 71,
+      "filename": "168.168巴巴爸爸开火车. .mp3",
+      "title": "168.168巴巴爸爸开火车. .mp3",
+      "fid": "~1w5zVjI1FU7Q6Zb5dKY_hDssFh5JTJxvbUPT1XWhdAbuO809CI62IQG_j5UE-XKeCXcvgDEFryU093VbUAUBb5U",
+      "fids": [
+        "~1w5zVjI1FU7Q6Zb5dKY_hDssFh5JTJxvbUPT1XWhdAbuO809CI62IQG_j5UE-XKeCXcvgDEFryU093VbUAUBb5U"
+      ],
+      "size": 2537056
+    },
+    {
+      "global_n": 169,
+      "season": 1,
+      "season_ep": 72,
+      "filename": "169.169巴巴祖变鸟窝. .mp3",
+      "title": "169.169巴巴祖变鸟窝. .mp3",
+      "fid": "~1NNbGCtjOVMIiGrnmoc0v7OybwupsT6gV6jQDcas80PSBW0Fdzqc-0iYYu73t0zNNoPyh8XA1cVRMYRq-ZOmAqU",
+      "fids": [
+        "~1NNbGCtjOVMIiGrnmoc0v7OybwupsT6gV6jQDcas80PSBW0Fdzqc-0iYYu73t0zNNoPyh8XA1cVRMYRq-ZOmAqU"
+      ],
+      "size": 2369663
+    },
+    {
+      "global_n": 171,
+      "season": 1,
+      "season_ep": 73,
+      "filename": "171.171巴巴爸爸和小狗洛丽塔. .mp3",
+      "title": "171.171巴巴爸爸和小狗洛丽塔. .mp3",
+      "fid": "~11_ukOKLUadcVcQw7gVwH14EthJqUsQP4Semd7RG6oRLSs1sFvydBL_F0QXhnjQQ-5ewhjo_qAt-bhQ3wNXFstw",
+      "fids": [
+        "~11_ukOKLUadcVcQw7gVwH14EthJqUsQP4Semd7RG6oRLSs1sFvydBL_F0QXhnjQQ-5ewhjo_qAt-bhQ3wNXFstw"
+      ],
+      "size": 2351691
+    },
+    {
+      "global_n": 173,
+      "season": 1,
+      "season_ep": 74,
+      "filename": "173.173巴巴爸爸搭树屋. .mp3",
+      "title": "173.173巴巴爸爸搭树屋. .mp3",
+      "fid": "~1vLmrSLTyjv8pl4zGiWPB0j5fG_CdDPxqt9OvHWWFUnKVPMQW4RKKygoXvCTGr1gqcEdQQXlb4Gh4NE-6Hthors",
+      "fids": [
+        "~1vLmrSLTyjv8pl4zGiWPB0j5fG_CdDPxqt9OvHWWFUnKVPMQW4RKKygoXvCTGr1gqcEdQQXlb4Gh4NE-6Hthors"
+      ],
+      "size": 2726809
+    },
+    {
+      "global_n": 174,
+      "season": 1,
+      "season_ep": 75,
+      "filename": "174.174巴巴爸爸搭木桥. .mp3",
+      "title": "174.174巴巴爸爸搭木桥. .mp3",
+      "fid": "~1TqOv2UfYQ6YtEVO683-fPiaD9QbfOgwe2rTmE03BVEUz7UNkx3S_6SlA55D9TfrORjdaVd8f9xHYcBXdORH2vc",
+      "fids": [
+        "~1TqOv2UfYQ6YtEVO683-fPiaD9QbfOgwe2rTmE03BVEUz7UNkx3S_6SlA55D9TfrORjdaVd8f9xHYcBXdORH2vc"
+      ],
+      "size": 2361931
+    },
+    {
+      "global_n": 175,
+      "season": 1,
+      "season_ep": 76,
+      "filename": "175.175巴巴爸爸的河马桥. .mp3",
+      "title": "175.175巴巴爸爸的河马桥. .mp3",
+      "fid": "~1TCVDvZE9vE0CpEpBG034iMkABXkblYDwqjKCo7nmv_nfCE7w9VNhp8LCZ53NM7zlpkdmS9LOkIRWEh4gmctjSY",
+      "fids": [
+        "~1TCVDvZE9vE0CpEpBG034iMkABXkblYDwqjKCo7nmv_nfCE7w9VNhp8LCZ53NM7zlpkdmS9LOkIRWEh4gmctjSY"
+      ],
+      "size": 2420654
+    },
+    {
+      "global_n": 176,
+      "season": 1,
+      "season_ep": 77,
+      "filename": "176.176巴巴爸爸一家睡不着. .mp3",
+      "title": "176.176巴巴爸爸一家睡不着. .mp3",
+      "fid": "~1WMrsfJETmEYpV6s6ZAs5oZK729SZoeZ7OCXB4hsPCoHCSKZqjLs3LMpJtUdRBhYTUwS0uT9GiR3dbWUE5w5FHQ",
+      "fids": [
+        "~1WMrsfJETmEYpV6s6ZAs5oZK729SZoeZ7OCXB4hsPCoHCSKZqjLs3LMpJtUdRBhYTUwS0uT9GiR3dbWUE5w5FHQ"
+      ],
+      "size": 2532876
+    },
+    {
+      "global_n": 178,
+      "season": 1,
+      "season_ep": 78,
+      "filename": "178.178巴巴爸爸营救洛丽塔. .mp3",
+      "title": "178.178巴巴爸爸营救洛丽塔. .mp3",
+      "fid": "~1EQMJdKkv1WE6ZzPkQt2qogGd1_6sPYj4o2WNPYgfbATbxKqQtKWt4eas3t0AAwJZXbAERgGgwnaHbPPXvuBkig",
+      "fids": [
+        "~1EQMJdKkv1WE6ZzPkQt2qogGd1_6sPYj4o2WNPYgfbATbxKqQtKWt4eas3t0AAwJZXbAERgGgwnaHbPPXvuBkig"
+      ],
+      "size": 2925967
+    },
+    {
+      "global_n": 182,
+      "season": 1,
+      "season_ep": 79,
+      "filename": "182.182巴巴爸爸一家遇雪崩. .mp3",
+      "title": "182.182巴巴爸爸一家遇雪崩. .mp3",
+      "fid": "~15DXlFH2hxNYG3zgwrg1jRCRFVurR5y_DuGEuvs9angsOfyBUjqMjxH-ptHcNVa1u63qab45dZapbwElcU0COYA",
+      "fids": [
+        "~15DXlFH2hxNYG3zgwrg1jRCRFVurR5y_DuGEuvs9angsOfyBUjqMjxH-ptHcNVa1u63qab45dZapbwElcU0COYA"
+      ],
+      "size": 2588465
+    },
+    {
+      "global_n": 184,
+      "season": 1,
+      "season_ep": 80,
+      "filename": "184.184巴巴贝尔的陷阱. .mp3",
+      "title": "184.184巴巴贝尔的陷阱. .mp3",
+      "fid": "~1wPVyBJS1macIl4EznGDcwXqr_r0D91mYqZKKqHSr792G-jLQ5u1_eSoUj1M29Awet0X5kNL5sDR6EqF-eP_ZnM",
+      "fids": [
+        "~1wPVyBJS1macIl4EznGDcwXqr_r0D91mYqZKKqHSr792G-jLQ5u1_eSoUj1M29Awet0X5kNL5sDR6EqF-eP_ZnM"
+      ],
+      "size": 2865990
+    },
+    {
+      "global_n": 185,
+      "season": 1,
+      "season_ep": 81,
+      "filename": "185.185巴巴爸爸盖冰屋. .mp3",
+      "title": "185.185巴巴爸爸盖冰屋. .mp3",
+      "fid": "~1CZH2h0zd67k4fLFiJMI_RFd_YQTfPRP0M1XybmPDqG4mZ8GlabNPUZEoS3L8vJjkcOmrnBBnISlRpQ7_g9ZhGw",
+      "fids": [
+        "~1CZH2h0zd67k4fLFiJMI_RFd_YQTfPRP0M1XybmPDqG4mZ8GlabNPUZEoS3L8vJjkcOmrnBBnISlRpQ7_g9ZhGw"
+      ],
+      "size": 2602675
+    },
+    {
+      "global_n": 189,
+      "season": 1,
+      "season_ep": 82,
+      "filename": "189.189巴巴爸爸一家的新出行方式. .mp3",
+      "title": "189.189巴巴爸爸一家的新出行方式. .mp3",
+      "fid": "~1ctkmhYpXkQQCjTBbXyHTIVQSC9UjIzIkyK7HHZWTQkPkzDDvYkBP8rTSNReczlt-O-LYJQp0wpmLsdpfmVESdU",
+      "fids": [
+        "~1ctkmhYpXkQQCjTBbXyHTIVQSC9UjIzIkyK7HHZWTQkPkzDDvYkBP8rTSNReczlt-O-LYJQp0wpmLsdpfmVESdU"
+      ],
+      "size": 2389725
+    },
+    {
+      "global_n": 191,
+      "season": 1,
+      "season_ep": 83,
+      "filename": "191.191巴巴拉拉的海上音乐会. .mp3",
+      "title": "191.191巴巴拉拉的海上音乐会. .mp3",
+      "fid": "~1Y4XB8feiiR0eLnejb042uR-N4I79jAptMUXmWr7KU-of_zqTe38jEv1QM3gY2XoAiM3zsUEeTv_B_tZmWooB3U",
+      "fids": [
+        "~1Y4XB8feiiR0eLnejb042uR-N4I79jAptMUXmWr7KU-of_zqTe38jEv1QM3gY2XoAiM3zsUEeTv_B_tZmWooB3U"
+      ],
+      "size": 2611035
+    },
+    {
+      "global_n": 192,
+      "season": 1,
+      "season_ep": 84,
+      "filename": "192.192巴巴布拉伯吃仙人掌. .mp3",
+      "title": "192.192巴巴布拉伯吃仙人掌. .mp3",
+      "fid": "~1RE4jPpCgzT4ji9R1udRB3QAK5nctTxiXFQFCniJBu89rnLC-9U_SYn90YpgJF-c5YUTdXFuKAuGIFKFZ81Cr6U",
+      "fids": [
+        "~1RE4jPpCgzT4ji9R1udRB3QAK5nctTxiXFQFCniJBu89rnLC-9U_SYn90YpgJF-c5YUTdXFuKAuGIFKFZ81Cr6U"
+      ],
+      "size": 2889395
+    },
+    {
+      "global_n": 193,
+      "season": 1,
+      "season_ep": 85,
+      "filename": "193.193巴巴爸爸去看帝企鹅. .mp3",
+      "title": "193.193巴巴爸爸去看帝企鹅. .mp3",
+      "fid": "~1VWYc3IEjIWYAhynL8t4bZ2ipRFt7zo2qgy6hYCQWxQGSHYJ6_KZQ6sDSmooxeqkHVY-aSwf6HPZmF_ML9pUwws",
+      "fids": [
+        "~1VWYc3IEjIWYAhynL8t4bZ2ipRFt7zo2qgy6hYCQWxQGSHYJ6_KZQ6sDSmooxeqkHVY-aSwf6HPZmF_ML9pUwws"
+      ],
+      "size": 2938924
+    },
+    {
+      "global_n": 195,
+      "season": 1,
+      "season_ep": 86,
+      "filename": "195.195巴巴爸爸营救长颈鹿宝宝. .mp3",
+      "title": "195.195巴巴爸爸营救长颈鹿宝宝. .mp3",
+      "fid": "~1I8ClbwYhF8cvwYZmBKZcc5ok4FdMtWp-8Ppx3D07ySjWqeTmdNiScx5upBff-GtjrJj7YIcxQltIIUYQXTpQR4",
+      "fids": [
+        "~1I8ClbwYhF8cvwYZmBKZcc5ok4FdMtWp-8Ppx3D07ySjWqeTmdNiScx5upBff-GtjrJj7YIcxQltIIUYQXTpQR4"
+      ],
+      "size": 2649069
+    },
+    {
+      "global_n": 200,
+      "season": 1,
+      "season_ep": 87,
+      "filename": "200.200巴巴拉拉做瓶子. .mp3",
+      "title": "200.200巴巴拉拉做瓶子. .mp3",
+      "fid": "~1cEFefv51rPgeVZjlamMpN_MWoz4ABFdgvBBBJj5-eYB22Bs1I9qNWkY0pAm6HeEqPRa7VluEgmSlRQQgcGSGMk",
+      "fids": [
+        "~1cEFefv51rPgeVZjlamMpN_MWoz4ABFdgvBBBJj5-eYB22Bs1I9qNWkY0pAm6HeEqPRa7VluEgmSlRQQgcGSGMk"
+      ],
+      "size": 2831090
+    },
+    {
+      "global_n": 201,
+      "season": 1,
+      "season_ep": 88,
+      "filename": "201.201巴巴伯做陶罐. .mp3",
+      "title": "201.201巴巴伯做陶罐. .mp3",
+      "fid": "~16KedoHwSC2gv0Gr0hux1wo4tFKnaPGSpM4zCo4qw8NuZLuscrKq18_OSmEnnlJbMZmnPD0HIeW_Zdkh34JodGs",
+      "fids": [
+        "~16KedoHwSC2gv0Gr0hux1wo4tFKnaPGSpM4zCo4qw8NuZLuscrKq18_OSmEnnlJbMZmnPD0HIeW_Zdkh34JodGs"
+      ],
+      "size": 2282728
+    },
+    {
+      "global_n": 208,
+      "season": 1,
+      "season_ep": 89,
+      "filename": "208.208巴巴爸爸收麦子. .mp3",
+      "title": "208.208巴巴爸爸收麦子. .mp3",
+      "fid": "~1Fms82JBK6SwxT0PDxYiimHYjx7bb8U53piIR-1vPmqis9M0wNaipdV6SOOQlpSQdMsjnaHWnjhwNML7r0n-wx0",
+      "fids": [
+        "~1Fms82JBK6SwxT0PDxYiimHYjx7bb8U53piIR-1vPmqis9M0wNaipdV6SOOQlpSQdMsjnaHWnjhwNML7r0n-wx0"
+      ],
+      "size": 2511769
+    },
+    {
+      "global_n": 209,
+      "season": 1,
+      "season_ep": 90,
+      "filename": "209.209巴巴爸爸收垃圾. .mp3",
+      "title": "209.209巴巴爸爸收垃圾. .mp3",
+      "fid": "~1VjCy0aGzZqYktq6--WNZF0yJd6ekDl6xSLFA_iX2ORBDNDh2ljn8Vm311Qiop6S8emCObz8jMi6DU-666r51HU",
+      "fids": [
+        "~1VjCy0aGzZqYktq6--WNZF0yJd6ekDl6xSLFA_iX2ORBDNDh2ljn8Vm311Qiop6S8emCObz8jMi6DU-666r51HU"
+      ],
+      "size": 3223763
+    },
+    {
+      "global_n": 210,
+      "season": 1,
+      "season_ep": 91,
+      "filename": "210.210巴巴爸爸和外星宝宝. .mp3",
+      "title": "210.210巴巴爸爸和外星宝宝. .mp3",
+      "fid": "~1KPc8Fvd3_J8TPZ5jvyyb9FKr94VJdkB8oMmgHmncpb5CjSCDhQbHqr_zXzIhREr1Y58961_Kn2ESPAokieEdFg",
+      "fids": [
+        "~1KPc8Fvd3_J8TPZ5jvyyb9FKr94VJdkB8oMmgHmncpb5CjSCDhQbHqr_zXzIhREr1Y58961_Kn2ESPAokieEdFg"
+      ],
+      "size": 2822522
+    },
+    {
+      "global_n": 211,
+      "season": 1,
+      "season_ep": 92,
+      "filename": "211.211巴巴爸爸做酸奶. .mp3",
+      "title": "211.211巴巴爸爸做酸奶. .mp3",
+      "fid": "~1gTrwCx4bpzkVDjPXcddQRmLEjJ_h8ekk9GrY2TdoCLzjny36JsdxjLb3PUj02jq2QF6eCqAoII3xPonFa9gZKY",
+      "fids": [
+        "~1gTrwCx4bpzkVDjPXcddQRmLEjJ_h8ekk9GrY2TdoCLzjny36JsdxjLb3PUj02jq2QF6eCqAoII3xPonFa9gZKY"
+      ],
+      "size": 2844047
+    },
+    {
+      "global_n": 213,
+      "season": 1,
+      "season_ep": 93,
+      "filename": "213.213巴巴布拉伯在农场. .mp3",
+      "title": "213.213巴巴布拉伯在农场. .mp3",
+      "fid": "~1RJ3WrPB0Z7ElL9Sp8LafjVTV1mHooVLYLYiuyjDRDtdEkQ3_krreLpIjEAe9ArD0MiSYQSv2NvgGvrVkkG7OZk",
+      "fids": [
+        "~1RJ3WrPB0Z7ElL9Sp8LafjVTV1mHooVLYLYiuyjDRDtdEkQ3_krreLpIjEAe9ArD0MiSYQSv2NvgGvrVkkG7OZk"
+      ],
+      "size": 2345421
+    },
+    {
+      "global_n": 217,
+      "season": 1,
+      "season_ep": 94,
+      "filename": "217.217巴巴爸爸设计新学校. .mp3",
+      "title": "217.217巴巴爸爸设计新学校. .mp3",
+      "fid": "~1VHBPpyFgnFIPcQsGmEayXJNf_DH2lbXSzePNPchpB6lCvcwkHQp_06QALTM4unWvnq3TIHXmr1zXJzAZ0XSpUY",
+      "fids": [
+        "~1VHBPpyFgnFIPcQsGmEayXJNf_DH2lbXSzePNPchpB6lCvcwkHQp_06QALTM4unWvnq3TIHXmr1zXJzAZ0XSpUY"
+      ],
+      "size": 2322852
+    },
+    {
+      "global_n": 218,
+      "season": 1,
+      "season_ep": 95,
+      "filename": "218.218巴巴布莱特的考古大冒险. .mp3",
+      "title": "218.218巴巴布莱特的考古大冒险. .mp3",
+      "fid": "~1xYiQnwjuJ3o0hTWa_3W9DPvUK1HU_CQ6bmTwKykfDtlmM1hjeJPfgurPo1_NVfIZ6JSk6y92IJKCYUU7AmoE38",
+      "fids": [
+        "~1xYiQnwjuJ3o0hTWa_3W9DPvUK1HU_CQ6bmTwKykfDtlmM1hjeJPfgurPo1_NVfIZ6JSk6y92IJKCYUU7AmoE38"
+      ],
+      "size": 2299446
+    },
+    {
+      "global_n": 221,
+      "season": 1,
+      "season_ep": 96,
+      "filename": "221.221巴巴宝宝们学上网. .mp3",
+      "title": "221.221巴巴宝宝们学上网. .mp3",
+      "fid": "~1YcWfh9SHeR058JLqc4BxJKE3pu1hOPxtf8B2CWMxQaxdZsFsyxP3BXLqTWLaCnjMZZ877tAlC2FNASjVxD6HPA",
+      "fids": [
+        "~1YcWfh9SHeR058JLqc4BxJKE3pu1hOPxtf8B2CWMxQaxdZsFsyxP3BXLqTWLaCnjMZZ877tAlC2FNASjVxD6HPA"
+      ],
+      "size": 2437999
+    }
+  ]
+}

@@ -85,6 +85,10 @@ def commerce_humanize_enabled() -> bool:
     return _env("WECHAT_MP_COMMERCE_HUMANIZE", "0").lower() in ("1", "true", "yes", "on")
 
 
+def commerce_seo_enabled() -> bool:
+    return _env("WECHAT_MP_COMMERCE_SEO", "1").lower() in ("1", "true", "yes", "on")
+
+
 def commerce_masthead_enabled() -> bool:
     return _env("WECHAT_MP_COMMERCE_MASTHEAD", "1").lower() in ("1", "true", "yes", "on")
 

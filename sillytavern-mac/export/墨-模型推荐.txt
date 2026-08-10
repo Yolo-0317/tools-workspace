@@ -1,0 +1,10 @@
+墨 · NSFW 写手模型推荐（OpenRouter）
+
+1) thedrummer/cydonia-24b-v4.1  —— 首选：creative writing、跟指令、短篇稳
+2) thedrummer/valkyrie-49b-v1 —— 叙事/成文感更强，稍贵
+3) thedrummer/skyfall-36b-v2  —— 故事感备选
+4) sao10k/l3.3-euryale-70b    —— 万能备胎，写稿易偏对话腔
+避免：Hermes（非写作向）；Lumimaid 70B（context 短，不适合长沟通）
+
+温度：0.75～0.9
+出稿 max tokens：400～512

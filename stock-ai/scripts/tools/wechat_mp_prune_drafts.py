@@ -18,9 +18,9 @@ from scripts.tools.wechat_mp_client import (
 )
 from scripts.tools.wechat_mp_content import is_obsolete_draft_title
 from scripts.tools.wechat_mp_draft_slots import (
-    DRAFT_KINDS,
     get_slot_media_id,
     is_managed_draft_title,
+    managed_slot_keys,
     prune_extra_managed_drafts,
 )
 
@@ -32,7 +32,7 @@ def prune_obsolete_drafts(*, dry_run: bool = False) -> int:
         print(f"❌ 拉取草稿列表失败: {err}", file=sys.stderr)
         return 1
 
-    keep = {mid for k in DRAFT_KINDS if (mid := get_slot_media_id(k))}
+    keep = {mid for k in managed_slot_keys() if (mid := get_slot_media_id(k))}
     to_delete: list[tuple[str, str, str]] = []
 
     for it in items:

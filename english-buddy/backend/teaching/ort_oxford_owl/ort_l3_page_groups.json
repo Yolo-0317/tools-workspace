@@ -1,25 +1,645 @@
 {
-  "note": "ORT L3 句↔橙果插图页手工分组（真源在 books.json pages[]）。橙果 PDF 故事页数常少于 lines 数。",
+  "note": "ORT L3 PDF OCR 对齐分组（真源 books.json pages[]）",
   "books": {
+    "ort_the_duck_race": {
+      "pdf_story_pages": 16,
+      "groups": [
+        [
+          "Wilma had an idea."
+        ],
+        [
+          "The children made six ducks."
+        ],
+        [
+          "\"Let's have a duck race,\" said Wilma."
+        ],
+        [
+          "Mum began the race."
+        ],
+        [
+          "\"Drop the ducks in,\" said Mum."
+        ],
+        [
+          "The ducks went down the stream."
+        ],
+        [
+          "Oh no! Wilma's duck sank."
+        ],
+        [
+          "Chip's duck got stuck in the reeds."
+        ],
+        [
+          "Biff's duck got stuck in the weeds."
+        ],
+        [
+          "Wilf's duck got stuck on a log."
+        ],
+        [
+          "\"Get it off with a stick,\" said Chip."
+        ],
+        [
+          "Kipper's duck went fast."
+        ],
+        [
+          "It went past Dad's duck."
+        ],
+        [
+          "Two swans flew down."
+        ],
+        [
+          "They landed on the ducks!"
+        ],
+        [
+          "\"Six soggy ducks,\" said Kipper."
+        ]
+      ]
+    },
+    "ort_sniff": {
+      "pdf_story_pages": 16,
+      "groups": [
+        [
+          "\"Will you look after Sniff today?\" said Mrs May."
+        ],
+        [
+          "Wilf and Wilma were happy."
+        ],
+        [
+          "They wanted to look after the puppy."
+        ],
+        [
+          "They took Sniff to the park."
+        ],
+        [
+          "The puppy was excited."
+        ],
+        [
+          "Sniff liked to roll on her back.",
+          "She jumped up for a stick."
+        ],
+        [
+          "She ran after a ball.",
+          "She barked at a cat."
+        ],
+        [
+          "Sniff went in the mud.",
+          "She ran after a duck."
+        ],
+        [
+          "She jumped in the pond.",
+          "She barked at a dog."
+        ],
+        [
+          "\"I am hot,\" said Wilf. \"I want a rest.\""
+        ],
+        [
+          "\"I am hot, too,\" said Wilma. \"I want a drink.\""
+        ],
+        [
+          "Mum couldn't find Sniff."
+        ],
+        [
+          "She couldn't find Wilf and Wilma."
+        ],
+        [
+          "Mum and Dad looked and looked."
+        ],
+        [
+          "\"They must be lost,\" said Mum."
+        ],
+        [
+          "They were fast asleep.",
+          "\"They are worn out,\" said Dad."
+        ]
+      ]
+    },
+    "ort_pond_dipping": {
+      "pdf_story_pages": 16,
+      "groups": [
+        [
+          "Wilf and Wilma were at the pond."
+        ],
+        [
+          "The net got stuck."
+        ],
+        [
+          "\"Help me pull,\" said Wilf."
+        ],
+        [
+          "They pulled the net."
+        ],
+        [
+          "It was stuck on some junk."
+        ],
+        [
+          "Wilma got a big stick."
+        ],
+        [
+          "\"Let's pull it out,\" she said."
+        ],
+        [
+          "Wilf and Wilma pulled."
+        ],
+        [
+          "They couldn't pull the junk out."
+        ],
+        [
+          "Mum and Dad helped."
+        ],
+        [
+          "They pulled out an old pram."
+        ],
+        [
+          "Plop! A frog hopped out."
+        ],
+        [
+          "It made Wilf jump."
+        ],
+        [
+          "Splash! A fish jumped up."
+        ],
+        [
+          "\"A pram full of fish,\" said Dad."
+        ],
+        [
+          "\"Pram dipping!\" said Wilma."
+        ]
+      ]
+    },
+    "ort_the_ice_rink": {
+      "pdf_story_pages": 16,
+      "groups": [
+        [
+          "Wilf and Dad went to the ice rink.",
+          "They put skates on."
+        ],
+        [
+          "They went on to the ice."
+        ],
+        [
+          "\"Hold my hand,\" said Dad."
+        ],
+        [
+          "Wilf held Dad's hand."
+        ],
+        [
+          "\"This is fun,\" said Wilf."
+        ],
+        [
+          "Wilf let go of his Dad's hand."
+        ],
+        [
+          "He began to skate."
+        ],
+        [
+          "Whoops! Wilf sat down with a bump."
+        ],
+        [
+          "\"This ice is cold,\" said Wilf."
+        ],
+        [
+          "Dad began to skate."
+        ],
+        [
+          "He went round the rink."
+        ],
+        [
+          "\"Look at me spin!\" said Dad."
+        ],
+        [
+          "\"Look at me jump!\" said Dad."
+        ],
+        [
+          "Dad got some cold drinks."
+        ],
+        [
+          "\"Look out, Dad,\" said Wilf."
+        ],
+        [
+          "Oh no! A banana skin."
+        ]
+      ]
+    },
+    "ort_the_mud_bath": {
+      "pdf_story_pages": 16,
+      "groups": [
+        [
+          "Dad was playing football."
+        ],
+        [
+          "He ran with the ball."
+        ],
+        [
+          "\"Go on Dad!\" called Chip. \"Kick it!\""
+        ],
+        [
+          "Dad fell over in the mud. Splat!"
+        ],
+        [
+          "\"Bad luck, Dad!\" said Biff."
+        ],
+        [
+          "\"Oh Dad,\" said Mum. \"What a mess.\""
+        ],
+        [
+          "\"I want a bath,\" said Dad."
+        ],
+        [
+          "Dad went up to the bathroom."
+        ],
+        [
+          "He ran a bath."
+        ],
+        [
+          "Dad came down."
+        ],
+        [
+          "There was football on TV."
+        ],
+        [
+          "Dad looked at the football."
+        ],
+        [
+          "\"Go on!\" he called. \"Kick it!\""
+        ],
+        [
+          "Dad forgot the bath.",
+          "Drip! Drop! Drip!"
+        ],
+        [
+          "Plop! Plop! Splat!",
+          "\"What was that?\" said Dad."
+        ],
+        [
+          "Splash! \"Oh no,\" said Dad."
+        ]
+      ]
+    },
+    "ort_the_steel_band": {
+      "pdf_story_pages": 16,
+      "groups": [
+        [
+          "A band came to play."
+        ],
+        [
+          "\"My name is Stan,\" said a man."
+        ],
+        [
+          "\"I want you to help us.\""
+        ],
+        [
+          "\"I want you to clap,\" he said."
+        ],
+        [
+          "\"Clap your hands and tap your feet.\""
+        ],
+        [
+          "\"I want you to sing a song.\""
+        ],
+        [
+          "\"Sing it with us.\""
+        ],
+        [
+          "The children sang with the band."
+        ],
+        [
+          "\"Now clap as you sing,\" said Stan."
+        ],
+        [
+          "\"Who wants to play in the band?\""
+        ],
+        [
+          "The children put up their hands."
+        ],
+        [
+          "Everyone wanted to play."
+        ],
+        [
+          "\"You can all play,\" said Stan."
+        ],
+        [
+          "Wilf hit the drum."
+        ],
+        [
+          "\"Tap it,\" said Stan. \"Don't bang it.\""
+        ],
+        [
+          "What a grand band!"
+        ]
+      ]
+    },
+    "ort_on_the_sand": {
+      "pdf_story_pages": 16,
+      "groups": [
+        [
+          "Biff and Chip played on the sand."
+        ],
+        [
+          "Dad went to sleep."
+        ],
+        [
+          "Biff and Chip put sand on Dad."
+        ],
+        [
+          "They made a sandcastle."
+        ],
+        [
+          "They put Dad's hat on top."
+        ],
+        [
+          "They went to get an ice-cream."
+        ],
+        [
+          "Dad was still asleep."
+        ],
+        [
+          "Chip looked at the donkeys."
+        ],
+        [
+          "Biff looked at the boat."
+        ],
+        [
+          "They looked at the go-karts."
+        ],
+        [],
+        [
+          "They looked at Dad's hat."
+        ],
+        [
+          "\"Oh no!\" said Biff."
+        ],
+        [
+          "Dad was hiding."
+        ],
+        [
+          "Biff was cross."
+        ],
+        [
+          "The hat was on a stick."
+        ]
+      ]
+    },
+    "ort_the_egg_hunt": {
+      "pdf_story_pages": 16,
+      "groups": [
+        [
+          "Kate came to stay."
+        ],
+        [
+          "Mum and Kate made a cake."
+        ],
+        [
+          "Kate put little eggs on it."
+        ],
+        [
+          "Wilma looked at the little eggs."
+        ],
+        [
+          "She had an idea."
+        ],
+        [
+          "Wilma went to the park."
+        ],
+        [
+          "She wanted to hide some eggs."
+        ],
+        [
+          "She put them in the trees."
+        ],
+        [
+          "She put them in the flowers."
+        ],
+        [
+          "Wilf and Kate came to the park."
+        ],
+        [
+          "\"You can look for eggs,\" said Wilma."
+        ],
+        [
+          "Kate looked for the eggs."
+        ],
+        [
+          "\"Where are they?\" she said."
+        ],
+        [
+          "The squirrels had them."
+        ],
+        [
+          "\"Squirrels like eggs,\" said Kate."
+        ],
+        [
+          "\"So do I,\" she said."
+        ]
+      ]
+    },
+    "ort_nobody_wanted_to_play": {
+      "pdf_story_pages": 16,
+      "groups": [
+        [
+          "Wilf was cross."
+        ],
+        [
+          "Nobody wanted to play."
+        ],
+        [
+          "He went to the park."
+        ],
+        [
+          "Wilf played on the rocket."
+        ],
+        [
+          "\"I am a spaceman,\" he said."
+        ],
+        [
+          "He played on the see-saw."
+        ],
+        [
+          "\"I am a juggler,\" he said."
+        ],
+        [
+          "He played on the horse."
+        ],
+        [
+          "\"I am a cowboy,\" he said."
+        ],
+        [
+          "He played on his bicycle."
+        ],
+        [
+          "\"I am a stuntman,\" he said."
+        ],
+        [
+          "He climbed up the ladder."
+        ],
+        [
+          "\"I am a fireman,\" he said."
+        ],
+        [
+          "He climbed on the wall."
+        ],
+        [
+          "\"I am a spiderman,\" he said."
+        ],
+        []
+      ]
+    },
     "ort_a_cat_in_the_tree": {
       "pdf_story_pages": 16,
       "groups": [
-        ["Floppy barked at a cat.", "The cat ran up a tree."],
-        ["Biff was cross with Floppy."],
-        ["Wilma climbed on the wall."],
-        ["Wilma climbed up the tree."],
-        ["She couldn't get the cat."],
-        ["Wilma couldn't get down."],
-        ["Wilma's dad was cross."],
-        ["He put the ladder up."],
-        ["Wilma climbed down."],
-        ["Wilma's dad climbed the tree."],
-        ["He couldn't get the cat."],
-        ["Wilma's dad was stuck."],
-        ["The cat jumped down."],
-        ["The fireman put a ladder up."],
-        ["Wilma's dad climbed down."],
-        ["\"Oh no!\" said everyone."]
+        [
+          "Floppy barked at a cat.",
+          "The cat ran up a tree."
+        ],
+        [
+          "Biff was cross with Floppy."
+        ],
+        [
+          "Wilma climbed on the wall."
+        ],
+        [
+          "Wilma climbed up the tree."
+        ],
+        [
+          "She couldn't get the cat."
+        ],
+        [
+          "Wilma couldn't get down."
+        ],
+        [
+          "Wilma's dad was cross."
+        ],
+        [
+          "He put the ladder up."
+        ],
+        [
+          "Wilma climbed down."
+        ],
+        [
+          "Wilma's dad climbed the tree."
+        ],
+        [
+          "He couldn't get the cat."
+        ],
+        [
+          "Wilma's dad was stuck."
+        ],
+        [
+          "The cat jumped down."
+        ],
+        [
+          "The fireman put a ladder up."
+        ],
+        [
+          "Wilma's dad climbed down."
+        ],
+        [
+          "\"Oh no!\" said everyone."
+        ]
+      ]
+    },
+    "ort_the_rope_swing": {
+      "pdf_story_pages": 16,
+      "groups": [
+        [
+          "The children went to the stream."
+        ],
+        [
+          "They looked at the swing."
+        ],
+        [
+          "Wilf climbed on the swing."
+        ],
+        [
+          "Chip pushed Wilf."
+        ],
+        [
+          "Floppy looked at the rope."
+        ],
+        [
+          "Biff climbed on the swing."
+        ],
+        [
+          "Floppy barked and barked."
+        ],
+        [
+          "Chip climbed on the swing."
+        ],
+        [
+          "Floppy barked and barked and barked."
+        ],
+        [
+          "Kipper went on the swing."
+        ],
+        [
+          "\"What a silly dog,\" said Kipper."
+        ],
+        [
+          "Wilma went on too."
+        ],
+        [
+          "\"What a silly dog!\" said Wilma."
+        ],
+        [
+          "The children went home."
+        ],
+        [
+          "Floppy looked at the rope."
+        ],
+        [
+          "Splash! Oh no!"
+        ]
+      ]
+    },
+    "ort_by_the_stream": {
+      "pdf_story_pages": 16,
+      "groups": [
+        [
+          "Mum and Dad sat on the rug."
+        ],
+        [
+          "The children played by the stream."
+        ],
+        [
+          "Biff went on the bridge."
+        ],
+        [
+          "They dropped sticks in the water."
+        ],
+        [
+          "Kipper couldn't see."
+        ],
+        [
+          "Kipper climbed up."
+        ],
+        [
+          "He dropped Teddy in the water."
+        ],
+        [
+          "\"Get Teddy,\" said Kipper."
+        ],
+        [
+          "Biff couldn't get Teddy."
+        ],
+        [
+          "\"Get Teddy,\" said Kipper."
+        ],
+        [
+          "Mum couldn't get Teddy."
+        ],
+        [
+          "\"I want Teddy,\" said Kipper."
+        ],
+        [
+          "Dad couldn't get Teddy."
+        ],
+        [
+          "Dad fell in."
+        ],
+        [
+          "Splash!"
+        ],
+        [
+          "\"I am a frogman,\" said Dad."
+        ]
       ]
     }
   }

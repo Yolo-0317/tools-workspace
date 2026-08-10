@@ -30,7 +30,7 @@ TZ = ZoneInfo("Asia/Shanghai")
 
 # 金融科技读者号：后台商品库搜索关键词（官方无列表 API，仅供人工选品）
 PICK_KEYWORDS = (
-    ("market", "理财 基金 记账本 财经"),
+    ("market", "办公 读书 科技 财经"),
     ("news", "财经 商务 办公 充电宝"),
     ("top5", "键盘 鼠标 显示器 支架"),
     ("dragons", "护眼灯 台灯 咖啡"),
@@ -231,7 +231,7 @@ def resolve_footer_product_key(
 
 
 _DISCLAIMER_MARKS = (
-    "本文为作者个人投资日记",
+    "本文为作者个人复盘笔记",
     "本文为作者个人工程笔记",
     "部分链接含推广合作",
     "含推广链接",
@@ -446,6 +446,11 @@ def auto_pick_footer_product(*, kind: str | None = None) -> dict[str, Any] | Non
 
 def attach_footer_product(article: dict[str, Any], *, kind: str | None = None) -> dict[str, Any]:
     """文末返佣商品：优先 CPS `<mp-common-cpsad data-pid>`，其次 footer product_key。"""
+    k = (kind or "").strip().lower()
+    if k in {"guba", "hotspot", "tv_review", "tv", "film", "movie"}:
+        return article
+    if (article.get("engagement_kind") or "").strip().lower() == "english_buddy":
+        return article
     if not footer_product_enabled():
         return article
     kinds = footer_product_kinds()

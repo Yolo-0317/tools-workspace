@@ -117,3 +117,13 @@ def latest_a_share_trade_date(*, on_or_before: date | None = None) -> date:
             return d
         d -= timedelta(days=1)
     return on_or_before or datetime.now(TZ).date()
+
+
+def next_a_share_trade_date(*, on_or_after: date | None = None) -> date:
+    """不早于 on_or_after 的下一个 A 股交易日（周五后跳至下周一等）。"""
+    d = on_or_after or datetime.now(TZ).date()
+    for _ in range(366):
+        if is_a_share_trading_day(d):
+            return d
+        d += timedelta(days=1)
+    return on_or_after or datetime.now(TZ).date()

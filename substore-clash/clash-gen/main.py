@@ -30,6 +30,7 @@ DEFAULT_REFRESH_SECONDS = 6 * 3600
 _cache_lock = threading.Lock()
 _cached_yaml: bytes | None = None
 _cached_yaml_verge: bytes | None = None
+_cached_yaml_android: bytes | None = None
 _cache_updated_at: float = 0.0
 _cache_error: str | None = None
 
@@ -73,14 +74,26 @@ def _split_pipe(value: str) -> list[str]:
 
 
 def _fetch_subscription(url: str, timeout: int = 60) -> str:
-    resp = requests.get(
-        url,
-        headers={"User-Agent": USER_AGENT},
-        timeout=timeout,
-        allow_redirects=True,
-    )
-    resp.raise_for_status()
-    return resp.text
+    last_exc: Exception | None = None
+    for attempt in range(2):
+        try:
+            resp = requests.get(
+                url,
+                headers={"User-Agent": USER_AGENT},
+                timeout=timeout,
+                allow_redirects=True,
+            )
+            resp.raise_for_status()
+            body = resp.text
+            if not body.strip():
+                raise ValueError(f"empty subscription body from {url}")
+            return body
+        except Exception as exc:
+            last_exc = exc
+            if attempt == 0:
+                time.sleep(1)
+    assert last_exc is not None
+    raise last_exc
 
 
 def _decode_if_base64(text: str) -> str:
@@ -261,10 +274,26 @@ def _filter_chatgpt_unlock_names(names: list[str]) -> list[str]:
 
 
 def _build_chatgpt_group_members(unlock_nodes: list[str]) -> list[str]:
-    """ChatGPT 组仅含解锁节点（不含自动选择）；首项为默认选中。"""
+    """ChatGPT url-test 成员（仅解锁节点）。"""
     if not unlock_nodes:
-        return ["DIRECT"]
+        return []
     return sorted(unlock_nodes, key=_node_benchmark_priority)
+
+
+def _build_chatgpt_group(unlock_nodes: list[str]) -> dict[str, Any]:
+    """ChatGPT: url-test 自动选最快解锁节点；无解锁节点时 fallback 为 DIRECT。"""
+    members = _build_chatgpt_group_members(unlock_nodes)
+    if not members:
+        return _select_group("ChatGPT", ["DIRECT"])
+    return _url_test_group("ChatGPT", members)
+
+
+def _build_proxy_group_members(names: list[str]) -> list[str]:
+    """PROXY select: 快捷项 + 全部节点平铺，便于测速后直接指定单节点。"""
+    shortcuts = [AUTO_SELECT_NAME, "ChatGPT", "DIRECT"]
+    shortcut_set = set(shortcuts)
+    nodes = sorted(names, key=_node_benchmark_priority)
+    return shortcuts + [n for n in nodes if n not in shortcut_set]
 
 
 def _prefix_proxy_names(proxies: list[dict[str, Any]], label: str) -> list[dict[str, Any]]:
@@ -298,8 +327,10 @@ def _proxy_names(proxies: list[dict[str, Any]]) -> list[str]:
 EXCLUDED_NODE_PATTERN = re.compile(r"商务|游戏")
 # 机场订阅里的信息/占位节点（127.0.0.x、0.0.0.0 等，Stash 导入会失败）
 PLACEHOLDER_NODE_PATTERN = re.compile(
-    r"[-—]{4,}|剩余[:：]|官网[:：]|下载新客户端|最新客户端|一元机场\.asia"
+    r"[-—]{4,}|剩余[:：]|官网[:：]|下载新客户端|最新客户端|一元机场\.asia|实时负载"
 )
+# Stash 节点级测速字段；Android Clash / Mihomo 不认，会导致导入失败
+_STASH_ONLY_PROXY_KEYS = frozenset({"benchmark-url", "benchmark-timeout"})
 _INVALID_SERVERS = frozenset({"0.0.0.0", "127.0.0.1"})
 _UNSUPPORTED_NETWORKS = frozenset({"xhttp"})
 # Stash 文档推荐 HTTP；gstatic 204 用于 url-test 组级探测
@@ -384,38 +415,19 @@ def _build_loyal_policy_groups() -> list[dict[str, Any]]:
     return groups
 
 
-def build_profile(
-    subscription_urls: list[str],
-    source_labels: list[str],
-    substore_url: str | None = None,
-) -> dict[str, Any]:
-    all_proxies: list[dict[str, Any]] = []
-
-    if substore_url:
-        raw = _fetch_subscription(substore_url)
-        all_proxies.extend(_extract_proxies(raw))
-    else:
-        for idx, url in enumerate(subscription_urls):
-            label = source_labels[idx] if idx < len(source_labels) else f"src{idx + 1}"
-            raw = _fetch_subscription(url)
-            chunk = _extract_proxies(raw)
-            all_proxies.extend(_prefix_proxy_names(chunk, label))
-
-    all_proxies = _dedupe_proxies(all_proxies)
-    all_proxies = _exclude_unwanted_proxies(all_proxies)
+def build_profile(all_proxies: list[dict[str, Any]]) -> dict[str, Any]:
     names = _proxy_names(all_proxies)
     if not names:
-        raise ValueError("no proxies parsed — check SUBSCRIPTION_URLS or SUBSTORE_COLLECTION_URL")
+        raise ValueError("no proxies in profile")
 
     chatgpt_nodes = _filter_chatgpt_unlock_names(names)
-    chatgpt_group = _build_chatgpt_group_members(chatgpt_nodes)
 
     config = _base_profile_dict(all_proxies)
     config["proxy-groups"] = [
         *_build_auto_select_groups(names),
-        _select_group("ChatGPT", chatgpt_group),
+        _build_chatgpt_group(chatgpt_nodes),
         *_build_loyal_policy_groups(),
-        _select_group("PROXY", [AUTO_SELECT_NAME, "ChatGPT", "DIRECT"]),
+        _select_group("PROXY", _build_proxy_group_members(names)),
         _select_group("GLOBAL", ["PROXY", AUTO_SELECT_NAME, "ChatGPT", "DIRECT"]),
     ]
     config["rule-providers"] = RULE_PROVIDERS["rule-providers"]
@@ -423,8 +435,10 @@ def build_profile(
     return config
 
 
-def _base_profile_dict(all_proxies: list[dict[str, Any]]) -> dict[str, Any]:
-    return {
+def _base_profile_dict(
+    all_proxies: list[dict[str, Any]], *, include_profile: bool = True
+) -> dict[str, Any]:
+    config: dict[str, Any] = {
         "mixed-port": 7890,
         "allow-lan": False,
         "mode": "rule",
@@ -433,10 +447,6 @@ def _base_profile_dict(all_proxies: list[dict[str, Any]]) -> dict[str, Any]:
         "external-controller": os.environ.get(
             "CLASH_EXTERNAL_CONTROLLER", "127.0.0.1:9097"
         ),
-        "profile": {
-            "store-selected": True,
-            "store-fake-ip": True,
-        },
         "dns": {
             "enable": True,
             "ipv6": False,
@@ -449,50 +459,95 @@ def _base_profile_dict(all_proxies: list[dict[str, Any]]) -> dict[str, Any]:
         },
         "proxies": all_proxies,
     }
+    if include_profile:
+        config["profile"] = {
+            "store-selected": True,
+            "store-fake-ip": True,
+        }
+    return config
 
 
-def build_profile_verge(
+def _strip_stash_only_proxy_fields(proxies: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {k: v for k, v in p.items() if k not in _STASH_ONLY_PROXY_KEYS}
+        for p in proxies
+    ]
+
+
+def _collect_subscription_proxies(
     subscription_urls: list[str],
     source_labels: list[str],
     substore_url: str | None = None,
-) -> dict[str, Any]:
-    """Clash Verge 轻量配置：无 rule-providers，避免首次激活长时间下载/测速转圈。"""
+) -> list[dict[str, Any]]:
     all_proxies: list[dict[str, Any]] = []
+    errors: list[str] = []
 
     if substore_url:
-        raw = _fetch_subscription(substore_url)
-        all_proxies.extend(_extract_proxies(raw))
+        try:
+            raw = _fetch_subscription(substore_url)
+            all_proxies.extend(_extract_proxies(raw))
+        except Exception as exc:
+            errors.append(f"substore: {exc}")
     else:
         for idx, url in enumerate(subscription_urls):
             label = source_labels[idx] if idx < len(source_labels) else f"src{idx + 1}"
-            raw = _fetch_subscription(url)
-            chunk = _extract_proxies(raw)
-            all_proxies.extend(_prefix_proxy_names(chunk, label))
+            try:
+                raw = _fetch_subscription(url)
+                chunk = _extract_proxies(raw)
+                if not chunk:
+                    errors.append(f"{label}: subscription returned 0 proxies")
+                    continue
+                all_proxies.extend(_prefix_proxy_names(chunk, label))
+            except Exception as exc:
+                errors.append(f"{label}: {exc}")
 
     all_proxies = _dedupe_proxies(all_proxies)
     all_proxies = _exclude_unwanted_proxies(all_proxies)
+    if not _proxy_names(all_proxies):
+        detail = "; ".join(errors) if errors else "unknown"
+        raise ValueError(
+            "no proxies parsed — check SUBSCRIPTION_URLS or SUBSTORE_COLLECTION_URL "
+            f"({detail})"
+        )
+    if errors:
+        sys.stderr.write(f"clash-gen: partial subscription fetch: {'; '.join(errors)}\n")
+    return all_proxies
+
+
+def build_profile_mobile(
+    all_proxies: list[dict[str, Any]],
+    *,
+    node_limit: int | None = VERGE_NODE_LIMIT,
+    include_profile: bool = True,
+) -> dict[str, Any]:
+    """轻量移动端配置：无 rule-providers / Stash benchmark 字段，避免 Android 导入失败。"""
     names = _proxy_names(all_proxies)
     if not names:
-        raise ValueError("no proxies parsed — check SUBSCRIPTION_URLS or SUBSTORE_COLLECTION_URL")
+        raise ValueError("no proxies in mobile profile")
 
-    shortlist = sorted(names, key=_node_benchmark_priority)[:VERGE_NODE_LIMIT]
+    ranked = sorted(names, key=_node_benchmark_priority)
+    shortlist = ranked if node_limit is None else ranked[:node_limit]
     chatgpt_nodes = _filter_chatgpt_unlock_names(names)
     include_names = list(dict.fromkeys([*shortlist, *chatgpt_nodes]))
     include_set = set(include_names)
-    verge_proxies = []
-    for p in all_proxies:
-        if str(p.get("name", "")) not in include_set:
-            continue
-        item = {k: v for k, v in p.items() if k not in ("benchmark-url", "benchmark-timeout")}
-        verge_proxies.append(item)
+    stripped = _strip_stash_only_proxy_fields(all_proxies)
+    if node_limit is None:
+        mobile_proxies = stripped
+    else:
+        mobile_proxies = [
+            p for p in stripped if str(p.get("name", "")) in include_set
+        ]
+    if not mobile_proxies:
+        raise ValueError("mobile profile has empty proxies after filtering")
+
     chatgpt_in_profile = [n for n in chatgpt_nodes if n in include_set]
-    chatgpt_group = _build_chatgpt_group_members(chatgpt_in_profile)
-    config = _base_profile_dict(verge_proxies)
+    auto_select_members = _auto_select_members(shortlist)
+    config = _base_profile_dict(mobile_proxies, include_profile=include_profile)
     config.pop("external-controller", None)
     config["proxy-groups"] = [
-        _url_test_group(AUTO_SELECT_NAME, shortlist),
-        _select_group("ChatGPT", chatgpt_group),
-        _select_group("PROXY", [AUTO_SELECT_NAME, "ChatGPT", "DIRECT"]),
+        _url_test_group(AUTO_SELECT_NAME, auto_select_members),
+        _build_chatgpt_group(chatgpt_in_profile),
+        _select_group("PROXY", _build_proxy_group_members(include_names)),
         _select_group("GLOBAL", ["PROXY", AUTO_SELECT_NAME, "ChatGPT", "DIRECT"]),
     ]
     config["rules"] = [
@@ -502,6 +557,24 @@ def build_profile_verge(
         f"MATCH,{AUTO_SELECT_NAME}",
     ]
     return config
+
+
+def build_profile_verge(all_proxies: list[dict[str, Any]]) -> dict[str, Any]:
+    """Clash Verge 轻量配置：无 rule-providers，避免首次激活长时间下载/测速转圈。"""
+    return build_profile_mobile(
+        all_proxies,
+        node_limit=VERGE_NODE_LIMIT,
+        include_profile=True,
+    )
+
+
+def build_profile_android(all_proxies: list[dict[str, Any]]) -> dict[str, Any]:
+    """Android Clash / Clash Meta for Android：去掉 Stash 字段与 Mihomo profile，保留全部节点。"""
+    return build_profile_mobile(
+        all_proxies,
+        node_limit=None,
+        include_profile=False,
+    )
 
 
 def _dump_yaml(profile: dict[str, Any]) -> str:
@@ -536,12 +609,32 @@ def _profile_sources() -> tuple[list[str], list[str], str | None]:
     return urls, labels, substore
 
 
-def generate_yaml(*, verge: bool = False) -> str:
+def _build_all_profiles(
+    subscription_urls: list[str],
+    source_labels: list[str],
+    substore_url: str | None = None,
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    all_proxies = _collect_subscription_proxies(
+        subscription_urls, source_labels, substore_url
+    )
+    return (
+        build_profile(all_proxies),
+        build_profile_verge(all_proxies),
+        build_profile_android(all_proxies),
+    )
+
+
+def generate_yaml(*, verge: bool = False, android: bool = False) -> str:
     urls, labels, substore = _profile_sources()
-    if verge:
-        profile = build_profile_verge(urls, labels, substore_url=substore)
+    full, verge_profile, android_profile = _build_all_profiles(urls, labels, substore)
+    if android:
+        profile = android_profile
+    elif verge:
+        profile = verge_profile
     else:
-        profile = build_profile(urls, labels, substore_url=substore)
+        profile = full
+    if not profile.get("proxies"):
+        raise ValueError("generated profile has empty proxies")
     return _dump_yaml(profile)
 
 
@@ -554,10 +647,15 @@ def _refresh_interval_seconds() -> int:
 
 def refresh_cache() -> None:
     """从机场/Sub-Store 拉取最新节点并更新内存缓存。"""
-    global _cached_yaml, _cached_yaml_verge, _cache_updated_at, _cache_error
+    global _cached_yaml, _cached_yaml_verge, _cached_yaml_android, _cache_updated_at, _cache_error
     try:
-        body = generate_yaml(verge=False).encode("utf-8")
-        body_verge = generate_yaml(verge=True).encode("utf-8")
+        urls, labels, substore = _profile_sources()
+        full, verge_profile, android_profile = _build_all_profiles(
+            urls, labels, substore
+        )
+        body = _dump_yaml(full).encode("utf-8")
+        body_verge = _dump_yaml(verge_profile).encode("utf-8")
+        body_android = _dump_yaml(android_profile).encode("utf-8")
     except Exception as exc:
         with _cache_lock:
             _cache_error = str(exc)
@@ -566,37 +664,48 @@ def refresh_cache() -> None:
     with _cache_lock:
         _cached_yaml = body
         _cached_yaml_verge = body_verge
+        _cached_yaml_android = body_android
         _cache_updated_at = time.time()
         _cache_error = None
     ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(_cache_updated_at))
     sys.stderr.write(
-        f"clash-gen refreshed at {ts} (full {len(body)}B, verge {len(body_verge)}B)\n"
+        f"clash-gen refreshed at {ts} "
+        f"(full {len(body)}B, verge {len(body_verge)}B, android {len(body_android)}B)\n"
     )
 
 
-def _get_yaml_bytes(*, force: bool = False, verge: bool = False) -> bytes:
+def _pick_cached_yaml(*, verge: bool, android: bool) -> bytes | None:
+    if android:
+        return _cached_yaml_android
+    if verge:
+        return _cached_yaml_verge
+    return _cached_yaml
+
+
+def _get_yaml_bytes(
+    *, force: bool = False, verge: bool = False, android: bool = False
+) -> bytes:
     interval = _refresh_interval_seconds()
     if interval <= 0 and not force:
-        return generate_yaml(verge=verge).encode("utf-8")
+        return generate_yaml(verge=verge, android=android).encode("utf-8")
 
-    if force:
+    with _cache_lock:
+        cached = _pick_cached_yaml(verge=verge, android=android)
+        if cached is not None and not force:
+            return cached
+
+    try:
         refresh_cache()
+    except Exception:
         with _cache_lock:
-            cached = _cached_yaml_verge if verge else _cached_yaml
-            assert cached is not None
-            return cached
+            cached = _pick_cached_yaml(verge=verge, android=android)
+            if cached is not None:
+                sys.stderr.write("clash-gen: refresh failed, serving stale cache\n")
+                return cached
+        raise
 
     with _cache_lock:
-        cached = _cached_yaml_verge if verge else _cached_yaml
-        if cached is not None:
-            return cached
-        err = _cache_error
-
-    if err:
-        raise RuntimeError(err)
-    refresh_cache()
-    with _cache_lock:
-        cached = _cached_yaml_verge if verge else _cached_yaml
+        cached = _pick_cached_yaml(verge=verge, android=android)
         assert cached is not None
         return cached
 
@@ -637,8 +746,8 @@ class Handler(BaseHTTPRequestHandler):
         qs = parse_qs(urlparse(self.path).query)
         return qs.get("token", [""])[0] == token
 
-    def _yaml_route(self) -> tuple[bool, bool] | None:
-        """Return (verge, force) for YAML routes, or None if not a YAML path."""
+    def _yaml_route(self) -> tuple[bool, bool, bool] | None:
+        """Return (verge, android, force) for YAML routes, or None if not a YAML path."""
         path = urlparse(self.path).path
         qs = parse_qs(urlparse(self.path).query)
         if path not in (
@@ -647,24 +756,40 @@ class Handler(BaseHTTPRequestHandler):
             "/config.yaml",
             "/clash-verge.yaml",
             "/verge.yaml",
+            "/clash-android.yaml",
+            "/android.yaml",
         ):
             return None
-        verge = path in ("/clash-verge.yaml", "/verge.yaml") or qs.get("verge", [""])[
-            0
-        ] in ("1", "true", "yes")
+        android = path in ("/clash-android.yaml", "/android.yaml") or qs.get(
+            "android", [""]
+        )[0] in ("1", "true", "yes")
+        verge = (
+            not android
+            and (
+                path in ("/clash-verge.yaml", "/verge.yaml")
+                or qs.get("verge", [""])[0] in ("1", "true", "yes")
+            )
+        )
         force = qs.get("force", [""])[0] in ("1", "true", "yes")
-        return verge, force
+        return verge, android, force
 
-    def _send_yaml(self, *, verge: bool, force: bool, send_body: bool) -> None:
+    def _send_yaml(
+        self, *, verge: bool, android: bool, force: bool, send_body: bool
+    ) -> None:
         if not self._authorized():
             self.send_error(403, "invalid token")
             return
         try:
-            body = _get_yaml_bytes(force=force, verge=verge)
+            body = _get_yaml_bytes(force=force, verge=verge, android=android)
         except Exception as exc:
             self.send_error(500, str(exc))
             return
-        fname = "clash-verge.yaml" if verge else "clash.yaml"
+        if android:
+            fname = "clash-android.yaml"
+        elif verge:
+            fname = "clash-verge.yaml"
+        else:
+            fname = "clash.yaml"
         self.send_response(200)
         self.send_header("Content-Type", "text/yaml; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
@@ -690,7 +815,9 @@ class Handler(BaseHTTPRequestHandler):
         if route is None:
             self.send_error(404)
             return
-        self._send_yaml(verge=route[0], force=route[1], send_body=False)
+        self._send_yaml(
+            verge=route[0], android=route[1], force=route[2], send_body=False
+        )
 
     def do_GET(self) -> None:
         path = urlparse(self.path).path
@@ -733,7 +860,9 @@ class Handler(BaseHTTPRequestHandler):
         if route is None:
             self.send_error(404)
             return
-        self._send_yaml(verge=route[0], force=route[1], send_body=True)
+        self._send_yaml(
+            verge=route[0], android=route[1], force=route[2], send_body=True
+        )
 
     def log_message(self, fmt: str, *args: Any) -> None:
         sys.stderr.write("%s - %s\n" % (self.address_string(), fmt % args))
@@ -743,6 +872,10 @@ def main() -> None:
     port = int(os.environ.get("CLASH_GEN_PORT", "8787"))
     host = os.environ.get("CLASH_GEN_HOST", "0.0.0.0")
     _start_background_refresh()
+    try:
+        refresh_cache()
+    except Exception as exc:
+        sys.stderr.write(f"clash-gen: initial refresh failed: {exc}\n")
     server = ThreadingHTTPServer((host, port), Handler)
     print(f"clash-gen listening on http://{host}:{port}/clash.yaml", file=sys.stderr)
     server.serve_forever()

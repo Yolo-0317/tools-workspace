@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "quark-audio": {
+      "type": "stdio",
+      "command": ".venv/bin/python",
+      "args": ["mcp/quark_audio_server.py"],
+      "env": {}
+    }
+  }
+}

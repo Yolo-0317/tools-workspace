@@ -126,8 +126,8 @@ def test_format_title_tags_truncates():
         edition="close",
         themes=[ThemeScore(name="半导体", score=3.0, sources=["x"])],
         primary="半导体",
-        title_tags="半导体+电力设备",
+        title_tags="半导体与电力设备",
         research_hook="",
         fetched_at="",
     )
-    assert format_title_tags(report, max_len=10) == "半导体+电力设备"[:10]
+    assert format_title_tags(report, max_len=10) == "半导体与电力设备"[:10]

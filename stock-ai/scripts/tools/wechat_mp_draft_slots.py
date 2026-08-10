@@ -28,8 +28,23 @@ from scripts.tools.wechat_mp_content import DRAFT_KINDS
 TZ = ZoneInfo("Asia/Shanghai")
 SLOTS_PATH = ROOT / "data" / "wechat_mp_draft_slots.json"
 
+# 定时四篇热点稿各占一槽，避免 upsert 时删掉同日其它时段草稿
+HOTSPOT_SCHEDULE_SLOT_KEYS: tuple[str, ...] = (
+    "hotspot_early",
+    "hotspot_morning",
+    "hotspot_afternoon",
+    "hotspot_evening",
+)
+
 # 用于识别「本脚本管理的草稿」，避免误删人工撰写的其他草稿
 _KIND_TITLE_HINTS: dict[str, tuple[str, ...]] = {
+    "hotspot": (
+        "热点深评",
+        "网上在吵",
+        "舆情",
+        "盘面",
+        "热点",
+    ),
     "sector": (
         "行业",
         "产业链",
@@ -95,6 +110,24 @@ _KIND_TITLE_HINTS: dict[str, tuple[str, ...]] = {
         "Agent",
         "自建应用",
     ),
+    "guba": (
+        "东财股吧",
+        "股吧",
+        "产业链怎么读",
+        "产业链怎么拆",
+        "向后看",
+        "盘面样本",
+    ),
+    "tv_review": (
+        "HBO",
+        "Netflix",
+        "美剧",
+        "电影",
+        "值不值得",
+        "开刷",
+        "追完",
+        "安利",
+    ),
 }
 
 
@@ -130,6 +163,17 @@ def is_managed_draft_title(title: str) -> bool:
     return classify_draft_kind(title) is not None
 
 
+def managed_slot_keys() -> tuple[str, ...]:
+    """草稿 prune 保留的槽位键（含定时热点三槽 + 各 kind 默认槽）。"""
+    from scripts.tools.wechat_mp_content import DRAFT_KINDS
+
+    keys: list[str] = list(HOTSPOT_SCHEDULE_SLOT_KEYS)
+    for k in DRAFT_KINDS:
+        if k not in keys:
+            keys.append(k)
+    return tuple(keys)
+
+
 def get_slot_media_id(kind: str) -> str | None:
     slots = _load_slots().get("slots") or {}
     entry = slots.get(kind) or {}
@@ -154,10 +198,13 @@ def upsert_draft_article(
     article: dict[str, Any],
     *,
     thumb_media_id: str,
+    slot_key: str | None = None,
 ) -> tuple[str | None, str, dict[str, Any] | None]:
     """
     更新或新建草稿。返回 (media_id, action, error)。
     action: updated | created
+
+    slot_key: 槽位键，默认同 kind；定时热点三篇用 hotspot_morning 等分槽。
     """
     from scripts.tools.wechat_mp_product import draft_article_payload
 
@@ -165,7 +212,8 @@ def upsert_draft_article(
     item["thumb_media_id"] = thumb_media_id
     attach_cover_crop_fields(item, thumb_media_id=thumb_media_id)
 
-    old_id = get_slot_media_id(kind)
+    slot = (slot_key or kind).strip()
+    old_id = get_slot_media_id(slot)
     if old_id:
         draft_delete(media_id=old_id)
 
@@ -173,7 +221,7 @@ def upsert_draft_article(
     if err:
         return None, "failed", err
     if new_id:
-        set_slot_media_id(kind, new_id, title=str(item.get("title") or ""))
+        set_slot_media_id(slot, new_id, title=str(item.get("title") or ""))
     action = "recreated" if old_id else "created"
     return new_id, action, None
 
@@ -218,5 +266,5 @@ def prune_extra_managed_drafts(
 
 
 def sync_all_slots_after_run(*, dry_run: bool = False) -> None:
-    keep = {mid for k in DRAFT_KINDS if (mid := get_slot_media_id(k))}
+    keep = {mid for k in managed_slot_keys() if (mid := get_slot_media_id(k))}
     prune_extra_managed_drafts(keep_media_ids=keep, dry_run=dry_run)

@@ -28,6 +28,8 @@ _CN_SECTION_RE = re.compile(r"^[一二三四五六七八九十]、")
 _SECTION_RE = _CN_SECTION_RE
 _SENTIMENT_TAG_RE = re.compile(r"\[(利好|利空|中性)\]")
 _PCT_RE = re.compile(r"([+\-]?\d+\.?\d*)%")
+_BEAR_PCT_CTX_RE = re.compile(r"跌|下挫|回落|走低|收跌|破位|急跌|跌幅|大跌|暴跌|跌超|月跌|累计跌|一度跌|盘中跌|回调|调降")
+_BULL_PCT_CTX_RE = re.compile(r"涨|上扬|反弹|走高|收涨|暴涨|急涨|涨幅|大涨|拉升|涨超|月涨|累计涨|一度涨|盘中涨|冲高|急升")
 _EMPHASIS_PHRASES = ("我们认为", "值得关注的是", "向后看")
 _TOP5_RANK_RE = re.compile(r"^(\d+)\.\s+.+")
 _NEWS_ITEM_HEAD_RE = re.compile(
@@ -51,6 +53,10 @@ _KNOWN_SECTION_TITLES = frozenset(
         "盘面里谁在用价格说话",
         "和指数情绪怎么联动",
         "向后看要验证什么",
+        "明天盯什么",
+        "今天深写什么",
+        "为啥盯这条",
+        "为什么选这一题",
         "要闻精选",
         "筛选名单",
         "个股拆解",
@@ -100,7 +106,31 @@ def is_blockquote_title_line(line: str) -> bool:
     bare = s.lstrip("> ").strip()
     if bare in _KNOWN_SECTION_TITLES:
         return True
-    return bool(_BLOCKQUOTE_TITLE_RE.match(s) or _CN_SECTION_RE.match(s))
+    for title in _KNOWN_SECTION_TITLES:
+        if bare.startswith(title) and len(bare) > len(title):
+            return False
+    for label in (
+        "先说事实",
+        "外面怎么传",
+        "A股怎么动",
+        "我们怎么看",
+        "发生了什么",
+        "网上在说什么",
+        "盘面怎么反应",
+        "AI怎么看",
+        "AI 怎么看",
+    ):
+        if label in bare:
+            return False
+    if _CN_SECTION_RE.match(s):
+        return True
+    m = _BLOCKQUOTE_TITLE_RE.match(s)
+    if not m:
+        return False
+    inner = m.group(1).strip()
+    if len(inner) > 22 or re.search(r"[，。；;！？!?]", inner):
+        return False
+    return True
 
 
 def normalize_blockquote_title(line: str) -> str:
@@ -132,8 +162,44 @@ def blockquote_title_html_card(title: str) -> str:
     )
 
 
-def blockquote_title_html(title: str, *, tight_top: bool = False, first_section: bool = False) -> str:
+def blockquote_body_html(lines: list[str]) -> str:
+    """引用块正文（`> ` 行）：输出真 blockquote，勿在 <p> 里留 &gt;。"""
+    inner = "<br/>".join(format_line_rich_html(ln) for ln in lines if ln.strip())
+    return (
+        '<blockquote style="margin: 12px 0; padding: 10px 14px; '
+        f"border-left: 3px solid {_BLOCKQUOTE_BORDER}; background-color: #f8fafc; "
+        'color: #444444; font-size: 15px; line-height: 1.72;">'
+        f"{inner}</blockquote>"
+    )
+
+
+def tv_section_banner_html(title: str, *, tight_top: bool = False, first_section: bool = False) -> str:
+    """影视稿分节：横幅渐变底 + 居中标题。"""
+    text = _escape_html(normalize_blockquote_title(title))
+    from scripts.tools.wechat_mp_layout import active_layout
+
+    layout = active_layout()
+    if tight_top:
+        margin = layout.section_margin_tight_top
+    elif first_section:
+        margin = f"{layout.section_first_margin_top} 0 10px"
+    else:
+        margin = layout.section_margin
+    return (
+        f'<section style="margin:{margin};padding:14px 16px 12px;'
+        "background:linear-gradient(135deg,#1a2744 0%,#4a2030 52%,#1a2744 100%);"
+        'border-radius:8px;text-align:center;">'
+        '<p style="margin:0;padding:0;font-size:17px;font-weight:700;color:#f8fafc;'
+        'line-height:1.4;letter-spacing:0.03em;">'
+        f"{text}</p></section>"
+    )
+
+
+def blockquote_title_html(title: str, *, tight_top: bool = False, first_section: bool = False, article_kind: str | None = None) -> str:
     """公众号分节标题：居中、加粗、主题色（非引用块）。"""
+    kind = (article_kind or "").strip().lower()
+    if kind == "tv_review":
+        return tv_section_banner_html(title, tight_top=tight_top, first_section=first_section)
     text = _escape_html(normalize_blockquote_title(title))
     if section_style() == "card":
         return blockquote_title_html_card(normalize_blockquote_title(title))
@@ -157,7 +223,9 @@ def blockquote_title_html(title: str, *, tight_top: bool = False, first_section:
     )
 
 
-OPENING_LEDE_KINDS = frozenset({"sector", "market", "top5", "dragons"})
+OPENING_LEDE_KINDS = frozenset(
+    {"sector", "hotspot", "market", "top5", "dragons", "news", "tv_review", "discussion"}
+)
 
 
 def opening_lede_paragraph_style() -> str:
@@ -170,6 +238,68 @@ def opening_lede_paragraph_style() -> str:
         "text-align:center;line-height:1.55;"
         "font-size:17px;font-weight:700;"
         f"color:{_COLOR_ACCENT};letter-spacing:0.02em;"
+    )
+
+
+_CTA_LINE_RE = re.compile(r"^\[\[cta:([^\]]+)\]\]\s*$")
+_HL_LINE_RE = re.compile(r"^\[\[hl:(.+)\]\]\s*$")
+
+
+def parse_hl_line(line: str) -> str | None:
+    """解析 [[hl:关键句]] 高亮行。"""
+    m = _HL_LINE_RE.match((line or "").strip())
+    if not m:
+        return None
+    return m.group(1).strip() or None
+
+
+def discussion_highlight_html(text: str) -> str:
+    """讨论稿关键句：居中浅底高亮。"""
+    t = _escape_html((text or "").strip())
+    if not t:
+        return ""
+    return (
+        '<section style="margin:14px 0 16px;padding:10px 12px;text-align:center;'
+        f"background-color:#eef6fc;border:1px solid #c5dce8;border-radius:8px;"
+        'box-shadow:0 1px 4px rgba(26,82,118,0.06);">'
+        '<p style="margin:0;padding:0;line-height:1.55;font-size:17px;'
+        f'font-weight:700;color:{_COLOR_ACCENT};letter-spacing:0.02em;">'
+        f"{t}</p></section>"
+    )
+
+
+def parse_cta_line(line: str) -> list[str] | None:
+    """解析 [[cta:行1|行2|行3]] 引流框（竖线分行）。"""
+    m = _CTA_LINE_RE.match((line or "").strip())
+    if not m:
+        return None
+    parts = [p.strip() for p in m.group(1).split("|") if p.strip()]
+    return parts or None
+
+
+def cta_box_html(parts: list[str]) -> str:
+    """关注/回复类引流：居中色块，中间行加大加粗。"""
+    if not parts:
+        return ""
+    rows: list[str] = []
+    for i, part in enumerate(parts):
+        text = _escape_html(part)
+        if i == len(parts) // 2 and len(parts) >= 2:
+            rows.append(
+                f'<span style="display:block;margin:6px 0;font-size:19px;'
+                f'font-weight:700;color:#c0392b;letter-spacing:0.06em;">{text}</span>'
+            )
+        else:
+            rows.append(
+                f'<span style="display:block;margin:2px 0;font-size:16px;'
+                f'font-weight:600;color:{_COLOR_ACCENT};">{text}</span>'
+            )
+    inner = "".join(rows)
+    return (
+        '<section style="margin:20px 0 22px;padding:18px 14px;text-align:center;'
+        f"background-color:#eef6fc;border:2px solid {_COLOR_ACCENT};"
+        'border-radius:10px;box-shadow:0 2px 8px rgba(26,82,118,0.08);">'
+        f'<p style="margin:0;line-height:1.75;">{inner}</p></section>'
     )
 
 
@@ -233,11 +363,21 @@ def _sentiment_color(tag: str) -> str:
     return {"利好": _COLOR_BULL, "利空": _COLOR_BEAR, "中性": _COLOR_NEUT}.get(tag, _COLOR_NEUT)
 
 
-def _pct_color(num: str) -> str:
+def _pct_color(num: str, *, prefix: str = "") -> str:
     try:
         value = float(num.replace("+", ""))
     except ValueError:
         return _COLOR_NEUT
+    if num.startswith("-"):
+        return _COLOR_BEAR
+    if num.startswith("+"):
+        return _COLOR_BULL
+    if prefix:
+        ctx = prefix[-10:]
+        if _BEAR_PCT_CTX_RE.search(ctx):
+            return _COLOR_BEAR
+        if _BULL_PCT_CTX_RE.search(ctx):
+            return _COLOR_BULL
     if value > 0:
         return _COLOR_BULL
     if value < 0:
@@ -327,11 +467,12 @@ def _format_inline_spans(segment: str) -> str:
         )
     for m in _PCT_RE.finditer(segment):
         num = m.group(1)
+        prefix = segment[max(0, m.start() - 10) : m.start()]
         events.append(
             (
                 m.start(),
                 m.end(),
-                _span(_pct_color(num), _escape_html(m.group(0)), bold=True),
+                _span(_pct_color(num, prefix=prefix), _escape_html(m.group(0)), bold=True),
             )
         )
     if not events:

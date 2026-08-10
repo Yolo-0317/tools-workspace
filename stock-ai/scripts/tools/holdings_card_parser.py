@@ -18,6 +18,8 @@ class CardPosition:
     status: str
     action: str
     asset_type: str = "stock"
+    market_value: float | None = None
+    category: str = ""
 
 
 @dataclass
@@ -40,7 +42,7 @@ def _cell(line: str, idx: int) -> str:
 
 
 def _parse_num(text: str) -> float | None:
-    m = re.search(r"([\d,.]+)", text.replace(",", ""))
+    m = re.search(r"(-?[\d,.]+)", text.replace(",", ""))
     return float(m.group(1)) if m else None
 
 
@@ -66,8 +68,12 @@ def _extract_section(text: str, heading_prefix: str) -> str:
 
 def parse_stock_positions(text: str) -> list[CardPosition]:
     positions: list[CardPosition] = []
+    new_format = "## 当前持仓与浮动损益" in text
     in_table = False
     for line in text.splitlines():
+        if new_format and line.startswith("| 代码 | 名称 | 数量 |"):
+            in_table = True
+            continue
         if line.startswith("| 股票 | 代码 |"):
             in_table = True
             continue
@@ -76,8 +82,23 @@ def parse_stock_positions(text: str) -> list[CardPosition]:
                 break
             if line.startswith("|------"):
                 continue
-            code = _cell(line, 2)
+            code = _cell(line, 1) if new_format else _cell(line, 2)
             if not re.fullmatch(r"\d{6}", code):
+                continue
+            if new_format:
+                positions.append(
+                    CardPosition(
+                        name=_cell(line, 2),
+                        code=code,
+                        shares=_parse_int(_cell(line, 3)),
+                        cost=_parse_num(_cell(line, 4)) or 0.0,
+                        price=_parse_num(_cell(line, 5)),
+                        status=_cell(line, 8),
+                        action="待诊断",
+                        market_value=_parse_num(_cell(line, 6)),
+                        category=_cell(line, 8),
+                    )
+                )
                 continue
             # 列：股票|代码|股数|可卖|成本价|现价|市值|持仓盈亏|状态|操作建议
             positions.append(
@@ -96,6 +117,29 @@ def parse_stock_positions(text: str) -> list[CardPosition]:
 
 
 def parse_account(text: str) -> CardAccount:
+    if "## 账户快照" in text:
+        values: dict[str, float | None] = {}
+        section = _extract_section(text, "## 账户快照")
+        for line in section.splitlines():
+            if not line.startswith("|") or line.startswith("|---"):
+                continue
+            key = _cell(line, 1)
+            if key:
+                values[key] = _parse_num(_cell(line, 2))
+        snapshot_match = re.search(r"最后更新[：:]\s*(\d{4}-\d{2}-\d{2})", text)
+        snapshot_date = date.fromisoformat(snapshot_match.group(1)) if snapshot_match else None
+        ratio = values.get("账户内仓位")
+        return CardAccount(
+            total_assets=values.get("券商总资产"),
+            available_cash=values.get("可用资金"),
+            market_value=values.get("证券市值"),
+            fund_value=None,
+            position_ratio=(ratio / 100.0) if ratio is not None else None,
+            holding_pnl=values.get("持仓浮动盈亏"),
+            daily_pnl=values.get("当日盈亏"),
+            snapshot_date=snapshot_date,
+        )
+
     section = _extract_section(text, "## 账户概览")
     body = section or text
     total = available = market = fund = position = holding = daily = None

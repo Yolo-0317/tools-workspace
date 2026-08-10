@@ -42,6 +42,7 @@ _COLOR_COMMERCE_SLOGAN_BORDER = "#e8ddd0"
 _COLOR_COMMERCE_SLOGAN_TEXT = "#5c5348"
 
 KIND_SLOGANS: dict[str, str] = {
+    "hotspot": "网下吵什么，盘上怎么走",
     "sector": "今天资金盯哪条链？先拆行业再盯票",
     "market": "牛马下班别躺平，先看一眼大盘魂",
     "news": "消息比外卖还快，筛十条够你吹",
@@ -50,6 +51,7 @@ KIND_SLOGANS: dict[str, str] = {
     "workspace": "代码和 K 线之间，还隔着一个 launchd",
     "commerce": "合租单间小电器，买前对照少踩坑",
     "temp": "官方 CLI 一条链路，飞书也能脚本化",
+    "harryputter": "HarryPutter：哈利波特朗读和文本对到句，播到哪亮哪句",
 }
 
 _DEFAULT_SLOGAN = "打工人的智能复盘手记"
@@ -244,6 +246,8 @@ def masthead_html(
     if not masthead_enabled():
         return ""
     k = (kind or "").strip().lower()
+    if k in {"guba", "hotspot", "tv_review", "tv", "film", "movie"}:
+        return ""
     name = account_name(kind=kind)
     slogan = slogan_for_kind(kind)
     src = _banner_src(kind=kind, upload_images=upload_images, local_preview=local_preview)

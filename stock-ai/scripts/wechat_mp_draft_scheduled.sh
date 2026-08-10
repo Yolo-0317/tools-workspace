@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 公众号草稿：每日 18:20 — 交易日 evening 三篇 / 周日·节假日休市 news 一篇 / 周六跳过
+# 公众号草稿：由 scheduler 触发（工作日 eod 后 / 周日 18:00）；自动选 evening|weekend|weekend_skip
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"

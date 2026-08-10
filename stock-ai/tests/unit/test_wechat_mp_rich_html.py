@@ -81,6 +81,8 @@ def test_strip_journal_title() -> None:
 def test_sentiment_and_pct() -> None:
     assert "#c0392b" in format_line_rich_html("[利好] 央行降准")
     assert "#1a7f37" in format_line_rich_html("创业板指 -0.80%")
+    assert "#1a7f37" in format_line_rich_html("双创指数月跌幅均超20%")
+    assert "#c0392b" in format_line_rich_html("长鑫科技早盘涨近9%")
 
 
 def test_top5_rank_and_metric() -> None:
@@ -105,6 +107,14 @@ def test_text_to_html_integrates_rich() -> None:
     assert "font-size:17px" in html
     assert "margin:0 0 5px" in html
     assert "span style=" in html
+
+
+def test_blockquote_body_line_renders_html_blockquote() -> None:
+    body = "> 通报里六个字。学生心里是一个名字。"
+    html = text_to_html(body, upload_figures=False)
+    assert "&gt;" not in html
+    assert "<blockquote" in html
+    assert "通报里六个字" in html
 
 
 def test_blockquote_section_title_gt() -> None:
@@ -145,6 +155,15 @@ def test_blockquote_cn_section_inline_block() -> None:
     assert "二、个股拆解" in html
     assert "京东方A" in html
     assert "text-align:center" in html
+
+
+def test_cta_box_renders_prominent_html() -> None:
+    body = "> 试读入口\n\n[[cta:关注本公众号|回复「哈利波特」|即可试读]]"
+    html = text_to_html(body, upload_figures=False)
+    assert "试读入口" in html
+    assert "哈利波特" in html
+    assert "border:2px solid" in html
+    assert "[[cta:" not in html
 
 
 def test_figure_and_section_not_same_block() -> None:

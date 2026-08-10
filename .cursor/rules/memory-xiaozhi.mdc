@@ -1,0 +1,63 @@
+---
+description: xiaozhi-mac-server / AtomS3R 语音网关与夸克播放记忆
+alwaysApply: false
+---
+
+# Memory — xiaozhi（Mac 网关 + AtomS3R）
+
+## 2026-07-29 MCP / media「卡死无反馈」
+
+- **Context**: 云端点播失败时小智长时间沉默，像卡死；实为业务失败被当成传输错误。
+- **Pitfall/Error**:
+  1. `/api/media/resolve`（及旧 `/api/mcp/resolve`）业务 miss 回 **HTTP 404** → 云端 agent 不念文案、反复重试。
+  2. Quark token 宽限期过期后仍掉进 **CLI 搜索 30–120s**，索引已命中也拖死。
+  3. MCP `_post` 超时/连不上无 `speak_hint`；`search` 再 `resolve` 双路径更慢。
+- **Solution/Rule**:
+  - 业务失败一律 **HTTP 200** + `success:false` + **`speak_hint`** + `instruction`（禁止沉默、禁止同句死磕）。
+  - MCP：`mcp/quark_audio_server.py` 超时约 **45s**；超时/网关挂也回 `speak_hint`；点播勿先 search。
+  - 目录已命中但 token 失败：快速失败说话，勿再拖 CLI 搜索；`_signed_post` 读 `x-new-access-token` 持久化并重试一次。
+  - 提示词：`docs/CLOUD_HTTP_AGENT_PROMPT.md` §播法 B 第 3 条。改代码后重启：`launchctl kickstart -k gui/$(id -u)/com.user.xiaozhi-media` 与 `com.user.xiaozhi-mcp-pipe`。冒烟：miss query 须 **HTTP 200 + speak_hint**。
+  - **续优（同日）**：空 search → `success:false`+`speak_hint`；搜夸克 **先 Open API 后 CLI**（CLI 默认 12s）；每 resolve 只搜 **1** 个 keyword；LLM 选片 ≤2 候选跳过、超时 8s；MCP HTTP 超时约 **28s**。
+  - **点播禁 search（同日）**：`/api/media/resolve` **只走** `quark_content_aliases` + 本地 index/series_maps；未命中目录立刻 `speak_hint`（「这边还没有」），**绝不** `find_stream_source`/网盘 search。新片须先写入 aliases + 重建 index。未配置时的建议名来自 **`speak_hint_not_in_catalog()`**（优先已入库系列短别名，如西游记/冰雪奇缘/哇英语）。
+  - **冰雪奇缘电影英文音轨（同日）**：catalog `frozen_movie`（玥玥 BD 国粤英：第一部 mkv / 第二部 mp4）；口令「艾莎英文版」「冰雪奇缘英文版」「冰雪奇缘电影」「第二部英文」；ffmpeg `-map` 抽英轨（S1=`0:a:m:language:eng`，S2=`0:a:2`）。普通「冰雪奇缘」仍走有声书 `frozen`。别名匹配仅「别名⊆口令」。
+
+## 2026-07-26 固件 HTTP MP3 播放（Phase B）
+
+- **Context**: 云端对话 + Mac 出 `stream_url` 后，设备须自行 HTTP 拉 MP3 并出声（非 Mode A Opus 推流）。
+- **Pitfall/Error**:
+  1. Pyramid 原 `partitions/v2/8m.csv`（OTA `0x2f0000`）装不下 `esp_audio_simple_dec`+MP3，溢出约 **226KB**。
+  2. Agent 会话只完成 **编译**；烧录须用户确认或本地自行 `flash.sh`（勿默认代烧）。
+  3. `release.py` 若已有 `releases/v*_atoms3r-echo-pyramid.zip` 会 **跳过重建**，改分区/代码后须先删 zip 再 `build.sh`。
+- **Solution/Rule**:
+  - 实现：`xiaozhi-atoms3r/firmware/main/audio/http_mp3_player.{h,cc}` — `esp_http_client` + `esp_audio_simple_dec`（MP3）→ `AudioCodec::OutputData`；播前 `AbortSpeaking`+`StopListening`+`ResetDecoder`。
+  - MCP：`self.audio.play_url` / `self.audio.stop`（Pyramid + `atoms3r-cam-m12-echo-base`）。
+  - Pyramid 分区：`partitions/v2/8m-large-app.csv`（OTA 各 `0x340000`，assets `0x160000`）；`config.json` 指向该表。**分区变更须全量烧录**（partition + app + assets）。
+  - Mac 流格式：`.../device.mp3` = **96kbps / 24000Hz / mono**（对齐 Pyramid `AUDIO_OUTPUT_SAMPLE_RATE`）；媒体栈 `com.user.xiaozhi-media` 或 `scripts/run-media-stack.sh`。
+  - 文档：`xiaozhi-atoms3r/docs/FIRMWARE_HTTP_MP3_PLAY.md`。联调：云端 resolve → `play_url(stream_url)`；串口期望 `HttpMp3Player Play start` / `MP3 info`。
+  - 编译：`cd xiaozhi-atoms3r && XIAOZHI_BOARD=atoms3r-echo-pyramid bash scripts/build.sh`；烧录：`bash scripts/flash.sh`（设备下载模式）。
+  - **已全量烧录（2026-07-26）**：`/dev/cu.usbmodem1101`，含 partition `8m-large-app` + app + assets；MAC `b4:3a:45:bd:20:e8`。
+  - **云端+HTTP 切换**：设备 OTA = `https://api.tenclass.net/xiaozhi/ota/`（`scripts/flash-cloud-ota.sh`）；Mac = `com.user.xiaozhi-media` + `com.user.xiaozhi-mcp-pipe`；**勿**起 Mode A `:8765`。角色提示词：`xiaozhi-mac-server/docs/CLOUD_HTTP_AGENT_PROMPT.md`。回本地 Mode A：`flash-local-ota.sh` + 全量网关。
+  - **「找不到资源」假阴性（2026-07-26）**：库里有片；云端若只调 `search_quark_audio`，候选排序常不含 `0001`，模型会误判没有；旧 `play_quark_audio`→Mode A 会 409「无本地设备」。点播须 `resolve_quark_stream_url` / 新版 play（走 `/api/media/resolve`）→ `self.audio.play_url`。MCP 工具描述已改；提示词禁止只靠 search 判无。
+  - **低沉 + 与 TTS 打架（2026-07-26）**：`device.mp3` 曾为 **44100** 而 Pyramid I2S=**24000** → 音调变低；须 ffmpeg `-af aresample=24000 -ar 24000`，media 重启后 ffprobe 应为 24000。固件 `HttpMp3Player` 另做重采样兜底；播前关 `EnableVoiceProcessing`、清 decode；唤醒打断 `HttpMp3Player::Stop`（`application.cc`）。
+  - **播故事时喊「你好小智」无反应**：HTTP 直写喇叭时 WakeNet 仍强制开 AEC，麦克风被当成回声压掉。须 `SetSuppressAec(true)`（`AfeAudioEngine`）+ 播期保持 idle、关掉云端音频通道（`PrepareHttpPlayback`）；唤醒只用 `RequestStop` 勿阻塞主循环。
+
+## 2026-07-26 设计草案：云端 + HTTP URL 播夸克
+
+- **Context**: 原机云端无故事库播放；SD/硬盘不现实；Mode B（云 MCP + 本地推 Opus）已弃用。讨论固件播 HTTP URL + Mac 转播夸克。
+- **Pitfall/Error**: 官方固件无 URL 播放；云端 MCP 只调工具返回 JSON，不能单独灌长音频；Mode B 要求设备同时在本地 WS。
+- **Solution/Rule**: 设计真源 **`xiaozhi-mac-server/docs/DESIGN_CLOUD_HTTP_QUARK_PLAY.md`**。分工：云端对话 → Mac MCP 搜夸克返回 `stream_url` → 设备 MCP `play_url` 拉 `http://<LAN>:8766/stream/quark/{fid}/device.mp3`。播前须断开对话。
+- **已拍板**：固件本仓库自研；设备至少 `play_url`+`stop`；下一集/续播在 Mac；Mac ffmpeg 统一 MP3；裸 fid；Mac 双进程 = **media 瘦 HTTP（launchd）+ mcp_pipe**，与 Mode A 全量网关互斥。
+- **实现进度（2026-07-26）**：Mac Phase A 已通；固件 Phase B 代码+Pyramid 编译已通（见上节）；联调/是否已烧录以设备串口为准。
+
+## 2026-07-25 玥玥目录梳理 + 冰雪奇缘集数映射
+
+- **Context**: 语音「冰雪奇缘 / 第一集」曾播到最后一集或「第一部完结」；需先固化文件夹与集数真源，再靠启发式选片。
+- **Pitfall/Error**:
+  1. 文件名 `0001-…` 四位序号曾不被 `episode_sort_key` 识别；`pick_best_file` 对同分 `reverse=True` 会选字典序最后一集（`0075-…`）。
+  2. 短字「一」曾子串命中「第一部完结」（`0037-…`），误当第一集。
+  3. 索引里每集常 **2 个 fid**（网盘重复拷贝），`file_count=150` / 去重后 **75** 集。
+- **Solution/Rule**:
+  - **目录总览**：`xiaozhi-mac-server/data/quark_yueyue_catalog_overview.json`（19 个 catalog key vs 索引；`empty_index` 需重建搜索）。
+  - **冰雪奇缘真源**：`data/quark_series_maps/frozen.json`；路径 `玥玥/冰雪奇缘`；**第一集** = `0001-冰雪奇缘01 神奇的冰雪魔法.mp3`（S1E1）；第一部 37 集（至 `0037-…第一部完结`）；第二部 38 集（`0038-二01` … `0075-二38`）。
+  - **代码**：`server/series_maps.py` → `pick_best_file` 优先走 curated map；重建 `python scripts/build_series_maps.py`（依赖已有 `quark_media_index.json`）。
+  - **口令**：无集数 → 默认第 1 集；「第一集」→ S1E1；「第二部第一集」→ S2E1。勿把 `0037`/`0075` 当开头。

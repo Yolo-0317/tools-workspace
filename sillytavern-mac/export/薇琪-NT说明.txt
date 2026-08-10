@@ -1,0 +1,10 @@
+薇琪 v1.1.0-zh（世界书 v1.1 · 80～220 字 · 压 intro）
+
+v1.1：单条回复 80～220 字；talkativeness 0.65；3 个 intro 均缩短。
+
+NT 设置：
+1. 重新导入 薇琪-nativetavern.png（确认版本 1.1.0-zh）
+2. Main 留空；max tokens 建议 256～384
+3. 勿绑 vicky-yangsheng-world.json
+4. Persona = 邻居
+5. 新建聊天

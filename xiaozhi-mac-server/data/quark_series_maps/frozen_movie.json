@@ -1,0 +1,76 @@
+{
+  "catalog_key": "frozen_movie",
+  "title": "冰雪奇缘电影（英文音轨）",
+  "path_hint": "玥玥",
+  "built_at": "2026-07-30T13:55:09+08:00",
+  "source": "Pre-extracted EN MP3 uploaded to 玥玥 root; no live ffmpeg -map",
+  "rules": {
+    "default_play": "S1 → 01-冰雪奇缘1-英文音轨.mp3",
+    "voice_英文版": "default_start = 第一部英文音轨",
+    "voice_第二部英文": "season=2 → 02-冰雪奇缘2-英文音轨.mp3",
+    "audiobook": "普通「冰雪奇缘」仍走 frozen 有声书 mp3"
+  },
+  "default_start": {
+    "global_n": 1,
+    "season": 1,
+    "season_ep": 1,
+    "filename": "01-冰雪奇缘1-英文音轨.mp3",
+    "title": "冰雪奇缘 第一部（英文音轨）",
+    "fid": "~1iDzwwMjAsK8WNCq-QSzjDtyyhxlERsne0kgrO-w7COVFz2CG4n7tRVB10hwQDGND7mgbTPnCzPHiQ4O1Gz4T80",
+    "fids": [
+      "~1iDzwwMjAsK8WNCq-QSzjDtyyhxlERsne0kgrO-w7COVFz2CG4n7tRVB10hwQDGND7mgbTPnCzPHiQ4O1Gz4T80"
+    ],
+    "size": 122662125
+  },
+  "seasons": [
+    {
+      "id": 1,
+      "label": "第一部电影",
+      "aliases": [
+        "第一部",
+        "一部",
+        "frozen 1"
+      ],
+      "episode_count": 1
+    },
+    {
+      "id": 2,
+      "label": "第二部电影",
+      "aliases": [
+        "第二部",
+        "二部",
+        "续集",
+        "冰雪奇缘二",
+        "frozen 2"
+      ],
+      "episode_count": 1
+    }
+  ],
+  "episode_count": 2,
+  "episodes": [
+    {
+      "global_n": 1,
+      "season": 1,
+      "season_ep": 1,
+      "filename": "01-冰雪奇缘1-英文音轨.mp3",
+      "title": "冰雪奇缘 第一部（英文音轨）",
+      "fid": "~1iDzwwMjAsK8WNCq-QSzjDtyyhxlERsne0kgrO-w7COVFz2CG4n7tRVB10hwQDGND7mgbTPnCzPHiQ4O1Gz4T80",
+      "fids": [
+        "~1iDzwwMjAsK8WNCq-QSzjDtyyhxlERsne0kgrO-w7COVFz2CG4n7tRVB10hwQDGND7mgbTPnCzPHiQ4O1Gz4T80"
+      ],
+      "size": 122662125
+    },
+    {
+      "global_n": 2,
+      "season": 2,
+      "season_ep": 1,
+      "filename": "02-冰雪奇缘2-英文音轨.mp3",
+      "title": "冰雪奇缘 第二部（英文音轨）",
+      "fid": "~11C1q0k6PL4sFyCpwV5_p5Ayh4-E_a3LUeOOtN2oyXjte1KeVu_uhLnqdvMKO-39vllVF0eUDf-mEy2hQQgqfv4",
+      "fids": [
+        "~11C1q0k6PL4sFyCpwV5_p5Ayh4-E_a3LUeOOtN2oyXjte1KeVu_uhLnqdvMKO-39vllVF0eUDf-mEy2hQQgqfv4"
+      ],
+      "size": 123858923
+    }
+  ]
+}

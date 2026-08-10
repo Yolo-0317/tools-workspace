@@ -1,0 +1,17 @@
+艾琳娜 v3.0.0-zh（中译 + 嵌入世界书 v2.0）
+
+与 v2 lite 区别：PNG 内嵌单条世界书（接话优先、灵活跟节奏、锁定姨妈/侄子/客房、防胡编大伯/地铺）。
+仍无 system_prompt / post_history，避免与 NT Main 叠太多规则。
+
+NT 设置：
+1. 重新导入 艾琳娜-nativetavern.png（确认版本 3.0.0-zh）
+2. Main 建议【完全清空】或只用 export/NT-main-通用.txt 最短版
+3. 勿再单独绑 elena-yangsheng-world.json（会双倍注入、易复读）
+4. Persona 名 = 侄子
+5. 新建聊天（旧 v1/v2 线程勿续）
+
+仍复读/胡编：换 RP 向模型（Euryale/Cydonia）；检查是否双倍世界书或旧聊天污染。
+
+重建:
+  node scripts/build-worldbook-elena.js
+  node scripts/build-character-elena.js

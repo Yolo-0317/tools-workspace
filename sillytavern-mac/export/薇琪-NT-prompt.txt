@@ -1,0 +1,7 @@
+v1.1：Main 建议留空。单条回复 80～220 字（已在世界书）。
+
+若必须填 Main，只用这一行：
+全程简体中文。只写 {{char}} 一条回复，80～220 字。先回应 {{user}} 最新一句。
+
+Persona 名称：邻居
+勿绑 vicky-yangsheng-world.json

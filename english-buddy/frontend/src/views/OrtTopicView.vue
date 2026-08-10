@@ -28,7 +28,10 @@ const props = defineProps<{
   catalogError: string;
   listenOnlyHint: string;
   startButtonLabel: string;
+  listenButtonLabel: string;
+  sttEnabledForMe: boolean;
   illustratedCount: number;
+  errorMessage: string;
 }>();
 
 const emit = defineEmits<{
@@ -36,7 +39,7 @@ const emit = defineEmits<{
   selectLesson: [lessonId: string];
   selectProgram: [programId: string];
   setSpeed: [presetId: "slow" | "normal" | "fast"];
-  startReadAlong: [lessonId: string];
+  startReadAlong: [lessonId: string, listenOnly: boolean];
 }>();
 
 const levelTabs = ORT_LEVEL_TABS;
@@ -85,9 +88,9 @@ function onPickChange(ev: Event) {
   if (id) openLesson(id);
 }
 
-function onStartReadAlong() {
+function onStartReadAlong(listenOnly = false) {
   if (!props.selectedLessonId || props.readAlongFull) return;
-  emit("startReadAlong", props.selectedLessonId);
+  emit("startReadAlong", props.selectedLessonId, listenOnly);
   closeSheet();
 }
 
@@ -102,15 +105,39 @@ watch(
   },
 );
 
+let sheetScrollY = 0;
+
+function lockPageScroll() {
+  sheetScrollY = window.scrollY;
+  const body = document.body;
+  body.style.position = "fixed";
+  body.style.top = `-${sheetScrollY}px`;
+  body.style.left = "0";
+  body.style.right = "0";
+  body.style.width = "100%";
+  body.style.overflow = "hidden";
+}
+
+function unlockPageScroll() {
+  const body = document.body;
+  body.style.position = "";
+  body.style.top = "";
+  body.style.left = "";
+  body.style.right = "";
+  body.style.width = "";
+  body.style.overflow = "";
+  window.scrollTo(0, sheetScrollY);
+}
+
 watch(sheetOpen, (open) => {
   if (typeof document === "undefined") return;
-  document.body.style.overflow = open ? "hidden" : "";
+  if (open) lockPageScroll();
+  else unlockPageScroll();
 });
 
 onUnmounted(() => {
-  if (typeof document !== "undefined") {
-    document.body.style.overflow = "";
-  }
+  if (typeof document === "undefined") return;
+  if (sheetOpen.value) unlockPageScroll();
 });
 </script>
 
@@ -145,6 +172,7 @@ onUnmounted(() => {
 
     <p v-if="lessonsLoading" class="ort-topic__status">加载课文…</p>
     <p v-else-if="catalogError" class="ort-topic__warn">{{ catalogError }}</p>
+    <p v-else-if="errorMessage" class="ort-topic__warn">{{ errorMessage }}</p>
     <p v-else-if="readAlongFull" class="ort-topic__warn">
       {{ readAlongLimitMessage }}
     </p>
@@ -280,7 +308,8 @@ onUnmounted(() => {
           <p v-if="listenOnlyHint" class="ort-sheet__listen-hint">
             {{ listenOnlyHint }}
           </p>
-          <p v-if="readAlongFull" class="ort-sheet__warn">
+          <p v-if="errorMessage" class="ort-sheet__warn">{{ errorMessage }}</p>
+          <p v-else-if="readAlongFull" class="ort-sheet__warn">
             {{ readAlongLimitMessage }}
           </p>
 
@@ -315,14 +344,26 @@ onUnmounted(() => {
             </button>
           </div>
 
-          <button
-            type="button"
-            class="ort-sheet__start"
-            :disabled="!canStart || readAlongFull"
-            @click="onStartReadAlong"
-          >
-            {{ startButtonLabel }}
-          </button>
+          <div class="ort-sheet__actions">
+            <button
+              v-if="sttEnabledForMe"
+              type="button"
+              class="ort-sheet__start"
+              :disabled="!canStart || readAlongFull"
+              @click="onStartReadAlong(false)"
+            >
+              {{ startButtonLabel }}
+            </button>
+            <button
+              type="button"
+              class="ort-sheet__start"
+              :class="{ 'ort-sheet__start--listen': sttEnabledForMe }"
+              :disabled="!canStart || readAlongFull"
+              @click="onStartReadAlong(true)"
+            >
+              {{ sttEnabledForMe ? listenButtonLabel : startButtonLabel }}
+            </button>
+          </div>
           <p
             v-if="!lessonReady(selectedLesson)"
             class="ort-sheet__hint"
@@ -524,36 +565,49 @@ onUnmounted(() => {
   color: #3d3428;
 }
 
-/* —— 选书弹层 —— */
+/* —— 选书弹层（Teleport 到 body，面板固定贴视口底） —— */
 .ort-sheet {
   position: fixed;
-  inset: 0;
-  z-index: 1200;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  z-index: 9999;
+  pointer-events: none;
 }
 
 .ort-sheet__backdrop {
-  position: absolute;
-  inset: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   border: none;
   background: rgba(15, 23, 42, 0.45);
   cursor: pointer;
+  pointer-events: auto;
 }
 
 .ort-sheet__panel {
-  position: relative;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 1;
   width: 100%;
   max-width: 26rem;
+  margin: 0 auto;
   max-height: min(88dvh, 640px);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 1rem 1.1rem calc(1.1rem + env(safe-area-inset-bottom));
   border-radius: 1.1rem 1.1rem 0 0;
   background: #fff;
   box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.18);
+  pointer-events: auto;
 }
 
 .ort-sheet__close {
@@ -680,10 +734,16 @@ onUnmounted(() => {
   color: #fff;
 }
 
+.ort-sheet__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
 .ort-sheet__start {
   display: block;
   width: 100%;
-  margin-top: 1rem;
   padding: 0.9rem;
   border: none;
   border-radius: 12px;
@@ -692,6 +752,13 @@ onUnmounted(() => {
   font-size: 1.05rem;
   font-weight: 700;
   cursor: pointer;
+}
+
+.ort-sheet__start--listen {
+  background: #fff;
+  color: #3d5c3c;
+  border: 2px solid #5b7f5a;
+  font-size: 0.98rem;
 }
 
 .ort-sheet__start:disabled {
@@ -714,16 +781,17 @@ onUnmounted(() => {
 }
 
 @media (min-width: 640px) {
-  .ort-sheet {
-    align-items: center;
-    padding: 1.5rem;
-  }
-
   .ort-sheet__panel {
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    top: 50%;
+    transform: translate(-50%, -50%);
     border-radius: 1.1rem;
     max-width: 22rem;
     max-height: min(90dvh, 520px);
     padding: 1.15rem 1.2rem 1.2rem;
+    box-shadow: 0 12px 40px rgba(15, 23, 42, 0.2);
   }
 }
 

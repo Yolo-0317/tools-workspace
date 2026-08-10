@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""把橙果 Level 2 课文合并进 books.json（爱贝 JSON + manual JSON，图与文分离）。"""
+"""把橙果 Level 2 课文合并进 books.json（优先 PDF OCR / manual，不再默认爱贝）。"""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ from chengguo_maps import CHENGGUO_LEVEL2  # noqa: E402
 
 IBEI_JSON = ORT_DIR / "chengguo_level2_ibei.json"
 MANUAL_JSON = ORT_DIR / "chengguo_level2_manual.json"
+PDF_JSON = ORT_DIR / "chengguo_level2_pdf.json"
 
 
 def _load_lines_map(path: Path) -> dict[str, list[str]]:
@@ -35,9 +36,14 @@ def _load_lines_map(path: Path) -> dict[str, list[str]]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--use-ibei",
+        action="store_true",
+        help="回退使用爱贝 JSON（默认不用，请用 extract_ort_pdf_lines.py）",
+    )
     args = parser.parse_args()
 
-    ibei = _load_lines_map(IBEI_JSON)
+    ibei = _load_lines_map(IBEI_JSON) if args.use_ibei else {}
     manual = _load_lines_map(MANUAL_JSON)
     raw = json.loads(BOOKS_JSON.read_text(encoding="utf-8"))
     existing = {b["id"]: b for b in raw.get("books") or []}
@@ -46,7 +52,10 @@ def main() -> int:
     for _pdf, book_id, title in CHENGGUO_LEVEL2:
         lines = ibei.get(book_id) or manual.get(book_id)
         if not lines:
-            print(f"SKIP {book_id}: no lines (run fetch_chengguo_ibei_lines.py or edit manual JSON)")
+            print(
+                f"SKIP {book_id}: no lines "
+                f"(run extract_ort_pdf_lines.py --level 2 or edit manual JSON)"
+            )
             skipped += 1
             continue
         entry = {

@@ -1,0 +1,14 @@
+米娜 v1.0.0-zh（中译 + 世界书 v1.0）
+
+懒邻居情色写手 · 走廊开场讨灵感 · 单条 80～220 字 · talkativeness 0.65 · 慢推进。
+
+NT 设置：
+1. 导入 米娜-nativetavern.png（版本 1.0.0-zh）
+2. Main 留空；max tokens 256～384
+3. 勿绑 mina-yangsheng-world.json
+4. Persona = 邻居
+5. 新建聊天
+
+重建:
+  node scripts/build-worldbook-mina.js
+  node scripts/build-character-mina.js

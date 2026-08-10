@@ -11,11 +11,12 @@ from scripts._bootstrap import ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
 
-from scripts.tools.deepseek_client import call_deepseek, is_llm_configured
+from scripts.tools.deepseek_client import call_wechat_mp_llm, is_wechat_mp_llm_configured
 from scripts.tools.selection_watchlist import SelectionPick, next_trading_day
 from scripts.tools.wechat_mp_public import (
     PUBLIC_MP_WRITER_RULE,
     RESEARCHER_VOICE_RULE,
+    PLATFORM_PROPERTY_RISK_RULE,
     check_public_compliance,
     finalize_public_body_text,
     sanitize_public_mp_text,
@@ -246,7 +247,7 @@ def generate_top5_trader_body(
     except Exception:
         align = ""
 
-    if not is_llm_configured():
+    if not is_wechat_mp_llm_configured():
         return _template_body(
             picks=picks,
             packs=packs,
@@ -265,6 +266,7 @@ def generate_top5_trader_body(
 读者要读懂每只票的结构与事实：研报体简练版（有框架、有验证点），不要粘贴东财网页原文。
 {PUBLIC_MP_WRITER_RULE}
 {RESEARCHER_VOICE_RULE}
+{PLATFORM_PROPERTY_RISK_RULE}
 {align}
 
 ## 数据日 / 结构跟踪日
@@ -310,7 +312,7 @@ def generate_top5_trader_body(
 {monetization_prompt_block("top5")}"""
 
     try:
-        content = call_deepseek(
+        content = call_wechat_mp_llm(
             [
                 {
                     "role": "system",

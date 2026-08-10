@@ -14,6 +14,10 @@ from scripts._bootstrap import ensure_repo_root_on_path
 ensure_repo_root_on_path()
 
 from scripts.tools.fetch_eastmoney_macro_news import fetch_macro_news
+from scripts.tools.fetch_supplemental_macro_news import (
+    fetch_supplemental_macro_news,
+    merge_macro_news_items,
+)
 from scripts.tools.news_ai_interpret import save_news_ai_snapshot
 from scripts.tools.news_db import (
     record_fetch_run,
@@ -35,8 +39,15 @@ def sync_once(*, limit: int = 40, news_limit: int = 8, skip_ai: bool = False) ->
     items = []
 
     try:
-        items = fetch_macro_news(limit=limit, include_home=True)
+        primary = fetch_macro_news(limit=limit, include_home=True)
+        supplement = fetch_supplemental_macro_news(limit=max(limit, 30))
+        items = merge_macro_news_items(primary, supplement)
         item_count, new_count = upsert_news_items(items, now=started)
+        if supplement:
+            print(
+                f"  补源 HTTP: {len(supplement)} 条（合并后 {len(items)} 条）",
+                file=sys.stderr,
+            )
         refreshed = refresh_sentiment_for_recent(hours=72)
         ok = True
         print(

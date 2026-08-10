@@ -1,20 +1,34 @@
 ---
 description: sidestore-infra 子项目记忆 — Docker / launchd / DDNS
-globs: sidestore-infra/**/*
 alwaysApply: false
 ---
 
 # Memory: sidestore-infra
 
-Hermes Step 3：处理 `sidestore-infra/` 时与本文件、`project-memory.mdc` 一并检索。
+按 `project-memory.mdc` 的主题索引精确检索；不要因处理 `sidestore-infra/` 就整份加载。
 
 ## 关键路径
 
 - 真实目录：`tools-workspace/sidestore-infra/`（`~/sidestore-infra` 为兼容符号链接）
 - 入口：`docker-compose.yml`、`scripts/setup.sh`、`scripts/healthcheck.sh`
-- launchd：`launchd/*.plist` → `scripts/install-launchd.sh` 安装到 `~/Library/LaunchAgents/`
+- launchd：`launchd/*.plist` → `scripts/install-launchd.sh` 安装到 `~/Library/LaunchAgents/`；sidestore compose 自启脚本 `scripts/compose-up.sh`
 
 ## 记忆条目
+
+### 2026-08-04 Immich · 绿联 NAS 外部照片库 + photos.yoloworld.site
+
+- **Context**: 用户要在 Mac Docker 跑 Immich，让 iPhone 通过 Immich 浏览绿联 NAS 已备份照片；iPhone 原图备份仍走绿联，Immich 只负责展示/索引/缩略图。
+- **Pitfall/Error**:
+  - 不要默认让 Immich 管理原图或把 NAS 原图复制进 `UPLOAD_LOCATION`；此场景应使用 External Library，只读展示 NAS 照片。
+  - 方案 A（Finder 挂载 `/Volumes/...` 后 bind mount）重启/睡眠后容易断；本场景默认方案 B：容器内 CIFS 自动挂载。
+  - 蜂窝访问报 `ERR_CONNECTION_REFUSED` 多数不是 Immich/Caddy 服务坏，而是 DDNS/路由器端口映射/手机 DNS 缓存；旧公网 IP 拒连会表现为同样错误。
+- **Solution/Rule**:
+  - Stack 在 **`~/docker/immich-stack`**（repo 外）；主文件：`docker-compose.yml`、`Dockerfile`、`scripts/entrypoint.sh`、`README.md`。
+  - NAS 源路径来自 Mac Finder：`/Volumes/yolo_NAS-06164-02356/我的备份`；容器内 entrypoint 挂 `//${NAS_HOST}/${NAS_SHARE}` 到 `/media/nas`（只读）/`/media/nas-rw`（读写），照片子路径默认 `NAS_PHOTOS_SUBPATH=我的备份`。自 2026-08-07 起 External Library 的稳定路径仍为 **`/mnt/nas/photos`**，但其目标为 `/media/nas-rw/...`，因此 Immich 清空回收站可删除 NAS 原件。
+  - `immich-server` 使用自定义镜像 `immich-with-nas:local`，安装 `cifs-utils`，需 `cap_add: SYS_ADMIN` / `privileged: true`；Web 端口 `2283`，ML 服务内部端口固定 `3003`，不要被 `IMMICH_PORT=2283` 覆盖。
+  - 缩略图/转码缓存可放 NAS `我的备份/.immich-cache/`，数据库 `postgres/` 必须本地 SSD；`library/` 仍用于 Immich 本地上传/元数据。
+  - 外网入口：`sidestore-infra/caddy/Caddyfile` `https://photos.yoloworld.site` → `host.docker.internal:2283`；`DDNS_SUBDOMAINS` 与证书脚本须包含 `photos`；iPhone 蜂窝 URL 必须带端口 **`https://photos.yoloworld.site:8883`**。
+  - 自启：workspace `scripts/docker-autostart.sh` 已接 `compose_up "$HOME/docker/immich-stack"`；排障先看 `docker compose ps`、`docker compose logs -f immich-server`、`docker exec immich_server ls -la /mnt/nas/photos | head`。
 
 ### 2026-05-29 迁移后路径
 
@@ -28,13 +42,24 @@ Hermes Step 3：处理 `sidestore-infra/` 时与本文件、`project-memory.mdc`
 - **Pitfall/Error**: Caddy 在 Docker 内须用 `host.docker.internal:8787` / `:3001` 访问宿主机绑定的服务；DDNS 须用 `scripts/run-ddns.sh` 加载 `.env` 才会包含 `sub`。
 - **Solution/Rule**: `caddy/Caddyfile` 已增 `https://sub.yoloworld.site`；`DDNS_SUBDOMAINS` 含 `sub`。外网订阅 **`https://sub.yoloworld.site:8883/clash.yaml`**（`EXTERNAL_HTTPS_PORT=8883`，无 443 映射）。Sub-Store UI 同样带 `:8883`。
 
-### 2026-06-07 Hub 公网暴露 · Readalong 试读推广前置
+### 2026-06-07 Hub 公网暴露 · HarryPutter 试读推广前置
 
-- **Context**: 用户计划 readalong 公网试读引流（技术分享 + 开源）；担心家庭网络被攻击。
-- **Pitfall/Error**: `8883→8443→Caddy` 暴露 **整站 Hub**，不只 `/readalong/`；readalong 试读开启后扫描器会顺带探测 `/hub/`、`/english/` 等。`:8791` 若绑定 `0.0.0.0` 则绕过 Caddy 直连。
+- **Context**: 用户计划 HarryPutter 公网试读引流（技术分享 + 开源）；担心家庭网络被攻击。
+- **Pitfall/Error**: `8883→8443→Caddy` 暴露 **整站 Hub**，不只 `/harryputter/`；试读开启后扫描器会顺带探测 `/hub/`、`/english/` 等。`:8791` 若绑定 `0.0.0.0` 则绕过 Caddy 直连。
 - **Solution/Rule**:
-  - **策略与清单真源**：`readalong/docs/PRODUCT-STRATEGY.md` §4。
-  - **推广前必查**：readalong `:8791` 仅 `127.0.0.1`；外网 ch2+ / EPUB / words 403；admin 强密码；各 Hub 子服务鉴权与并发上限。
-  - **建议加固**：Caddy `/readalong/*` rate limit；`/api/auth/login`、`/api/dict` 限速。
-  - **应急下线**：Caddy 注释 readalong 块 + `docker compose restart caddy`，或停 `com.user.readalong` launchd。
+  - **策略与清单真源**：`harryputter/docs/PRODUCT-STRATEGY.md` §4。
+  - **推广前必查**：harryputter `:8791` 仅 `127.0.0.1`；外网 ch2+ / EPUB / words 403；admin 强密码；各 Hub 子服务鉴权与并发上限。
+  - **建议加固**：Caddy `/harryputter/*` rate limit；`/api/auth/login`、`/api/dict` 限速。
+  - **应急下线**：Caddy 注释 harryputter 块 + `docker compose restart caddy`，或停 `com.user.harryputter` launchd。
+  - **旧路由**：`/readalong/*` 已 301 至 `/harryputter/*`（2026-06-08）。
   - **未做前不推广**：清单 §4.1 未完成时不发公网试读链接。
+
+### 2026-06-12 Anisette 开机未自启 · launchd 禁止 bash -lc
+
+- **Context**: 用户反馈 anisette 未随开机启动，尽管已配置 `com.user.sidestore-infra` 与 workspace 级 `com.user.docker-stacks`。
+- **Pitfall/Error**: 旧 plist 用 `bash -lc` 跑 `docker compose`，开机/唤醒时加载 conda、`bash_profile` 触发 `fork: Resource temporarily unavailable`，compose 未执行。并行地 `docker-autostart.sh` 仅等 10 分钟 Docker 就绪即退出（日志反复 `docker 在 10 分钟内未就绪`），即使 Docker Desktop `AutoStart: true` 也可能晚于登录很久才可用。
+- **Solution/Rule**:
+  - launchd **禁止** `bash -lc` / 登录 shell；sidestore 改调 `scripts/compose-up.sh`（非 login、等 Docker 最多 30 分钟）。
+  - workspace `scripts/docker-autostart.sh` 等待上限同步为 30 分钟（360×5s）。
+  - 改 plist 后必跑 `bash scripts/install-launchd.sh`。
+  - 排障日志：`sidestore-infra/logs/compose-up.log`、`launchd-compose.err.log`、`tools-workspace/logs/docker-autostart.log`；兜底 `cd sidestore-infra && docker compose --env-file .env up -d`。

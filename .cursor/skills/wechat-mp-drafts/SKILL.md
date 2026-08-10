@@ -6,7 +6,10 @@ description: >-
   Read INDEX.md first, then task-specific child docs.
 paths:
   - .cursor/skills/wechat-mp-drafts/INDEX.md
-  - stock-ai/scripts/tools/wechat_mp_*.py
+  - .cursor/skills/wechat-mp-drafts/content-analytics-sop.md
+  - stock-ai/scripts/tools/fetch_wechat_mp_analytics_opencli.py
+  - stock-ai/scripts/tools/wechat_mp_analytics_page.py
+  - stock-ai/output/wechat_mp_recommend_daily_page*.json
   - stock-ai/scripts/tools/wechat_mp_product.py
   - stock-ai/tests/unit/test_wechat_mp_*.py
   - stock-ai/data/wechat_mp_draft_slots.json
@@ -34,9 +37,15 @@ paths:
 ├─ 推草稿 / 定时 / env / 报错     → INDEX「工程」→ operations-sop + reference
 ├─ 改 sector|top5|dragons 文案    → evening-trilogy-templates（先读）→ researcher-voice
 ├─ 改 market|news|workspace       → templates + writing-guide
+├─ 影视试跑 / tv_review / 剧评稿   → [tv-review-template.md](tv-review-template.md)（v2·《铁拳教育》）
+├─ 关注引流 / 星标 / 写作笔记 / 关注回复  → follow-growth-copy + account-packaging + operations-sop §二点六
+├─ 运营增长 / 复盘 / 涨阅读 / 流量主  → [wechat-mp-growth-ops](../wechat-mp-growth-ops/SKILL.md)
 ├─ 阅读量 / 搜一搜 / 标题优化      → traffic-optimization + sousou-analytics-sop
+├─ 内容分析 / 渠道占比 / 7日阅读    → content-analytics-sop + stock-opencli
 └─ 改 Python 行为 / 合规          → rules-implemented → pytest
 ```
+
+**上下文预算**：本文件只负责路由。一次任务只打开决策树命中的 1～2 个子文档；不要为一次草稿、标题或排障扫描全部索引文档。
 
 **看稿**：默认 **mp 草稿箱**；禁止 `output/*preview*.html`（除非用户要 `--preview-html`）。
 
@@ -63,10 +72,11 @@ bash scripts/wechat_mp_draft_scheduled.sh
 
 uv run python -m scripts.tools.wechat_mp_eval --kind all
 uv run python -m scripts.tools.wechat_mp_eval --kind sector --traffic
+uv run python -m scripts.tools.wechat_mp_push_quality_gate --batch evening
 uv run pytest tests/unit/test_wechat_mp_*.py -q
 ```
 
-**质量建议**：总分 ≥75、AI 味 ≤40、无合规红线 → 可进草稿箱。
+**质量建议**：总分 ≥75、AI 味 ≤20、无合规红线 → 可进草稿箱。改稿流程见 [wechat-mp-writing](../wechat-mp-writing/SKILL.md)。
 
 ## 流水线（摘要）
 
@@ -79,7 +89,7 @@ uv run pytest tests/unit/test_wechat_mp_*.py -q
 | | 说明 |
 |--|------|
 | **19:00 launchd** | 自动**写/更新草稿**；跳过：`echo YYYY-MM-DD > data/wechat_mp_skip_scheduled.date` |
-| **后台定时发表** | **人工**在 mp.weixin.qq.com；服务号一天一次通知时，多篇应同批群发并排头条顺序 |
+| **后台定时发表** | **人工**在 mp.weixin.qq.com；**每天仅 1 次通知**（个人号）→ 多篇**同批群发**，排好头条/次条顺序；**禁止**分时段错开发表 |
 | **LLM** | 写稿 `LLM_BACKEND=cursor`；SOP 并发 `SOP_LLM_BACKEND=deepseek` |
 
 详 [operations-sop.md](operations-sop.md) · `stock-ai/docs/WECHAT_MP_SCHEDULING.md`。
@@ -100,6 +110,7 @@ uv run pytest tests/unit/test_wechat_mp_*.py -q
 | [reference.md](reference.md) | API · env · 模块 · 故障 |
 | [rules-implemented.md](rules-implemented.md) | 规则 ↔ 代码 |
 | [traffic-optimization.md](traffic-optimization.md) | 阅读量优化 |
+| [content-analytics-sop.md](content-analytics-sop.md) | **内容分析** · 流量来源 · 日期范围 |
 | [sousou-analytics-sop.md](sousou-analytics-sop.md) | 搜一搜看板 |
 
 ## 故障（速查）

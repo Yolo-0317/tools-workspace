@@ -76,5 +76,41 @@ def _load_english_buddy_variant() -> None:
     )
 
 
+def _load_harryputter_variant() -> None:
+    from scripts.tools.wechat_mp_harryputter_article import (
+        generate_harryputter_article_body,
+        harryputter_article_digest,
+        harryputter_article_title,
+    )
+
+    _register(
+        "harryputter",
+        (
+            harryputter_article_title,
+            harryputter_article_digest,
+            generate_harryputter_article_body,
+        ),
+    )
+
+
+def _load_world_cup_variant() -> None:
+    from scripts.tools.wechat_mp_world_cup_article import (
+        generate_world_cup_article_body,
+        world_cup_article_digest,
+        world_cup_article_title,
+    )
+
+    _register(
+        "world_cup",
+        (
+            world_cup_article_title,
+            world_cup_article_digest,
+            generate_world_cup_article_body,
+        ),
+    )
+
+
 _load_lark_cli_variant()
 _load_english_buddy_variant()
+_load_harryputter_variant()
+_load_world_cup_variant()

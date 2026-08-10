@@ -46,7 +46,9 @@ THUMB_CACHE = ROOT / "data" / "wechat_mp_thumb.json"
 SECTOR_BANNER_THUMB_CACHE = ROOT / "data" / "wechat_mp_sector_banner_thumb.json"
 _KIND_THUMB_ASSET_CACHE: dict[str, Path] = {
     "top5": ROOT / "data" / "wechat_mp_thumb_top5.json",
+    "hotspot": ROOT / "data" / "wechat_mp_thumb_hotspot.json",
     "dragons": ROOT / "data" / "wechat_mp_thumb_dragons.json",
+    "tv_review": ROOT / "data" / "wechat_mp_thumb_tv_review.json",
 }
 DEFAULT_COVER_PATH = ROOT / "assets" / "wechat_mp" / "default_cover.jpg"
 ALERT_LOG = ROOT / "logs" / "wechat_mp_alerts.log"
@@ -126,6 +128,15 @@ def _mp_session() -> requests.Session:
     return session
 
 
+def _mp_parse_json(resp: requests.Response) -> dict[str, Any]:
+    """微信 API 常返回 Content-Type: text/plain，requests 会误用 ISO-8859-1 解码。"""
+    try:
+        return json.loads(resp.content.decode("utf-8"))
+    except Exception:
+        snippet = (resp.text or resp.content[:200].decode("utf-8", errors="replace"))[:200]
+        return {"errcode": -1, "errmsg": f"非 JSON 响应 HTTP {resp.status_code}: {snippet}"}
+
+
 def _mp_post_json(
     url: str,
     *,
@@ -139,12 +150,7 @@ def _mp_post_json(
     if headers:
         req_headers.update(headers)
     resp = _mp_session().post(url, params=params, data=body, headers=req_headers, timeout=60)
-    try:
-        data = resp.json()
-    except Exception:
-        snippet = (resp.text or resp.content[:200].decode("utf-8", errors="replace"))[:200]
-        return {"errcode": -1, "errmsg": f"非 JSON 响应 HTTP {resp.status_code}: {snippet}"}
-    return data
+    return _mp_parse_json(resp)
 
 
 def get_public_ip(*, timeout: float = 10.0) -> str:
@@ -261,9 +267,16 @@ def _line_to_html(line: str) -> str:
     return _escape_html(line)
 
 
-def _body_paragraph_style() -> str:
+def _body_paragraph_style(*, article_kind: str | None = None) -> str:
     from scripts.tools.wechat_mp_layout import active_layout
 
+    k = (article_kind or "").strip().lower()
+    if k == "discussion":
+        return (
+            "margin:0 0 14px;padding:0;"
+            "line-height:1.88;font-size:16px;color:#333333;"
+            "letter-spacing:0.02em;"
+        )
     layout = active_layout()
     return (
         f"margin:{layout.para_margin};padding:0;"
@@ -322,10 +335,15 @@ def _next_nonempty_line(lines: list[str], start: int) -> tuple[int, str] | None:
 
 
 _FIGURE_BODY_RE = re.compile(r"^\[\[fig:[^|\]]+\|[^\]]*\]\]\s*$")
+_CTA_BODY_RE = re.compile(r"^\[\[cta:[^\]]+\]\]\s*$")
 
 
 def _is_figure_line(line: str) -> bool:
     return bool(_FIGURE_BODY_RE.match(line.strip()))
+
+
+def _is_cta_line(line: str) -> bool:
+    return bool(_CTA_BODY_RE.match(line.strip()))
 
 
 def split_wechat_body_blocks(text: str) -> list[str]:
@@ -355,7 +373,7 @@ def split_wechat_body_blocks(text: str) -> list[str]:
             ns = next_line.strip()
             if _SECTION_HEAD_RE.match(ns) or is_blockquote_title_line(ns):
                 flush()
-            elif _is_figure_line(next_line):
+            elif _is_figure_line(next_line) or _is_cta_line(next_line):
                 flush()
             elif cur and _block_is_news_cluster(cur) and _is_news_content_line(next_line):
                 pass
@@ -375,7 +393,7 @@ def split_wechat_body_blocks(text: str) -> list[str]:
             i += 1
             continue
 
-        if _is_figure_line(line):
+        if _is_figure_line(line) or _is_cta_line(line):
             flush()
             cur.append(line)
             flush()
@@ -463,6 +481,7 @@ def _append_body_lines(
     lines: list[str],
     *,
     lede_first_para: bool = False,
+    article_kind: str | None = None,
 ) -> bool:
     """追加正文段落；若 `lede_first_para` 则首段用开篇样式。返回是否已应用开篇样式。"""
     if not lines:
@@ -471,7 +490,10 @@ def _append_body_lines(
         _append_news_cluster(parts, lines)
         return False
     if len(lines) == 1 and lines[0].startswith("·"):
-        parts.append(f'<p style="{_body_paragraph_style()}">{_line_to_html(lines[0])}</p>')
+        parts.append(
+            f'<p style="{_body_paragraph_style(article_kind=article_kind)}">'
+            f"{_line_to_html(lines[0])}</p>"
+        )
         return False
     if all(line.startswith("·") for line in lines):
         items = "".join(
@@ -479,12 +501,25 @@ def _append_body_lines(
         )
         parts.append(f'<ul style="{_body_list_style()}">{items}</ul>')
         return False
+    if len(lines) == 1 and lines[0].strip().startswith("（配图"):
+        parts.append(
+            f'<p style="margin:6px 0 2px;font-size:10px;line-height:1.45;'
+            f'color:#aaa;text-align:center;">{_line_to_html(lines[0].strip())}</p>'
+        )
+        return False
+    stripped_lines = [ln for ln in lines if ln.strip()]
+    if stripped_lines and all(ln.strip().startswith("> ") for ln in stripped_lines):
+        from scripts.tools.wechat_mp_rich_html import blockquote_body_html
+
+        bare = [ln.strip()[2:].strip() for ln in stripped_lines]
+        parts.append(blockquote_body_html(bare))
+        return lede_first_para
     from scripts.tools.wechat_mp_rich_html import opening_lede_paragraph_style
 
     style = (
         opening_lede_paragraph_style()
         if lede_first_para
-        else _body_paragraph_style()
+        else _body_paragraph_style(article_kind=article_kind)
     )
     inner = "<br/>".join(_line_to_html(x) for x in lines)
     parts.append(f'<p style="{style}">{inner}</p>')
@@ -547,6 +582,8 @@ def _text_prose_to_html(
             return not seen_section
         if kind in ("top5", "dragons"):
             return seen_section
+        if kind == "discussion":
+            return not seen_section
         return False
 
     for block in split_wechat_body_blocks(text):
@@ -558,8 +595,12 @@ def _text_prose_to_html(
         from scripts.tools.wechat_mp_rich_html import (
             blockquote_title_html,
             commerce_hashtag_html,
+            cta_box_html,
+            discussion_highlight_html,
             is_blockquote_title_line,
             is_commerce_hashtag_line,
+            parse_cta_line,
+            parse_hl_line,
         )
 
         if len(lines) == 1:
@@ -568,9 +609,24 @@ def _text_prose_to_html(
                 parts.append(commerce_hashtag_html(tags))
                 prev_was_figure = False
                 continue
+            cta_parts = parse_cta_line(lines[0])
+            if cta_parts:
+                parts.append(cta_box_html(cta_parts))
+                prev_was_figure = True
+                continue
+            hl_text = parse_hl_line(lines[0])
+            if hl_text:
+                parts.append(discussion_highlight_html(hl_text))
+                prev_was_figure = False
+                continue
             fig = parse_figure_line(lines[0])
             if fig:
                 fname, caption = fig
+                if prev_was_figure:
+                    parts.append(
+                        '<p style="margin:0;padding:0;height:12px;line-height:12px;'
+                        'font-size:12px;">&nbsp;</p>'
+                    )
                 img_url: str | None = None
                 if mp_configured():
                     from scripts.tools.wechat_mp_figures import (
@@ -601,6 +657,7 @@ def _text_prose_to_html(
                     lines[0],
                     tight_top=prev_was_figure,
                     first_section=not seen_section,
+                    article_kind=kind or None,
                 )
             )
             seen_section = True
@@ -608,16 +665,21 @@ def _text_prose_to_html(
             body_lines = [ln for ln in lines[1:] if ln.strip()]
             if body_lines:
                 if _append_body_lines(
-                    parts, body_lines, lede_first_para=_want_opening_lede()
+                    parts,
+                    body_lines,
+                    lede_first_para=_want_opening_lede(),
+                    article_kind=kind or None,
                 ):
                     lede_done = True
             continue
         prev_was_figure = False
         if _want_opening_lede():
-            if _append_body_lines(parts, lines, lede_first_para=True):
+            if _append_body_lines(
+                parts, lines, lede_first_para=True, article_kind=kind or None
+            ):
                 lede_done = True
         else:
-            _append_body_lines(parts, lines)
+            _append_body_lines(parts, lines, article_kind=kind or None)
     return parts, seen_section, prev_was_figure, lede_done
 
 
@@ -664,6 +726,11 @@ def _escape_html(text: str) -> str:
         .replace(">", "&gt;")
         .replace('"', "&quot;")
     )
+
+
+def _escape_html_plain(text: str) -> str:
+    """纯文本转 HTML：不转义 >，避免 -> 复制成 -&gt;。"""
+    return text.replace("&", "&amp;").replace("<", "&lt;")
 
 
 def _load_thumb_cache() -> dict[str, Any] | None:
@@ -899,15 +966,18 @@ _DEFAULT_KIND_THUMB_NAMES: dict[str, str] = {
     "market": "封面-交易所屏-双封面",
     "news": "封面-显示器走势-双封面",
     "top5": "封面-财经亮屏-双封面",
+    "hotspot": "封面-牛马品牌-双封面",
     "dragons": "封面-多屏亮行情-双封面",
     "workspace": "封面-数据大屏-双封面",
     "temp": "封面-数据大屏-双封面",
+    "guba": "封面-牛马品牌-双封面",
 }
 
 # top5 / dragons 默认本地亮色封面（相对 ROOT）；可被 WECHAT_MP_THUMB_PATH_{KIND} 覆盖
 _DEFAULT_KIND_THUMB_ASSETS: dict[str, Path] = {
     "top5": ROOT / "assets" / "wechat_mp" / "cover-financial-screen-dual.jpg",
     "dragons": ROOT / "assets" / "wechat_mp" / "cover-multi-screen-dual.jpg",
+    "tv_review": ROOT / "assets" / "wechat_mp" / "cover-tv" / "euphoria-hbo-neon.jpg",
 }
 
 # 带货预览会上传 avatar 等到同一素材库；财经选封面须排除，禁止回退到「最新一张」
@@ -916,6 +986,7 @@ _FINANCE_THUMB_DENY_SUBSTR: tuple[str, ...] = ("avatar", "简选")
 _KIND_THUMB_FALLBACKS: dict[str, tuple[str, ...]] = {
     "news": ("封面-多屏行情-双封面", "封面-平板分析-双封面", "多屏行情"),
     "top5": ("封面-手机看盘-双封面", "财经亮屏", "financial-screen"),
+    "hotspot": ("封面-牛马品牌-双封面", "牛马品牌", "banner"),
     "dragons": (
         "封面-多屏行情-双封面",
         "封面-显示器走势-双封面",
@@ -1202,10 +1273,11 @@ def pick_sector_thumb_from_banner(*, force_reupload: bool = False) -> tuple[str 
 
 def pick_thumb_for_draft_kind(kind: str) -> tuple[str | None, dict[str, Any] | None]:
     """
-    按草稿槽位选封面（market / news / top5 / dragons / workspace / temp）。
+    按封面资源 kind 选 thumb（sector / top5 / dragons 等素材或本地图）。
     环境变量：WECHAT_MP_THUMB_MEDIA_ID_{KIND}、WECHAT_MP_THUMB_NAME_{KIND}
     与带货隔离：排除 avatar/简选 素材，且禁止「最新一张」回退。
-    sector：素材库「封面-牛马品牌」→ 否则上传正文 masthead 用 banner.png（牛马图）。
+    sector：素材库「封面-牛马品牌」→ 否则上传 banner.png。
+    注意：evening 批次「内容 kind」与「封面 kind」解耦，见 wechat_mp_draft_batch.cover_kind_for_content。
     """
     k = (kind or "").strip().lower()
     env_suffix = k.upper()
@@ -1233,7 +1305,7 @@ def pick_thumb_for_draft_kind(kind: str) -> tuple[str | None, dict[str, Any] | N
         if mid:
             return mid, None
         last_err = err
-    if k == "sector":
+    if k in {"sector", "guba", "hotspot"}:
         mid, err = pick_sector_thumb_from_banner()
         if mid:
             return mid, None
@@ -1319,6 +1391,35 @@ def list_all_drafts(*, max_items: int = 100) -> tuple[list[dict[str, Any]], dict
         if len(chunk) < 20:
             break
     return all_items, None
+
+
+def fetch_draft_news_item(
+    *,
+    media_id: str,
+    max_items: int = 100,
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+    """按 media_id 拉取草稿首篇图文（含 content HTML）。"""
+    target = (media_id or "").strip()
+    if not target:
+        return None, {"errcode": -1, "errmsg": "media_id 为空"}
+    offset = 0
+    while offset < max_items:
+        chunk, err = draft_batchget(offset=offset, count=20, no_content=False)
+        if err:
+            return None, err
+        if not chunk:
+            break
+        for item in chunk:
+            if str(item.get("media_id") or "") != target:
+                continue
+            news = (item.get("content") or {}).get("news_item") or []
+            if news and isinstance(news[0], dict):
+                return news[0], None
+            return None, {"errcode": -1, "errmsg": "草稿无 news_item"}
+        offset += len(chunk)
+        if len(chunk) < 20:
+            break
+    return None, {"errcode": -1, "errmsg": f"未找到 media_id={target}"}
 
 
 def draft_delete(*, media_id: str) -> dict[str, Any] | None:

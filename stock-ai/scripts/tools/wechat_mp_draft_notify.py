@@ -12,9 +12,14 @@ from zoneinfo import ZoneInfo
 TZ = ZoneInfo("Asia/Shanghai")
 
 BATCH_LABELS = {
-    "evening": "交易日 19:00",
-    "weekend": "休市日 18:20 周末要闻(热股Top10×快讯)",
+    "evening": "交易日 18:20 · news+hotspot（已停用自动调度）",
+    "weekend": "休市日 18:20 · hotspot(热点深评)（已停用自动调度）",
     "weekend_skip": "周六休市(跳过)",
+    "tv_trial": "手动 · 影视/话题讨论 1 篇（已移出定时）",
+    "hotspot_early": "每天 09:00 · 热点深评",
+    "hotspot_morning": "每天 11:00 · 热点深评",
+    "hotspot_afternoon": "每天 15:00 · 热点深评",
+    "hotspot_evening": "每天 18:00 · 热点深评",
 }
 
 
@@ -74,8 +79,69 @@ def format_batch_message(
             lines.append(f"· [{r.kind}] {r.error[:120]}")
     lines.append("")
     lines.append("请在 mp.weixin.qq.com 草稿箱审阅后发布。")
+    if batch == "evening" and ok_items:
+        from scripts.tools.wechat_mp_draft_batch import EVENING_PUBLISH_ROWS
+
+        lines.append("")
+        lines.append("同批群发（1 次通知）· 封面槽位 1→2→3 不变：")
+        for idx, (pos, content_kind, cover_kind, cover_label) in enumerate(
+            EVENING_PUBLISH_ROWS, start=1
+        ):
+            lines.append(
+                f"{idx}. {pos} 内容=[{content_kind}] · 封面第{idx}位={cover_label}({cover_kind})"
+            )
+    if batch == "tv_trial" and ok_items:
+        lines.append("")
+        lines.append("影视：今日 1 篇 tv_review（牛马品牌封面），审阅后发布。")
+    if batch in {
+        "hotspot_early",
+        "hotspot_morning",
+        "hotspot_afternoon",
+        "hotspot_evening",
+    } and ok_items:
+        lines.append("")
+        lines.append("热点深评：选题来自当日微博+百度热搜，审阅后发布。")
     if ok_items and any(r.hashtags for r in ok_items):
-        lines.append("发布后：勾选原创(财经) → 文章右侧 # 粘贴各行推荐话题。")
+        lines.append("发布后：勾选原创 → 文章右侧 # 粘贴各行推荐话题。")
+    try:
+        from scripts.tools.wechat_mp_growth import format_growth_notify_block
+
+        news_r = next((r for r in ok_items if r.kind == "news"), None)
+        tv_r = next((r for r in ok_items if r.kind == "tv_review"), None)
+        news_intro = ""
+        if news_r:
+            try:
+                from scripts.tools.wechat_mp_content import build_news_article
+                from scripts.tools.wechat_mp_news_lede import extract_news_intro_from_body
+
+                art = build_news_article()
+                news_intro = extract_news_intro_from_body(str(art.get("body") or ""))
+            except Exception:
+                news_intro = ""
+        share_title = tv_r.title if tv_r else (news_r.title if news_r else "")
+        share_intro = ""
+        if tv_r:
+            try:
+                from scripts.tools.wechat_mp_content import build_article
+                from scripts.tools.wechat_mp_news_lede import (
+                    extract_news_intro_from_body,
+                    format_group_share_copy,
+                )
+
+                art = build_article("tv_review")
+                body_intro = extract_news_intro_from_body(str(art.get("body") or ""))
+                share_intro = format_group_share_copy(title=share_title, intro=body_intro)
+            except Exception:
+                share_intro = share_title
+        growth = format_growth_notify_block(
+            batch=batch,
+            news_title=share_title,
+            news_intro=share_intro or news_intro,
+        )
+        if growth:
+            lines.append(growth)
+    except Exception:
+        pass
     return "\n".join(lines)
 
 

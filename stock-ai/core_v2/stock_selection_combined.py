@@ -111,9 +111,16 @@ def _normalize_position_pct(ratio: float | None) -> float:
     return val * 100 if val <= 1.0 else val
 
 
-def _cap_action_for_redlines(action: str, pct_chg: float, account_position_pct: float) -> str:
+def _cap_action_for_redlines(
+    action: str,
+    pct_chg: float,
+    account_position_pct: float,
+    *,
+    chase_pct_max: float | None = None,
+) -> str:
     """执行卡买入档位：>75% 禁买；60–75% 仅小仓埋伏；≤60% 按评分动作（仍受禁追高约束）。"""
-    if pct_chg > CHASE_PCT_MAX and action in BUY_ACTIONS:
+    chase = CHASE_PCT_MAX if chase_pct_max is None else chase_pct_max
+    if pct_chg > chase and action in BUY_ACTIONS:
         return "继续观察"
     if account_position_pct > POSITION_NO_BUY_PCT:
         if action in BUY_ACTIONS:
@@ -191,8 +198,11 @@ def assign_action(
     *,
     is_ambush_only: bool,
     regime: str,
+    threshold_overrides: dict[str, float] | None = None,
 ) -> str:
     th = action_thresholds_for_regime(regime)
+    if threshold_overrides:
+        th = {**th, **threshold_overrides}
     if is_ambush_only:
         if total_score >= th["小仓埋伏"]:
             return "小仓埋伏"
@@ -343,6 +353,13 @@ def main(target_date=None):
     except Exception as exc:  # noqa: BLE001
         print(f"⚠️ 投顾选股过滤未加载（{exc}）")
 
+    from board_filters import code6, passes_crash_filter
+    from combined_selection_engine import evaluate_combined_candidate
+    from market_breadth import compute_daily_breadth, regime_for_date
+
+    kcb_breadth_map = compute_daily_breadth(df_all, board_kind="kcb")
+    main_breadth_map = compute_daily_breadth(df_all, board_kind="main")
+
     excluded_crash = 0
     excluded_bj = 0
     excluded_st = 0
@@ -362,9 +379,7 @@ def main(target_date=None):
             pass
         
         latest = group.iloc[-1]
-        close_today = latest['close']
-        amount_today = latest['amount']
-        code_str = str(ts_code).split(".")[0].zfill(6)
+        code_str = code6(ts_code)
         pct_chg_today = float(latest['pct_chg'])
 
         if EXCLUDE_ST and code_str in st_codes:
@@ -373,289 +388,87 @@ def main(target_date=None):
         if EXCLUDE_BJ and code_str.startswith("92"):
             excluded_bj += 1
             continue
-        if pct_chg_today <= DROP_EXCLUDE_PCT or pct_chg_today <= LIMIT_DOWN_PCT:
+        if not passes_crash_filter(ts_code, pct_chg_today):
             excluded_crash += 1
             continue
-        
-        # 基础过滤
-        if not (MIN_PRICE <= close_today <= MAX_PRICE): continue
-        if amount_today < MIN_AMOUNT_QIAN:
+
+        from board_filters import BoardKind, detect_board, get_board_params
+
+        code_board = detect_board(code_str)
+        if code_board == BoardKind.KCB:
+            board_regime = regime_for_date(kcb_breadth_map, trade_date)
+        elif code_board == BoardKind.MAIN:
+            board_regime = regime_for_date(main_breadth_map, trade_date)
+        else:
+            board_regime = None
+
+        row = evaluate_combined_candidate(
+            group,
+            ts_code,
+            market_score_adj=market_score_adj,
+            hot_sectors=hot_sectors,
+            market_regime=market_regime,
+            holdings_codes=holdings_codes,
+            account_position_pct=account_position_pct,
+            industry_map=industry_map,
+            advisor_phase=advisor_phase,
+            legacy_unified_filter=False,
+            board_market_regime=board_regime,
+        )
+        if not row:
             continue
-        amount_wan = amount_qian_to_wan(amount_today)
-        
-        # 均线计算
-        ma5 = group['close'].tail(5).mean()
-        ma10 = group['close'].tail(10).mean()
-        ma20 = group['close'].tail(20).mean()
-        ma60 = group['close'].tail(60).mean()
-        
-        # --- 策略1: 3年大底突破 ---
-        is_breakout = False
-        box_width = 0
-        breakout_ratio = 0
-        if len(group) >= BOX_PERIOD:
-            box_data = group.iloc[-BOX_PERIOD:-10]
-            box_high = box_data['high'].max()
-            box_low = box_data['low'].min()
-            box_width = (box_high - box_low) / box_low * 100
-            breakout_ratio = (close_today - box_high) / box_high * 100
-            
-            high_250d = group['high'].tail(250).max()
-            low_250d = group['low'].tail(250).min()
-            dist_from_high = (close_today - high_250d) / high_250d * 100
-            dist_from_low = (close_today - low_250d) / low_250d * 100
-            
-            day_high = float(latest["high"])
-            day_low = float(latest["low"])
-            close_str = close_strength_ratio(day_high, day_low, close_today)
-            if (box_width <= BOX_WIDTH_MAX and breakout_ratio >= 0 and 
-                dist_from_high <= DIST_FROM_250D_HIGH_MAX and dist_from_low <= DIST_FROM_250D_LOW_MAX and
-                ma5 > ma10 > ma20 and
-                pct_chg_today > 0 and
-                close_today > float(latest['open']) and
-                close_str >= BREAKOUT_CLOSE_STRENGTH_MIN):
-                is_breakout = True
 
-        # --- 策略2: 低位放量三连阳 ---
-        is_three_up = False
-        if len(group) >= 10:
-            recent_3 = group.tail(3)
-            avg_amount_5 = group['amount'].iloc[-8:-3].mean()
-            
-            cond1 = (recent_3['pct_chg'] >= THREE_UP_MIN_CHG).all()
-            cond2 = (recent_3['close'] > recent_3['open']).all()
-            cond3 = (recent_3['amount'] > avg_amount_5 * THREE_UP_VOL_RATIO).any()
-            cond4 = (close_today - group['close'].iloc[-4]) / group['close'].iloc[-4] * 100 <= THREE_UP_TOTAL_CHG_MAX
-            
-            # 确保是在相对低位（距250日高点跌幅超过30%）
-            high_250d = group['high'].tail(250).max()
-            is_low = (close_today - high_250d) / high_250d * 100 < -30
-            
-            if cond1 and cond2 and cond3 and cond4 and is_low:
-                is_three_up = True
+        tags_str = str(row.get("策略标签") or "")
+        for tag in ("大底突破", "三连阳", "空中加油", "早埋伏"):
+            if tag in tags_str:
+                signal_hits[tag] += 1
+        results.append(row)
 
-        # --- 策略3: 空中加油 (MA20回踩) ---
-        is_pullback = False
-        if len(group) >= 30:
-            prev_20d_chg = (group['close'].iloc[-5] - group['close'].iloc[-25]) / group['close'].iloc[-25] * 100
-            dist_to_ma20 = abs(close_today - ma20) / ma20 * 100
-            avg_amount_5 = group['amount'].iloc[-10:-5].mean()
-            vol_ratio = amount_today / avg_amount_5
-            
-            if (prev_20d_chg >= PULLBACK_PREV_STRENGTH and 
-                dist_to_ma20 <= PULLBACK_MA20_DIST and 
-                vol_ratio <= PULLBACK_VOL_DECREASE and
-                close_today >= ma20 and
-                close_today >= ma5 and
-                close_today > float(latest['open']) and
-                pct_chg_today > 0):
-                is_pullback = True
+    try:
+        from board_filters import BoardKind, detect_board, get_board_params
 
-        # --- 策略4: 早埋伏（接近突破但未突破） ---
-        is_ambush = False
-        if len(group) >= max(BOX_PERIOD, 40):
-            box_data2 = group.iloc[-BOX_PERIOD:-5]
-            box_high2 = box_data2['high'].max()
-            box_low2 = box_data2['low'].min()
-            box_width2 = (box_high2 - box_low2) / box_low2 * 100 if box_low2 > 0 else 999
-            near_box_top = (close_today - box_high2) / box_high2 * 100 if box_high2 > 0 else -999
-
-            # MA20近5日斜率（简化）
-            ma20_series = group['close'].rolling(20).mean()
-            ma20_slope_5d = (ma20_series.iloc[-1] - ma20_series.iloc[-6]) / ma20_series.iloc[-6] * 100 if len(group) >= 26 and ma20_series.iloc[-6] > 0 else -999
-
-            avg_amount_5b = group['amount'].iloc[-10:-5].mean()
-            vol_ratio_b = amount_today / avg_amount_5b if avg_amount_5b > 0 else 0
-
-            ambush_ok = (
-                AMBUSH_NEAR_BOX_TOP_MIN <= near_box_top <= AMBUSH_NEAR_BOX_TOP_MAX and
-                box_width2 <= AMBUSH_BOX_WIDTH_MAX and
-                ma20_slope_5d >= AMBUSH_MA20_SLOPE_MIN and
-                AMBUSH_VOL_RATIO_MIN <= vol_ratio_b <= AMBUSH_VOL_RATIO_MAX and
-                close_today >= ma20
-            )
-            if ambush_ok and pct_chg_today >= 0 and close_today > float(latest["open"]):
-                is_ambush = True
-            elif ambush_ok and AMBUSH_SOFT_DIP_PCT <= pct_chg_today < 0:
-                is_ambush = True
-
-        # --- 策略5: 主力异动（已弃用 capital_flow 表；资金面改 OpenCLI SOP） ---
-        is_surge = False
-        big_net = 0
-        big_pct = 0
-
-        # 记录结果 + 评分
-        if is_breakout:
-            signal_hits["大底突破"] += 1
-        if is_three_up:
-            signal_hits["三连阳"] += 1
-        if is_pullback:
-            signal_hits["空中加油"] += 1
-        if is_ambush:
-            signal_hits["早埋伏"] += 1
-
-        if is_breakout or is_three_up or is_pullback or is_ambush or is_surge:
-            # --- 暂时跳过自动基本面过滤，由 Agent 通过浏览器手动校验 ---
-            # print(f"  🔍 校验基本面红线: {ts_code}...")
-            # fundamental = get_stock_fundamental(ts_code)
-            
-            # 记录技术面候选
-            tags = []
-            if is_breakout: tags.append("大底突破")
-            if is_three_up: tags.append("三连阳")
-            if is_pullback: tags.append("空中加油")
-            if is_ambush: tags.append("早埋伏")
-            if is_surge: tags.append("主力异动")
-
-            # === 评分体系（0-100）===
-            # 1) 信号分（0-45）
-            signal_score = 0
-            if is_breakout:
-                signal_score += 18
-            if is_three_up:
-                signal_score += 14
-            if is_pullback:
-                signal_score += 13
-            if is_ambush:
-                signal_score += 12
-            if is_surge:
-                signal_score += 15
-
-            # 2) 趋势分（0-25）
-            trend_score = 0
-            if ma5 > ma10:
-                trend_score += 8
-            if ma10 > ma20:
-                trend_score += 8
-            if close_today >= ma20:
-                trend_score += 9
-
-            # 3) 动量分（0-20） + 5) 风险惩罚（0~-15）
-            risk_penalty = 0
-            momentum_score = 0
-            if -2 <= pct_chg_today <= CHASE_PCT_MAX:
-                momentum_score += 8
-            elif CHASE_PCT_MAX < pct_chg_today <= 6:
-                momentum_score += 2
-            elif pct_chg_today > 6:
-                risk_penalty -= 4
-
-            if len(group) >= 25:
-                prev_20d_chg_for_score = (group['close'].iloc[-1] - group['close'].iloc[-21]) / group['close'].iloc[-21] * 100
-                if 5 <= prev_20d_chg_for_score <= 30:
-                    momentum_score += 12
-                elif prev_20d_chg_for_score > 30:
-                    momentum_score += 6
-
-            # 4) 流动性分（0-10）
-            liquidity_score = liquidity_score_from_wan(amount_wan)
-
-            if abs(pct_chg_today) > 8:
-                risk_penalty -= 6
-            if len(group) >= 10:
-                recent_vol = group['pct_chg'].tail(10).std()
-                if recent_vol > 5:
-                    risk_penalty -= 5
-            if is_ambush and AMBUSH_SOFT_DIP_PCT <= pct_chg_today < 0:
-                risk_penalty -= 2
-            if len(group) >= 4:
-                chg_3d = (close_today / float(group['close'].iloc[-4]) - 1) * 100
-                if chg_3d > 12:
-                    risk_penalty -= 4
-
-            # 6) 大盘调整
-            total_score = max(0, min(100, round(signal_score + trend_score + momentum_score + liquidity_score + risk_penalty + market_score_adj, 1)))
-
-            # 7) 板块调整
-            sector_score_adj = 0
-            industry = _resolve_industry(str(ts_code), industry_map)
-            if _sector_matches(industry, hot_sectors):
-                sector_score_adj = 5
-                total_score = min(100, total_score + sector_score_adj)
-
-            # 8) 三力合一共振 (Market + Sector + Stock)
-            resonance_score = 0
-            # 条件：大盘环境好 + 属于热门板块 + 个股有强信号(标签数>1 或 信号分高)
-            if market_score_adj > 0 and sector_score_adj > 0 and (len(tags) > 1 or signal_score >= 18):
-                resonance_score = 10
-                total_score = min(100, total_score + resonance_score)
-                tags.append("三力合一")
-
-            is_ambush_only = is_ambush and not (
-                is_breakout or is_three_up or is_pullback or is_surge
-            )
-            action = assign_action(
-                total_score,
-                is_ambush_only=is_ambush_only,
-                regime=market_regime,
-            )
-
-            if code_str in holdings_codes:
-                action = "持有" if action in BUY_ACTIONS else action
-            else:
-                action = _cap_action_for_redlines(action, pct_chg_today, account_position_pct)
-                if pct_chg_today > CHASE_PCT_MAX and action in BUY_ACTIONS:
-                    action = "继续观察"
-                if pct_chg_today < 0 and action not in BUY_ACTIONS:
-                    action = "谨慎回避"
-
-            if code_str not in holdings_codes and action == "谨慎回避":
-                continue
-
-            try:
-                from stock_ai.advisor_selection import (
-                    advisor_industry_score_bonus,
-                    apply_advisor_to_results_row,
+        board = get_board_params("688000")
+        main_board = get_board_params("600000")
+        kcb_cap = board.max_signals_per_day
+        main_cap = main_board.max_signals_per_day
+        if kcb_cap is not None:
+            kcb_idx = [
+                i
+                for i, r in enumerate(results)
+                if detect_board(str(r.get("代码", ""))) == BoardKind.KCB
+            ]
+            if len(kcb_idx) > kcb_cap:
+                kcb_rows = sorted(
+                    (results[i] for i in kcb_idx),
+                    key=lambda r: (-float(r.get("总分") or 0), str(r.get("代码"))),
                 )
-
-                total_score = min(
-                    100.0,
-                    total_score + advisor_industry_score_bonus(industry, phase=advisor_phase),
+                keep_codes = {str(r.get("代码")) for r in kcb_rows[:kcb_cap]}
+                results = [
+                    r
+                    for r in results
+                    if detect_board(str(r.get("代码", ""))) != BoardKind.KCB
+                    or str(r.get("代码")) in keep_codes
+                ]
+        if main_cap is not None:
+            main_idx = [
+                i
+                for i, r in enumerate(results)
+                if detect_board(str(r.get("代码", ""))) == BoardKind.MAIN
+            ]
+            if len(main_idx) > main_cap:
+                main_rows = sorted(
+                    (results[i] for i in main_idx),
+                    key=lambda r: (-float(r.get("总分") or 0), str(r.get("代码"))),
                 )
-            except ImportError:
-                pass
-
-            _, buy_shares, buy_amount_yuan = _position_suggestion(action, close_today)
-
-            row = {
-                '代码': code_str,
-                '收盘价': close_today,
-                '涨幅%': latest['pct_chg'],
-                '成交额(万)': round(amount_wan, 2),
-                '策略标签': ",".join(tags),
-                '标签数': len(tags),
-                '总分': total_score,
-                '信号分': signal_score,
-                '趋势分': trend_score,
-                '动量分': momentum_score,
-                '流动性分': round(liquidity_score, 1),
-                '风险调整': risk_penalty,
-                '大盘调整': market_score_adj,
-                '板块调整': sector_score_adj,
-                '共振加分': resonance_score,
-                '大盘环境': market_regime,
-                '所属行业': industry,
-                '建议动作': action,
-                '建议买入(股)': buy_shares,
-                '预计金额(元)': buy_amount_yuan,
-                '超大单净流入(万)': big_net,
-                '超大单占比%': big_pct
-            }
-            try:
-                from stock_ai.advisor_selection import apply_advisor_to_results_row
-
-                apply_advisor_to_results_row(
-                    row, phase=advisor_phase, account_position_pct=account_position_pct
-                )
-                if row.get("建议动作") == "禁止":
-                    continue
-                action = str(row["建议动作"])
-                _, buy_shares, buy_amount_yuan = _position_suggestion(action, close_today)
-                row["建议买入(股)"] = buy_shares
-                row["预计金额(元)"] = buy_amount_yuan
-            except ImportError:
-                pass
-            results.append(row)
+                keep_main = {str(r.get("代码")) for r in main_rows[:main_cap]}
+                results = [
+                    r
+                    for r in results
+                    if detect_board(str(r.get("代码", ""))) != BoardKind.MAIN
+                    or str(r.get("代码")) in keep_main
+                ]
+    except Exception:
+        pass
 
     print(
         "📈 信号命中："

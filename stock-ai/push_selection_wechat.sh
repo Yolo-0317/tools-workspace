@@ -1,5 +1,5 @@
 #!/bin/sh
-# 工作日 17:45：选股 Top5 → 东财 SOP → 战报落盘 → 监控 sync / 持仓快照（默认不推微信）
+# 工作日 17:45：并行选股入库 → 可选战报落盘 → 监控 sync / 持仓快照（默认不推微信）
 set -eu
 set -o pipefail
 
@@ -18,8 +18,9 @@ if [ -f .env ]; then
   set +a
 fi
 
-# 勿用 FULL：子进程/环境可能覆盖该名导致 set -u 报错
+DISABLE_SELECTION_REPORT="${DISABLE_SELECTION_REPORT:-1}"
 SELECTION_REPORT="${ROOT}/output/daily_selection_full_latest.txt"
+SELECTION_LOG="${ROOT}/logs/selection_push_$(date '+%Y%m%d').log"
 
 WECHAT_ACP_INSTANCE="${WECHAT_ACP_INSTANCE:-tools-workspace}"
 WECHAT_TARGET="${WECHAT_TARGET:-o9cq801H5ip_q8SH3ogvkQhhNI2s@im.wechat}"
@@ -27,11 +28,19 @@ WECHAT_PUSH_BACKEND="${WECHAT_PUSH_BACKEND:-wechat-acp}"
 
 if [ "${REPORT_ONLY:-0}" != "1" ]; then
   echo "=========================================="
-  echo "综合选股 + SOP（17:45）"
+  echo "综合选股（17:45）"
   echo "时间：$(date '+%Y-%m-%d %H:%M:%S')"
   echo "=========================================="
-  ./run_selection_daily.sh 2>&1 | tee "$SELECTION_REPORT"
+  if [ "${DISABLE_SELECTION_REPORT}" = "1" ]; then
+    ./run_selection_daily.sh 2>&1 | tee -a "${SELECTION_LOG}"
+  else
+    ./run_selection_daily.sh 2>&1 | tee "${SELECTION_REPORT}"
+  fi
 else
+  if [ "${DISABLE_SELECTION_REPORT}" = "1" ]; then
+    echo "❌ REPORT_ONLY=1 但 DISABLE_SELECTION_REPORT=1（无战报可推）" >&2
+    exit 1
+  fi
   if ! uv run python -c "
 from scripts.tools.selection_results import resolve_selection_df
 _, df, _ = resolve_selection_df()
@@ -48,6 +57,11 @@ fi
 uv run python -m scripts.tools.selection_watchlist --sync || true
 
 "${ROOT}/scripts/tools/run_portfolio_snapshot.sh" eod
+
+if [ "${DISABLE_SELECTION_REPORT}" = "1" ]; then
+  echo "选股完成（未写战报；DISABLE_SELECTION_REPORT=1）"
+  exit 0
+fi
 
 if [ ! -s "$SELECTION_REPORT" ]; then
   echo "❌ 选股报告为空，无法推送" >&2

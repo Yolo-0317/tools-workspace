@@ -1,0 +1,617 @@
+{
+  "comment": "hp01 ch07 · paragraph bilingual_clips (bilingual_pdf)",
+  "source": "bilingual_pdf",
+  "granularity": "paragraph",
+  "zh_variant": "zh-cn",
+  "bilingual_clips": [
+    {
+      "en": "Chapter 7 · The Sorting Hat",
+      "zh": "第7章 · 分院帽",
+      "kind": "heading"
+    },
+    {
+      "en": "The door swung open at once. A tall, black-haired witch in emerald-green robes stood there. She had a very stern face and Harry's first thought was that this was not someone to cross.",
+      "zh": "大门立时洞开。一个身穿翠绿色长袍的高个儿黑发女巫站在大门前。她神情严肃，哈利首 先想到的是这个人可不好对付。"
+    },
+    {
+      "en": "\"The firs' years, Professor McGonagall,\" said Hagrid.",
+      "zh": "“一年级新生，麦格教授。”海格说。"
+    },
+    {
+      "en": "\"Thank you, Hagrid. I will take them from here.\"",
+      "zh": "“谢谢你，海格。到这里就交给我来接走。”"
+    },
+    {
+      "en": "She pulled the door wide. The entrance hall was so big you could have fit the whole of the Dursleys' house in it. The stone walls were lit with flaming torches like the ones at Gringotts, the ceiling was too high to make out, and a magnificent marble staircase facing them led to the upper floors.",
+      "zh": "她把门拉得大开。门厅大得能把德思礼家整栋房子搬进去。像古灵阁一样，石墙周围都是熊 熊燃烧的火炬。天花板高得几乎看不到顶。正面是一段豪华的大理石楼梯，直通楼上。"
+    },
+    {
+      "en": "They followed Professor McGonagall across the flagged stone floor. Harry could hear the drone of hundreds of voices from a doorway to the right -the rest of the school must already be here -- but Professor McGonagall showed the first years into a small, empty chamber off the hall. They crowded in, standing rather closer together than they would usually have done, peering about nervously.",
+      "zh": "他们跟随麦格教授沿石铺地板走去。哈利听见右边门里传来几百人嗡嗡的说话声，学校其他 班级的同学想必已经到了——但是麦格教授却把一年级新生带到了大厅另一头的一间很小的空 屋里。大家一拥而入，摩肩擦背地挤在一起，紧张地仔细凝望着周围的一切。"
+    },
+    {
+      "en": "\"Welcome to Hogwarts,\" said Professor McGonagall. \"The start-of-term banquet will begin shortly, but before you take your seats in the Great Hall, you will be sorted into your houses. The Sorting is a very important ceremony because, while you are here, your house will be something like your family within Hogwarts. You will have classes with the rest of your house, sleep in your house dormitory, and spend free time in your house common room.",
+      "zh": "“欢迎你们来到霍格沃茨，”麦格教授说，“开学宴就要开始了，不过你们在到餐厅入席之 前，首先要你们大家确定一下你们各自进入哪一所学院。分类是一项很重要的仪式，因为你们在 校期间，学院就像你们在霍格沃茨的家。你们要与学院里的其他同学一起上课，一起在学院的宿 舍住宿，一起在学院的公共休息室里度过课余时间。"
+    },
+    {
+      "en": "\"The four houses are called Gryffindor, Hufflepuff, Ravenclaw, and Slytherin. Each house has its own noble history and each has produced outstanding witches and wizards. While you are at Hogwarts, your triumphs will earn your house points, while any rulebreaking will lose house points. At the end of the year, the house with the most points is awarded the house cup, a great honor. I hope each of you will be a credit to whichever house becomes yours.",
+      "zh": "“四所学院的名称分别是：格兰芬多、赫奇帕奇、拉文克劳和斯莱特林。每所学院都拥有自 己的光荣历史，都培育出了杰出的男女巫师。你们在霍格沃茨就读期间，你们的出色表现会使你 们所在的学院赢得加分，而任何违规行为则使你们所在的学院减分。年终时，获最高分的学院可 获得学院杯，这是很高的荣誉。我希望你们不论分到哪所学院都能为学院争光。"
+    },
+    {
+      "en": "\"The Sorting Ceremony will take place in a few minutes in front of the rest of the school. I suggest you all smarten yourselves up as much as you can while you are waiting.\"",
+      "zh": "“过几分钟，分院仪式就要在全校师生面前举行。我建议你们在等候时，好好把自己整理一 下，精神一些。”"
+    },
+    {
+      "en": "Her eyes lingered for a moment on Neville's cloak, which was fastened under his left ear, and on Ron's smudged nose. Harry nervously tried to flatten his hair.",
+      "zh": "她的目光在纳威的斗篷(斗篷带系在左耳下边)和罗恩鼻子那块脏东西上游移了一下。哈利紧 张地拼命把头发抚平。"
+    },
+    {
+      "en": "\"I shall return when we are ready for you,\" said Professor McGonagall. \"Please wait quietly.\"",
+      "zh": "“等那边准备好了，我就来接你们。”麦格教授说，“等候时，请保持安静。”"
+    },
+    {
+      "en": "She left the chamber. Harry swallowed.",
+      "zh": "她离开了房间。哈利这才吐了一口气。"
+    },
+    {
+      "en": "\"How exactly do they sort us into houses?\" he asked Ron.",
+      "zh": "“他们怎么能准确地把我们分到哪所学院去呢?”他问罗恩。"
+    },
+    {
+      "en": "\"Some sort of test, I think. Fred said it hurts a lot, but I think he was joking.\"",
+      "zh": "“我想，总是通过一种测验呗。弗雷德说对我们的伤害很大，可我想他是在开玩笑。”"
+    },
+    {
+      "en": "Harry's heart gave a horrible jolt. A test? In front of the whole school? But he didn't know any magic yet -- what on earth would he have to do? He hadn't expected something like this the moment they arrived. He looked around anxiously and saw that everyone else looked terrified, too. No one was talking much except Hermione Granger, who was whispering very fast about all the spells she'd learned and wondering which one she'd need. Harry tried hard not to listen to her. He'd never been more nervous, never, not even when he'd had to take a school report home to the Dursleys saying that he'd somehow turned his teacher's wig blue. He kept his eyes fixed on the door. Any second now, Professor McGonagall would come back and lead him to his doom.",
+      "zh": "哈利心里猛地一颤。做测验?在全校师生面前?可他直到现在连一点儿魔法也不会——他究竟 该怎么办呢?他们来到这里时，他根本没想到还会来这么一招。他焦急地看看周围，周围人也人 人自危。没有人说话。只有赫敏口中念念有词，在飞快地背诵她学过的咒语，拿不准该用哪一道。 哈利尽量不去听她背诵。他从来没有像现在这样紧张过，从来没有，即使他把学校报告书交给德 思礼夫妇：报告书上说他把老师的假发套变成了蓝色。他目不转睛地盯着房门，麦格教授随时都 可能回来带他去面对毁灭。"
+    },
+    {
+      "en": "Then something happened that made him jump about a foot in the air -- several people behind him screamed.",
+      "zh": "这时发生了一件怪事，吓得他一蹦三丈高——他背后有几个人还高声尖叫。"
+    },
+    {
+      "en": "\"What the --?\"",
+      "zh": "“那是——”"
+    },
+    {
+      "en": "He gasped. So did the people around him. About twenty ghosts had just streamed through the back wall. Pearly-white and slightly transparent, they glided across the room talking to one another and hardly glancing at the first years. They seemed to be arguing. What looked like a fat little monk was saying: \"Forgive and forget, I say, we ought to give him a second chance --\"",
+      "zh": "他吓得透不过气来，周围的人也是一样。从他们背后的墙上突然蹿出二十来个幽灵。这些珍 珠白、半透明的幽灵，滑过整个房间，一边交头接耳，对这些一年级新生很少留意。他们好像在 争论什么。一个胖乎乎的小修士模样的幽灵说：“应当原谅，应当忘掉，我说，我们应当再给他 一次机会——”"
+    },
+    {
+      "en": "\"My dear Friar, haven't we given Peeves all the chances he deserves? He gives us all a bad name and you know, he's not really even a ghost -- I say, what are you all doing here?\"",
+      "zh": "“我的好修士，难道我们给皮皮鬼的机会还不够多吗?可他给我们都取了难听的外号。你知 道，他甚至连一个起码的幽灵都够不上——我说，你们在这里干什么?”"
+    },
+    {
+      "en": "A ghost wearing a ruff and tights had suddenly noticed the first years.",
+      "zh": "一个穿轮状皱领【流行于十六、十七世纪的一种环绕颈部的高而硬的圆领】紧身衣的幽灵突 然发现了一年级新生。"
+    },
+    {
+      "en": "Nobody answered. \"New students!\" said the Fat Friar, smiling around at them. \"About to be Sorted, I suppose?\"",
+      "zh": "没有人答话。“新生哟!”那个胖乎乎的修士朝他们微笑说。“我想，大概是准备接受测试 吧?”"
+    },
+    {
+      "en": "A few people nodded mutely. \"Hope to see you in Hufflepuff!\" said the Friar. \"My old house, you know.\" \"Move along now,\" said a sharp voice. \"The Sorting Ceremony's about to start.\"",
+      "zh": "有些学生默默地点点头。“希望你们能分到赫奇帕奇!”修士说，“我以前就读那个学院。” “现在朝前动动吧，”一个尖细的声音说，“分院仪式马上就要开始了。”"
+    },
+    {
+      "en": "Professor McGonagall had returned. One by one, the ghosts floated away through the opposite wall. \"Now, form a line,\" Professor McGonagall told the first years, \"and follow me.\"",
+      "zh": "麦格教授回来了。幽灵们鱼贯地飘飘荡荡穿过对面的墙壁不见了。“现在，排成单行，”麦 格教授对一年级新生说，“跟着我走。”"
+    },
+    {
+      "en": "Feeling oddly as though his legs had turned to lead, Harry got into line behind a boy with sandy hair, with Ron behind him, and they walked out of the chamber, back across the hall, and through a pair of double doors into the Great Hall.",
+      "zh": "哈利觉得两腿像灌了铅，可奇怪的是他还是站到了队列里，在一个淡茶色头发男孩背后，而 他的背后是罗恩。他们走出房间，穿过门厅，经过后边一道双开门进入豪华的餐厅。"
+    },
+    {
+      "en": "Harry had never even imagined such a strange and splendid place. It was lit by thousands and thousands of candles that were floating in midair over four long tables, where the rest of the students were sitting. These tables were laid with glittering golden plates and goblets. At the top of the hall was another long table where the teachers were sitting. Professor McGonagall led the first years up here, so that they came to a halt in a line facing the other students, with the teachers behind them. The hundreds of faces staring at them looked like pale lanterns in the flickering candlelight. Dotted here and there among the students, the ghosts shone misty silver. Mainly to avoid all the staring eyes, Harry looked upward and saw a velvety black ceiling dotted with stars. He heard Hermione whisper, \"Its bewitched to look like the sky outside. I read about it in Hogwarts, A History.\"",
+      "zh": "哈利从未想到过竟会有如此神奇美妙、富丽堂皇的地方。学院其他班级的同学都已围坐在四 张长桌旁，桌子上方成千上万只飘荡在半空的蜡烛照亮餐厅。四张桌上摆着熠熠闪光的金盘和高 脚酒杯。餐厅上首的台子上另摆着一张长桌，那是教师们的席位。麦格教授把一年级新生带到那 边，让他们面对全体高班生排成一排，教师们在他们背后。烛光摇曳，几百张注视着他们的面孔 像一盏盏苍白的灯笼。幽灵们也夹杂在学生们当中闪着朦胧的点点银光。哈利为避开他们的目光， 抬头朝上看，只见天鹅绒般漆黑的顶棚上点点星光闪烁。他听见赫敏小声说：“这里施过法术， 看起来跟外边的天空一样，我在《霍格沃茨，一段校史》里读到过。”"
+    },
+    {
+      "en": "It was hard to believe there was a ceiling there at all, and that the Great Hall didn't simply open on to the heavens.",
+      "zh": "很难令人相信那上边真有天花板，也很难令人相信餐厅屋顶不是露天的。"
+    },
+    {
+      "en": "Harry quickly looked down again as Professor McGonagall silently placed a four-legged stool in front of the first years. On top of the stool she put a pointed wizard's hat. This hat was patched and frayed and extremely dirty. Aunt Petunia wouldn't have let it in the house.",
+      "zh": "麦格教授往一年级新生面前轻轻放了一只四脚凳，哈利连忙收回了目光。麦格教授又往凳子 上放了一顶尖顶巫师帽。帽子打着补丁，磨得很旧，而且脏极了。佩妮姨妈决不会让这样的东西 进家门。"
+    },
+    {
+      "en": "Maybe they had to try and get a rabbit out of it, Harry thought wildly, that seemed the sort of thing -- noticing that everyone in the hall was now staring at the hat, he stared at it, too. For a few seconds, there was complete silence. Then the hat twitched. A rip near the brim opened wide like a mouth -- and the hat began to sing:",
+      "zh": "说不定他们要用这顶帽子变出一只兔子吧，哈利想入非非，大概就是这类事吧——他发现餐 厅里的人都在盯着这顶帽子，于是他也盯着它。餐厅里鸦雀无声。接着，帽子扭动了。帽边裂开 一道宽宽的缝，像一张嘴——帽子开始唱起来："
+    },
+    {
+      "en": "\"Oh, you may not think I'm pretty,",
+      "zh": "你们也许觉得我不算漂亮，"
+    },
+    {
+      "en": "But don't judge on what you see,",
+      "zh": "但千万不要以貌取人。"
+    },
+    {
+      "en": "I'll eat myself if you can find A smarter hat than me.",
+      "zh": "如果你们能找到比我更漂亮的帽子，我可以把自己吃掉。"
+    },
+    {
+      "en": "You can keep your bowlers black,",
+      "zh": "你们可以让你们的圆顶礼帽乌黑油亮，"
+    },
+    {
+      "en": "Your top hats sleek and tall,",
+      "zh": "让你们的高顶丝帽光滑挺括。"
+    },
+    {
+      "en": "For I'm the Hogwarts Sorting Hat",
+      "zh": "我可是霍格沃茨测试用的魔帽，"
+    },
+    {
+      "en": "And I can cap them all.",
+      "zh": "自然比你们的帽子高超出众。"
+    },
+    {
+      "en": "There's nothing hidden in your head",
+      "zh": "你们头脑里隐藏的任何念头，"
+    },
+    {
+      "en": "The Sorting Hat can't see,",
+      "zh": "都躲不过魔帽的金睛火眼。"
+    },
+    {
+      "en": "So try me on and I will tell you",
+      "zh": "戴上它试一下吧，"
+    },
+    {
+      "en": "Where you ought to be.",
+      "zh": "我会告诉你们，你们应该分到哪一所学院。"
+    },
+    {
+      "en": "You might belong in Gryffindor, Where dwell the brave at heart,",
+      "zh": "你也许属于格兰芬多，那里有埋藏在心底的勇敢，"
+    },
+    {
+      "en": "Their daring, nerve, and chivalry Set Gryffindors apart;",
+      "zh": "他们的胆识、气魄和豪爽，使格兰芬多出类拔萃；"
+    },
+    {
+      "en": "You might belong in Hufflepuff, Where they are just and loyal,",
+      "zh": "你也许属于赫奇帕奇，那里的人正直忠诚，"
+    },
+    {
+      "en": "Those patient Hufflepuffis are true And unafraid of toil;",
+      "zh": "赫奇帕奇的学子们坚忍诚实，不畏惧艰辛的劳动；"
+    },
+    {
+      "en": "Or yet in wise old Ravenclaw, if you've a ready mind,",
+      "zh": "如果你头脑精明，或许会进智慧的老拉文克劳，"
+    },
+    {
+      "en": "Where those of wit and learning, Will always find their kind;",
+      "zh": "那些睿智博学的人，总会在那里遇见他们的同道；"
+    },
+    {
+      "en": "Or perhaps in Slytherin You'll make your real friends,",
+      "zh": "也许你会进斯菜特林，也许你在这里交上真诚的朋友，"
+    },
+    {
+      "en": "Those cunning folk use any means To achieve their ends.",
+      "zh": "但那些狡诈阴险之辈却会不惜一切手段，去达到他们的目的。"
+    },
+    {
+      "en": "So put me on! Don't be afraid!",
+      "zh": "来戴上我吧!不必害怕!千万不要惊慌失措!"
+    },
+    {
+      "en": "And don't get in a flap! You're in safe hands (though I have none)",
+      "zh": "在我的手里(尽管我连一只手也没有)你绝对安全"
+    },
+    {
+      "en": "For I'm a Thinking Cap!\"",
+      "zh": "因为我是一顶会思想的魔帽!"
+    },
+    {
+      "en": "The whole hall burst into applause as the hat finished its song. It bowed to each of the four tables and then became quite still again.",
+      "zh": "魔帽唱完歌后，全场掌声雷动，魔帽向四张餐桌一一鞠躬行礼，随后就静止不动了。"
+    },
+    {
+      "en": "\"So we've just got to try on the hat!\" Ron whispered to Harry. \"I'll kill Fred, he was going on about wrestling a troll.\" Harry. smiled weakly. Yes, trying on the hat was a lot better than having to do a spell, but he did wish they could have tried it on without everyone watching. The hat seemed to be asking rather alot; Harry didn't feel brave or quick-witted or any of it at the moment. If only the hat had mentioned a house for people who felt a bit queasy, that would have been the one for him.",
+      "zh": "“所以，我们只要戴上这顶帽子就可以了。”罗恩悄悄对哈利说，“我要把弗雷德杀掉，听 他说得像是要跟巨人搏斗呢。”哈利淡淡地一笑。当然，戴帽子要比来一段咒语好多了，但他还 是不希望在众目睽睽之下去戴。看来这顶帽子的要求高了些。哈利觉得自己没有那份勇气和机灵 劲儿或其他任何优点。如果帽子提出有一所专门让优柔寡断的人进的学院，那倒是对他最合适的 地方。"
+    },
+    {
+      "en": "Professor McGonagall now stepped forward holding a long roll of parchment.",
+      "zh": "这时麦格教授朝前走了几步，手里拿着一卷羊皮纸。"
+    },
+    {
+      "en": "\"When I call your name, you will put on the hat and sit on the stool to be sorted,\" she said. \"Abbott, Hannah!\"",
+      "zh": "“我现在叫到谁的名字，谁就戴上帽子，坐到凳子上，听候分院。”她说，“汉娜·艾博!”"
+    },
+    {
+      "en": "A pink-faced girl with blonde pigtails stumbled out of line, put on the hat, which fell right down over her eyes, and sat down. A moments pause -- \"HUFFLEPUFF!\" shouted the hat.",
+      "zh": "一个面色红润、梳着两条金色发辫的小姑娘，跌跌撞撞地走出队列，戴上帽子，帽子刚好遮 住她的限睛。她坐了下来。片刻停顿——“赫奇帕奇!”帽子喊道。"
+    },
+    {
+      "en": "The table on the right cheered and clapped as Hannah went to sit down at the Hufflepuff table. Harry saw the ghost of the Fat Friar waving merrily at her.",
+      "zh": "右边一桌的人向汉娜鼓掌欢呼，欢迎她在他们这一桌就坐。哈利看见胖修士幽灵也高兴地向 她挥手致意。"
+    },
+    {
+      "en": "\"Bones, Susan!\"",
+      "zh": "“苏珊·彭斯!”"
+    },
+    {
+      "en": "\"HUFFLEPUFF!\" shouted the hat again, and Susan scuttled off to sit next to Hannah.",
+      "zh": "“赫奇帕奇!”帽子又喊道。苏珊飞快地跑到汉娜身边坐下。"
+    },
+    {
+      "en": "\"Boot, Terry!\"",
+      "zh": "“泰瑞·布特!”"
+    },
+    {
+      "en": "\"RAVENCLAW!\"",
+      "zh": "“拉文克劳!”"
+    },
+    {
+      "en": "The table second from the left clapped this time; several Ravenclaws stood up to shake hands with Terry as he joined them.",
+      "zh": "这次左边第二桌拍手鼓掌。当泰瑞加入到他们的行列时，有几名拉文克劳的学生站起来和他 握手。"
+    },
+    {
+      "en": "\" Brocklehurst, Mandy\" went to Ravenclaw too, but \"Brown, Lavender\" became the first new Gryffindor, and the table on the far left exploded with cheers; Harry could see Ron's twin brothers catcalling.",
+      "zh": "曼蒂·布洛贺也分到拉文克劳，拉文德·布朗则成了格兰芬多的第一位新生，左边最远的一 张餐桌即刻爆发出一阵欢呼，哈利看见罗恩的一对孪生哥哥发出了嘘声。"
+    },
+    {
+      "en": "\"Bulstrode, Millicent\" then became a Slytherin. Perhaps it was Harry's imagination, after all he'd heard about Slytherin, but he thought they looked like an unpleasant lot. He was starting to feel definitely sick now. He remembered being picked for teams during gym at his old school. He had always been last to be chosen, not because he was no good, but because no one wanted Dudley to think they liked him.",
+      "zh": "接着米里森·伯斯德成为斯莱特林的新生。也许哈利听了许多关于斯莱特林的议论，产生了 某些印象，但他总觉得这些人看起来不讨人喜欢。 他现在开始感到特别不舒服。他回想起在 小学上体育课时分组的事。总是挑到最后剩他一个人，这并不是因为他不够好，而是因为谁也不 想让达力认为他们喜欢他。"
+    },
+    {
+      "en": "\"Finch-Fletchley, Justin!\"",
+      "zh": "“贾斯廷·芬列里!”"
+    },
+    {
+      "en": "\"HUFFLEPUFF!\"",
+      "zh": "“赫奇帕奇!”"
+    },
+    {
+      "en": "Sometimes, Harry noticed, the hat shouted out the house at once, but at others it took a little while to decide. \"Finnigan, Seamus,\" the sandy-haired boy next to Harry in the line, sat on the stool for almost a whole minute before the hat declared him a Gryffindor.",
+      "zh": "哈利发现有时帽子立刻就喊出学院的名字，但另一些时候花了一些时间才作出决定。比如排 在哈利旁边的那个浅茶色头发的男孩西莫·斐尼甘就在凳子上几乎坐了整整一分钟，帽子才宣布 他被分到格兰芬多。"
+    },
+    {
+      "en": "\"Granger, Hermione!\"",
+      "zh": "“赫敏·格兰杰!”"
+    },
+    {
+      "en": "Hermione almost ran to the stool and jammed the hat eagerly on her head.",
+      "zh": "赫敏几乎跑到凳子跟前，急急忙忙把帽子扣到头上。"
+    },
+    {
+      "en": "\"GRYFFINDOR!\" shouted the hat. Ron groaned.",
+      "zh": "“格兰芬多!”帽子喊道。罗恩哼了一声。"
+    },
+    {
+      "en": "A horrible thought struck Harry, as horrible thoughts always do when you're very nervous. What if he wasn't chosen at all? What if he just sat there with the hat over his eyes for ages, until Professor McGonagall jerked it off his head and said there had obviously been a mistake and he'd better get back on the train? When Neville Longbottom, the boy who kept losing his toad, was called, he fell over on his way to the stool. The hat took a long time to decide with Neville. When it finally shouted, \"GRYFFINDOR,\" Neville ran off still wearing it, and had to jog back amid gales of laughter to give it to \"MacDougal, Morag.\"",
+      "zh": "当你非常紧张的时候，就会生出许多可怕的想法，哈利也是一样。他突然想到要是万一根本 不挑选他会怎么样呢?如果帽子扣在他头上盖住他的眼睛好长时间，最后还是麦格教授把帽子从 他头上拽下来，然后说，明摆着是搞错了，要他最好还是坐火车回去，那又会怎么样呢?叫到那 个总丢失蟾蜍的男孩纳威·隆巴顿的名字时，他朝凳子跑的路上摔了一跤。帽子用了好长时间才 对纳威作出决定。当帽子最后喊出“格兰芬多”时，纳威戴着帽子就跑掉了，最后不得不在一片 哄笑声中一溜小跑回来，把帽子还给麦格教授。"
+    },
+    {
+      "en": "Malfoy swaggered forward when his name was called and got his wish at once: the hat had barely touched his head when it screamed, \"SLYTHERIN!\"",
+      "zh": "叫到马尔福的名字时，马尔福大模大样走过去，而且即刻如愿以偿，帽子几乎刚碰到他的头 就尖叫道：“斯莱特林!”"
+    },
+    {
+      "en": "Malfoy went to join his friends Crabbe and Goyle, looking pleased with himself.",
+      "zh": "马尔福前去和他的朋友克拉布与高尔会合，露出对自己很满意的样子。"
+    },
+    {
+      "en": "There weren't many people left now. \"Moon\" \"Nott\" \"Parkinson\" then a pair of twin girls, \"Patil\" and \"Patil\" then \"Perks, Sally-Anne\" and then, at last -- \"Potter, Harry!\"",
+      "zh": "这时，剩下的人已经不多了。 莫恩……诺特……帕金森……之后是一对佩蒂尔孪生姐 妹……然后是莎莉安·波克斯……最后，总算轮到——“哈利·波特!”"
+    },
+    {
+      "en": "As Harry stepped forward, whispers suddenly broke out like little hissing fires all over the hall.",
+      "zh": "当哈利朝前走去时，餐厅里突然发出的一阵嗡嗡低语像小火苗的咝咝响声。"
+    },
+    {
+      "en": "\"Potter, did she say?\"",
+      "zh": "“波特，她是在叫波特吗?”"
+    },
+    {
+      "en": "The Harry Potter?\"",
+      "zh": "“是那个哈利·波特?”"
+    },
+    {
+      "en": "The last thing Harry saw before the hat dropped over his eyes was the hall full of people craning to get a good look at him. Next second he was looking at the black inside of the hat. He waited.",
+      "zh": "在帽子就要扣到头上遮住他的视线时，哈利看到餐厅里人头攒动，人人引颈而望，希望看清 他的模样。接着就是帽子里的黑暗世界和等待。"
+    },
+    {
+      "en": "Hmm,\" said a small voice in his ear. \"Difficult. Very difficult. Plenty of courage, I see. Not a bad mind either. There's talent, A my goodness, yes -- and a nice thirst to prove yourself, now that's interesting.... So where shall I put you?\"",
+      "zh": "“嗯，”他听到耳边一个细微的声音说，“难。非常难。看得出很有勇气。心地也不坏。有 天分，哦，我的天哪，不错——你有急于证明自己的强烈愿望，那么，很有意思……我该把你分 到哪里去呢?”"
+    },
+    {
+      "en": "Harry gripped the edges of the stool and thought, Not Slytherin, not Slytherin.",
+      "zh": "哈利紧紧抓住凳子边，心里想：“不去斯莱特林，不去斯莱特林。”"
+    },
+    {
+      "en": "\"Not Slytherin, eh?\" said the small voice. \"Are you sure? You could be great, you know, it's all here in your head, and Slytherin will help you on the way to greatness, no doubt about that -- no? Well, if you're sure -- better be GRYFFINDOR!\"",
+      "zh": "“不去斯莱特林，对吧?”那个细微的声音问，“拿定主意了吗?你能成大器，你知道，在你 一念之间，斯莱特林能帮助你走向辉煌，这毫无疑问——不乐意?那好，既然你已经拿定主意— —那就最好去格兰芬多吧!”"
+    },
+    {
+      "en": "Harry heard the hat shout the last word to the whole hall. He took off the hat and walked shakily toward the Gryffindor table. He was so relieved to have been chosen and not put in Slytherin, he hardly noticed that he was getting the loudest cheer yet. Percy the Prefect got up and shook his hand vigorously, while the Weasley twins yelled, \"We got Potter! We got Potter!\" Harry sat down opposite the ghost in the ruff he'd seen earlier. The ghost patted his arm, giving Harry the sudden, horrible feeling he'd just plunged it into a bucket of ice-cold water.",
+      "zh": "哈利听见帽子向整个餐厅喊出了最后那个名字。他摘下帽子，两腿微微颤抖着走向格兰芬多 那一桌。他入选了，而且没有被分到斯莱特林，这使他大大松了一口气，也使他几乎没有注意到 自己竞获得了最响亮的欢呼喝彩。级长珀西站起来紧紧地跟他握手。韦斯莱家的孪生兄弟大声喊 道：“我们有波特了!我们有波特了!”哈利坐到他先前碰到的那个穿轮状皱领的幽灵对面。幽灵 拍了拍他的手臂，使他突然产生了一种刚刚跳进一桶冰水里的可怕感觉。"
+    },
+    {
+      "en": "He could see the High Table properly now. At the end nearest him sat Hagrid, who caught his eye and gave him the thumbs up. Harry grinned back. And there, in the center of the High Table, in a large gold chair, sat Albus Dumbledore. Harry recognized him at once from the card he'd gotten out of the Chocolate Frog on the train. Dumbledore's silver hair was the only thing in the whole hall that shone as brightly as the ghosts. Harry spotted Professor Quirtell, too, the nervous young man from the Leaky Cauldron. He was looking very peculiar in a large purple turban.",
+      "zh": "现在哈利总算可以好好看看高台上的主宾席了。海格坐在离他最近的角落。他捕捉到了哈利 的目光，向他竖起大拇指。哈利咧嘴报以一笑。主宾席的中央，一把大金椅上坐着阿不思·邓布 利多。哈利一眼就认出了他的面孔，因为他在火车上从巧克力蛙的巫师画片上见过。整个餐厅里 只有邓布利多的银发和幽灵们一样闪闪发光。哈利也同样认出了奇洛教授，那个他在破釜酒吧遇 到的神经质的年轻人。他头上裹着一条很大的紫色围巾，显得很古怪。"
+    },
+    {
+      "en": "And now there were only three people left to be sorted. \"Thomas, Dean,\" a Black boy even taller than Ron, joined Harry at the Gryffindor table. \"Turpin, Lisa,\" became a Ravenclaw and then it was Ron's turn. He was pale green by now. Harry crossed his fingers under the table and a second later the hat had shouted, \"GRYFFINDOR!\"",
+      "zh": "现在听候分配的只剩下三个人了。莉莎·杜平成了拉文克劳的新生。接着就轮到了罗恩。他 这时脸色发青。哈利紧握双手放在桌下。一眨眼工夫帽子就高喊道：“格兰芬多!”"
+    },
+    {
+      "en": "Harry clapped loudly with the rest as Ron collapsed into the chair next to him.",
+      "zh": "当罗恩一下子瘫倒在哈利旁边的座位上时，哈利跟着其余的人大声鼓掌。"
+    },
+    {
+      "en": "\"Well done, Ron, excellent,\" said Percy Weasley Pompously across Harry as \"Zabini, Blaise,\" was made a Slytherin. Professor McGonagall rolled up her scroll and took the Sorting Hat away.",
+      "zh": "“很好，罗恩，太好了!”珀西·韦斯莱越过哈利，用夸张的口吻说。这时剩下的最后一名 布雷司·沙比尼被分到斯莱特林了。麦格教授卷起羊皮纸，拿起分院帽离去了。"
+    },
+    {
+      "en": "Harry looked down at his empty gold plate. He had only just realized how hungry he was. The pumpkin pasties seemed ages ago. Albus Dumbledore had gotten to his feet. He was beaming at the students, his arms opened wide, as if nothing could have pleased him more than to see them all there. \"Welcome,\" he said. \"Welcome to a new year at Hogwarts! Before we begin our banquet, I would like to say a few words. And here they are: Nitwit! Blubber! Oddment! Tweak! \"Thank you!\" He sat back down. Everybody clapped and cheered. Harry didn't know whether to laugh or not. \"Is he -- a bit mad?\" he asked Percy uncertainly. \"Mad?\" said Percy airily. \"He's a genius! Best wizard in the world! But he is a bit mad, yes. Potatoes, Harry?\"",
+      "zh": "哈利低头看着面前空空的金盘子，这才感觉到早已饥肠辘辘。吃南瓜馅饼似乎是很久以前的 事了。阿不思·邓布利多站起来。他笑容满面地看着学生们，向他们伸开双臂，似乎没有什么比 看到学生们济济一堂使他更高兴的了。“欢迎啊!”他说，“欢迎大家来霍格沃茨开始新的学年! 在宴会开始前，我想讲几句话。那就是：笨蛋!哭鼻子!残渣!拧!谢谢大家!”他重新坐下来。大家 鼓掌欢呼。哈利不知道是否该一笑置之。“他是不是——有点疯疯癫癫?”他迟疑地问珀西。“疯 疯癫癫?”珀西小声说，“他是一位天才!世界上最优秀的巫师!不过你说得也对，他是有点疯疯 癫癫。要不要来点马铃薯，哈利?”"
+    },
+    {
+      "en": "Harry's mouth fell open. The dishes in front of him were now piled with food. He had never seen so many things he liked to eat on one table: roast beef, roast chicken, pork chops and lamb chops, sausages, bacon and steak, boiled potatoes, roast potatoes, fries, Yorkshire pudding, peas, carrots, gravy, ketchup, and, for some strange reason, peppermint humbugs.",
+      "zh": "哈利目瞪口呆。这时他面前的餐盘里都放满了吃的。他从来没见过桌上一下子摆这么多他喜 欢吃的东西：烤牛肉、烤子鸡、猪排、羊羔排、腊肠、牛排、煮马铃薯、烤马铃薯、炸薯片、约 克夏布丁、豌豆苗、胡萝卜、肉汁、番茄酱，而且不知出于什么古怪的原因，还有薄荷硬糖。"
+    },
+    {
+      "en": "The Dursleys had never exactly starved Harry, but he'd never been allowed to eat as much as he liked. Dudley had always taken anything that Harry really wanted, even if It made him sick. Harry piled his plate with a bit of everything except the peppermints and began to eat. It was all delicious.",
+      "zh": "说实在的，德思礼夫妇并没让哈利饿着，可也没有真正让他放开肚皮吃过。达力总是把哈利 想吃的东西抢走了，尽管这些东西有时候让达力想吐。除了薄荷硬糖之外，哈利每样都往餐盘里 拿了一点儿，开始大嚼起来。样样都很好吃。"
+    },
+    {
+      "en": "\"That does look good,\" said the ghost in the ruff sadly, watching Harry cut up his steak,",
+      "zh": "“看起来真不错呀。”穿轮状皱领的幽灵眼睁睁地看着哈利切牛排，难过地说。"
+    },
+    {
+      "en": "\"Can't you --?\"",
+      "zh": "“你不来上一点儿吗?”"
+    },
+    {
+      "en": "I haven't eaten for nearly four hundred years,\" said the ghost. \"I don't need to, of course, but one does miss it. I don't think I've in troduced myself? Sir Nicholas de Mimsy-Porpington at your service. Resident ghost of Gryffindor Tower.\"",
+      "zh": "“我已经有四百年没有吃东西了。”那个幽灵说，“我不需要吃，不过，当然很怀念它们的 美昧。我想，我还没有做自我介绍吧?敏西——波平顿的尼古拉斯爵士，格兰芬多塔的常驻幽灵。”"
+    },
+    {
+      "en": "\"I know who you are!\" said Ron suddenly. \"My brothers told me about you -- you're Nearly Headless Nick!\"",
+      "zh": "“我知道你是谁了!”罗恩突然说，“我的两个哥哥对我讲起过你——你是那个‘差点没头 的尼克’!”"
+    },
+    {
+      "en": "\"I would prefer you to call me Sir Nicholas de Mimsy --\" the ghost began stiffly, but sandy-haired Seamus Finnigan interrupted. \"Nearly Headless? How can you be nearly headless?\"",
+      "zh": "“我想，我比较喜欢你们叫我敏西的尼古拉斯爵士。”幽灵显得有些局促不安，但是淡茶色 头发的西莫·斐尼甘插话说：“差点没头?你怎么会差点没头呢?”"
+    },
+    {
+      "en": "Sir Nicholas looked extremely miffed, as if their little chat wasn't going at all the way he wanted.",
+      "zh": "尼古拉斯爵士显得很生气，看来他不想谈这个话题。"
+    },
+    {
+      "en": "\"Like this,\" he said irritably. He seized his left ear and pulled. His whole head swung off his neck and fell onto his shoulder as if it was on a hinge. Someone had obviously tried to behead him, but not done it properly. Looking pleased at the stunned looks on their faces, Nearly Headless Nick flipped his head back onto his neck, coughed, and said, \"So -- new Gryffindors! I hope you're going to help us win the house championship this year? Gryffindors have never gone so long without winning. Slytherins have got the cup six years in a row! The Bloody Baron's becoming almost unbearable -- he's the Slytherin ghost.\"",
+      "zh": "“就像这样。”他急躁地说。他抓住左耳朵往下拽。他的头摇摇晃晃从脖子上滑了下来，搏 到肩上，仿佛头是用铰链连接的。看来有人砍他的头，没有砍彻底。差点没头的尼克眼看他们一 个个目瞪口呆的表情，很开心。他把头轻轻弹回到脖子上，清了清嗓子，说：“好了，格兰芬多 的新同学们!我希望你们能帮助我们赢得本学年的学院杯冠军，好吗?格兰芬多从来没有这么长时 间没赢过奖了。斯莱特林来了个六连冠!血人巴罗实在让人忍无可忍了——他是斯莱特林的幽 灵。”"
+    },
+    {
+      "en": "Harry looked over at the Slytherin table and saw a horrible ghost sitting there, with blank staring eyes, a gaunt face, and robes stained with silver blood. He was right next to Malfoy who, Harry was pleased to see, didn't look too pleased with the seating arrangements.",
+      "zh": "哈利朝斯莱特林那一桌看过去，看见桌旁坐着一个幽灵，十分可怕，瞪着呆滞的眼睛，形容 枯槁，长袍上沾满银色的血斑。血人巴罗正好坐在马尔福旁边，马尔福对这样的座位安排不太满 意，哈利看了心里觉得乐滋滋的。"
+    },
+    {
+      "en": "\"How did he get covered in blood?\" asked Seamus with great interest.",
+      "zh": "“他怎么弄得浑身都是血?”西奠特别感兴趣。"
+    },
+    {
+      "en": "\"I've never asked,\" said Nearly Headless Nick delicately.",
+      "zh": "“我从来没问过。”差点没头的尼克拘谨地说。"
+    },
+    {
+      "en": "When everyone had eaten as much as they could, the remains of the food faded from the plates, leaving them sparkling clean as before. A moment later the desserts appeared. Blocks of ice cream in every flavor you could think of, apple pies, treacle tarts, chocolate eclairs and jam doughnuts, trifle, strawberries, Jell-O, rice pudding -- As Harry helped himself to a treacle tart, the talk turned to their families.",
+      "zh": "等到每人都敞开肚皮填饱肚子以后，剩下的食物就一股脑儿地从餐盘里消失了。餐盘叉都变 得光洁如初。过了一会儿，布丁上来了。各种口味的冰淇淋应有尽有，苹果饼、搪浆饼、巧克力 松糕、炸果酱甜圈、酒浸果酱布丁、草莓、果冻、米布丁……哈利取过一块糖浆饼，这时话题又 转到了各自的家庭。"
+    },
+    {
+      "en": "\"I'm half-and-half,\" said Seamus. \"Me dad's a Muggle. Mom didn't tell him she was a witch 'til after they were married. Bit of a nasty shock for him.\"",
+      "zh": "“我是混血。”西莫说，“爸爸是一个麻瓜，妈妈直到结婚以后才告诉爸爸自己是个女巫。 可把他吓得不轻。”"
+    },
+    {
+      "en": "The others laughed.",
+      "zh": "大家都哈哈大笑。"
+    },
+    {
+      "en": "\"What about you, Neville?\" said Ron.",
+      "zh": "“那你呢，纳威?”罗恩问。"
+    },
+    {
+      "en": "\"Well, my gran brought me up and she's a witch,\" said Neville, \"but the family thought I was all- Muggle for ages. My Great Uncle Algie kept trying to catch me off my guard and force some magic out of me -- he pushed me off the end of Blackpool pier once, I nearly drowned -- but nothing happened until I was eight. Great Uncle Algie came round for dinner, and he was hanging me out of an upstairs window by the ankles when my Great Auntie Enid offered him a meringue and he accidentally let go. But I bounced -- all the way down the garden and into the road. They were all really pleased, Gran was crying, she was so happy. And you should have seen their faces when I got in here -- they thought I might not be magic enough to come, you see. Great Uncle Algie was so pleased he bought me my toad.\"",
+      "zh": "“哦，我是由奶奶带大的，她是女巫。”纳威说，“不过这么多年来我们家一直把我当成麻 瓜。我的阿尔吉伯父总想趁人不备，想方设法逼我露一手法术——有一次他把我从黑湖码头推了 下去，差点儿把我淹死——结果什么事也没有发生。直到我八岁那年，有一天我阿尔吉伯父过来 喝茶，他把我的脚脖子朝上从楼上窗口吊了下去，正好我的艾妮伯母递给他一块蛋白蛋糕。他一 失手，没有拿稳我。我自己弹了起来——飞过整个花园，摔到马路上。他们都高兴极了。艾妮伯 母甚至高兴得哭了起来。你要是能看看我接到入学通知书时他们脸上的表情就好了，你看，他们 原以为我的魔法功力不够，不能进这所学校呢。我的阿尔吉伯父一时高兴，还买了一只蟾蜍送给 我呢。”"
+    },
+    {
+      "en": "On Harry's other side, Percy Weasley and Hermione were talking about lessons (\"I do hope they start right away, there's so much to learn, I'm particularly interested in Transfiguration, you know, turning something into something else, of course, it's supposed to be very difficult-\"; \"You'll be starting small, just matches into needles and that sort of thing -- \").",
+      "zh": "哈利的另一边珀西·韦斯莱和赫敏正在议论他们的功课(“我真希望直截了当，要学的东西 太多了，我对变形术特别感兴趣。你知道，把一样东西变成另一样东西，当然，应该是非常困难 ——”“你应当从小的东西变起，比如把火柴变成针什么的——”)。"
+    },
+    {
+      "en": "Harry, who was starting to feel warm and sleepy, looked up at the High Table again. Hagrid was drinking deeply from his goblet. Professor McGonagall was talking to Professor Dumbledore. Professor Quirrell, in his absurd turban, was talking to a teacher with greasy black hair, a hooked nose, and sallow skin.",
+      "zh": "哈利浑身热起来，想睡觉，但又抬头看了看主宾席。海格正举杯狂饮。麦格教授在跟邓布利 多教授说着什么。头上裹着可笑围巾的奇洛教授正跟一位一头油腻黑发、鹰钩鼻、皮肤蜡黄的老 师说话。"
+    },
+    {
+      "en": "It happened very suddenly. The hook-nosed teacher looked past Quirrell's turban straight into Harry's eyes -- and a sharp, hot pain shot across the scar on Harry's forehead.",
+      "zh": "事情发生在一瞬间。鹰钩鼻老师越过奇洛教授的围巾直视哈利的眼睛——哈利顿感他前额上 的那道伤疤一阵灼痛。"
+    },
+    {
+      "en": "\"Ouch!\" Harry clapped a hand to his head.",
+      "zh": "“哎呀!”哈利用一只手捂住前额。"
+    },
+    {
+      "en": "\"What is it?\" asked Percy.",
+      "zh": "“怎么了？”珀西问。"
+    },
+    {
+      "en": "\"N-nothing.\"",
+      "zh": "“没——没什么。”"
+    },
+    {
+      "en": "The pain had gone as quickly as it had come. Harder to shake off was the feeling Harry had gotten from the teacher's look -- a feeling that he didn't like Harry at all.",
+      "zh": "灼痛像来时一样，刹那间就消失了。挥之不去的是哈利扶那位老师目光中得到的感受，他觉 得那位老师对他没有一点儿好感。"
+    },
+    {
+      "en": "\"Who's that teacher talking to Professor Quirrell?\" he asked Percy.",
+      "zh": "“跟奇洛教授讲话的那位老师是谁?”他问珀西。"
+    },
+    {
+      "en": "\"Oh, you know Quirrell already, do you? No wonder he's looking so nervous, that's Professor Snape. He teaches Potions, but he doesn't want to -- everyone knows he's after Quirrell's job. Knows an awful lot about the Dark Arts, Snape.\" Harry watched Snape for a while, but Snape didn't look at him again. At last, the desserts too disappeared, and Professor Dumbledore got to his feet again. The hall fell silent. \"Ahern -- just a few more words now that we are all fed and watered. I have a few start-of-term notices to give you.",
+      "zh": "“哦，奇洛教授你已经认识了，他那么紧张并不奇怪。那位是斯内普教授，教魔药学，但他 不愿意教这门课——大家都知道他眼馋奇洛教授的工作。斯内普对黑魔法可是大大在行。”哈利 注视了斯内普片刻，但斯内普没有再看他。最后，布丁也消失了，邓布利多教授又站了起来。餐 厅也复归肃静。“哦，现在大家都吃饱了，喝足了，我要再对大家说几句话。在学期开始的时候， 我要向大家提出几点注意事项。”"
+    },
+    {
+      "en": "\"First years should note that the forest on the grounds is forbidden to all pupils. And a few of our older students would do well to remember that as well.\"",
+      "zh": "“一年级新生注意，校园里的树林一律禁止学生进入。我们有些老班的同学也要好好记住这 一点。”"
+    },
+    {
+      "en": "Dumbledore's twinkling eyes flashed in the direction of the Weasley twins.",
+      "zh": "邓布利多闪亮的目光朝韦斯莱孪生兄弟那边扫了一下。"
+    },
+    {
+      "en": "\"I have also been asked by Mr. Filch, the caretaker, to remind you all that no magic should be used between classes in the corridors.",
+      "zh": "“再有，管理员费尔奇先生也要我提醒大家，课间不要在走廊里施魔法。"
+    },
+    {
+      "en": "\"Quidditch trials will be held in the second week of the term. Anyone interested in playing for their house teams should contact Madam Hooch.",
+      "zh": "“魁地奇球员的审核工作将在本学期的第二周举行。凡有志参加学院代表队的同学请与霍琦 夫人联系。"
+    },
+    {
+      "en": "\"And finally, I must tell you that this year, the third-floor corridor on the right-hand side is out of bounds to everyone who does not wish to die a very painful death.\"",
+      "zh": "“最后，我必须告诉大家，凡不愿遭遇意外、痛苦惨死的人，请不要进入四楼靠右边的走廊。”"
+    },
+    {
+      "en": "Harry laughed, but he was one of the few who did.",
+      "zh": "哈利哈哈大笑，但笑的人毕竟只有少数几个。"
+    },
+    {
+      "en": "\"He's not serious?\" he muttered to Percy.",
+      "zh": "“他不是认真的吧?”哈利悄声问珀西。"
+    },
+    {
+      "en": "\"Must be,\" said Percy, frowning at Dumbledore. \"It's odd, because he usually gives us a reason why we're not allowed to go somewhere -- the forest's full of dangerous beasts, everyone knows that. I do think he might have told us prefects, at least.\"",
+      "zh": "“不可能，”珀西朝邓布利多皱起眉头说。“奇怪的是凡不准许我们去的地方，他通常都说 明原因，比如，树林里有许多危险的野兽，这一点大家都知道。我想他至少该对我们的级长讲清 楚。”"
+    },
+    {
+      "en": "\"And now, before we go to bed, let us sing the school song!\" cried Dumbledore. Harry noticed that the other teachers' smiles had become rather fixed.",
+      "zh": "“现在，在大家就寝之前，让我们一起来唱校歌!”邓布利多大声说。哈利发现其他老师的 笑容似乎都僵住了。"
+    },
+    {
+      "en": "Dumbledore gave his wand a little flick, as if he was trying to get a fly off the end, and a long golden ribbon flew out of it, which rose high above the tables and twisted itself, snakelike, into words.",
+      "zh": "邓布利多将魔杖轻轻一弹，魔杖中就飘飞出一条长长的金色彩带，在高高的餐桌上空像蛇一 样扭动盘绕出一行行文字。"
+    },
+    {
+      "en": "\"Everyone pick their favorite tune,\" said Dumbledore, \"and off we go!\" And the school bellowed:",
+      "zh": "“每人选择自己喜欢的曲调。”邓布利多说，“预备，唱!” 于是全体师生放声高唱起 来："
+    },
+    {
+      "en": "\"Hogwarts, Hogwarts, Hoggy Warty Hogwarts,",
+      "zh": "霍格沃茨，霍格沃茨，霍格沃茨，霍格沃茨，"
+    },
+    {
+      "en": "Teach us something please,",
+      "zh": "请教给我们知识，"
+    },
+    {
+      "en": "Whether we be old and bald",
+      "zh": "不论我们是谢顶的老人"
+    },
+    {
+      "en": "Or young with scabby knees,",
+      "zh": "还是跌伤膝盖的孩子，"
+    },
+    {
+      "en": "Our heads could do with filling",
+      "zh": "我们的头脑可以接纳一些有趣的事物，"
+    },
+    {
+      "en": "With some interesting stuff,",
+      "zh": "因为现在我们头脑空空，"
+    },
+    {
+      "en": "For now they're bare and full of air, Dead flies and bits of fluff,",
+      "zh": "充满空气，死苍蝇和鸡毛蒜皮，"
+    },
+    {
+      "en": "So teach us things worth knowing,",
+      "zh": "教给我们一些有价值的知识，"
+    },
+    {
+      "en": "Bring back what we've forgot,",
+      "zh": "把被我们遗忘的，还给我们，"
+    },
+    {
+      "en": "just do your best, we'll do the rest,",
+      "zh": "你们只要尽全力，其他的交给我们自己，"
+    },
+    {
+      "en": "And learn until our brains all rot.",
+      "zh": "我们将努力学习，直到化为粪土。"
+    },
+    {
+      "en": "Everybody finished the song at different times. At last, only the Weasley twins were left singing along to a very slow funeral march. Dumbledore conducted their last few lines with his wand and when they had finished, he was one of those who clapped loudest.",
+      "zh": "大家七零八落地唱完了这首校歌。只有韦斯莱家的孪生兄弟仍随着《葬礼进行曲》徐缓的旋 律继续歌唱。邓布利多用魔杖为他们俩指挥了最后几个小节，等他们唱完，他的掌声最响亮。"
+    },
+    {
+      "en": "\"Ah, music,\" he said, wiping his eyes. \"A magic beyond all we do here! And now, bedtime. Off you trot!\"",
+      "zh": "“音乐啊，”他揩了揩眼睛说，“比我们在这里所做的一切都更富魅力!现在是就寝的时间 了。大家回宿舍去吧。”"
+    },
+    {
+      "en": "The Gryffindor first years followed Percy through the chattering crowds, out of the Great Hall, and up the marble staircase. Harry's legs were like lead again, but only because he was so tired and full of food. He was too sleepy even to be surprised that the people in the portraits along the corridors whispered and pointed as they passed, or that twice Percy led them through doorways hidden behind sliding panels and hanging tapestries. They climbed more staircases, yawning and dragging their feet, and Harry was just wondering how much farther they had to go when they came to a sudden halt.",
+      "zh": "格兰芬多的一年级新生跟着珀西，穿过嘈杂的人群，走出餐厅，登上大理石楼梯。哈利的两 腿又像灌了铅似的，不过这次是因为他太累，而且吃得太饱。他实在太困了。因此当走廊画像上 的人在他们经过时喁喁私语，指指点点，当珀西两次带领他们穿过暗藏在滑动挡板和垂挂的帷幔 后边的门时，他甚至一点儿也没有感到吃惊。他们哈欠连天，拖着沉重的脚步又爬了许多楼梯。 哈利正在纳闷，不知他们还要走多久，这时，前边的人突然停了下来。"
+    },
+    {
+      "en": "A bundle of walking sticks was floating in midair ahead of them, and as Percy took a step toward them they started throwing themselves at him.",
+      "zh": "在他们前边，一捆手杖在半空中飘荡，珀西距后面的人仅一步之遥，于是后面的人都纷纷朝 他扑倒下去。"
+    },
+    {
+      "en": "\"Peeves,\" Percy whispered to the first years. \"A poltergeist.\" He raised his voice, \"Peeves -- show yourself\"",
+      "zh": "“是皮皮鬼，”珀西小声对一年级新生说，“一个专门喜欢恶作剧的幽灵。”他又抬高嗓门 说：“皮皮鬼——显形吧。”"
+    },
+    {
+      "en": "A loud, rude sound, like the air being let out of a balloon, answered.",
+      "zh": "回答他的是响亮、刺耳、像气球泄气似的噗噗的响声。"
+    },
+    {
+      "en": "\"Do you want me to go to the Bloody Baron?\"",
+      "zh": "“你是要我去找血人巴罗吗?”"
+    },
+    {
+      "en": "There was a pop, and a little man with wicked, dark eyes and a wide mouth appeared, floating cross- legged in the air, clutching the walking sticks. \"Oooooooh!\" he said, with an evil cackle. \"Ickle Firsties! What fun!\"",
+      "zh": "噗的一声，突然冒出一个小矮人，一对邪恶的黑眼睛，一张大嘴，盘腿在半空中飘荡；双手 牢牢抓着那捆手杖。“嗬嗬嗬!”他咯咯地奸笑，“原来是讨厌的一年级的小鬼头啊!太好玩了!”"
+    },
+    {
+      "en": "He swooped suddenly at them. They all ducked.",
+      "zh": "他突然朝他们猛扑过来。他们一下子惊呆了。"
+    },
+    {
+      "en": "\"Go away, Peeves, or the Baron'll hear about this, I mean it!\" barked Percy.",
+      "zh": "“走开，皮皮鬼，不然我去告诉血人巴罗，我可不是开玩笑!．’珀西大吼道。"
+    },
+    {
+      "en": "Peeves stuck out his tongue and vanished, dropping the walking sticks on Neville's head. They heard him zooming away, rattling coats of armor as he passed.",
+      "zh": "皮皮鬼伸出舌头，不见了。手杖正好砸在纳威头上。他们听见他腾空而去，飞过时盔甲铿锵 作响。"
+    },
+    {
+      "en": "\"You want to watch out for Peeves,\" said Percy, as they set off again. \"The Bloody Baron's the only one who can control him, he won't even listen to us prefects. Here we are.\"",
+      "zh": "“你们应当对皮皮鬼有所防备。”珀西说，领着大家继续朝前走，“血人巴罗是惟一能降住 他的，他甚至连我们这些级长的话都听不进去。我们到了。”"
+    },
+    {
+      "en": "At the very end of the corridor hung a portrait of a very fat woman in a pink silk dress.",
+      "zh": "走廊尽头挂着一幅画像，画像上一个非常富态的女人穿着一身粉色的衣服。"
+    },
+    {
+      "en": "\"Password?\" she said. \"Caput Draconis,\" said Percy, and the portrait swung forward to reveal a round hole in the wall. They all scrambled through it -- Neville needed a leg up -- and found themselves in the Gryffindor common room, a cozy, round room full of squashy armchairs.",
+      "zh": "“口令?”她说。“龙渣。”珀西说。只见这幅画摇摇晃晃朝前移去，露出墙上的一个圆形 洞口。他们都从墙洞里爬了过去——纳威还得有人拉他一把——之后，他们就发现已经来到格兰 芬多的公共休息室了。这是一个舒适的圆形房间，摆满了软绵绵的扶手椅。"
+    },
+    {
+      "en": "Percy directed the girls through one door to their dormitory and the boys through another. At the top of a spiral staircase -- they were obviously in one of the towers -- they found their beds at last: five four-posters hung with deep red, velvet curtains. Their trunks had already been brought up. Too tired to talk much, they pulled on their pajamas and fell into bed.",
+      "zh": "珀西指引姑娘们进一扇门，去往她们的寝室，然后再带男生们走进另一道门。在一部螺旋形 的楼梯顶上——他们显然是在一座塔里——他们终于找到了自己的铺位：五张带四根帷柱的床， 垂挂着深红色法兰绒幔帐。他们的箱子早已送了上来。他们已精疲力竭，不想再多说话，一个个 换上睡衣就倒下睡了。"
+    },
+    {
+      "en": "\" Great food, isn't it?\" Ron muttered to Harry through the hangings. \"Get off, Scabbers! He's chewing my sheets.\"",
+      "zh": "“今天的伙食太丰盛了，是吧?”罗恩隔着幔帐对哈利小声说。“走开，斑斑!它在啃我的床 单呢。”"
+    },
+    {
+      "en": "Harry was going to ask Ron if he'd had any of the treacle tart, but he fell asleep almost at once.",
+      "zh": "哈利本想问罗恩吃没吃糖浆饼，可没等开口就睡着了。"
+    },
+    {
+      "en": "Perhaps Harry had eaten a bit too much, because he had a very strange dream. He was wearing Professor Quirrell's turban, which kept talking to him, telling him he must transfer to Slytherin at once, because it was his destiny. Harry told the turban he didn't want to be in Slytherin; it got heavier and heavier; he tried to pull it off but it tightened painfully -- and there was Malfoy, laughing at him as he struggled with it -then Malfoy turned into the hook-nosed teacher, Snape, whose laugh became high and cold -- there was a burst of green light and Harry woke, sweating and shaking. He rolled over and fell asleep again, and when he woke next day, he didn't remember the dream at all.",
+      "zh": "也许是哈利吃得过饱的缘故，他做了一个非常奇怪的梦。他头上顶着奇洛教授的大围巾，那 围巾一个劲地絮絮叨叨，对他说，应当立刻转到斯莱特林去，因为那是命中注定的。哈利告诉围 巾他不想去斯莱特林；围巾变得越来越重，他想把它扯掉，但却箍得他头痛——他在挣扎的时候， 马尔福在一旁看着他，哈哈大笑；接着马尔福变成了鹰钩鼻老师斯内普；斯内普的笑声更响，也 更冷了——只见一道绿光突然一闪，哈利惊醒了，一身冷汗，不停地发抖。他翻过身去，又睡着 了。第二天醒来时，一点儿也不记得这个梦了。"
+    }
+  ]
+}

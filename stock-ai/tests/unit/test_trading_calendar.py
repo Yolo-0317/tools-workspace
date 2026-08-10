@@ -55,6 +55,9 @@ def test_resolve_batch_holiday_weekday(trade_cal_cache, monkeypatch) -> None:
 
     from scripts._bootstrap import ensure_repo_root_on_path
     from scripts.tools.wechat_mp_draft_batch import resolve_scheduled_batch
+    import scripts.tools.wechat_mp_tv_review_article
+
+    monkeypatch.setattr(scripts.tools.wechat_mp_tv_review_article, "tv_trial_active", lambda **kwargs: False)
 
     ensure_repo_root_on_path()
     trade_cal_cache.write_text(

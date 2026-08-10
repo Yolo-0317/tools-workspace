@@ -63,8 +63,6 @@ def build_pages_field(
     pages: list[dict] = []
     for i, chunk in enumerate(groups, start=1):
         chunk = [ln for ln in chunk if ln]
-        if not chunk:
-            continue
         pages.append(
             {
                 "lines": chunk,

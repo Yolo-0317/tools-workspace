@@ -1,0 +1,962 @@
+{
+  "catalog_key": "steve_maggie",
+  "title": "Wow English / Steve and Maggie",
+  "path_hint": "玥玥/002.BBC英语动画【小优趣系列精选20部】/06.儿歌  Songs for kids  Sing with Steve and Maggie更新至30集",
+  "folder_fid": null,
+  "built_at": "2026-07-29T15:42:43+08:00",
+  "source": "derived from quark_media_index.json; leading NNN. is Wow English TV story order",
+  "rules": {
+    "default_play": "global_n=1 → 001.Animal Face for Kids + MORE  Stories for Children  Steve and Maggie from Wow English TV.mp3",
+    "voice_第一集": "season_ep=1",
+    "scope": "仅收录 NNN. 开头的 Wow English TV 故事；不含 Blue/Gold 课程长音频、不含 Songs for kids 儿歌编号",
+    "duplicate_fids": "每集可有多个 fid，播放取 fids[0]"
+  },
+  "default_start": {
+    "global_n": 1,
+    "season": 1,
+    "season_ep": 1,
+    "filename": "001.Animal Face for Kids + MORE  Stories for Children  Steve and Maggie from Wow English TV.mp3",
+    "title": "Animal Face for Kids + MORE  Stories for Children  Steve and Maggie from Wow English TV",
+    "fid": "~1E1cBBwJiy5ErcZG07uvjmva9gyfK8NXkFBsiKXwBS251g_ZoLJNJiih0QR45Hw5fMHCY3hPdsJB9oHyEOhz2h4",
+    "fids": [
+      "~1E1cBBwJiy5ErcZG07uvjmva9gyfK8NXkFBsiKXwBS251g_ZoLJNJiih0QR45Hw5fMHCY3hPdsJB9oHyEOhz2h4"
+    ]
+  },
+  "seasons": [
+    {
+      "id": 1,
+      "label": "Wow English TV 故事",
+      "aliases": [
+        "wow english",
+        "steve and maggie",
+        "第一部",
+        "哇英语"
+      ],
+      "episode_count": 78,
+      "global_range": [
+        1,
+        143
+      ],
+      "first_filename": "001.Animal Face for Kids + MORE  Stories for Children  Steve and Maggie from Wow English TV.mp3",
+      "last_filename": "143.Wild Animal Stories for Kids  Magic Animals from Steve and Maggie  Story for Kids  Wow English TV.mp3"
+    }
+  ],
+  "episode_count": 78,
+  "episodes": [
+    {
+      "global_n": 1,
+      "season": 1,
+      "season_ep": 1,
+      "filename": "001.Animal Face for Kids + MORE  Stories for Children  Steve and Maggie from Wow English TV.mp3",
+      "title": "Animal Face for Kids + MORE  Stories for Children  Steve and Maggie from Wow English TV",
+      "fids": [
+        "~1E1cBBwJiy5ErcZG07uvjmva9gyfK8NXkFBsiKXwBS251g_ZoLJNJiih0QR45Hw5fMHCY3hPdsJB9oHyEOhz2h4"
+      ],
+      "fid": "~1E1cBBwJiy5ErcZG07uvjmva9gyfK8NXkFBsiKXwBS251g_ZoLJNJiih0QR45Hw5fMHCY3hPdsJB9oHyEOhz2h4"
+    },
+    {
+      "global_n": 2,
+      "season": 1,
+      "season_ep": 2,
+      "filename": "002.Baby Food  English Short Stories for Kids  Baby Steve and Maggie  Wow English TV  Cartoon Story.mp3",
+      "title": "Baby Food  English Short Stories for Kids  Baby Steve and Maggie  Wow English TV  Cartoon Story",
+      "fids": [
+        "~1rtou53xtXooDSMuRFIu5mMHyWdzxymtqkWpmaXHaLf1bNMEpl6CrYIMI0fPdkaKJ0lwJ0SgepjuRgQlBXL7e4o",
+        "~1NNuX2i55uFwwLItfglKQgf9U7Znhc3dx1i3zWQKDLsu0XtPJxIpMrRIQyP9OCL54FpbdkCzDYRTmdZwpTuOG_w"
+      ],
+      "fid": "~1rtou53xtXooDSMuRFIu5mMHyWdzxymtqkWpmaXHaLf1bNMEpl6CrYIMI0fPdkaKJ0lwJ0SgepjuRgQlBXL7e4o"
+    },
+    {
+      "global_n": 3,
+      "season": 1,
+      "season_ep": 3,
+      "filename": "003.Animal Magic with Maggie and Steve  English Stories for Kids  Wow English TV.mp3",
+      "title": "Animal Magic with Maggie and Steve  English Stories for Kids  Wow English TV",
+      "fids": [
+        "~1xOnSxYkZs6Qy7j6pvoRfclvVklsBXuu9D6wyAyXstWN5c57OgPyhU-_tW-X-CMu83Fo8ki3YKgs9unJwg8hpdI",
+        "~16o3Ls6_4Fnc6p99qfAJX9qAzhvpgNP8xFkxeq8jjYs0mje-Eid0sNeCpGemi4OXWeB09eZ5XjqCx1lU-72I_uc",
+        "~1TbynOw8WbtQaErrB5ziCkmWMF3CF4mUmclFDZNvxONgyw5I541PmjxX2i_f0hf2_yKAHEw3cT6fWW9lzMvBRlg"
+      ],
+      "fid": "~1xOnSxYkZs6Qy7j6pvoRfclvVklsBXuu9D6wyAyXstWN5c57OgPyhU-_tW-X-CMu83Fo8ki3YKgs9unJwg8hpdI"
+    },
+    {
+      "global_n": 4,
+      "season": 1,
+      "season_ep": 4,
+      "filename": "004.Animal Safari for Children + MORE English Stories for Kids  Steve and Maggie  Wow English TV.mp3",
+      "title": "Animal Safari for Children + MORE English Stories for Kids  Steve and Maggie  Wow English TV",
+      "fids": [
+        "~1FSzz0U2qIyUSgdbszT7nGl51vbxdB-3OH6XqkZpfrjeIw4aIGPQoGUuCoBoA2WLyR68IJ4xwHniPEM0zn8Bs2A",
+        "~1ISHvoUzt3KYKFxTsy2KTUReT0tU_ue075byqtH4yhdXM23u0Cs0k2-ul8GDoNA2TzHjIaipB47eUA-YgxqmG5Q",
+        "~1nb4wz78Vpasv5cze8AyR5wbWvBJ6tIvqa6r79sL-P4RopXMQs6UIS6TtFSkjovSHFLdmmSpY_xs1bnNqsiQDnw",
+        "~1iIOXII4pNU4vBA8eM8UToUzlGPtbbH1lgG_aSlOQfJdkd3Uq9881b_uLDPNgKLDKRzWI5-C1J43E00Ge8tpTpI",
+        "~1X2JHlWjpNWEukZwf6CW0Gms12298mVWnkeLAnpcjDhozNDEzrP1EXbL6n7NjkxSlqyaPx5WZuLW0u76Gy6wJk4",
+        "~14lZhXxSUv5oTbbrI2oFzKVM5SUxjTEtgora4hOKV6Iin3jXfabMsnZsyrMf4-Xs9UTz9xdo3EPof--KLX5vL2c"
+      ],
+      "fid": "~1FSzz0U2qIyUSgdbszT7nGl51vbxdB-3OH6XqkZpfrjeIw4aIGPQoGUuCoBoA2WLyR68IJ4xwHniPEM0zn8Bs2A"
+    },
+    {
+      "global_n": 5,
+      "season": 1,
+      "season_ep": 5,
+      "filename": "005.Animal Story for Kids + MORE Stories for Children from Steve and Maggie  Learn Wow English TV.mp3",
+      "title": "Animal Story for Kids + MORE Stories for Children from Steve and Maggie  Learn Wow English TV",
+      "fids": [
+        "~1xt35YgEnpfMKl04VYo60DHMhZBOmjc1MRGd1iyaQlZui5eRNHEjgBbmXSE5jzoSqNzILf-tMV19CLGOhDBMULc",
+        "~1t-GCgc-VigotGsT5H-tMAsbgIhuxovTUZ7XkeaH0kqrIU6BXbc6Rxr9VYmxnHHjC2eTSAcNyZHoCxV7lnofT9U",
+        "~1-qaoe9euSE8xdUneumSbwMVnUCQu1-5IPl175MOWvx7uZKIPRDQEduqK13PO5HW0G7ajpoSpCLK9kuWa_KZ0r8"
+      ],
+      "fid": "~1xt35YgEnpfMKl04VYo60DHMhZBOmjc1MRGd1iyaQlZui5eRNHEjgBbmXSE5jzoSqNzILf-tMV19CLGOhDBMULc"
+    },
+    {
+      "global_n": 6,
+      "season": 1,
+      "season_ep": 6,
+      "filename": "006.Baby Shark Song from Steve and Maggie for children  Wow English TV.mp3",
+      "title": "Baby Shark Song from Steve and Maggie for children  Wow English TV",
+      "fids": [
+        "~1jCWZ9nrBccwOEuQkMpQYHUIY19cn3PlNdT49Bfj8pzMxdCDYvO_LBRQ7w2frX63A4UeIefa-xwwjRtUo91_ZYc",
+        "~1n-iYw2fhdnwRCcJNtITFkb4SDv4qbArY_jL8igGndkWFdlOW3jULxAI0wmOggKnRqLuyteRxEEE28_QZuUbTA4",
+        "~1k6fY76vD7xcbCFSSkMvA9ZTlbDctl3GlU2j7BXRk-uHhr6Pd5JEjYm49L57Txf0ghJyFStfWRH_L8MGDp4xtuI"
+      ],
+      "fid": "~1jCWZ9nrBccwOEuQkMpQYHUIY19cn3PlNdT49Bfj8pzMxdCDYvO_LBRQ7w2frX63A4UeIefa-xwwjRtUo91_ZYc"
+    },
+    {
+      "global_n": 7,
+      "season": 1,
+      "season_ep": 7,
+      "filename": "007.Animals for Kids + MORE Funny Stories for Children  Steve and Maggie from Wow English TV.mp3",
+      "title": "Animals for Kids + MORE Funny Stories for Children  Steve and Maggie from Wow English TV",
+      "fids": [
+        "~1-FJUGVY5Ay8bQIxmKJYyE_OX39mfvVUM0JMydhYHLbGnkZEKNugqHYn1jj88anrEGzYO4XaYwc_zv3FiPRF078",
+        "~1V88wv6QKwbUl3OArfGdPPeM-25M7cxTA0QLwa2GNoy5oJ3NsI5lj5Mk-1KYuXDeF1zqt-Ca5jdD39fBlhvVAsk",
+        "~1tg6T3TjRo6oWKeGsZRCGnsjrBOFfzuUj7V2-c003yB-TDvtejvvsVfkT1_cbvsG1HK5dj5NuVfTbrVYudLD9J8",
+        "~1stferG8tnbEDKyvUXhwBiB5SlTu8P5u2_8fqe3rpjSeX0mVxBCO-XNJGNbustE7QK9lJEQL8bsipJdpSmdT8KA",
+        "~1NsyTYwgfaPA5AMKQWlwW6BAR8IPTzeGO3d5UeM2YZnQCje3y_K__3MsT60TLLBe0ShjcQ7jm0TH_I_tt88M1rU"
+      ],
+      "fid": "~1-FJUGVY5Ay8bQIxmKJYyE_OX39mfvVUM0JMydhYHLbGnkZEKNugqHYn1jj88anrEGzYO4XaYwc_zv3FiPRF078"
+    },
+    {
+      "global_n": 8,
+      "season": 1,
+      "season_ep": 8,
+      "filename": "008.Animals from Steve and Maggie for Kids   Free Speaking Wow English TV.mp3",
+      "title": "Animals from Steve and Maggie for Kids   Free Speaking Wow English TV",
+      "fids": [
+        "~1rfihf46dTFIZMfMQuAxV5hBlFt2XwwyO7FEFjTwLzsYYYbo3HmfArA9jSHyOuuAeRhDhrh19wKavM2FEou_B6E",
+        "~16HcOWFYEK_k8wUSIQW31FgiAyCYqX6ZG7xo7EDKgoolotw_Q_xezhDN2YaHhETOIyW02eamMx-16C2Wv4_-wyo",
+        "~1Q5wbkD7TIqk804sYRJlS-46iGzzMDFes3ecCIRxfFFZdGQ-J0r0tW4Ir8aHuo6Nh04SbT44ThBQ9yyi1TQQ520"
+      ],
+      "fid": "~1rfihf46dTFIZMfMQuAxV5hBlFt2XwwyO7FEFjTwLzsYYYbo3HmfArA9jSHyOuuAeRhDhrh19wKavM2FEou_B6E"
+    },
+    {
+      "global_n": 9,
+      "season": 1,
+      "season_ep": 9,
+      "filename": "009.Animals in the Garden + MORE Stories with Steve and Maggie for Kids  Wow English TV.mp3",
+      "title": "Animals in the Garden + MORE Stories with Steve and Maggie for Kids  Wow English TV",
+      "fids": [
+        "~1ESQyfTHo5pAnqUb1YmBsLLH4SliENbaD_C80Ofk4R5pSsseGuxSeO83DU0doensmNjUgCvEuqEh7b_F4eXYomU"
+      ],
+      "fid": "~1ESQyfTHo5pAnqUb1YmBsLLH4SliENbaD_C80Ofk4R5pSsseGuxSeO83DU0doensmNjUgCvEuqEh7b_F4eXYomU"
+    },
+    {
+      "global_n": 10,
+      "season": 1,
+      "season_ep": 10,
+      "filename": "010.[无字幕]Sea Animals for Kids from Steve and Maggie Stories  Free Speaking Wow English TV.mp3",
+      "title": "[无字幕]Sea Animals for Kids from Steve and Maggie Stories  Free Speaking Wow English TV",
+      "fids": [
+        "~14E-f8JEPT4c0Sd5Shs8eRWQU_PO1EUogKQnYVGX6EP3y7KiLhl70L5Dk4WLMgb1n7Fzd83SRFwseLJFtGdeb48",
+        "~1g6kgoQfxbTILhGvsjI9DEAMF6-9ky9swFwXnKdNroQMjqWXWKknd2eZhe1rhV-_wVIvNiC15AJuw6ZfbJZgAAQ",
+        "~1v-d9xb3DDb07YJpPU59SkmwiuBRNgngQ1UXjDLFvDJefTbmH6UR8n8nlKSDp4ZlmK7Ek-netf7M0fVGsp8AHDc"
+      ],
+      "fid": "~14E-f8JEPT4c0Sd5Shs8eRWQU_PO1EUogKQnYVGX6EP3y7KiLhl70L5Dk4WLMgb1n7Fzd83SRFwseLJFtGdeb48"
+    },
+    {
+      "global_n": 11,
+      "season": 1,
+      "season_ep": 11,
+      "filename": "011.Garden Animals   Stories for Kids from Steve and Maggie  Learn ESL Story Wow English TV.mp3",
+      "title": "Garden Animals   Stories for Kids from Steve and Maggie  Learn ESL Story Wow English TV",
+      "fids": [
+        "~1caoU1bYkbigoyMsT1Vl16L_SbKJRV3CyDGm0N2UdGTkIFa2oz0Km3Mrknsyz6DQ5N-n35TRGZn90v8kNXrCPTY"
+      ],
+      "fid": "~1caoU1bYkbigoyMsT1Vl16L_SbKJRV3CyDGm0N2UdGTkIFa2oz0Km3Mrknsyz6DQ5N-n35TRGZn90v8kNXrCPTY"
+    },
+    {
+      "global_n": 12,
+      "season": 1,
+      "season_ep": 12,
+      "filename": "012.Chocolate Birthday Cake Story for Kids from Steve and Maggie  Wow English TV.mp3",
+      "title": "Chocolate Birthday Cake Story for Kids from Steve and Maggie  Wow English TV",
+      "fids": [
+        "~1tnAYw8X0h341ZVmJaL5Hoz2B9NGxf0MIGjltd6rtxt777T9-QsFU3CxehqAI0u-m73yuQIt-qfwnQmVNwle6hY",
+        "~1naj51l0qIxw117mr9U81IKmfH9QZvFhJzb5Sn-Zxe_SBRzlmMLEEPpZJ4Gm2J5UM7emK6yOq9mEFFDZS6nqQUg",
+        "~1FlgjD8hGXksECgLwgIrusc_dD8xestPv-zIrGAaHRQxb5h6UWlYh_k6XEdeJDNGxR_qArXpgzo6dntSzp3TsZQ",
+        "~16LpfX5SxIAkRK3hhbxWhUEiE5SqQXMMNV9LWMRZ4liu6Xk1ET-LDLkA10acATbgHlPyDktIFpzfnum4i-kSIx4"
+      ],
+      "fid": "~1tnAYw8X0h341ZVmJaL5Hoz2B9NGxf0MIGjltd6rtxt777T9-QsFU3CxehqAI0u-m73yuQIt-qfwnQmVNwle6hY"
+    },
+    {
+      "global_n": 13,
+      "season": 1,
+      "season_ep": 13,
+      "filename": "013.Chocolate Yummy Tummy Story from Steve and Maggie  Wow English TV.mp3",
+      "title": "Chocolate Yummy Tummy Story from Steve and Maggie  Wow English TV",
+      "fids": [
+        "~1KlgbKCInWPAh6UE3jdNauzxflJprZP8YOi1RCFLQvmqyUEvrwVO3AndWFLbx2zWIKOicASzxXvUX9J87q4oR4A",
+        "~1bxeyBRy3DaoH66rlomG7G6J74Tw4wMDg1f7rQwb92yVW5OsW1lmOPRUAZBTecjkUeowsu1Fi10vIQfafQ-EfMI",
+        "~1JQqV-IJz4poTLrJXw1MYITHRBD_2udZck2rTo_yUpbPUR2H1R4Cw455yviNkl3Dcf3ynHOeMjEWC4euIMpcBQM"
+      ],
+      "fid": "~1KlgbKCInWPAh6UE3jdNauzxflJprZP8YOi1RCFLQvmqyUEvrwVO3AndWFLbx2zWIKOicASzxXvUX9J87q4oR4A"
+    },
+    {
+      "global_n": 14,
+      "season": 1,
+      "season_ep": 14,
+      "filename": "014.Halloween for Kids  Steve and Maggie Songs and Rhymes for Children from Wow English TV.mp3",
+      "title": "Halloween for Kids  Steve and Maggie Songs and Rhymes for Children from Wow English TV",
+      "fids": [
+        "~12Vf5XcvGNj8AkmOiGuiK2TGCIo7eBItZg_Ct2V1NUAinvyf8Rn3aJzVWS0TBMgrdxIvxtMusLBjt7OSxkL4BZM",
+        "~1cGeGzMLgQnQnPja__h6KC9spAamH-GsIDV0Z7POempZj8NLux-0-JkHBJ-lBs4IOXeFzFTs6ZV_Uk5T3pMxIqc"
+      ],
+      "fid": "~12Vf5XcvGNj8AkmOiGuiK2TGCIo7eBItZg_Ct2V1NUAinvyf8Rn3aJzVWS0TBMgrdxIvxtMusLBjt7OSxkL4BZM"
+    },
+    {
+      "global_n": 15,
+      "season": 1,
+      "season_ep": 15,
+      "filename": "015.Christmas Tree Song  Stories for Kids by Wow English TV.mp3",
+      "title": "Christmas Tree Song  Stories for Kids by Wow English TV",
+      "fids": [
+        "~1aVpFUp6SOTwkYUZoo0b8N5UjzGLersYM5iEimhePPuvebUjUQBXteLeCM2WAARxo_qk-oKBNR-CUs92jZcY5T8"
+      ],
+      "fid": "~1aVpFUp6SOTwkYUZoo0b8N5UjzGLersYM5iEimhePPuvebUjUQBXteLeCM2WAARxo_qk-oKBNR-CUs92jZcY5T8"
+    },
+    {
+      "global_n": 16,
+      "season": 1,
+      "season_ep": 16,
+      "filename": "016.Haunted House for Kids  Halloween Songs for Children from Steve and Maggie  Wow English TV.mp3",
+      "title": "Haunted House for Kids  Halloween Songs for Children from Steve and Maggie  Wow English TV",
+      "fids": [
+        "~1iG66h6A3HXQc7JwNqvaE7Blr_Ngf6mnCnt5qd--qqfzmgSikuTfd5oL5NkCN3SN_Bx5R4HgV2SNNZ37nLn-a0U",
+        "~1MNmAlrI7fSQFcVeZ-jKVz12XXnPx3V1d9p6ZhG1chdqAK3biUgUobXGa4sMzbK-Itvrs67I5W3DgOPjgC672zg",
+        "~1L-y9A92j1ggGq6TKvnvvn_23NyimuQKn5OOpmd7cVv99GJswPTZD529cxjZAiN58rzn9ShkNcSA-IoNRTtDGFQ"
+      ],
+      "fid": "~1iG66h6A3HXQc7JwNqvaE7Blr_Ngf6mnCnt5qd--qqfzmgSikuTfd5oL5NkCN3SN_Bx5R4HgV2SNNZ37nLn-a0U"
+    },
+    {
+      "global_n": 17,
+      "season": 1,
+      "season_ep": 17,
+      "filename": "017.Clothes for Kids  Kids Short Stories for Children from Steve and Maggie  Wow English TV.mp3",
+      "title": "Clothes for Kids  Kids Short Stories for Children from Steve and Maggie  Wow English TV",
+      "fids": [
+        "~1walOEeylrl4rQr5qLnLV9cKspQeC-0eHiWA7JC1-IrhY5OG45hvBukhDsdc63PJQvTynfxoz9ugIut3C5G2Xtc",
+        "~1NJAqM9p6aqEAibsYHKXXLwAFLoj6tkVW9VbNGOdj6deHWFLXmQ5MsDFKT0QTpXiS8IzrxIkP8wEfxqjhmEgpKo"
+      ],
+      "fid": "~1walOEeylrl4rQr5qLnLV9cKspQeC-0eHiWA7JC1-IrhY5OG45hvBukhDsdc63PJQvTynfxoz9ugIut3C5G2Xtc"
+    },
+    {
+      "global_n": 18,
+      "season": 1,
+      "season_ep": 18,
+      "filename": "018.Best Steve and Maggie Magic Stories for Kids of   Speak and Learn with Wow English TV 智美教育.mp3",
+      "title": "Best Steve and Maggie Magic Stories for Kids of   Speak and Learn with Wow English TV 智美教育",
+      "fids": [
+        "~1Eql7I7oRAbACa90GB8xjVMVtJizM7NcjVGc8sZujD1tVkx7c_-7Gn6DYfqVt5oJquH0xzB8144H031YfvYDDAQ",
+        "~1aZlR5lfrXtMTQr0w0YKsgBm_dqej2n09hf8pJueUyUSnLNn05tZoZECcTGQ75tuODTfCpfDyodP05jfdWYDsTk",
+        "~1o-B6gd4yo8kJrzvG3lCsQXRikNd4Zb_7-5WB-5ZOWK1AY1nN-lai2ZoXZl0IEmHtjUyrcwgB_0qk0I0BIaOk80",
+        "~1V3BJlSNJu_4berNtX9ZrEJGlq-4aD5K-KY7MGZA_aMtmvX5g2YCBQkUKuyouQL2k2bRVr9GYRAi3O3dxZG5yls"
+      ],
+      "fid": "~1Eql7I7oRAbACa90GB8xjVMVtJizM7NcjVGc8sZujD1tVkx7c_-7Gn6DYfqVt5oJquH0xzB8144H031YfvYDDAQ"
+    },
+    {
+      "global_n": 19,
+      "season": 1,
+      "season_ep": 19,
+      "filename": "019.Best Stories for Kids from Steve and Maggie  Free Speaking Magic with Wow English TV 智美教育.mp3",
+      "title": "Best Stories for Kids from Steve and Maggie  Free Speaking Magic with Wow English TV 智美教育",
+      "fids": [
+        "~1A3cv0hd14kAkBKK6Hq3EMh3UizI1vUr6x70R9K8Tmh8-N7dqP0J0xw51EifB2oD46vMCW7DH-n6LUMptv-5aBA",
+        "~10m16bQ5D2G8ws5mlkX58LWQCI6-mvxWX97lm0Cuu4EVMBGvzip0ep00PQJAyNxW5o92ffjSsbun5imMLrB59KI",
+        "~1ws04-L-HrREckSOatHetKbK9YmbwpJpueTkcWV8MDS4RjxOPsZP5VlmEx6ZSbpTYH6ZW_9PgUsSBFLiQauu8Zs",
+        "~116kh-Ti1T_UhlQDfqBRM1eSYyw6OXAzS3dVqdgzlnWzOJUu29_FPIZm8eE3ChdqGrS4VJNQAdMLkjz6KdVJanc",
+        "~1cUdTp6HYsrUeUDDNJ5V_VtzrB1ckTNxI2tKBEG6al4ubWwbAfPGrFjQH6JckMWOKKPVKQi5O6t7K6vRQ910A_Q"
+      ],
+      "fid": "~1A3cv0hd14kAkBKK6Hq3EMh3UizI1vUr6x70R9K8Tmh8-N7dqP0J0xw51EifB2oD46vMCW7DH-n6LUMptv-5aBA"
+    },
+    {
+      "global_n": 20,
+      "season": 1,
+      "season_ep": 20,
+      "filename": "020.Trick or Treat Halloween Story for Kids from Steve and Maggie  Wow English TV.mp3",
+      "title": "Trick or Treat Halloween Story for Kids from Steve and Maggie  Wow English TV",
+      "fids": [
+        "~15cP7_Ao6micWNwcWdR4G2P0fvufP_hCtFlMUK7yPpHMKTVomKAJrCURGHPNtHTCfcbgt4LMNbylkEqSrALWncA",
+        "~1Z36lHPEqnqQOTpQVf8JczOgPz9kEsx5Op-hAYRVdQug32qBvbhFxRrkGk64M-yKmqnPEDDbTq0M99HRnKSa_K8"
+      ],
+      "fid": "~15cP7_Ao6micWNwcWdR4G2P0fvufP_hCtFlMUK7yPpHMKTVomKAJrCURGHPNtHTCfcbgt4LMNbylkEqSrALWncA"
+    },
+    {
+      "global_n": 21,
+      "season": 1,
+      "season_ep": 21,
+      "filename": "021.Body Parts + MORE Magic English Stories for Kids from Steve and Maggie by Wow English TV.mp3",
+      "title": "Body Parts + MORE Magic English Stories for Kids from Steve and Maggie by Wow English TV",
+      "fids": [
+        "~1UqTZS6PHsXc5PrZXSnCHVsyy6ojxLjnqu5GfcJXuZOQ1VZ4i5kfSn5YLXM2138ixYtQGvPXMKYesJqgZ7bYo2I",
+        "~18gpyZCCnJL0N5PWVYe5C-67kNXNqGFDY-61BsbSeVclRZHPyvsmrlUjTHt3bVlF33Hb_oo2bvur-NvMik9FCIM",
+        "~18jKLGpB5qv4qEDoRVCt0HeulVCySQF_7Rrl7rTesLiDIxo9RT_pKyblOE5LYirb28eA4cLu7uBMFJmW2gOZ970"
+      ],
+      "fid": "~1UqTZS6PHsXc5PrZXSnCHVsyy6ojxLjnqu5GfcJXuZOQ1VZ4i5kfSn5YLXM2138ixYtQGvPXMKYesJqgZ7bYo2I"
+    },
+    {
+      "global_n": 23,
+      "season": 1,
+      "season_ep": 22,
+      "filename": "023.Body Parts for Kids + MORE English Funny Stories for Children  Steve and Maggie from Wow English TV.mp3",
+      "title": "Body Parts for Kids + MORE English Funny Stories for Children  Steve and Maggie from Wow English TV",
+      "fids": [
+        "~1aXQFDeqbk8A1V1q8oStsaejWjBAESwkqNdvFzf_KqqzgB8Qxg6oeJ915-ZhRiEhUG45Jay6zzRGSxEBc32tNyI"
+      ],
+      "fid": "~1aXQFDeqbk8A1V1q8oStsaejWjBAESwkqNdvFzf_KqqzgB8Qxg6oeJ915-ZhRiEhUG45Jay6zzRGSxEBc32tNyI"
+    },
+    {
+      "global_n": 25,
+      "season": 1,
+      "season_ep": 23,
+      "filename": "025.Brush your Teeth Song for Kids + MORE Stories from Steve and Maggie  Free Speaking Wow English TV 智美教育.mp3",
+      "title": "Brush your Teeth Song for Kids + MORE Stories from Steve and Maggie  Free Speaking Wow English TV 智美教育",
+      "fids": [
+        "~18bZBK325QTY0tbQCXOpzR4C6ku7cI7JSCcF66bbUziaJjjFbOnCTU0KNwoAMwKeKzdF-3jwsrHSUdfmbvcOMYQ",
+        "~1yYOzJH8GF_IVWBik7mP_zIFL4DK8-TPI-LQpqS-KmntWkLEt9ytUra4Qv6-h0PpkBIc39Kyd8aMUiMKA-gYbxk"
+      ],
+      "fid": "~18bZBK325QTY0tbQCXOpzR4C6ku7cI7JSCcF66bbUziaJjjFbOnCTU0KNwoAMwKeKzdF-3jwsrHSUdfmbvcOMYQ"
+    },
+    {
+      "global_n": 26,
+      "season": 1,
+      "season_ep": 24,
+      "filename": "026.Camping Magic English Stories for Kids from Steve and Maggie  Learn English with Wow English TV 智美教育.mp3",
+      "title": "Camping Magic English Stories for Kids from Steve and Maggie  Learn English with Wow English TV 智美教育",
+      "fids": [
+        "~1QnEJMJKciSUvlCqUZAhUfYu-EFsYG8_M-G_mmkQE1XOhcWNfSLy4QGhKbAaLovw1ZXhLjrd_NMG4svNXHF3Q8w"
+      ],
+      "fid": "~1QnEJMJKciSUvlCqUZAhUfYu-EFsYG8_M-G_mmkQE1XOhcWNfSLy4QGhKbAaLovw1ZXhLjrd_NMG4svNXHF3Q8w"
+    },
+    {
+      "global_n": 27,
+      "season": 1,
+      "season_ep": 25,
+      "filename": "027.Fruit for Kids  Funny English Stories for Kids from Steve and Maggie by Wow English TV 智美教育.mp3",
+      "title": "Fruit for Kids  Funny English Stories for Kids from Steve and Maggie by Wow English TV 智美教育",
+      "fids": [
+        "~1LWH6LGpB3ecnfkotDZBxUybvUc-nGIrMmg_CnUSyMl6xX7RQX-AyBVu3MSP9Oz3kcDbwHiOZr2qcB12_IBkcN0"
+      ],
+      "fid": "~1LWH6LGpB3ecnfkotDZBxUybvUc-nGIrMmg_CnUSyMl6xX7RQX-AyBVu3MSP9Oz3kcDbwHiOZr2qcB12_IBkcN0"
+    },
+    {
+      "global_n": 29,
+      "season": 1,
+      "season_ep": 26,
+      "filename": "029.Funny Haircut and the Teddy Bear Wheels on the Bus with Steve and Maggie  Wow English TV.mp3",
+      "title": "Funny Haircut and the Teddy Bear Wheels on the Bus with Steve and Maggie  Wow English TV",
+      "fids": [
+        "~1bV4gwwyjexw4syIRIhJ4vPrlo8q3P4iNk0NqIxErtS5qGhoxw5Fxarf03d_xGaig9r6zL92_aWDHj6a1ZQTkjo"
+      ],
+      "fid": "~1bV4gwwyjexw4syIRIhJ4vPrlo8q3P4iNk0NqIxErtS5qGhoxw5Fxarf03d_xGaig9r6zL92_aWDHj6a1ZQTkjo"
+    },
+    {
+      "global_n": 30,
+      "season": 1,
+      "season_ep": 27,
+      "filename": "030.Funny Haircut with Steve and Maggie  Speaking with Wow English TV 智美教育.mp3",
+      "title": "Funny Haircut with Steve and Maggie  Speaking with Wow English TV 智美教育",
+      "fids": [
+        "~1Y9zg5lmsygQmVzJLdH_nyLV1Xkx_ig5YLZdooVTmkGQQihQ36417voPLR1sytuDizAk7niDBXd3jjhb4Zar_O4"
+      ],
+      "fid": "~1Y9zg5lmsygQmVzJLdH_nyLV1Xkx_ig5YLZdooVTmkGQQihQ36417voPLR1sytuDizAk7niDBXd3jjhb4Zar_O4"
+    },
+    {
+      "global_n": 32,
+      "season": 1,
+      "season_ep": 28,
+      "filename": "032.Christmas Songs and Stories from Steve and Magie for Kids  Free Speaking Wow English TV.mp3",
+      "title": "Christmas Songs and Stories from Steve and Magie for Kids  Free Speaking Wow English TV",
+      "fids": [
+        "~1R5RzVVmCANk3eHExzyv2yURYnNB-77iXJ3U3ukxW-wfLmn3JL2DetGiQEyGKbk8ZVPKGuyaCHs2jtme3pvDckY",
+        "~1hoZERayShjU5bBK3ZdFZcxXxIeWzoG8oofCN_EE7cJGw_Wl8-5Zh67zs-3MGDclVpMNpi6YwLiRm_JYMctJRb4"
+      ],
+      "fid": "~1R5RzVVmCANk3eHExzyv2yURYnNB-77iXJ3U3ukxW-wfLmn3JL2DetGiQEyGKbk8ZVPKGuyaCHs2jtme3pvDckY"
+    },
+    {
+      "global_n": 33,
+      "season": 1,
+      "season_ep": 29,
+      "filename": "033.Christmas Tree Song for Children + MORE Stories for Kids from Steve and Maggie  Wow English TV.mp3",
+      "title": "Christmas Tree Song for Children + MORE Stories for Kids from Steve and Maggie  Wow English TV",
+      "fids": [
+        "~1pbi2kfIqT8sHsfe85oIoZ9VucnWRKWU7NQwUww5ntUbCMUlTv8IXohB50r3dLUS99Pig1s_xLBNPu-XB4R2Dh4"
+      ],
+      "fid": "~1pbi2kfIqT8sHsfe85oIoZ9VucnWRKWU7NQwUww5ntUbCMUlTv8IXohB50r3dLUS99Pig1s_xLBNPu-XB4R2Dh4"
+    },
+    {
+      "global_n": 34,
+      "season": 1,
+      "season_ep": 30,
+      "filename": "034.Christmas Tree for Kids from Steve and Maggie  Free Stories with Wow English TV.mp3",
+      "title": "Christmas Tree for Kids from Steve and Maggie  Free Stories with Wow English TV",
+      "fids": [
+        "~1nIOiCaGKmQo3c8GS6YuG0HLFMQ4NzwJNS46pKu4MP59Sco-a149Kd2dji6X7tIggkPQ1mX3DlGZ8tiNPUyssSo",
+        "~1VNGnSsyYzHoXDiPE5umZccWXDOJ5IxqPPeZSJ8gsCyDYe1cGGDzwXQdp9d7vrQxC9SNH1rark4kkV8Gic0e0GU",
+        "~14twq7gggKxwILTSSJjcj2a6ym_Aadfy47sxmexhkcIj59Jso8kqd7UFJssqPsQ9Mehod_T9-XeyguYLW3BSBoE"
+      ],
+      "fid": "~1nIOiCaGKmQo3c8GS6YuG0HLFMQ4NzwJNS46pKu4MP59Sco-a149Kd2dji6X7tIggkPQ1mX3DlGZ8tiNPUyssSo"
+    },
+    {
+      "global_n": 36,
+      "season": 1,
+      "season_ep": 31,
+      "filename": "036.Healthy Food for Steve and Maggie  Magic English Stories for Kids  Cartoon Story Wow English TV.mp3",
+      "title": "Healthy Food for Steve and Maggie  Magic English Stories for Kids  Cartoon Story Wow English TV",
+      "fids": [
+        "~1Br_GhoEk_oAWXb2RwbDzUXHwyYdLF5DrL-Ec-3x2bHMS0DbelN3TKxVxzp-aaR37jRDjo7mwGYTr-NkTOqK1K4"
+      ],
+      "fid": "~1Br_GhoEk_oAWXb2RwbDzUXHwyYdLF5DrL-Ec-3x2bHMS0DbelN3TKxVxzp-aaR37jRDjo7mwGYTr-NkTOqK1K4"
+    },
+    {
+      "global_n": 39,
+      "season": 1,
+      "season_ep": 32,
+      "filename": "039.Hide and Seek at the Dinosaur Outdoor Playground for Kids with Steve and Maggie - Wow English TV 智美教育.mp3",
+      "title": "Hide and Seek at the Dinosaur Outdoor Playground for Kids with Steve and Maggie - Wow English TV 智美教育",
+      "fids": [
+        "~1TEvKzLRMx28RliZcuyC4hqUrzOPDPvyWYj1QIdobOjyI3rQ5iwAzjoFsO6XL4k4WPXYT_Myyrd1BShoYU1kXGs"
+      ],
+      "fid": "~1TEvKzLRMx28RliZcuyC4hqUrzOPDPvyWYj1QIdobOjyI3rQ5iwAzjoFsO6XL4k4WPXYT_Myyrd1BShoYU1kXGs"
+    },
+    {
+      "global_n": 40,
+      "season": 1,
+      "season_ep": 33,
+      "filename": "040.Holiday Stories from Steve and Maggie for Kids  Free Speaking Wow English TV 智美教育.mp3",
+      "title": "Holiday Stories from Steve and Maggie for Kids  Free Speaking Wow English TV 智美教育",
+      "fids": [
+        "~1haA4PVortIA0OZFJBcVqIW1lLuavL7cQ0-ypdBbWzJO0NhaFWg1cxOvTfB7dYpC6e-QJ3rAr9sSJD6Wekk8oQY"
+      ],
+      "fid": "~1haA4PVortIA0OZFJBcVqIW1lLuavL7cQ0-ypdBbWzJO0NhaFWg1cxOvTfB7dYpC6e-QJ3rAr9sSJD6Wekk8oQY"
+    },
+    {
+      "global_n": 41,
+      "season": 1,
+      "season_ep": 34,
+      "filename": "041.Holiday Story for Kids from Steve and Maggie  Speaking Stories Wow English TV 智美教育.mp3",
+      "title": "Holiday Story for Kids from Steve and Maggie  Speaking Stories Wow English TV 智美教育",
+      "fids": [
+        "~1fiG01ksghmQqswbKfL-LOMmzhsGosbJkJtO4SO1Tq7_b-7IFJcQK4ZdlYFudO_8hpoiXcP5ZdibW6VKSZfBBUA",
+        "~1WXWzzN4v40AxitvIe4lR2wHvta69iQYDBjDzA0CKYgDacqW70lTsMJ6UnBQWxD7kwAqYvrYJUFU8sf_J9BXICs"
+      ],
+      "fid": "~1fiG01ksghmQqswbKfL-LOMmzhsGosbJkJtO4SO1Tq7_b-7IFJcQK4ZdlYFudO_8hpoiXcP5ZdibW6VKSZfBBUA"
+    },
+    {
+      "global_n": 45,
+      "season": 1,
+      "season_ep": 35,
+      "filename": "045.Finger Family Animals from Steve and Maggie  Free Speaking Wow English TV  ESL Stories for Kids.mp3",
+      "title": "Finger Family Animals from Steve and Maggie  Free Speaking Wow English TV  ESL Stories for Kids",
+      "fids": [
+        "~1lMHf1poHa-Qng08-pjChKiTgcj0ybbI3FcvJCcfuohRMNKCIxmntRskMBdl6fgmtgxGheZgpkPKmTK8dP8yCmI"
+      ],
+      "fid": "~1lMHf1poHa-Qng08-pjChKiTgcj0ybbI3FcvJCcfuohRMNKCIxmntRskMBdl6fgmtgxGheZgpkPKmTK8dP8yCmI"
+    },
+    {
+      "global_n": 46,
+      "season": 1,
+      "season_ep": 36,
+      "filename": "046.Little Live Pets Stories for Kids  Story from Wow English TV  ESL English for Children.mp3",
+      "title": "Little Live Pets Stories for Kids  Story from Wow English TV  ESL English for Children",
+      "fids": [
+        "~1niJRzpFp7RUgEB30k0JMycrLpDWUnWD5o9Mmxo5if14eHS3pd1XlJC-Fi__7wFAdq1pl_TPi_MQmyh0tGqqwW0"
+      ],
+      "fid": "~1niJRzpFp7RUgEB30k0JMycrLpDWUnWD5o9Mmxo5if14eHS3pd1XlJC-Fi__7wFAdq1pl_TPi_MQmyh0tGqqwW0"
+    },
+    {
+      "global_n": 48,
+      "season": 1,
+      "season_ep": 37,
+      "filename": "048.Food Cooking Magic Story for Kids from Steve and Maggie  Speaking Wow English TV Story Time Lessons.mp3",
+      "title": "Food Cooking Magic Story for Kids from Steve and Maggie  Speaking Wow English TV Story Time Lessons",
+      "fids": [
+        "~1tkfTJhVZUgwXt4GfAdONgZdRLt6-mQ68zz5-60pqtBf4k9Z3kuhd0LoSO3EWCfOAyI8DrgYHRM_sQ1NVOIP6sw"
+      ],
+      "fid": "~1tkfTJhVZUgwXt4GfAdONgZdRLt6-mQ68zz5-60pqtBf4k9Z3kuhd0LoSO3EWCfOAyI8DrgYHRM_sQ1NVOIP6sw"
+    },
+    {
+      "global_n": 49,
+      "season": 1,
+      "season_ep": 38,
+      "filename": "049.Food Stories for Kids from Steve and Maggie  Free Speaking Wow English TV.mp3",
+      "title": "Food Stories for Kids from Steve and Maggie  Free Speaking Wow English TV",
+      "fids": [
+        "~1_zIjttG-6zo8Q9bLa5TSY4Vn1qB0mOpEGLkeOXMHFcRwrkfuzQk1VGFsZ1WcrqBdLr2DnWwABwIDf5iLlW3zO0",
+        "~1BZbB8P6MrNwincQDJ3UEHvnz1mPVEErVrmaEl1cqTn8PyZ1I4vJmuk3lHH5TpoQB9IR60UGtbAnQV3A9QeFqUM",
+        "~1ToKztKYfvWwnl9LxcNDKEaBn2VRvSqZUq6wETngQrQoDkU3qiUgDTcEpX1vtFK2LSYTKw8f-vlTX6WQb_1HUI0",
+        "~1LuMyW-_JhoUL8YOgSAWHobcnIyVU9jpE4A5fFlOwfCPLEKjQUVkSozmLZtyk90u_GDNcbvMdxLsSR19clb9N6k"
+      ],
+      "fid": "~1_zIjttG-6zo8Q9bLa5TSY4Vn1qB0mOpEGLkeOXMHFcRwrkfuzQk1VGFsZ1WcrqBdLr2DnWwABwIDf5iLlW3zO0"
+    },
+    {
+      "global_n": 50,
+      "season": 1,
+      "season_ep": 39,
+      "filename": "050.Food Stories for Kids from Steve and Maggie  Learn Speaking Wow English TV.mp3",
+      "title": "Food Stories for Kids from Steve and Maggie  Learn Speaking Wow English TV",
+      "fids": [
+        "~1j-I6u-o1f4EMM1wMcg8BBuvL9phpV5FNieii7iWZYaqF6g15-TNd68siJ-H2CB3e5701MUxTuijDT520HBZntU"
+      ],
+      "fid": "~1j-I6u-o1f4EMM1wMcg8BBuvL9phpV5FNieii7iWZYaqF6g15-TNd68siJ-H2CB3e5701MUxTuijDT520HBZntU"
+    },
+    {
+      "global_n": 52,
+      "season": 1,
+      "season_ep": 40,
+      "filename": "052.Magic Funny Clothes Story with Steve and Maggie  English Stories for Kids  Wow English TV.mp3",
+      "title": "Magic Funny Clothes Story with Steve and Maggie  English Stories for Kids  Wow English TV",
+      "fids": [
+        "~1Kaq8p4Cd5f8igBxq-o9VuezmLeNt8-IdDZC23mtzIImThSAY1CYfbk_FJiObVm2U2Ph4izS6waDOvWksFUpbhM"
+      ],
+      "fid": "~1Kaq8p4Cd5f8igBxq-o9VuezmLeNt8-IdDZC23mtzIImThSAY1CYfbk_FJiObVm2U2Ph4izS6waDOvWksFUpbhM"
+    },
+    {
+      "global_n": 53,
+      "season": 1,
+      "season_ep": 41,
+      "filename": "053.Magic Picnic Food Story for Kids from Steve and Maggie   Free Speaking Wow English TV.mp3",
+      "title": "Magic Picnic Food Story for Kids from Steve and Maggie   Free Speaking Wow English TV",
+      "fids": [
+        "~1nVxbmdILc2wPFVahrUZsDo3Q0SjA7M_P1iqLbTSQ1RU0WdvZ8MBANEZdPJpjDPEq78TKzm13rDCiEN4z9V-wkk"
+      ],
+      "fid": "~1nVxbmdILc2wPFVahrUZsDo3Q0SjA7M_P1iqLbTSQ1RU0WdvZ8MBANEZdPJpjDPEq78TKzm13rDCiEN4z9V-wkk"
+    },
+    {
+      "global_n": 54,
+      "season": 1,
+      "season_ep": 42,
+      "filename": "054.Fruit for Children + MORE English Stories for Kids from Steve and Maggie  Learn with Wow English TV 智美教育.mp3",
+      "title": "Fruit for Children + MORE English Stories for Kids from Steve and Maggie  Learn with Wow English TV 智美教育",
+      "fids": [
+        "~1x2msuus1V00S19d5nKwWsoLnFRjiNfymPQ-zXiz3fxg8REhrk62lwKoN-pO5W-4_yceDEnFwJLbbWFgMmoK340"
+      ],
+      "fid": "~1x2msuus1V00S19d5nKwWsoLnFRjiNfymPQ-zXiz3fxg8REhrk62lwKoN-pO5W-4_yceDEnFwJLbbWFgMmoK340"
+    },
+    {
+      "global_n": 57,
+      "season": 1,
+      "season_ep": 43,
+      "filename": "057.Magic Yummy Food Surprise Stories for Kids from Steve and Maggie  Learn Wow English TV.mp3",
+      "title": "Magic Yummy Food Surprise Stories for Kids from Steve and Maggie  Learn Wow English TV",
+      "fids": [
+        "~1l3S4rR4SmuQhMLENWSXcSRzTQUkQy8ZwGVuGJsj58v-WrWEdle1-j6V2zVOGRJQW8Pgn9xq0NTA6aXBWjC43DI"
+      ],
+      "fid": "~1l3S4rR4SmuQhMLENWSXcSRzTQUkQy8ZwGVuGJsj58v-WrWEdle1-j6V2zVOGRJQW8Pgn9xq0NTA6aXBWjC43DI"
+    },
+    {
+      "global_n": 58,
+      "season": 1,
+      "season_ep": 44,
+      "filename": "058.Magic food for kids  English stories for children  Steve and Maggie from Wow English TV.mp3",
+      "title": "Magic food for kids  English stories for children  Steve and Maggie from Wow English TV",
+      "fids": [
+        "~1ec0AKLlfaAIGw6mU_PEXuBCpBj43iq3wviWbCprxOEdzyGuCAw3ZNA98NivucGi-vurhWbDH9-ZZogdCpQU2ag"
+      ],
+      "fid": "~1ec0AKLlfaAIGw6mU_PEXuBCpBj43iq3wviWbCprxOEdzyGuCAw3ZNA98NivucGi-vurhWbDH9-ZZogdCpQU2ag"
+    },
+    {
+      "global_n": 60,
+      "season": 1,
+      "season_ep": 45,
+      "filename": "060.Funny Trip for Kids + MORE Stories for Children with Steve and Maggie  Learn English Wow English TV 智美教育.mp3",
+      "title": "Funny Trip for Kids + MORE Stories for Children with Steve and Maggie  Learn English Wow English TV 智美教育",
+      "fids": [
+        "~1BIsghX0IgGQVvPZpTWVuJ8v4KCWVdzIhiCkkzvyvcgtzwt1VSzdBUXsryegLLfSU0UTxra05i3JUJ0q9V_28Sw"
+      ],
+      "fid": "~1BIsghX0IgGQVvPZpTWVuJ8v4KCWVdzIhiCkkzvyvcgtzwt1VSzdBUXsryegLLfSU0UTxra05i3JUJ0q9V_28Sw"
+    },
+    {
+      "global_n": 63,
+      "season": 1,
+      "season_ep": 46,
+      "filename": "063.Hide and Seek + Ice Cream + MORE Stories for Kids  Learn English  Steve and Maggie Wow English TV 智美教育.mp3",
+      "title": "Hide and Seek + Ice Cream + MORE Stories for Kids  Learn English  Steve and Maggie Wow English TV 智美教育",
+      "fids": [
+        "~1zQxYGB36e2kaNwSKLkg-olhUvQycCSSvzjUe01d8eF5pxvGDdc4MaKR9kNg2kwCJo6WCV7U6svXRNLNTg-Ou_c"
+      ],
+      "fid": "~1zQxYGB36e2kaNwSKLkg-olhUvQycCSSvzjUe01d8eF5pxvGDdc4MaKR9kNg2kwCJo6WCV7U6svXRNLNTg-Ou_c"
+    },
+    {
+      "global_n": 64,
+      "season": 1,
+      "season_ep": 47,
+      "filename": "064.Opening Christmas Presents with Steve and Maggie  Stories for Kids  Speaking Wow English TV.mp3",
+      "title": "Opening Christmas Presents with Steve and Maggie  Stories for Kids  Speaking Wow English TV",
+      "fids": [
+        "~1tCqiGnn62oI7THDXd_ABFeSddKhrm5bAzYLMEKLKsp331I5dqLJapoIG3BZnaM0O7eoaS7f1WCtfjzS-Dm62S0"
+      ],
+      "fid": "~1tCqiGnn62oI7THDXd_ABFeSddKhrm5bAzYLMEKLKsp331I5dqLJapoIG3BZnaM0O7eoaS7f1WCtfjzS-Dm62S0"
+    },
+    {
+      "global_n": 65,
+      "season": 1,
+      "season_ep": 48,
+      "filename": "065.Hide and Seek + MORE English Stories for Kids from Steve and Maggie  Wow English TV 智美教育.mp3",
+      "title": "Hide and Seek + MORE English Stories for Kids from Steve and Maggie  Wow English TV 智美教育",
+      "fids": [
+        "~1xleWaqUBrJwH4aWVzp4S-8vMHi9aI2roNarPUzBCyxkK741o81pl3zXlH9g3-S4Geo-MWvcSsX4mESp63wYIUE",
+        "~1kXKdnZ-FjyEtY9130ggk4tvsINM4AaSmjR4ZwOM-mtl8qWM5I6pP56woI6Ogxf9UzxZXeOpsRta2SPHqwZgT4Y"
+      ],
+      "fid": "~1xleWaqUBrJwH4aWVzp4S-8vMHi9aI2roNarPUzBCyxkK741o81pl3zXlH9g3-S4Geo-MWvcSsX4mESp63wYIUE"
+    },
+    {
+      "global_n": 68,
+      "season": 1,
+      "season_ep": 49,
+      "filename": "068.Perfect Marshmallow Pizza Story from Steve and Maggie NEW  Food for Kids Stories  Wow English TV.mp3",
+      "title": "Perfect Marshmallow Pizza Story from Steve and Maggie NEW  Food for Kids Stories  Wow English TV",
+      "fids": [
+        "~1nbiL5zi2z4ctR93kf35j9Q8tTPJbcZzPTXdX8qPoSRoiKcE9THUkT5LgXowCZ5K5esuJwS12YgmT96JbrIznx0"
+      ],
+      "fid": "~1nbiL5zi2z4ctR93kf35j9Q8tTPJbcZzPTXdX8qPoSRoiKcE9THUkT5LgXowCZ5K5esuJwS12YgmT96JbrIznx0"
+    },
+    {
+      "global_n": 70,
+      "season": 1,
+      "season_ep": 50,
+      "filename": "070.The Wheels On The Bus New!  English For Children  English For Kids  Songs from Wow English TV.mp3",
+      "title": "The Wheels On The Bus New!  English For Children  English For Kids  Songs from Wow English TV",
+      "fids": [
+        "~1lFbh9itCepQnrVtCVpIw2IBSjiTwgh-gAa-8ggkRJTQixqRZ-d9w9Jv7f5Z9mWOexjdoxK2nloMPJ4KBT1i9IY"
+      ],
+      "fid": "~1lFbh9itCepQnrVtCVpIw2IBSjiTwgh-gAa-8ggkRJTQixqRZ-d9w9Jv7f5Z9mWOexjdoxK2nloMPJ4KBT1i9IY"
+    },
+    {
+      "global_n": 73,
+      "season": 1,
+      "season_ep": 51,
+      "filename": "073.Playground for Kids  New House for Steve and Maggie Magic  Wow English TV 智美教育.mp3",
+      "title": "Playground for Kids  New House for Steve and Maggie Magic  Wow English TV 智美教育",
+      "fids": [
+        "~1DXkGbJvIkoA4MKYLaXE5CKlUkLX6bBJGVf6KepHnjA9OjNH5odKYehReCZP1csn7phx8TCp0eSLV11mSbYUjGA",
+        "~1EQE1BiG7hGUVDQ5bOYPKz8r7-lypleuB7Ecx_0wEZd1f9VgsdKpzNzRTaFl5jfJ0h-eD243cl0C_N9urwk0BUM"
+      ],
+      "fid": "~1DXkGbJvIkoA4MKYLaXE5CKlUkLX6bBJGVf6KepHnjA9OjNH5odKYehReCZP1csn7phx8TCp0eSLV11mSbYUjGA"
+    },
+    {
+      "global_n": 75,
+      "season": 1,
+      "season_ep": 52,
+      "filename": "075.Potty Training with Steve and Maggie  Stories and Songs for Kids from Wow English TV  Potty Song 智美教育.mp3",
+      "title": "Potty Training with Steve and Maggie  Stories and Songs for Kids from Wow English TV  Potty Song 智美教育",
+      "fids": [
+        "~1EfBYhBSIjJQxacqcGm9staLLR67_q7cGesySd41esEnqd_0u5cY4dZkbjzwpnFDK8vBQomSuTqRYBrVRTqehrg",
+        "~1Y-6hROy0MJAoGt9fzdSanpaS3iFrBwYjjD11HHppBioLA9t-Smj2vkATuxTI60iQkFef-EKQUkZLCAMitJTFMk"
+      ],
+      "fid": "~1EfBYhBSIjJQxacqcGm9staLLR67_q7cGesySd41esEnqd_0u5cY4dZkbjzwpnFDK8vBQomSuTqRYBrVRTqehrg"
+    },
+    {
+      "global_n": 76,
+      "season": 1,
+      "season_ep": 53,
+      "filename": "076.Rainbow Colors Story for Children from Steve and Maggie  Wow English TV.mp3",
+      "title": "Rainbow Colors Story for Children from Steve and Maggie  Wow English TV",
+      "fids": [
+        "~1SAn_Rmr6rIgDLXYkgYdj6OeFPgIL8fld_3CisuTPmmRPC3PljNWaYsX3-gy18dlQMrhvai74fTTJ8VeQ-SRo40",
+        "~1SlF2ClotPR87fA3Z5W13pqw_lt5eqIKbaQkKpMLSoJ-pl_wLCsGuZkLWHfiIgkptmeSKaL-wynxNjbTaSjcHys"
+      ],
+      "fid": "~1SAn_Rmr6rIgDLXYkgYdj6OeFPgIL8fld_3CisuTPmmRPC3PljNWaYsX3-gy18dlQMrhvai74fTTJ8VeQ-SRo40"
+    },
+    {
+      "global_n": 77,
+      "season": 1,
+      "season_ep": 54,
+      "filename": "077.Kids Toys + MORE Play Stories for Kids about Toys from Steve and Maggie  Wow English TV.mp3",
+      "title": "Kids Toys + MORE Play Stories for Kids about Toys from Steve and Maggie  Wow English TV",
+      "fids": [
+        "~1EKXjCLDKafQmeBYj0sqnega9uxWhHY2idaaJPVBuvGmd1bmMFDprc8a6689Iiag9RDFL_-Ye8407Ttv81BEqpg",
+        "~1sKpIchE8Dwovaa1aLbSh8Q01oHivWRhMMwKocmYWUQRk_c79Iy0Dnf7Gm_zEOZc95afTp5ATcSYkccJuqVq85I"
+      ],
+      "fid": "~1EKXjCLDKafQmeBYj0sqnega9uxWhHY2idaaJPVBuvGmd1bmMFDprc8a6689Iiag9RDFL_-Ye8407Ttv81BEqpg"
+    },
+    {
+      "global_n": 80,
+      "season": 1,
+      "season_ep": 55,
+      "filename": "080.Lego Toy Train Story + MORE  Stories for Kids from Steve and Maggie  Wow English TV.mp3",
+      "title": "Lego Toy Train Story + MORE  Stories for Kids from Steve and Maggie  Wow English TV",
+      "fids": [
+        "~17PWgKyJMnocbHuc46qJGklzBhCAtAvFZX4XJ7a9Nj9uSbHkTaAOeIp3m-XfVkxCt245Ca2BBlbDFYpkhsn3zho",
+        "~1iODMhPshmcciVi7mgZ6gx0GdxKUOVid22nOoL2KPmBlWt2LHXH32lT74B-Ikdl_c0W4e5VfU5AMJsyAi6d77-Y"
+      ],
+      "fid": "~17PWgKyJMnocbHuc46qJGklzBhCAtAvFZX4XJ7a9Nj9uSbHkTaAOeIp3m-XfVkxCt245Ca2BBlbDFYpkhsn3zho"
+    },
+    {
+      "global_n": 82,
+      "season": 1,
+      "season_ep": 56,
+      "filename": "082.Maggie Magic Stories for Kids from Steve and Maggie  Learning Speaking Wow English TV 智美教育.mp3",
+      "title": "Maggie Magic Stories for Kids from Steve and Maggie  Learning Speaking Wow English TV 智美教育",
+      "fids": [
+        "~14xzvntgk0Lky1pp3VSa5dNfTJk2MRJaFF9UuFFKdB7lI1I8JHrM_cmivjvnxaf1YSJZznmqt-_L_Szk_GURQOM"
+      ],
+      "fid": "~14xzvntgk0Lky1pp3VSa5dNfTJk2MRJaFF9UuFFKdB7lI1I8JHrM_cmivjvnxaf1YSJZznmqt-_L_Szk_GURQOM"
+    },
+    {
+      "global_n": 83,
+      "season": 1,
+      "season_ep": 57,
+      "filename": "083.Sweet Dreams and Body Parts Story with Steve and Maggie  Speak with Wow English TV.mp3",
+      "title": "Sweet Dreams and Body Parts Story with Steve and Maggie  Speak with Wow English TV",
+      "fids": [
+        "~1IIMc8goT6kANHfKSCN3lsZkaP9Y8rGqry2cxyAwZayPG1isjKP2KtpmCUUU9iOmuNU2nPMPlvjvYi_TIvyNiEU"
+      ],
+      "fid": "~1IIMc8goT6kANHfKSCN3lsZkaP9Y8rGqry2cxyAwZayPG1isjKP2KtpmCUUU9iOmuNU2nPMPlvjvYi_TIvyNiEU"
+    },
+    {
+      "global_n": 85,
+      "season": 1,
+      "season_ep": 58,
+      "filename": "085.Magic Animals in a Tent + MORE English Stories for Kids with Steve and Maggie  Learn Wow English TV.mp3",
+      "title": "Magic Animals in a Tent + MORE English Stories for Kids with Steve and Maggie  Learn Wow English TV",
+      "fids": [
+        "~1AnE4IfOkWXoPA4T5bWfDADFVkUJrUvPpLHNOnB7TC4MRNtXX1fco8cuVTHd0lhLAokD1MF2USaY1GplpyX3C6U",
+        "~1jRubdgF47H4yDSnk0cJmasWfpQkyZ8RZHA8yst7_NhBu5bFzcw__CN_iNeG8InsLGXsUoQuSaLPaVwLNqLeyeU"
+      ],
+      "fid": "~1AnE4IfOkWXoPA4T5bWfDADFVkUJrUvPpLHNOnB7TC4MRNtXX1fco8cuVTHd0lhLAokD1MF2USaY1GplpyX3C6U"
+    },
+    {
+      "global_n": 86,
+      "season": 1,
+      "season_ep": 59,
+      "filename": "086.Magic Classroom Objects + MORE Stories from Steve and Maggie with Bobby  Wow English TV 智美教育.mp3",
+      "title": "Magic Classroom Objects + MORE Stories from Steve and Maggie with Bobby  Wow English TV 智美教育",
+      "fids": [
+        "~1CixY6GLcKgAShMwEQ4NmRl09opi_x0NEwjRVbgDI5QkLnIMptfOsXUnnUKYNPQdHOcoClMgS4_qreTbzOt31Ao"
+      ],
+      "fid": "~1CixY6GLcKgAShMwEQ4NmRl09opi_x0NEwjRVbgDI5QkLnIMptfOsXUnnUKYNPQdHOcoClMgS4_qreTbzOt31Ao"
+    },
+    {
+      "global_n": 87,
+      "season": 1,
+      "season_ep": 60,
+      "filename": "087.Magic Clothes + MORE Clothes Stories from Steve and Maggie  Learn English speaking  Wow English TV.mp3",
+      "title": "Magic Clothes + MORE Clothes Stories from Steve and Maggie  Learn English speaking  Wow English TV",
+      "fids": [
+        "~1bZ6cioxBeWUrTPQNBnC3nnavwJr5oltgjsi4D03TCrVSlbxGnLZOzN5k95THb6IxXaA3xKu1DXHZSy0-7RFO2k"
+      ],
+      "fid": "~1bZ6cioxBeWUrTPQNBnC3nnavwJr5oltgjsi4D03TCrVSlbxGnLZOzN5k95THb6IxXaA3xKu1DXHZSy0-7RFO2k"
+    },
+    {
+      "global_n": 88,
+      "season": 1,
+      "season_ep": 61,
+      "filename": "088.Twinkle Twinkle Little Star from Steve and Maggie  Stories for Kids  Wow English TV.mp3",
+      "title": "Twinkle Twinkle Little Star from Steve and Maggie  Stories for Kids  Wow English TV",
+      "fids": [
+        "~1RGUa38o3FRQVeqwlT7vyuTi_Qvcw79WwPND-uTx3Do6lbYHBgXWSmgxyTzj0xvn9KvXSn9fbq2MGkbl56sXZ2c"
+      ],
+      "fid": "~1RGUa38o3FRQVeqwlT7vyuTi_Qvcw79WwPND-uTx3Do6lbYHBgXWSmgxyTzj0xvn9KvXSn9fbq2MGkbl56sXZ2c"
+    },
+    {
+      "global_n": 90,
+      "season": 1,
+      "season_ep": 62,
+      "filename": "090.Wake up, Steve and Maggie Jobs for Kids NEW English Stories for Children  Learn Wow English TV.mp3",
+      "title": "Wake up, Steve and Maggie Jobs for Kids NEW English Stories for Children  Learn Wow English TV",
+      "fids": [
+        "~1xDpuQ_9OTRwReGQmUSz-uXu8Al3lAPZOAJFG3HaVdhaSoYXKLvLA4rEXWBqtflnaxY3GHinL79LsuGKthQPceY"
+      ],
+      "fid": "~1xDpuQ_9OTRwReGQmUSz-uXu8Al3lAPZOAJFG3HaVdhaSoYXKLvLA4rEXWBqtflnaxY3GHinL79LsuGKthQPceY"
+    },
+    {
+      "global_n": 92,
+      "season": 1,
+      "season_ep": 63,
+      "filename": "092.Magic Healthy Food Stories for Kids from Steve and Maggie + MORE  Speaking Wow English TV.mp3",
+      "title": "Magic Healthy Food Stories for Kids from Steve and Maggie + MORE  Speaking Wow English TV",
+      "fids": [
+        "~1i452y9DHgvABVFt9Lcg1xd4AdhOrn9Gq_HZqyu7InCmwiW8lLghv-sxY_23-9pDPPZHQAlz3bZKSHQRMr5z3DY",
+        "~1YrtpX2J1_R0xCUpYRPLVoAgIOcbmCTY1Gpz0lHxwSWRKij7XhqThhZ2ezWKvlV5uxEDH5kJ9EOxk1GGmdzxAZU"
+      ],
+      "fid": "~1i452y9DHgvABVFt9Lcg1xd4AdhOrn9Gq_HZqyu7InCmwiW8lLghv-sxY_23-9pDPPZHQAlz3bZKSHQRMr5z3DY"
+    },
+    {
+      "global_n": 95,
+      "season": 1,
+      "season_ep": 64,
+      "filename": "095.Magic Monster Stories for Kids from Steve and Maggie + MORE  Wow English TV 智美教育.mp3",
+      "title": "Magic Monster Stories for Kids from Steve and Maggie + MORE  Wow English TV 智美教育",
+      "fids": [
+        "~1V_43BsgqGr4f7xwQlX-C5hnfDsTp00JfIjjtLM2lFJIHciWRWLuqPq8Kb9FeAbmrOcU5kSNa56ICfCmOXWe3jE",
+        "~1GlZqESlOpcQbN8AVznwTvawIM94meWxHtKb_EvlKqksqhEVFzaZGfTrlvyWgzxKt_AsqnH5RMXyN0jvyotFmN4"
+      ],
+      "fid": "~1V_43BsgqGr4f7xwQlX-C5hnfDsTp00JfIjjtLM2lFJIHciWRWLuqPq8Kb9FeAbmrOcU5kSNa56ICfCmOXWe3jE"
+    },
+    {
+      "global_n": 97,
+      "season": 1,
+      "season_ep": 65,
+      "filename": "097.Magic Race + Wheels on the Bus + MORE Stories for Kids from Steve and Maggie  Wow English TV.mp3",
+      "title": "Magic Race + Wheels on the Bus + MORE Stories for Kids from Steve and Maggie  Wow English TV",
+      "fids": [
+        "~1WuWKQ5qFq5cNqUXOVSc8MfU_mjoodU7g1nfmlGGZpmRxN9ipMvgwwIFB9fTEJamen3TmJoVCu9pJAZ9jan7mjw",
+        "~1fXirSVjscCw027aEMPWP6QyBLdUCMJE2OoF3mhIzYUT3duyvp4tQxR7pYG8dYxzaPuSkmXTWRTo3IfFTbBNUc4"
+      ],
+      "fid": "~1WuWKQ5qFq5cNqUXOVSc8MfU_mjoodU7g1nfmlGGZpmRxN9ipMvgwwIFB9fTEJamen3TmJoVCu9pJAZ9jan7mjw"
+    },
+    {
+      "global_n": 100,
+      "season": 1,
+      "season_ep": 66,
+      "filename": "100.Magic Toys for Kids + MORE  Steve and Maggie  Magic English for Kids by Wow English TV.mp3",
+      "title": "Magic Toys for Kids + MORE  Steve and Maggie  Magic English for Kids by Wow English TV",
+      "fids": [
+        "~1v7dVnypzfW0kjMwMw8wxAhTp9NnRXNczSbnl74qfi4KZhx7Rrt5x8yvRR8fNQRk8iQewPFMv-yh-TT1VjNjNEU"
+      ],
+      "fid": "~1v7dVnypzfW0kjMwMw8wxAhTp9NnRXNczSbnl74qfi4KZhx7Rrt5x8yvRR8fNQRk8iQewPFMv-yh-TT1VjNjNEU"
+    },
+    {
+      "global_n": 104,
+      "season": 1,
+      "season_ep": 67,
+      "filename": "104.Monster for Kids + MORE Magic English Stories for Children by Steve and Maggie from Wow English TV 智美教育.mp3",
+      "title": "Monster for Kids + MORE Magic English Stories for Children by Steve and Maggie from Wow English TV 智美教育",
+      "fids": [
+        "~1PqmmR2WJSIgsbYpYH-GH_6dd4qn963rYO1Ay59_qbJT0EHgPP13trSFwzDlPrJIJfShM2mx1rmn7dDcsCCzFvE"
+      ],
+      "fid": "~1PqmmR2WJSIgsbYpYH-GH_6dd4qn963rYO1Ay59_qbJT0EHgPP13trSFwzDlPrJIJfShM2mx1rmn7dDcsCCzFvE"
+    },
+    {
+      "global_n": 111,
+      "season": 1,
+      "season_ep": 68,
+      "filename": "111.Play Kids  Play with Steve and Maggie  Toys for Kids on Wow English TV.mp3",
+      "title": "Play Kids  Play with Steve and Maggie  Toys for Kids on Wow English TV",
+      "fids": [
+        "~1ycCTrc61fT0pwJfbdVUF4uUCrpLkx354SPEC5z3p6_PlARqRbwM9rT7ocN-pXhpkzTYVIoj2VHt4IkL52-Xakg"
+      ],
+      "fid": "~1ycCTrc61fT0pwJfbdVUF4uUCrpLkx354SPEC5z3p6_PlARqRbwM9rT7ocN-pXhpkzTYVIoj2VHt4IkL52-Xakg"
+    },
+    {
+      "global_n": 116,
+      "season": 1,
+      "season_ep": 69,
+      "filename": "116.Safari Animals, Monsters + MORE Stories from Steve and Maggie  Speaking Wow English TV.mp3",
+      "title": "Safari Animals, Monsters + MORE Stories from Steve and Maggie  Speaking Wow English TV",
+      "fids": [
+        "~10m0MoN1pjW4K43ml-xNAa66CgojGxC3mDGEAP3q89L8pV1pNbDnjvCuLUkEbw2DLz57jCLPcrZlv1uiQ2kb1_o"
+      ],
+      "fid": "~10m0MoN1pjW4K43ml-xNAa66CgojGxC3mDGEAP3q89L8pV1pNbDnjvCuLUkEbw2DLz57jCLPcrZlv1uiQ2kb1_o"
+    },
+    {
+      "global_n": 117,
+      "season": 1,
+      "season_ep": 70,
+      "filename": "117.Sea and Farm Animals for Kids  English Stories from Steve and Maggie  Wow English TV.mp3",
+      "title": "Sea and Farm Animals for Kids  English Stories from Steve and Maggie  Wow English TV",
+      "fids": [
+        "~1Ku6t_pCxt7AZ9OEylnzZos383kDe7UjnecTbEYVr-2q911aW0fCvxhq8Hdi8-nmMiel8NE_yO1ehnoDD3mfS3g"
+      ],
+      "fid": "~1Ku6t_pCxt7AZ9OEylnzZos383kDe7UjnecTbEYVr-2q911aW0fCvxhq8Hdi8-nmMiel8NE_yO1ehnoDD3mfS3g"
+    },
+    {
+      "global_n": 121,
+      "season": 1,
+      "season_ep": 71,
+      "filename": "121.Sports for Kids  Magic Stories from Steve and Maggie  Wow English TV 智美教育.mp3",
+      "title": "Sports for Kids  Magic Stories from Steve and Maggie  Wow English TV 智美教育",
+      "fids": [
+        "~1uPNsQyujLXoLmvjF8T5aS2bfBwzaCds1GL_BFofmhtM0rtyab9CccPLSpxWkJ-BERtQ6ctPTDT9Xo8J8LrJ0CQ"
+      ],
+      "fid": "~1uPNsQyujLXoLmvjF8T5aS2bfBwzaCds1GL_BFofmhtM0rtyab9CccPLSpxWkJ-BERtQ6ctPTDT9Xo8J8LrJ0CQ"
+    },
+    {
+      "global_n": 131,
+      "season": 1,
+      "season_ep": 72,
+      "filename": "131.Toy Car Stories from Steve and Maggie + Learn MORE Words  Free Speaking Wow English TV.mp3",
+      "title": "Toy Car Stories from Steve and Maggie + Learn MORE Words  Free Speaking Wow English TV",
+      "fids": [
+        "~1Vu7fDe8JvYQ88USy6aQ3FDOHoJNKZzrpzMLjylOsB0po7XJ80QiNC6ncxc713jksmSz87XjXxpsEaM3sggNCYE"
+      ],
+      "fid": "~1Vu7fDe8JvYQ88USy6aQ3FDOHoJNKZzrpzMLjylOsB0po7XJ80QiNC6ncxc713jksmSz87XjXxpsEaM3sggNCYE"
+    },
+    {
+      "global_n": 132,
+      "season": 1,
+      "season_ep": 73,
+      "filename": "132.Toy Cars for Kids from Steve and Maggie + MORE Stories and Lessons  Free Speaking Wow English TV.mp3",
+      "title": "Toy Cars for Kids from Steve and Maggie + MORE Stories and Lessons  Free Speaking Wow English TV",
+      "fids": [
+        "~1xQT8S9xe1JoIh7kblpLbsEOfID2TZ1f1MN0skhLObFA9wEUQnzfvGs3jsuwvRn4lswpbe0LE16-AXJbTUZrU3s"
+      ],
+      "fid": "~1xQT8S9xe1JoIh7kblpLbsEOfID2TZ1f1MN0skhLObFA9wEUQnzfvGs3jsuwvRn4lswpbe0LE16-AXJbTUZrU3s"
+    },
+    {
+      "global_n": 134,
+      "season": 1,
+      "season_ep": 74,
+      "filename": "134.Wake up, Brush your Teeth and Johny, Johny Stories for Kids from Steve and Maggie  Wow English TV 智美教育.mp3",
+      "title": "Wake up, Brush your Teeth and Johny, Johny Stories for Kids from Steve and Maggie  Wow English TV 智美教育",
+      "fids": [
+        "~1SsQTKCm2g285Lki4F3PXntVToLYlJnTYR8IEWkoccgVq-C_PHxmEHWe59AqjlX1UXRK58QuoOgTPSbnfTYo3Kw"
+      ],
+      "fid": "~1SsQTKCm2g285Lki4F3PXntVToLYlJnTYR8IEWkoccgVq-C_PHxmEHWe59AqjlX1UXRK58QuoOgTPSbnfTYo3Kw"
+    },
+    {
+      "global_n": 136,
+      "season": 1,
+      "season_ep": 75,
+      "filename": "136.What colour is it, kids Color Stories for children with Steve and Maggie  Speak Wow English TV.mp3",
+      "title": "What colour is it, kids Color Stories for children with Steve and Maggie  Speak Wow English TV",
+      "fids": [
+        "~1ikTaXPhbbbYO7Vx-F9TsSZQkMzQIh32ZmGdYHz2pLfPFuzzEfs8VLSx_W63v_D-rjZkS80u7RF-RZvJwFRJqLo"
+      ],
+      "fid": "~1ikTaXPhbbbYO7Vx-F9TsSZQkMzQIh32ZmGdYHz2pLfPFuzzEfs8VLSx_W63v_D-rjZkS80u7RF-RZvJwFRJqLo"
+    },
+    {
+      "global_n": 138,
+      "season": 1,
+      "season_ep": 76,
+      "filename": "138.Wheels On The Bus Plus MORE Funny Stories for Children  Steve and Maggie from Wow English TV.mp3",
+      "title": "Wheels On The Bus Plus MORE Funny Stories for Children  Steve and Maggie from Wow English TV",
+      "fids": [
+        "~1a5KNaJ-UAcMHmJU2kC3R9J-NxwBN972nc5IfxhqIKWAvrtxEueKCps7mRPzGiO1SAdSgM50LvM1gvxvURTAZiU"
+      ],
+      "fid": "~1a5KNaJ-UAcMHmJU2kC3R9J-NxwBN972nc5IfxhqIKWAvrtxEueKCps7mRPzGiO1SAdSgM50LvM1gvxvURTAZiU"
+    },
+    {
+      "global_n": 139,
+      "season": 1,
+      "season_ep": 77,
+      "filename": "139.Wheels On The Bus and MORE from Steve and Maggie  Short Stories for Kids by Wow English TV.mp3",
+      "title": "Wheels On The Bus and MORE from Steve and Maggie  Short Stories for Kids by Wow English TV",
+      "fids": [
+        "~1XRNQQ1sw_uY7eXyo1mfEP4KpmCKyYEj4ZGY7FmSvmWjw0t1GZtovJ8UwzLHkYhuasA-n1VVeOhbMpyyYQtIf7M"
+      ],
+      "fid": "~1XRNQQ1sw_uY7eXyo1mfEP4KpmCKyYEj4ZGY7FmSvmWjw0t1GZtovJ8UwzLHkYhuasA-n1VVeOhbMpyyYQtIf7M"
+    },
+    {
+      "global_n": 143,
+      "season": 1,
+      "season_ep": 78,
+      "filename": "143.Wild Animal Stories for Kids  Magic Animals from Steve and Maggie  Story for Kids  Wow English TV.mp3",
+      "title": "Wild Animal Stories for Kids  Magic Animals from Steve and Maggie  Story for Kids  Wow English TV",
+      "fids": [
+        "~10VlkA_V16ag9NAwab96UW5EW6CIxeR7XkZIPpBgmzt1sNGQ55h2iKSenixKOEtJXqcCRfP1vws_ouL38KwjjTY"
+      ],
+      "fid": "~10VlkA_V16ag9NAwab96UW5EW6CIxeR7XkZIPpBgmzt1sNGQ55h2iKSenixKOEtJXqcCRfP1vws_ouL38KwjjTY"
+    }
+  ]
+}

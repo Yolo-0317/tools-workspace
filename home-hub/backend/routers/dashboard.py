@@ -38,6 +38,15 @@ async def portfolio_current() -> dict[str, Any]:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
+@router.get("/portfolio/workbench")
+async def portfolio_workbench() -> dict[str, Any]:
+    """账户操作台：执行卡快照、行动队列与主题暴露。"""
+    try:
+        return stock_bridge.load_portfolio_workbench()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
 @router.get("/monitor/rules")
 async def monitor_rules(live: bool = True) -> dict[str, Any]:
     try:

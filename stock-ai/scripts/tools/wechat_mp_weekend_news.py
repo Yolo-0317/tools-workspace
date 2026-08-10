@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import re
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -32,6 +33,97 @@ def format_hot_stock_anchor_label(anchor: date) -> str:
     return f"{anchor.month}月{anchor.day}日收盘"
 
 
+def _weekday_cn(d: date) -> str:
+    return "周" + "一二三四五六日"[d.weekday()]
+
+
+@dataclass(frozen=True)
+class NewsTimeContext:
+    """热股 news 稿的时间口径（休市/收盘批次共用）。"""
+
+    now: datetime
+    anchor_date: date
+    anchor_label: str
+    anchor_weekday_cn: str
+    today_weekday_cn: str
+    next_trade_date: date
+    next_trade_weekday_cn: str
+    is_off_market: bool
+    is_weekend_batch: bool
+
+    @property
+    def verify_auction_phrase(self) -> str:
+        return f"{self.next_trade_weekday_cn}竞价"
+
+    @property
+    def verify_title_suffix(self) -> str:
+        return f"{self.next_trade_weekday_cn}怎么验"
+
+    @property
+    def intro_lede(self) -> str:
+        if self.is_off_market:
+            return (
+                f"按{self.anchor_weekday_cn}人气序扫一遍；周末消息少的票，"
+                f"重点盯{self.next_trade_weekday_cn}竞价与首小时量价。"
+            )
+        return (
+            "按收盘人气序扫一遍；消息少的票，"
+            f"重点盯{self.next_trade_weekday_cn}竞价与首小时量价。"
+        )
+
+    @property
+    def llm_date_rule(self) -> str:
+        today = self.now.strftime("%Y-%m-%d")
+        return (
+            f"发稿日 {today} {self.today_weekday_cn}。"
+            f"验证动作写 {self.next_trade_weekday_cn}竞价或首小时，"
+            f"勿写已过去的{self.today_weekday_cn}竞价。"
+        )
+
+
+def build_news_time_context(*, now: datetime | None = None) -> NewsTimeContext:
+    from stock_ai.trading_calendar import next_a_share_trade_date
+
+    now = now or datetime.now(TZ)
+    today = now.date()
+    anchor = resolve_hot_stock_anchor_date(now=now)
+    anchor_label = format_hot_stock_anchor_label(anchor)
+    batch = os.getenv("WECHAT_MP_NEWS_BATCH", "").strip()
+    is_weekend_batch = batch == "weekend"
+    is_off_market = is_weekend_batch or batch != "evening" and _is_off_market(today)
+    if batch == "evening":
+        is_off_market = False
+    next_trade = next_a_share_trade_date(on_or_after=today + timedelta(days=1))
+    return NewsTimeContext(
+        now=now,
+        anchor_date=anchor,
+        anchor_label=anchor_label,
+        anchor_weekday_cn=_weekday_cn(anchor),
+        today_weekday_cn=_weekday_cn(today),
+        next_trade_date=next_trade,
+        next_trade_weekday_cn=_weekday_cn(next_trade),
+        is_off_market=is_off_market,
+        is_weekend_batch=is_weekend_batch,
+    )
+
+
+def _is_off_market(d: date) -> bool:
+    from stock_ai.trading_calendar import is_off_market_day
+
+    return is_off_market_day(d)
+
+
+def fix_stale_auction_weekday(text: str, ctx: NewsTimeContext) -> str:
+    """收盘批次已过完当日竞价时，纠正 LLM 误写的「今周X竞价」。"""
+    if not text or ctx.is_off_market:
+        return text
+    stale = f"{ctx.today_weekday_cn}竞价"
+    fresh = ctx.verify_auction_phrase
+    if stale in text and stale != fresh:
+        return text.replace(stale, fresh)
+    return text
+
+
 def _env_int(name: str, default: int) -> int:
     try:
         return int(os.getenv(name) or default)
@@ -46,6 +138,24 @@ def weekend_hot_stock_count() -> int:
 def weekend_news_hours() -> int:
     """周六+周日窗口（小时）。"""
     return max(24, min(96, _env_int("WECHAT_MP_WEEKEND_NEWS_HOURS", 48)))
+
+
+def weekday_hot_stock_news_hours() -> int:
+    """交易日收盘批次：回溯近若干小时快讯。"""
+    return max(12, min(72, _env_int("WECHAT_MP_WEEKDAY_HOT_NEWS_HOURS", 36)))
+
+
+def hot_stock_news_hours() -> int:
+    """按批次 env（WECHAT_MP_NEWS_BATCH）或 HOT_STOCK_NEWS_HOURS 覆盖。"""
+    override = (os.getenv("WECHAT_MP_HOT_STOCK_NEWS_HOURS") or "").strip()
+    if override:
+        return max(12, min(96, int(override)))
+    batch = (os.getenv("WECHAT_MP_NEWS_BATCH") or "").strip()
+    if batch == "weekend":
+        return weekend_news_hours()
+    if batch == "evening":
+        return weekday_hot_stock_news_hours()
+    return weekday_hot_stock_news_hours()
 
 
 def weekend_kuaixun_pool_limit() -> int:
@@ -187,11 +297,13 @@ def fetch_weekend_kuaixun_pool(
     return pool, engagement
 
 
-def synthetic_display_title(stock: HotStockRow) -> str:
-    """周末无快讯时，按涨跌幅与人气位生成列表小标题（非模板句）。"""
+def synthetic_display_title(stock: HotStockRow, *, ctx: NewsTimeContext | None = None) -> str:
+    """周末/收盘无快讯时，按涨跌幅与人气位生成列表小标题（非模板句）。"""
+    ctx = ctx or build_news_time_context()
     name = stock.name
     chg = stock.change_pct
     rank = stock.rank
+    verify = ctx.verify_title_suffix
     if chg >= 9.5:
         perf = "涨停级收涨"
     elif chg >= 5:
@@ -209,9 +321,9 @@ def synthetic_display_title(stock: HotStockRow) -> str:
     else:
         perf = "高位换手"
     if rank == 1:
-        return f"{name}人气榜首，{perf}周一怎么验"
+        return f"{name}人气榜首，{perf}{verify}"
     if rank <= 3:
-        return f"榜{rank}{name}{perf}，休市后盯什么"
+        return f"榜{rank}{name}{perf}，休市后盯什么" if ctx.is_off_market else f"榜{rank}{name}{perf}，收盘后盯什么"
     return f"{name}{perf}，人气第{rank}位"
 
 
@@ -221,15 +333,24 @@ def _synthetic_item_for_stock(
     now: datetime,
     anchor: date,
     anchor_label: str,
+    ctx: NewsTimeContext,
 ) -> dict[str, Any]:
-    """热股榜上有名、周末无该股单独快讯时，写休市观察（读者向，不含流水线术语）。"""
-    title = synthetic_display_title(stock)
+    """热股榜上有名、无该股单独快讯时，写休市/收盘观察（读者向，不含流水线术语）。"""
+    title = synthetic_display_title(stock, ctx=ctx)
     chg = stock.change_pct
-    chg_txt = f"周五收涨约 {chg:+.2f}%" if chg else "周五成交活跃"
+    chg_txt = (
+        f"{ctx.anchor_weekday_cn}收涨约 {chg:+.2f}%"
+        if chg
+        else f"{ctx.anchor_weekday_cn}成交活跃"
+    )
+    if ctx.is_off_market:
+        context = "休市期间消息面相对安静，就着榜单聊下一交易日怎么验证"
+    else:
+        context = "就着收盘人气榜聊下一交易日怎么验证"
     summary = (
-        f"周五东财人气榜第{stock.rank}位，{chg_txt}。"
-        f"休市两天消息面相对安静，就着榜单聊下一交易日怎么验证："
-        f"先看竞价是否还有资金接力，再看首小时量价是否与周五人气一致。"
+        f"东财人气榜第{stock.rank}位，{chg_txt}。"
+        f"{context}：先看{ctx.verify_auction_phrase}是否还有资金接力，"
+        f"再看首小时量价是否与人气一致。"
         f"具体催化仍看公司公告与行业动向，别单凭排名下注。"
     )
     return {
@@ -262,6 +383,7 @@ def match_hot_stocks_to_news(
     now = now or datetime.now(TZ)
     anchor = anchor or resolve_hot_stock_anchor_date(now=now)
     anchor_label = anchor_label or format_hot_stock_anchor_label(anchor)
+    ctx = build_news_time_context(now=now)
     used_hrefs: set[str] = set()
     out: list[dict[str, Any]] = []
 
@@ -281,7 +403,7 @@ def match_hot_stocks_to_news(
             pick = dict(scored[0][1])
         else:
             pick = _synthetic_item_for_stock(
-                stock, now=now, anchor=anchor, anchor_label=anchor_label
+                stock, now=now, anchor=anchor, anchor_label=anchor_label, ctx=ctx
             )
 
         href = _normalize_href(str(pick.get("href") or ""))

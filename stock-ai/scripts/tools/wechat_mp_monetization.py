@@ -7,12 +7,14 @@ import os
 import re
 from typing import Literal
 
-DraftKind = Literal["sector", "market", "news", "top5", "dragons", "workspace", "temp"]
+DraftKind = Literal["sector", "hotspot", "market", "news", "top5", "dragons", "workspace", "temp"]
 
 _DISCLAIMER_MARKS = (
-    "本文为作者个人投资日记",
+    "本文为作者个人复盘笔记",
+    "本文为作者个人市场信息整理",
     "本文为作者个人工程笔记",
     "本文为个人体验与信息整理",
+    "本文为作者个人投资日记",  # 旧稿兼容：拆分免责声明，新稿勿再使用
 )
 
 # 财经/科技垂直词（自然植入，勿堆砌；匹配高 eCPM + 搜一搜停留）
@@ -37,10 +39,12 @@ TRAFFIC_VERTICAL_WORDS = (
 
 # 按稿型优先检查的垂直词（traffic 清单 ≥ WECHAT_MP_VERTICAL_WORDS_MIN 个命中）
 VERTICAL_HINTS_BY_KIND: dict[str, tuple[str, ...]] = {
+    "hotspot": ("报道", "网友", "争议", "公开", "多方", "事件"),
+    "tv_review": ("报道", "网友", "争议", "公开", "多方", "事件"),
     "sector": ("产业链", "复盘", "结构", "量价", "行业"),
     "market": ("复盘", "结构", "盯盘", "避坑", "收盘"),
     "news": ("复盘", "盯盘", "避坑", "快讯"),
-    "top5": ("结构", "盯盘", "避坑", "攻略", "收盘信号"),
+    "top5": ("结构", "对照", "避坑", "复盘", "待验证"),
     "dragons": ("龙头", "梯队", "避坑", "复盘", "情绪"),
     "workspace": ("自动化", "脚本", "量化", "复盘"),
     "temp": ("自动化", "脚本", "CLI", "复盘"),
@@ -65,16 +69,22 @@ _MONETIZATION_PROMPT: dict[str, str] = {
         "【完读】导语预告递进阅读；条与条之间「·」轻过渡（成稿会补）；"
         "每条摘要+AI点评；第 3 条后宜分段跳读。"
     ),
+    "hotspot": (
+        "【阅读】标题前 15 字含可搜实体（案由/片名/事件/数字），表意完整；勿 #A股 打头。"
+        "【完读】纯段落长文；首段直接写人+事；社会争议呈现多方；"
+        "禁止导读腔、热榜播报、盘面三线对照套话；单段宜短。"
+        "【垂直词】自然出现报道/争议/公开信息等，勿堆砌财经词。"
+    ),
     "top5": (
-        "【阅读】公众号标题由系统生成（领衔股+只数句式），**正文禁止**复述该标题或「收盘信号出炉/明日盯啥」问句。"
+        "【阅读】公众号标题由系统生成（观察样本+结构句式），**正文禁止**复述操作指引型标题问句。"
         "【完读】「筛选名单」开篇须预告阅读路径（逐只拆→组合→待验证）；"
         "个股之间用简短过渡吊读（成稿会补「·」开头的衔接句，勿写「往下看」）；"
         "「待验证事项」末句用「若…则…谁先…」式可验证悬念；禁分数与买卖暗示。"
-        "【垂直词】正文声明观察池、非荐股。"
+        "【垂直词】正文声明观察样本、非推荐名单。"
     ),
     "dragons": (
-        "【阅读】公众号标题由系统生成（情绪{阶段}怎么玩？{龙头}{N}板还在榜），"
-        "**正文禁止**复述该标题或同构问句；开篇直接从「> 情绪与盘面」写数字事实。"
+        "【阅读】公众号标题由系统生成（情绪阶段+梯队/结构观察），"
+        "**正文禁止**复述「怎么玩/还在榜」类问句；开篇直接从「> 情绪与盘面」写数字事实。"
         "【完读】开篇数字+阅读路径；龙头拆解间「·」轻过渡；节间桥接；"
         "「明日计划与纪律」末句退潮/修复若则验证；650～1100 字。"
         "【垂直词】清单体/梯队表，利于收藏与搜一搜停留。"
@@ -96,8 +106,8 @@ _ENGAGEMENT_POOL: dict[str, tuple[str, ...]] = {
         "热点行业稿，你更信新闻催化还是盘面量价？欢迎交流。",
     ),
     "market": (
-        "看完结构判断，你明天更盯周期还是科技？留言说说。",
-        "指数涨、个股跌的日子，你一般怎么控节奏？欢迎交流。",
+        "看完结构判断，你更关注哪条产业链？留言说说。",
+        "指数与广度背离时，你一般怎么读结构？欢迎交流。",
     ),
     "news": (
         "十条里哪一条最可能影响你的板块？留言聊聊。",
@@ -108,8 +118,8 @@ _ENGAGEMENT_POOL: dict[str, tuple[str, ...]] = {
         "综合选股和单策略信号，你平时更信哪路？留言讨论。",
     ),
     "dragons": (
-        "退潮日你习惯空仓还是小仓试错？留言交流纪律。",
-        "空间板断板后，你盯梯队还是直接休息？说说你的做法。",
+        "退潮日你更关注梯队还是指数？留言交流观察角度。",
+        "空间板断板后，你更看广度还是高度？说说你的读法。",
     ),
     "workspace": (
         "你的收盘自动化是脚本还是定时任务？留言交换踩坑。",
@@ -118,6 +128,10 @@ _ENGAGEMENT_POOL: dict[str, tuple[str, ...]] = {
     "english_buddy": (
         "你家娃跟读更怕「说得慢」还是「说得不对」？留言聊聊。",
         "幼儿园课文你会自己贴进列表吗？欢迎交流踩坑。",
+    ),
+    "harryputter": (
+        "你试过 HarryPutter 这类句级听读吗？卡在哪一步留言说说。",
+        "文本和朗读音频英美式不一致时你怎么对齐？欢迎交流。",
     ),
     "temp": (
         "飞书自动化你更信 OpenAPI 还是官方 CLI？留言说说踩坑。",
@@ -129,6 +143,37 @@ _ENGAGEMENT_POOL: dict[str, tuple[str, ...]] = {
         "如果只能留一件小收纳，你会选哪类？",
     ),
 }
+
+_FOLLOW_HOOK_DEFAULT = (
+    "我们会继续整理社会与文娱热点；星标本号，下一篇不易漏看。"
+)
+
+# 微信审核违规：关注后回复关键词领资料类诱导
+_WRITING_REPLY_INDUCMENT_RES = (
+    re.compile(r"[。；;]?关注后回复[「『\"]?写作[」』\"]?[^。\n]*"),
+    re.compile(
+        r"[。；;]?回复[「『\"]?写作[」』\"]?[^。\n]*(?:笔记|技巧|资料|领取)[^。\n]*"
+    ),
+    re.compile(r"可领大模型辅助写作技巧笔记[。]?"),
+    re.compile(r"大模型辅助写作技巧笔记[。]?"),
+)
+
+# 阅读 → 关注（与留言问句、推荐 ♡ 分开；推荐流陌生读者主转化点）
+_FOLLOW_HOOK_BY_KIND: dict[str, str] = {
+    "hotspot": _FOLLOW_HOOK_DEFAULT,
+    "tv_review": _FOLLOW_HOOK_DEFAULT,
+    "tv": _FOLLOW_HOOK_DEFAULT,
+}
+
+_FOLLOW_HOOK_MARKERS: tuple[str, ...] = (
+    "星标本号",
+    "下一篇不易漏看",
+    "我们会继续整理社会与文娱热点",
+    "回复「写作」",
+    "大模型辅助写作",
+    "有讨论度的公共热点",
+    "我们会持续写有讨论度的",
+)
 
 
 def monetization_enabled() -> bool:
@@ -170,14 +215,47 @@ def recommend_hook_enabled() -> bool:
     return raw not in ("0", "false", "no", "off")
 
 
-_RECOMMEND_HOOK_MARKERS = ("推荐 ♡", "推荐♡", "点「推荐", "点右下角推荐")
+def follow_hook_enabled() -> bool:
+    raw = os.getenv("WECHAT_MP_FOLLOW_HOOK", "1").strip().lower()
+    return raw not in ("0", "false", "no", "off")
+
+
+# 社会热点 / 话题讨论不加财经号「推荐 ♡ / 复盘的朋友」引导
+_NO_RECOMMEND_HOOK_KINDS = frozenset({
+    "guba",
+    "hotspot",
+    "tv_review",
+    "tv",
+    "film",
+    "movie",
+})
+
+
+def recommend_hook_applies_to_kind(kind: str | None) -> bool:
+    return (kind or "").strip().lower() not in _NO_RECOMMEND_HOOK_KINDS
+
+
+_RECOMMEND_HOOK_MARKERS = (
+    "推荐 ♡",
+    "推荐♡",
+    "点「推荐",
+    "点右下角推荐",
+    "点文章下方「推荐」",
+)
 
 
 def default_recommend_hook_line() -> str:
     return (
         os.getenv("WECHAT_MP_RECOMMEND_HOOK_TEXT", "").strip()
-        or "若这篇对你有用，欢迎点文章下方「推荐 ♡」，也方便推给同样在复盘的朋友。"
+        or "若这篇对你有用，欢迎点文章下方「推荐」，也方便推给同样关心这类话题的朋友。"
     )
+
+
+def default_follow_hook_line(kind: str) -> str:
+    custom = os.getenv("WECHAT_MP_FOLLOW_HOOK_TEXT", "").strip()
+    if custom:
+        return custom
+    return _FOLLOW_HOOK_BY_KIND.get((kind or "").strip().lower(), "")
 
 
 def monetization_prompt_block(kind: str) -> str:
@@ -282,9 +360,53 @@ def append_engagement_hook(
     return f"{body.rstrip()}\n\n{hook}"
 
 
+def append_follow_hook(body: str, *, kind: str) -> str:
+    """文末引导关注（搜一搜陌生读者 → 关注 + 星标）。"""
+    k = (kind or "").strip().lower()
+    if not follow_hook_enabled() or k not in _FOLLOW_HOOK_BY_KIND:
+        return body
+    if any(m in body for m in _FOLLOW_HOOK_MARKERS):
+        return body
+    line = default_follow_hook_line(k)
+    if not line:
+        return body
+    return f"{body.rstrip()}\n\n{line}"
+
+
+def strip_writing_reply_inducement(text: str) -> str:
+    """去掉「关注/回复写作领笔记」类诱导（微信审核违规）。"""
+    if not text:
+        return text
+    out = text
+    for pat in _WRITING_REPLY_INDUCMENT_RES:
+        out = pat.sub("", out)
+    out = re.sub(r"。{2,}", "。", out)
+    out = re.sub(r"[；;]\s*$", "", out, flags=re.M)
+    return re.sub(r"\n{3,}", "\n\n", out).strip()
+
+
+def strip_follow_hook(body: str) -> str:
+    """去掉文末关注引导（repush / 旧稿兜底）。"""
+    if not body:
+        return body
+    body = strip_writing_reply_inducement(body)
+    lines = body.splitlines()
+    while lines:
+        last = lines[-1].strip()
+        if not last:
+            lines.pop()
+            continue
+        if any(m in last for m in _FOLLOW_HOOK_MARKERS):
+            lines.pop()
+            continue
+        break
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
+
+
 def append_recommend_hook(body: str, *, kind: str) -> str:
     """文末引导点「推荐 ♡」（朋友推荐流；非点赞/在看套路）。"""
-    del kind
+    if not recommend_hook_applies_to_kind(kind):
+        return body
     if not recommend_hook_enabled():
         return body
     if any(m in body for m in _RECOMMEND_HOOK_MARKERS):
@@ -295,17 +417,40 @@ def append_recommend_hook(body: str, *, kind: str) -> str:
     return f"{body.rstrip()}\n\n{line}"
 
 
+def strip_recommend_hook(body: str) -> str:
+    """去掉文末财经推荐引导（repush / 旧稿兜底）。"""
+    if not body:
+        return body
+    lines = body.splitlines()
+    while lines:
+        last = lines[-1].strip()
+        if not last:
+            lines.pop()
+            continue
+        if any(m in last for m in _RECOMMEND_HOOK_MARKERS) or "复盘的朋友" in last:
+            lines.pop()
+            continue
+        break
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
+
+
 def polish_for_traffic(
     body: str,
     *,
     kind: str,
     engagement_kind: str | None = None,
 ) -> str:
-    """成稿后处理：文末互动问句 + 推荐♡引导（不含免责声明）。"""
+    """成稿后处理：文末互动问句 + 星标关注 + 推荐♡引导（不含免责声明）。"""
     if not monetization_enabled():
         return body
+    k = (kind or "").strip().lower()
     body = append_engagement_hook(body, kind=kind, engagement_kind=engagement_kind)
-    return append_recommend_hook(body, kind=kind)
+    body = append_follow_hook(body, kind=kind)
+    if k in _NO_RECOMMEND_HOOK_KINDS:
+        body = strip_recommend_hook(body)
+        return strip_writing_reply_inducement(body)
+    body = append_recommend_hook(body, kind=kind)
+    return strip_writing_reply_inducement(body)
 
 
 def split_disclaimer(body: str) -> tuple[str, str]:
@@ -318,7 +463,8 @@ def split_disclaimer(body: str) -> tuple[str, str]:
 
 _TRAILING_DISCLAIMER_LINE_RE = re.compile(
     r"^(?:"
-    r"本文为作者个人投资日记|"
+    r"本文为作者个人复盘笔记|"
+    r"本文为作者个人市场信息整理|"
     r"本文为作者个人工程笔记|"
     r"本文为个人体验与信息整理|"
     r".*不构成投资建议.*|"
@@ -339,6 +485,8 @@ def _is_inline_disclaimer_line(line: str) -> bool:
     if "免责声明" in s and re.search(r"不构成|投资需谨慎|买卖推荐|仅供参考", s):
         return True
     if re.search(r"不构成任何投资|仅代表作者.*观点", s):
+        return True
+    if "不代表本号立场" in s and "公开报道" in s:
         return True
     return False
 

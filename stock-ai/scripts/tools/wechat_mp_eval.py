@@ -18,6 +18,7 @@ ensure_repo_root_on_path()
 
 TITLE_MAX = 32
 DIGEST_MAX = 128
+AI_FLAVOR_DRAFT_MAX = 20  # 可进草稿箱 / 推稿门禁默认 AI 味上限（0–100，越低越好）
 
 # 与 writing-guide / test_wechat_mp_workspace_article 对齐
 BANNED_AI_PHRASES: tuple[str, ...] = (
@@ -147,7 +148,13 @@ def _score_title(title: str, *, kind: str) -> DimensionScore:
     else:
         notes.append("标题过短，信息不足")
 
-    return DimensionScore("标题", min(score, 15), 15, notes)
+    score = min(score, 15)
+    from scripts.tools.wechat_mp_sousou_eval import sousou_title_score_adjust
+
+    score, sousou_notes = sousou_title_score_adjust(title, base_score=score)
+    notes.extend(sousou_notes)
+
+    return DimensionScore("标题", score, 15, notes)
 
 
 def _score_opening(body: str) -> DimensionScore:
@@ -192,7 +199,7 @@ def _count_section_heads(body: str, *, html: str = "") -> int:
     return n
 
 
-def _score_body(body: str, *, kind: str, html: str = "") -> DimensionScore:
+def _score_body(body: str, *, kind: str, html: str = "", title: str = "") -> DimensionScore:
     notes: list[str] = []
     score = 0
     paras = _paragraphs(body)
@@ -231,7 +238,9 @@ def _score_body(body: str, *, kind: str, html: str = "") -> DimensionScore:
 
     if kind in {"workspace", "temp"} and "工具工作区" in body:
         score += 3
-    elif kind in {"market", "top5", "dragons"} and re.search(r"[一二三四五六]、", body):
+    elif kind in {"market", "top5", "dragons", "sector", "news", "hotspot"} and re.search(
+        r"[一二三四五六]、|^\s*>", body, re.M
+    ):
         score += 3
     else:
         score += 1
@@ -239,7 +248,15 @@ def _score_body(body: str, *, kind: str, html: str = "") -> DimensionScore:
     if re.search(r"^·\s", body, re.M) or section_heads >= 2:
         score += 2
 
-    return DimensionScore("正文", min(score, 25), 25, notes)
+    score = min(score, 25)
+    from scripts.tools.wechat_mp_sousou_eval import sousou_body_score_adjust
+
+    score, sousou_notes = sousou_body_score_adjust(
+        body, title=title, kind=kind, base_score=score
+    )
+    notes.extend(sousou_notes)
+
+    return DimensionScore("正文", score, 25, notes)
 
 
 def _ai_flavor_penalty(body: str) -> tuple[int, list[str]]:
@@ -297,6 +314,8 @@ def _score_closing(body: str) -> DimensionScore:
     tail_blob = tail + body[-200:]
     if re.search(r"不构成投资|决策自负|市场有风险", tail_blob):
         score += 5
+    elif re.search(r"不代表本号立场|公开报道与网络讨论", tail_blob):
+        score += 5
     elif re.search(r"个人工程笔记|工程记录|技术分享", tail_blob):
         score += 5
     else:
@@ -336,7 +355,7 @@ def evaluate_article(
     dims = [
         _score_title(title, kind=kind),
         _score_opening(body_plain),
-        _score_body(body_plain, kind=kind, html=html_src),
+        _score_body(body_plain, kind=kind, html=html_src, title=title),
         _score_de_ai(body_plain),
         _score_closing(body_plain),
     ]
@@ -347,7 +366,7 @@ def evaluate_article(
 
     if compliance:
         verdict = "不合规（须先修）"
-    elif total >= 75 and flavor <= 40:
+    elif total >= 75 and flavor <= AI_FLAVOR_DRAFT_MAX:
         verdict = "可进草稿箱"
     elif total >= 60:
         verdict = "建议改稿后再推"
@@ -388,7 +407,19 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="公众号文章质量评分")
     parser.add_argument(
         "--kind",
-        choices=["market", "top5", "dragons", "workspace", "temp", "all"],
+        choices=[
+            "market",
+            "news",
+            "sector",
+            "hotspot",
+            "top5",
+            "dragons",
+            "workspace",
+            "temp",
+            "guba",
+            "tv_review",
+            "all",
+        ],
     )
     parser.add_argument("--file", type=str, help="纯文本/Markdown 正文文件")
     parser.add_argument("--title", type=str, default="")
@@ -396,6 +427,7 @@ def main() -> int:
     parser.add_argument("--min-score", type=int, default=0, help="低于此分返回 exit 1")
     parser.add_argument("--max-ai-flavor", type=int, default=100, help="AI味高于此返回 exit 1")
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--quiet", action="store_true", help="只输出总分与结论")
     parser.add_argument("--traffic", action="store_true", help="附加阅读量优化清单")
     parser.add_argument(
         "--edition",
@@ -413,7 +445,11 @@ def main() -> int:
         kinds = list(DAILY_DRAFT_KINDS) if args.kind == "all" else [args.kind]
         for k in kinds:
             try:
-                if k == "market" and args.edition:
+                if k == "news":
+                    from scripts.tools.wechat_mp_draft_batch import _peer_market_title
+
+                    art = build_article(k, peer_market_title=_peer_market_title())
+                elif k in {"market", "sector", "hotspot"} and args.edition:
                     art = build_article(k, edition=args.edition)
                 else:
                     art = build_article(k)
@@ -456,7 +492,9 @@ def main() -> int:
                     run_traffic_checklist,
                 )
 
-                edition = args.edition if rep.kind == "market" else None
+                edition = (
+                    args.edition if rep.kind in {"market", "sector", "hotspot"} else None
+                )
                 traffic = run_traffic_checklist(
                     title=rep.title,
                     digest=rep.digest,

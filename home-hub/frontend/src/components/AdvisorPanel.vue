@@ -9,11 +9,6 @@ const props = defineProps<{
 }>()
 
 const a = computed(() => props.advisor)
-const progressWidth = computed(() => {
-  const p = a.value?.progress_pct ?? 0
-  return `${Math.min(100, Math.max(0, p))}%`
-})
-
 const tierClass = computed(() => {
   const t = a.value?.position_tier ?? ''
   if (t === 'A') return 'tier-a'
@@ -44,24 +39,15 @@ const healthClass = computed(() => {
 
     <div v-if="!compact" class="recovery">
       <div class="recovery-labels">
-        <span>回本进度</span>
+        <span>交易资金纪律</span>
         <span class="recovery-nums">
-          ¥{{ fmtNum(a.total_assets, 0) }} / {{ fmtNum(a.principal_cny, 0) }}
-          <template v-if="a.gap_to_principal > 0">
-            · 还差约 ¥{{ fmtNum(a.gap_to_principal, 0) }}
-          </template>
+          实投预算 ¥{{ fmtNum(a.principal_cny, 0) }}
         </span>
       </div>
-      <div class="bar-track" role="progressbar" :aria-valuenow="a.progress_pct">
-        <div class="bar-fill" :style="{ width: progressWidth }" />
-      </div>
       <p class="recovery-sub">
-        完成度 {{ a.progress_pct?.toFixed(1) }}%
-        <template v-if="a.need_return_pct > 0">
-          · 尚需约 +{{ a.need_return_pct?.toFixed(1) }}%（相对现净资产）
-        </template>
+        收盘选股仅生成次日候选，盘中需完成题材、板块、量价资金、筹码与盘口确认
         <template v-if="a.position_ratio_pct != null">
-          · 仓位 {{ a.position_ratio_pct?.toFixed(1) }}%
+          · 账户仓位 {{ a.position_ratio_pct?.toFixed(1) }}%
         </template>
       </p>
     </div>
@@ -104,7 +90,7 @@ const healthClass = computed(() => {
     </div>
 
     <p v-if="a.selection && !a.selection.sop_top5_enabled" class="hint">
-      阶段 0：Top5 不跑 SOP、不写选股监控；列表仅供观察。
+      选股只作收盘候选池，禁止直接转化为下单指令。
     </p>
   </section>
   <p v-else-if="a?.error" class="advisor-error">投顾数据加载失败：{{ a.error }}</p>

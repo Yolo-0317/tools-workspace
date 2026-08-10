@@ -332,12 +332,14 @@ def discover_sector_hot_themes(
         research_hook = "东财行业榜未获取，仅作盘面结构观察（观察口径）。"
     else:
         primary = ranked[0].name
+        from scripts.tools.wechat_mp_market_titles import join_market_title_tags
+
         tag_parts: list[str] = []
         for t in ranked[:2]:
             label = t.name if len(t.name) <= 6 else t.name[:6]
             if label and label not in tag_parts:
                 tag_parts.append(label)
-        title_tags = "+".join(tag_parts) if tag_parts else primary
+        title_tags = join_market_title_tags(tag_parts) if tag_parts else primary
         src = ranked[0].sources[0] if ranked[0].sources else "eastmoney_industry_board"
         research_hook = (
             f"行业主线取自东财行业板块涨幅榜排名靠前项（当前第一：{primary}，来源 {src}）。"
@@ -397,6 +399,8 @@ def discover_hot_themes(
         research_hook = "结合当日指数广度与成交额，拆解资金主攻方向（观察口径）。"
     else:
         primary = ranked[0].name
+        from scripts.tools.wechat_mp_market_titles import join_market_title_tags
+
         tag_parts: list[str] = []
         for t in ranked[:3]:
             label = t.name
@@ -406,7 +410,7 @@ def discover_hot_themes(
                 tag_parts.append(label)
             if len(tag_parts) >= 2:
                 break
-        title_tags = "+".join(tag_parts) if tag_parts else primary
+        title_tags = join_market_title_tags(tag_parts) if tag_parts else primary
         research_hook = (
             f"当日资金与舆情共振方向偏向「{primary}」"
             f"（信号：{', '.join(ranked[0].sources[:4])}）。"

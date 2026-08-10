@@ -1,0 +1,2 @@
+Main 清空。模型：thedrummer/cydonia-24b-v4.1
+出稿 tokens：512～768

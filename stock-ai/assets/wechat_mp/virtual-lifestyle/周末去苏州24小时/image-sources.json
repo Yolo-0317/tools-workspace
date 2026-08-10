@@ -1,0 +1,26 @@
+{
+  "01-出门前镜前自拍.png": {
+    "source_type": "original",
+    "fallback_reason": "AI 虚拟角色原创旅行叙事首图"
+  },
+  "02-高铁窗边自拍.png": {
+    "source_type": "original",
+    "fallback_reason": "AI 虚拟角色原创旅行叙事场景"
+  },
+  "03-平江路自拍.png": {
+    "source_type": "original",
+    "fallback_reason": "AI 虚拟角色原创旅行叙事场景"
+  },
+  "04-午餐自拍.png": {
+    "source_type": "original",
+    "fallback_reason": "AI 虚拟角色原创旅行叙事场景"
+  },
+  "05-金鸡湖夜景自拍.png": {
+    "source_type": "original",
+    "fallback_reason": "AI 虚拟角色原创旅行叙事场景"
+  },
+  "06-返程前自拍.png": {
+    "source_type": "original",
+    "fallback_reason": "AI 虚拟角色原创旅行叙事收束图"
+  }
+}

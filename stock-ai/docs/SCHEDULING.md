@@ -44,7 +44,7 @@ Docker scheduler 17:30 同步 · 18:00 龙头 eod
 │  17:45  selection → run-host-job.sh selection                                      │
 │  18:00  emotion eod → sync_emotion_cycle.sh eod（容器内，MySQL）                   │
 │  */5 工作日       → run-host-job.sh monitor（勿再开 holdings-monitor launchd）      │
-│  周五 20:30       → run-host-job.sh advisor-weekly                                 │
+│  周五 20:30 投顾周复盘 — 已停用（2026-06-16）                                      │
 └───────────────────────────────┬───────────────────────────────────────────────────┘
                                 │ HTTP POST host.docker.internal:9876/run/{job}
                                 ▼
@@ -53,9 +53,7 @@ Docker scheduler 17:30 同步 · 18:00 龙头 eod
 └───────────────────────────────────────────────────────────────────────────────────┘
 
 launchd（与 Docker 分工，勿重复监控）
-  com.user.stock-macro-news-sync     每 15min  快讯 + AI 解读落库
-  com.user.stock-emotion-intraday    （默认停用）盘中情绪；晚间稿用 eod
-  com.user.wechat-mp-draft-scheduled 每天 18:20 公众号草稿
+  com.user.wechat-mp-guba-scheduled   交易日 15:15 股吧飞书
   com.user.docker-stacks             每 15min   保活 Docker 栈
 ```
 
@@ -75,14 +73,17 @@ launchd（与 Docker 分工，勿重复监控）
 | 任务 | 调度 | 执行位置 | 入口脚本 / 模块 |
 |------|------|----------|-----------------|
 | Tushare 日线同步 | 工作日 **17:30** | **容器内** | `run_sync_daily.sh` |
-| 选股 + SOP + 战报落盘 | 工作日 **17:45** | 本机（经 host-jobs） | `push_selection_wechat.sh` → `run_selection_daily.sh`（**先** `ensure_daily_bars --require-ready`） |
-| 东财快讯 + AI 解读 | **每 15 分钟** | 本机 launchd | `sync_macro_news.sh` → `com.user.stock-macro-news-sync` |
-| 持仓 + 选股池监控 | 工作日 **每 5 分钟** | **仅** Docker → host-jobs | `push_holdings_monitor.sh`（**勿**再装 `holdings-monitor` launchd） |
-| **投顾周五周复盘** | **周五 20:30** | 本机 | `push_advisor_weekly_review.sh` → MySQL + home-hub `/advisor` |
-| 情绪周期 / 收盘龙头 | **18:00 eod** 容器 | `sync_emotion_cycle.sh eod` → MySQL `emotion_cycle_*` |
-| 公众号草稿 | 每天 **18:20** | 本机 launchd | `wechat_mp_draft_scheduled.sh`（见 [WECHAT_MP_SCHEDULING.md](WECHAT_MP_SCHEDULING.md)） |
+| 选股入库 | 工作日 **17:45** | 本机（经 host-jobs） | `push_selection_wechat.sh` → `run_selection_daily.sh`（**先** `ensure_daily_bars --require-ready`；SOP/战报默认关） |
+| 持仓 + 选股池监控 | 工作日 **每 5 分钟** | **仅** Docker → host-jobs | `push_holdings_monitor.sh`（**crontab 已注释停用**） |
+| 情绪周期 / 收盘龙头 + 公众号草稿 | **18:00** | 容器 eod → host-jobs `wechat-mp-draft` | 工作日：eod 成功后链式写稿；**周日** 18:00 仅写稿（休市 news） |
+| 东财股吧拆帖 → 飞书 | 交易日 **15:15** | launchd | `wechat_mp_guba_scheduled.sh` |
 
-**已停用**：每日战报 **09 / 12 / 15 / 20** 微信推送（`install-daily-briefing-launchd.sh` 会提示废弃）；`daily_briefing_report.py` 仍可供手动/看板，定时改走快讯同步。
+**已停用**：
+- 东财快讯 15min `com.user.stock-macro-news-sync`（2026-06-16；手动 `./sync_macro_news.sh`）
+- 周五 20:30 投顾周复盘 `advisor-weekly`（2026-06-16；手动 `advisor_weekly_review --save`）
+- 周二/五 19:25 公众号增长提醒 `com.user.wechat-mp-growth-remind`（2026-06-16）
+- 18:20 公众号草稿 launchd `com.user.wechat-mp-draft-scheduled`（2026-06-16；改 eod 后 host-jobs）
+- 每日战报 **09 / 12 / 15 / 20** 微信推送；`daily_briefing_report.py` 仍可手动
 
 **监控时段**：脚本内仅 **9:30–11:30、13:00–15:00** 真正检查；非交易时段返回「跳过」exit 0。
 
@@ -94,9 +95,10 @@ launchd（与 Docker 分工，勿重复监控）
          → host-jobs 执行 push_selection_wechat.sh
          → **日线门禁** `ensure_daily_bars`（期望交易日 + 当日条数≥3500；落后 Tushare by_date 补同步，仍不满足则 exit 1）
          → 四轨选股 **ProcessPool 并行**（`run_parallel_selection` 入口再次门禁；combined+watch / ma5 / 五因子 / 筑底）
-         → Top5 enrich + 监控规则 sync → `output/daily_selection_full_latest.txt`（微信需 `PUSH_WECHAT=1`）
-18:00  scheduler 容器内 sync_emotion_cycle.sh eod → MySQL 龙头池（依赖当日 stock_daily）
-18:20  launchd 公众号 evening（sector + dragons(eod) + top5）
+         → Top5 enrich + 监控规则 sync（战报落盘默认关 `DISABLE_SELECTION_REPORT=1`）
+18:00  scheduler sync_emotion_cycle eod → MySQL 龙头池
+         → 成功则 host-jobs wechat-mp-draft（evening 三篇 / 休市日 news）
+         （周日 18:00 仅 wechat-mp-draft，无 eod）
 ```
 
 ---
@@ -193,9 +195,9 @@ uv run python -m scripts.tools.advisor_weekly_review --save --no-ai
 | `com.user.wechat-cursor-acp` | 微信 ↔ Cursor CLI |
 | `com.user.aliyun-ddns` / `sidestore-certs` / `sidestore-infra` | 基础设施 |
 | `com.user.jellyfin-sd-staging-daily` | Jellyfin 导入 |
-| `com.user.stock-macro-news-sync` | 每 15 分钟快讯 + AI 解读 |
+| `com.user.stock-macro-news-sync` | **已停用**（2026-06-16）；手动 `sync_macro_news.sh` |
+| `com.user.wechat-mp-draft-scheduled` | **已停用**（2026-06-16）；改 scheduler eod 后 `wechat-mp-draft` |
 | `com.user.stock-emotion-intraday` | **默认不安装**；盘中 OpenCLI（`INSTALL_EMOTION_INTRADAY=1` 启用） |
-| `com.user.wechat-mp-draft-scheduled` | 每日 18:20 公众号草稿 |
 | `com.user.wechat-mp-whitelist-check` | 公众号 IP 白名单（每小时） |
 
 **勿安装**：`com.user.stock-holdings-monitor`（与 Docker `*/5 monitor` 重复）；`com.user.stock-ai-daily-selection`（改由 scheduler 17:45）。
@@ -248,10 +250,9 @@ Home Hub `/jobs` 当前仍扫描 **launchd plist**（`load_launchd_jobs`），�
 | `launchd/com.user.stock-ai-host-jobs.plist` | host-jobs launchd |
 | `scripts/docker-autostart.sh` | 登录后拉起 scheduler 栈 |
 | `docker/daily-sync/` | **已合并**，仅保留兼容说明 |
-| `launchd/com.user.wechat-mp-draft-scheduled.plist` | 公众号草稿：每日 18:20 |
-| `scripts/wechat_mp_draft_scheduled.sh` | 每日 18:20 批次入口（自动交易日/休市日） |
+| `scripts/wechat_mp_draft_scheduled.sh` | host-jobs `wechat-mp-draft` 入口 |
 | `scripts/tools/wechat_mp_draft_batch.py` | 工作日 `evening` · 周末 `weekend`(news) |
 
-安装：`cd stock-ai && bash scripts/install-wechat-mp-launchd.sh`（仅 `com.user.wechat-mp-draft-scheduled` + 白名单监控）。
+安装：`cd stock-ai && bash scripts/install-wechat-mp-launchd.sh`（白名单 + 股吧；**不**装 18:20 草稿 launchd）。
 
 *最后更新：2026-06-03*

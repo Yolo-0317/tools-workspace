@@ -27,6 +27,9 @@
 | `WECHAT_MP_SECTOR_THEME_SOURCE` | `opencli` | 行业主线来源 |
 | `WECHAT_MP_HOT_INDUSTRY_TOP_N` | `8` | 东财榜抓取条数 |
 | `WECHAT_MP_HOT_THEME_EMOTION` | `1` | 仅旧版 `discover_hot_themes`（如手动 `market` 标题），**不影响 sector** |
+| `WECHAT_MP_SECTOR_HOT_WATCH_TOP_N` | `10`（**evening 自动 0**） | 正文「当日人气观察」TopN；0=不插入 |
+| `WECHAT_MP_SECTOR_EVENING_DEDUP` | evening 批次 `1` | 与 news 去重：关 Top10 表、避开头条人气票 |
+| `WECHAT_MP_SECTOR_EXCLUDE_NEWS_HOT_N` | `2` | 代表股避开东财人气前 N |
 
 ## 命令
 
@@ -49,7 +52,7 @@ uv run python -m scripts.tools.wechat_mp_hot_theme
 | 环节 | 行为 |
 |------|------|
 | **`sector` 槽（定时）** | `build_sector_article` → `generate_sector_research_body`；`pick_focus_themes` 取 1～2 个主题 |
-| 交易日 19:00 | `evening` 批次：`sector` + `top5` + `dragons`（无 `market`/`news`） |
+| 交易日 19:00 | `evening` 批次：`news` + `dragons` + `sector` |
 | 休市日 19:00 | 周日/节假日 `weekend` → `news`；周六跳过 |
 | 手动旧槽 | `market` / `news` 仍 `wechat_mp_draft --kind market|news` |
 | `market` 标题 `{tags}` | `_compress_market_tags` 仍可走 `discover_hot_themes`（手动盘前/收盘稿） |
@@ -59,5 +62,5 @@ uv run python -m scripts.tools.wechat_mp_hot_theme
 代码：`wechat_mp_evening_align.py` → `sector_alignment_prompt_block()` 注入 top5/dragons prompt。
 
 1. **sector**：写排序前 1～2 个主题产业链（全文 80% 主线 + 快讯催化）  
-2. **top5**：标题领衔股名；`逻辑归属` 写清与主线「同属/分化/独立」；750～1200 字  
-3. **dragons**：标题优先 `情绪{阶段}怎么玩？{名}{n}板还在榜`；深度写 ≤2 只（`WECHAT_MP_DRAGON_WRITE_MAX`）；650～1100 字；开篇含炸板率等数字
+2. **news**（替代 top5 定时）：人气快讯；sector **勿重复**其 Top10/头条票（见 `WECHAT_MP_SECTOR_EVENING_DEDUP`）  
+3. **dragons**：标题优先 `情绪{阶段}梯队｜{名}{n}板结构`；深度写 ≤2 只（`WECHAT_MP_DRAGON_WRITE_MAX`）；650～1100 字；开篇含炸板率等数字

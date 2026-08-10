@@ -9,7 +9,7 @@
 ```bash
 # 公众号写稿、战报、单篇 LLM 等（需 agent login）
 LLM_BACKEND=cursor
-CURSOR_AGENT_MODEL=auto
+CURSOR_AGENT_MODEL=composer-2.5
 
 # 东财 SOP Top5 并发终审（与 LLM_BACKEND 解耦，始终走 API）
 SOP_LLM_BACKEND=deepseek
@@ -18,7 +18,8 @@ DEEPSEEK_API_KEY=sk-...
 
 | 场景 | 环境变量 | 后端 |
 |------|----------|------|
-| `wechat_mp_*_article`、选股 AI 审查等 | `LLM_BACKEND` | 默认 `cursor` → `auto` |
+| `wechat_mp_*_article`、选股 AI 审查等 | `LLM_BACKEND` | 默认 `cursor` → `composer-2.5` |
+| `wechat_mp_news` 10 条 AI 点评 | `WECHAT_MP_NEWS_AI_BACKEND`（默认 `deepseek`） | DeepSeek API，与写稿 LLM 解耦 |
 | `sop_review_top5_concurrent` / `sop_review_single` | `SOP_LLM_BACKEND`（默认 `deepseek`） | DeepSeek API，可 `DEEPSEEK_WORKERS` 并发 |
 
 `call_deepseek(..., backend=…)` 可显式覆盖；SOP 脚本固定 `backend=sop_llm_backend()`。

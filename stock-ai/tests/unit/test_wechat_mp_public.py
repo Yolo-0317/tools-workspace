@@ -13,10 +13,61 @@ ensure_repo_root_on_path()
 
 from scripts.tools.wechat_mp_prose import humanize_mp_text
 from scripts.tools.wechat_mp_public import (
+    audit_recommendation_safety,
     check_public_compliance,
+    sanitize_platform_property_risk,
     sanitize_public_mp_text,
+    sanitize_public_title,
     strip_investment_advice,
 )
+
+
+def test_sanitize_platform_property_risk() -> None:
+    raw = "理财方案+投资操作：明日盯啥？收盘信号出炉，小仓跟。"
+    out = sanitize_platform_property_risk(raw)
+    assert "理财" not in out or "财经信息" in out
+    assert "投资操作" not in out
+    assert "明日盯" not in out
+    assert "收盘信号" not in out
+
+
+def test_check_platform_property_risk_in_title() -> None:
+    fails = check_public_compliance("复盘正文。", title="情绪高潮怎么玩？明日盯啥")
+    assert any("平台风险" in f for f in fails)
+
+
+def test_check_platform_property_risk_bidu_title() -> None:
+    fails = check_public_compliance(
+        "正文。",
+        title="A股必读？京东方A与亨通光电快讯",
+    )
+    assert any("诱导性必读" in f or "平台风险" in f for f in fails)
+
+
+def test_sanitize_public_title_strips_bidu() -> None:
+    raw = "A股周末必读？达实智能与天娱数科要闻"
+    out = sanitize_public_title(raw, kind="news")
+    assert "必读" not in out
+    assert audit_recommendation_safety(title=out, body="", digest="") == []
+
+
+def test_sanitize_public_title_strips_old_winners() -> None:
+    from scripts.tools.wechat_mp_public import sanitize_public_title
+
+    cases = [
+        ("A股热股10条：洛阳钼业怎么读？", "news"),
+        ("情绪高潮怎么玩？中化国际4板还在榜", "dragons"),
+        ("A股铅锌+诊断｜洛阳钼业领衔：产业链怎么拆？", "sector"),
+        ("A股收盘复盘｜其他化学制品+光学元件怎么读？", "market"),
+    ]
+    for raw, kind in cases:
+        out = sanitize_public_title(raw, kind=kind)
+        assert "怎么玩" not in out
+        assert "还在榜" not in out
+        assert "领衔" not in out
+        if kind == "dragons" and "怎么玩" in raw:
+            assert "梯队" in out and "结构" in out
+        assert audit_recommendation_safety(title=out, body="", digest="") == []
 
 
 def test_sanitize_strips_holdings_markers() -> None:
@@ -42,7 +93,7 @@ def test_check_public_compliance_catches_advice() -> None:
 
 
 def test_disclaimer_whitelist() -> None:
-    body = "复盘而已。\n\n本文为作者个人投资日记，不构成投资建议。市场有风险。"
+    body = "复盘而已。\n\n本文为作者个人复盘笔记，不构成投资建议。市场有风险。"
     assert check_public_compliance(body) == []
 
 

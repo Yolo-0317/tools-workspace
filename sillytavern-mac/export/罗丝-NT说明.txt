@@ -1,0 +1,11 @@
+罗丝·索恩 v1.0.0-zh（中译 + 世界书 v1.0）
+
+原卡「第五句转 Dom + 锁笼结束」硬脚本已改为随 {{user}} 节奏推进。
+单条回复 80～220 字；talkativeness 0.65。
+
+NT 设置：
+1. 导入 罗丝-nativetavern.png（版本 1.0.0-zh）
+2. Main 留空；max tokens 建议 256～384
+3. 勿绑 rose-thorn-yangsheng-world.json
+4. Persona = 来访者
+5. 新建聊天

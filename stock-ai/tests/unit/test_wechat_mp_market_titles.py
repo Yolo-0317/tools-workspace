@@ -23,10 +23,23 @@ from scripts.tools.wechat_mp_content import (
 from scripts.tools.wechat_mp_market_titles import (
     MARKET_TITLE_TEMPLATES,
     build_market_title_options,
+    join_market_title_tags,
     load_recent_market_titles,
     pick_rotated_market_title,
     rotate_options,
 )
+
+
+def test_join_market_title_tags_uses_yu() -> None:
+    assert join_market_title_tags(["LED", "小金属"]) == "LED与小金属"
+    assert join_market_title_tags(["油价", "半导体"]) == "油价与半导体"
+    assert join_market_title_tags(["半导体"]) == "半导体"
+
+
+def test_close_templates_avoid_tags_zenmedu() -> None:
+    for tpl in MARKET_TITLE_TEMPLATES["close"]:
+        sample = tpl.format(wd="周一", tags="LED与小金属")
+        assert "{tags}怎么读" not in sample
 
 
 def test_each_edition_has_many_templates() -> None:
@@ -47,7 +60,7 @@ def test_pick_rotated_avoids_recent(tmp_path: Path) -> None:
         json.dumps({"2026-06-02": {"close": "收盘复盘：油价+半导体牵动哪些线？"}}),
         encoding="utf-8",
     )
-    options = build_market_title_options("close", wd="周二", tags="油价+半导体")
+    options = build_market_title_options("close", wd="周二", tags="油价与半导体")
     now = datetime(2026, 6, 3, 17, 0, tzinfo=ZoneInfo("Asia/Shanghai"))
     recent = load_recent_market_titles("close", log_path=log, today=date(2026, 6, 3))
     title = pick_rotated_market_title(

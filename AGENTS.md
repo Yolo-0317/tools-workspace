@@ -1,90 +1,29 @@
-# tools-workspace — Agent 指南
+# tools-workspace
 
-个人工具 **monorepo**（单一 git）：`stock-ai`（A 股 / MCP）+ `sidestore-infra`（SideStore / Docker）+ `substore-clash` 等。
+个人工具 monorepo：`stock-ai`、`sidestore-infra`、`substore-clash`、`english-buddy`、`xiaozhi-*`、`harryputter` 等。
 
-## 已安装能力
+## 必须遵守
 
-### Superpowers
+- 用户可见内容、UI 与汇报禁止 emoji。
+- 先读 `.cursor/rules/project-memory.mdc` 前 60 行主题索引；用 `rg` 定位相关条目，再按需读 **一个**子项目记忆。不要整份加载任何 `memory-*.mdc`。
+- 新功能先做简短设计和计划；修改后运行最相关的验证。
+- 不提交 `.env`、证书、订阅链接、持仓或个人记忆。
+- 复杂流程可用 Superpowers；其规则在 `.cursor/rules/superpowers.mdc`。
 
-- **插件**：Cursor 市场 `superpowers`（TDD、头脑风暴、计划、调试、代码评审）
-- **项目 Hook**：`.cursor/hooks.json` → 每次会话启动注入 `using-superpowers`
-- **规则**：`.cursor/rules/superpowers.mdc`
+## 项目路由
 
-若 Agent 未识别 Superpowers 技能，在聊天执行：
+| 任务 | 先读 |
+|---|---|
+| A 股、MySQL、选股、公众号工程 | `stock-ai/docs/PROJECT_LAYOUT.md` |
+| OpenCLI、东财、公众号后台抓取 | `.cursor/skills/stock-opencli/ROUTING.md` |
+| 东财个股深度 SOP | `stock-ai/investment-agent/docs/skills/eastmoney-browser-sop/ROUTING.md` |
+| SideStore、Caddy、DDNS | `sidestore-infra/README.md` |
+| Sub-Store、Clash | `substore-clash/README.md` |
+| 英语带读、ORT | `english-buddy/docs/ORT_READ_ALONG.md` |
+| 小智固件或 Mac 网关 | `xiaozhi-atoms3r/README.md` 或 `xiaozhi-mac-server/README.md` |
+| 哈利波特导入/对齐 | `.cursor/skills/harryputter-import/SKILL.md` |
+| 夸克网盘 | `.cursor/skills/quarkclouddrive/ROUTING.md` |
 
-```text
-/add-plugin superpowers
-```
+用户说“公众号”默认指「牛马也智能」。先读 `.cursor/skills/wechat-mp-drafts/SKILL.md` 的决策树；写作/质检只再读命中的一个专题文档。简选带货仅在用户明确要求时处理。
 
-### Hermes 十步工作法
-
-- **规则**：`.cursor/rules/hermes-protocol.mdc`
-- **记忆**：`project-memory.mdc`、`memory-python.mdc`、`memory-infra.mdc`
-
-## 推荐工作流
-
-1. 读 `project-memory.mdc` 与子项目记忆
-2. 新功能 → Superpowers `brainstorming` → `writing-plans`
-3. 实现 → `test-driven-development` + `verification-before-completion`
-4. 结束 → Hermes 询问是否写入记忆
-
-## Docker 开机自启
-
-- **Docker Desktop**：`settings-store.json` → `AutoStart: true`（或 Settings → General → 登录时启动）
-- **Compose 栈**：`scripts/install-docker-launchd.sh` 安装 `com.user.docker-stacks`（登录后 `docker-autostart.sh` 幂等 `compose up -d`）
-- 各服务 `restart: unless-stopped` / `always` 时，Docker 引擎起来后也会自动恢复容器
-
-## 子项目
-
-| 目录 | 文档 |
-|------|------|
-| `stock-ai/` | `stock-ai/docs/PROJECT_LAYOUT.md` |
-| `wechat-cursor-acp/` | `wechat-cursor-acp/README.md` — 微信桥接 Cursor CLI |
-| `sidestore-infra/` | `sidestore-infra/README.md` |
-| `substore-clash/` | `substore-clash/README.md` — Sub-Store + Mihomo 订阅生成 |
-| `stock-mysql/` | `stock-mysql/README.md` — MySQL 8，stock-ai 业务库 |
-| `emquant-sim/` | `emquant-sim/OFFLINE.md` — **已下线**（专业投资者门槛）；代码备查 |
-| `english-buddy/` | `english-buddy/README.md` — 少儿英文带读（Ollama + edge-tts）；账号见 `docs/AUTH.md` |
-| `readalong/` | `readalong/README.md` — 哈利波特有声书句级带读 PWA（`:8791`） |
-| `~/docker/jellyfin-stack` | `.cursor/skills/jellyfin/SKILL.md`（NAS / 迅雷 / 夸克 三库） |
-
-### OpenCLI 浏览器（stock-ai）
-
-| Skill | 路径 | 用途 |
-|-------|------|------|
-| `stock-opencli` | `.cursor/skills/stock-opencli/` | **场景路由真源**：东财 / 公众号内容分析 / JYWG；命令与故障速查 |
-| `eastmoney-browser-sop` | `stock-ai/investment-agent/docs/skills/eastmoney-browser-sop/` | 东财 **深度分析** 十一维 SOP（在 OpenCLI 采集之后） |
-
-用户说 **OpenCLI、东财浏览器、公众号后台抓取** → 先读 `stock-opencli`，勿每次重查 `opencli --help`。
-
-### Readalong 章节导入
-
-| Skill | 路径 | 用途 |
-|-------|------|------|
-| `readalong-import` | `.cursor/skills/readalong-import/` | **按书目+章号导入**：`BOOK=hp01 ./scripts/pipeline.sh N` · verify |
-
-用户说 **导入哈利波特第一部第 N 章、hp01 第 N 章、魔法石第 N 章** → 先读 `readalong-import`。**禁止**仅凭「第 N 章」执行（须确认 book_id）。Whisper 首跑须前台 ~5 min/章。
-
-### 微信公众号草稿 Skill
-
-**约定**：用户说 **「公众号」= 「牛马也智能」**（`wechat-mp-drafts`），不是简选小电。
-
-| Skill | 路径 | 用途 |
-|-------|------|------|
-| `wechat-mp-drafts` | `.cursor/skills/wechat-mp-drafts/` | **牛马也智能**：先 [INDEX.md](.cursor/skills/wechat-mp-drafts/INDEX.md) → [evening-trilogy-templates.md](.cursor/skills/wechat-mp-drafts/evening-trilogy-templates.md) · [operations-sop.md](.cursor/skills/wechat-mp-drafts/operations-sop.md) · [SKILL.md](.cursor/skills/wechat-mp-drafts/SKILL.md) |
-| `wechat-mp-commerce-drafts` | `.cursor/skills/wechat-mp-commerce-drafts/` | **简选小电**（**已搁置**；仅用户明确带货时使用） |
-
-**公众号定时（每日 18:20）**：交易日 `sector`+`dragons`+`top5` · 周日/节假日休市 `news`（72h）· 周六跳过 — 见 `stock-ai/docs/WECHAT_MP_SCHEDULING.md`。
-
-### Jellyfin Skills
-
-Stack 在 `~/docker/jellyfin-stack`（非本 repo 子目录）。Agent 技能：
-
-| Skill | 用途 |
-|-------|------|
-| `jellyfin` | 总入口，按数据源路由 |
-| `jellyfin-nas-smb-staging` | NAS-影音（琅琊榜、人世间、绝命毒师） |
-| `jellyfin-xunlei-tv-import` | 迅雷-影音 |
-| `jellyfin-quark-tv-import` | 夸克-影音 |
-
-Canonical 路径：`~/docker/jellyfin-stack/.cursor/skills/`；`~/.cursor/skills/jellyfin-nas-smb-staging` 为 NAS skill 的用户级副本。
+Docker 开机自启说明见 `scripts/install-docker-launchd.sh` 与各子项目 README。

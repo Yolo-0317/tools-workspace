@@ -76,14 +76,14 @@ else
   fi
 fi
 
-if curl -sfk --max-time 8 --resolve "${HUB_DOMAIN}:${INTERNAL_PORT}:127.0.0.1" "https://${HUB_DOMAIN}:${INTERNAL_PORT}/readalong/api/health" | grep -q '"ok"'; then
-  echo "OK  readalong HTTPS 内网 :${INTERNAL_PORT}/readalong/web/"
+if curl -sfk --max-time 8 --resolve "${HUB_DOMAIN}:${INTERNAL_PORT}:127.0.0.1" "https://${HUB_DOMAIN}:${INTERNAL_PORT}/harryputter/api/health" | grep -q '"ok"'; then
+  echo "OK  harryputter HTTPS 内网 :${INTERNAL_PORT}/harryputter/web/"
 else
-  code=$(curl -sk --max-time 8 -o /dev/null -w "%{http_code}" --resolve "${HUB_DOMAIN}:${INTERNAL_PORT}:127.0.0.1" "https://${HUB_DOMAIN}:${INTERNAL_PORT}/readalong/api/health" || echo 000)
+  code=$(curl -sk --max-time 8 -o /dev/null -w "%{http_code}" --resolve "${HUB_DOMAIN}:${INTERNAL_PORT}:127.0.0.1" "https://${HUB_DOMAIN}:${INTERNAL_PORT}/harryputter/api/health" || echo 000)
   if [[ "$code" == "200" ]]; then
-    echo "OK  readalong HTTPS 内网 :${INTERNAL_PORT}/readalong/web/"
+    echo "OK  harryputter HTTPS 内网 :${INTERNAL_PORT}/harryputter/web/"
   else
-    echo "FAIL readalong HTTPS 内网 :${INTERNAL_PORT}/readalong/web/ (http=${code}；检查 launchd :8791 与 Caddy /readalong)"
+    echo "FAIL harryputter HTTPS 内网 :${INTERNAL_PORT}/harryputter/web/ (http=${code}；检查 launchd :8791 与 Caddy /harryputter)"
     FAIL=1
   fi
 fi
@@ -100,6 +100,18 @@ else
   fi
 fi
 
+if curl -sfk --max-time 8 --resolve "${HUB_DOMAIN}:${INTERNAL_PORT}:127.0.0.1" "https://${HUB_DOMAIN}:${INTERNAL_PORT}/silly/" | grep -qi 'sillytavern'; then
+  echo "OK  sillytavern HTTPS 内网 :${INTERNAL_PORT}/silly/"
+else
+  code=$(curl -sk --max-time 8 -o /dev/null -w "%{http_code}" --resolve "${HUB_DOMAIN}:${INTERNAL_PORT}:127.0.0.1" "https://${HUB_DOMAIN}:${INTERNAL_PORT}/silly/" || echo 000)
+  if [[ "$code" == "200" ]]; then
+    echo "OK  sillytavern HTTPS 内网 :${INTERNAL_PORT}/silly/"
+  else
+    echo "FAIL sillytavern HTTPS 内网 :${INTERNAL_PORT}/silly/ (http=${code}；检查 launchd :8792 与 Caddy /silly)"
+    FAIL=1
+  fi
+fi
+
 ENGLISH_URL="https://${HUB_DOMAIN}:${EXTERNAL_PORT}/english/api/health"
 if curl -sfk --max-time 8 "$ENGLISH_URL" 2>/dev/null | grep -q '"ok"'; then
   echo "OK  english-buddy HTTPS 公网 :${EXTERNAL_PORT}/english/"
@@ -107,11 +119,11 @@ else
   echo "WARN english-buddy HTTPS 公网 :${EXTERNAL_PORT}/english/ (路由器 ${EXTERNAL_PORT}->${INTERNAL_PORT} 或外网 hairpin)"
 fi
 
-READALONG_URL="https://${HUB_DOMAIN}:${EXTERNAL_PORT}/readalong/api/health"
-if curl -sfk --max-time 8 "$READALONG_URL" 2>/dev/null | grep -q '"ok"'; then
-  echo "OK  readalong HTTPS 公网 :${EXTERNAL_PORT}/readalong/web/"
+HARRYPUTTER_URL="https://${HUB_DOMAIN}:${EXTERNAL_PORT}/harryputter/api/health"
+if curl -sfk --max-time 8 "$HARRYPUTTER_URL" 2>/dev/null | grep -q '"ok"'; then
+  echo "OK  harryputter HTTPS 公网 :${EXTERNAL_PORT}/harryputter/web/"
 else
-  echo "WARN readalong HTTPS 公网 :${EXTERNAL_PORT}/readalong/web/ (路由器 ${EXTERNAL_PORT}->${INTERNAL_PORT} 或外网 hairpin)"
+  echo "WARN harryputter HTTPS 公网 :${EXTERNAL_PORT}/harryputter/web/ (路由器 ${EXTERNAL_PORT}->${INTERNAL_PORT} 或外网 hairpin)"
 fi
 
 if curl -sfk --max-time 8 "$ANI_URL" 2>/dev/null | grep -q 'X-Apple-I-MD'; then

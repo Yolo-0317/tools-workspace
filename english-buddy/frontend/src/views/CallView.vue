@@ -42,7 +42,7 @@ const {
   selectedLesson,
   isLessonPrewarmReady,
   builtinPrewarm,
-  grades,
+  homeGrades,
   gradesLoading,
   lessonsLoading,
   catalogLoadError,
@@ -100,6 +100,9 @@ const {
   sttEnabledForMe,
   sttEnabled,
   listenOnlyHint,
+  ortTopicHint,
+  ortListenButtonLabel,
+  ortListenOnlyInCall,
   ortStartButtonLabel,
   isAuthenticated,
   displayName,
@@ -116,8 +119,10 @@ const {
   ortLevelFilter,
   ortSelectedBookId,
   ortFilteredLessonGroups,
+  isOrtCall,
   ortActiveBook,
   readAlongPageIndex,
+  ortViewPageIndex,
   ortScriptLines,
   ortCallPageImage,
   ortCallPageMissing,
@@ -203,9 +208,9 @@ const pickerCustomLessons = computed(() =>
 );
 
 const gradeStages = computed(() => {
-  const order = ["幼儿园", "牛津阅读树", "小学"];
-  const map = new Map<string, typeof grades.value>();
-  for (const g of grades.value) {
+  const order = ["幼儿园", "小学"];
+  const map = new Map<string, typeof homeGrades.value>();
+  for (const g of homeGrades.value) {
     const label =
       g.stage_label || (g.stage === "kindergarten" ? "幼儿园" : "小学");
     const list = map.get(label) ?? [];
@@ -223,7 +228,7 @@ const gradeStages = computed(() => {
     class="app"
     :class="[
       usesThemedShell ? `app--${skin}` : 'app--shell',
-      screen === 'call' && ortActiveBook && 'app--ort-call',
+      screen === 'call' && isOrtCall && 'app--ort-call',
     ]"
     :style="appStyle"
   >
@@ -326,9 +331,6 @@ const gradeStages = computed(() => {
         <span class="picker__ort-banner-sub">
           {{ ortIllustratedCount }} 本配图带读 ·
           {{ sttEnabledForMe ? "可跟读" : "只听模式" }}
-          <template v-if="ortIllustratedCount < 50">
-            · 其余回首页选课文
-          </template>
         </span>
       </button>
       <div class="picker__lesson-panel">
@@ -362,7 +364,7 @@ const gradeStages = computed(() => {
           >选年级</label
         >
         <select
-          v-if="grades.length"
+          v-if="homeGrades.length"
           id="home-grade-select"
           class="lesson-select"
           :value="pickerGradeId"
@@ -548,8 +550,11 @@ const gradeStages = computed(() => {
       :prewarm-label="prewarmStatusLabel"
       :lesson-ready="ortLessonReadyForTopic"
       :illustrated-count="ortIllustratedCount"
-      :listen-only-hint="listenOnlyHint"
+      :listen-only-hint="ortTopicHint"
       :start-button-label="ortStartButtonLabel"
+      :listen-button-label="ortListenButtonLabel"
+      :stt-enabled-for-me="sttEnabledForMe"
+      :error-message="errorMessage"
       @set-level="setOrtLevelFilter"
       @select-lesson="selectOrtLesson"
       @select-program="selectPickerProgram"
@@ -755,7 +760,7 @@ const gradeStages = computed(() => {
     <section
       v-else-if="screen === 'call'"
       class="call-screen"
-      :class="{ 'call-screen--ort': callMode === 'read_along' && ortActiveBook }"
+      :class="{ 'call-screen--ort': isOrtCall }"
     >
       <header class="call-screen__top call-screen__top--call">
         <button
@@ -796,11 +801,11 @@ const gradeStages = computed(() => {
           class="call-screen__main"
           :class="{
             'call-screen__main--read': callMode === 'read_along',
-            'call-screen__main--ort': callMode === 'read_along' && ortActiveBook,
+            'call-screen__main--ort': isOrtCall,
           }"
         >
           <div
-            v-if="!(callMode === 'read_along' && ortActiveBook)"
+            v-if="!isOrtCall"
             :class="[orbClass, callMode === 'read_along' && 'orb--compact']"
             aria-hidden="true"
           >
@@ -823,29 +828,7 @@ const gradeStages = computed(() => {
             {{ micWarning }}
           </p>
 
-          <div
-            v-if="callMode === 'read_along'"
-            class="speed-field speed-field--call"
-          >
-            <span class="speed-field__label">语速</span>
-            <div class="speed-segment speed-segment--call" role="group" aria-label="语速">
-              <button
-                v-for="preset in ttsSpeedPresets"
-                :key="preset.id"
-                type="button"
-                class="speed-segment__btn"
-                :class="{ 'speed-segment__btn--active': ttsSpeedPreset === preset.id }"
-                @click="setTtsSpeedPreset(preset.id)"
-              >
-                {{ preset.label }}
-              </button>
-            </div>
-          </div>
-
-          <div
-            v-if="callMode === 'read_along' && ortActiveBook"
-            class="ort-call-page"
-          >
+          <div v-if="isOrtCall" class="ort-call-page">
             <div
               class="ort-call-page__frame"
               :class="{ 'ort-call-page__frame--missing': ortCallPageMissing }"
@@ -855,7 +838,7 @@ const gradeStages = computed(() => {
               <img
                 class="ort-call-page__img"
                 :src="ortCallPageImage"
-                :alt="`${ortActiveBook.title} 第 ${readAlongPageIndex + 1} 页`"
+                :alt="`${ortActiveBook?.title ?? '读本'} 第 ${ortViewPageIndex + 1} 页`"
                 decoding="async"
                 @error="onOrtImgError"
               />
@@ -885,20 +868,64 @@ const gradeStages = computed(() => {
               </p>
             </div>
             <p class="ort-call-page__meta">
-              第 {{ readAlongPageIndex + 1 }} / {{ ortActiveBook.page_count }} 页 · 左右滑动翻页
+              第 {{ ortViewPageIndex + 1 }} /
+              {{ ortActiveBook?.page_count ?? "…" }} 页
+              <template v-if="ortListenOnlyInCall">
+                · 听读中，老师读完自动翻页
+              </template>
+              <template v-else-if="ortActiveBook"> · 左右滑动翻页</template>
+              <template v-else> · 加载插图…</template>
             </p>
+          </div>
+
+          <div
+            v-if="callMode === 'read_along' && !isOrtCall"
+            class="speed-field speed-field--call"
+          >
+            <span class="speed-field__label">语速</span>
+            <div class="speed-segment speed-segment--call" role="group" aria-label="语速">
+              <button
+                v-for="preset in ttsSpeedPresets"
+                :key="preset.id"
+                type="button"
+                class="speed-segment__btn"
+                :class="{ 'speed-segment__btn--active': ttsSpeedPreset === preset.id }"
+                @click="setTtsSpeedPreset(preset.id)"
+              >
+                {{ preset.label }}
+              </button>
+            </div>
+          </div>
+
+          <div
+            v-if="isOrtCall"
+            class="speed-field speed-field--call speed-field--ort"
+          >
+            <span class="speed-field__label">语速</span>
+            <div class="speed-segment speed-segment--call" role="group" aria-label="语速">
+              <button
+                v-for="preset in ttsSpeedPresets"
+                :key="preset.id"
+                type="button"
+                class="speed-segment__btn"
+                :class="{ 'speed-segment__btn--active': ttsSpeedPreset === preset.id }"
+                @click="setTtsSpeedPreset(preset.id)"
+              >
+                {{ preset.label }}
+              </button>
+            </div>
           </div>
 
           <div
             v-if="
               callMode === 'read_along' &&
-              (ortScriptLines?.length || materialLines.length)
+              (isOrtCall || materialLines.length)
             "
             class="script-panel"
-            :class="{ 'script-panel--ort': ortActiveBook }"
+            :class="{ 'script-panel--ort': isOrtCall }"
           >
             <p class="script-panel__label">
-              <template v-if="ortActiveBook">本页句子</template>
+              <template v-if="isOrtCall">本页句子</template>
               <template v-else>课文（点一句可重读）</template>
               <span
                 v-if="pronunciationAssess && sttEnabled"
@@ -909,6 +936,12 @@ const gradeStages = computed(() => {
             </p>
             <ul class="script-panel__lines">
               <template v-if="ortScriptLines">
+                <li
+                  v-if="ortScriptLines.length === 0"
+                  class="script-panel__illus-hint"
+                >
+                  本页纯插图，左右滑动翻页
+                </li>
                 <li
                   v-for="row in ortScriptLines"
                   :key="row.globalIndex"
@@ -1057,7 +1090,19 @@ const gradeStages = computed(() => {
             </button>
           </div>
           <p
-            v-if="callMode === 'read_along' && readAlongTurn && readAlongTurn !== 'done' && sttEnabled"
+            v-if="
+              callMode === 'read_along' &&
+              isOrtCall &&
+              readAlongTurn &&
+              readAlongTurn !== 'done' &&
+              sttEnabled
+            "
+            class="call-screen__read-intro"
+          >
+            听「叮叮」后跟读；左右滑动翻页会念该页第一句，再听叮叮跟读；可暂停 / 上一句 / 再说一遍 / 我说完啦 / 下一句
+          </p>
+          <p
+            v-else-if="callMode === 'read_along' && readAlongTurn && readAlongTurn !== 'done' && sttEnabled"
             class="call-screen__read-intro"
           >
             听「叮叮」后跟读；可暂停 / 上一句 / 再说一遍 / 我说完啦 / 下一句
@@ -1065,14 +1110,14 @@ const gradeStages = computed(() => {
           <p
             v-if="
               callMode === 'read_along' &&
-              ortActiveBook &&
+              isOrtCall &&
               readAlongTurn &&
               readAlongTurn !== 'done' &&
               !sttEnabled
             "
             class="call-screen__read-intro"
           >
-            只听模式：老师逐句朗读；可暂停；翻页或上一句后需点「下一句」继续
+            只听模式：老师自动往下读；滑动翻页后会念该页句子并继续；点「下一句」可手动跳句
           </p>
           <p v-if="!readAlongTurn" class="call-screen__status">
             {{
@@ -2250,6 +2295,15 @@ const gradeStages = computed(() => {
   opacity: 0.85;
 }
 
+.script-panel__illus-hint {
+  list-style: none;
+  margin: 0;
+  padding: 0.35rem 0;
+  font-size: 0.82rem;
+  color: #8a7a68;
+  text-align: center;
+}
+
 .call-screen__main--ort .ort-call-page__meta {
   flex-shrink: 0;
   margin: 0;
@@ -2272,7 +2326,8 @@ const gradeStages = computed(() => {
 }
 
 .script-panel--ort .script-panel__lines {
-  max-height: 5rem;
+  max-height: none;
+  overflow: visible;
 }
 
 .script-panel--ort {
@@ -2878,6 +2933,94 @@ const gradeStages = computed(() => {
   }
 }
 
+/* 手机/PWA：ORT 听读一屏展示，插图区撑满中间 */
+@media (max-width: 767px) {
+  .app.app--ort-call {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .call-screen--ort {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding-top: max(env(safe-area-inset-top), 0.25rem);
+    padding-bottom: max(env(safe-area-inset-bottom), 0.1rem);
+  }
+
+  .call-screen--ort .call-screen__top--call {
+    flex-shrink: 0;
+    min-height: 2.35rem;
+    padding-bottom: 0.15rem;
+  }
+
+  .call-screen--ort .call-screen__body {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .call-screen--ort .call-screen__main--ort {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .call-screen--ort .ort-call-page {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .call-screen--ort .ort-call-page__frame {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: unset;
+  }
+
+  .call-screen--ort .speed-field--ort {
+    flex-shrink: 0;
+    padding: 0 0.85rem;
+  }
+
+  .call-screen--ort .speed-field--ort .speed-field__label {
+    display: none;
+  }
+
+  .call-screen--ort .script-panel--ort {
+    flex-shrink: 0;
+  }
+
+  .call-screen--ort .script-panel--ort .script-panel__lines {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .call-screen--ort .script-panel--ort .script-panel__line {
+    font-size: 0.98rem;
+    line-height: 1.4;
+    padding: 0.4rem 0.5rem;
+  }
+
+  .call-screen--ort .turn-strip,
+  .call-screen--ort .call-screen__read-actions,
+  .call-screen--ort .call-screen__read-intro,
+  .call-screen--ort .call-screen__status {
+    flex-shrink: 0;
+  }
+}
+
 /* PC：左图右操作，一屏无滚动 */
 @media (min-width: 768px) {
   .app.app--ort-call {
@@ -2990,8 +3133,8 @@ const gradeStages = computed(() => {
   }
 
   .call-screen--ort .script-panel--ort .script-panel__lines {
-    max-height: 8rem;
-    overflow-y: auto;
+    max-height: none;
+    overflow: visible;
   }
 
   .call-screen--ort .script-panel--ort .script-panel__line {

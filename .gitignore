@@ -30,3 +30,8 @@ stock-ai/*.bak
 # substore-clash
 substore-clash/.env
 substore-clash/data/
+
+# xiaozhi-atoms3r (ESP-IDF + 固件 clone)
+xiaozhi-atoms3r/.env
+xiaozhi-atoms3r/.espressif/
+xiaozhi-atoms3r/firmware/

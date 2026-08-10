@@ -10,11 +10,11 @@ from stock_ai.advisor_selection import EXCLUDE_CODES, PRINCIPAL_CNY, parse_advis
 # 电力/公用集群（与投顾主策略 §四 一致）
 POWER_KEYWORDS = ("电力", "储能", "核电", "广核", "发展", "能源", "皖能", "宝新", "南网")
 
-PHASE_POSITION_TARGET = {0: 65.0, 1: 60.0, 2: 75.0}
-PHASE_CASH_TARGET_MIN = {0: 20.0, 1: 25.0, 2: 15.0}
-MAX_SINGLE_PCT_PHASE = {0: 15.0, 1: 30.0, 2: 30.0}
-MAX_SECTOR_CLUSTER_PCT = 45.0
-RISK_BUDGET_PCT = 2.0  # 单笔最大亏损 ≤ 总资产 2%
+PHASE_POSITION_TARGET = {0: 40.0, 1: 50.0, 2: 60.0}
+PHASE_CASH_TARGET_MIN = {0: 60.0, 1: 50.0, 2: 40.0}
+MAX_SINGLE_PCT_PHASE = {0: 4.0, 1: 8.0, 2: 8.0}
+MAX_SECTOR_CLUSTER_PCT = 35.0
+RISK_BUDGET_PCT = 0.5  # 单笔计划亏损 ≤ 10 万实投预算的 0.5%
 
 
 @dataclass
@@ -198,13 +198,13 @@ def build_account_diagnosis(
         score -= 8
 
     score = max(0, min(100, score))
-    max_loss_cny = round(assets * RISK_BUDGET_PCT / 100, 0)
+    max_loss_cny = round(PRINCIPAL_CNY * RISK_BUDGET_PCT / 100, 0)
     worst = min(snaps, key=lambda s: s.pnl or 0) if snaps else None
     worst_loss = abs(worst.pnl) if worst and worst.pnl and worst.pnl < 0 else 0
 
     rebalance: list[str] = []
     if p == 0:
-        rebalance = ["减梅花/止损", "减广州腾现金", "南网反弹锁利", "不新开仓"]
+        rebalance = ["完成库存持仓交易建档", "不新开仓", "隔离资格资产与交易预算"]
     elif max_snap and max_snap.weight_pct > max_single:
         rebalance.append(f"降 {max_snap.name} 至 ≤{max_single:.0f}%")
     if pos_pct > target_pos:
@@ -249,15 +249,10 @@ def build_account_diagnosis(
 
 def _education_tip(phase: int, issues: list[dict], pos_pct: float, target_pos: float) -> str:
     if phase == 0:
-        if pos_pct > target_pos:
-            return (
-                "投教：回本不是赌一只票反弹，而是先降仓位、砍拖累项，"
-                "把波动和最大亏损控在可承受范围内。"
-            )
-        return "投教：阶段0成功标准是完成减仓或仓位下降，不要求净值大涨。"
+        return "交易建档阶段的成功标准是写清每笔失效条件，不是预测下一只涨停。"
     if any(i["title"] == "单票集中" for i in issues):
         return "投教：单票权重过高时，一次误判就可能吃掉数周收益；分散是控风险，不是分散注意力。"
-    return "投教：投顾建议含条件与止损，执行纪律比预测涨跌更重要。"
+    return "交易提示必须含入场条件、失效条件和仓位上限；执行纪律比预测涨跌更重要。"
 
 
 def format_diagnosis_briefing(diagnosis: dict[str, Any]) -> str:
@@ -293,9 +288,8 @@ def format_advisor_delivery_extended(advisor: dict[str, Any]) -> str:
     lines = [
         "【市场一句话】（档位 + 主线 + 情绪）",
         (
-            f"【回本进度】现 ¥{advisor.get('total_assets') or '—'} / "
-            f"本金 {advisor.get('principal_cny')} = {advisor.get('progress_pct')}%"
-            f"；还差约 ¥{advisor.get('gap_to_principal', 0):.0f}"
+            f"【交易资金】实投预算 ¥{advisor.get('principal_cny') or '—'}；"
+            "资格资产与交易仓位分开核算"
         ),
     ]
     if diag:
@@ -306,7 +300,7 @@ def format_advisor_delivery_extended(advisor: dict[str, Any]) -> str:
         gap = diag.get("allocation_gap") or {}
         if gap.get("position_gap_pp"):
             lines.append(
-                f"【配置缺口】仓位需降 {gap['position_gap_pp']}pp"
+                f"【风险缺口】账户仓位需降 {gap['position_gap_pp']}pp"
                 f"（目标 ≤{gap.get('target_position_pct')}%）"
             )
         rb = diag.get("rebalance_priority") or []
@@ -316,7 +310,7 @@ def format_advisor_delivery_extended(advisor: dict[str, Any]) -> str:
         [
             "【本周必做 1～3 条】代码+股数+条件+理由",
             "【本周不做】",
-            f"【风险预算】单笔亏损 ≤ 总资产 {RISK_BUDGET_PCT}%（约 ¥{diag.get('risk_budget', {}).get('max_loss_per_trade_cny', '—')}）",
+            f"【风险预算】单笔计划亏损 ≤ 实投预算 {RISK_BUDGET_PCT}%（约 ¥{diag.get('risk_budget', {}).get('max_loss_per_trade_cny', '—')}）",
         ]
     )
     if diag.get("education_tip"):

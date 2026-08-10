@@ -1,0 +1,19 @@
+NativeTavern · 通用 Main（v2 /lite 角色优先留空）
+
+玩 艾琳娜 v3.0.0-zh（已嵌入世界书）时：
+→ Main 建议【完全清空】；勿再绑 elena-yangsheng-world.json。
+
+玩其他「纯中译无世界书」lite 卡时：
+→ Main 建议【完全清空】，让卡内 description / mes_example 自己带节奏。
+
+玩其他仍带 system_prompt 的中文卡时：
+→ 可用下面通用 Main。
+
+--- 通用 Main（可选）---
+
+全程简体中文。只写 {{char}} 的一条回复。禁止替 {{user}} 发言。
+先回应 {{user}} 最新一条，再推进。禁止复制上一轮句子。
+
+--- 结束 ---
+
+Persona 按角色改（侄子、丈夫…）。勿绑与 PNG 重复的世界书 JSON。

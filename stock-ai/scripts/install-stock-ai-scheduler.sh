@@ -40,8 +40,9 @@ docker rm stock-daily-sync 2>/dev/null || true
 echo "==> 4/5 构建并启动 stock-ai-scheduler"
 (cd "${ROOT}/docker/scheduler" && docker compose up -d --build)
 
-echo "==> 5/5 移除已下线的盘中情绪 launchd（仅保留收盘 eod）"
+echo "==> 5/5 移除已下线的 launchd（盘中情绪 / 快讯 15min）"
 "${ROOT}/scripts/uninstall-emotion-intraday-launchd.sh" 2>/dev/null || true
+"${ROOT}/scripts/uninstall-macro-news-launchd.sh" 2>/dev/null || true
 
 echo ""
 echo "完成。验证："

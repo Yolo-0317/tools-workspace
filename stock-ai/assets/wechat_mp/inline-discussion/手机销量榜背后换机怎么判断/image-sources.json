@@ -1,0 +1,8 @@
+{
+  "report-01.jpg": {"source_type": "report", "page_title": "华为 nova 16 发布报道", "page_url": "https://tech.ifeng.com/c/8tbSuJvOcKh"},
+  "report-02.jpg": {"source_type": "report", "page_title": "荣耀 500 系列发布报道", "page_url": "https://h5.ifeng.com/c/vivoArticle/v002x-_gAhHggoiYZImw4XIZUrj1JS5DBqVmnyDmdl6B25Fo__?isNews=1&showComments=0"},
+  "report-03.jpg": {"source_type": "report", "page_title": "荣耀 Magic8 发布报道", "page_url": "https://www.jvniubi.com/"},
+  "original-01.png": {"source_type": "original", "fallback_reason": "其余公开报道 CDN 直链下载失败，补足换机价格决策图位"},
+  "original-02.png": {"source_type": "original", "fallback_reason": "其余公开报道 CDN 直链下载失败，补足配置比较图位"},
+  "original-03.png": {"source_type": "original", "fallback_reason": "其余公开报道 CDN 直链下载失败，补足延迟换机建议图位"}
+}

@@ -31,13 +31,24 @@ def finalize_news_body(body: str) -> str:
         return body
 
     def _run(text: str) -> str:
+        head = text[:700]
+        if has_reader_hook(head) and re.search(r"\d", head):
+            return inject_transitions_in_section(
+                text,
+                _SECTION,
+                line_re=_NEWS_ITEM_RE,
+                transitions=_TRANSITIONS,
+            )
+        from scripts.tools.wechat_mp_weekend_news import build_news_time_context
+
+        intro = build_news_time_context().intro_lede
         if not has_reader_hook(text[:500]):
             text = insert_after_section_title(
                 text,
                 _SECTION,
                 [
                     "",
-                    "按周五人气序扫一遍；周末消息少的票，重点盯周一竞价与首小时量价。",
+                    intro,
                     "",
                 ],
             )

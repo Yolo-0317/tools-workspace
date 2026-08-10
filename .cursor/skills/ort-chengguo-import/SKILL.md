@@ -12,7 +12,7 @@ description: >-
 | 内容 | 真源 | 禁止 |
 |------|------|------|
 | **页图** `frontend/public/ort/{book_id}/pNN.jpg` | 橙果 PDF，`extract_ort_pdf_pages.py` | — |
-| **课文** `books.json` → `lines[]` 或 `pages[].lines` | 爱贝指导 / Oxford Owl 人工录入 / `chengguo_level2_manual.json` | **勿 OCR PDF**、勿 easyocr |
+| **课文** `books.json` → `pages[].lines` | **橙果 PDF 官方页底 OCR**（`extract_ort_pdf_lines.py`，macOS） | ~~爱贝 i-bei~~、勿用手写爱贝句 |
 
 PDF 结构：p1 封面、p2 家长导读、p3… 故事页（默认 `--story-start 3`）。
 
@@ -38,7 +38,15 @@ python3 teaching/build_lessons_v5.py
 
 混合排版（有的页 1 句、有的 2 句）：直接编辑 `books.json` 的 `pages[]`，勿盲目整级 `--lines-per-page 2`。
 
-L3 已校对示例：`ort_a_cat_in_the_tree`（16 插图页 / 17 句，首页两句）— 参考 `ort_l3_page_groups.json`。
+L3 全书 12 本已按 PDF 逐页 OCR 对齐 `pages[]`（含纯插图页 `lines: []`）：
+
+```bash
+.venv/bin/python scripts/apply_ort_pdf_page_groups.py --level 3 --dry-run
+.venv/bin/python scripts/apply_ort_pdf_page_groups.py --level 3
+# 然后 rebuild catalog + lessons + batch-level 3 抽图
+```
+
+分组备份：`ort_l3_page_groups.json`。单本手工改 `pages[]` 后以 Cat in the Tree 为范本。
 
 ## 路径约定
 
@@ -50,30 +58,25 @@ L3 已校对示例：`ort_a_cat_in_the_tree`（16 插图页 / 17 句，首页两
 
 ```bash
 cd english-buddy
-.venv/bin/pip install pymupdf pillow   # 首次
+.venv/bin/pip install pymupdf pillow ocrmac   # 首次；ocrmac 需 macOS
 
-# 1. 拉爱贝课文（可选，输出 JSON）
-.venv/bin/python scripts/fetch_chengguo_ibei_lines.py
+# 1. 从橙果 PDF OCR 官方课文 → books.json（16 页含纯插图页）
+.venv/bin/python scripts/extract_ort_pdf_lines.py --level 2
 
-# 2. 合并进 books.json（爱贝 + manual JSON）
-.venv/bin/python scripts/merge_ort_chengguo_books.py
-
-# 3. 批量页图 + 封面
+# 2. 批量页图 + 封面
 .venv/bin/python scripts/extract_ort_pdf_pages.py \
   --batch-level 2 \
   --batch-dir "$HOME/Documents/Oxfordreadingtree/级别 (2)【橙果玩英语】"
-.venv/bin/python scripts/extract_ort_pdf_pages.py \
-  --batch-level2-covers "$HOME/Documents/Oxfordreadingtree/级别 (2)【橙果玩英语】"
 
-# 4. 重建 catalog + lessons
+# 3. 重建 catalog + lessons
 cd backend && python3 -c "from teaching.ort_oxford_owl.catalog import write_catalog; write_catalog(13)"
 python3 teaching/build_lessons_v5.py
 
-# 5. 部署
+# 4. 部署
 cd .. && ./scripts/restart.sh --build
 ```
 
-缺课文：编辑 `chengguo_level2_manual.json` 或 `books.json`，再跑 merge（`--dry-run` 可预览）。
+爱贝 `fetch_chengguo_ibei_lines.py` 已弃用；仅 `--use-ibei` 时 merge 脚本才会读爱贝 JSON。
 
 ## Level 3（已有）
 
@@ -96,8 +99,16 @@ cd .. && ./scripts/restart.sh --build
 - Level Tab：`frontend/src/config/ort.ts`（`ort_l2` / `ORT_LEVEL_TABS`）
 - 专题只显示 `images_ready` 读本
 
+## 带读 / 听读（专题页）
+
+| 用户 | 牛津阅读树 |
+|------|------------|
+| 未登录 / 非 STT | **开始听读**：只听，老师逐句往下读，插图随页自动翻 |
+| `ENGLISH_BUDDY_STT_USERS`（yueyue / dingdang）登录 | **开始跟读**（麦克风跟读打分）或 **开始听读（自动翻页）** |
+
+听读不走麦克风；本页末句播完后略停顿再翻页（`ORT_LISTEN_PAGE_TURN_MS`）。配置见 `docs/AUTH.md`。
+
 ## 勿做
 
-- 不要 `pip install easyocr` 或从 PDF 扫课文
+- 不要用爱贝 i-bei 课文覆盖 `books.json`（与橙果 PDF 官方版不一致）
 - 不要把 `frontend/public/ort/*.jpg` 当课文真源
-- 爱贝 aid 不要按 2-01→31049 递增假设，以 `chengguo_maps.py` 为准

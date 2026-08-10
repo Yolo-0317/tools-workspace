@@ -26,6 +26,82 @@ export interface PositionRow {
   action_note?: string
 }
 
+export interface WorkbenchPosition extends PositionRow {
+  role: string
+  decision: string
+  next_review: string
+  operation_card?: {
+    holding_logic: string
+    market_watch: string[]
+    risk_signals: string[]
+    guardrail: string
+    observation_plan?: {
+      time: string
+      focus: string
+      check: string
+      meaning: string
+    }[]
+    close_decision?: string
+    trade_reference?: {
+      buy: string
+      sell: { trigger: string; reference_action: string }[]
+    }
+    decision_paths?: { title: string; when: string; result: string }[]
+    position_guidance?: string
+  } | null
+  weight_pct: number | null
+  trading_budget_weight_pct: number | null
+  trade_profile: string
+  entry_gate: string
+  exit_rule: string
+  confirmation_card?: {
+    overall_status: string
+    source: string
+    updated_at: string | null
+    rule: string
+    items: {
+      key: string
+      label: string
+      status: string
+      timing: string
+      fields: string[]
+    }[]
+  } | null
+}
+
+export interface PortfolioWorkbench {
+  source: string
+  as_of: string | null
+  phase_label: string
+  account: {
+    arrived_principal: number
+    principal_label: string
+    planned_principal: number
+    qualification_assets_target: number
+    trading_budget: number
+    total_assets: number | null
+    market_value: number | null
+    available_cash: number | null
+    holding_pnl: number | null
+    daily_pnl: number | null
+    cumulative_pnl: number | null
+    cumulative_pnl_pct: number | null
+    account_position_pct: number | null
+    plan_arrived_pct: number | null
+    plan_market_exposure_pct: number | null
+    trading_budget_exposure_pct: number | null
+  }
+  actions: { level: string; title: string; detail: string; condition: string }[]
+  themes: {
+    name: string
+    market_value: number
+    weight_pct: number
+    target_max_pct: number | null
+    over_limit: boolean
+  }[]
+  positions: WorkbenchPosition[]
+}
+
 export interface AdvisorWeeklyTask {
   title: string
   detail: string

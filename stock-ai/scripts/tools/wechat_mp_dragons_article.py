@@ -17,9 +17,9 @@ from scripts._bootstrap import ensure_repo_root_on_path
 ensure_repo_root_on_path()
 
 from scripts.analysis.eastmoney_sop_extract import build_fast_preliminary_report
-from scripts.tools.deepseek_client import call_deepseek, is_llm_configured
+from scripts.tools.deepseek_client import call_wechat_mp_llm, is_wechat_mp_llm_configured
 from scripts.tools.portfolio_db import load_stock_names_by_codes
-from scripts.tools.wechat_mp_public import PUBLIC_MP_WRITER_RULE, RESEARCHER_VOICE_RULE
+from scripts.tools.wechat_mp_public import PUBLIC_MP_WRITER_RULE, RESEARCHER_VOICE_RULE, PLATFORM_PROPERTY_RISK_RULE
 from scripts.tools.wechat_mp_monetization import monetization_prompt_block
 
 TZ = ZoneInfo("Asia/Shanghai")
@@ -480,7 +480,7 @@ def generate_dragons_trader_body(
     except Exception:
         align = ""
 
-    if not is_llm_configured():
+    if not is_wechat_mp_llm_configured():
         return sanitize_dragons_public_text(
             _template_trader_body(
                 hdr=hdr,
@@ -500,6 +500,7 @@ def generate_dragons_trader_body(
 读者是活跃交易者：用博弈框架写清梯队与情绪位置，语言偏研究备忘录，不是游资喊单体。
 {PUBLIC_MP_WRITER_RULE}
 {RESEARCHER_VOICE_RULE}
+{PLATFORM_PROPERTY_RISK_RULE}
 {_DRAGON_PUBLIC_BANNED}
 {align}
 
@@ -524,7 +525,7 @@ def generate_dragons_trader_body(
 
 ## 输出结构（严格按节，禁止 emoji、禁止 markdown 表格、禁止「研究员札记 |」；**小标题禁止「一、二、三」序号**，只用 `> 标题`）
 > 情绪与盘面
-（**开篇 2～3 句必须含至少 2 个数字**：涨停/跌停、炸板率、涨跌比、连板高度等；再写 1～2 短段解读接力环境；总篇幅控制在 4 段以内，不给买卖意见）
+（**开篇 2～3 句必须含至少 2 个数字**：涨停/跌停、炸板率、涨跌比、连板高度等；**可补 1 句宏观流动性或政策预期对情绪的影响**（公开信息）；再写 1～2 短段解读接力环境；总篇幅控制在 4 段以内，不给买卖意见）
 
 > 龙头拆解
 （**仅**前 {n} 只独立 4 行块，标题行格式必须为「1. 股票名（000001）」；每只「量价资金」≤3 句）
@@ -551,7 +552,7 @@ def generate_dragons_trader_body(
 {monetization_prompt_block("dragons")}"""
 
     try:
-        content = call_deepseek(
+        content = call_wechat_mp_llm(
             [
                 {
                     "role": "system",

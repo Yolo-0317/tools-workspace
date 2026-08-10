@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import os
 import re
+from pathlib import Path
 
 # (PDF 文件名, book_id, 显示标题)
 CHENGGUO_LEVEL2: list[tuple[str, str, str]] = [
@@ -59,9 +61,43 @@ CHENGGUO_LEVEL3: list[tuple[str, str, str]] = [
     ("3-12 By the Stream.pdf", "ort_by_the_stream", "By the Stream"),
 ]
 
+CHENGGUO_LEVEL4: list[tuple[str, str, str]] = [
+    ("4-01 Lucky the Goat.pdf", "ort_lucky_the_goat", "Lucky the Goat"),
+    ("4-02 Adam's Car.pdf", "ort_adams_car", "Adam's Car"),
+    ("4-03 Yasmin and the Flood.pdf", "ort_yasmin_and_the_flood", "Yasmin and the Flood"),
+    ("4-04 Yasmin's Dress.pdf", "ort_yasmins_dress", "Yasmin's Dress"),
+    ("4-05 Mosque School.pdf", "ort_mosque_school", "Mosque School"),
+    ("4-06 Adam Goes Shopping.pdf", "ort_adam_goes_shopping", "Adam Goes Shopping"),
+    ("4-07 House for Sale.pdf", "ort_house_for_sale", "House for Sale"),
+    ("4-08 The New House.pdf", "ort_the_new_house", "The New House"),
+    ("4-09 Come In!.pdf", "ort_come_in", "Come In"),
+    ("4-10 The Secret Room.pdf", "ort_the_secret_room", "The Secret Room"),
+    ("4-11 The Play.pdf", "ort_the_play", "The Play"),
+    ("4-12 The Storm.pdf", "ort_the_storm", "The Storm"),
+    ("4-13 Nobody Got Wet.pdf", "ort_nobody_got_wet", "Nobody Got Wet"),
+    ("4-14 The Weather Vane.pdf", "ort_the_weather_vane", "The Weather Vane"),
+    ("4-15 Poor Old Mum.pdf", "ort_poor_old_mum", "Poor Old Mum"),
+    ("4-16 The Wedding.pdf", "ort_the_wedding", "The Wedding"),
+    ("4-17 The Camcorder.pdf", "ort_the_camcorder", "The Camcorder"),
+    ("4-18 The Balloon.pdf", "ort_the_balloon", "The Balloon"),
+    ("4-19 Wet Paint.pdf", "ort_wet_paint", "Wet Paint"),
+    ("4-20 Swap!.pdf", "ort_swap", "Swap!"),
+    ("4-21 The Flying Elephant .pdf", "ort_the_flying_elephant", "The Flying Elephant"),
+    ("4-22 The Scarf.pdf", "ort_the_scarf", "The Scarf"),
+    ("4-23 The Dragon Dance.pdf", "ort_the_dragon_dance", "The Dragon Dance"),
+    ("4-24 Everyone Got Wet.pdf", "ort_everyone_got_wet", "Everyone Got Wet"),
+    ("4-25 Dad's Jacket.pdf", "ort_dad_s_jacket", "Dad's Jacket"),
+    ("4-26 Stuck in the Mud.pdf", "ort_stuck_in_the_mud", "Stuck in the Mud"),
+    ("4-27 The Den.pdf", "ort_the_den", "The Den"),
+    ("4-28 Look Smart.pdf", "ort_look_smart", "Look Smart"),
+    ("4-29 Tug of War.pdf", "ort_tug_of_war", "Tug of War"),
+    ("4-30 An Important Case.pdf", "ort_an_important_case", "An Important Case"),
+]
+
 CHENGGUO_BY_LEVEL: dict[str, list[tuple[str, str, str]]] = {
     "2": CHENGGUO_LEVEL2,
     "3": CHENGGUO_LEVEL3,
+    "4": CHENGGUO_LEVEL4,
 }
 
 # 爱贝亲子网 ORT L2 中文指导 aid（人工校对：≠ 橙果 2-XX 序号）
@@ -92,3 +128,37 @@ def pdf_map_for_level(level: str) -> list[tuple[str, str]]:
     """Return [(pdf_filename, book_id), ...] for extract script."""
     rows = CHENGGUO_BY_LEVEL.get(level) or []
     return [(pdf, bid) for pdf, bid, _title in rows]
+
+
+def pdf_filename_for_book(book_id: str) -> str | None:
+    for rows in CHENGGUO_BY_LEVEL.values():
+        for pdf, bid, _title in rows:
+            if bid == book_id:
+                return pdf
+    return None
+
+
+def ort_level_for_book(book_id: str) -> str | None:
+    for level, rows in CHENGGUO_BY_LEVEL.items():
+        for _pdf, bid, _title in rows:
+            if bid == book_id:
+                return level
+    return None
+
+
+def chengguo_batch_dir(level: str) -> Path:
+    env_key = f"ENGLISH_BUDDY_CHENGGUO_L{level}_DIR"
+    default = f"~/Documents/Oxfordreadingtree/级别 ({level})【橙果玩英语】"
+    return Path(os.getenv(env_key, default)).expanduser()
+
+
+def resolve_chengguo_pdf(book_id: str) -> Path | None:
+    pdf_name = pdf_filename_for_book(book_id)
+    level = ort_level_for_book(book_id)
+    if not pdf_name or not level:
+        return None
+    batch = chengguo_batch_dir(level)
+    path = batch / pdf_name
+    return path if path.is_file() else None
+
+

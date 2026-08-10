@@ -1,0 +1,26 @@
+{
+  "book_id": "hp02",
+  "book_title_en": "Harry Potter and the Chamber of Secrets",
+  "book_title_zh": "哈利·波特与密室",
+  "chapter_count": 18,
+  "chapters": [
+    { "id": 1, "title_en": "The Worst Birthday", "title_zh": "最糟糕的生日", "en_file": "OEBPS/hp02_watermarkval001_en-ushtml", "zh_file": "index_split_023.html" },
+    { "id": 2, "title_en": "Dobby's Warning", "title_zh": "多比的警告", "en_file": "OEBPS/hp02_watermarkval002_en-ushtml", "zh_file": "index_split_024.html" },
+    { "id": 3, "title_en": "The Burrow", "title_zh": "陋居", "en_file": "OEBPS/hp02_watermarkval003_en-ushtml", "zh_file": "index_split_025.html" },
+    { "id": 4, "title_en": "At Flourish and Blotts", "title_zh": "在丽痕书店", "en_file": "OEBPS/hp02_watermarkval004_en-ushtml", "zh_file": "index_split_026.html" },
+    { "id": 5, "title_en": "The Whomping Willow", "title_zh": "打人柳", "en_file": "OEBPS/hp02_watermarkval005_en-ushtml", "zh_file": "index_split_027.html" },
+    { "id": 6, "title_en": "Gilderoy Lockhart", "title_zh": "吉德罗·洛哈特", "en_file": "OEBPS/hp02_watermarkval006_en-ushtml", "zh_file": "index_split_028.html" },
+    { "id": 7, "title_en": "Mudbloods and Murmurs", "title_zh": "泥巴种和细语", "en_file": "OEBPS/hp02_watermarkval007_en-ushtml", "zh_file": "index_split_029.html" },
+    { "id": 8, "title_en": "The Deathday Party", "title_zh": "忌辰晚会", "en_file": "OEBPS/hp02_watermarkval008_en-ushtml", "zh_file": "index_split_030.html" },
+    { "id": 9, "title_en": "The Writing on the Wall", "title_zh": "墙上的字", "en_file": "OEBPS/hp02_watermarkval009_en-ushtml", "zh_file": "index_split_031.html" },
+    { "id": 10, "title_en": "The Rogue Bludger", "title_zh": "失控的游走球", "en_file": "OEBPS/hp02_watermarkval010_en-ushtml", "zh_file": "index_split_032.html" },
+    { "id": 11, "title_en": "The Duelling Club", "title_zh": "决斗俱乐部", "en_file": "OEBPS/hp02_watermarkval011_en-ushtml", "zh_file": "index_split_033.html" },
+    { "id": 12, "title_en": "The Polyjuice Potion", "title_zh": "复方汤剂", "en_file": "OEBPS/hp02_watermarkval012_en-ushtml", "zh_file": "index_split_034.html" },
+    { "id": 13, "title_en": "The Very Secret Diary", "title_zh": "绝密日记", "en_file": "OEBPS/hp02_watermarkval013_en-ushtml", "zh_file": "index_split_035.html" },
+    { "id": 14, "title_en": "Cornelius Fudge", "title_zh": "康奈利·福吉", "en_file": "OEBPS/hp02_watermarkval014_en-ushtml", "zh_file": "index_split_036.html" },
+    { "id": 15, "title_en": "Aragog", "title_zh": "阿拉戈克", "en_file": "OEBPS/hp02_watermarkval015_en-ushtml", "zh_file": "index_split_037.html" },
+    { "id": 16, "title_en": "The Chamber of Secrets", "title_zh": "密室", "en_file": "OEBPS/hp02_watermarkval016_en-ushtml", "zh_file": "index_split_038.html" },
+    { "id": 17, "title_en": "The Heir of Slytherin", "title_zh": "斯莱特林的继承人", "en_file": "OEBPS/hp02_watermarkval017_en-ushtml", "zh_file": "index_split_039.html" },
+    { "id": 18, "title_en": "Dobby's Reward", "title_zh": "多比的报偿", "en_file": "OEBPS/hp02_watermarkval018_en-ushtml", "zh_file": "index_split_040.html" }
+  ]
+}

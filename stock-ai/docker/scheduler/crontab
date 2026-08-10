@@ -10,13 +10,19 @@ PATH=/usr/local/bin:/usr/bin:/bin
 # 工作日 17:45 选股 + SOP（本机 OpenCLI；日线 17:30 同步后）
 45 17 * * 1-5 /bin/sh /app/docker/scheduler/run-host-job.sh selection >> /app/logs/selection.log 2>&1
 
-# 工作日 18:00 收盘龙头 eod（须在 stock_daily 与选股之后 → emotion_cycle_*）
+# 工作日 18:00 收盘龙头 eod（不再链式触发公众号草稿）
 0 18 * * 1-5 /bin/sh /app/sync_emotion_cycle.sh eod >> /app/logs/emotion_cycle.log 2>&1
+
+# 公众号热点草稿定时已暂停（2026-08-06）；保留命令供人工恢复。
+# 0 9 * * * /bin/sh /app/docker/scheduler/run-host-job.sh wechat-mp-hotspot-early >> /app/logs/wechat_mp_hotspot_early.log 2>&1
+# 0 11 * * * /bin/sh /app/docker/scheduler/run-host-job.sh wechat-mp-hotspot-morning >> /app/logs/wechat_mp_hotspot_morning.log 2>&1
+# 0 15 * * * /bin/sh /app/docker/scheduler/run-host-job.sh wechat-mp-hotspot-afternoon >> /app/logs/wechat_mp_hotspot_afternoon.log 2>&1
+# 0 18 * * * /bin/sh /app/docker/scheduler/run-host-job.sh wechat-mp-hotspot-evening >> /app/logs/wechat_mp_hotspot_evening.log 2>&1
 
 # 盘前 pre_market 已下线（2026-06-04）
 
 # 盘中监控 — 已停用（2026-06-04：OpenCLI 抢 Chrome；用户不再需要）
 # */5 * * * 1-5 /bin/sh /app/docker/scheduler/run-host-job.sh monitor >> /app/logs/monitor.log 2>&1
 
-# 周五 20:30 投顾周复盘 → MySQL + 看板
-30 20 * * 5 /bin/sh /app/docker/scheduler/run-host-job.sh advisor-weekly >> /app/logs/advisor_weekly.log 2>&1
+# 周五 20:30 投顾周复盘 — 已停用（2026-06-16）
+# 30 20 * * 5 /bin/sh /app/docker/scheduler/run-host-job.sh advisor-weekly >> /app/logs/advisor_weekly.log 2>&1

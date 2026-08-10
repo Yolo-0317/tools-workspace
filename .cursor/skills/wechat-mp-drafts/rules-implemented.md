@@ -20,9 +20,17 @@
 
 | 规则 | 实现 | 测试 |
 |------|------|------|
-| 行情四槽共用口吻块 | `RESEARCHER_VOICE_RULE` in `wechat_mp_public.py` | — |
+| 行情四槽共用口吻块 | `RESEARCHER_VOICE_RULE` in `wechat_mp_public.py`（含宏观政策 + 主观判断） | — |
 | 注入 LLM prompt | `wechat_mp_market_article` / `top5` / `dragons` / `news` | — |
-| Skill 细则 | `.cursor/skills/wechat-mp-drafts/researcher-voice.md` | — |
+| Skill 细则 | `researcher-voice.md` · `wechat-mp-writing/depth-and-opinion.md` | — |
+
+## 影视深度（立意 + 见解）
+
+| 规则 | 实现 | 测试 |
+|------|------|------|
+| TV_DEPTH_RULE | `wechat_mp_tv_review_template.py` | — |
+| 注入影视 LLM | `wechat_mp_tv_review_article.generate_tv_review_body` | — |
+| Skill | `.cursor/skills/wechat-mp-writing/depth-and-opinion.md` | — |
 
 ## 摘要 SEO 与 #话题
 
@@ -40,11 +48,30 @@
 | **market 按 edition 标题池** | `wechat_mp_market_titles.py`（各 20 条 + 按日轮换） | `test_wechat_mp_market_titles.py` |
 | **market 按 edition 标题** | `_market_title` + `_market_publish_label` | `test_market_title_by_edition` |
 | market 钩子来自 **market 正文**，非快讯 | `_compress_market_tags` / `_extract_market_hook` | — |
-| news 钩子来自 **快讯列表** | `_news_title` | — |
+| news 钩子来自 **快讯列表** | `_news_title` ← `wechat_mp_news_titles` | `test_wechat_mp_news_titles.py` |
+| **news 拒榜位元叙述当事件** | `_short_event_hook` 拒 `人气榜/榜首`；禁 `背景下`；单股不凑 `甲与甲` | `test_hot_stock_news_title_rejects_rank_meta_as_event` · `test_hot_stock_news_title_single_lead_no_pair_echo` |
+| **hotspot 标题不砍半截人名** | `_GEO_SECTION_MAP` · `_title_hook` 冒号取前半 · `A股` 后缀前加顿号 | `test_build_hotspot_title_geo_no_mid_name_cut` |
+| **news 10 条去重** | `_summary_pad_sentences` · `_hot_stock_fallback_comment` · `_warn_duplicate_news_copy` | `test_synthetic_batch_summaries_not_identical` |
+| **sector evening 去重** | `sector_evening_dedup_enabled` · `news_hot_exclude_codes` · `sector_hot_watch_top_n=0` | `test_wechat_mp_sector_evening_dedup.py` |
 | **market 与 news 同日勿雷同** | `_titles_too_similar`；`--kind all` 传 `peer_market_title` | `test_market_news_titles_differ` |
 | digest ≤128 字 | 各 `_digest` 函数截断 | — |
 
-## 要闻 `news`
+## 平台推荐安全（财产风险 / 不适合推荐）
+
+| 规则 | 实现 | 测试 |
+|------|------|------|
+| 标题禁 `怎么玩` `还在榜` `领衔` `热股` `投资日记` | `wechat_mp_public.sanitize_public_title` + `_TITLE_RISK_INLINE_REPLACEMENTS` | `test_sanitize_public_title_strips_old_winners` |
+| 标题禁 `A股必读` `A股周末必读` | `PLATFORM_PROPERTY_RISK_CHECKS` · 标题池已移除 | `test_check_platform_property_risk_bidu_title` · `test_sanitize_public_title_strips_bidu` |
+| 标题+摘要+正文推前审计 | `audit_recommendation_safety` ← `wechat_mp_draft_batch` | `test_check_platform_property_risk_in_title` |
+| LLM prompt 平台红线 | `PLATFORM_PROPERTY_RISK_RULE` in sector/dragons/top5/market | — |
+| 正文 prepend 信息说明 | `strip_information_notices` → `render_article_content_html` 只 prepend 一次 | `test_information_notice_not_duplicated_on_re_render` |
+| 说明行不参与平台风险替换 | `sanitize_platform_property_risk` 跳过 `_INFORMATION_NOTICE_LINE_RE` | 同上 |
+| 免责用「复盘笔记」非「投资日记」 | `wechat_mp_content.DISCLAIMER` | `test_disclaimer_whitelist` |
+| SEO 标题池负分 risky 句式 | `title_sousou_hook_score` | `test_title_sousou_hook_score_prefers_search_winners` |
+| **勿**改小节 `> 明日计划与纪律` | 正文 `_PLATFORM_RISK` 不含 `明日计划` 替换 | `test_generate_without_llm` |
+| 限推后渠道复盘 | 页面 `--daily-series` · [content-analytics-sop.md](content-analytics-sop.md)；**勿用 API** | — |
+
+记忆：`project-memory.mdc` §2026-06-12 · §2026-06-14 · §2026-06-16 · `memory-python.mdc` §2026-06-12 · §2026-06-14 · §2026-06-16。
 
 | 规则 | 实现 | 测试 |
 |------|------|------|
@@ -117,7 +144,9 @@
 | 留言默认开 | `comment_settings()` → `need_open_comment=1`（env 可关） |
 | 摘要 SEO 分 edition | `enrich_digest(..., edition=)` + `market_digest_core` |
 | **阅读量清单** | `wechat_mp_traffic_checklist.py`；`eval --traffic` / `draft --dry-run` |
+| **推稿质量门禁** | `wechat_mp_push_quality_gate.py`；`draft_batch --batch evening` 推稿前自动跑（总分≥75、AI味≤20）；见 [eval-gates.md](../wechat-mp-writing/eval-gates.md) |
 | 原创 / 话题 `#` / 推荐 ♡ | **API 不支持** → mp.weixin.qq.com 发布/发布后手动 |
+| **起号 / 入池 / 发表必勾** | 运营 SOP：[cold-start-playbook.md](../wechat-mp-growth-ops/cold-start-playbook.md) §四（原创·允许推荐·合集） |
 
 ## 与带货（简选小电）隔离
 
@@ -164,9 +193,10 @@ cd stock-ai
 uv run python -m scripts.tools.wechat_mp_draft --dry-run
 uv run python -m scripts.tools.wechat_mp_draft --kind news
 uv run python -m scripts.tools.wechat_mp_eval --kind all --traffic   # 评分 + 阅读量清单
+uv run python -m scripts.tools.wechat_mp_push_quality_gate --batch evening  # 推稿前门禁
 ```
 
-推稿默认 **`WECHAT_MP_STRICT_COMPLIANCE=1`**：合规未过则**不写入**草稿箱（可设 `0` 仅告警）。
+推稿默认 **`WECHAT_MP_STRICT_COMPLIANCE=1`**：合规未过则**不写入**草稿箱（可设 `0` 仅告警）。evening 批次默认 **`WECHAT_MP_PUSH_QUALITY_GATE=1`**：质量门禁未过则不 upsert（`WECHAT_MP_QUALITY_GATE_STRICT=0` 仅告警）。
 
 槽位状态：`data/wechat_mp_draft_slots.json`（update 优先，勿手删）。
 
@@ -183,3 +213,10 @@ uv run python -m scripts.tools.wechat_mp_eval --kind all --traffic   # 评分 + 
 9. **双免责**：曾 LLM 内联 + 文末框 → 已 `strip_inline_disclaimer_blocks` + 文末 1 块。
 10. **彩色开篇**：market 在 `盘面速览` 前；top5/dragons 首节首段 → `opening_lede_paragraph_style`。
 11. **阅读原文**：默认关（`WECHAT_MP_READ_SOURCE_URL=0`），勿链 home-hub。
+12. **hotspot「今天深写什么」**（原「为什么选这一题」）：只写**本条事件**为何值得深读；**禁止**候选/同批素材等编审过程。旧节名 LLM 输出会 normalize 为新节名。
+13. **搜一搜写稿规则（2026-07-12）**：官方教程 01/03 → `wechat-mp-writing/sousou-content-rules.md`（标题路牌完整、单主题、开篇一致、禁编审话术）；evening 审阅顺序 hotspot→news（定时两篇）。
+14. **读者禁采集缺口话术（2026-07-12）**：禁止「数据未获取」「样本个股…未获取」「交易时段…未获取」；缺数写板块/指数现象。实现：`HOTSPOT_READER_DATA_RULE` + `sanitize_reader_data_gap()` + 合规项 `数据缺口元叙述` + eval/traffic `reader_no_data_gap_meta`。
+15. **hotspot 节标题粘连（2026-07-12）**：`为什么选这一题`/`向后看` 须独立成行，禁止与正文同段。实现：`reflow_hotspot_body` + `ensure_blockquote_sections` 拆行；HTML 侧 `is_blockquote_title_line` 拒 glued 行。
+16. **news/hotspot 怪标题（2026-07-28）**：禁把「XX人气榜首」当事件套 `背景下`；禁通稿冒号硬切半截人名；`A股` 后缀前加顿号。Skill：`sousou-content-rules.md` §标题硬禁；代码 `wechat_mp_news_titles` / `wechat_mp_hotspot_article`。
+17. **hotspot 热搜选题（2026-07-30）**：默认 `WECHAT_MP_HOTSPOT_SOURCE=trends`（微博+百度）；`evening_mode=hotspot_only` 只推 1 篇；模块 `wechat_mp_hot_trends.py`。
+18. **hotspot 参考仿写 + 纯段落（2026-07-30）**：东财搜索取材 →【参考文章·仿写】→ 二次仿写；纯段落无小标题；禁元叙述（`公开报道里…`）；事实标题 `build_hotspot_title_from_facts`；排版 `reflow_hotspot_layout`（≤130 字/段）。Skill：`wechat-mp-writing/hotspot-deep-review.md`；代码 `wechat_mp_hotspot_research.py` · `strip_hotspot_meta_commentary` · `dedupe_hotspot_index_mentions`。

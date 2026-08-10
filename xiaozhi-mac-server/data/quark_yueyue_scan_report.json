@@ -1,0 +1,301 @@
+{
+  "scanned_at": "2026-07-19T18:16:00",
+  "yueyue_folder": {},
+  "yueyue_child_count_hint": null,
+  "discovered_folder_count": 54,
+  "catalog_entry_count": 19,
+  "note": "Quark Open API has no folder-list command; this scan uses keyword search. path_hint values are curated under 玥玥/; verify playback for each series.",
+  "folders": {
+    "001.微观小世界V昆虫总动员 第一季 78集 高清": {
+      "seed": "昆虫总动员",
+      "include_items": 78,
+      "fid": "~1RB--AMDAN5Iq9iNcXDhmDG2pI4pQM-kLB4WJDRijZDOql1pPLeLQG2FsIh1G6VNuC0qwLZk4jETKh6c6DIg7Uo"
+    },
+    "002.BBC英语动画【小优趣系列精选20部】": {
+      "seed": "小优趣",
+      "include_items": 27,
+      "fid": "~1luu04owtaCkLbC1JyMwlnKj1NKCeKSRaWbGj8ynaFfNcdrXqeqdguBOFCs1gOfBbTo4vAJwkz5UG0mCXKmW1fQ"
+    },
+    "002.微观小世界V昆虫总动员 第二季 99集 高清": {
+      "seed": "昆虫总动员",
+      "include_items": 99,
+      "fid": "~1zSVxnY7Mw8cRSjjAUgLG0QCHAI0mf_C7lGXoCQB1ULfvGLXc65eE_S54me-q7YhaWstwGuUjlnqrjmj0uBImZw"
+    },
+    "01-开口说单词 Yakka Dee（1-5季）": {
+      "seed": "Yakka",
+      "include_items": 5,
+      "fid": "~1Au3TkLz__LcTD4DIBQC7BqEfXIG03qmvS9sSxdaHEurh9kWOwMhkps13fxfVzBMRxJi2Badt4VcEVJtv-8ZPZo"
+    },
+    "01.数字积木 Numberblocks 第一季 全15集 英语 英字": {
+      "seed": "Numberblocks",
+      "include_items": 15,
+      "fid": "~1nC8YIKVjNH4RwqhUaqsIAGq4AsR8HgjFHIIvfaihMKmsTa3n13OmD95y2_aw5O1QL3aTR2l6xuwNzyQH-UuZZE"
+    },
+    "02.数字积木 Numberblocks 第二季 全15集 英语 英字": {
+      "seed": "Numberblocks",
+      "include_items": 15,
+      "fid": "~1NvefRFPEj7o5MZQ-h1vMPz_Ke_rt-zcVbvU1FqRjf30I0SpJcP10u_4856YM7mT6D6KLxmDHKWYIW3uz5hqX1U"
+    },
+    "03-布鲁伊Bluey（中文版+英文版）": {
+      "seed": "Bluey",
+      "include_items": 5,
+      "fid": "~142I6PYfiU24OWQqx8rinITd_ytYEtd4YK0ymMIvYdsh0gmxFC8JzZB3oR4yKvhkkbjwZDvTnV8I7xqzD689dyU"
+    },
+    "03.布鲁伊 第三季 全52集 国语": {
+      "seed": "03-布鲁伊",
+      "include_items": 52,
+      "fid": "~1D1Z5HnMtSisFA3GJSmAF52sylZpRvUjFM-guWArSBeebUG7cM2cWlpeMnYGX6mKgnNaaJ8QF25oaRw9fdgeRZg"
+    },
+    "03.布鲁伊 第三季 全52集 英语": {
+      "seed": "03-布鲁伊",
+      "include_items": 52,
+      "fid": "~12QmzO1hzqUoweBI8tfr7dpQFaQcVVDdcLm_1TZV986fGm96rwiJGTj-B3gvj5gOChAi_RD1cPtm2u45sUKnu0o"
+    },
+    "03.数字积木 Numberblocks 第三季 全30集 英语 英字": {
+      "seed": "Numberblocks",
+      "include_items": 30,
+      "fid": "~1WUoV4yro7DAn52kfSPNxN5F1E0PVrzDV5ZjfbQIwTyggEa38omjM3gx8AiGkrmQhc2Q_bZoKvDdAI1DxlxwOEg"
+    },
+    "04.数字积木 Numberblocks 第四季 全30集 英语 英字": {
+      "seed": "Numberblocks",
+      "include_items": 30,
+      "fid": "~1vpJ5Gwlb-PAWU0BXEOjV-f76QYr-eNHxkwnSPlbC9Heg2-Bb2GodbwB3e9yYRWQPvyFIqfU2kriBqRgG2_v6Zk"
+    },
+    "05.数字积木 Numberblocks 第五季 全34集 英语 英字": {
+      "seed": "Numberblocks",
+      "include_items": 34,
+      "fid": "~1rj9CaacvXnAzK2JcONHBB9zd4rvG9UvJAz2Zzu5V1kgXn9TJqxfPCX_ytPWTggHXP1pvcjx1H1jKqL8lnWRJLw"
+    },
+    "06- BBC数字积木1-5季（英文字幕）": {
+      "seed": "06- BBC数字积木",
+      "include_items": 7,
+      "fid": "~1oIB75g-tEAUzyEi9SlPBBcW30ShIB3lR7zrr3BJDQO7jHRkAy8c1uV2DwVHFBzM4QlQq24MhYnxqSdxWKTo0vY"
+    },
+    "07- 阅读树配套原版高清动画 The Magic Key 神奇之钥": {
+      "seed": "神奇之钥",
+      "include_items": null,
+      "fid": "~1JHTy2tRXqdI6y4RhjCsQXVElNdAGWu3li7Hj2JAljrYOH_M7Ba2Ozx7ABxJ_E4bFmMR3V3wvPPFXhrX8gy26Zk"
+    },
+    "07.【牛津树精讲】Susan教英语 1-3级": {
+      "seed": "Susan教英语",
+      "include_items": 3,
+      "fid": "~16LLCd4VEMuM4JYwIvd75vp0mbmXtLRa6SRQeod_l4ib-FOdM8IkL3OXdTy596RFNcX3n7E7IEinnGoitxcQY_Y"
+    },
+    "07.数字积木 Numberblocks 1-5【音频】": {
+      "seed": "Numberblocks",
+      "include_items": 6,
+      "fid": "~1pC_WYzsrHkk0jZJ_E62i_dpIkQk3W9098Djjpg1ugyEBT5UMH5em69oHy5FyeY710xuXfntmRhBe_O31C2VSZk"
+    },
+    "09-蓝色小考拉Penelope【中英双版+绘本台词+译文+故事会】": {
+      "seed": "Penelope",
+      "include_items": 6,
+      "fid": "~1IhZCtvWe9_ccivILNaZgzqziIeDeUR02FEA0QHq2boS2R6AmsqAOLt8PXqSfhXE1ACOeYtl59tA9pk0MeZuUuo"
+    },
+    "09【牛津树精讲】Susan教英语 1-3级": {
+      "seed": "Susan教英语",
+      "include_items": 3,
+      "fid": "~1JkVp1YoaotYBnCA2rbJab7vzihJeJuhdWCiBu37K3fhEUcIh1S6fI57YUGRwP40s4fXEpUY1-XpTLTVcXS-2uo"
+    },
+    "10- 高清版Big Muzzy玛泽的故事（英文版+中文版）": {
+      "seed": "Muzzy",
+      "include_items": 5,
+      "fid": "~1Msz4e0zhR6IjLMAEZ2xjrZEprIZjd04Y6qz4kbuk2blgN4wk1-qOaYaFPCH2M8JjKcPM2u4ipCRYTmvCGNPtwg"
+    },
+    "11-积木字母Alphablocks（英文字幕）": {
+      "seed": "11-积木",
+      "include_items": 5,
+      "fid": "~1l1ELnynKtMku9Ql_dE1xrgVNXY90ONOj0CZMDoaFhslWVwv7pEpvWcWDBk0tE8xTOJvEviz8RRNFs2iuctTDIc"
+    },
+    "12-儿童学习单词 Abadas【BBC系列】": {
+      "seed": "Abadas",
+      "include_items": 52,
+      "fid": "~1TMk3MNVij0g3CWcuj7a9UYlybBbvdT-vU_3C6OZKcgyBHni1JBdIzQMtpMm1nPt3Ct_lqEhbrhfPzghQCUjEsA"
+    },
+    "15-雨果带你看世界【BBC系列】国语+英语": {
+      "seed": "15-雨果",
+      "include_items": 3,
+      "fid": "~1Pgr3PqqwzmEkny19FfCgXIWHP9KU2wW_QjOCnFeRsWFq-pCAN9Av04be-sNS2qTGxEd3JThxvN6NknO1r2RTEM"
+    },
+    "19 - 小贝大发明STEM动画Bitz.&.Bob": {
+      "seed": "Bitz",
+      "include_items": 2,
+      "fid": "~1ZI6NNgT-0_MinxGYVDYjnVreI0e4YhW48OCF5TkZ6npqdfS2HdlIkhycZ8mO_JDYRNpomtHy_diBgmPa7Culi0"
+    },
+    "BBC.微观小世界 昆虫总动员 1-2季 1080P 16G": {
+      "seed": "昆虫总动员",
+      "include_items": 4,
+      "fid": "~1Vx3q7TgI5Mcwr3DMCktzxlIW_pst3VlGLJpBMcpN7Tyd407zW4rDNnoWDZ2sJjpWMgSkVlMcrcYrJjk4gx8yk8"
+    },
+    "Bluey_Activities": {
+      "seed": "Bluey",
+      "include_items": 17,
+      "fid": "~128Ww_h85ZmQoi3E1N5kz0T0IVz7KLRacYXhHgUOkjThknaxHuPug0zjB8dcTG8Zok0rJZNYmVGRAAY_a51qdds"
+    },
+    "Bluey_Christmas": {
+      "seed": "Bluey",
+      "include_items": 12,
+      "fid": "~1uVkakdtopWY1lBjx0egonqoShiaEkgP4P9Bj4EYobvicrY2gzkLzOP2PMxyVFi_DvtbssaPgUgio9QK_0a0EgE"
+    },
+    "Bluey_Crafts": {
+      "seed": "Bluey",
+      "include_items": 19,
+      "fid": "~1CT5CWcSgXosC0bfSbfrliAE9iRFh6N4qAmRlU2VdobIElbhO_KVX9RiKVurl1WzCOkAKEAhJEIm4WcXVVYCcmY"
+    },
+    "Bluey_Party": {
+      "seed": "Bluey",
+      "include_items": 5,
+      "fid": "~1SDQl2Pri75Qv3ZQRoOgsd75Dmf4tXSSn1IKAE_btSUzjPxRXSWEY2oe-iBZ3FwQQQktsjRj1pR-WQrRFASV5lE"
+    },
+    "ORT L5 peggy老师讲解mp3": {
+      "seed": "ORT",
+      "include_items": 36,
+      "fid": "~1YapIPl8HJDsnLBOf6mvMS_Xhz3CTKeOkmqL2MnLVpKIFtltVOpzMFLLY0jSIxKxLsj5AfWWK10ZOZNR9-ZUuBg"
+    },
+    "Susan教英语 牛津树 第1级 48视频课+48原声音频": {
+      "seed": "Susan教英语",
+      "include_items": 2,
+      "fid": "~1FzhwqTT7eLYQE3Cs4J0tgFBcFgXTWbJ3zxq9VMXdgrAAJaqU4xoM5gm6aGprU1uSviVi5juDFeYOWuxA__K69Y"
+    },
+    "Susan教英语 牛津树 第2级 42视频课+42原声音频": {
+      "seed": "Susan教英语",
+      "include_items": 3,
+      "fid": "~13t4OThGQplkzpv8e2xlhQrUxgnlb-sb5w71hM3T2or-AZG59Akj58FjV5VPM5MiMvXiVe2LhOUFxWlJHEr_6R0"
+    },
+    "Susan教英语 牛津树 第3级 28视频课+28原声音频": {
+      "seed": "Susan教英语",
+      "include_items": 2,
+      "fid": "~1agGVB6_nBXcbIj8SbbinEU6UHqxmK6wVMxxmOp8sTD6BzLTm02fUbP1vhPUqoMoUEVXvZKbB9rkpbY7Tcqqpc0"
+    },
+    "Susan教英语 牛津树精讲 118视频课+118原声音频": {
+      "seed": "Susan教英语",
+      "include_items": 3,
+      "fid": "~1olxZyIbeQbkuNpjjBnVDN2LAR5nM3JDuNGtEqALN4hHzfUIrxWwj_N-MVH-ipzYHyA9HofOfK3gAJKyqYIbEwI"
+    },
+    "Yakka.Dee.Season.1【20集全】": {
+      "seed": "Yakka",
+      "include_items": 20,
+      "fid": "~1OP0Q0UVzXJMyeB3MuooDxdRoPmGIe-1F7UUwSkA8z5bd6l20_fdeB_A6VvP12uVTjiS-oRv7C-6-JfyfQSeV-U"
+    },
+    "Yakka.Dee.Season.2【20集全】": {
+      "seed": "Yakka",
+      "include_items": 20,
+      "fid": "~1VHPLsELue1MogWFLuaONC_UWvBh7BQDj-K6PMfqDz4PizFo-_OqONdX5IGK2RLxn9vpTozNXVLTTCys-rZgdvY"
+    },
+    "Yakka.Dee.Season.3【20集全】": {
+      "seed": "Yakka",
+      "include_items": 20,
+      "fid": "~1txSVVj60GzEvDHgkxc5prjPLvT25ocjzLybc9E7MwKHPeA6jvTip2txnZ9__7NdzA4aEmB_9BxtZXqSkX1CGZ4"
+    },
+    "Yakka.Dee.Season.4【20集全】": {
+      "seed": "Yakka",
+      "include_items": 20,
+      "fid": "~1NIL88ILoufEPq3xThQIEPFvtnd6Ay8Y8kWlshYnClO5Lg6NY0tqJQD4G0Jv-mIcUbb7E8V8SW5wSayaXXMKRy4"
+    },
+    "Yakka.Dee.Season.5【20集全】": {
+      "seed": "Yakka",
+      "include_items": 20,
+      "fid": "~1FjNmczao1dALCj4x_Vuoj9u_bv05yBpzZYaX7er3LtyUsbiXUF-mCqmry4HPbS01ue-Xc_z-kI6ZE5odx340QM"
+    },
+    "《哈利波特》1-8合集 1080P 人人影视内嵌中英硬字幕": {
+      "seed": "哈利波特",
+      "include_items": 8,
+      "fid": "~1iEu57Vi3Nz4muDaBWkKYroMsfgNwmmFMD0bDC0HvILIWIzwit4CmMF8zSR6WpV9HdGosWB0z76OTNm0nXF3T4c"
+    },
+    "一、童老师871集视频": {
+      "seed": "童老师",
+      "include_items": 859,
+      "fid": "~1-Eg9Lg-rAOAcV1zTIkWYA8DmQvCi82pzs9dc1oOMy1Sdfuv8z_0xahcT-r7kfaMHrUF16GpXI7jnobVdVEesq4"
+    },
+    "二、童老师15集音频": {
+      "seed": "童老师",
+      "include_items": 15,
+      "fid": "~1PiZC4kUBVOQljxvz6UuzBsXg9IFas-4lQhFtaGpFsIXp2bXds9MnXAyT2EOhco9A-MFMFDsA0d1-v0iPPgvMQo"
+    },
+    "冰雪奇缘": {
+      "seed": "冰雪奇缘",
+      "include_items": 167,
+      "fid": "~1uA0nxupz9qseM0RBGZQKIu4EVFcW0oZ7CIh2GjKUdKDEnBMFururS86RN8UKmL4dtzIfzuEn22hCaDtmuvQ4pQ"
+    },
+    "牛津阅读树动画The Magic Key": {
+      "seed": "Magic Key",
+      "include_items": 26,
+      "fid": "~1LCTAEkYxQy0RO9F3mvfT4eHhLeQYrTvnCo5XaXuf79axcUzLHHxzpfJ1a-mo0qWN2m8P1Jtnj0sifQFUFJovYI"
+    },
+    "童老师1-9阶精讲音频": {
+      "seed": "童老师",
+      "include_items": 9,
+      "fid": "~1fRVite52VgomNuUiV_r_JLgenRoTXxZc5sLCqgiHfw0dhPxEjai2DNN0sJZyDsYX2TlTOpysrFNOxjE_XmjEKM"
+    },
+    "童老师精讲音频": {
+      "seed": "童老师",
+      "include_items": 9,
+      "fid": "~189vJmhMu_IEzS9l6iGuo4zdlAQLOq2ZHkTQHd59UCRkkx0hYCAA3Tl546ZD93Yn6aaSw5xarifizG1qrPaGNes"
+    },
+    "童老师音频课1+至2阶": {
+      "seed": "童老师",
+      "include_items": 160,
+      "fid": "~1sjcrQYAsMdwHxCumVWVHf7foSRTE0rjwOJfxAU7svX7OXF_1CZ8tkNjJVk8oRZCH22GeGky8S9HBtybPe4rEEM"
+    },
+    "童老师音频课1阶": {
+      "seed": "童老师",
+      "include_items": 56,
+      "fid": "~16uKjA4ZBahgTrVLLdQH_7agPHQ2N7eHdpFgVhQTjR86AZysxeKMInrHTt4mFJqW_POvH6NtxEhE0EDejKeglGU"
+    },
+    "童老师音频课3阶": {
+      "seed": "童老师",
+      "include_items": 99,
+      "fid": "~1gVQQTP2rkFo8BZD5DpeRLuAkHavDSXUdacq14hv7SQkOncYqAtmdBD1XmbXsUa1XJqDDPUxKs3bGSs1jDbB5k0"
+    },
+    "童老师音频课4阶": {
+      "seed": "童老师",
+      "include_items": 112,
+      "fid": "~1DqWB5vfmOVcMelYj-QKE1txrB-3iHUWQbniOcpje10NjTXpawLgxkIW5sb-ollABukUXEPbWiv5eVPHcF8CL0I"
+    },
+    "童老师音频课5阶": {
+      "seed": "童老师",
+      "include_items": 144,
+      "fid": "~1t-WOAoUyJ3IUtir-kzVy2g6TfCVjujz-KNugYbRkbUOPxzNdTwGJk2kogke6YqB5lEIo2xzA5pvk9rbZfzQigk"
+    },
+    "童老师音频课6阶": {
+      "seed": "童老师",
+      "include_items": 96,
+      "fid": "~1wlIBiYkKFkMpgBKF-bT9uPVWLq1BjsOCuMW9oK6vHcFhnHdpyBb7DHs2zwv-i8xe4v9fRrNRJ9xJO_1dBEASpo"
+    },
+    "童老师音频课7阶": {
+      "seed": "童老师",
+      "include_items": 123,
+      "fid": "~1StESQ5Fy0B0yiwstEIGsxXXmRaqETqjdlwdLlhh1mzxMYwnUzlW1dNKWzSV-Gj-OBI_JV8mCBsZqZ9AZpHNnWo"
+    },
+    "童老师音频课8阶": {
+      "seed": "童老师",
+      "include_items": 88,
+      "fid": "~1-TJB0kiVx_UmAdKq7XTFFghwj-Y9ZI-c1ateI0XR5Ov2HtfD61ogm6z4EX44fDYRYyM_8vOOXLVu9zfIGFQlOs"
+    },
+    "童老师音频课9阶": {
+      "seed": "童老师",
+      "include_items": 98,
+      "fid": "~18jbjzzW423wZIDAMRLkluD6nN92c5zPUDmItJxQUmJEln-RMClEDrV8D8VyT-uaIjd3iKdKUaevHvBQvnX_v2A"
+    }
+  },
+  "catalog_keys": [
+    "abadas",
+    "alphablocks",
+    "big_muzzy",
+    "bitz_bob",
+    "bluey",
+    "frozen",
+    "harry_potter",
+    "hugo",
+    "magic_key",
+    "microcosmos",
+    "numberblocks",
+    "ort_magic_key",
+    "ort_peggy",
+    "penelope",
+    "peppa",
+    "steve_maggie",
+    "susan_ort",
+    "tong_laoshi",
+    "yakka_dee"
+  ]
+}

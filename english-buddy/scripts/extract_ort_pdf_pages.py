@@ -26,15 +26,23 @@ ROOT = Path(__file__).resolve().parent.parent
 CATALOG_JSON = ROOT / "backend" / "teaching" / "ort_oxford_owl" / "catalog.json"
 ORT_PUBLIC = ROOT / "frontend" / "public" / "ort"
 ORT_PKG = ROOT / "backend" / "teaching" / "ort_oxford_owl"
-sys.path.insert(0, str(ORT_PKG))
+sys.path.insert(0, str(ROOT / "backend"))
 
-from chengguo_maps import pdf_map_for_level  # noqa: E402
+from teaching.ort_oxford_owl.chengguo_maps import pdf_map_for_level  # noqa: E402
+from teaching.ort_oxford_owl.pdf_extract import (  # noqa: E402
+    extract_cover_jpeg,
+    extract_pdf_page_jpeg,
+    pdf_story_page_count,
+    story_pdf_pages,
+    write_cover_image,
+    write_story_page_image,
+)
 
 
 def _load_book_page_count(book_id: str) -> int:
     books_json = ORT_PKG / "books.json"
     if books_json.is_file():
-        from book_lines import image_page_count  # noqa: E402
+        from teaching.ort_oxford_owl.book_lines import image_page_count  # noqa: E402
 
         raw = json.loads(books_json.read_text(encoding="utf-8"))
         for book in raw.get("books") or []:
@@ -53,83 +61,20 @@ def _load_book_page_count(book_id: str) -> int:
 def _extract_story_images(
     pdf_path: Path,
     *,
-    story_start: int,
-    page_count: int,
+    pdf_pages: list[int],
     rotate: int,
     jpeg_quality: int,
 ) -> list[tuple[int, bytes]]:
-    try:
-        import fitz  # PyMuPDF
-    except ImportError as e:
-        raise SystemExit(
-            "PyMuPDF required: .venv/bin/pip install pymupdf pillow"
-        ) from e
-    from PIL import Image
-    import io
-
-    doc = fitz.open(pdf_path)
-    available = max(0, doc.page_count - story_start + 1)
-    if page_count > available:
-        print(
-            f"warn: PDF has {available} story pages ({story_start}–{doc.page_count}); "
-            f"catalog wants {page_count} — extracting {available}",
-            file=sys.stderr,
-        )
-        page_count = available
-    if page_count <= 0:
-        raise SystemExit(
-            f"PDF has {doc.page_count} pages; no story pages from index {story_start}"
-        )
-
     out: list[tuple[int, bytes]] = []
-    for i in range(page_count):
-        pdf_page = story_start + i
-        page = doc[pdf_page - 1]
-        imgs = page.get_images(full=True)
-        if not imgs:
-            raise SystemExit(f"no embedded image on PDF page {pdf_page}")
-        info = doc.extract_image(imgs[0][0])
-        img = Image.open(io.BytesIO(info["image"]))
-        # 橙果扫描：奇数故事页 -90°，偶数故事页 +90°（相对默认 rotate）
-        page_rotate = rotate if (i + 1) % 2 == 1 else -rotate
-        if page_rotate:
-            img = img.rotate(page_rotate, expand=True)
-        buf = io.BytesIO()
-        img.convert("RGB").save(buf, format="JPEG", quality=jpeg_quality, optimize=True)
-        out.append((i + 1, buf.getvalue()))
+    for i, pdf_page in enumerate(pdf_pages):
+        data = extract_pdf_page_jpeg(
+            pdf_path,
+            pdf_page,
+            rotate=rotate,
+            jpeg_quality=jpeg_quality,
+        )
+        out.append((i + 1, data))
     return out
-
-
-def _extract_cover_image(
-    pdf_path: Path,
-    *,
-    cover_page: int,
-    rotate: int,
-    jpeg_quality: int,
-) -> bytes:
-    try:
-        import fitz  # PyMuPDF
-    except ImportError as e:
-        raise SystemExit(
-            "PyMuPDF required: .venv/bin/pip install pymupdf pillow"
-        ) from e
-    from PIL import Image
-    import io
-
-    doc = fitz.open(pdf_path)
-    if cover_page < 1 or cover_page > doc.page_count:
-        raise SystemExit(f"cover page {cover_page} out of range (1–{doc.page_count})")
-    page = doc[cover_page - 1]
-    imgs = page.get_images(full=True)
-    if not imgs:
-        raise SystemExit(f"no embedded image on PDF cover page {cover_page}")
-    info = doc.extract_image(imgs[0][0])
-    img = Image.open(io.BytesIO(info["image"]))
-    if rotate:
-        img = img.rotate(rotate, expand=True)
-    buf = io.BytesIO()
-    img.convert("RGB").save(buf, format="JPEG", quality=jpeg_quality, optimize=True)
-    return buf.getvalue()
 
 
 def _write_cover(
@@ -141,18 +86,17 @@ def _write_cover(
     quality: int,
     dry_run: bool,
 ) -> None:
-    data = _extract_cover_image(
+    data = extract_cover_jpeg(
         pdf_path,
         cover_page=cover_page,
         rotate=rotate,
         jpeg_quality=quality,
     )
-    dest = ORT_PUBLIC / book_id / "cover.jpg"
     if dry_run:
         print(f"  cover.jpg  {len(data) // 1024} KB (dry-run)")
         return
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_bytes(data)
+    write_cover_image(book_id, data)
+    dest = ORT_PUBLIC / book_id / "cover.jpg"
     print(f"  wrote {dest.relative_to(ROOT)} ({len(data) // 1024} KB)")
 
 
@@ -169,13 +113,18 @@ def _extract_one(
     write_cover: bool,
 ) -> None:
     page_count = pages or _load_book_page_count(book_id)
+    page_count = min(
+        page_count,
+        pdf_story_page_count(pdf_path, story_start=story_start),
+    )
     dest_dir = ORT_PUBLIC / book_id
+    pdf_pages = story_pdf_pages(page_count, story_start=story_start)
 
     print(f"PDF: {pdf_path.name}")
     print(f"Book: {book_id} ({page_count} story pages)")
     if write_cover:
         print(f"Cover: PDF page {cover_page} → cover.jpg")
-    print(f"PDF pages: {story_start}–{story_start + page_count - 1}")
+    print(f"PDF pages: {pdf_pages}")
     print(f"Output: {dest_dir}/pNN.jpg")
 
     if write_cover:
@@ -190,8 +139,7 @@ def _extract_one(
 
     images = _extract_story_images(
         pdf_path,
-        story_start=story_start,
-        page_count=page_count,
+        pdf_pages=pdf_pages,
         rotate=rotate,
         jpeg_quality=quality,
     )
@@ -205,16 +153,26 @@ def _extract_one(
     expected = _load_book_page_count(book_id)
     dest_dir.mkdir(parents=True, exist_ok=True)
     for idx, data in images:
+        write_story_page_image(book_id, idx, data)
         path = dest_dir / f"p{idx:02d}.jpg"
-        path.write_bytes(data)
         print(f"  wrote {path.relative_to(ROOT)} ({len(data)//1024} KB)")
 
     if len(images) < expected and images:
         last = images[-1][1]
         for idx in range(len(images) + 1, expected + 1):
+            write_story_page_image(book_id, idx, last)
             path = dest_dir / f"p{idx:02d}.jpg"
-            path.write_bytes(last)
             print(f"  padded {path.relative_to(ROOT)} (copy of last page)")
+
+    if not dry_run:
+        for orphan in sorted(dest_dir.glob("p*.jpg")):
+            try:
+                idx = int(orphan.stem[1:])
+            except ValueError:
+                continue
+            if idx > page_count:
+                orphan.unlink()
+                print(f"  removed orphan {orphan.relative_to(ROOT)}")
 
     print(f"done: {len(images)} pages → {dest_dir}\n")
 
@@ -225,9 +183,9 @@ def main() -> None:
     parser.add_argument("--book", help="ORT book id, e.g. ort_the_duck_race")
     parser.add_argument(
         "--batch-level",
-        choices=["2", "3"],
+        choices=["2", "3", "4"],
         metavar="N",
-        help="Batch level (2 or 3); use with --batch-dir",
+        help="Batch level (2, 3, or 4); use with --batch-dir",
     )
     parser.add_argument(
         "--batch-dir",

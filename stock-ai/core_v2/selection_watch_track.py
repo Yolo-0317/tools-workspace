@@ -7,20 +7,19 @@ from typing import Any
 
 import pandas as pd
 
+from board_filters import (
+    get_board_params,
+    liquidity_score_from_wan,
+    passes_base_filter,
+    passes_crash_filter,
+)
 from stock_selection_combined import (
     AMBUSH_VOL_RATIO_MAX,
     AMBUSH_VOL_RATIO_MIN,
     BUY_ACTIONS,
-    CHASE_PCT_MAX,
-    DROP_EXCLUDE_PCT,
     EXCLUDE_BJ,
     EXCLUDE_ST,
-    LIMIT_DOWN_PCT,
-    MAX_PRICE,
-    MIN_AMOUNT_QIAN,
-    MIN_PRICE,
     amount_qian_to_wan,
-    liquidity_score_from_wan,
     _cap_action_for_redlines,
     _resolve_industry,
 )
@@ -118,11 +117,12 @@ def run_watch_track(
             continue
         if EXCLUDE_BJ and code_str.startswith("92"):
             continue
-        if pct_chg <= DROP_EXCLUDE_PCT or pct_chg <= LIMIT_DOWN_PCT:
+        if not passes_crash_filter(code_str, pct_chg):
             continue
-        if not (MIN_PRICE <= close <= MAX_PRICE) or amount_today < MIN_AMOUNT_QIAN:
+        if not passes_base_filter(code_str, close, amount_today):
             continue
 
+        board = get_board_params(code_str)
         amount_wan = amount_qian_to_wan(amount_today)
         ma5 = float(group["close"].tail(5).mean())
         ma10 = float(group["close"].tail(10).mean())
@@ -145,7 +145,7 @@ def run_watch_track(
         if close >= ma20:
             trend_score += 4
         momentum_score = 6 if pct_chg >= 0 else 2
-        liquidity_score = liquidity_score_from_wan(amount_wan)
+        liquidity_score = liquidity_score_from_wan(amount_wan, board)
         total_score = min(
             78.0,
             round(signal_score + trend_score + momentum_score + liquidity_score, 1),
@@ -161,8 +161,10 @@ def run_watch_track(
         if code_str in holdings_codes:
             action = "持有" if action in BUY_ACTIONS else action
         else:
-            action = _cap_action_for_redlines(action, pct_chg, account_position_pct)
-            if pct_chg > CHASE_PCT_MAX and action in BUY_ACTIONS:
+            action = _cap_action_for_redlines(
+                action, pct_chg, account_position_pct, chase_pct_max=board.chase_pct_max
+            )
+            if pct_chg > board.chase_pct_max and action in BUY_ACTIONS:
                 action = "继续观察"
 
         if action == "谨慎回避":

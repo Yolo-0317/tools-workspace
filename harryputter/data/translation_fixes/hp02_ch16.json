@@ -1,0 +1,869 @@
+{
+  "comment": "hp02 ch16 · paragraph bilingual_clips (bilingual_pdf)",
+  "source": "bilingual_pdf",
+  "granularity": "paragraph",
+  "zh_variant": "zh-cn",
+  "bilingual_clips": [
+    {
+      "en": "Chapter 16 · The Chamber of Secrets",
+      "zh": "第16章 · 密室",
+      "kind": "heading"
+    },
+    {
+      "en": "All those times we were in that bathroom, and she was just three toilets away,\" said Ron bitterly at breakfast next day, \"and we could've asked her, and now...\"",
+      "zh": "当时我们就在那个盥洗室里，离她只隔三个抽水马桶，都没有能够问她。”第二天吃早饭 的时候，罗恩苦恼地说，“现在……”"
+    },
+    {
+      "en": "It had been hard enough trying to look for spiders. Escaping their teachers long enough to sneak into a girls' bathroom, the girls' bathroom, moreover, right next to the scene of the first attack, was going to be almost impossible.",
+      "zh": "这些日子，寻找蜘蛛就已经够他们受的了。要想长时间地避开老师，溜进女生盥洗室——这 个女生盥洗室不在别处，偏偏就在第一次攻击事件现场的隔壁——这简直是不可能的事。"
+    },
+    {
+      "en": "But something happened in their first lesson, Transfiguration, that drove the Chamber of Secrets out of their minds for the first time in weeks. Ten minutes into the class, Professor McGonagall told them that their exams would start on the first of June, one week from today.",
+      "zh": "然而，就在上午第一节的变形课上，发生了一件事情，使他们几个星期来第一次把密室的事 忘到了脑后。麦格教授走进教室刚刚十分钟，就告诉他们说，考试将于六月一日举行，离今天只 有短短一个星期了。"
+    },
+    {
+      "en": "\"Exams?\" howled Seamus Finnigan. \"We're still getting exams?\"",
+      "zh": "“考试?”西莫·斐尼甘惨叫道，“我们还要考试?”"
+    },
+    {
+      "en": "There was a loud bang behind Harry as Neville Longbottom's wand slipped, vanishing one of the legs on his desk. Professor McGonagall restored it with a wave of her own wand, and turned, frowning, to Seamus.",
+      "zh": "，微博：一切只为遇见更好的你 啷!哈利后面传来一声巨响，纳威·隆巴顿的魔杖从手里滑落，使课桌的一条腿突然消失了。 麦格教授用她自己的魔杖一挥，又把桌腿安了上去，然后她转过身来，朝西莫皱起了眉头。"
+    },
+    {
+      "en": "\"The whole point of keeping the school open at this time is for you to receive your education,\" she said sternly. \"The exams will therefore take place as usual, and I trust you are all studying hard.\"",
+      "zh": "“在目前这种非常状态下，仍然没有关闭学校，目的就是为了让你们接受教育。”她严厉地 说，“因此，考试仍像平时一样进行，我相信你们都会认真复习的。”"
+    },
+    {
+      "en": "Studying hard! It had never occurred to Harry that there would be exams with the castle in this state. There was a great deal of mutinous muttering around the room, which made Professor McGonagall scowl even more darkly.",
+      "zh": "认真复习!哈利从来没有想过，城堡里已经是这种状况了，居然还要考试。班上的同学们七 嘴八舌地议论开了，教室里一阵嘁嘁喳喳，这使麦格教授的眉头皱得更紧，脸色更阴沉了。"
+    },
+    {
+      "en": "\"Professor Dumbledore's instructions were to keep the school running as normally as possible,\" she said. \"And that, I need hardly point out, means finding out how much you have learned this year.\"",
+      "zh": "“邓布利多教授的指示，是尽可能地维持学校的正常运转。”她说，“这就意味着，要考察 一下你们今年到底学到了多少知识。”"
+    },
+    {
+      "en": "Harry looked down at the pair of white rabbits he was supposed to be turning into slippers. What had he learned so far this year? He couldn't seem to think of anything that would be useful in an exam.",
+      "zh": "哈利低头看着那一对小白兔，他应该把它们变成拖鞋的。他今年到现在为止，究竟学到了什 么呢?他简直想不出他脑子里有哪些知识可以用来应付考试。"
+    },
+    {
+      "en": "Ron looked as though he'd just been told he had to go and live in the Forbidden Forest.",
+      "zh": "看罗恩的神情，就好像有人刚对他说，他必须到禁林里去生活一样。"
+    },
+    {
+      "en": "\"Can you imagine me taking exams with this?\" he asked Harry, holding up his wand, which had just started whistling loudly.",
+      "zh": "“你能想象我用这个破玩艺儿考试吗?”他举起魔杖问哈利，就在刚才，那魔杖突然发出刺 耳的呼啸声。"
+    },
+    {
+      "en": "Three days before their first exam, Professor McGonagall made another announcement at breakfast.",
+      "zh": "离他们第一门考试只有三天了，早饭时，麦格教授又宣布了一条消息。"
+    },
+    {
+      "en": "\"I have good news,\" she said, and the Great Hall, instead of falling silent, erupted.",
+      "zh": "“我有好消息要告诉大家。”她说，礼堂里不仅没有变得安静，反而喧哗了起来。"
+    },
+    {
+      "en": "\"Dumbledore's coming back!\" several people yelled joyfully.",
+      "zh": "“邓布利多要回来了!”有几个人高兴地大叫。"
+    },
+    {
+      "en": "\"You've caught the Heir of Slytherin!\" squealed a girl at the Ravenclaw table.",
+      "zh": "“你抓住了斯莱特林的继承人!”拉文克劳餐桌上的一个女生尖声尖气地喊道。"
+    },
+    {
+      "en": "\"Quidditch matches are back on!\" roared Wood excitedly.",
+      "zh": "“魁地奇比赛恢复了!”伍德兴奋地嚷。"
+    },
+    {
+      "en": "When the hubbub had subsided, Professor McGonagall said, \"Professor Sprout has informed me that the Mandrakes are ready for cutting at last. Tonight, we will be able to revive those people who have been Petrified. I need hardly remind you all that",
+      "zh": ""
+    },
+    {
+      "en": "one of them may well be able to tell us who, or what, attacked them. I am hopeful that this dreadful year will end with our catching the culprit.\"",
+      "zh": "等这些吵闹声平息下来后，麦格教授说：“斯普劳特教授告诉我，曼德拉草终于可以收割了。 今晚，我们就能使那几个被石化的人起死回生。我无须向你们指出，他们中间的某个人大概可能 告诉我们，当时是谁，或什么东西，攻击了他们。我衷心地希望，这可怕的一年将以我们抓住凶 手而告终。”"
+    },
+    {
+      "en": "There was an explosion of cheering. Harry looked over at the Slytherin table and wasn't at all surprised to see that Draco Malfoy hadn't joined in. Ron, however, was looking happier than he'd looked in days.",
+      "zh": "大家爆发出一片欢呼。哈利朝斯莱特林的餐桌望去，没有看见德拉科.马尔福的影子，对此， 他丝毫也不感到意外。不过，罗恩倒是几天来第一次露出了笑容。"
+    },
+    {
+      "en": "\"It won't matter that we never asked Myrtle, then!\" he said to Harry. \"Hermione'll probably have all the answers when they wake her up! Mind you, she'll go crazy when she finds out we've got exams in three days' time. She hasn't studied. It might be kinder to leave her where she is till they're over.\"",
+      "zh": "“那么，我们去不去问桃金娘就没有什么关系了!”他对哈利说，“等他们使赫敏苏醒过来 后，她也许就能回答出所有的问题!不过你别忘了，如果她发现还有三天就要考试，肯定会急疯 了的。她还没来得及复习啊!也许更仁慈的做法是让她保持现状，等考试结束了再说。”"
+    },
+    {
+      "en": "Just then, Ginny Weasley came over and sat down next to Ron. She looked tense and nervous, and Harry noticed that her hands were twisting in her lap.",
+      "zh": "就在这时，金妮·韦斯莱走了过来，坐在罗恩旁边。她显得非常紧张，惶恐不安。哈利注意 到，她的两只手在膝盖上紧紧地扭在一起。"
+    },
+    {
+      "en": "\"What's up?\" said Ron, helping himself to more porridge.",
+      "zh": "“怎么啦?”罗恩说着，又给自己添了些粥。"
+    },
+    {
+      "en": "Ginny didn't say anything, but glanced up and down the Gryffindor table with a scared look on her face that reminded Harry of someone, though he couldn't think who.",
+      "zh": "金妮什么也没说，目光在格兰芬多的餐桌上来回扫视，脸上那种惊恐的神情使哈利想起了一 个人，究竟是谁呢，他又想不起来。"
+    },
+    {
+      "en": "\"Spit it out,\" said Ron, watching her.",
+      "zh": "“有话快说。”罗恩望着她说道。"
+    },
+    {
+      "en": "Harry suddenly realized who Ginny looked like. She was rocking backward and forward slightly in her chair, exactly like Dobby did when he was teetering on the edge of revealing forbidden information.",
+      "zh": "哈利突然想起金妮的这副神情像谁了。看她在椅子里微微地前后摇晃的样子，哈利想起每当 多比要向他透露一些不能说的秘密、欲言又止时，也是这样晃来晃去的。"
+    },
+    {
+      "en": "\"I've got to tell you something,\" Ginny mumbled, carefully not looking at Harry. \"What is it?\" said Harry. Ginny looked as though she couldn't find the right words. \"What?\" said Ron.",
+      "zh": ""
+    },
+    {
+      "en": "Ginny opened her mouth, but no sound came out. Harry leaned forward and spoke quietly, so that only Ginny and Ron could hear him.",
+      "zh": "“我有件事情要告诉你们。”金妮嘟囔着说，小心地避开哈利的目光。“什么事?”哈利问。 金妮似乎找不到合适的字眼。“怎么啦?”罗恩问。金妮张了张嘴，却没有发出声音。哈利凑上 前去，把声音压得很低，只有金妮和罗恩能够听见。"
+    },
+    {
+      "en": "\"Is it something about the Chamber of Secrets? Have you seen something? Someone acting oddly?\" Ginny drew a deep breath and, at that precise moment, Percy Weasley appeared, looking tired and wan.",
+      "zh": "“是关于密室的事吗?你看见了什么?是不是有人行为反常?”金妮深深地吸了口气，正要说 话，恰好就在这时，珀西·韦斯莱出现了，一副疲惫而憔悴的样子。"
+    },
+    {
+      "en": "\"If you've finished eating, I'll take that seat, Ginny. I'm starving, I've only just come off patrol duty.\" Ginny jumped up as though her chair had just been electrified, gave Percy a fleeting, frightened look, and scampered away. Percy sat down and grabbed a mug from the center of the table.",
+      "zh": "“金妮，如果你吃完了，就把座位让给我吧。我饿坏了，刚刚值勤回来。”金妮猛地跳起， 仿佛她的椅子突然通了电似的。她匆匆地、惊慌失措地看了珀西一眼，逃走了。珀西一屁股坐下， 从桌子中央抓过一只大杯子。"
+    },
+    {
+      "en": "\"Percy!\" said Ron angrily. \"She was just about to tell us something important!\" Halfway through a gulp of tea, Percy choked. \"What sort of thing?\" he said, coughing.",
+      "zh": "“珀西!”罗恩恼火地说，“她刚要告诉我们一件很重要的事!”珀西一口茶刚咽到一半，呛 住了。“什么事情?”他一边咳嗽着，一边问道。"
+    },
+    {
+      "en": "\"I just asked her if she'd seen anything odd, and she started to say —\"",
+      "zh": "“我刚才问她有没有看见什么异常情况，她正要说——”"
+    },
+    {
+      "en": "\"Oh — that — that's nothing to do with the Chamber of Secrets,\" said Percy at once. \"How do you know?\" said Ron, his eyebrows raised.",
+      "zh": "“噢——那件事——那件事和密室无关。”珀西立刻说道。“你怎么知道?”罗恩吃惊地扬 起眉毛问。"
+    },
+    {
+      "en": "\"Well, er, if you must know, Ginny, er, walked in on me the other day when I was — well, never mind — the point is, she spotted me doing something and I, um, I asked her not to mention it to anybody. I must say, I did think she'd keep her word. It's nothing, really, I'd just rather —\"",
+      "zh": "“是这样，嗯，如果你们一定要知道，金妮，嗯，她那天突然碰见我，当时我正在——唉， 不说也罢——实际上就是，她正好看见我在做一件事，我，呃，我叫她不要告诉任何人。唉，我 就知道她不可能说到做到。其实也没什么，我情愿——”"
+    },
+    {
+      "en": "Harry had never seen Percy look so uncomfortable.",
+      "zh": ""
+    },
+    {
+      "en": "\"What were you doing, Percy?\" said Ron, grinning. \"Go on, tell us, we won't laugh.\" Percy didn't smile back. \"Pass me those rolls, Harry, I'm starving.\"",
+      "zh": "哈利以前从没看见珀西显得这么尴尬。“你当时在做什么呀，珀西?”罗恩狡猾地笑着，问 道。“别瞒着了，快告诉我们吧，我们不会笑你的。”珀西没有笑。“把那些小圆面包递给我， 哈利，我真是饿坏了。”"
+    },
+    {
+      "en": "Harry knew the whole mystery might be solved tomorrow without their help, but he wasn't about to pass up a chance to speak to Myrtle if it turned up — and to his delight it did, midmorning, when they were being led to History of Magic by Gilderoy Lockhart.",
+      "zh": "哈利知道，即使没有他们的帮助，整个秘密到明天也会水落石出的，但是如果有机会跟桃金 娘谈谈，他也不愿意错过——令他高兴的是，这个机会很快就来了。上午两节课后，他们在吉德 罗·洛哈特的护送下，去上魔法史课。"
+    },
+    {
+      "en": "Lockhart, who had so often assured them that all danger had passed, only to be proved wrong right away, was now wholeheartedly convinced that it was hardly worth the trouble to see them safely down the corridors. His hair wasn't as sleek as usual; it seemed he had been up most of the night, patrolling the fourth floor.",
+      "zh": "洛哈特曾经多次向他们保证危险已经过去，但事实很快就证明他错了。现在他更加坚决地认 为，根本用不着护送同学安全通过走廊。他的头发不像平常那样光滑了，看样子他整夜忙着在五 楼巡逻，睡不了多少觉。"
+    },
+    {
+      "en": "\"Mark my words,\" he said, ushering them around a corner. \"The first words out of those poor Petrified people's mouths will be 'It was Hagrid.' Frankly, I'm astounded Professor McGonagall thinks all these security measures are necessary.\"",
+      "zh": "“记住我的话吧，”他招呼他们拐过一个墙角，说道，“那些可怜的被石化的人，醒过来说 的第一句话肯定就是：‘海格是凶手。’坦率地说，我真感到吃惊，麦格教授居然认为有必要采 取这么多安全措施。”"
+    },
+    {
+      "en": "\"I agree, sir,\" said Harry, making Ron drop his books in surprise.",
+      "zh": "“我同意，先生。”哈利说，罗恩惊讶得把书掉在了地上。"
+    },
+    {
+      "en": "\"Thank you, Harry,\" said Lockhart graciously while they waited for a long line of Hufflepuffs to pass. \"I mean, we teachers have quite enough to be getting on with, without walking students to classes and standing guard all night....\"",
+      "zh": "“谢谢你，哈利。”洛哈特态度慈祥地说，他们站到一边，等待排成长队的赫奇帕奇学生走 过去。“我的意思是，我们老师要做的事情已经够多的了，还要护送学生上课，整夜放哨站岗……”"
+    },
+    {
+      "en": "\"That's right,\" said Ron, catching on. \"Why don't you leave us here, sir, we've only got one more corridor to go —\"",
+      "zh": "“说的是啊，”罗恩立刻心领神会，“你不妨就送到这里吧，先生，我们只有一个走廊要走 了。”"
+    },
+    {
+      "en": "\"You know, Weasley, I think I will,\" said Lockhart. \"I really should go and prepare my next class —\"",
+      "zh": "“好吧，韦斯莱，就这样吧，”洛哈特说，“我真应该去准备准备下一节的课了。”"
+    },
+    {
+      "en": "And he hurried off.",
+      "zh": "他说完就匆匆地走了。"
+    },
+    {
+      "en": "\"Prepare his class,\" Ron sneered after him. \"Gone to curl his hair, more like.\"",
+      "zh": "“什么准备课，”罗恩对着他的背影嘲笑着，“去卷他的头发还差不多。”"
+    },
+    {
+      "en": "They let the rest of the Gryffindors draw ahead of them, then darted down a side passage and hurried off toward Moaning Myrtle's bathroom. But just as they were congratulating each other on their brilliant scheme — \"Potter! Weasley! What are you doing?\"",
+      "zh": "他们让其他的格兰芬多同学走到前面，然后他们偷偷蹿进旁边的一条过道，急匆匆地向哭泣 的桃金娘的盥洗室赶去。然而，就在他们准备祝贺这个计划天衣无缝时……“波特!韦斯莱!你们 在做什么?”"
+    },
+    {
+      "en": "It was Professor McGonagall, and her mouth was the thinnest of thin lines.",
+      "zh": "是麦格教授，她的嘴唇抿成了一根细得不能再细的直线。"
+    },
+    {
+      "en": "\"We were — we were —\" Ron stammered. \"We were going to — to go and see",
+      "zh": "“我们想——我们想——”罗恩结结巴巴地说，“我们想去——去看看——”"
+    },
+    {
+      "en": "\"Hermione,\" said Harry. Ron and Professor McGonagall both looked at him.",
+      "zh": "“赫敏。”哈利接口道。罗恩和麦格教授都望着他。"
+    },
+    {
+      "en": "\"We haven't seen her for ages, Professor,\" Harry went on hurriedly, treading on Ron's foot, \"and we thought we'd sneak into the hospital wing, you know, and tell her the Mandrakes are nearly ready and, er, not to worry —\"",
+      "zh": "“我们好长时间没有看见她了，教授，”哈利踩了一下罗恩的脚，一口气说道，“我们刚才 想偷偷溜到医院去，告诉她曼德拉草快要长成了，叫她不要担心。”"
+    },
+    {
+      "en": "Professor McGonagall was still staring at him, and for a moment, Harry thought she was going to explode, but when she spoke, it was in a strangely croaky voice.",
+      "zh": "麦格教授仍然盯着他，一时间，哈利以为她要大发雷霆。结果她说话了，声音有些异样的颤 抖。"
+    },
+    {
+      "en": "\"Of course,\" she said, and Harry, amazed, saw a tear glistening in her beady eye. \"Of course, I realize this has all been hardest on the friends of those who have been... I quite understand. Yes, Potter, of course you may visit Miss Granger. I will inform Professor Binns where you've gone. Tell Madam Pomfrey I have given my permission.\"",
+      "zh": "“当然，”她说，哈利吃惊地发现她犀利的眼睛里居然闪着一点儿泪花，“当然，我知道， 对所有那些不幸的受害者的朋友来说，这痛苦确实很难忍受……我非常理解。是的，波特，你们 当然可以去看望赫敏。我会告诉宾斯教授你们到哪儿去了。就对庞弗雷夫人说，是我批准你们去 的。”"
+    },
+    {
+      "en": "Harry and Ron walked away, hardly daring to believe that they'd avoided detention. As they turned the corner, they distinctly heard Professor McGonagall blow her nose.",
+      "zh": "哈利和罗恩走开了，他们简直不敢相信自己侥幸逃避了留校劳动的惩罚。转过墙角时，他们 清晰无误地听见了麦格教授擤鼻子的声音。"
+    },
+    {
+      "en": "\"That,\" said Ron fervently, \"was the best story you've ever come up with.\"",
+      "zh": "“太棒了，”罗恩激动地说，“那可是你编出的最妙的谎话。”"
+    },
+    {
+      "en": "They had no choice now but to go to the hospital wing and tell Madam Pomfrey that they had Professor McGonagall's permission to visit Hermione.",
+      "zh": "他们现在没有别的选择，只好去医院，告诉庞弗雷夫人，麦格教授批准他们来看望赫敏。"
+    },
+    {
+      "en": "Madam Pomfrey let them in, but reluctantly.",
+      "zh": "庞弗雷夫人让他们进去了，可是不太情愿。"
+    },
+    {
+      "en": "\"There's just no point talking to a Petrified person,\" she said, and they had to admit she had a point when they'd taken their seats next to Hermione. It was plain that Hermione didn't have the faintest inkling that she had visitors, and that they might just as well tell her bedside cabinet not to worry for all the good it would do.",
+      "zh": "“跟一个被石化的人谈话，完全是白费工夫。”她说。当他们在赫敏床边的褥子上落座后， 不得不承认庞弗雷夫人说得对。显然，赫敏一点儿也不知道有人来看她，他们还不如跟床头柜说 话，叫它不要担心，一切都会好起来的。"
+    },
+    {
+      "en": "\"Wonder if she did see the attacker, though?\" said Ron, looking sadly at Hermione's rigid face. \"Because if he sneaked up on them all, no one'll ever know....\" But Harry wasn't looking at Hermione's face. He was more interested in her right hand. It lay clenched on top of her blankets, and bending closer, he saw that a piece of paper was scrunched inside her fist.",
+      "zh": "“不知道她有没有看见那个进攻者?”罗恩悲哀地看着赫敏僵硬的脸，说道，“如果那家伙 从背后偷偷接近她们，那就谁也不会知道……”然而，哈利并没有望着赫敏的脸。他似乎对她的 右手更感兴趣。那只紧握的手放在毯子上面，哈利凑近一些，看见她的拳头里攥着一张纸。"
+    },
+    {
+      "en": "Making sure that Madam Pomfrey was nowhere near, he pointed this out to Ron. \"Try and get it out,\" Ron whispered, shifting his chair so that he blocked Harry from Madam Pomfrey's view.",
+      "zh": "哈利确信庞弗雷夫人不在旁边，就把那张纸指给罗恩看。“把它取出来。”罗恩小声说，一 边把椅子挪了一下，挡住庞弗雷夫人的视线，使她看不见哈利。"
+    },
+    {
+      "en": "It was no easy task. Hermione's hand was clamped so tightly around the paper that Harry was sure he was going to tear it. While Ron kept watch he tugged and twisted, and at last, after several tense minutes, the paper came free.",
+      "zh": "哈利费了好大的工夫。赫敏把纸头攥得太紧了，哈利觉得自己肯定会把它扯破了。就这样， 罗恩在旁边放哨，哈利又掰又扭，经过几分钟紧张的努力，总算把那张纸弄了出来。"
+    },
+    {
+      "en": "It was a page torn from a very old library book. Harry smoothed it out eagerly and Ron leaned close to read it, too.",
+      "zh": "这是从一本很旧的图书馆藏书上撕下来的一页纸。哈利迫不及待地把它展开，罗恩也凑上来， 两人一起读道："
+    },
+    {
+      "en": "Of the many fearsome beasts and monsters that roam our land, there is none more curious or more deadly than the Basilisk, known also as the King of Serpents. This snake, which may reach gigantic size and live many hundreds of years, is born from a chicken's egg, hatched beneath a toad. Its methods of killing are most wondrous, for aside from its deadly and venomous fangs, the Basilisk has a murderous stare, and all who are fixed with the beam of its eye shall suffer instant death. Spiders flee before the Basilisk, for it is their mortal enemy, and the Basilisk flees only from the crowing of the rooster, which is fatal to it.",
+      "zh": "在我们国家，游荡着许多可怕的野兽和怪物，其中最离奇、最具有杀伤力的莫过于蛇怪，又 被称为蛇王。这种蛇的体积可以变得十分巨大，通常能活好几百年，它是从一只公鸡蛋里、由一 只癞蛤蟆孵出的。它杀人的方式十分惊人，除了它致命的毒牙外，蛇怪的瞪视也能致人死亡，任 何人只要被它的目光盯住，就会立刻丧命。蜘蛛看到蛇怪就会逃跑，因为蛇怪是蜘蛛的死敌，而 蛇怪只有听见公鸡的叫声才会仓皇逃命，因为公鸡的叫声对它来说也是致命的。"
+    },
+    {
+      "en": "And beneath this, a single word had been written, in a hand Harry recognized as Hermione's. Pipes. It was as though somebody had just flicked a light on in his brain.",
+      "zh": "在这段话下面，还写着两个字，哈利一眼就认出是赫敏的字迹。那两个字是：管子。突然， 就好像有人在哈利的脑海里突然点亮了一盏明灯。"
+    },
+    {
+      "en": "\"Ron,\" he breathed. \"This is it. This is the answer. The monster in the Chamber's a basilisk — a giant serpent! That's why I've been hearing that voice all over the place, and nobody else has heard it. It's because I understand Parseltongue....\"",
+      "zh": "“罗恩，”他激动得几乎喘不过气来，“就是这样。答案就在这里。密室里的怪物就是蛇怪 ——是一条巨蛇!难怪我走到哪儿都能听见那个声音，别人却听不见。因为我能听得懂蛇佬 腔……”"
+    },
+    {
+      "en": "Harry looked up at the beds around him.",
+      "zh": "哈利看着他周围的那几张病床。"
+    },
+    {
+      "en": "\"The basilisk kills people by looking at them. But no one's died — because no one looked it straight in the eye. Colin saw it through his camera. The basilisk burned up all the film inside it, but Colin just got Petrified. Justin... Justin must've seen the basilisk through Nearly Headless Nick! Nick got the full blast of it, but he couldn't die again... and Hermione and that Ravenclaw prefect were found with a mirror next to them. Hermione had just realized the monster was a basilisk. I bet you anything she warned the first person she met to look around corners with a mirror first! And that girl pulled out her mirror — and —\"",
+      "zh": "“蛇怪的眼睛看着谁，谁就会死。可是这里一个人也没有死——因为他们谁也没有直接跟它 对视。科林是通过照相机看见它的。蛇怪把照相机里的胶卷都烧焦了，而科林只是被石化了。贾 斯廷呢……贾斯廷一定是透过差点没头的尼克看见蛇怪的!尼克倒是被蛇怪的目光盯住了，但是 他不可能再死第二回……赫敏和那个拉文克劳女生被人发现时，旁边还有一面镜子。我可以跟你 打赌，她当时逢人就提醒要先用镜子照照拐弯处!那个姑娘刚掏出镜子——就——”"
+    },
+    {
+      "en": "Ron's jaw had dropped.",
+      "zh": "罗恩吃惊地张大嘴巴。"
+    },
+    {
+      "en": "\"And Mrs. Norris?\" he whispered eagerly.",
+      "zh": "“那么洛丽丝夫人呢?”他紧张地小声问。"
+    },
+    {
+      "en": "Harry thought hard, picturing the scene on the night of Halloween.",
+      "zh": "哈利苦苦思索，回忆万圣节前夜的情景。"
+    },
+    {
+      "en": "\"The water...\" he said slowly. \"The flood from Moaning Myrtle's bathroom. I bet you Mrs. Norris only saw the reflection....\"",
+      "zh": "“水……”他慢慢地说，“从哭泣的桃金娘的盥洗室里漫出来的那摊水。我敢说洛丽丝夫人 只是看见了水里的倒影……”"
+    },
+    {
+      "en": "He scanned the page in his hand eagerly. The more he looked at it, the more it made sense.",
+      "zh": "他又迫切地看了看手里的那页纸，越看，越觉得心里透亮起来。"
+    },
+    {
+      "en": "\"'The Basilisk flees only from the crowing of the rooster, which is fatal to it'!\" he read aloud. \"Hagrid's roosters were killed! The Heir of Slytherin didn't want one anywhere near the castle once the Chamber was opened! 'Spiders flee before the Basilisk'! It all fits!\"",
+      "zh": "“公鸡的叫声对它来说也是致命的!”他大声念道，“海格的公鸡都被杀死了!一旦密室被打 开，斯莱特林的继承人决不希望城堡附近有公鸡存在!蜘蛛看到它就会逃跑!啊，每一条都能对得 上号!”"
+    },
+    {
+      "en": "\"But how's the basilisk been getting around the place?\" said Ron. \"A giant snake... Someone would've seen...\"",
+      "zh": "“可是蛇怪怎么可能到处爬来爬去呢?”罗恩说，“一条丑陋的大蛇……肯定会有人看见它 的……”"
+    },
+    {
+      "en": "Harry, however, pointed at the word Hermione had scribbled at the foot of the page.",
+      "zh": "哈利却指着赫敏在那张纸下面草草写就的那两个字。"
+    },
+    {
+      "en": "\"Pipes,\" he said. \"Pipes... Ron, it's been using the plumbing. I've been hearing that voice inside the walls....\"",
+      "zh": "“管子，”他说， “管子……罗恩，它一直在管道里活动。我总是听见那个声音在墙的里面……”"
+    },
+    {
+      "en": "Ron suddenly grabbed Harry's arm.",
+      "zh": "罗恩一把抓住哈利的手臂。"
+    },
+    {
+      "en": "\"The entrance to the Chamber of Secrets!\" he said hoarsely. \"What if it's a bathroom? What if it's in —\"",
+      "zh": "“密室的入口!”他声音嘶哑地说，“说不定就在一间盥洗室里呢?说不定就在——”"
+    },
+    {
+      "en": "\"— Moaning Myrtle's bathroom,\" said Harry.",
+      "zh": "“——哭泣的桃金娘的盥洗室。”哈利说。"
+    },
+    {
+      "en": "They sat there, excitement coursing through them, hardly able to believe it.",
+      "zh": "他们坐在那里，激动得难以自制，简直不敢相信这一切。"
+    },
+    {
+      "en": "\"This means,\" said Harry, \"I can't be the only Parselmouth in the school. The Heir of Slytherin's one, too. That's how he's been controlling the basilisk.\"",
+      "zh": "“这就意味着，”哈利说，“在这个学校里，懂得蛇佬腔的不止我一个人。斯莱特林的继承 人也懂。所以他们才能一直控制蛇怪。”"
+    },
+    {
+      "en": "\"What're we going to do?\" said Ron, whose eyes were flashing. \"Should we go straight to McGonagall?\"",
+      "zh": "“我们怎么办呢?”罗恩问，他的眼睛闪闪发亮，“是不是直接去找麦格教授?”"
+    },
+    {
+      "en": "\"Let's go to the staffroom,\" said Harry, jumping up. \"She'll be there in ten minutes. It's nearly break.\"",
+      "zh": "“我们到教工休息室去，”哈利说着，一跃雨起，“她十分钟后就会到那里去的，很快就要 下课了。”"
+    },
+    {
+      "en": "They ran downstairs. Not wanting to be discovered hanging around in another corridor, they went straight into the deserted staffroom. It was a large, paneled room full of dark, wooden chairs. Harry and Ron paced around it, too excited to sit down.",
+      "zh": "他们跑下楼去。他们不希望麦格教授又发现他们在另一条走廊里乱逛，就直接走进了空无一 人的教工休息室。这是一问四周镶着木板的大屋子，里面摆满了黑木椅子。哈利和罗恩在里面踱 来踱去，激动得坐不下来。"
+    },
+    {
+      "en": "But the bell to signal break never came.",
+      "zh": "可是，下课的铃声一直没有响起。"
+    },
+    {
+      "en": "Instead, echoing through the corridors came Professor McGonagall's voice, magically magnified.",
+      "zh": "相反，走廊里回响着麦格教授的声音，被魔法放大了许多倍。"
+    },
+    {
+      "en": "\"All students to return to their House dormitories at once. All teachers return to the staffroom. Immediately, please.\"",
+      "zh": "“所有同学立即回到各自学院的宿舍。所有老师回到教工休息室。请立即行动。”"
+    },
+    {
+      "en": "Harry wheeled around to stare at Ron.",
+      "zh": "哈利猛地转过身来，瞪着罗恩。"
+    },
+    {
+      "en": "\"Not another attack? Not now?\"",
+      "zh": "“难道又出事了?在这个时候?”"
+    },
+    {
+      "en": "\"What'll we do?\" said Ron, aghast. \"Go back to the dormitory?\"",
+      "zh": "“我们怎么办?”罗恩惊骇地问，“回宿舍去？”"
+    },
+    {
+      "en": "\"No,\" said Harry, glancing around. There was an ugly sort of wardrobe to his left, full of the teachers' cloaks. \"In here. Let's hear what it's all about. Then we can tell them what we've found out.\"",
+      "zh": "“不行。”哈利说着，目光在四下里搜寻。他左边有一个很难看的衣柜，里面堆满了老师上 课穿的袍子。“躲在这里面。我们听听是怎么回事，然后再把我们的发现告诉他们。”"
+    },
+    {
+      "en": "They hid themselves inside it, listening to the rumbling of hundreds of people moving overhead, and the staffroom door banging open. From between the musty folds of the cloaks, they watched the teachers filtering into the room. Some of them were looking puzzled, others downright scared. Then Professor McGonagall arrived.",
+      "zh": "他们躲进了衣柜，听着好几百人在楼上走动的脚步声，接着，教工休息室的门被重重地推开 了。他们透过散发着霉味的一层层袍服，看着一个个走进房间的老师，有的一脸迷惑，有的吓得 魂不守舍。随后，麦格教授赶到了。"
+    },
+    {
+      "en": "\"It has happened,\" she told the silent staffroom. \"A student has been taken by the monster. Right into the Chamber itself.\"",
+      "zh": "“又出事了，”她对着房间里沉默不语的老师们说，“一个学生被怪兽掳走了。直接带进了 密室。”"
+    },
+    {
+      "en": "Professor Flitwick let out a squeal. Professor Sprout clapped her hands over her mouth. Snape gripped the back of a chair very hard and said, \"How can you be sure?\"",
+      "zh": "弗立维教授发出一声尖叫。斯普劳特教授猛地用双手捂住嘴巴。斯内普紧紧地抓住一把椅子 的椅背，问道：“你怎么能肯定?”"
+    },
+    {
+      "en": "\"The Heir of Slytherin,\" said Professor McGonagall, who was very white, \"left another message. Right underneath the first one. 'Her skeleton will lie in the Chamber forever.'\"",
+      "zh": "“斯莱特林的继承人，”脸色十分苍白的麦格教授说，“又留下了一行字。就在上次那段文 字的下面，写着：她的尸骨将永远留在密室。”"
+    },
+    {
+      "en": "Professor Flitwick burst into tears.",
+      "zh": "弗立维教授忍不住哭了出来。"
+    },
+    {
+      "en": "\"Who is it?\" said Madam Hooch, who had sunk, weak-kneed, into a chair. \"Which student?\"",
+      "zh": "“是谁？”霍琦夫人双膝一软，瘫坐在一把椅子里。“是哪个学生?”"
+    },
+    {
+      "en": "\"Ginny Weasley,\" said Professor McGonagall.",
+      "zh": "“金妮·韦斯莱。”麦格教授说。"
+    },
+    {
+      "en": "Harry felt Ron slide silently down onto the wardrobe floor beside him.",
+      "zh": "哈利感到罗恩在他身边无声地跌倒在衣柜的地板上。"
+    },
+    {
+      "en": "\"We shall have to send all the students home tomorrow,\" said Professor McGonagall. \"This is the end of Hogwarts. Dumbledore always said...\"",
+      "zh": "“我们必须明天就把所有的学生都打发回家，”麦格教授说，“霍格沃茨到此为止了。邓布 利多以前常说……”"
+    },
+    {
+      "en": "The staffroom door banged open again. For one wild moment, Harry was sure it would be Dumbledore. But it was Lockhart, and he was beaming.",
+      "zh": "教工休息室的门又一次被重重撞开了。哈利一时突发奇想，以为肯定是邓布利多回来了。结 果却是洛哈特，脸上居然还笑嘻嘻的。"
+    },
+    {
+      "en": "\"So sorry — dozed off — what have I missed?\"",
+      "zh": "“对不起——打了个盹儿——我错过了什么?”"
+    },
+    {
+      "en": "He didn't seem to notice that the other teachers were looking at him with something remarkably like hatred. Snape stepped forward.",
+      "zh": "他似乎没有注意到，其他老师都以一种可以说是仇恨的目光盯着他。斯内普向前跨了一步。"
+    },
+    {
+      "en": "\"Just the man,\" he said. \"The very man. A girl has been snatched by the monster, Lockhart. Taken into the Chamber of Secrets itself. Your moment has come at last.\"",
+      "zh": "“解决问题的人来了，”他说，“就是这个人。洛哈特，一个姑娘被怪兽抓走了。被带进了 密室。你展示辉煌的时候终于到了。”"
+    },
+    {
+      "en": "Lockhart blanched.",
+      "zh": "洛哈特的脸色刷地变白了。"
+    },
+    {
+      "en": "\"That's right, Gilderoy,\" chipped in Professor Sprout. \"Weren't you saying just last night that you've known all along where the entrance to the Chamber of Secrets is?\"",
+      "zh": "“是啊，吉德罗，”斯普劳特教授插进来说，“你昨天晚上不是说，你完全清楚密室的入口 在哪里吗?”"
+    },
+    {
+      "en": "\"I — well, I —\" sputtered Lockhart.",
+      "zh": "“我——这个，这个，我——”洛哈持结结巴巴地说。"
+    },
+    {
+      "en": "\"Yes, didn't you tell me you were sure you knew what was inside it?\" piped up Professor Flitwick.",
+      "zh": "“你不是告诉我说，你有把握知道那里面的怪兽是什么吗?”弗立维教授也插话说。"
+    },
+    {
+      "en": "\"D-did I? I don't recall —\"",
+      "zh": "“我——我说过吗?我不记得……”"
+    },
+    {
+      "en": "\"I certainly remember you saying you were sorry you hadn't had a crack at the monster before Hagrid was arrested,\" said Snape. \"Didn't you say that the whole affair had been bungled, and that you should have been given a free rein from the first?\" Lockhart stared around at his stony-faced colleagues. \"I — I really never — you may have misunderstood —\"",
+      "zh": "“我当然记得你说的话，你说你没能在海格被抓走前与怪兽较量一番，很是遗憾。”斯内普 说，“你不是还说，整个事情都被搞得一团糟，应该从一开始就放手让你去处理的吗?”洛哈特 目瞪口呆地望着那些板着脸的同事。“我……我真的从来没有……你们大概是误会了……”"
+    },
+    {
+      "en": "\"We'll leave it to you, then, Gilderoy,\" said Professor McGonagall. \"Tonight will be an excellent time to do it. We'll make sure everyone's out of your way. You'll be able to tackle the monster all by youself. A free rein at last.\"",
+      "zh": "“那么，吉德罗，我们就让你去处理吧，”麦格教授说，“今晚正是你大显身手的绝好机会。 我们保证不让任何人来妨碍你。你可以独自一个人去对付那个怪兽。现在终于放手让你去干了。”"
+    },
+    {
+      "en": "Lockhart gazed desperately around him, but nobody came to the rescue. He didn't look remotely handsome anymore. His lip was trembling, and in the absence of his usually toothy grin, he looked weak-chinned and feeble.",
+      "zh": "洛哈特绝望地左右张望，但是没有一个人出来替他解围。他现在的样子一点也不英俊潇洒了。 他的嘴唇哆嗦着，脸上没有了往常那种露出晶亮牙齿的微笑，显得下巴瘪瘪的，一副枯瘦憔悴的 模样。"
+    },
+    {
+      "en": "\"V-very well,\" he said. \"I'll — I'll be in my office, getting — getting ready.\" And he left the room.",
+      "zh": "“那——那好吧，”他说，“我——我到我的办公室去，做好——做好准备。”说完他就离 开了房间。"
+    },
+    {
+      "en": "\"Right,\" said Professor McGonagall, whose nostrils were flared, \"that's got him out from under our feet. The Heads of Houses should go and inform their students what has happened. Tell them the Hogwarts Express will take them home first thing tomorrow. Will the rest of you please make sure no students have been left outside their dormitories.\" The teachers rose and left, one by one.",
+      "zh": "“行了，”麦格教授说，她的鼻孔扇动着，喷着粗气，“总算摆脱了他的妨碍。现在，各学 院的院长去通知学生发生了什么事情。告诉他们，霍格沃茨特快列车明天一早就送他们回家。其 他老师要确保不让一个学生留在宿舍外面。老师们站起身，一个接一个地离开了。"
+    },
+    {
+      "en": "It was probably the worst day of Harry's entire life. He, Ron, Fred, and George sat together in a corner of the Gryffindor common room, unable to say anything to each other. Percy wasn't there. He had gone to send an owl to Mr. and Mrs. Weasley, then shut himself up in his dormitory.",
+      "zh": "这大概是哈利一生中最难熬的一天。他、罗恩、弗雷德和乔治坐在格兰芬多公共休息室的一 个角落里，谁也说不出一句话。珀西不在。他派了一只猫头鹰给韦斯莱夫人送信，然后就把自己 关在了宿舍里。"
+    },
+    {
+      "en": "No afternoon ever lasted as long as that one, nor had Gryffindor Tower ever been so crowded, yet so quiet. Near sunset, Fred and George went up to bed, unable to sit there any longer.",
+      "zh": "从来没有哪一个下午过得像今天这样缓慢，格兰芬多楼也从来没有像现在这样显得拥挤而又 寂静。太阳快要落山的时候，弗雷德和乔治再也坐不住了，就回宿舍睡觉去了。"
+    },
+    {
+      "en": "\"She knew something, Harry,\" said Ron, speaking for the first time since they had entered the wardrobe in the staffroom. \"That's why she was taken. It wasn't some stupid thing about Percy at all. She'd found out something about the Chamber of",
+      "zh": ""
+    },
+    {
+      "en": "Secrets. That must be why she was —\" Ron rubbed his eyes frantically. \"I mean, she was a pureblood. There can't be any other reason.\"",
+      "zh": "“她准是知道点什么，哈利。”罗恩说，这是他们躲进教工休息室的衣柜之后他第一次说话， “所以她才被抓走了。根本就与珀西做的傻事毫无关系。她肯定是发现了跟密室有关的情况。肯 定是这样，所以她才会——”罗恩拼命地揉了揉眼睛，“我的意思是，她是个纯血种，本来轮不 到她的。不可能有别的原因。”"
+    },
+    {
+      "en": "Harry could see the sun sinking, blood-red, below the skyline. This was the worst he had ever felt. If only there was something they could do. Anything. \"Harry,\" said Ron. \"D'you think there's any chance at all she's not — you know Harry didn't know what to say. He couldn't see how Ginny could still be alive.",
+      "zh": "哈利可以看见太阳红得像血一样，渐渐沉落到地平线以下。他心里从来没有像现在这样难过。 哪怕他们能够做点什么也好啊。不管是什么。“哈利，”罗恩说，“你说，她是不是可能还没有 ——你知道——”哈利不知道该说什么。他想不出金妮怎么可能还活着。"
+    },
+    {
+      "en": "\"D'you know what?\" said Ron. \"I think we should go and see Lockhart. Tell him what we know. He's going to try and get into the Chamber. We can tell him where we think it is, and tell him it's a basilisk in there.\"",
+      "zh": "“你说呢?”罗恩说，“我认为我们应该去找找洛哈特。把我们知道的情况告诉他。他不是 准备进入密室吗!我们可以对他说我们认为密室在哪里，并告诉他密室里的是一条蛇怪。”"
+    },
+    {
+      "en": "Because Harry couldn't think of anything else to do, and because he wanted to be doing something, he agreed. The Gryffindors around them were so miserable, and felt so sorry for the Weasleys, that nobody tried to stop them as they got up, crossed the room, and left through the portrait hole.",
+      "zh": "哈利想不出别的办法，而他又希望做点什么，便同意了罗恩的提议。他们周围的格兰芬多学 生们心情都很悲哀，而且都为韦斯莱兄弟感到难过，所以当哈利和罗恩起身穿过房间、钻出肖像 洞口时，没有人试图阻拦他们。"
+    },
+    {
+      "en": "Darkness was falling as they walked down to Lockhart's office. There seemed to be a lot of activity going on inside it. They could hear scraping, thumps, and hurried footsteps.",
+      "zh": "他们下楼走向洛哈特的办公室时，夜幕已经降临了。办公室里面好像动静很大。他们可以听 见摩擦声、撞击声，以及匆匆忙忙的脚步声。"
+    },
+    {
+      "en": "Harry knocked and there was a sudden silence from inside. Then the door opened the tiniest crack and they saw one of Lockhart's eyes peering through it.",
+      "zh": "哈利敲了敲门，里面突然安静了下来。接着，门打开了很细很细的一条缝，他们看见洛哈特 的一只眼睛正朝外面窥视。"
+    },
+    {
+      "en": "\"Oh — Mr. Potter — Mr. Weasley —\" he said, opening the door a bit wider. \"I'm rather busy at the moment — if you would be quick —\"",
+      "zh": "“哦……波特先生……韦斯莱先生……”他说，把门稍稍开大了一点儿。“我现在正忙着呢。 希望你们有话快……”"
+    },
+    {
+      "en": "\"Professor, we've got some information for you,\" said Harry. \"We think it'll help you.\"",
+      "zh": "“教授，我们有一些情况要告诉你，”哈利说，“我们认为会对你有些帮助。”"
+    },
+    {
+      "en": "\"Er — well — it's not terribly —\" The side of Lockhart's face that they could see looked very uncomfortable. \"I mean — well — all right —\"",
+      "zh": "“唔——是这样——其实并不怎么——”他们看出洛哈特的这半边脸显得十分紧张。“我的 意思是——唉——好吧。”"
+    },
+    {
+      "en": "He opened the door and they entered.",
+      "zh": "他打开门，让他们进去。"
+    },
+    {
+      "en": "His office had been almost completely stripped. Two large trunks stood open on the floor. Robes, jade-green, lilac, midnight-blue, had been hastily folded into one of them; books were jumbled untidily into the other. The photographs that had covered the walls were now crammed into boxes on the desk.",
+      "zh": "他的办公室差不多完全搬空了。两只大皮箱敞开着放在地板上。各种颜色的衣服，翠绿色的、 淡紫色的、深蓝色的，被胡乱地叠放在其中一只皮箱里。各种图书乱七八糟地堆在另一只皮箱里。 原来挂在墙上的那些照片都塞进了桌上的纸箱里。"
+    },
+    {
+      "en": "\"Are you going somewhere?\" said Harry.",
+      "zh": "“你要到什么地方去吗?”哈利问道。"
+    },
+    {
+      "en": "\"Er, well, yes,\" said Lockhart, ripping a life-size poster of himself from the back of the door as he spoke and starting to roll it up. \"Urgent call — unavoidable — got to go —\"",
+      "zh": "“唔，是啊，是啊，”洛哈特一边说，一边从门背后扯下一张真人大小的他本人的招贴画， 把它卷了起来，“接到一个紧急通知……躲不开……不得不去……”"
+    },
+    {
+      "en": "\"What about my sister?\" said Ron jerkily.",
+      "zh": "“那么我妹妹怎么办呢?”罗恩冲动地问。"
+    },
+    {
+      "en": "\"Well, as to that — most unfortunate —\" said Lockhart, avoiding their eyes as he wrenched open a drawer and started emptying the contents into a bag. \"No one regrets more than I —\"",
+      "zh": "“啊，至于那件事情——真是太不幸了。”洛哈特说，他避开他们俩的目光，用力拉开一只 抽屉，把里面的东西装进一只大包，“没有谁比我更感到遗憾的了——”"
+    },
+    {
+      "en": "\"You're the Defense Against the Dark Arts teacher!\" said Harry. \"You can't go now! Not with all the Dark stuff going on here!\"",
+      "zh": "“你是黑魔法防御术课的老师啊!”哈利说，“你现在不能走!现在有这么多邪恶的东西在这 里作祟!”"
+    },
+    {
+      "en": "\"Well — I must say — when I took the job —\" Lockhart muttered, now piling socks on top of his robes. \"nothing in the job description — didn't expect —\"",
+      "zh": "“这个，这个，怎么说呢……当初我接受这份职务时……”洛哈特含糊不清地嘟囔着，一边 把袜子堆在箱子里的衣服上面，“工作条例里并没有包括……我没想到……”"
+    },
+    {
+      "en": "\"You mean you're running away?\" said Harry disbelievingly. \"After all that stuff you did in your books —\"",
+      "zh": "“你是说你要逃跑?”哈利不敢相信地说，“可你写了那么多了不起的书啊?”"
+    },
+    {
+      "en": "\"Books can be misleading,\" said Lockhart delicately.",
+      "zh": "“书是可以骗人的。”洛哈特狡猾地说。"
+    },
+    {
+      "en": "\"You wrote them!\" Harry shouted.",
+      "zh": "“是你写的！”哈利喊道。"
+    },
+    {
+      "en": "\"My dear boy,\" said Lockhart, straightening up and frowning at Harry. \"Do use your common sense. My books wouldn't have sold half as well if people didn't think",
+      "zh": ""
+    },
+    {
+      "en": "I'd done all those things. No one wants to read about some ugly old Armenian warlock, even if he did save a village from werewolves. He'd look dreadful on the front cover. No dress sense at all. And the witch who banished the Bandon Banshee had a hairy chin. I mean, come on —\"",
+      "zh": "“我亲爱的孩子，”洛哈特直起身，皱起眉头看着哈利，“用你的常识思考一下吧。如果不 让人们以为那些事情都是我做的，书的销路可就差远啦。读者不会愿意去读一个丑陋的美国老巫 师的事迹，尽管他使一个村子里的人摆脱了狼人的祸害。把他的照片放在封面上，那还不难看死 啦。他穿衣服一点品位也没有。还有那个驱逐万伦女鬼的巫婆，她是一个豁嘴!我的意思是，你 想想看……”"
+    },
+    {
+      "en": "\"So you've just been taking credit for what a load of other people have done?\" said Harry incredulously.",
+      "zh": "“所以你就把别人做的事情全部记在你自己的账上?”哈利难以置信地问。"
+    },
+    {
+      "en": "\"Harry, Harry,\" said Lockhart, shaking his head impatiently, \"it's not nearly as simple as that. There was work involved. I had to track these people down. Ask them exactly how they managed to do what they did. Then I had to put a Memory Charm on them so they wouldn't remember doing it. If there's one thing I pride myself on, it's my Memory Charms. No, it's been a lot of work, Harry. It's not all book signings and publicity photos, you know. You want fame, you have to be prepared for a long hard slog.\"",
+      "zh": "“哈利呀，哈利，”洛哈特不耐烦地摇着头，说道，“可不像你说的那样简单。我的工作也 不少呢。我要跟踪查找这些人。问他们究竟是怎么能够傲到那些事的。然后我还要给他们施一个 遗忘魔咒，这样他们就会把这件事忘得一干二净。如果说我有什么值得骄傲的，那就是我的遗忘 魔咒。你知道了吧，哈利，我也要付出很多很多辛苦呢。知道吗，不仅仅是签名售书和拍名人照 片。你想出名，就必须准备长时间地艰苦努力。”"
+    },
+    {
+      "en": "He banged the lids of his trunks shut and locked them.",
+      "zh": "他乒乒乓乓给皮箱盖上盖子，上了锁。"
+    },
+    {
+      "en": "\"Let's see,\" he said. \"I think that's everything. Yes. Only one thing left.\"",
+      "zh": "“让我想想，”他说，“东西部收拾齐了。噢，对了，还忘了一件事情。”"
+    },
+    {
+      "en": "He pulled out his wand and turned to them.",
+      "zh": "他抽出魔杖，转向哈利和罗恩。"
+    },
+    {
+      "en": "\"Awfully sorry, boys, but I'll have to put a Memory Charm on you now. Can't have you blabbing my secrets all over the place. I'd never sell another book —\"",
+      "zh": "“由衷地抱歉，孩子们，我不得不给你们施一个遗忘魔咒。不能让你们把我的秘密到处张扬。 不然的话，我的书就别想卖出去了……”"
+    },
+    {
+      "en": "Harry reached his wand just in time. Lockhart had barely raised his, when Harry bellowed, \"Expelliarmus!\" Lockhart was blasted backward, falling over his trunk; his wand flew high into the air; Ron caught it, and flung it out of the open window.",
+      "zh": "哈利及时地拔出自己的魔杖。洛哈特刚把魔杖举起，哈利就大吼一声，“除你武器!”洛哈 特被击得倒退几步，摔倒在他的皮箱上。他的魔杖高高地飞到空中，被罗恩接住，扔到敞开的窗 户外面去了。"
+    },
+    {
+      "en": "\"Shouldn't have let Professor Snape teach us that one,\" said Harry furiously, kicking Lockhart's trunk aside. Lockhart was looking up at him, feeble once more. Harry was still pointing his wand at him.",
+      "zh": "“你不应该让斯内普教授教我们那个咒语的。”哈利气愤地说，一脚把洛哈特的箱子踢到一 边。洛啥特抬头看着他，邓模样显得更枯瘦憔悴了。哈利仍然用魔杖指着他。"
+    },
+    {
+      "en": "\"What d'you want me to do?\" said Lockhart weakly. \"I don't know where the Chamber of Secrets is. There's nothing I can do.\"",
+      "zh": "“你们想要我做什么?”洛哈特虚弱地说，“我可不知道密室在哪里。我什么也不会。”"
+    },
+    {
+      "en": "\"You're in luck,\" said Harry, forcing Lockhart to his feet at wandpoint. \"We think we know where it is. And what's inside it. Let's go.\"",
+      "zh": "“算你运气好，”哈利说，他用魔杖指着洛哈特，强迫他站起身来，“我们碰巧知道密室在 哪里。还知道密室里关着什么。走吧。”"
+    },
+    {
+      "en": "They marched Lockhart out of his office and down the nearest stairs, along the dark corridor where the messages shone on the wall, to the door of Moaning Myrtle's bathroom. They sent Lockhart in first. Harry was pleased to see that he was shaking.",
+      "zh": "他们押着洛哈特走出他的办公室，沿着最近的一道楼梯下去，走过墙上闪着那些文字的昏暗 走廊，来到哭泣的桃金娘的盥洗室门口。他们派洛哈特走在最前面。哈利开心地看见他浑身发抖。"
+    },
+    {
+      "en": "Moaning Myrtle was sitting on the tank of the end toilet. \"Oh, it's you,\" she said when she saw Harry. \"What do you want this time?\"",
+      "zh": "哭泣的桃金娘正坐在最里面的一个抽水马桶的水箱上。“噢，是你，”她看见哈利，说道， “这次你想要什么?”"
+    },
+    {
+      "en": "\"To ask you how you died,\" said Harry. Myrtle's whole aspect changed at once. She looked as though she had never been asked such a flattering question.",
+      "zh": "“想问问你是怎么死的。”哈利说。桃金娘的整个神态一下子就变了。看样子，从来没有人 问过她这样一个让她感到荣幸的问题。"
+    },
+    {
+      "en": "\"Ooooh, it was dreadful,\" she said with relish. \"It happened right in here. I died in this very stall. I remember it so well. I'd hidden because Olive Hornby was teasing me about my glasses. The door was locked, and I was crying, and then I heard somebody come in. They said something funny. A different language, I think it must have been. Anyway, what really got me was that it was a boy speaking. So I unlocked the door, to tell him to go and use his own toilet, and then —\" Myrtle swelled importantly, her face shining. \"I died.\"",
+      "zh": "“哎哟哟，太可怕了，”她津津有味地说，“事情就在这里发生的。我就死在这间厕所里。 我记得非常清楚。当时，奥利夫·洪贝嘲笑我戴着眼镜像四眼狗，我就躲到这里来了。我把门锁 上，在里面哭，突然听到有人进来了。他们说的话很滑稽。我想一定是另外一种语言吧。不过最 让我感到恼火的是，我听见一个男孩的声音在说活。于是我就把门打开，呵斥他走开，到自己的 男生厕所去，然后——”桃金娘自以为很了不起地挺起胸膛，脸上容光焕发，“我就死了。”"
+    },
+    {
+      "en": "\"How?\" said Harry.",
+      "zh": "“怎么死的?”哈利问。"
+    },
+    {
+      "en": "\"No idea,\" said Myrtle in hushed tones. \"I just remember seeing a pair of great, big, yellow eyes. My whole body sort of seized up, and then I was floating away....\" She looked dreamily at Harry. \"And then I came back again. I was determined to haunt Olive Hornby, you see. Oh, she was sorry she'd ever laughed at my glasses.\"",
+      "zh": "“不知道，”桃金娘神秘地压低声音说，“我只记得看见一对大得吓人的黄眼睛。我的整个 身体好像都被抓了起来，然后我就飘走了……”她神情恍惚地看着哈利。“后来我又回来了。你 知道，我一心要找奥利夫·洪贝算账。哦，她非常后悔当初嘲笑我戴眼镜。”"
+    },
+    {
+      "en": "\"Where exactly did you see the eyes?\" said Harry.",
+      "zh": "“你到底是在哪儿看见那双眼睛的?”哈利问。"
+    },
+    {
+      "en": "\"Somewhere there,\" said Myrtle, pointing vaguely toward the sink in front of her toilet. Harry and Ron hurried over to it. Lockhart was standing well back, a look of utter terror on his face.",
+      "zh": "“差不多就在那儿吧。”桃金娘说，很模糊地指了指她前面的水池。哈利和罗恩赶紧走过去。 洛哈特慌忙退到一边，脸上露出万分惊恐的表情。"
+    },
+    {
+      "en": "It looked like an ordinary sink. They examined every inch of it, inside and out, including the pipes below. And then Harry saw it: Scratched on the side of one of the copper taps was a tiny snake. \"That tap's never worked,\" said Myrtle brightly as he tried to turn it. \"Harry,\" said Ron. \"Say something. Something in Parseltongue.\"",
+      "zh": "那个水池看上去很平常。他们把它里里外外、上上下下检查了一番，连下面的水管子也没有 放过。接着，哈利看见了：在一个铜龙头的侧面，刻着一条小小的蛇。“这个龙头从来都不出水。” 桃金娘看到哈利想把龙头拧开，高兴地说。“哈利，”罗恩说，“你说几句话。用蛇佬腔说几句 话。”"
+    },
+    {
+      "en": "\"But —\" Harry thought hard. The only times he'd ever managed to speak Parseltongue were when he'd been faced with a real snake. He stared hard at the tiny engraving, trying to imagine it was real.",
+      "zh": "“可是——”哈利拼命地想。以前，他总是在面对一条真蛇时才能说蛇佬腔。他死死地盯着 那条刻出来的小蛇，试着把它想象成一条真蛇。"
+    },
+    {
+      "en": "\"Open up,\" he said.",
+      "zh": "“打开。”他说。"
+    },
+    {
+      "en": "He looked at Ron, who shook his head.",
+      "zh": "他抬头看着罗恩，罗恩摇了摇头。"
+    },
+    {
+      "en": "\"English,\" he said.",
+      "zh": "“不行，你说的是人话。”他说。"
+    },
+    {
+      "en": "Harry looked back at the snake, willing himself to believe it was alive. If he moved his head, the candlelight made it look as though it were moving.",
+      "zh": "哈利又转过头去望着那条蛇，强迫自己相信它是活的。哈利想，如果他把头晃动几下，那么 摇曳的烛光就会使那条蛇看上去仿佛在动似的。"
+    },
+    {
+      "en": "\"Open up,\" he said.",
+      "zh": "“打开。”他说。"
+    },
+    {
+      "en": "Except that the words weren't what he heard; a strange hissing had escaped him, and at once the tap glowed with a brilliant white light and began to spin. Next second, the sink began to move; the sink, in fact, sank, right out of sight, leaving a large pipe exposed, a pipe wide enough for a man to slide into.",
+      "zh": "然而，听到的不是这句话，从他嘴里发出的是一种奇怪的嘶嘶声。顿时，龙头发出一道耀眼 的白光，开始飞快地旋转。接着，水池也动了起来。他们眼看着水池慢慢地从视线中消失了，露 出一根十分粗大的水管，可以容一个人钻进去。"
+    },
+    {
+      "en": "Harry heard Ron gasp and looked up again. He had made up his mind what he was going to do.",
+      "zh": "哈利听见罗恩倒抽了一口冷气。他抬起头来，心里已经拿定了主意要怎么做了。"
+    },
+    {
+      "en": "\"I'm going down there,\" he said.",
+      "zh": "“我要下去。”他说。"
+    },
+    {
+      "en": "He couldn't not go, not now they had found the entrance to the Chamber, not if there was even the faintest, slimmest, wildest chance that Ginny might be alive.",
+      "zh": "他不能不去，既然他们已经找到了密室的入口，既然还有很细小、很微弱、很渺茫的一线希 望：金妮也许还活着。"
+    },
+    {
+      "en": "\"Me too,\" said Ron.",
+      "zh": "“我也去。”罗恩说。"
+    },
+    {
+      "en": "There was a pause.",
+      "zh": "片刻的沉默。"
+    },
+    {
+      "en": "\"Well, you hardly seem to need me,\" said Lockhart, with a shadow of his old smile. \"I'll just —\"",
+      "zh": "“好吧，看来你们不需要我了，”洛哈特说，脸上又露出了一丝丝他惯有的那种笑容，“我 就——”"
+    },
+    {
+      "en": "He put his hand on the door knob, but Ron and Harry both pointed their wands at him.",
+      "zh": "他伸手抓住门把手，可是罗恩和哈利都用魔杖指住了他。"
+    },
+    {
+      "en": "\"You can go first,\" Ron snarled.",
+      "zh": "“你可以第一个下去。”罗恩吼道。"
+    },
+    {
+      "en": "White-faced and wandless, Lockhart approached the opening.",
+      "zh": "失去了魔杖的洛哈特脸色煞白，慢慢地走近洞口。"
+    },
+    {
+      "en": "\"Boys,\" he said, his voice feeble. \"Boys, what good will it do?\"",
+      "zh": "“孩子们，”他说，声音可怜兮兮的，“孩子们，这有什么用呢?”"
+    },
+    {
+      "en": "Harry jabbed him in the back with his wand. Lockhart slid his legs into the pipe.",
+      "zh": "哈利用魔杖捅了捅他的后背，洛哈特把双腿伸进管子。"
+    },
+    {
+      "en": "\"I really don't think —\" he started to say, but Ron gave him a push, and he slid out of sight. Harry followed quickly. He lowered himself slowly into the pipe, then let go.",
+      "zh": "“我真的认为这样不——”他还想往下说，可是罗恩推了他一把，他就一下子滑了下去，看 不见了。哈利紧跟着也慢慢钻进管子，然后一松手，让自己滑落下去。"
+    },
+    {
+      "en": "It was like rushing down an endless, slimy, dark slide. He could see more pipes branching off in all directions, but none as large as theirs, which twisted and turned, sloping steeply downward, and he knew that he was falling deeper below the school",
+      "zh": ""
+    },
+    {
+      "en": "than even the dungeons. Behind him he could hear Ron, thudding slightly at the curves.",
+      "zh": "那感觉就像飞快地冲下一个黑暗的、黏糊糊的、没完没了的滑道。他可以看见还有许多管子 向四面八方岔开，但都没有这根管子这么粗。他们的这根管子曲曲折折，七绕八绕，坡度很陡地 一路向下。哈利知道他已经滑落到学校地詹下很深很深的地方，甚至比那些地下教室还要深。他 可以听见罗恩跟在他后面，在拐弯处发出轻微的碰撞声。"
+    },
+    {
+      "en": "And then, just as he had begun to worry about what would happen when he hit the ground, the pipe leveled out, and he shot out of the end with a wet thud, landing on the damp floor of a dark stone tunnel large enough to stand in. Lockhart was getting to his feet a little ways away, covered in slime and white as a ghost. Harry stood aside as Ron came whizzing out of the pipe, too.",
+      "zh": "接着，就在他开始为接下来的事情感到担心时，他突然落到了地面上。水管变成了水平的， 他从管口冒了出来，噗的一声跌在潮湿的地上。这是一条黑暗的石头隧道，大得可以容人站在里 面。在离他很近的地方，洛哈特正从地上爬起来，浑身黏泥，脸色苍白得像一个幽灵。哈利站到 一边，罗恩也呼地从管子里冒了出来。"
+    },
+    {
+      "en": "\"We must be miles under the school,\" said Harry, his voice echoing in the black tunnel.",
+      "zh": "“我们肯定到了学校下面好几英里深的地方。”哈利说，他的声音在漆黑的隧道里回响。"
+    },
+    {
+      "en": "\"Under the lake, probably,\" said Ron, squinting around at the dark, slimy walls.",
+      "zh": "“大概到了湖底下。”罗恩说。他眯起眼睛，打量着周围黑魃魃、黏糊糊的墙壁。"
+    },
+    {
+      "en": "All three of them turned to stare into the darkness ahead.",
+      "zh": "然后，他们三个人都转眼盯着黑暗的前方。"
+    },
+    {
+      "en": "\"Lumos!\" Harry muttered to his wand and it lit again. \"C'mon,\" he said to Ron and Lockhart, and off they went, their footsteps slapping loudly on the wet floor.",
+      "zh": "“荧光闪烁!”哈利朝他的魔杖低声说了一句，魔杖便又发出了亮光。“走吧。”他对罗恩 和洛哈特说。三个人豹脚啦嗒啪嗒地踩在潮湿的地面上，发出很响的声音。"
+    },
+    {
+      "en": "The tunnel was so dark that they could only see a little distance ahead. Their shadows on the wet walls looked monstrous in the wandlight.",
+      "zh": "隧道里太黑了，他们只能看见面前的一小块地方。魔杖的光把他们的影子映在湿乎乎的墙壁 上，看上去像妖怪一样。"
+    },
+    {
+      "en": "\"Remember,\" Harry said quietly as they walked cautiously forward, \"any sign of movement, close your eyes right away....\"",
+      "zh": "“记住，”当他们小心地往前走着时，哈利低声说道，“只要一有动静，就赶紧闭上眼睛……”"
+    },
+    {
+      "en": "But the tunnel was quiet as the grave, and the first unexpected sound they heard was a loud crunch as Ron stepped on what turned out to be a rat's skull. Harry lowered his wand to look at the floor and saw that it was littered with small animal bones. Trying very hard not to imagine what Ginny might look like if they found her, Harry led the way forward, around a dark bend in the tunnel.",
+      "zh": "可是隧道里像坟墓一样寂然无声，他们只听见一个出乎意料的声音，咔啪，结果发现是罗恩 踩到了一个老鼠头骨。哈利把魔杖放低，查看地面，发现到处都有一些小动物的骨头。哈利拼命 克制住自己，不去想象金妮被他们找到时会是什么样子。他领头向前面走，转过隧道里一个黑暗 的弯道。"
+    },
+    {
+      "en": "\"Harry — there's something up there —\" said Ron hoarsely, grabbing Harry's shoulder.",
+      "zh": "“哈利，那儿有个什么东西……”罗恩一把抓住哈利的肩膀，声音嘶哑地说。"
+    },
+    {
+      "en": "They froze, watching. Harry could just see the outline of something huge and curved, lying right across the tunnel. It wasn't moving.",
+      "zh": "三个人顿时呆立不动，注视着。哈利看见一个盘绕着的庞然大物的轮廓，躺在隧道的另一边， 一动不动。"
+    },
+    {
+      "en": "\"Maybe it's asleep,\" he breathed, glancing back at the other two. Lockhart's hands were pressed over his eyes. Harry turned back to look at the thing, his heart beating so fast it hurt.",
+      "zh": "“也许它睡着了。”他喘着气说，回头望了望另外两个人。洛哈特用手紧紧按住自己的眼睛。 哈利又转过头去看着那庞然大物，他的心跳得飞快，感到胸膛里隐隐作痛。"
+    },
+    {
+      "en": "Very slowly, his eyes as narrow as he could make them and still see, Harry edged forward, his wand held high.",
+      "zh": "哈利尽可能地把眼睛眯得很小很小，同时又能看见东西。他侧着身子慢慢向前移动，手里高 高地举着魔杖。"
+    },
+    {
+      "en": "The light slid over a gigantic snake skin, of a vivid, poisonous green, lying curled and empty across the tunnel floor. The creature that had shed it must have been twenty feet long at least.",
+      "zh": "光线照在一副巨大的蛇皮上，绿盈盈的，十分鲜艳，一看就是一条毒蛇的皮，盘绕着躺在隧 道的地面上，里面是空的。显然，那个刚褪下这层皮的动物至少有二十英尺长。"
+    },
+    {
+      "en": "\"Blimey,\" said Ron weakly.",
+      "zh": "“天哪。”罗恩无力地叹了一声。"
+    },
+    {
+      "en": "There was a sudden movement behind them. Gilderoy Lockhart's knees had given way.",
+      "zh": "他们身后突然传来一个动静。是吉德罗·洛哈特膝盖一软，瘫倒了。"
+    },
+    {
+      "en": "\"Get up,\" said Ron sharply, pointing his wand at Lockhart.",
+      "zh": "“起来。”罗恩严厉地说，用魔杖指着洛哈特。"
+    },
+    {
+      "en": "Lockhart got to his feet — then he dived at Ron, knocking him to the ground.",
+      "zh": "洛哈特站了起来——他扑向罗恩，把他撞翻在地。"
+    },
+    {
+      "en": "Harry jumped forward, but too late — Lockhart was straightening up, panting, Ron's wand in his hand and a gleaming smile back on his face.",
+      "zh": "哈利冲上前去，可是已经来不及了。洛哈特气喘吁吁地站起身来，手里拿着罗恩的魔杖，脸 上又挂着他那特有的笑容，露出了晶亮的牙齿。"
+    },
+    {
+      "en": "\"The adventure ends here, boys!\" he said. \"I shall take a bit of this skin back up to the school, tell them I was too late to save the girl, and that you two tragically lost your minds at the sight of her mangled body — say good-bye to your memories!\"",
+      "zh": "“孩子们，你们的冒险到此结束了!”他说，“我要把这张皮带到学校去，对他们说，我来 晚了，没能救得了那个姑娘，而你们一看见她血肉模糊的尸体，就令人痛心地丧失了理智。“向 你们的记忆告别吧!”"
+    },
+    {
+      "en": "He raised Ron's Spellotaped wand high over his head and yelled, \"Obliviate!\"",
+      "zh": "他把罗恩那根失灵的魔杖高高举过头顶，大喊一声：“一忘皆空!”"
+    },
+    {
+      "en": "The wand exploded with the force of a small bomb. Harry flung his arms over his head and ran, slipping over the coils of snake skin, out of the way of great chunks of tunnel ceiling that were thundering to the floor. Next moment, he was standing alone, gazing at a solid wall of broken rock.",
+      "zh": "嘭!魔杖突然爆炸了，其威力不亚于一枚小炸弹。哈利用胳膊护住脑袋，撒腿就跑，被盘绕 着的蛇皮绊倒，躲过了从隧道天花板上崩落到地面上的大块碎石。然后，他站起来，独自面对着 一堵厚厚的碎石墙。"
+    },
+    {
+      "en": "\"Ron!\" he shouted. \"Are you okay? Ron!\"",
+      "zh": "“罗恩!”他喊道，“你没事吧?罗恩!”"
+    },
+    {
+      "en": "\"I'm here!\" came Ron's muffled voice from behind the rockfall. \"I'm okay — this git's not, though — he got blasted by the wand —\"",
+      "zh": "“我在这里!”碎石墙后面传来罗恩发闷的声音。“我没事。不过这个笨蛋可倒了霉——他 被魔杖击中了。”"
+    },
+    {
+      "en": "There was a dull thud and a loud \"ow!\" It sounded as though Ron had just kicked Lockhart in the shins.",
+      "zh": "随着一记沉闷的撞击声，有人大声惨叫：“唉哟。”从声音听，似乎罗恩踢中了洛哈特的小 腿肚子。"
+    },
+    {
+      "en": "\"What now?\" Ron's voice said, sounding desperate. \"We can't get through — it'll take ages....\"",
+      "zh": "“现在怎么办呢?”罗恩说，声音显得很绝望，“我们过不去了。要花好长时间才能……”"
+    },
+    {
+      "en": "Harry looked up at the tunnel ceiling. Huge cracks had appeared in it. He had never tried to break apart anything as large as these rocks by magic, and now didn't seem a good moment to try — what if the whole tunnel caved in? There was another thud and another \"ow!\" from behind the rocks. They were wasting time. Ginny had already been in the Chamber of Secrets for hours.... Harry knew there was only one thing to do.",
+      "zh": "哈利抬头望望隧道的天花板，那里出现了几道巨大的裂口。他从来没有试过用魔法分开像这 些岩石这么大的东西，而现在进行尝试似乎不太合适——万一整个隧道都塌下来呢?岩石那边又 传来一声撞击和一声“唉哟”。他们在浪费时间。金妮已经在密室里待了好几个小时了。哈利知 道，眼下只有一个办法。"
+    },
+    {
+      "en": "\"Wait there,\" he called to Ron. \"Wait with Lockhart. I'll go on.... If I'm not back in an hour...\"",
+      "zh": "“在这儿等着，”他大声对罗恩说，“和洛哈特一起等着。我继续往前走。如果我一小时之 内没有回来……”"
+    },
+    {
+      "en": "There was a very pregnant pause.",
+      "zh": "接着是片刻意味深长的停顿。"
+    },
+    {
+      "en": "\"I'll try and shift some of this rock,\" said Ron, who seemed to be trying to keep his voice steady. \"So you can — can get back through. And, Harry —\"",
+      "zh": "“我来看看能不能把这块石头搬走，”罗恩说，似乎竭力使语调保持平稳，“这样你就能— —就能钻回来了。还有，哈利——”"
+    },
+    {
+      "en": "\"See you in a bit,\" said Harry, trying to inject some confidence into his shaking voice.",
+      "zh": "“待会儿见。”哈利说，他努力给自己颤抖的声音里注入一些自信。"
+    },
+    {
+      "en": "And he set off alone past the giant snake skin.",
+      "zh": "然后，他独自走过了那张巨大的蛇皮。"
+    },
+    {
+      "en": "Soon the distant noise of Ron straining to shift the rocks was gone. The tunnel turned and turned again. Every nerve in Harry's body was tingling unpleasantly. He",
+      "zh": ""
+    },
+    {
+      "en": "wanted the tunnel to end, yet dreaded what he'd find when it did. And then, at last, as he crept around yet another bend, he saw a solid wall ahead on which two entwined serpents were carved, their eyes set with great, glinting emeralds.",
+      "zh": "很快，罗恩吭哧吭哧搬石头的声音听不见了。隧道转了一个弯又一个弯。哈利的每一根神经 都在很不舒服地颤抖着。他希望快点走到隧道的尽头，同时又害怕隧道真的到了尽头。最后，他 小心地转过又一个弯道，终于发现前面立着一堵结结实实的墙，上面刻着两条互相缠绕的蛇，它 们的眼睛里镶着大大的、闪闪发亮的绿宝石。"
+    },
+    {
+      "en": "Harry approached, his throat very dry. There was no need to pretend these stone snakes were real; their eyes looked strangely alive.",
+      "zh": "哈利一步步地走近，感到喉咙发干。现在不需要把这两条石头蛇假想成真的了，它们的眼睛 看上去跟活的一模一样。"
+    },
+    {
+      "en": "He could guess what he had to do. He cleared his throat, and the emerald eyes seemed to flicker.",
+      "zh": "哈利猜到他必须怎么做了。他清了清喉咙，那绿宝石的眼睛似乎在闪烁。"
+    },
+    {
+      "en": "\"Open,\" said Harry, in a low, faint hiss.",
+      "zh": "“打开。”哈利用低沉的、暗哑的嘶嘶声说。"
+    },
+    {
+      "en": "The serpents parted as the wall cracked open, the halves slid smoothly out of sight, and Harry, shaking from head to foot, walked inside.",
+      "zh": "两条蛇分开了，石墙从中间裂开，慢慢滑到两边消失了。哈利浑身颤抖着，走了进去。"
+    }
+  ]
+}

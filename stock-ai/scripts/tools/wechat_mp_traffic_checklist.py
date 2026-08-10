@@ -28,6 +28,14 @@ from scripts.tools.wechat_mp_seo import (
     title_front_has_search_keywords,
     title_has_search_keywords,
 )
+from scripts.tools.wechat_mp_sousou_eval import (
+    check_hotspot_reader_meta,
+    check_hotspot_selection_leak,
+    check_hotspot_single_theme,
+    check_reader_data_gap_meta,
+    check_title_opening_aligned,
+    check_title_sousou_complete,
+)
 
 # 移动端约 3 分钟阅读（纯文字，不含 HTML）
 READ_MIN_CHARS = 400
@@ -157,7 +165,7 @@ def run_traffic_checklist(
             hint="禁：震惊/重磅/100倍 等",
         )
     )
-    if kind in {"market", "news", "top5", "dragons"}:
+    if kind in {"market", "news", "sector", "top5", "dragons"}:
         items.append(
             TrafficCheckItem(
                 id="title_search_seo",
@@ -165,6 +173,76 @@ def run_traffic_checklist(
                 passed=title_has_search_keywords(t, kind, edition=edition)
                 and title_front_has_search_keywords(t, kind, edition=edition),
                 hint=f"列表截断：{t[:15]!r}；宜含 A股/选股/龙头/快讯 等",
+            )
+        )
+    elif kind in {"hotspot", "tv_review"}:
+        ok_title, _ = check_title_sousou_complete(t)
+        front = t[:15].strip()
+        items.append(
+            TrafficCheckItem(
+                id="title_search_seo",
+                label="标题实体完整（搜一搜路牌）",
+                passed=len(front) >= 8 and ok_title,
+                hint=f"列表截断：{t[:15]!r}；优先案由/片名/事件名，勿 #A股 打头",
+            )
+        )
+
+    ok_title, title_sousou_notes = check_title_sousou_complete(t)
+    items.append(
+        TrafficCheckItem(
+            id="title_sousou_complete",
+            label="标题表意完整（搜一搜路牌）",
+            passed=ok_title,
+            hint=title_sousou_notes[0] if title_sousou_notes else "禁止 返…/暂… 半句话",
+        )
+    )
+
+    ok_align, align_notes = check_title_opening_aligned(t, plain, kind=kind)
+    items.append(
+        TrafficCheckItem(
+            id="title_opening_aligned",
+            label="开篇与标题同题",
+            passed=ok_align,
+            hint=align_notes[0] if align_notes else "首段须承接标题主题",
+        )
+    )
+
+    ok_data, data_notes = check_reader_data_gap_meta(plain)
+    items.append(
+        TrafficCheckItem(
+            id="reader_no_data_gap_meta",
+            label="无采集缺口元叙述",
+            passed=ok_data,
+            hint=data_notes[0] if data_notes else "禁止 数据未获取/样本未获取",
+        )
+    )
+
+    if kind == "hotspot":
+        ok_theme, theme_notes = check_hotspot_single_theme(plain)
+        items.append(
+            TrafficCheckItem(
+                id="hotspot_single_theme",
+                label="hotspot 纯段落长文",
+                passed=ok_theme,
+                hint=theme_notes[0] if theme_notes else "≥2000字、≥5段、禁止一切小标题",
+            )
+        )
+        ok_leak, leak_notes = check_hotspot_selection_leak(plain)
+        items.append(
+            TrafficCheckItem(
+                id="hotspot_no_selection_leak",
+                label="无模板节名/编审过程",
+                passed=ok_leak,
+                hint=leak_notes[0] if leak_notes else "禁止候选/舍弃/相较其它标题",
+            )
+        )
+        ok_meta, meta_notes = check_hotspot_reader_meta(plain)
+        items.append(
+            TrafficCheckItem(
+                id="hotspot_no_reader_meta",
+                label="开篇无结构导语",
+                passed=ok_meta,
+                hint=meta_notes[0] if meta_notes else "禁止阅读路径/下文先/不复盘清单",
             )
         )
 
@@ -182,30 +260,53 @@ def run_traffic_checklist(
             id="digest_seo",
             label="摘要含稿型 SEO 词",
             passed=_digest_has_seo(d, kind, edition=edition),
-            hint="脚本 enrich_digest 会补 A股/盘前/收盘复盘 等",
+            hint=(
+                "脚本 enrich_digest 会补热点观察/话题评论等"
+                if kind in {"hotspot", "tv_review"}
+                else "脚本 enrich_digest 会补 A股/盘前/收盘复盘 等"
+            ),
         )
     )
 
+    opening_pat = (
+        r"\d|年|月|日|岁|亿|万|人|通报|报道|称|表示"
+        if kind in {"hotspot", "tv_review"}
+        else r"\d|指数|涨|跌|外围|结构|收盘|盘前|午间"
+    )
     items.append(
         TrafficCheckItem(
             id="opening_conclusion",
             label="开头结论先行",
             passed=bool(opening)
             and len(opening) >= OPENING_MIN_CHARS
-            and bool(re.search(r"\d|指数|涨|跌|外围|结构|收盘|盘前|午间", opening)),
-            hint="首段宜含数字或盘面关键词，40 字以上",
+            and bool(re.search(opening_pat, opening)),
+            hint=(
+                "首段宜含时间/数字/人物或事件关键词，40 字以上"
+                if kind in {"hotspot", "tv_review"}
+                else "首段宜含数字或盘面关键词，40 字以上"
+            ),
         )
     )
 
     sections = _count_section_heads(plain, html=content_html or body)
-    items.append(
-        TrafficCheckItem(
-            id="sections",
-            label="至少 2 个分节标题",
-            passed=sections >= 2,
-            hint=f"当前 {sections} 个（> 引用块）",
+    if kind == "hotspot":
+        items.append(
+            TrafficCheckItem(
+                id="sections",
+                label="无小标题（纯段落）",
+                passed=sections == 0,
+                hint=f"当前 {sections} 个小标题（热点深评禁止 `> ` 分节）",
+            )
         )
-    )
+    else:
+        items.append(
+            TrafficCheckItem(
+                id="sections",
+                label="至少 2 个分节标题",
+                passed=sections >= 2,
+                hint=f"当前 {sections} 个（> 引用块）",
+            )
+        )
 
     long_paras = [p for p in _paragraphs(plain) if len(p) > 180 and not p.startswith(">")]
     items.append(
@@ -218,12 +319,13 @@ def run_traffic_checklist(
     )
 
     char_len = len(re.sub(r"\s+", "", plain))
+    min_chars = 2000 if kind == "hotspot" else READ_MIN_CHARS
     items.append(
         TrafficCheckItem(
             id="read_length",
             label="正文长度利于完读（约 3 分钟）",
-            passed=READ_MIN_CHARS <= char_len <= READ_MAX_CHARS,
-            hint=f"纯文字约 {char_len} 字（建议 {READ_MIN_CHARS}–{READ_MAX_CHARS}）",
+            passed=min_chars <= char_len <= READ_MAX_CHARS,
+            hint=f"纯文字约 {char_len} 字（建议 {min_chars}–{READ_MAX_CHARS}）",
         )
     )
 

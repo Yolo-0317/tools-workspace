@@ -69,29 +69,34 @@ def test_format_hashtag_line():
 
 
 def test_enrich_title_for_search_adds_prefix_top5():
-    raw = "胜业电气领衔5只！收盘信号出炉，明日盯啥？"
+    raw = "胜业电气等5只，结构怎么读？"
     out = enrich_title_for_search(raw, "top5", max_len=32)
     assert title_front_has_search_keywords(out, "top5")
     assert len(out) <= 32
+    assert "领衔" not in out
+    assert "明日盯" not in out
 
 
 def test_enrich_title_for_search_skips_when_front_ok():
-    raw = "A股选股5只｜胜业电气领衔，明日盯啥？"
+    raw = "A股观察5只｜胜业电气结构对照"
     out = enrich_title_for_search(raw, "top5", max_len=32)
-    assert out == raw
+    assert "领衔" not in out
+    assert title_front_has_search_keywords(out, "top5")
 
 
 def test_title_sousou_hook_score_prefers_search_winners():
-    assert title_sousou_hook_score("情绪退潮怎么玩？粤电力4板还在榜", "dragons") >= 4
-    assert title_sousou_hook_score("胜业电气领衔5只！收盘信号出炉，明日盯啥？", "top5") >= 4
-    assert title_sousou_hook_score("A股电力｜产业链怎么跟？收盘观察", "sector") >= 4
+    assert title_sousou_hook_score("情绪退潮梯队｜粤电力4板结构", "dragons") >= 4
+    assert title_sousou_hook_score("A股观察｜胜业电气等5只，结构怎么读？", "top5") >= 4
+    assert title_sousou_hook_score("A股电力｜产业链怎么拆？收盘观察", "sector") >= 4
+    assert title_sousou_hook_score("情绪退潮怎么玩？粤电力4板还在榜", "dragons") < 0
 
 
 def test_top5_winner_title_keeps_mingri_dinghua():
-    raw = "胜业电气领衔5只！收盘信号出炉，明日盯啥？"
+    raw = "A股观察｜胜业电气等5只，结构怎么读？"
     out = enrich_title_for_search(raw, "top5", max_len=32)
-    assert "领衔" in out
-    assert "明日盯" in out
+    assert "胜业电气" in out
+    assert "领衔" not in out
+    assert "明日盯" not in out
     assert title_front_has_search_keywords(out, "top5")
 
 
@@ -140,7 +145,7 @@ def test_commerce_title_enrich_prefix() -> None:
 
 
 def test_append_hashtag_inline_before_disclaimer():
-    disc = "本文为作者个人投资日记与信息整理，不构成投资建议。市场有风险，决策自负。"
+    disc = "本文为作者个人复盘笔记与信息整理，不构成投资建议。市场有风险，决策自负。"
     body = f"> 盘面速览\n\n指数震荡。\n\n{disc}"
     tags = recommended_hashtags("market", edition="close")
     out = append_hashtag_inline_to_body(body, tags)
@@ -148,3 +153,30 @@ def test_append_hashtag_inline_before_disclaimer():
     assert "#A股" in out
     assert "#收盘复盘" in out
     assert out.index("#A股") < out.index(disc)
+
+
+def test_recommended_hashtags_hotspot_no_agu():
+    tags = recommended_hashtags("hotspot", theme="胚胎案")
+    assert "A股" not in tags
+    assert tags[0] == "热点观察"
+    assert "胚胎案" in tags
+    assert len(tags) <= HASHTAG_MAX
+
+
+def test_recommended_hashtags_tv_review():
+    tags = recommended_hashtags("tv_review")
+    assert tags[0] == "热点观察"
+    assert "A股" not in tags
+
+
+def test_enrich_digest_hotspot():
+    base = "【7月30日 热点评论】暑期档票房——"
+    out = enrich_digest(base, "hotspot")
+    assert "热点观察" in out or "话题评论" in out
+    assert "A股" not in out
+    assert len(out) <= DIGEST_MAX
+
+
+def test_title_sousou_hook_hotspot_entity():
+    assert title_sousou_hook_score("伪造结婚证做试管案再起波澜", "hotspot") >= 1
+    assert title_sousou_hook_score("A股收盘｜指数震荡", "hotspot") < 0

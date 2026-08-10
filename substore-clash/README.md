@@ -6,7 +6,7 @@
 |----|-----|
 | 项目路径 | `tools-workspace/substore-clash` |
 | 订阅域名 | `sub.yoloworld.site` |
-| 本机 clash-gen | http://127.0.0.1:8787 |
+| 本机 / 局域网 clash-gen | `http://192.168.1.13:8787`（绑定 `0.0.0.0`） |
 | 外网订阅 | https://sub.yoloworld.site:8883/clash.yaml |
 | 内网订阅 | https://sub.yoloworld.site:8443/clash.yaml |
 
@@ -33,9 +33,9 @@
                     │
         ┌───────────┴───────────┐
         ▼                       ▼
- 127.0.0.1:8787          Caddy sub.yoloworld.site
+ 0.0.0.0:8787            Caddy sub.yoloworld.site
  /clash.yaml             :8883 外网 / :8443 内网
- /clash-verge.yaml
+ /clash-verge.yaml       （局域网可直连，勿映射公网）
 ```
 
 **Docker 服务**
@@ -43,7 +43,7 @@
 | 服务 | 端口 | 作用 |
 |------|------|------|
 | `substore-clash-store` | 127.0.0.1:3001 | Sub-Store 管理（可选） |
-| `substore-clash-gen` | 127.0.0.1:8787 | 订阅生成与 HTTP 分发 |
+| `substore-clash-gen` | 0.0.0.0:8787 | 订阅生成与 HTTP 分发（局域网直连） |
 
 ---
 
@@ -59,6 +59,8 @@
 | **内网 Clash 订阅** | https://sub.yoloworld.site:8443/clash.yaml |
 | 带 token | 上述 URL 加 `?token=<CLASH_SUB_TOKEN>` |
 | **Verge 轻量订阅** | https://sub.yoloworld.site:8883/clash-verge.yaml |
+| **Android 订阅** | https://sub.yoloworld.site:8883/clash-android.yaml |
+| **局域网 Verge** | http://192.168.1.13:8787/clash-verge.yaml |
 | 本机调试 | http://127.0.0.1:8787/clash.yaml |
 
 路由器须映射 **8883** → 本机（`sidestore-infra` 的 `EXTERNAL_HTTPS_PORT`）。
@@ -73,18 +75,20 @@
 
 同域其他服务（Anisette、Alist/Jellyfin 等）见 `sidestore-infra` 文档。
 
-**客户端内核**：Clash Verge / Mihomo Party / ClashMi / Stash 选 **Clash Meta**（Stash 内核亦可）。
+**客户端内核**：Clash Verge / Mihomo Party / ClashMi / Stash 选 **Clash Meta**（Stash 内核亦可）。**Android** 请用 **`clash-android.yaml`**，勿直接导入完整版 `clash.yaml`（含 Stash 专用字段，Android 会解析失败）。
 
 ---
 
 ## 两种配置
 
-| | **完整版** `clash.yaml` | **轻量版** `clash-verge.yaml` |
-|--|-------------------------|--------------------------------|
-| 路径 | `/clash.yaml` | `/clash-verge.yaml` 或 `?verge=1` |
-| 规则集 | 12 个在线 rule-providers | 无，内联 GEOIP + OpenAI |
-| 节点数 | 全部（自动选择最多 80） | 50 个优先节点 |
-| 适用 | Stash / 日常完整分流 | Verge 首次导入（避免长时间转圈） |
+| | **完整版** `clash.yaml` | **轻量版** `clash-verge.yaml` | **Android** `clash-android.yaml` |
+|--|-------------------------|--------------------------------|----------------------------------|
+| 路径 | `/clash.yaml` | `/clash-verge.yaml` 或 `?verge=1` | `/clash-android.yaml` 或 `?android=1` |
+| 规则集 | 12 个在线 rule-providers | 无，内联 GEOIP + OpenAI | 同 Verge |
+| 节点数 | 全部（自动选择最多 80） | 50 个优先节点 | 全部 |
+| Stash benchmark 字段 | 有（Stash 测速用） | 无 | 无 |
+| Mihomo profile | 有 | 有 | 无 |
+| 适用 | Stash / 桌面完整分流 | Verge 首次导入 | **Android Clash / Clash Meta for Android** |
 
 ---
 
@@ -93,8 +97,8 @@
 | 策略组 | 类型 | 说明 |
 |--------|------|------|
 | **自动选择** | url-test | **单组**，含各区域节点；空闲 → 均衡 → 默认 → 爆满 排序，最多 80 个 |
-| **ChatGPT** | select | 仅含名称带 `ChatGPT解锁` 的节点（不含「自动选择」）；OpenAI 规则走本组 |
-| **PROXY** | select | 通用代理 |
+| **ChatGPT** | url-test | 仅含名称带 `ChatGPT解锁` 的节点；每 120s 测速，50ms 容差自动选最快 |
+| **PROXY** | select | 通用代理：自动选择 / ChatGPT / DIRECT + **全部节点平铺**（测速后可直选单节点） |
 | **GLOBAL** | select | 全局 |
 | Loyalsoldier 组 | select | applications / google / direct / …（见规则表） |
 
@@ -192,9 +196,11 @@ curl -s "http://127.0.0.1:8787/clash.yaml?force=1"  # 强制刷新并返回
 
 | 路径 | 方法 | 说明 |
 |------|------|------|
-| `/clash.yaml` | GET/HEAD | 完整配置 |
+| `/clash.yaml` | GET/HEAD | 完整配置（Stash / 桌面） |
 | `/clash-verge.yaml` | GET/HEAD | 轻量配置 |
+| `/clash-android.yaml` | GET/HEAD | Android 专用配置 |
 | `/clash.yaml?verge=1` | GET | 轻量配置（别名） |
+| `/clash.yaml?android=1` | GET | Android 配置（别名） |
 | `/refresh` | GET | 刷新缓存 |
 | `/health` | GET | 健康检查 |
 
@@ -207,6 +213,26 @@ curl -s "http://127.0.0.1:8787/clash.yaml?force=1"  # 强制刷新并返回
 3. 将 collection 的 ClashMeta 下载地址写入 `SUBSTORE_COLLECTION_URL`
 
 不配置 Sub-Store 时，直接用 `SUBSCRIPTION_URLS` 即可。
+
+---
+
+## Clash Meta for Android 导入
+
+完整版 `clash.yaml` 为 **Stash 优化**，每个节点带 `benchmark-url` 字段，Android Clash 无法识别，导入会报 YAML 错误。请改用 Android 专用地址：
+
+```text
+https://sub.yoloworld.site:8883/clash-android.yaml
+# 同 WiFi 内网
+https://sub.yoloworld.site:8443/clash-android.yaml
+```
+
+步骤：
+
+1. 安装 **Clash Meta for Android**（或 ClashMi），内核选 **Meta / Mihomo**（旧版 Clash for Android 不支持 trojan + fake-ip 组合，已停更）
+2. 配置 → 新建订阅 → 粘贴上述 URL → 更新
+3. 选中配置 → 开启系统代理 → 模式 **规则**
+
+若订阅下载失败，先在浏览器打开 URL 确认能下载 `.yaml` 文件（外网须映射 **8883** 端口）。
 
 ---
 

@@ -1,0 +1,369 @@
+{
+  "comment": "hp01 ch03 · paragraph bilingual_clips (bilingual_pdf)",
+  "source": "bilingual_pdf",
+  "granularity": "paragraph",
+  "zh_variant": "zh-cn",
+  "bilingual_clips": [
+    {
+      "en": "Chapter 3 · The Letters from No One",
+      "zh": "第3章 · 猫头鹰传书",
+      "kind": "heading"
+    },
+    {
+      "en": "He'd lived with the Dursleys almost ten years, ten miserable years, as long as he could remember, ever since he'd been a baby and his parents had died in that car crash. He couldn't remember being in the car when his parents had died. Sometimes, when he strained his memory during long hours in his cupboard, he came up with a strange vision: a blinding flash of green light and a burn- ing pain on his forehead. This, he supposed, was the crash, though he couldn't imagine where all the green light came from. He couldn't remember his parents at all. His aunt and uncle never spoke about them, and of course he was forbidden to ask questions. There were no photographs of them in the house.",
+      "zh": "他还是个婴儿时，他的父母死于车祸。他记得，从那时起到现在，他已经在弗农姨父家生活 了近十年了，那是十年苦难的生活。他已经不记得父母身亡时，他自己也在车上。有时躺在碗柜 里长时间拼命回忆，会出现一种奇妙的幻象：一道耀眼的闪电般的绿光，前额上一阵火辣辣的疼 痛。他猜想，这就是那场车祸，但他不知道那道绿光是从哪里来的。他一点也不记得他的父母了。 姨父姨妈从来不提他们，当然，也不准他问。家里也没有他们的照片。。"
+    },
+    {
+      "en": "When he had been younger, Harry had dreamed and dreamed of some unknown relation coming to take him away, but it had never happened; the Dursleys were his only family. Yet sometimes he thought (or maybe hoped) that strangers in the street seemed to know him. Very strange strangers they were, too. A tiny man in a violet top hat had bowed to him once while out shopping with Aunt Petunia and Dudley. After asking Harry furiously if he knew the man, Aunt Petunia had rushed them out of the shop without buying anything. A wild-looking old woman dressed all in green had waved merrily at him once on a bus. A bald man in a very long purple coat had actually shaken his hand in the street the other day and then walked away without a word. The weirdest thing about all these people was the way they seemed to vanish the second Harry tried to get a closer look.",
+      "zh": "在哈利年纪还小的时候，他经常做梦，梦见某一位亲戚突然来把他接走，可是他的梦从来没 有实现。德思礼一家是他惟一的亲戚。可有时候他觉得(也许是盼望)街上的陌生人似乎认识他。 而且，他们都是些非常奇怪的陌生人。一次他跟佩妮姨妈和达力上街买东西，就有一个戴紫罗兰 色大礼帽的小个子男人向他鞠躬行礼。佩妮姨妈怒冲冲地追问哈利是否认识那人，之后就把他和 达力赶出商店，什么东西也没有买。另外一次在公共汽车上，一个放荡不羁、穿一身绿衣服的老 太婆笑眯眯地向他招手。还有一次，一个穿紫色拖地长袍的秃头男子在大街上竟然跑过来跟他握 手，之后一句活没说就走开了。而最令人感到不可思议的是，当哈利想更仔细地看他们的时候， 他们便消失得无影无踪了。"
+    },
+    {
+      "en": "At school, Harry had no one. Everybody knew that Dudley's gang hated that odd with Dudley's gang.",
+      "zh": "在学校里，哈利没有一个朋友。大家都知道，达力一伙最恨的就是穿松松垮垮的旧衣服、戴 一副破碎眼镜的怪人哈利·波特。谁也不愿意去跟达力一伙作对。"
+    },
+    {
+      "en": "The escape of the Brazilian boa constrictor earned Harry his longest-ever punishment. By the time he was allowed out of his cupboard again, the summer",
+      "zh": ""
+    },
+    {
+      "en": "holidays had started and Dudley had already broken his new video camera, crashed his remote control airplane, and, first time out on his racing bike, knocked down old Mrs. Figg as she crossed Privet Drive on her crutches.",
+      "zh": "巴西巨蟒的脱逃使哈利受到了平生为期最长的一次惩罚。当他获准走出碗柜时，暑假已经 开始了。达力已经打坏了他的新摄像机，摔毁了遥控飞机，他的赛车也在他第一次骑着上街时， 把拄着拐杖过女贞路的费格太太撞倒了。"
+    },
+    {
+      "en": "Harry was glad school was over, but there was no escaping Dudley's gang, who visited the house every single day. Piers, Dennis, Malcolm, and Gordon were all big and stupid, but as Dudley was the biggest and stupidest of the lot, he was the leader. The rest of them were all quite happy to join in Dudley's favorite sport: Harry Hunting.",
+      "zh": "学期结束了，哈利很开心，但无法回避达力一伙人，他们每天都要到达力家来。皮尔、丹尼、 莫肯、戈登都是傻大个，而且很蠢，而达力更是他们中间块头最大、最蠢的，也就成了他们的头 儿。达力的同伙都乐意加入他最热中的游戏——追打哈利。"
+    },
+    {
+      "en": "This was why Harry spent as much time as possible out of the house, wandering around and thinking about the end of the holidays, where he could see a tiny ray of hope. When September came he would be going off to secondary school and, for the first time in his life, he wouldn't be with Dudley. Dudley had been accepted at Uncle Vernon's old private school, Smeltings. Piers Polkiss was going there too. Harry, on the other hand, was going to Stonewall High, the local public school. Dudley thought this was very funny.",
+      "zh": "这就是哈利尽量长时间待在外边的原因。他四处游逛，盘算着假期的结束，由此获得对生活 的一线希望。到九月他就要上中学了，这将是他平生第一次跟达力分开。达力获准在弗农姨父的 母校上学。皮尔也要上这所学校。哈利则要去当地的一所综合制中学【五年制中学，学生十一岁 入学，课程包括普通与职校学科】——石墙中学。达力觉得很好笑。"
+    },
+    {
+      "en": "\"They stuff people's heads down the toilet the first day at Stonewall,\" he told Harry. \"Want to come upstairs and practice?\"",
+      "zh": "“石墙中学开学的第一天，他们就会把新生的头浸到马桶里。”他对哈利说，“要不要上楼 去试一试?”"
+    },
+    {
+      "en": "\"No, thanks,\" said Harry. \"The poor toilet's never had anything as horrible as your head down it -- it might be sick.\" Then he ran, before Dudley could work out what he'd said.",
+      "zh": "“不用了，多谢。”哈利说，“可怜的马桶从来没有泡过像你的头这样叫人倒胃口的脑袋— —它可能会吐呢。”不等达力弄明白这句话的意思，哈利早已经跑掉了。"
+    },
+    {
+      "en": "One day in July, Aunt Petunia took Dudley to London to buy his Smeltings uniform, leaving Harry at Mrs. Figg's. Mrs. Figg wasn 't as bad as usual. It turned out she'd broken her leg tripping over one of her cats, and she didn't seem quite as fond of them as before. She let Harry watch television and gave him a bit of chocolate cake that tasted as though she'd had it for several years.",
+      "zh": "七月的一天，佩妮姨妈带达力上伦敦，去给他买斯梅廷中学的校服，把哈利放在了费格太太 家。费格太太不像平时那么坏。原来费格太太是被自己养的猫绊倒才摔断了腿。她让哈利看电视， 还给了他一小块巧克力蛋糕，可这块蛋糕吃起来像已经放了很多年似的。"
+    },
+    {
+      "en": "That evening, Dudley paraded around the living room for the family in his brand-new uniform. Smeltings' boys wore maroon tailcoats, orange knickerbockers,",
+      "zh": ""
+    },
+    {
+      "en": "and flat straw hats called boaters. They also carried knobbly sticks, used for hitting each other while the teachers weren't looking. This was supposed to be good training for later life.",
+      "zh": "那天晚上达力神气活现地在起居室里走来走去，向家人展示他那套新校服。斯梅廷中学的男 生制服是棕红色燕尾服，橙色短灯笼裤和一顶叫硬草帽【旧时夏季划船戴的一种帽子】的扁平草 帽。他们还配了一支多节的手杖，趁老师不注意时用来互相打斗，这也许是对未来生活的一种很 好的训练吧。"
+    },
+    {
+      "en": "As he looked at Dudley in his new knickerbockers, Uncle Vernon said gruffly that it was the proudest moment of his life. Aunt Petunia burst into tears and said she couldn't believe it was her Ickle Dudleykins, he looked so handsome and grown-up. Harry didn't trust himself to speak. He thought two of his ribs might already have cracked from trying not to laugh.",
+      "zh": "弗农姨父看着身穿崭新灯笼裤的达力，他的声音都沙哑了，他说这是他平生感到最自豪的一 刻。佩妮姨妈突然哭起来，她说她的宝贝疙瘩已经长大了，长得这么帅，简直让她不能相信。哈 利却不敢开口。为了强忍住不笑，他的两条肋骨都快折断了。"
+    },
+    {
+      "en": "There was a horrible smell in the kitchen the next morning when Harry went in for breakfast. It seemed to be coming from a large metal tub in the sink. He went to have a look. The tub was full of what looked like dirty rags swimming in gray water.",
+      "zh": "第二天早上哈利来吃早饭时，发现厨房里有一股难闻的味儿。这气味似乎是从污水池里的一 只大铁盆里散发出来的。他去看了一眼，发现一盆灰黑色的水里泡着像破抹布似的东西。"
+    },
+    {
+      "en": "\"What's this?\" he asked Aunt Petunia. Her lips tightened as they always did if he dared to ask a question.",
+      "zh": "“这是什么?”他问佩妮姨妈。她把嘴唇抿紧，每当哈利大胆问问题时，她总是这样。"
+    },
+    {
+      "en": "\"Your new school uniform,\" she said.",
+      "zh": "“你的新校服呀。”她说。"
+    },
+    {
+      "en": "Harry looked in the bowl again.",
+      "zh": "哈利又朝盆里扫了一眼。"
+    },
+    {
+      "en": "\"Oh,\" he said, \"I didn't realize it had to be so wet.\"",
+      "zh": "“哦，”他说，“我不知道还得泡得这么湿。”"
+    },
+    {
+      "en": "\"DotA be stupid,\" snapped Aunt Petunia. \"I'm dyeing some of Dudley's old things gray for you. It'll look just like everyone else's when I've finished.\" Harry seriously doubted this, but thought it best not to argue. He sat down at the table and tried not to think about how he was going to look on his first day at Stonewall High -- like he was wearing bits of old elephant skin, probably.",
+      "zh": "“别冒傻气，”佩妮姨妈斥责说，“我把达力的旧衣服染好给你用。等我染好以后，穿起来 就会跟别人的一模一样。”哈利对此非常怀疑，但他还是觉得最好不要跟她争论。他坐下来吃早 饭时，竭力不去想第一天去石墙中学上学自己会是什么模样，八成像披着大象的旧象皮吧。"
+    },
+    {
+      "en": "Dudley and Uncle Vernon came in, both with wrinkled noses because of the smell from Harry's new uniform. Uncle Vernon opened his newspaper as usual and Dudley banged his Smelting stick, which he carried everywhere, on the table.",
+      "zh": "达力和弗农姨父进来时，都因为哈利那套新校服散发的味道皱起了鼻子。弗农姨父像通常一 样打开报纸，达力则把他从不离身的斯梅廷手杖啪的一声放到桌上。"
+    },
+    {
+      "en": "They heard the click of the mail slot and flop of letters on the doormat.",
+      "zh": ""
+    },
+    {
+      "en": "\"Get the mail, Dudley,\" said Uncle Vernon from behind his paper.",
+      "zh": "他们听到信箱咔哒响了一声，一些信落到大门口的擦脚垫上。“去拿信，达力。”弗农姨父 从报纸后边说。"
+    },
+    {
+      "en": "\"Make Harry get it.\" \"Get the mail, Harry.\" \"Make Dudley get it.\" \"Poke him with your Smelting stick, Dudley.\" Harry dodged the Smelting stick and went to get the mail. Three things lay on the doormat: a postcard from Uncle Vernon's sister Marge, who was vacationing on the Isle of Wight, a brown envelope that looked like a bill, and -- a letter for Harry. Harry picked it up and stared at it, his heart twanging like a giant elastic band. No one, ever, in his whole life, had written to him. Who would? He had no friends, no other relatives -- he didn't belong to the library, so he'd never even got rude notes asking for books back. Yet here it was, a letter, addressed so plainly there could be no mistake: Mr. H. Potter The Cupboard under the Stairs 4 Privet Drive Little Whinging Surrey The envelope was thick and heavy, made of yellowish parchment, and the address was written in emerald-green ink. There was no stamp. Turning the envelope over, his hand trembling, Harry saw a purple wax seal bearing a coat of arms; a lion, an eagle, a badger, and a snake surrounding a large letter H. \"Hurry up, boy!\" shouted Uncle Vernon from the kitchen. \"What are you doing, checking for letter bombs?\" He chuckled at his own joke.",
+      "zh": "“叫哈利去捡。”“哈利去捡。”“达力去捡。”“用你的斯梅廷手杖赶他去捡。”哈利躲 闪着斯梅廷手杖，去捡信。擦脚垫上有三样邮件：一封是弗农姨父的姐姐玛姬姑妈寄来的明信片， 她现在在怀特岛【在英格兰东南部，构成怀特郡】上度假；另一封是看来像账单的棕色信封；还 有——一封是寄给哈利的信。哈利把信捡起来，目不转睛地盯着看，心里像有一根很粗的橡皮筋 嘣的一声弹了起来，嗡嗡直响。活到现在，从来没有人给他写过信。这封信可能是谁写的呢?他 没有朋友，没有另外的亲戚，他没有借书证，因此不会收到图书馆催还图书的通知单。可现在确 实有一封信，地址清清楚楚，不会有错：萨里郡小惠金区女贞路4 号楼梯下的碗柜哈利·波特先 生收。信封是用厚重的羊皮纸做的，地址是用翡翠绿的墨水写的。没有贴邮票。哈利用颤抖的手 把信封翻转过来，只见上边有一块蜡封、一个盾牌纹章，大写“H”字母的周围圈着一头狮子、 一只鹰、一只獾和一条蛇。“小子，快拿过来!”弗农姨父在厨房里喊起来，“你在干什么，在 检查邮包有没有炸弹吗?”他开了个玩笑，自己也咯咯地笑开了。"
+    },
+    {
+      "en": "Harry went back to the kitchen, still staring at his letter. He handed Uncle Vernon the bill and the postcard, sat down, and slowly began to open the yellow envelope. Uncle Vernon ripped open the bill, snorted in disgust, and flipped over the postcard.",
+      "zh": "哈利回到厨房，目光一直盯着他的那封信。他把账单和明信片递给弗农姨父，然后坐下来， 慢慢拆开他那个黄色的信封。弗农姨父拆开有账单的信封，厌恶地哼了一声，又把明信片轻轻翻 转过来。"
+    },
+    {
+      "en": "\"Marge's ill,\" he informed Aunt Petunia. \"Ate a funny whelk. --.\" \"Dad!\" said Dudley suddenly. \"Dad, Harry's got something!\"",
+      "zh": "“玛姬病倒了，”他对佩妮姨妈说，“吃了有问题的油螺……”“老爸!”达力突然说，“老 爸，哈利收到什么东西了!”"
+    },
+    {
+      "en": "Harry was on the point of unfolding his letter, which was written on the same heavy parchment as the envelope, when it was jerked sharply out of his hand by Uncle Vernon. \"That's mine!\" said Harry, trying to snatch it back. \"Who'd be writing to you?\" sneered Uncle Vernon, shaking the letter open with one hand and glancing at it. His face went from red to green faster than a set of traffic lights. And it didn't stop there. Within seconds it was the grayish white of old porridge.",
+      "zh": "哈利刚要打开他那封写在厚重羊皮纸上的信，信却被弗农姨父一把从手中抢过去了。“那是 写给我的!”哈利说，想把信夺回来。“谁会给你写信?”弗农姨父讥讽地说，用一只手把信纸抖 开，朝它瞥了一眼。他的脸一下子由红变青，比红绿灯变得还快。事情到这里并没结束。几秒钟 之内他的脸就变得像灰色的麦片粥一样灰白了。"
+    },
+    {
+      "en": "\"P-P-Petunia!\" he gasped.",
+      "zh": "“佩——佩——佩妮!”他气喘吁吁地说。"
+    },
+    {
+      "en": "Dudley tried to grab the letter to read it, but Uncle Vernon held it high out of his reach. Aunt Petunia took it curiously and read the first line. For a moment it looked as though she might faint. She clutched her throat and made a choking noise.",
+      "zh": "达力想把信抢过来看，可是弗农姨父把信举得老高，他够不着。佩妮姨妈好奇地把信拿过去， 刚看第一行，她就好像要晕倒了。她抓住喉咙，噎了一下，像要背过气去。"
+    },
+    {
+      "en": "\"Vernon! Oh my goodness -- Vernon!\"",
+      "zh": "“德思礼!哎呀!我的天——德思礼!”"
+    },
+    {
+      "en": "They stared at each other, seeming to have forgotten that Harry and Dudley were still in the room. Dudley wasn't used to being ignored. He gave his father a sharp tap on the head with his Smelting stick.",
+      "zh": "他们俩你看我，我看你，都不说话，似乎忘了哈利和达力还在屋里。达力是不习惯被人冷落 的。他甩斯梅廷手杖朝他父亲的头上狠狠地敲了一下。"
+    },
+    {
+      "en": "\"I want to read that letter,\" he said loudly. want to read it,\" said Harry furiously, \"as it's mine.\"",
+      "zh": "“我要看那封信。”他大声说。“我要看。”哈利气呼呼地说，“因为那封信是写给我的。”"
+    },
+    {
+      "en": "\"Get out, both of you,\" croaked Uncle Vernon, stuffing the letter back inside its envelope.",
+      "zh": "“你们俩，统统给我出去。”弗农姨父用低沉而沙哑的声音说，把信重新塞到信封里。"
+    },
+    {
+      "en": "Harry didn't move.",
+      "zh": "哈利没有动。"
+    },
+    {
+      "en": "I WANT MY LETTER!\" he shouted.",
+      "zh": "“我要我的信!”他大叫说。"
+    },
+    {
+      "en": "\"Let me see it!\" demanded Dudley.",
+      "zh": "“让我看!”达力命令说。"
+    },
+    {
+      "en": "\"OUT!\" roared Uncle Vernon, and he took both Harry and Dudley by the scruffs of their necks and threw them into the hall, slamming the kitchen door behind them. Harry and Dudley promptly had a furious but silent fight over who would listen at the keyhole; Dudley won, so Harry, his glasses dangling from one ear, lay flat on his stomach to listen at the crack between door and floor.",
+      "zh": "“出去!”弗农姨父吼了起来，揪住哈利和达力的脖领，把他们俩扔到了走廊里，砰地一声 关上厨房门。哈利和达力两人都火冒三丈，为争夺由锁孔窥视的权利，悄悄地争斗起来。最后达 力胜利了。哈利一只耳朵上挂着他那副破眼镜，只好趴在地板上，贴着门和地板之间的缝隙窥探 动静。"
+    },
+    {
+      "en": "\"Vernon,\" Aunt Petunia was saying in a quivering voice, \"look at the address -- how could they possibly know where he sleeps? You don't think they're watching the house?\"",
+      "zh": "“弗农，”佩妮姨妈用颤抖的声音说，“你看看这地址——他们怎么会知道他睡在什么地方? 他们该不会监视我们这栋房子吧?”"
+    },
+    {
+      "en": "\"Watching -- spying -- might be following us,\" muttered Uncle Vernon wildly.",
+      "zh": "“监视——暗中窥探——说不定还会跟踪咱们呢。”弗农姨父愤愤地抱怨说。"
+    },
+    {
+      "en": "\"But what should we do, Vernon? Should we write back? Tell them we don't want --\"",
+      "zh": "“可我们该怎么办?弗农?我们要不要回封信?告诉他们我们不想让——”"
+    },
+    {
+      "en": "Harry could see Uncle Vernon's shiny black shoes pacing up and down the kitchen.",
+      "zh": "哈利能看见弗农姨父锃亮的黑皮鞋在厨房里走来走去。"
+    },
+    {
+      "en": "\"No,\" he said finally. \"No, we'll ignore it. If they don't get an answer... Yes, that's best... we won't do anything....",
+      "zh": "“不，”他终于说，“不，我们给他来个置之不理。如果他们收不到回信……对，这是最好 的办法……我们按兵不动……”"
+    },
+    {
+      "en": "\"But --\"",
+      "zh": "“可是——”"
+    },
+    {
+      "en": "\"I'm not having one in the house, Petunia! Didn't we swear when we took him in we'd stamp out that dangerous nonsense?\"",
+      "zh": "“佩妮，我决不让他们任何人进这栋房子。我们拖他进来的时候，不是发过誓，要制止这种 耸人听闻的荒唐事吗?”"
+    },
+    {
+      "en": "That evening when he got back from work, Uncle Vernon did something he'd never done before; he visited Harry in his cupboard. \"Where's my letter?\" said Harry, the moment Uncle Vernon had squeezed through the door. \"Who's writing to me?\" \"No one. it was addressed to you by mistake,\" said Uncle Vernon shortly. \"I have burned it.\"",
+      "zh": "当天傍晚，弗农姨父下班回来，做了一件从来没有做过的事，他竟然到碗柜前来看望哈利了。 “我的信呢?”弗农姨父刚刚挤进门，哈利就问，“是谁写给我的?”“没有人。因为写错了地址 才寄给你的。”弗农姨父直截了当说，“我已经把信烧掉了。”"
+    },
+    {
+      "en": "\"It was not a mistake,\" said Harry angrily, \"it had my cupboard on it.\"",
+      "zh": "“根本没有写错，”哈利生气地说，“上边还写着我住在碗柜里呢。”"
+    },
+    {
+      "en": "\"SILENCE!\" yelled Uncle Vernon, and a couple of spiders fell from the ceiling. He took a few deep breaths and then forced his face into a smile, which looked quite painful.",
+      "zh": "“住嘴!”弗农姨父咆哮起来，两只蜘蛛都从柜顶上被震下来了。他做了几次深呼吸，勉强 挤出一个笑脸，但看起来像苦笑。"
+    },
+    {
+      "en": "\"Er -- yes, Harry -- about this cupboard. Your aunt and I have been thinking... you're really getting a bit big for it... we think it might be nice if you moved into Dudley's second bedroom.",
+      "zh": "“唔——不错，哈利——说起这个碗柜，你姨妈和我都考虑到……你已经长大了，这地方确 实小了点……我们想，你不如搬到达力的另外一间卧室比较好。”"
+    },
+    {
+      "en": "\"Why?\" said Harry.",
+      "zh": "“为什么?”哈利说。"
+    },
+    {
+      "en": "\"Don't ask questions!\" snapped his uncle. \"Take this stuff upstairs, now.\"",
+      "zh": "“不准问问题!”他姨父吼起来，“把你这些东西统统搬到楼上去，现在就搬。”"
+    },
+    {
+      "en": "The Dursleys' house had four bedrooms: one for Uncle Vernon and Aunt Petunia, one for visitors (usually Uncle Vernon's sister, Marge), one where Dudley slept, and one where Dudley kept all the toys and things that wouldn't fit into his first bedroom. It only took Harry one trip upstairs to move everything he owned from the cupboard to this room. He sat down on the bed and stared around him. Nearly everything in here was broken. The month-old video camera was lying on top of a small, working tank Dudley had once driven over the next door neighbor's dog; in the corner was Dudley's first-ever television set, which he'd put his foot through when his favorite program had been canceled; there was a large birdcage, which had once held a parrot that Dudley had swapped at school for a real air rifle, which was up on a shelf with the end all bent because Dudley had sat on it. Other shelves were full of books. They were the only things in the room that looked as though they'd never been touched.",
+      "zh": "德思礼家总共有四间卧室：一间是供弗农姨父和佩妮姨妈用的；一间是客房(通常是给弗农 姨父的姐姐玛姬准备的)；一间是达力的睡房；还有一间用来堆放达力卧室里放不下的玩具和什 物。哈利只走了一趟就把他的全部家当从碗柜搬到楼上这个房间来了。他端坐在床上，朝房间里 四下打量。这里所有的东西几乎都是坏的。只用了一个月的摄像机放在一辆小手推车顶上，达力 有一次还甩这辆手推车去压过邻居家的小狗；屋角里放着达力的第一台电视机，当他心爱的节目 被取消时，他给了电视机一脚；这里还有一只大鸟笼，他用它养过一只鹦鹉，后来他把鹦鹉带到 学校换回了一支真正的气枪。这支气枪现在扔在架子上。枪管的一头被他坐得弯了。另外的一些 架子上摆满了书。这些书看上去大概是这个房间里惟一没有翻动过的东西。"
+    },
+    {
+      "en": "From downstairs came the sound of Dudley bawling at his mother, I don't want him in there... I need that room... make him get out....\"",
+      "zh": "楼下传来达力缠着他母亲哭闹的声音：“我不要他住那个房间……那间屋我要用……让他搬 出去……”"
+    },
+    {
+      "en": "Harry sighed and stretched out on the bed. Yesterday he'd have given anything to be up here. Today he'd rather be back in his cupboard with that letter than up here without it.",
+      "zh": "哈利叹了口气，伸开四肢躺到床上。如果是昨天，要他搬上来，他会不惜任何代价。可是今 天他却宁愿拿着那封信搬回他的碗柜，也不愿搬到这里来却拿不到那封信。"
+    },
+    {
+      "en": "Next morning at breakfast, everyone was rather quiet. Dudley was in shock. He'd screamed, whacked his father with his Smelting stick, been sick on purpose, kicked his mother, and thrown his tortoise through the greenhouse roof, and he still didn't have his room back. Harry was thinking about this time yesterday and bitterly wishing he'd opened the letter in the hall. Uncle Vernon and Aunt Petunia kept looking at each other darkly.",
+      "zh": "第二天吃早饭时，大家都觉得最好还是不说话。达力歇斯底里大发作，用斯梅廷手杖使劲敲 打他父亲，故意装吐，拼命踢他母亲，用他的乌龟把温室的屋顶也砸了个窟窿，可还是没能把自 己的房间要回来。哈利其实昨天就想到了，他非常后悔昨天没有在走廊里就把信打开。弗农姨父 和佩妮姨妈一直沉着脸面面相觑。"
+    },
+    {
+      "en": "When the mail arrived, Uncle Vernon, who seemed to be trying to be nice to Harry, made Dudley go and get it. They heard him banging things with his Smelting stick all the way down the hall. Then he shouted, \"There's another one! 'Mr. H. Potter, The Smallest Bedroom, 4 Privet Drive --'\" With a strangled cry, Uncle Vernon leapt from his seat and ran down the hall, Harry right behind him. Uncle Vernon had to wrestle Dudley to the ground to get the letter from him, which was made difficult by the fact that Harry had grabbed Uncle Vernon around the neck from behind. After a minute of confused fighting, in which everyone got hit a lot by the Smelting stick, Uncle Vernon straightened up, gasping for breath, with Harry's letter clutched in his hand.",
+      "zh": "今天来信的时候，弗农姨父似乎要表示对哈利的友好，便让达力去拿信。他们听见达力穿过 走廊时用斯梅廷手杖敲敲打打。之后，他大喊大叫：“又有一封信!女贞路4 号最小的一间卧室 哈利·波特先生收——”弗农姨父像被掐住了脖子，喊了一声，从椅子上一跃而起，朝走廊跑去。 哈利紧跟在他背后。弗农姨父只有把达力摔倒在地，才能把信拿到手，可哈利从背后搂住了他的 脖子，这就增加了他的难度。经过片刻的混战，弗农姨父和哈利都挨了达力不少棍子。最后，弗 农姨父直起腰来大口喘气，手里捏着哈利的信。"
+    },
+    {
+      "en": "\"Go to your cupboard -- I mean, your bedroom,\" he wheezed at Harry. \"Dudley -- go -- just go.\"",
+      "zh": "“上你的碗柜去——我是说，上你的睡房去。”他呼哧带喘地对哈利说。“达力——走开— —快走开!”"
+    },
+    {
+      "en": "Harry walked round and round his new room. Someone knew he had moved out of his cupboard and they seemed to know he hadn't received his first letter. Surely that meant they'd try again? And this time he'd make sure they didn't fail. He had a plan.",
+      "zh": "哈利在他新搬来的房间里来回兜圈子。有人知道他已经搬出了碗柜，好像还知道他没有收到 写给他的第一封信。这足以说明他们还会再试一次。这回他可要保证让他们获得成功。他设计了 一个方案。"
+    },
+    {
+      "en": "The repaired alarm clock rang at six o'clock the next morning. Harry turned it off quickly and dressed silently. He mustn't wake the Dursleys. He stole downstairs without turning on any of the lights.",
+      "zh": "第二天一早，修好的闹钟铃声在六点钟时响了。哈利连忙把闹钟铃关掉，悄没声息地穿好衣 服。他不能吵醒德思礼一家。他一盏灯也没有开就悄悄溜下楼去。"
+    },
+    {
+      "en": "He was going to wait for the postman on the corner of Privet Drive and get the letters for number four first. His heart hammered as he crept across the dark hall toward the front door -- Harry leapt into the air; he'd trodden on something big and squashy on the doormat -- something alive! Lights clicked on upstairs and to his horror Harry realized that the big, squashy something had been his uncle's face. Uncle Vernon had been lying at the foot of the front door in a sleeping bag, clearly making sure that Harry didn't do exactly what he'd been trying to do. He shouted at Harry for about half an hour and then told him to go and make a cup of tea. Harry shuffled miserably off into the kitchen and by the time he got back, the mail had arrived, right into Uncle Vernon's lap. Harry could see three letters addressed in green ink.",
+      "zh": "他要去女贞路街口等邮差来，首先把四号的邮件取到手。当他穿过漆黑的走廊朝大门口走时， 他心里怦怦直跳——“哎哟!”哈利一蹦老高——他一脚踩到攘鞋垫上一个软绵绵的大东西，还 是一个活物!楼上的灯都亮了，哈利踩着的那个软绵绵的大东西竟是他姨父的脸。这使他大为惊 骇。弗农姨父裹着睡袋躺在大门口是为了不让哈利做他想做的事。他朝哈利大喊大叫，嚷嚷了有 半个钟头，这才让哈利去泡杯热荼。哈利难过地拖着脚步，慢慢吞吞地来到厨房。等他转回来的 时候，信件已经到了，刚好掉在弗农姨父的膝盖上。哈利看见了三封信，地址是用翠绿色墨水写 的。"
+    },
+    {
+      "en": "I want --\" he began, but Uncle Vernon was tearing the letters into pieces before his eyes. Uncle Vernon didnt go to work that day. He stayed at home and nailed up the mail slot. \"See,\" he explained to Aunt Petunia through a mouthful of nails, \"if they can't deliver them they'll just give up.\" \"I'm not sure that'll work, Vernon.\"",
+      "zh": ""
+    },
+    {
+      "en": "\"Oh, these people's minds work in strange ways, Petunia, they're not like you and me,\" said Uncle Vernon, trying to knock in a nail with the piece of fruitcake Aunt Petunia had just brought him.",
+      "zh": "“我想——”他刚要开口，弗农姨父已经当着他的面把三封信撕得粉碎。那天弗农姨父没去 上班。他待在家里，把信箱钉死了。“你看，”他嘴里含着一把钉子，对佩妮姨妈解释说，“如 果他们没法投送，他们自然也就放弃了。”“这是不是真能起作用，我不敢说，德思礼。”“哦， 这些入的头脑想问题都古古怪怪的，佩妮，跟你我不一样。”弗农姨父说，一边用力捶钉子，钉 子上还沾有佩妮姨妈刚给他端来的水果蛋糕的渣呢。"
+    },
+    {
+      "en": "On Friday, no less than twelve letters arrived for Harry. As they couldn't go through the mail slot they had been pushed under the door, slotted through the sides, and a few even forced through the small window in the downstairs bathroom. Uncle Vernon stayed at home again. After burning all the letters, he got out a hammer and nails and boarded up the cracks around the front and back doors so no one could go out. He hummed \"Tiptoe Through the Tulips\" as he worked, and jumped at small noises.",
+      "zh": "星期五，寄给哈利的信至少有十二封。既然不能往信箱里播，只好往门底下的缝里塞，从门 边的缝里塞，有几封信甚至从楼下洗手间的小窗口塞了进来。弗农姨父又待在家里。他把信全部 烧光之后，就找来锤子、钉子，把前门后门的门缝全都用木板钉死，这样谁也出不去了。他一边 干，一边哼着《从郁金香花园中悄悄走过》，只要有一点动静他就吓一跳。"
+    },
+    {
+      "en": "On Saturday, things began to get out of hand. Twenty-four letters to Harry found their way into the house, rolled up and hidden inside each of the two dozen eggs that their very confused milkman had handed Aunt Petunia through the living room window. While Uncle Vernon made furious telephone calls to the post office and the dairy trying to find someone to complain to, Aunt Petunia shredded the letters in her food processor. \"Who on earth wants to talk to you this badly?\" Dudley asked Harry in amazement.",
+      "zh": "星期六，事态开始失控。二十四封写给哈利的信已设法进入德思礼家中。这些信是卷成小卷 藏在两打鸡蛋下边，由毫不知情的送奶员从起居室窗口递给佩妮姨妈的。弗农姨父怒冲冲地给邮 局、奶厂打电话找人说理。佩妮姨妈正好把二十四封信都塞到食品粉碎机里搅得粉碎。“究竟什 么人这么急着要找你联系?”达力吃惊地问哈利。"
+    },
+    {
+      "en": "On Sunday morning, Uncle Vernon sat down at the breakfast table looking tired and rather ill, but happy. \"No post on Sundays,\" he reminded them cheerfully as he spread marmalade on his newspapers, \"no damn letters today --\"",
+      "zh": "星期天早上，弗农姨父坐下来吃早饭，显得很疲惫，气色也不太好，不过很开心。“星期天 没有邮差，”他一边把果酱抹在报纸上，一边高兴地提醒大家，“今天不会有该死的信来了……”"
+    },
+    {
+      "en": "Something came whizzing down the kitchen chimney as he spoke and caught him sharply on the back of the head. Next moment, thirty or forty letters came pelting",
+      "zh": ""
+    },
+    {
+      "en": "out of the fireplace like bullets. The Dursleys ducked, but Harry leapt into the air trying to catch one.",
+      "zh": "他正说着，有东西飕飕地从厨房烟囱里掉下来，狠狠地砸到他的后脑上。接着三四十封信像 子弹一样从壁炉里射出来。德思礼一家忙着躲避，哈利却一蹿老高，伸手想抓住一封——"
+    },
+    {
+      "en": "\"Out! OUT!\" Uncle Vernon seized Harry around the waist and threw him into the hall. When Aunt Petunia and Dudley had run out with their arms over their faces, Uncle Vernon slammed the door shut. They could hear the letters still streaming into the room, bouncing off the walls and floor.",
+      "zh": "“出去!出去!”弗农姨父伸手抱住哈利的腰，把他扔到了走廊里。佩妮姨妈和达力双手抱头 逃出屋去，弗农姨父砰的一声把门关上。他们能听见信件源源不断地向厨房里涌，弹到地板上和 墙上。"
+    },
+    {
+      "en": "\"That does it,\" said Uncle Vernon, trying to speak calmly but pulling great tufts out of his mustache at the same time. I want you all back here in five minutes ready to leave. We're going away. Just pack some clothes. No arguments!\"",
+      "zh": "“玩儿完了!”弗农姨父尽量保持镇静说，但一边又大把大把地从脸上把胡子揪了下来。“我 要你们五分钟之内回来，准备走。我们要离开这里。你们赶紧去收拾几件衣服。没有商量!”"
+    },
+    {
+      "en": "He looked so dangerous with half his mustache missing that no one dared argue. Ten minutes later they had wrenched their way through the boarded-up doors and were in the car, speeding toward the highway. Dudley was sniffling in the back seat; his father had hit him round the head for holding them up while he tried to pack his television, VCR, and computer in his sports bag.",
+      "zh": "他揪掉了一半胡子，看起来很可怕，谁也不敢顶撞他了。十分钟后，他们奋力拆开用木条钉 死的大门，冲出门去，坐上汽车朝公路疾驰雨去。达力坐在后座哭鼻子，因为他刚才要把电视机、 摄像机和电脑都塞到他的运动背包里，耽误了大家的时间，父亲打了好凡下他的头。"
+    },
+    {
+      "en": "They drove. And they drove. Even Aunt Petunia didn't dare ask where they were going. Every now and then Uncle Vernon would take a sharp turn and drive in the opposite direction for a while. \"Shake'em off... shake 'em off,\" he would mutter whenever he did this.",
+      "zh": "他们一个劲往前开。连佩妮姨妈也不敢问他们这是要去哪里。弗农姨父会不时打个紧急掉头， 往回开一小段路。“甩掉他们……甩掉他们……”每次他往回开的时候，总这么叨叨。"
+    },
+    {
+      "en": "They didn't stop to eat or drink all day. By nightfall Dudley was howling. He'd never had such a bad day in his life. He was hungry, he'd missed five television programs he'd wanted to see, and he'd never gone so long without blowing up an alien on his computer.",
+      "zh": "他们一整天都没有停下来吃东西或喝水。夜幕降临时，达力哇哇大哭起来。他平生从未遇到 过像今天这么糟糕的事情。他饿极了；五个他想看的电视节目也错过了；他还从来没遇到过今天 这种情况，一整天都没坐到电脑前炸外星人。"
+    },
+    {
+      "en": "Uncle Vernon stopped at last outside a gloomy-looking hotel on the outskirts of a big city. Dudley and Harry shared a room with twin beds and damp, musty sheets. Dudley snored but Harry stayed awake, sitting on the windowsill, staring down at the lights of passing cars and wondering....",
+      "zh": ""
+    },
+    {
+      "en": "They ate stale cornflakes and cold tinned tomatoes on toast for breakfast the next day. They had just finished when the owner of the hotel came over to their table.",
+      "zh": "汽车来到一座大城市的郊区，弗农姨父终于在一家显得幽暗阴沉的旅馆门口停下。达力和哈 利合住一个有两张床位的房间，潮湿的床单散发着一股霉味。达力打着呼噜，哈利却睡不着，只 好坐在窗台上看着下边过往的汽车灯光，感到纳闷……第二天早餐，他们吃的是走味的玉米片【常 浸泡于牛奶中作为早餐】和罐头冷土豆加烤面包。他们刚吃完，旅馆的老板娘就过来了。"
+    },
+    {
+      "en": "\"'Scuse me, but is one of you Mr. H. Potter? Only I got about an 'undred of these at the front desk.\"",
+      "zh": "“对不起，你们当中有叫哈利·波特先生的吗?前边服务台大概收到了一百封像这样的信。”"
+    },
+    {
+      "en": "She held up a letter so they could read the green ink address: Mr. H. Potter Room 17 Railview Hotel Cokeworth Harry made a grab for the letter but Uncle Vernon knocked his hand out of the way. The woman stared.",
+      "zh": "她举起一封信好让他们看清用绿墨水写的地址：科克沃斯铁路风景旅馆十七号房间哈利·波 特先生收。哈利伸手去抓信，可是他的手被弗农姨父挡了回去。老板娘瞪大眼睛看着他。"
+    },
+    {
+      "en": "\"I'll take them,\" said Uncle Vernon, standing up quickly and following her from the dining room.",
+      "zh": "“我去拿信。”弗农姨父说着，即刻站起来跟随老板娘走出餐厅。"
+    },
+    {
+      "en": "Wouldn't it be better just to go home, dear?\" Aunt Petunia suggested timidly, hours later, but Uncle Vernon didn't seem to hear her. Exactly what he was looking for, none of them knew. He drove them into the middle of a forest, got out, looked around, shook his head, got back in the car, and off they went again. The same thing happened in the middle of a plowed field, halfway across a suspension bridge, and at the top of a multilevel parking garage.",
+      "zh": "“我们还是回家比较好吧，亲爱的。”几小时过后，佩妮姨妈胆怯地建议说。弗农姨父好像 根本没有听到她说话。他究竟在寻我什么，他们谁也不知道。他开车把他们带到了一处森林中间。 他下车四下里看了看，摇摇头，又回到车上，继续往前开。后来在一片新耕的田地里、在一座吊 桥的中央和立体停车场的顶层又发生了同样的事。"
+    },
+    {
+      "en": "\"Daddy's gone mad, hasn't he?\" Dudley asked Aunt Petunia dully late that afternoon. Uncle Vernon had parked at the coast, locked them all inside the car, and disappeared. It started to rain. Great drops beat on the roof of the car. Dud ley sniveled. \"It's Monday,\" he told his mother. \"The Great Humberto's on tonight. I want to stay somewhere with a television. \"",
+      "zh": "“老爸是不是疯了?”这时天色已经相当晚了，达力无精打采地问佩妮姨妈。弗农姨父把车 停在海边，把他们锁在车里就不见了。开始下雨了。豆大的雨点落到车顶上。达力又抽抽噎噎哭 鼻子了。“今天是星期一，”他对母亲说，“晚上上演《伟大的亨伯托》，我真想待在有电视可 看的地方。”"
+    },
+    {
+      "en": "Monday. This reminded Harry of something. If it was Monday -- and you could usually count on Dudley to know the days the week, because of television -- then tomorrow, Tuesday, was Harry's eleventh birthday. Of course, his birthdays were never exactly fun -- last year, the Dursleys had given him a coat hanger and a pair of Uncle Vernon's old socks. Still, you weren't eleven every day.",
+      "zh": "星期一。这使哈利想起一件事。他通常总是靠达力来推算每天是星期几，因为达力要看电视。 如果今天是星期一，那么明天，星期二，将是哈利十一岁的生日。当然，他的生日从来都没有一 点儿意思。去年德思礼夫妇送给他一个挂上衣的挂衣钩和弗农姨父的一双旧袜子。但是，他毕竟 不是天天过十一岁的生日。"
+    },
+    {
+      "en": "Uncle Vernon was back and he was smiling. He was also carrying a long, thin package and didn't answer Aunt Petunia when she asked what he'd bought. \"Found the perfect place!\" he said. \"Come on! Everyone out!\"",
+      "zh": "弗农姨父回来了，而且面带微笑。他还拎着一个细长的包裹，佩妮姨妈问他买的是什么，他 没有回答。“我找到了一个特别理想的地方!”他说，“走吧!都下车!”"
+    },
+    {
+      "en": "It was very cold outside the car. Uncle Vernon was pointing at what looked like a large rock way out at sea. Perched on top of the rock was the most miserable little shack you could imagine. One thing was certain, there was no television in there.",
+      "zh": "车外边很冷。弗农姨父指着海上的一块巨大的礁石。礁石上有一间你能想象的小得可怜的破 烂小屋。有一点可以肯定，那就是小屋里绝对不会有电视。"
+    },
+    {
+      "en": "\"Storm forecast for tonight!\" said Uncle Vernon gleefully, clapping his hands together. \"And this gentleman's kindly agreed to lend us his boat!\"",
+      "zh": "“天气预报说今天夜里有暴风雨!”弗农姨父高兴地拍手说，“而这位先生好心地同意把船 借给我们!”"
+    },
+    {
+      "en": "A toothless old man came ambling up to them, pointing, with a rather wicked grin, at an old rowboat bobbing in the iron-gray water below them. \"I've already got us some rations,\" said Uncle Vernon, \"so all aboard!\"",
+      "zh": "一个牙齿掉光的老汉慢慢吞吞地朝他们走来，脸上挂着不怀好意的奸笑，指着铁灰色海面上 漂荡的一只破旧的划艇。“我已经给大家弄到了一些吃的!”弗农姨父说，“咱们就都上船吧!”"
+    },
+    {
+      "en": "It was freezing in the boat. Icy sea spray and rain crept down their necks and a chilly wind whipped their faces. After what seemed like hours they reached the rock, where Uncle Vernon, slipping and sliding, led the way to the broken-down house.",
+      "zh": "船上寒气逼人。冰冷的海水掀起的浪花夹着雨水顺着他们的脖子往下流淌，刺骨的寒风拍打 着他们的面孔。大概过了好几个小时，他们来到了那块礁石边，弗农姨父连滚带爬地领着他们朝 东倒西歪的小屋走去。"
+    },
+    {
+      "en": "The inside was horrible; it smelled strongly of seaweed, the wind whistled through the gaps in the wooden walls, and the fireplace was damp and empty. There were only two rooms.",
+      "zh": ""
+    },
+    {
+      "en": "Uncle Vernon's rations turned out to be a bag of chips each and four bananas. He tried to start a fire but the empty chip bags just smoked and shriveled up. \"Could do with some of those letters now, eh?\" he said cheerfully.",
+      "zh": "屋里更显得可怕，一股浓重的海藻腥味，寒风透过木墙的缝隙飕飕地往里灌，壁炉里湿漉漉 的，什么也没有。屋里总共只有两个房间。弗农姨父弄来吃的东西也只是每人一包薯片和四根香 蕉。他想把火生起来，但薯片的空包装袋只冒了一股烟，之后就卷缩成一堆灰烬了。“现在要是 有信，可就有用处了，是吗?”他开心地说。"
+    },
+    {
+      "en": "He was in a very good mood. Obviously he thought nobody stood a chance of reaching them here in a storm to deliver mail. Harry privately agreed, though the thought didn't cheer him up at all.",
+      "zh": "他的心情很好。看得出他认为这样暴风雨的天气，不会有人冒雨来送信的。哈利心里当然也 同意，但这种想法却让他一点儿也高兴不起来。"
+    },
+    {
+      "en": "As night fell, the promised storm blew up around them. Spray from the high waves splattered the walls of the hut and a fierce wind rattled the filthy windows. Aunt Petunia found a few moldy blankets in the second room and made up a bed for Dudley on the moth-eaten sofa. She and Uncle Vernon went off to the lumpy bed next door, and Harry was left to find the softest bit of floor he could and to curl up under the thinnest, most ragged blanket.",
+      "zh": "夜幕降临，意料之中的暴风雨果然从四面八方向他们袭来。滔滔翻滚的海浪，拍打着小木屋 的四壁，肆虐的狂风吹得几扇污秽不堪的窗户咔哒咔哒直响。佩妮姨妈从另一间屋里找来几床发 霉的被子，在虫蛀的沙发上给达力铺了一张床。她和弗农姨父到隔壁一张坑坑洼洼、高低不平的 床上睡了；哈利勉强找到一块最不硌人的地板，把身子蜷缩在一条薄而又薄的破被子下边。"
+    },
+    {
+      "en": "The storm raged more and more ferociously as the night went on. Harry couldn't sleep. He shivered and turned over, trying to get comfortable, his stomach rumbling with hunger. Dudley's snores were drowned by the low rolls of thunder that started near midnight. The lighted dial of Dudley's watch, which was dangling over the edge of the sofa on his fat wrist, told Harry he'd be eleven in ten minutes' time. He lay and watched his birthday tick nearer, wondering if the Dursleys would remember at all, wondering where the letter writer was now.",
+      "zh": "深夜，雨暴风狂，暴风雨越发肆无忌惮。哈利不能入眠，他瑟瑟发抖，辗转反侧，总想睡得 舒服些，肚子又饿得咕咕直叫。临近午夜，一阵沉闷的隆隆雷声淹没了达力的鼾声。达力的一只 胳膊搭拉在沙发边上，胖乎乎的手腕上戴着手表，夜光的表盘告诉哈利再过十分钟他就满十一岁 了。他躺在那里期待着他的生日在嘀嗒声中一分一秒地临近。他心里想，不知德思礼夫妇会不会 记得他的生日，不知那个写信的人此刻会在什么地方。"
+    },
+    {
+      "en": "Five minutes to go. Harry heard something creak outside. He hoped the roof wasn't going to fall in, although he might be warmer if it did. Four minutes to go. Maybe the house in Privet Drive would be so full of letters when they got back that he'd be able to steal one somehow.",
+      "zh": "还有五分钟。哈利听见屋外不知什么嘎吱响了一声。但愿屋顶不会塌下来，尽管塌下来也许 反倒会暖和些。还有四分钟。说不定等他回到女贞路时，那幢房子已经堆满了信，没准儿他还能 想办法偷到一封呢。 ，微博：一切只为遇见更好的你"
+    }
+  ]
+}

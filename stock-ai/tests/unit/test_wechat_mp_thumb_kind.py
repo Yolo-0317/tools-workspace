@@ -35,6 +35,27 @@ def test_finance_thumb_excludes_avatar_material() -> None:
     )
 
 
+def test_cover_kind_for_content_evening_fixed_slots() -> None:
+    from scripts.tools.wechat_mp_draft_batch import cover_kind_for_content
+
+    assert cover_kind_for_content(content_kind="news", batch="evening") == "sector"
+    assert cover_kind_for_content(content_kind="hotspot", batch="evening") == "dragons"
+    assert cover_kind_for_content(content_kind="dragons", batch="evening") == "dragons"
+    assert cover_kind_for_content(content_kind="sector", batch="evening") == "sector"
+    assert cover_kind_for_content(content_kind="news", batch="weekend") == "sector"
+    assert cover_kind_for_content(content_kind="market", batch="evening") == "market"
+
+
+def test_cover_kind_hotspot_only_uses_brand_main(monkeypatch) -> None:
+    from scripts.tools.wechat_mp_draft_batch import cover_kind_for_content
+
+    monkeypatch.setattr(
+        "scripts.tools.wechat_mp_draft_batch.resolve_evening_kinds",
+        lambda: ("hotspot",),
+    )
+    assert cover_kind_for_content(content_kind="hotspot", batch="evening") == "sector"
+
+
 def test_pick_thumb_for_kind_uses_distinct_env(monkeypatch) -> None:
     monkeypatch.delenv("WECHAT_MP_THUMB_MEDIA_ID", raising=False)
     monkeypatch.delenv("WECHAT_MP_THUMB_NAME_TOP5", raising=False)

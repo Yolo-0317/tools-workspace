@@ -12,6 +12,7 @@ import type {
   NewsMeta,
   BriefingSnapshot,
   PortfolioHistory,
+  PortfolioWorkbench,
   PositionRow,
   SelectionHistory,
   SelectionKline,
@@ -76,6 +77,10 @@ export function fetchPortfolioCurrent() {
     positions: Record<string, unknown>[]
     alert_rules: MonitorRule[]
   }>('/api/dashboard/portfolio')
+}
+
+export function fetchPortfolioWorkbench() {
+  return apiJson<PortfolioWorkbench>('/api/dashboard/portfolio/workbench')
 }
 
 

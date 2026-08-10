@@ -28,6 +28,39 @@ def _job_command(name: str, body: dict) -> list[str] | None:
         return ["/bin/bash", str(ROOT / "sync_macro_news.sh")]
     if name == "advisor-weekly":
         return ["/bin/bash", str(ROOT / "push_advisor_weekly_review.sh")]
+    if name in {"wechat-mp-draft", "wechat_mp_draft"}:
+        return ["/bin/bash", str(ROOT / "scripts" / "wechat_mp_draft_scheduled.sh")]
+    if name in {"wechat-mp-hotspot-early", "wechat_mp_hotspot_early"}:
+        return [
+            "/bin/bash",
+            str(ROOT / "scripts" / "wechat_mp_hotspot_draft_scheduled.sh"),
+            "hotspot_early",
+        ]
+    if name in {"wechat-mp-hotspot-morning", "wechat_mp_hotspot_morning"}:
+        return [
+            "/bin/bash",
+            str(ROOT / "scripts" / "wechat_mp_hotspot_draft_scheduled.sh"),
+            "hotspot_morning",
+        ]
+    if name in {
+        "wechat-mp-hotspot-afternoon",
+        "wechat_mp_hotspot_afternoon",
+        "wechat-mp-hotspot-draft",
+        "wechat_mp_hotspot_draft",
+    }:
+        return [
+            "/bin/bash",
+            str(ROOT / "scripts" / "wechat_mp_hotspot_draft_scheduled.sh"),
+            "hotspot_afternoon",
+        ]
+    if name in {"wechat-mp-hotspot-evening", "wechat_mp_hotspot_evening"}:
+        return [
+            "/bin/bash",
+            str(ROOT / "scripts" / "wechat_mp_hotspot_draft_scheduled.sh"),
+            "hotspot_evening",
+        ]
+    if name in {"wechat-mp-tv-draft", "wechat_mp_tv_draft"}:
+        return ["/bin/bash", str(ROOT / "scripts" / "wechat_mp_tv_draft_scheduled.sh")]
     return None
 
 

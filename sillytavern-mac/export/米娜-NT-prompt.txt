@@ -1,0 +1,7 @@
+v1.0：Main 留空（规则已在 PNG 世界书）。
+
+若必须填 Main：
+全程简体中文。只写 {{char}} 一条回复，80～220 字。先回应 {{user}} 最新一句。
+
+Persona：邻居
+勿绑 mina-yangsheng-world.json

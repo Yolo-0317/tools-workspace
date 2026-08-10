@@ -235,8 +235,15 @@ def _browser_close_prev_tab() -> bool:
     )
 
 
+def _tab_list_timeout() -> float:
+    try:
+        return max(12.0, float(os.getenv("OPENCLI_TAB_LIST_TIMEOUT", "45")))
+    except ValueError:
+        return 45.0
+
+
 def _list_browser_tabs() -> list[dict]:
-    stdout, _, rc = _run_opencli(["browser", "tab", "list"], timeout=12)
+    stdout, _, rc = _run_opencli(["browser", "tab", "list"], timeout=_tab_list_timeout())
     if rc != 0 or not stdout:
         return []
     try:
@@ -326,7 +333,7 @@ def close_all_session_tabs(*, session: str | None = None) -> None:
     """关闭会话内全部 OpenCLI 托管标签（减轻 Chrome「标签分组」堆积）。"""
     sess = (session or _opencli_browser_session()).strip()
     for _ in range(12):
-        stdout, _, rc = _run_opencli(["browser", sess, "tab", "list"], timeout=12)
+        stdout, _, rc = _run_opencli(["browser", sess, "tab", "list"], timeout=_tab_list_timeout())
         if rc != 0 or not stdout:
             break
         try:
@@ -1351,6 +1358,71 @@ WTI_OIL_INDEX_URL = "https://data.eastmoney.com/cjsj/hyzs_EMI01508580.html"
 
 def unify_quote_url(code: str) -> str:
     return f"https://quote.eastmoney.com/unify/r/{code}"
+
+
+def _jsonp_board_constituents_js(board_code: str, *, pz: int = 12) -> str:
+    bk = (board_code or "").strip().upper()
+    return f"""
+new Promise((resolve) => {{
+  const cb = "jQuery_bc_" + Date.now();
+  window[cb] = (data) => {{
+    try {{
+      const diff = data?.data?.diff;
+      const list = Array.isArray(diff) ? diff : Object.values(diff || {{}});
+      const rows = list.map((x) => ({{
+        code: String(x.f12 || "").replace(/\\D/g, "").slice(-6).padStart(6, "0"),
+        name: String(x.f14 || "").trim(),
+        change_pct: Number(x.f3),
+      }})).filter((r) => /^\\d{{6}}$/.test(r.code) && r.name);
+      resolve(JSON.stringify({{ rc: data?.rc, rows }}));
+    }} catch (e) {{
+      resolve(JSON.stringify({{ rc: -1, rows: [], error: String(e) }}));
+    }}
+  }};
+  const s = document.createElement("script");
+  s.src = "https://push2.eastmoney.com/api/qt/clist/get?cb=" + cb
+    + "&fs=" + encodeURIComponent("b:{bk}")
+    + "&fields=f12,f14,f3"
+    + "&fid=f3&po=1&pn=1&pz={int(pz)}&np=1"
+    + "&fltt=2&invt=2&ut={A_SHARE_CLIST_UT}&_=" + Date.now();
+  s.onerror = () => resolve(JSON.stringify({{ rc: -1, rows: [], error: "script" }}));
+  document.head.appendChild(s);
+  setTimeout(
+    () => resolve(JSON.stringify({{ rc: -1, rows: [], error: "timeout" }})),
+    {int(A_SHARE_JSONP_TIMEOUT_MS)}
+  );
+}})
+"""
+
+
+def fetch_industry_board_constituents(
+    board_code: str,
+    *,
+    top_n: int = 8,
+    close_browser: bool = False,
+    reset_browser: bool = False,
+) -> list[dict]:
+    """东财板块 BK 成分股（OpenCLI JSONP，按涨跌幅）。"""
+    bk = (board_code or "").strip().upper()
+    if not bk.startswith("BK") or top_n <= 0:
+        return []
+    if reset_browser:
+        _reset_browser()
+    pz = max(top_n, 8)
+    _open_page(INDUSTRY_BOARD_URL, label="industry-board-const")
+    _run_opencli(["browser", "wait", "time", "1"], timeout=10)
+    raw = _eval_js(_jsonp_board_constituents_js(bk, pz=pz), timeout=45)
+    _close_browser_if(close_browser)
+    if not raw:
+        return []
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        return []
+    rows = payload.get("rows") or []
+    if not isinstance(rows, list):
+        return []
+    return [r for r in rows if isinstance(r, dict)][:top_n]
 
 
 def fetch_hot_industry_board_rows_opencli(

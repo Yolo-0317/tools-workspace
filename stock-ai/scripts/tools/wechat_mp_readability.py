@@ -19,7 +19,7 @@ _TOP5_FIELD_SPLIT_RE = re.compile(
     r"(?<=[。；;！？\s])(?=(?:逻辑归属|量价结构|技术位置|待核实|AI点评)[：:])"
 )
 
-_SKIP_LINE_PREFIXES = (">", "[[fig:")
+_SKIP_LINE_PREFIXES = (">", "[[fig:", "[[cta:")
 
 
 def para_max_chars() -> int:
@@ -158,10 +158,21 @@ def reflow_inline_numbered_lists(body: str) -> str:
     return "\n".join(out)
 
 
-def polish_mobile_readability(body: str, *, max_chars: int | None = None) -> str:
-    """序号列表换行 + 控段长（全稿型通用）。"""
+def polish_mobile_readability(
+    body: str,
+    *,
+    max_chars: int | None = None,
+    kind: str | None = None,
+    engagement_kind: str | None = None,
+) -> str:
+    """序号列表换行 + 控段长（全稿型通用）。影视纯段落稿不在此拆句。"""
     if not body or not body.strip():
         return body
     text = reflow_inline_numbered_lists(body)
-    text = split_long_paragraphs(text, max_chars=max_chars)
+    k = (kind or "").strip().lower()
+    ek = (engagement_kind or "").strip().lower()
+    if ek == "discussion":
+        return re.sub(r"\n{3,}", "\n\n", text).strip()
+    if k not in {"tv_review", "tv", "film", "movie"}:
+        text = split_long_paragraphs(text, max_chars=max_chars)
     return re.sub(r"\n{3,}", "\n\n", text).strip()

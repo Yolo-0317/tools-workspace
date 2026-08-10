@@ -1,16 +1,31 @@
 # 牛马也智能 · 晚间槽位封面留档
 
-> 定稿：2026-06-04 · 代码真源：`scripts/tools/wechat_mp_client.py`（`_DEFAULT_KIND_THUMB_ASSETS` / `_DEFAULT_KIND_THUMB_NAMES`）
+> 定稿：2026-07-13 · 代码真源：`scripts/tools/wechat_mp_client.py`（`_DEFAULT_KIND_THUMB_ASSETS` / `_DEFAULT_KIND_THUMB_NAMES`）
 
-## 晚间三篇默认封面（本地优先）
-
-`top5`、`dragons` 默认 **`WECHAT_MP_KIND_THUMB_FROM_ASSETS=1`**：先上传 repo 内 `*-dual.jpg`（2.35:1 裁切版），再回退素材库名匹配。
+## evening 两篇默认封面（本地优先）
 
 | kind | 本地文件（相对 `stock-ai/`） | 画面 | 素材库名（可选上传） |
 |------|------------------------------|------|----------------------|
-| **sector** | `assets/wechat_mp/banner.png`（与顶栏同源） | 牛马品牌 | `封面-牛马品牌-双封面` |
-| **top5** 选股 | `assets/wechat_mp/cover-financial-screen-dual.jpg` | 亮色财经屏 | `封面-财经亮屏-双封面` |
-| **dragons** 龙头 | `assets/wechat_mp/cover-multi-screen-dual.jpg` | 亮色多屏行情 | `封面-多屏亮行情-双封面` |
+| **sector**（news 头条封面槽） | `assets/wechat_mp/banner.png` | 牛马品牌 | `封面-牛马品牌-双封面` |
+| **dragons**（hotspot 次条封面槽） | `assets/wechat_mp/cover-multi-screen-dual.jpg` | 亮色多屏行情 | `封面-多屏亮行情-双封面` |
+| **news** 正文 | 同上 sector 槽 | 牛马品牌 | — |
+| **hotspot** 正文 | 同上 dragons 槽 | 多屏亮行情 | — |
+
+**evening 同批群发**
+
+| 群发位 | 正文 kind | 封面槽位（固定不变） |
+|--------|-----------|----------------------|
+| 1 头条 | `news` | **牛马品牌** |
+| 2 次条 | `hotspot` | **多屏亮行情** |
+
+封面槽位 1→2 永远 **牛马 → 多屏**，与正文 kind 解耦；代码见 `cover_kind_for_content()`。
+
+## 手动槽位（非 evening 定时）
+
+| kind | 本地文件 | 画面 |
+|------|----------|------|
+| **top5**（仅手动） | `assets/wechat_mp/cover-financial-screen-dual.jpg` | 亮色财经屏 |
+| **dragons**（仅手动） | `assets/wechat_mp/cover-multi-screen-dual.jpg` | 多屏亮行情 |
 
 **勿再用（已淘汰）**
 

@@ -1,0 +1,10 @@
+坂本由美 v1.0.0-zh（中译 + 世界书 v1.0）
+
+单条回复 80～220 字；talkativeness 0.65。实验搭档开场，femdom 随 {{user}} 接招加深。
+
+NT 设置：
+1. 导入 由美-nativetavern.png（版本 1.0.0-zh）
+2. Main 留空；max tokens 256～384
+3. 勿绑 yumi-yangsheng-world.json
+4. Persona = 同学 / 实验搭档
+5. 新建聊天

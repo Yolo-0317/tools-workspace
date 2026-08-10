@@ -21,6 +21,17 @@ from scripts.tools.wechat_mp_content import DRAFT_KINDS, build_article
 from scripts.tools.wechat_mp_draft_slots import upsert_draft_article
 
 
+def _resolve_cover_kind(content_kind: str) -> str:
+    """内容 kind → 封面资源 kind（evening 批次 news 用牛马 sector 封面）。"""
+    from scripts.tools.wechat_mp_draft_batch import (
+        cover_kind_for_content,
+        resolve_scheduled_batch,
+    )
+
+    batch = os.getenv("WECHAT_MP_NEWS_BATCH", "").strip() or resolve_scheduled_batch()
+    return cover_kind_for_content(content_kind=content_kind, batch=batch)
+
+
 def _resolve_kinds(raw: str) -> list[str]:
     from scripts.tools.wechat_mp_content import DAILY_DRAFT_KINDS
 
@@ -43,12 +54,14 @@ def _build_for_kind(
 ) -> dict[str, str]:
     if kind == "news" and market_title:
         return build_article(kind, peer_market_title=market_title)
-    if kind in {"market", "sector"}:
+    if kind in {"market", "sector", "hotspot"}:
         return build_article(kind, edition=edition)
     if kind == "temp":
         return build_article(kind, variant=variant)
     if kind == "workspace":
         return build_article(kind, variant=variant)
+    if kind == "guba":
+        return build_article(kind, edition=edition or "close")
     return build_article(kind)
 
 
@@ -75,7 +88,7 @@ def main() -> int:
         "--edition",
         choices=("pre", "midday", "close"),
         default=None,
-        help="A股评论时段（仅 market）：pre 盘前 / midday 午间 / close 盘后；"
+        help="A股评论时段：pre 盘前 / midday 午间 / close 盘后（market、hotspot、sector）；"
         "午间/盘后配合 dragons 时自动选 intraday/eod 数据槽",
     )
     parser.add_argument("--list-materials", action="store_true", help="列出素材库图片后退出")
@@ -142,7 +155,7 @@ def main() -> int:
         market_title: str | None = None
         for kind in kinds:
             try:
-                edition = args.edition if kind == "market" else None
+                edition = args.edition if kind in {"market", "sector", "hotspot"} else None
                 article = _build_for_kind(
                     kind,
                     edition=edition,
@@ -167,14 +180,14 @@ def main() -> int:
             print_publish_hints(
                 kind,
                 article,
-                edition=args.edition if kind == "market" else None,
+                edition=args.edition if kind in {"market", "sector", "hotspot"} else None,
             )
             from scripts.tools.wechat_mp_traffic_checklist import print_traffic_checklist
 
             print_traffic_checklist(
                 kind,
                 article,
-                edition=args.edition if kind == "market" else None,
+                edition=args.edition if kind in {"market", "sector", "hotspot"} else None,
             )
             from scripts.tools.wechat_mp_publish_checklist import print_manual_publish_checklist
 
@@ -201,7 +214,7 @@ def main() -> int:
     market_title: str | None = None
     for kind in kinds:
         try:
-            edition = args.edition if kind == "market" else None
+            edition = args.edition if kind in {"market", "sector", "hotspot"} else None
             article = _build_for_kind(
                 kind,
                 edition=edition,
@@ -230,7 +243,8 @@ def main() -> int:
             if strict not in ("0", "false", "no", "off"):
                 continue
 
-        thumb, terr = pick_thumb_for_draft_kind(kind)
+        cover_kind = _resolve_cover_kind(kind)
+        thumb, terr = pick_thumb_for_draft_kind(cover_kind)
         if kind == "workspace" and (args.variant or "").strip().lower() == "english_buddy":
             from scripts.tools.wechat_mp_english_buddy_article import (
                 pick_english_buddy_workspace_thumb,
@@ -239,13 +253,28 @@ def main() -> int:
             thumb, terr = pick_english_buddy_workspace_thumb()
             if not thumb:
                 thumb, terr = pick_thumb_for_draft_kind(kind)
+        if kind == "temp" and (args.variant or "").strip().lower() == "harryputter":
+            from scripts.tools.wechat_mp_harryputter_article import pick_harryputter_thumb
+
+            thumb, terr = pick_harryputter_thumb()
+            if not thumb:
+                thumb, terr = pick_thumb_for_draft_kind(kind)
+        if kind == "tv_review":
+            from scripts.tools.wechat_mp_tv_cover import pick_tv_review_thumb
+            from scripts.tools.wechat_mp_tv_topics import pick_tv_topic
+
+            topic = pick_tv_topic()
+            thumb, terr = pick_tv_review_thumb(topic)
+            if not thumb:
+                thumb, terr = pick_thumb_for_draft_kind(cover_kind)
         if terr:
             print(f"❌ [{kind}] 封面: {terr.get('errmsg')}", file=sys.stderr)
             continue
         meta, _ = get_material_image_meta(thumb or "")
         if meta:
+            cover_note = f"({cover_kind})" if cover_kind != kind else ""
             print(
-                f"封面 [{kind}]: {meta.get('name')} {meta.get('width')}x{meta.get('height')}",
+                f"封面 [{kind}]{cover_note}: {meta.get('name')} {meta.get('width')}x{meta.get('height')}",
                 file=sys.stderr,
             )
 

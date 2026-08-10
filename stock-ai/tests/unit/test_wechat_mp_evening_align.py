@@ -35,8 +35,8 @@ def test_dragon_title_prefers_souyisou_pattern() -> None:
         }
     ]
     title = _dragon_title(hdr, dragons, trade_date=date(2026, 6, 3))
-    assert "怎么玩" in title
-    assert "还在榜" in title or "？" in title
+    assert "梯队" in title or "结构" in title
+    assert "怎么玩" not in title
     assert "粤电力" in title or "电力" in title
 
 
@@ -64,7 +64,8 @@ def test_top5_title_leading_stock_first() -> None:
         ),
     ]
     title = _top5_title(picks, trade_date=date(2026, 6, 3))
-    assert "巨化股份" in title and ("领衔" in title or "A股选股" in title)
+    assert "巨化股份" in title and ("A股观察" in title or "结构" in title)
+    assert "明日盯" not in title and "收盘信号" not in title
 
 
 def test_dragons_write_max_default_two() -> None:

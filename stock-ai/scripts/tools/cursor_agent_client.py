@@ -70,12 +70,12 @@ def call_cursor_agent(
     timeout_seconds: float | None = None,
     max_retries: int | None = None,
 ) -> str:
-    """调用 `agent --print --mode ask --trust --model auto`（默认）。"""
+    """调用 `agent --print --mode ask --trust --model composer-2.5`（默认）。"""
     prompt = prompt.strip()
     if not prompt:
         raise ValueError("prompt 为空")
 
-    model = model or os.getenv("CURSOR_AGENT_MODEL", "auto")
+    model = model or os.getenv("CURSOR_AGENT_MODEL", "composer-2.5")
     mode = mode or os.getenv("CURSOR_AGENT_MODE", "ask")
     workspace = workspace or agent_workspace()
     timeout_seconds = timeout_seconds if timeout_seconds is not None else _env_float(

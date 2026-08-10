@@ -12,7 +12,7 @@ from scripts._bootstrap import ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
 
-from scripts.tools.deepseek_client import call_deepseek, is_llm_configured
+from scripts.tools.deepseek_client import call_wechat_mp_llm, is_wechat_mp_llm_configured
 from scripts.tools.wechat_mp_hot_theme import (
     HotThemeReport,
     ThemeScore,
@@ -20,7 +20,7 @@ from scripts.tools.wechat_mp_hot_theme import (
     discover_sector_hot_themes,
     pick_focus_themes,
 )
-from scripts.tools.wechat_mp_public import PUBLIC_MP_WRITER_RULE, RESEARCHER_VOICE_RULE
+from scripts.tools.wechat_mp_public import PUBLIC_MP_WRITER_RULE, RESEARCHER_VOICE_RULE, PLATFORM_PROPERTY_RISK_RULE
 from scripts.tools.wechat_mp_monetization import monetization_prompt_block
 
 TZ = ZoneInfo("Asia/Shanghai")
@@ -117,6 +117,18 @@ def build_sector_research_context(
         parts.append(
             f"{i}. {t.name}（得分 {t.score:.1f}，来源：{', '.join(t.sources)}）"
         )
+    hot_lines: list[str] = []
+    try:
+        from scripts.tools.wechat_mp_sector_stocks import (
+            fetch_hot_stock_watch_rows,
+            format_hot_stock_watch_line,
+        )
+
+        hot_rows = fetch_hot_stock_watch_rows()
+        hot_lines = [format_hot_stock_watch_line(r) for r in hot_rows]
+    except Exception:
+        hot_lines = []
+
     parts.extend(
         [
             "",
@@ -127,6 +139,25 @@ def build_sector_research_context(
             *(stocks or ["（暂无与主题直接对应的龙头/选股样本，仅写产业链逻辑）"]),
         ]
     )
+    if hot_lines:
+        from scripts.tools.wechat_mp_sector_stocks import sector_evening_dedup_enabled
+
+        if sector_evening_dedup_enabled():
+            parts.extend(
+                [
+                    "",
+                    "【evening 同批分工】news 头条已写东财人气快讯；本篇禁止再罗列 Top10 全榜，"
+                    "「盘面里谁在用价格说话」只写行业代表股（已避开头条人气前几名）。",
+                ]
+            )
+        else:
+            parts.extend(
+                [
+                    "",
+                    "【当日人气观察 Top10（成稿将单独插入一节，其它节勿重复罗列全榜）】",
+                    *hot_lines,
+                ]
+            )
     try:
         from scripts.tools.wechat_mp_market_edition import (
             build_market_news_context,
@@ -165,22 +196,55 @@ def _sector_lead_stock_name(theme_names: list[str]) -> str | None:
     return None
 
 
-def build_sector_title(themes: list[ThemeScore], *, now: datetime | None = None) -> str:
+def build_sector_title(
+    themes: list[ThemeScore],
+    *,
+    now: datetime | None = None,
+    hot_watch_rows: list | None = None,
+) -> str:
     del now
     hook = sector_title_hook(themes)
     theme_names = [t.name for t in themes if t.name]
-    lead = _sector_lead_stock_name(theme_names)
+    if hot_watch_rows is None:
+        try:
+            from scripts.tools.wechat_mp_sector_stocks import fetch_hot_stock_watch_rows
+
+            hot_watch_rows = fetch_hot_stock_watch_rows()
+        except Exception:
+            hot_watch_rows = []
+    from scripts.tools.wechat_mp_sector_stocks import (
+        news_hot_exclude_codes,
+        pick_hot_stock_for_sector_title,
+        sector_evening_dedup_enabled,
+    )
+
+    exclude = news_hot_exclude_codes() if sector_evening_dedup_enabled() else set()
+    if sector_evening_dedup_enabled():
+        lead = _sector_lead_stock_name(theme_names) or pick_hot_stock_for_sector_title(
+            hot_watch_rows or [],
+            exclude_codes=exclude,
+        )
+    else:
+        hot_name = pick_hot_stock_for_sector_title(hot_watch_rows or [])
+        lead = hot_name or _sector_lead_stock_name(theme_names)
     options: tuple[str, ...] = (
         f"A股行业｜{hook}：产业链怎么拆？",
-        f"A股{hook}｜产业链怎么跟？收盘观察",
-        f"{hook}产业链怎么拆？量价谁在带头",
+        f"A股{hook}｜产业链结构观察",
+        f"{hook}产业链怎么拆？量价对照",
     )
     from scripts.tools.wechat_mp_content import _pick_clickbait_title
     from scripts.tools.wechat_mp_seo import enrich_title_for_search
 
     if lead:
-        # 搜一搜验证：用户常搜票名（如新安股份）；有代表股时固定优先，不轮换掉
-        raw = f"A股{hook}｜{lead}领涨：产业链怎么拆？"
+        board_lead = _sector_lead_stock_name(theme_names)
+        verb = "领涨" if board_lead and lead == board_lead else "关联"
+        from scripts.tools.wechat_mp_public import sanitize_public_title
+
+        # 搜一搜：标题前段带 1 只热股名；用语偏信息观察，避免「领衔」被平台判为推荐
+        raw = sanitize_public_title(
+            f"A股{hook}｜{lead}{verb}观察：产业链怎么拆？",
+            kind="sector",
+        )
         return enrich_title_for_search(raw, "sector", clip_fn=lambda t, _m=32: t[:_m])
 
     raw = _pick_clickbait_title(list(options), kind="sector")
@@ -258,7 +322,7 @@ def generate_sector_research_body(
         resolve_sector_trade_date(report), edition=report.edition
     )
 
-    if not is_llm_configured():
+    if not is_wechat_mp_llm_configured():
         return (
             _template_sector_body(
                 context=context,
@@ -270,9 +334,28 @@ def generate_sector_research_body(
         )
 
     names = "、".join(t.name for t in themes)
+    dedup_note = ""
+    try:
+        from scripts.tools.wechat_mp_sector_stocks import (
+            news_hot_exclude_codes,
+            sector_evening_dedup_enabled,
+        )
+
+        if sector_evening_dedup_enabled():
+            exc = news_hot_exclude_codes()
+            exc_txt = "、".join(sorted(exc)) if exc else "（无）"
+            dedup_note = (
+                f"\n## evening 同批分工（必读）\n"
+                f"- news 头条已覆盖东财人气快讯；禁止再写 Top10 全榜或快讯清单\n"
+                f"- 代表股样本已避开头条人气前几名（代码 {exc_txt}）\n"
+                f"- 本篇只写行业机制、产业链与行业代表股量价\n"
+            )
+    except Exception:
+        pass
     prompt = f"""你是一位从业15年的A股行业研究员，为公众号撰写「热点行业研究」观察稿。
-{PUBLIC_MP_WRITER_RULE}
+{dedup_note}{PUBLIC_MP_WRITER_RULE}
 {RESEARCHER_VOICE_RULE}
+{PLATFORM_PROPERTY_RISK_RULE}
 
 {context}
 
@@ -285,13 +368,15 @@ def generate_sector_research_body(
    {SECTION_LINK}
    {SECTION_FORWARD}
 2. 必须覆盖上下文中的 **1～2 个聚焦主题**；若有两个，篇幅约 55% / 45%，勿写成互无关的两篇。
-3. 「为什么现在看」160～220字：催化（快讯/政策/景气）+ 为何是 {trade_day_label} 的主线（资金/行业榜）
+3. 「为什么现在看」160～220字：催化（快讯/政策/景气）+ 为何是 {trade_day_label} 的主线；**至少 1 句承接宏观或产业政策背景**（只写公开信息），再写资金/行业榜映射
 4. 「产业链怎么拆」280～380字：上游/中游/下游或设备-材料-应用；只观察，无买入建议
 5. 「盘面里谁在用价格说话」240～320字：**必须**写出上下文「代表股观察样本」里至少 **2 只**（有则尽量写满样本数，最多 4 只）；每只 **公司名+6位代码各出现 1 次**，写涨跌/换手/是否带量等事实，**禁止**操作建议与「可买可卖」。无样本才写板块梯队现象
+5a. evening 同批：news 已写人气快讯，本节**勿复述**头条热股清单，只写**行业链**代表股量价
 5b. 代表股是行业/人气/龙头 **观察样本**，不是第二篇 top5，勿写成五只名单式拆解
 6. 「和指数情绪怎么联动」180～240字：指数、涨跌家数、情绪周期相位（若有）
 7. 「向后看要验证什么」160～220字：2～3 个可跟踪指标；「我们认为」「值得关注的是」「向后看」各起一段
 8. 禁止 emoji、禁止 markdown 加粗、禁止编号快讯清单
+8a. 禁止「流水线/链路/赋能/综上所述/值得注意的是」及「首先/其次/最后/综上」机械连接
 8b. **移动端排版**：普通叙述每段约 120 字内；`1. 2. 3.` 列表每项单独一行
 9. 只使用上下文事实；勿编造订单额、精确份额
 10. 禁止正文内免责声明（文末统一追加）
@@ -299,7 +384,7 @@ def generate_sector_research_body(
 {monetization_prompt_block("sector")}"""
 
     try:
-        content = call_deepseek(
+        content = call_wechat_mp_llm(
             [
                 {
                     "role": "system",

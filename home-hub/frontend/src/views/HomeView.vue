@@ -1,29 +1,34 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import AdvisorPanel from '../components/AdvisorPanel.vue'
-import AdvisorWeeklyReviewPanel from '../components/AdvisorWeeklyReviewPanel.vue'
 import DashboardLoadingSkeleton from '../components/DashboardLoadingSkeleton.vue'
-import DisciplinePanel from '../components/DisciplinePanel.vue'
 import MiniLineChart from '../components/MiniLineChart.vue'
+import PortfolioWorkbenchPanel from '../components/PortfolioWorkbenchPanel.vue'
 import { usePlatformLayout } from '../composables/usePlatformLayout'
 import {
   fetchDashboardSummary,
-  fetchDiscipline,
+  fetchPortfolioWorkbench,
   fetchSnapshotAlerts,
   fmtNum,
 } from '../api/dashboard'
-import type { AdvisorPayload, DashboardPayload, DisciplinePayload } from '../types/dashboard'
+import type { DashboardPayload, PortfolioWorkbench } from '../types/dashboard'
 import { selCode, selName, selScore, strategyLabel } from '../utils/selection'
 
 const data = ref<DashboardPayload | null>(null)
-const advisor = ref<AdvisorPayload | null>(null)
-const discipline = ref<DisciplinePayload | null>(null)
+const workbench = ref<PortfolioWorkbench | null>(null)
 const alerts = ref<string[]>([])
 const error = ref('')
 const loading = ref(true)
 const isMobile = usePlatformLayout()
 
 const latestAccount = computed(() => {
+  if (workbench.value?.account.total_assets != null) {
+    return {
+      total_assets: workbench.value.account.total_assets,
+      market_value: workbench.value.account.market_value,
+      holding_pnl: workbench.value.account.holding_pnl,
+      snapshot_date: workbench.value.as_of,
+    }
+  }
   const cur = data.value?.account_current
   if (cur?.total_assets != null) return cur
   return data.value?.account_series.at(-1) ?? null
@@ -38,26 +43,26 @@ const assetChart = computed(() =>
     })),
 )
 
-const weeklyReview = computed(
-  () => advisor.value?.weekly_review_latest ?? null,
-)
+async function loadSecondaryData() {
+  try {
+    const [summary, alertRes] = await Promise.all([
+      fetchDashboardSummary(),
+      fetchSnapshotAlerts(10),
+    ])
+    data.value = summary
+    alerts.value = alertRes.lines
+  } catch {}
+}
 
 onMounted(async () => {
   try {
-    const [summary, alertRes, disc] = await Promise.all([
-      fetchDashboardSummary(),
-      fetchSnapshotAlerts(10),
-      fetchDiscipline(),
-    ])
-    data.value = summary
-    advisor.value = summary?.advisor ?? null
-    alerts.value = alertRes.lines
-    discipline.value = disc
+    workbench.value = await fetchPortfolioWorkbench()
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
   } finally {
     loading.value = false
   }
+  void loadSecondaryData()
 })
 </script>
 
@@ -67,16 +72,7 @@ onMounted(async () => {
     <DashboardLoadingSkeleton v-if="loading" variant="home" />
     <p v-if="error" class="error">{{ error }}</p>
 
-    <AdvisorPanel v-if="!loading && advisor" :advisor="advisor" />
-    <AdvisorWeeklyReviewPanel v-if="!loading && weeklyReview" :review="weeklyReview" />
-    <p v-if="!loading && !advisor" class="hint">投顾摘要未加载（请刷新或检查 MySQL）</p>
-
-    <DisciplinePanel
-      v-if="discipline"
-      class="disc-block"
-      :alerts="discipline.alerts"
-      :position-ratio="discipline.position_ratio"
-    />
+    <PortfolioWorkbenchPanel v-if="!loading && workbench" :workbench="workbench" />
 
     <section v-if="data" class="cards">
       <article class="card">
@@ -94,9 +90,9 @@ onMounted(async () => {
 
       <article class="card">
         <h2>持仓</h2>
-        <p class="big">{{ data.positions_latest.length }} 只</p>
+        <p class="big">{{ workbench?.positions.length ?? data.positions_latest.length }} 只</p>
         <p class="sub">
-          表 portfolio_positions（同步后即最新）
+          {{ workbench ? '执行卡快照（券商页已核对）' : 'MySQL 同步数据' }}
         </p>
       </article>
 
@@ -120,9 +116,7 @@ onMounted(async () => {
 
     <section v-if="data?.selection_resolve?.top5?.length" class="block">
       <h2>选股情报 Top5</h2>
-      <p v-if="advisor?.selection?.mode === 'intel_only'" class="hint block-hint">
-        投顾阶段 0：以下仅供观察，非买入清单。
-      </p>
+      <p class="hint block-hint">选股逻辑尚待按新版账户框架重构，当前仅作情报参考。</p>
       <ul>
         <li v-for="(row, i) in data.selection_resolve.top5" :key="i">
           {{ selCode(row) }}

@@ -247,6 +247,8 @@ def main() -> int:
     except Exception:
         pass
 
+    advisor_phase = 0
+    run_sop = not args.no_sop
     try:
         from stock_ai.advisor_selection import (
             ai_selection_review_enabled,
@@ -256,14 +258,17 @@ def main() -> int:
         )
 
         advisor_phase = parse_advisor_phase()
+        run_sop = not args.no_sop and sop_review_enabled(phase=advisor_phase)
         print(format_selection_banner(phase=advisor_phase), file=sys.stderr)
-        if advisor_phase == 0 and not args.no_sop:
+        if run_sop and advisor_phase == 0:
             print(
-                "📋 投顾阶段0：仍跑 Top5 东财 SOP（情报池·供公众号/战报）；不写次日监控",
+                "📋 投顾阶段0：跑 Top5 东财 SOP（情报池）；不写次日监控",
                 file=sys.stderr,
             )
+        elif not run_sop:
+            print("⏭️ 已跳过 Top5 东财 SOP（DISABLE_SOP_TOP5 或 --no-sop）", file=sys.stderr)
     except ImportError:
-        advisor_phase = 0
+        pass
 
     top_df = pick_selection_top(
         df.head(TOP_N * 4),
@@ -296,7 +301,7 @@ def main() -> int:
         "",
     ]
 
-    if args.no_sop:
+    if not run_sop:
         try:
             from stock_ai.advisor_selection import ai_selection_review_enabled
 
@@ -304,7 +309,7 @@ def main() -> int:
                 ai_block = _run_ai_review(trade_date, decision_context)
             else:
                 ai_block = (
-                    "【投顾·情报池】阶段0已跳过 Top5 AI 简评。\n"
+                    "【投顾·情报池】阶段0已跳过 Top5 SOP 与 AI 简评。\n"
                     "Top5 仅供观察，非买入清单；本周以投顾「本周必做」减仓为主。"
                 )
         except ImportError:

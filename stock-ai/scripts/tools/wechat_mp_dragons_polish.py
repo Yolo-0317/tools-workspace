@@ -117,7 +117,7 @@ def _finalize_dragons_read_hooks(body: str, *, hdr: dict[str, Any]) -> str:
     bridges = {
         s_breakdown: f"{BRIDGE_MARK}龙头拆解才是情绪真正的试金石。",
         s_ladder: f"{BRIDGE_MARK}空间板断了以后，梯队怎么排，比单看高度更重要。",
-        s_plan: f"{BRIDGE_MARK}明日盯什么信号，比今晚的口号更值得写进备忘录。",
+        s_plan: f"{BRIDGE_MARK}次日用哪些公开数据核对，比口号更值得写进备忘录。",
     }
     text = insert_section_bridges(text, bridges)
 

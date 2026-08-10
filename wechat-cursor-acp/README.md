@@ -43,8 +43,9 @@ cp .env.example .env   # 按需改 AGENT_CWD、INSTANCE
 | `./scripts/start.sh` | 扫码登录 → 自动 `--daemon` 常驻 |
 | `./scripts/start.sh --foreground` | 全程保持前台（调试） |
 | `./scripts/start.sh --login` | 强制重新扫码 |
-| `./scripts/stop.sh` | 停止守护进程 |
-| `./scripts/status.sh` | 查看守护进程状态 |
+| `./scripts/stop.sh` | 停止守护进程（秒退，不阻塞） |
+| `./scripts/restart.sh` | 停止后重新后台启动 |
+| `./scripts/status.sh` | 查看守护进程状态（秒退） |
 | `./scripts/start-typing-watcher.sh` | 单独启动「正在输入」脉冲（`start.sh` 会自动带） |
 | `./scripts/install-launchd.sh` | 安装 macOS 登录自启 |
 
@@ -119,6 +120,7 @@ wechat-cursor-acp/
 │   ├── lib/common.sh
 │   ├── start.sh
 │   ├── stop.sh
+│   ├── restart.sh
 │   ├── status.sh
 │   ├── wechat-acp-autostart.sh
 │   └── install-launchd.sh

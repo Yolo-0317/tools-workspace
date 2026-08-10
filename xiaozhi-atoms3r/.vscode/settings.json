@@ -1,0 +1,20 @@
+{
+  "idf.espIdfPath": "${workspaceFolder}/.espressif/esp-idf-v6.0.2",
+  "idf.toolsPath": "${workspaceFolder}/.espressif/tools",
+  "idf.openOcdConfigs": [
+    "board/esp32s3-builtin.cfg"
+  ],
+  "idf.port": "",
+  "idf.flashType": "UART",
+  "idf.monitorBaudRate": "115200",
+  "clangd.path": "/usr/bin/clangd",
+  "files.associations": {
+    "*.h": "c",
+    "*.cc": "cpp"
+  },
+  "search.exclude": {
+    "**/.espressif": true,
+    "**/firmware/build": true,
+    "**/firmware/managed_components": true
+  }
+}

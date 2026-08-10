@@ -21,15 +21,14 @@ def test_format_batch_message_ok() -> None:
     text = format_batch_message(
         "evening",
         [
-            DraftPushResult(kind="market", title="A股收盘复盘", action="updated", ok=True),
-            DraftPushResult(kind="top5", title="今日五只", action="created", ok=True),
+            DraftPushResult(kind="news", title="A股热股快讯", action="updated", ok=True),
+            DraftPushResult(kind="dragons", title="情绪发酵", action="created", ok=True),
         ],
     )
-    assert "交易日 19:00" in text
-    assert "[market]" in text
-    assert "更新" in text
-    assert "[top5]" in text
-    assert "新建" in text
+    assert "news+dragons+sector" in text
+    assert "[news]" in text
+    assert "同批群发" in text
+    assert "牛马品牌" in text
     assert "mp.weixin.qq.com" in text
 
 
@@ -39,5 +38,5 @@ def test_format_batch_message_with_failures() -> None:
         [DraftPushResult(kind="news", title="", action="", ok=False, error="合规")],
         failed_kinds=["news"],
     )
-    assert "休市日 19:00" in text
+    assert "休市日 18:20" in text
     assert "跳过/失败" in text

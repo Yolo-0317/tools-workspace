@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+import re
 from typing import Any
 
 DIGEST_MAX = 128
@@ -22,6 +23,8 @@ DIGEST_SEO_CORE: dict[str, tuple[str, ...]] = {
     "news": ("A股", "财经快讯"),
     "top5": ("A股", "选股观察"),
     "dragons": ("A股", "龙头复盘"),
+    "hotspot": ("热点观察", "话题评论"),
+    "tv_review": ("热点观察", "话题讨论"),
     "workspace": ("工具工作区", "量化自动化"),
     "temp": ("开发者工具", "飞书自动化"),
     "commerce": ("租屋", "小家电"),
@@ -37,8 +40,10 @@ DIGEST_SEO_PHRASE: dict[str, str] = {
     "sector": "热点行业产业链与情绪结构观察",
     "market": "指数外围与结构判断",
     "news": "Top10要闻逐条解读",
-    "top5": "领衔股收盘信号与结构观察",
+    "top5": "观察样本结构对照与待验证指标",
     "dragons": "情绪周期与龙头梯队",
+    "hotspot": "整理公开信息与多方观点，供阅读与讨论",
+    "tv_review": "社会文娱公共热点，呈现多方说法",
     "workspace": "收盘入库到草稿的一条龙",
     "temp": "单篇技术笔记可独立发布",
     "commerce": "合租单间买前对照",
@@ -52,27 +57,31 @@ COMMERCE_DIGEST_SEO_BY_SLOT: dict[str, tuple[str, ...]] = {
 
 # 标题搜一搜：前 15 字内尽量出现；勿堆砌（与摘要 SEO 词表对齐）
 TITLE_SEO_KEYWORDS: dict[str, tuple[str, ...]] = {
-    "sector": ("A股", "行业", "产业链", "热点", "板块", "情绪", "怎么拆", "怎么跟"),
+    "sector": ("A股", "行业", "产业链", "热点", "板块", "情绪", "怎么拆"),
     "market": ("A股", "收盘", "盘前", "午间", "复盘"),
-    "top5": ("A股", "选股", "盯盘", "技术面", "收盘信号", "领衔", "明日盯"),
-    "dragons": ("A股", "龙头", "情绪", "复盘", "连板", "怎么玩", "还在榜"),
-    "news": ("A股", "快讯", "要闻", "财经"),
+    "top5": ("A股", "观察", "结构", "待验证"),
+    "dragons": ("A股", "龙头", "情绪", "复盘", "连板", "梯队", "结构"),
+    "news": ("A股", "快讯", "要闻", "财经", "人气"),
+    "hotspot": ("热点", "社会", "话题", "事件", "公共", "评论", "讨论"),
+    "tv_review": ("热点", "社会", "话题", "事件", "公共", "讨论"),
     "commerce": ("租屋", "合租", "单间", "小家电", "小电", "厨房", "租房"),
 }
 
 TITLE_SEO_FRONT_KEYWORDS: dict[str, tuple[str, ...]] = {
     "sector": ("A股", "行业", "产业链"),
     "market": ("A股", "收盘复盘", "盘前", "午间"),
-    "top5": ("A股", "选股", "领衔", "收盘信号"),
-    "dragons": ("A股", "龙头", "情绪", "怎么玩", "还在榜"),
+    "top5": ("A股", "观察", "结构"),
+    "dragons": ("A股", "龙头", "情绪", "梯队"),
     "news": ("A股", "快讯"),
+    "hotspot": ("热点", "社会", "话题", "事件"),
+    "tv_review": ("热点", "社会", "话题", "事件"),
     "commerce": ("租屋", "合租", "单间", "小家电", "租房"),
 }
 
 TITLE_SEO_PREFIX: dict[str, str | dict[str, str]] = {
     "commerce": "租屋小电｜",
     "sector": "A股行业｜",
-    "top5": "A股选股｜",
+    "top5": "A股观察｜",
     "dragons": "A股龙头｜",
     "news": "A股快讯｜",
     "market": {
@@ -97,10 +106,10 @@ HASHTAG_POOL: dict[str, dict[str, tuple[str, ...]]] = {
         "default": ("A股", "财经快讯", "宏观解读"),
     },
     "top5": {
-        "default": ("A股", "选股观察", "收盘信号"),
+        "default": ("A股", "结构观察", "收盘复盘"),
     },
     "dragons": {
-        "default": ("A股", "龙头战法", "情绪周期"),
+        "default": ("A股", "龙头复盘", "情绪周期"),
         "intraday": ("A股", "盘中龙头", "情绪周期"),
         "eod": ("A股", "收盘龙头", "连板梯队"),
     },
@@ -109,6 +118,12 @@ HASHTAG_POOL: dict[str, dict[str, tuple[str, ...]]] = {
     },
     "temp": {
         "default": ("开发者工具", "飞书", "效率工具"),
+    },
+    "hotspot": {
+        "default": ("热点观察", "社会话题", "公共事件"),
+    },
+    "tv_review": {
+        "default": ("热点观察", "话题讨论", "社会观察"),
     },
     "commerce": {
         "default": ("租房好物", "小家电", "买前对照"),
@@ -144,9 +159,23 @@ HASHTAG_BANNED = frozenset(
 
 PUBLISH_STEPS_USER = (
     "1. mp.weixin.qq.com 打开草稿 → 预览",
-    "2. 发布时勾选「原创」（分类选财经/科技）",
+    "2. 发布时勾选「原创」（分类选社会/娱乐/资讯，勿默认财经）",
     "3. 发布成功后点文章右侧 #，粘贴下方推荐话题（最多 5 个）",
-    "4. 可选：文末或朋友圈提醒读者点「推荐 ♡」（朋友推荐流权重高）",
+    "4. 可选：文末星标引导；tv_review 可弱化推荐 ♡",
+)
+
+PUBLISH_STEPS_HOTSPOT = (
+    "1. mp.weixin.qq.com 草稿 → 预览",
+    "2. 勾选「原创」（分类选社会/娱乐/资讯）",
+    "3. # 话题优先实体词（案由/片名/事件），勿 #A股 打头",
+    "4. 确认摘要含「热点观察」或标题实体词已在正文首段出现",
+)
+
+PUBLISH_STEPS_TV_REVIEW = (
+    "1. mp.weixin.qq.com 草稿 → 预览正文剧照与封面",
+    "2. 勾选「原创」（分类选 生活/娱乐，勿选财经）",
+    "3. 确认配图说明在文末；敏感剧照勿留",
+    "4. 发布成功后 # 话题（美剧/HBO/剧评等，最多 5 个）",
 )
 
 
@@ -204,25 +233,46 @@ def title_front_has_search_keywords(
 
 
 def title_sousou_hook_score(title: str, kind: str) -> int:
-    """搜一搜看板验证过的标题句式加分（2026-06 牛马也智能）。"""
+    """标题句式加分：优先平台推荐安全表述（2026-06 调整后）。"""
     t = title or ""
     if kind == "dragons":
         return (
-            (2 if "怎么玩" in t else 0)
-            + (2 if "还在榜" in t else 0)
+            (2 if "梯队" in t or "结构" in t else 0)
+            + (2 if "连板" in t or "观察" in t or re.search(r"\d板", t) else 0)
             + (1 if "情绪" in t[:18] else 0)
+            - (3 if "怎么玩" in t else 0)
+            - (3 if "还在榜" in t else 0)
         )
     if kind == "top5":
         return (
-            (2 if "领衔" in t else 0)
-            + (2 if "收盘信号" in t else 0)
-            + (1 if "明日盯" in t else 0)
+            (2 if "结构" in t or "观察" in t else 0)
+            + (2 if "待验证" in t or "怎么读" in t else 0)
+            + (1 if "A股" in t[:15] else 0)
+            - (3 if "领衔" in t or "收盘信号" in t or "明日盯" in t else 0)
         )
     if kind == "sector":
         return (
             (2 if "产业链" in t else 0)
-            + (2 if "怎么拆" in t or "怎么跟" in t else 0)
+            + (2 if "怎么拆" in t else 0)
             + (1 if "A股" in t[:15] or "行业" in t[:15] else 0)
+            - (2 if "怎么跟" in t or "领衔" in t else 0)
+        )
+    if kind == "news":
+        return (
+            (2 if "快讯" in t or "要闻" in t or "人气" in t else 0)
+            + (1 if "对照" in t else 0)
+            - (2 if "领衔" in t or "热股" in t else 0)
+            - (3 if "必读" in t else 0)
+            - (2 if "怎么读" in t else 0)
+        )
+    if kind in {"hotspot", "tv_review"}:
+        front = t[:15]
+        return (
+            (2 if re.search(r"\d", front) else 0)
+            + (1 if any(k in front for k in ("热点", "社会", "话题", "事件")) else 0)
+            + (1 if len(front.strip()) >= 10 else 0)
+            - (3 if "A股" in front[:6] else 0)
+            - (2 if "复盘" in front or "龙头" in front else 0)
         )
     return 0
 
@@ -269,11 +319,17 @@ def enrich_title_for_search(
     if not kind or kind not in TITLE_SEO_KEYWORDS:
         return t
     if title_front_has_search_keywords(t, kind, edition=edition):
-        return t
+        from scripts.tools.wechat_mp_public import sanitize_public_title
+
+        return sanitize_public_title(t, kind=kind)
     prefix = _title_seo_prefix(kind, edition=edition)
     if not prefix or t.startswith(prefix.rstrip("｜")):
-        return t
-    return clip(f"{prefix}{t}")
+        from scripts.tools.wechat_mp_public import sanitize_public_title
+
+        return sanitize_public_title(t, kind=kind)
+    from scripts.tools.wechat_mp_public import sanitize_public_title
+
+    return sanitize_public_title(clip(f"{prefix}{t}"), kind=kind)
 
 
 def _digest_contains_keyword(digest: str, keyword: str) -> bool:
@@ -457,7 +513,8 @@ def sync_article_content_from_body(
 
 
 def format_publish_reminder(*, kind: str | None = None) -> str:
-    if (kind or "").strip().lower() == "commerce":
+    k = (kind or "").strip().lower()
+    if k == "commerce":
         import os
 
         auto = os.getenv("WECHAT_MP_COMMERCE_AUTO_PUBLISH", "0").lower() in (
@@ -468,6 +525,10 @@ def format_publish_reminder(*, kind: str | None = None) -> str:
         )
         steps = PUBLISH_STEPS_COMMERCE_AUTO if auto else PUBLISH_STEPS_COMMERCE
         return "发布提醒: " + " → ".join(steps)
+    if k == "tv_review":
+        return "发布提醒: " + " → ".join(PUBLISH_STEPS_TV_REVIEW)
+    if k == "hotspot":
+        return "发布提醒: " + " → ".join(PUBLISH_STEPS_HOTSPOT)
     return "发布提醒: " + " → ".join(PUBLISH_STEPS_USER)
 
 

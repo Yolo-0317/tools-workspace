@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""LLM 统一封装：DeepSeek API 或 Cursor CLI（agent --model auto）。"""
+"""LLM 统一封装：DeepSeek API 或 Cursor CLI（agent --model composer-2.5）。"""
 
 from __future__ import annotations
 
 import os
 import time
+from pathlib import Path
+from typing import Any
 
 import requests
 
@@ -28,6 +30,52 @@ def llm_backend() -> str:
 def sop_llm_backend() -> str:
     """东财 SOP 并发终审：默认 deepseek，与 LLM_BACKEND 解耦。"""
     return os.getenv("SOP_LLM_BACKEND", "deepseek").strip().lower()
+
+
+def wechat_mp_llm_backend() -> str:
+    """公众号长文成稿：固定 cursor / Composer（已弃用 DeepSeek API 写稿）。"""
+    return "cursor"
+
+
+def wechat_mp_llm_model() -> str | None:
+    """Composer 模型 slug；默认 CURSOR_AGENT_MODEL（composer-2.5）。"""
+    explicit = os.getenv("WECHAT_MP_LLM_MODEL", "").strip()
+    if explicit:
+        return explicit
+    return _cursor_model(None)
+
+
+def is_wechat_mp_llm_configured() -> bool:
+    return is_llm_configured(backend="cursor")
+
+
+def call_wechat_mp_llm(
+    messages: list[dict[str, str]],
+    *,
+    max_retries: int | None = None,
+    **kwargs: Any,
+) -> str:
+    """公众号长文成稿：Composer（cursor CLI），不经 DeepSeek API。"""
+    if max_retries is None:
+        max_retries = _env_int("WECHAT_MP_CURSOR_MAX_RETRIES", 1)
+    timeout_s = _env_float("WECHAT_MP_CURSOR_TIMEOUT_SECONDS", 420)
+    kwargs.setdefault("backend", "cursor")
+    kwargs.setdefault("model", wechat_mp_llm_model())
+    kwargs.setdefault("workspace", _wechat_mp_agent_workspace())
+    return call_deepseek(
+        messages,
+        max_retries=max_retries,
+        timeout=(10.0, timeout_s),
+        **kwargs,
+    )
+
+
+def _wechat_mp_agent_workspace() -> Path:
+    """Use a minimal workspace so article generation avoids investment-agent memory."""
+    configured = os.getenv("WECHAT_MP_CURSOR_WORKSPACE", "").strip()
+    if configured:
+        return Path(configured).expanduser().resolve()
+    return Path(__file__).resolve().parents[2] / "agent-workspaces" / "wechat-writer"
 
 
 def _resolve_backend(explicit: str | None) -> str:
@@ -67,7 +115,7 @@ def _api_key() -> str:
 
 
 def _cursor_model(explicit: str | None) -> str:
-    return explicit or os.getenv("CURSOR_AGENT_MODEL", "auto")
+    return explicit or os.getenv("CURSOR_AGENT_MODEL", "composer-2.5")
 
 
 def call_deepseek(
@@ -79,14 +127,24 @@ def call_deepseek(
     model: str | None = None,
     timeout: tuple[float, float] | None = None,
     backend: str | None = None,
+    workspace: Path | None = None,
 ) -> str:
     """Chat Completions（messages 列表）。backend 覆盖 LLM_BACKEND（SOP 传 sop_llm_backend()）。"""
     if _resolve_backend(backend) == "cursor":
-        _ = temperature, max_tokens, timeout  # Cursor CLI 不支持细粒度采样参数
+        _ = temperature, max_tokens
+        cursor_timeout = _env_float("CURSOR_AGENT_TIMEOUT_SECONDS", 300)
+        if timeout is not None:
+            cursor_timeout = (
+                float(timeout[1])
+                if isinstance(timeout, tuple)
+                else float(timeout)
+            )
         return call_cursor_agent(
             messages_to_prompt(messages),
             model=_cursor_model(model),
+            workspace=workspace,
             max_retries=max_retries,
+            timeout_seconds=cursor_timeout,
         )
 
     max_retries = max_retries if max_retries is not None else _env_int("DEEPSEEK_RETRIES", 3)

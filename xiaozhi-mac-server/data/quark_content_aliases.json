@@ -1,0 +1,341 @@
+{
+  "abadas": {
+    "title": "Abadas 儿童学单词",
+    "aliases": [
+      "abadas",
+      "阿巴达斯"
+    ],
+    "path_hint": "玥玥/002.BBC英语动画【小优趣系列精选20部】/12-儿童学习单词 Abadas【BBC系列】",
+    "search_queries": [
+      "Abadas mp3",
+      "儿童学习单词 Abadas 音频",
+      "玥玥 Abadas"
+    ],
+    "filename_boost": [
+      "abadas",
+      "Abadas"
+    ],
+    "media_hint": "story_audio"
+  },
+  "steve_maggie": {
+    "title": "Wow English / Steve and Maggie",
+    "aliases": [
+      "wow english",
+      "wowenglish",
+      "哇英语",
+      "wow 英语",
+      "wattsenglish",
+      "watts english",
+      "steve and maggie",
+      "steve maggie",
+      "史蒂夫和玛吉",
+      "史蒂夫玛吉",
+      "玛吉和史蒂夫",
+      "玛吉"
+    ],
+    "path_hint": "玥玥/002.BBC英语动画【小优趣系列精选20部】/06.儿歌  Songs for kids  Sing with Steve and Maggie更新至30集",
+    "series_map": "data/quark_series_maps/steve_maggie.json",
+    "search_queries": [
+      "Wow English TV Steve Maggie",
+      "Steve and Maggie mp3",
+      "Wow English 音频",
+      "Songs for kids Steve mp3",
+      "玥玥 Steve and Maggie"
+    ],
+    "filename_boost": [
+      "wow english",
+      "steve",
+      "maggie"
+    ],
+    "media_hint": "story_audio"
+  },
+  "bitz_bob": {
+    "title": "Bitz and Bob 小贝大发明",
+    "aliases": [
+      "bitz and bob",
+      "bitz bob",
+      "小贝大发明"
+    ],
+    "path_hint": "玥玥/002.BBC英语动画【小优趣系列精选20部】/19 - 小贝大发明STEM动画Bitz.&.Bob",
+    "search_queries": [
+      "Bitz Bob mp3",
+      "小贝大发明 音频"
+    ],
+    "filename_boost": [
+      "bitz",
+      "bob",
+      "小贝"
+    ],
+    "media_hint": "story_audio"
+  },
+  "yakka_dee": {
+    "title": "Yakka Dee 开口说单词",
+    "aliases": [
+      "yakka dee",
+      "yakkadee",
+      "开口说单词"
+    ],
+    "path_hint": "玥玥/002.BBC英语动画【小优趣系列精选20部】/01-开口说单词 Yakka Dee（1-5季）",
+    "search_queries": [
+      "Yakka Dee mp3",
+      "开口说单词 音频"
+    ],
+    "filename_boost": [
+      "yakka",
+      "dee"
+    ],
+    "media_hint": "story_audio"
+  },
+  "penelope": {
+    "title": "Penelope 蓝色小考拉",
+    "aliases": [
+      "penelope",
+      "蓝色小考拉",
+      "蓝色考拉",
+      "小考拉",
+      "小考拉 penelope"
+    ],
+    "path_hint": "玥玥/002.BBC英语动画【小优趣系列精选20部】/09-蓝色小考拉Penelope【中英双版+绘本台词+译文+故事会】",
+    "search_queries": [
+      "Penelope mp3",
+      "蓝色小考拉 音频"
+    ],
+    "filename_boost": [
+      "penelope",
+      "小考拉"
+    ],
+    "media_hint": "story_audio"
+  },
+  "bluey": {
+    "title": "Bluey 布鲁伊",
+    "aliases": [
+      "bluey",
+      "布鲁伊"
+    ],
+    "path_hint": "玥玥/002.BBC英语动画【小优趣系列精选20部】/03-布鲁伊Bluey（中文版+英文版）",
+    "search_queries": [
+      "Bluey mp3",
+      "布鲁伊 音频"
+    ],
+    "filename_boost": [
+      "bluey",
+      "布鲁伊"
+    ],
+    "media_hint": "story_audio"
+  },
+  "frozen": {
+    "title": "冰雪奇缘 Frozen",
+    "aliases": [
+      "frozen",
+      "冰雪奇缘",
+      "艾莎",
+      "爱莎",
+      "elsa",
+      "安娜",
+      "爱莎公主",
+      "艾莎公主"
+    ],
+    "path_hint": "玥玥/冰雪奇缘",
+    "series_map": "data/quark_series_maps/frozen.json",
+    "search_queries": [
+      "冰雪奇缘 mp3",
+      "Frozen 音频",
+      "玥玥 冰雪奇缘"
+    ],
+    "filename_boost": [
+      "frozen",
+      "冰雪奇缘",
+      "艾莎",
+      "爱莎"
+    ],
+    "media_hint": "story_audio"
+  },
+  "harry_potter": {
+    "title": "哈利波特",
+    "aliases": [
+      "harry potter",
+      "哈利波特",
+      "魔法石",
+      "霍格沃茨"
+    ],
+    "path_hint": "玥玥/《哈利波特》1-8合集 1080P 人人影视内嵌中英硬字幕",
+    "search_queries": [
+      "哈利波特 有声",
+      "Harry Potter mp3",
+      "玥玥 哈利波特 音频"
+    ],
+    "filename_boost": [
+      "harry",
+      "potter",
+      "哈利波特"
+    ],
+    "media_hint": "movie"
+  },
+  "tong_laoshi": {
+    "title": "童老师 牛津树精讲",
+    "aliases": [
+      "童老师",
+      "童老师音频",
+      "童老师牛津树",
+      "牛津树童老师",
+      "牛津树",
+      "牛津阅读树",
+      "牛津树精讲",
+      "精讲音频"
+    ],
+    "path_hint": "玥玥/童老师精讲音频/童老师音频课1阶",
+    "search_queries": [
+      "01【正课】Look at Me",
+      "童老师音频课1阶 正课",
+      "童老师 Look at Me 双语讲解"
+    ],
+    "filename_boost": [
+      "童老师",
+      "牛津树"
+    ],
+    "media_hint": "story_audio",
+    "series_map": "data/quark_series_maps/tong_laoshi.json"
+  },
+  "microcosmos": {
+    "title": "微观小世界 昆虫总动员",
+    "aliases": [
+      "微观小世界",
+      "昆虫总动员",
+      "microcosmos",
+      "minuscule"
+    ],
+    "path_hint": "玥玥/001.微观小世界V昆虫总动员 第一季 78集 高清",
+    "search_queries": [
+      "微观小世界 mp3",
+      "昆虫总动员 音频",
+      "Minuscule 音频"
+    ],
+    "filename_boost": [
+      "微观小世界",
+      "昆虫",
+      "minuscule"
+    ],
+    "media_hint": "movie"
+  },
+  "peppa": {
+    "title": "小猪佩奇 Peppa Pig",
+    "aliases": [
+      "peppa",
+      "peppa pig",
+      "小猪佩奇",
+      "佩奇"
+    ],
+    "path_hint": "玥玥/小猪佩奇",
+    "search_queries": [
+      "小猪佩奇 mp3",
+      "Peppa Pig 音频",
+      "玥玥 佩奇 故事"
+    ],
+    "filename_boost": [
+      "peppa",
+      "佩奇",
+      "小猪佩奇"
+    ],
+    "media_hint": "story_audio"
+  },
+  "journey_west": {
+    "title": "西游记儿童广播剧",
+    "aliases": [
+      "西游记",
+      "西游记广播剧",
+      "美猴王",
+      "孙悟空",
+      "唐僧",
+      "journey to the west",
+      "xiyouji"
+    ],
+    "path_hint": "玥玥/04.【完结】西游记儿童广播剧",
+    "series_map": "data/quark_series_maps/journey_west.json",
+    "search_queries": [
+      "第一回 美猴王",
+      "第六十回 孙悟空",
+      "第一百七十回",
+      "西游记儿童广播剧",
+      "满到归根"
+    ],
+    "filename_boost": [
+      "回",
+      "孙悟空",
+      "唐僧",
+      "美猴王"
+    ],
+    "media_hint": "story_audio"
+  },
+  "frozen_movie": {
+    "title": "冰雪奇缘电影（英文音轨）",
+    "aliases": [
+      "冰雪奇缘英文版",
+      "冰雪奇缘英语版",
+      "冰雪奇缘英文",
+      "冰雪奇缘英语",
+      "艾莎英文版",
+      "爱莎英文版",
+      "elsa english",
+      "frozen english",
+      "冰雪奇缘电影",
+      "冰雪奇缘第一部英文",
+      "冰雪奇缘第二部英文",
+      "冰雪奇缘二英文版",
+      "英文版冰雪奇缘",
+      "英语版冰雪奇缘"
+    ],
+    "path_hint": "玥玥",
+    "series_map": "data/quark_series_maps/frozen_movie.json",
+    "search_queries": [
+      "01-冰雪奇缘1-英文音轨.mp3",
+      "02-冰雪奇缘2-英文音轨.mp3",
+      "英文音轨.mp3"
+    ],
+    "filename_boost": [
+      "英文音轨",
+      "冰雪奇缘1",
+      "冰雪奇缘2"
+    ],
+    "media_hint": "story_audio"
+  },
+  "barbapapa": {
+    "title": "巴巴爸爸",
+    "aliases": [
+      "巴巴爸爸",
+      "barbapapa",
+      "巴巴爸",
+      "巴巴妈妈"
+    ],
+    "path_hint": "玥玥/巴巴爸爸",
+    "series_map": "data/quark_series_maps/barbapapa.json",
+    "search_queries": [
+      "001.01巴巴爸爸的诞生",
+      "巴巴爸爸 mp3"
+    ],
+    "filename_boost": [
+      "巴巴爸爸",
+      "巴巴"
+    ],
+    "media_hint": "story_audio"
+  },
+  "popo_detective": {
+    "title": "屁屁侦探",
+    "aliases": [
+      "屁屁侦探",
+      "屁屁偵探",
+      "おしりたんてい",
+      "butt detective",
+      "屁股侦探"
+    ],
+    "path_hint": "玥玥/屁屁侦探",
+    "series_map": "data/quark_series_maps/popo_detective.json",
+    "search_queries": [
+      "1_屁屁侦探-消失的人气甜点",
+      "屁屁侦探 mp3"
+    ],
+    "filename_boost": [
+      "屁屁侦探"
+    ],
+    "media_hint": "story_audio"
+  }
+}

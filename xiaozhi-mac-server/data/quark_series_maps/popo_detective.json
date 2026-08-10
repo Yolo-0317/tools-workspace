@@ -1,0 +1,1156 @@
+{
+  "catalog_key": "popo_detective",
+  "title": "屁屁侦探",
+  "path_hint": "玥玥/屁屁侦探",
+  "built_at": "2026-07-29T20:59:18+08:00",
+  "source": "Quark Open API search index",
+  "rules": {
+    "default_play": "global_n=1 → 1_屁屁侦探-消失的人气甜点 .mp3",
+    "scope": "93 episodes indexed"
+  },
+  "default_start": {
+    "global_n": 1,
+    "season": 1,
+    "season_ep": 1,
+    "filename": "1_屁屁侦探-消失的人气甜点 .mp3",
+    "title": "1_屁屁侦探-消失的人气甜点 ",
+    "fid": "~1SCcPYQvtUV42xvFHlAaYz8GvCjtDX6VNStKWcw-LrwhT6hvjbsP4hLIZy5KsQt1dDm1tc4Hht1wf4Sw7tNuqGg",
+    "fids": [
+      "~1SCcPYQvtUV42xvFHlAaYz8GvCjtDX6VNStKWcw-LrwhT6hvjbsP4hLIZy5KsQt1dDm1tc4Hht1wf4Sw7tNuqGg"
+    ],
+    "size": 7302294
+  },
+  "seasons": [
+    {
+      "id": 1,
+      "label": "屁屁侦探",
+      "aliases": [],
+      "episode_count": 93,
+      "global_range": [
+        1,
+        93
+      ],
+      "first_filename": "1_屁屁侦探-消失的人气甜点 .mp3",
+      "last_filename": "93_屁屁侦探-噗噗~深海遗址探秘 （6） .mp3"
+    }
+  ],
+  "episode_count": 93,
+  "episodes": [
+    {
+      "global_n": 1,
+      "season": 1,
+      "season_ep": 1,
+      "filename": "1_屁屁侦探-消失的人气甜点 .mp3",
+      "title": "1_屁屁侦探-消失的人气甜点 ",
+      "fid": "~1SCcPYQvtUV42xvFHlAaYz8GvCjtDX6VNStKWcw-LrwhT6hvjbsP4hLIZy5KsQt1dDm1tc4Hht1wf4Sw7tNuqGg",
+      "fids": [
+        "~1SCcPYQvtUV42xvFHlAaYz8GvCjtDX6VNStKWcw-LrwhT6hvjbsP4hLIZy5KsQt1dDm1tc4Hht1wf4Sw7tNuqGg"
+      ],
+      "size": 7302294
+    },
+    {
+      "global_n": 2,
+      "season": 1,
+      "season_ep": 2,
+      "filename": "2_屁屁侦探-寻找彩虹宝石 .mp3",
+      "title": "2_屁屁侦探-寻找彩虹宝石 ",
+      "fid": "~15_DCWgViAgoWEq8ghElFWteh3ZrUsUzF24nv3i-Ma5aXTWIvT0PsJ3M_u0YLROJWGXX76jIeoFw_pihSdXtAgo",
+      "fids": [
+        "~15_DCWgViAgoWEq8ghElFWteh3ZrUsUzF24nv3i-Ma5aXTWIvT0PsJ3M_u0YLROJWGXX76jIeoFw_pihSdXtAgo"
+      ],
+      "size": 4012913
+    },
+    {
+      "global_n": 3,
+      "season": 1,
+      "season_ep": 3,
+      "filename": "3_屁屁侦探-小局长的大危机 .mp3",
+      "title": "3_屁屁侦探-小局长的大危机 ",
+      "fid": "~13mh5YiMdeYwkSGnJMSzLEBrA0eOnfGBRfx0svpn7amwtvQKnOvP264-bagKBbRkgziE4fmL6GpUIFwU6lbPjXE",
+      "fids": [
+        "~13mh5YiMdeYwkSGnJMSzLEBrA0eOnfGBRfx0svpn7amwtvQKnOvP264-bagKBbRkgziE4fmL6GpUIFwU6lbPjXE"
+      ],
+      "size": 3786518
+    },
+    {
+      "global_n": 4,
+      "season": 1,
+      "season_ep": 4,
+      "filename": "4_屁屁侦探-失踪的便当之谜 .mp3",
+      "title": "4_屁屁侦探-失踪的便当之谜 ",
+      "fid": "~1GwqvhL5m-_0sbK5_v35NwDyjPrjt6ySFSANS41v7jp45LMEWvMyuzwfdEckNjW_71vS_3UkNt0LkWj04dkYMYg",
+      "fids": [
+        "~1GwqvhL5m-_0sbK5_v35NwDyjPrjt6ySFSANS41v7jp45LMEWvMyuzwfdEckNjW_71vS_3UkNt0LkWj04dkYMYg"
+      ],
+      "size": 5010689
+    },
+    {
+      "global_n": 5,
+      "season": 1,
+      "season_ep": 5,
+      "filename": "5_屁屁侦探-怪盗现身 .mp3",
+      "title": "5_屁屁侦探-怪盗现身 ",
+      "fid": "~17EgH8YUEOxA3WQCz9UiB5mG7WfhrTm9bmVekSrXnCcn442gvyK3vhKYkyy_pHL0MK_y5PLEdz4_lY_MKKkAiEs",
+      "fids": [
+        "~17EgH8YUEOxA3WQCz9UiB5mG7WfhrTm9bmVekSrXnCcn442gvyK3vhKYkyy_pHL0MK_y5PLEdz4_lY_MKKkAiEs"
+      ],
+      "size": 4504324
+    },
+    {
+      "global_n": 6,
+      "season": 1,
+      "season_ep": 6,
+      "filename": "6_屁屁侦探-真假屁屁侦探 .mp3",
+      "title": "6_屁屁侦探-真假屁屁侦探 ",
+      "fid": "~1hTVHaGJo4PAaEn4IvNDJ4N04U7aDaoE7r2N5r9uecF81Q3DZveA-yhNXwPm8NwHNRmhyKCYB90P_wHFGdO7KRo",
+      "fids": [
+        "~1hTVHaGJo4PAaEn4IvNDJ4N04U7aDaoE7r2N5r9uecF81Q3DZveA-yhNXwPm8NwHNRmhyKCYB90P_wHFGdO7KRo"
+      ],
+      "size": 6114014
+    },
+    {
+      "global_n": 7,
+      "season": 1,
+      "season_ep": 7,
+      "filename": "7_屁屁侦探-深深山的大雪怪 .mp3",
+      "title": "7_屁屁侦探-深深山的大雪怪 ",
+      "fid": "~1GKoVVAXNhTQ7vMoxEO9yKeg6W80bD1DVU96sxPx8j5JBjLLutTZ_pCNnGIlHJotyRuaESmps1XsXPbCzuB0_k8",
+      "fids": [
+        "~1GKoVVAXNhTQ7vMoxEO9yKeg6W80bD1DVU96sxPx8j5JBjLLutTZ_pCNnGIlHJotyRuaESmps1XsXPbCzuB0_k8"
+      ],
+      "size": 5566298
+    },
+    {
+      "global_n": 8,
+      "season": 1,
+      "season_ep": 8,
+      "filename": "8_屁屁侦探-紫衣夫人的密码事件（上） .mp3",
+      "title": "8_屁屁侦探-紫衣夫人的密码事件（上） ",
+      "fid": "~1G3A-nTs5UIMgXFKcK14Mjk5qLNNXs9KK9IoUZHB01CosAiPUbaVIyM8P1UR2HbYDYoBAE1BWUR_UEXIkhHc6EM",
+      "fids": [
+        "~1G3A-nTs5UIMgXFKcK14Mjk5qLNNXs9KK9IoUZHB01CosAiPUbaVIyM8P1UR2HbYDYoBAE1BWUR_UEXIkhHc6EM"
+      ],
+      "size": 3469397
+    },
+    {
+      "global_n": 9,
+      "season": 1,
+      "season_ep": 9,
+      "filename": "9_屁屁侦探-紫衣夫人的密码事件（下） .mp3",
+      "title": "9_屁屁侦探-紫衣夫人的密码事件（下） ",
+      "fid": "~1ylunblNQZj4z8mtVj83zfMglkpMeqLifVJTVSf58K9D5qjEn3A0gjiRV5TX8QxumVUKyILI9FZdpCS9ckyH1sw",
+      "fids": [
+        "~1ylunblNQZj4z8mtVj83zfMglkpMeqLifVJTVSf58K9D5qjEn3A0gjiRV5TX8QxumVUKyILI9FZdpCS9ckyH1sw"
+      ],
+      "size": 3593193
+    },
+    {
+      "global_n": 10,
+      "season": 1,
+      "season_ep": 10,
+      "filename": "10_屁屁侦探-是谁偷走了鸡蛋布丁 .mp3",
+      "title": "10_屁屁侦探-是谁偷走了鸡蛋布丁 ",
+      "fid": "~14tii12xw-3UFVcXoNPYamKdOJ8xi_7KQtj0DagHDQwdAa9HaLMzplE7-14YDYbk77ePKRCm5m6YUqZLifxuF3g",
+      "fids": [
+        "~14tii12xw-3UFVcXoNPYamKdOJ8xi_7KQtj0DagHDQwdAa9HaLMzplE7-14YDYbk77ePKRCm5m6YUqZLifxuF3g"
+      ],
+      "size": 3711054
+    },
+    {
+      "global_n": 11,
+      "season": 1,
+      "season_ep": 11,
+      "filename": "11_屁屁侦探-消失在黑夜里的巨人（上） .mp3",
+      "title": "11_屁屁侦探-消失在黑夜里的巨人（上） ",
+      "fid": "~1YKNuibjHc9UfpEtu1HFXh0WeIA5hsrpqfvOFuYekj2iZr6-DZVnbgpzg73iyMLiVSq47dtuV6JNHFSDsFExUds",
+      "fids": [
+        "~1YKNuibjHc9UfpEtu1HFXh0WeIA5hsrpqfvOFuYekj2iZr6-DZVnbgpzg73iyMLiVSq47dtuV6JNHFSDsFExUds"
+      ],
+      "size": 3582735
+    },
+    {
+      "global_n": 12,
+      "season": 1,
+      "season_ep": 12,
+      "filename": "12_屁屁侦探-消失在黑夜里的巨人（下） .mp3",
+      "title": "12_屁屁侦探-消失在黑夜里的巨人（下） ",
+      "fid": "~1yIaj_cHTVccL9Bv0l-2kEqKMOmpJ_DN6U-BmV0URb6pnGHNFoMymVQJEyUr04Cuy8AUJ5U1Xnmfh8AGedK1f3E",
+      "fids": [
+        "~1yIaj_cHTVccL9Bv0l-2kEqKMOmpJ_DN6U-BmV0URb6pnGHNFoMymVQJEyUr04Cuy8AUJ5U1Xnmfh8AGedK1f3E"
+      ],
+      "size": 3208238
+    },
+    {
+      "global_n": 13,
+      "season": 1,
+      "season_ep": 13,
+      "filename": "13_屁屁侦探-客人的失物 .mp3",
+      "title": "13_屁屁侦探-客人的失物 ",
+      "fid": "~1LpPX5XERkAgfDgpnL-CcfSZb-MOF-QpBlXYbkBhBrG9Ak53rOSNuN71d88xBPAHZZFLEZkVp5uKtDaimaJo6qU",
+      "fids": [
+        "~1LpPX5XERkAgfDgpnL-CcfSZb-MOF-QpBlXYbkBhBrG9Ak53rOSNuN71d88xBPAHZZFLEZkVp5uKtDaimaJo6qU"
+      ],
+      "size": 3610729
+    },
+    {
+      "global_n": 14,
+      "season": 1,
+      "season_ep": 14,
+      "filename": "14_屁屁侦探-黑影盗窃团来袭(上) .mp3",
+      "title": "14_屁屁侦探-黑影盗窃团来袭(上) ",
+      "fid": "~1SD848EUHgOg90tNh-3FRV7ojmVCfJ5U5VIAdAGwSWmam-IB7S57ifLlJHSvqEHaCrABd3xE4w9YaIPmCMgc8Qg",
+      "fids": [
+        "~1SD848EUHgOg90tNh-3FRV7ojmVCfJ5U5VIAdAGwSWmam-IB7S57ifLlJHSvqEHaCrABd3xE4w9YaIPmCMgc8Qg"
+      ],
+      "size": 5138952
+    },
+    {
+      "global_n": 15,
+      "season": 1,
+      "season_ep": 15,
+      "filename": "15_屁屁侦探-黑影盗窃团来袭(下） .mp3",
+      "title": "15_屁屁侦探-黑影盗窃团来袭(下） ",
+      "fid": "~1uqPj2jsj6jwt36wIhvLx2pvqKP2lZdwQ00mOXywPUUnqKIdbAbQ6ByfJAJVUkVifnAdvzPJp0tFqLlfN9eyEOA",
+      "fids": [
+        "~1uqPj2jsj6jwt36wIhvLx2pvqKP2lZdwQ00mOXywPUUnqKIdbAbQ6ByfJAJVUkVifnAdvzPJp0tFqLlfN9eyEOA"
+      ],
+      "size": 4229132
+    },
+    {
+      "global_n": 16,
+      "season": 1,
+      "season_ep": 16,
+      "filename": "16_屁屁侦探-飘浮在理发店里的幽灵 .mp3",
+      "title": "16_屁屁侦探-飘浮在理发店里的幽灵 ",
+      "fid": "~1a_t7aECJ3rAlXNWrRoJAhUdx-D7BWDp-7_5R2-CWNkHE1a99k9NG-3pmEs_Rby-6u8Xx-Sesox0ufRNvQT1dO4",
+      "fids": [
+        "~1a_t7aECJ3rAlXNWrRoJAhUdx-D7BWDp-7_5R2-CWNkHE1a99k9NG-3pmEs_Rby-6u8Xx-Sesox0ufRNvQT1dO4"
+      ],
+      "size": 4254840
+    },
+    {
+      "global_n": 17,
+      "season": 1,
+      "season_ep": 17,
+      "filename": "17_屁屁侦探-怪盗VS侦探（上） .mp3",
+      "title": "17_屁屁侦探-怪盗VS侦探（上） ",
+      "fid": "~15OQIqmTfPdMy9InJkVrKzJoWZG3MZ8puStgqh2GTBQOHF0sZ5iEcfTyA8FyTowxneEFFIjmM-g8ytKeUxl9SUU",
+      "fids": [
+        "~15OQIqmTfPdMy9InJkVrKzJoWZG3MZ8puStgqh2GTBQOHF0sZ5iEcfTyA8FyTowxneEFFIjmM-g8ytKeUxl9SUU"
+      ],
+      "size": 3567473
+    },
+    {
+      "global_n": 18,
+      "season": 1,
+      "season_ep": 18,
+      "filename": "18_屁屁侦探-怪盗VS侦探（下） .mp3",
+      "title": "18_屁屁侦探-怪盗VS侦探（下） ",
+      "fid": "~1ZB0pBGUOVs4zVY2OI7hKXJp0cJCvPdGFLRQJCSwdQThI5Y14I8EINXfhfHnZcdjtw3Ex9tgC2Wy3r-MtpeyEQM",
+      "fids": [
+        "~1ZB0pBGUOVs4zVY2OI7hKXJp0cJCvPdGFLRQJCSwdQThI5Y14I8EINXfhfHnZcdjtw3Ex9tgC2Wy3r-MtpeyEQM"
+      ],
+      "size": 3546840
+    },
+    {
+      "global_n": 19,
+      "season": 1,
+      "season_ep": 19,
+      "filename": "19_屁屁侦探-布朗上学记（上） .mp3",
+      "title": "19_屁屁侦探-布朗上学记（上） ",
+      "fid": "~19Rx0pekhvjg3UAUfi8m4ioVvlDlyCvbawn5fKZpqNmihTEgnUcURh6WdqON7aBRM7Vb4MkitCEobSbiFOD8jvs",
+      "fids": [
+        "~19Rx0pekhvjg3UAUfi8m4ioVvlDlyCvbawn5fKZpqNmihTEgnUcURh6WdqON7aBRM7Vb4MkitCEobSbiFOD8jvs"
+      ],
+      "size": 2949902
+    },
+    {
+      "global_n": 20,
+      "season": 1,
+      "season_ep": 20,
+      "filename": "20_屁屁侦探-布朗上学记（下） .mp3",
+      "title": "20_屁屁侦探-布朗上学记（下） ",
+      "fid": "~1s4lJeQJxGr8jR0AFGalsrZ6tOhiPZzgXtbf62Vlj_lPLdRD_AvyHNDJ-7HRNOEtpin5g3kbXjY54wDuVZDAyb8",
+      "fids": [
+        "~1s4lJeQJxGr8jR0AFGalsrZ6tOhiPZzgXtbf62Vlj_lPLdRD_AvyHNDJ-7HRNOEtpin5g3kbXjY54wDuVZDAyb8"
+      ],
+      "size": 2862283
+    },
+    {
+      "global_n": 21,
+      "season": 1,
+      "season_ep": 21,
+      "filename": "21_屁屁侦探-来自遗址的求救信（上） .mp3",
+      "title": "21_屁屁侦探-来自遗址的求救信（上） ",
+      "fid": "~1lDi0wxvlGaoL1ptAMYwEyXTAIlO9Kpe4ksTJUftbT7gaGblMNhBqRCvop0I_KyamKLoRUD3RqYykVzVbmCwk7Q",
+      "fids": [
+        "~1lDi0wxvlGaoL1ptAMYwEyXTAIlO9Kpe4ksTJUftbT7gaGblMNhBqRCvop0I_KyamKLoRUD3RqYykVzVbmCwk7Q"
+      ],
+      "size": 3967973
+    },
+    {
+      "global_n": 22,
+      "season": 1,
+      "season_ep": 22,
+      "filename": "22_屁屁侦探-来自遗址的求救信（下） .mp3",
+      "title": "22_屁屁侦探-来自遗址的求救信（下） ",
+      "fid": "~1bkjiCHxQ9Hg9ibYEsizjAjIaw_7EhWC4-4h9sQFVt-xKBHvVhD3E2egJDfs0_8nAOjMzNl5ZpEt9QYxwH9nTmI",
+      "fids": [
+        "~1bkjiCHxQ9Hg9ibYEsizjAjIaw_7EhWC4-4h9sQFVt-xKBHvVhD3E2egJDfs0_8nAOjMzNl5ZpEt9QYxwH9nTmI"
+      ],
+      "size": 3693813
+    },
+    {
+      "global_n": 23,
+      "season": 1,
+      "season_ep": 23,
+      "filename": "23_屁屁侦探-可疑的访客 .mp3",
+      "title": "23_屁屁侦探-可疑的访客 ",
+      "fid": "~1PJp3TogwOrEFXXhhuPr8Qwt_ch2tuZGS1WJ0PzMSxLQHp8mhxTawfNPagGiY4H-pVCHkYg0yoNqXBgd8Fg_a3o",
+      "fids": [
+        "~1PJp3TogwOrEFXXhhuPr8Qwt_ch2tuZGS1WJ0PzMSxLQHp8mhxTawfNPagGiY4H-pVCHkYg0yoNqXBgd8Fg_a3o"
+      ],
+      "size": 4217261
+    },
+    {
+      "global_n": 24,
+      "season": 1,
+      "season_ep": 24,
+      "filename": "24_屁屁侦探-怪奇侦探事务所（上） .mp3",
+      "title": "24_屁屁侦探-怪奇侦探事务所（上） ",
+      "fid": "~1AAZPEBERkeMA5DAa3nnO8NzgigYnhqEaAljI6hP1MlBxoPUPB_DjsPMPahiYJ1IIdRDq-ZMwNSi-jJuioPSfuI",
+      "fids": [
+        "~1AAZPEBERkeMA5DAa3nnO8NzgigYnhqEaAljI6hP1MlBxoPUPB_DjsPMPahiYJ1IIdRDq-ZMwNSi-jJuioPSfuI"
+      ],
+      "size": 4021674
+    },
+    {
+      "global_n": 25,
+      "season": 1,
+      "season_ep": 25,
+      "filename": "25_屁屁侦探-怪奇侦探事务所（下） .mp3",
+      "title": "25_屁屁侦探-怪奇侦探事务所（下） ",
+      "fid": "~1MIt6iihRJD4w1L7WdJH47nYs2uh-wlMY9sxIkPXCeVe_zkGVSZGazJEvjqQeHNs8R62zXhCcQQ_GHnVxyPUNDw",
+      "fids": [
+        "~1MIt6iihRJD4w1L7WdJH47nYs2uh-wlMY9sxIkPXCeVe_zkGVSZGazJEvjqQeHNs8R62zXhCcQQ_GHnVxyPUNDw"
+      ],
+      "size": 4291046
+    },
+    {
+      "global_n": 26,
+      "season": 1,
+      "season_ep": 26,
+      "filename": "26_屁屁侦探-担心过头的父亲 .mp3",
+      "title": "26_屁屁侦探-担心过头的父亲 ",
+      "fid": "~1vFk8yXtbXQkY2Gd9qyVS8L5_DF_K9kyBYM2P0Kerx-K4wC-q7_DRLwynrMLm7L1l14Um36A0AzbRK25X4rs9B8",
+      "fids": [
+        "~1vFk8yXtbXQkY2Gd9qyVS8L5_DF_K9kyBYM2P0Kerx-K4wC-q7_DRLwynrMLm7L1l14Um36A0AzbRK25X4rs9B8"
+      ],
+      "size": 4010086
+    },
+    {
+      "global_n": 27,
+      "season": 1,
+      "season_ep": 27,
+      "filename": "27_屁屁侦探-观景山庄有妖怪(上) .mp3",
+      "title": "27_屁屁侦探-观景山庄有妖怪(上) ",
+      "fid": "~1YC5weq-PmLgDKK4x5eWC_TQLsVQj_A_yZtSc7HH7mZ74kmxiBMxLbFnJMq76Mlodhh1WVeKw7y__11rHFWe0dk",
+      "fids": [
+        "~1YC5weq-PmLgDKK4x5eWC_TQLsVQj_A_yZtSc7HH7mZ74kmxiBMxLbFnJMq76Mlodhh1WVeKw7y__11rHFWe0dk"
+      ],
+      "size": 4178269
+    },
+    {
+      "global_n": 28,
+      "season": 1,
+      "season_ep": 28,
+      "filename": "28_屁屁侦探-观景山庄有妖怪（下） .mp3",
+      "title": "28_屁屁侦探-观景山庄有妖怪（下） ",
+      "fid": "~1_edwnVUxcxsSmXboOUffvHX4GWK78KrA-akq5RohfCrwLbXUMmHLdWDusp8qkZrZhDYuxkwlrAHZl9rKIoH5fU",
+      "fids": [
+        "~1_edwnVUxcxsSmXboOUffvHX4GWK78KrA-akq5RohfCrwLbXUMmHLdWDusp8qkZrZhDYuxkwlrAHZl9rKIoH5fU"
+      ],
+      "size": 3891378
+    },
+    {
+      "global_n": 29,
+      "season": 1,
+      "season_ep": 29,
+      "filename": "29_屁屁侦探-找不到失主的脏物 .mp3",
+      "title": "29_屁屁侦探-找不到失主的脏物 ",
+      "fid": "~1-lsQd2wESs0ro0nnG1cyN1hcpU9C2gBtmQPvRn5jvdvvWJdXBDA-WHXqqCWtU2Gm6PBsBtSFvMhx1o3lkrvpio",
+      "fids": [
+        "~1-lsQd2wESs0ro0nnG1cyN1hcpU9C2gBtmQPvRn5jvdvvWJdXBDA-WHXqqCWtU2Gm6PBsBtSFvMhx1o3lkrvpio"
+      ],
+      "size": 4594306
+    },
+    {
+      "global_n": 30,
+      "season": 1,
+      "season_ep": 30,
+      "filename": "30_屁屁侦探-被怪盗盯上的新娘（上） .mp3",
+      "title": "30_屁屁侦探-被怪盗盯上的新娘（上） ",
+      "fid": "~1kNMMjpZp_v0g9ziuV91UJYitcqAm-j9FCZMp61Z6XejrgFfNx_SqmWzjLi_svEyUJFQPJLKnr7q8UGHfiPAJeE",
+      "fids": [
+        "~1kNMMjpZp_v0g9ziuV91UJYitcqAm-j9FCZMp61Z6XejrgFfNx_SqmWzjLi_svEyUJFQPJLKnr7q8UGHfiPAJeE"
+      ],
+      "size": 4978437
+    },
+    {
+      "global_n": 31,
+      "season": 1,
+      "season_ep": 31,
+      "filename": "31_屁屁侦探-被怪盗盯上的新娘（下） .mp3",
+      "title": "31_屁屁侦探-被怪盗盯上的新娘（下） ",
+      "fid": "~16n7zzdcOMi4EC3PB_cYa0Nnh1JKgNQCztteQ11oOeJne1Cq8M3SpatItHRWa3IldaGoTgRKqEAoS5Y7klcwvSc",
+      "fids": [
+        "~16n7zzdcOMi4EC3PB_cYa0Nnh1JKgNQCztteQ11oOeJne1Cq8M3SpatItHRWa3IldaGoTgRKqEAoS5Y7klcwvSc"
+      ],
+      "size": 4384587
+    },
+    {
+      "global_n": 32,
+      "season": 1,
+      "season_ep": 32,
+      "filename": "32_屁屁侦探-牢房里的计划 .mp3",
+      "title": "32_屁屁侦探-牢房里的计划 ",
+      "fid": "~1IIgbdBEO6_ImQ4rAkpvVzHiVdqM-3d_qQ71EahHNQcKXH27bbz7Z6KSbGu9NrXjqmUGLj0Bd9XD9BAlqASYgzw",
+      "fids": [
+        "~1IIgbdBEO6_ImQ4rAkpvVzHiVdqM-3d_qQ71EahHNQcKXH27bbz7Z6KSbGu9NrXjqmUGLj0Bd9XD9BAlqASYgzw"
+      ],
+      "size": 5086381
+    },
+    {
+      "global_n": 33,
+      "season": 1,
+      "season_ep": 33,
+      "filename": "33_屁屁侦探-咖喱香料失踪事件（上） .mp3",
+      "title": "33_屁屁侦探-咖喱香料失踪事件（上） ",
+      "fid": "~1B5hZVMR0A9cEzTERtGRcted6jGu30c08pa1wwgZsT3Aipu2QgNeB-gBAZss9drl4h8atS-2VpLQ7YOb-piNaTA",
+      "fids": [
+        "~1B5hZVMR0A9cEzTERtGRcted6jGu30c08pa1wwgZsT3Aipu2QgNeB-gBAZss9drl4h8atS-2VpLQ7YOb-piNaTA"
+      ],
+      "size": 3353797
+    },
+    {
+      "global_n": 34,
+      "season": 1,
+      "season_ep": 34,
+      "filename": "34_屁屁侦探-咖喱香料失踪事件（下） .mp3",
+      "title": "34_屁屁侦探-咖喱香料失踪事件（下） ",
+      "fid": "~1g11hnYDfeO41mtKuyZVGSeDUJmDRNos3sb9zx6QiMZSn49AAcfHO_upUqNZi58ywYRIJW1NjQIB8_vz41RAPbU",
+      "fids": [
+        "~1g11hnYDfeO41mtKuyZVGSeDUJmDRNos3sb9zx6QiMZSn49AAcfHO_upUqNZi58ywYRIJW1NjQIB8_vz41RAPbU"
+      ],
+      "size": 3763342
+    },
+    {
+      "global_n": 35,
+      "season": 1,
+      "season_ep": 35,
+      "filename": "35_屁屁侦探-噗噗~考拉小妹大显神通（上） .mp3",
+      "title": "35_屁屁侦探-噗噗~考拉小妹大显神通（上） ",
+      "fid": "~19UXB20-CXpMSJXc0ajtLqBsEcXL7O31SRBqgpXCCz2IymhEfOkrw6u5sS80dHnU4pfV73cBNQKMQZRFEKO8gE8",
+      "fids": [
+        "~19UXB20-CXpMSJXc0ajtLqBsEcXL7O31SRBqgpXCCz2IymhEfOkrw6u5sS80dHnU4pfV73cBNQKMQZRFEKO8gE8"
+      ],
+      "size": 4123707
+    },
+    {
+      "global_n": 36,
+      "season": 1,
+      "season_ep": 36,
+      "filename": "36_屁屁侦探-噗噗~考拉小妹大显神通（下） .mp3",
+      "title": "36_屁屁侦探-噗噗~考拉小妹大显神通（下） ",
+      "fid": "~1kj11GtI4DMkpAFiVmF2CzDzQXfUyjwc8E_lWbHtIUdafZDzr4oAaZNyBBMBYr--Zk_mUKOEb0PhZJsJ5UKFytY",
+      "fids": [
+        "~1kj11GtI4DMkpAFiVmF2CzDzQXfUyjwc8E_lWbHtIUdafZDzr4oAaZNyBBMBYr--Zk_mUKOEb0PhZJsJ5UKFytY"
+      ],
+      "size": 4754575
+    },
+    {
+      "global_n": 37,
+      "season": 1,
+      "season_ep": 37,
+      "filename": "37_屁屁侦探-圆溜溜的东西真危险(上) .mp3",
+      "title": "37_屁屁侦探-圆溜溜的东西真危险(上) ",
+      "fid": "~1QWZp0FZQgUYQsCgt79-l1sa95iprV8r8lrPdQqEk9nb9XtWi_1Z8FgDyWXTtdtegve2BVEng6e1JpAFBpta7Gs",
+      "fids": [
+        "~1QWZp0FZQgUYQsCgt79-l1sa95iprV8r8lrPdQqEk9nb9XtWi_1Z8FgDyWXTtdtegve2BVEng6e1JpAFBpta7Gs"
+      ],
+      "size": 3986627
+    },
+    {
+      "global_n": 38,
+      "season": 1,
+      "season_ep": 38,
+      "filename": "38_屁屁侦探-圆溜溜的东西真危险（下） .mp3",
+      "title": "38_屁屁侦探-圆溜溜的东西真危险（下） ",
+      "fid": "~1j9V4ufHzrucnwFNxPPL_H_UvZGuT6bh26CWKIWuC5JOs7xwFydCpMtEMrFiyp_uaDP3NDGKMJM_kq77VNf5tDM",
+      "fids": [
+        "~1j9V4ufHzrucnwFNxPPL_H_UvZGuT6bh26CWKIWuC5JOs7xwFydCpMtEMrFiyp_uaDP3NDGKMJM_kq77VNf5tDM"
+      ],
+      "size": 5382874
+    },
+    {
+      "global_n": 39,
+      "season": 1,
+      "season_ep": 39,
+      "filename": "39_屁屁侦探-噗噗~怪盗U夺宝大作战（上） .mp3",
+      "title": "39_屁屁侦探-噗噗~怪盗U夺宝大作战（上） ",
+      "fid": "~1FSf2UkHzjTMwdha8fnalKX0JI6lElxz1MMNN3oTonhTiceydUr9AWWy9MPAg0BkdA0sPOyunXJTnho1CWxzs60",
+      "fids": [
+        "~1FSf2UkHzjTMwdha8fnalKX0JI6lElxz1MMNN3oTonhTiceydUr9AWWy9MPAg0BkdA0sPOyunXJTnho1CWxzs60"
+      ],
+      "size": 3328925
+    },
+    {
+      "global_n": 40,
+      "season": 1,
+      "season_ep": 40,
+      "filename": "40_屁屁侦探-噗噗~怪盗U夺宝大作战（中） .mp3",
+      "title": "40_屁屁侦探-噗噗~怪盗U夺宝大作战（中） ",
+      "fid": "~1Ev_Q0lM9QEEbvSVz0b0QCxMTcbJbTg2_4iw54_rWRrFauN6YD0uhcG0-38KOY73zamX-hrhH_WkqUWrtHYZRMU",
+      "fids": [
+        "~1Ev_Q0lM9QEEbvSVz0b0QCxMTcbJbTg2_4iw54_rWRrFauN6YD0uhcG0-38KOY73zamX-hrhH_WkqUWrtHYZRMU"
+      ],
+      "size": 3650569
+    },
+    {
+      "global_n": 41,
+      "season": 1,
+      "season_ep": 41,
+      "filename": "41_屁屁侦探-噗噗~怪盗U夺宝大作战（下） .mp3",
+      "title": "41_屁屁侦探-噗噗~怪盗U夺宝大作战（下） ",
+      "fid": "~1Mg0w6ojjjWc0R3lfRo0EIBopKa7h-N9Kael43fq7jNNKVF2h7YcggUVky283lvQOJTnGyOELc2QnWoxJyZLbKc",
+      "fids": [
+        "~1Mg0w6ojjjWc0R3lfRo0EIBopKa7h-N9Kael43fq7jNNKVF2h7YcggUVky283lvQOJTnGyOELc2QnWoxJyZLbKc"
+      ],
+      "size": 2862566
+    },
+    {
+      "global_n": 42,
+      "season": 1,
+      "season_ep": 42,
+      "filename": "42_屁屁侦探-噗噗~警官变成了小偷？（上） .mp3",
+      "title": "42_屁屁侦探-噗噗~警官变成了小偷？（上） ",
+      "fid": "~1KBiOMonKpQcM2hyz9D3w_g03NkIO-fDfugYM1QafUpA3CnJaaA7sdFVqybX_Yq1N_SBtKJiIfygGeQkkDbCQac",
+      "fids": [
+        "~1KBiOMonKpQcM2hyz9D3w_g03NkIO-fDfugYM1QafUpA3CnJaaA7sdFVqybX_Yq1N_SBtKJiIfygGeQkkDbCQac"
+      ],
+      "size": 2962903
+    },
+    {
+      "global_n": 43,
+      "season": 1,
+      "season_ep": 43,
+      "filename": "43_屁屁侦探-噗噗~警官变成了小偷？（中） .mp3",
+      "title": "43_屁屁侦探-噗噗~警官变成了小偷？（中） ",
+      "fid": "~1S6TXezO740E5dNtDfY22554fMirGxlZZRiBPZpbsJDfMuZEQjOBw_ja2UFD466ZdPhg3iu34J1s_iBnaDGPaps",
+      "fids": [
+        "~1S6TXezO740E5dNtDfY22554fMirGxlZZRiBPZpbsJDfMuZEQjOBw_ja2UFD466ZdPhg3iu34J1s_iBnaDGPaps"
+      ],
+      "size": 3315936
+    },
+    {
+      "global_n": 44,
+      "season": 1,
+      "season_ep": 44,
+      "filename": "44_屁屁侦探-噗噗~警官变成了小偷？（下） .mp3",
+      "title": "44_屁屁侦探-噗噗~警官变成了小偷？（下） ",
+      "fid": "~1XSCn3AtpeKMZrIkrZ7zgg-4rCeUXjnCV1A9PMhOoL7wqHx1mKDbLTLaXKZnKdvOwCus5ixuvHD_-bO4IxJAjPY",
+      "fids": [
+        "~1XSCn3AtpeKMZrIkrZ7zgg-4rCeUXjnCV1A9PMhOoL7wqHx1mKDbLTLaXKZnKdvOwCus5ixuvHD_-bO4IxJAjPY"
+      ],
+      "size": 2347597
+    },
+    {
+      "global_n": 45,
+      "season": 1,
+      "season_ep": 45,
+      "filename": "45_屁屁侦探-噗噗~陷阱重重的热带雨林（上） .mp3",
+      "title": "45_屁屁侦探-噗噗~陷阱重重的热带雨林（上） ",
+      "fid": "~1_YOPjaKEjVowmAfg9N7vo-iUfS5p1fo4wKDszo4GcKrtzKZ_j76v-Dcz_RL3ZBghedIAQU2QoFpq_4SqspAEM8",
+      "fids": [
+        "~1_YOPjaKEjVowmAfg9N7vo-iUfS5p1fo4wKDszo4GcKrtzKZ_j76v-Dcz_RL3ZBghedIAQU2QoFpq_4SqspAEM8"
+      ],
+      "size": 4841050
+    },
+    {
+      "global_n": 46,
+      "season": 1,
+      "season_ep": 46,
+      "filename": "46_屁屁侦探-噗噗~陷阱重重的热带雨林（下） .mp3",
+      "title": "46_屁屁侦探-噗噗~陷阱重重的热带雨林（下） ",
+      "fid": "~1zAr-B4aiRnAy5sEcbl2_Uj1zF3h0YGTQnrWM8JQRz4VIe78VCsaViJsH2RLNDo1XZECHJBPMaZEdkmYNkB1wtU",
+      "fids": [
+        "~1zAr-B4aiRnAy5sEcbl2_Uj1zF3h0YGTQnrWM8JQRz4VIe78VCsaViJsH2RLNDo1XZECHJBPMaZEdkmYNkB1wtU"
+      ],
+      "size": 4496242
+    },
+    {
+      "global_n": 47,
+      "season": 1,
+      "season_ep": 47,
+      "filename": "47_屁屁侦探-噗噗~包包乌龙事件（上） .mp3",
+      "title": "47_屁屁侦探-噗噗~包包乌龙事件（上） ",
+      "fid": "~1EpGQV4Zuwnw0PLVxVmDMiVKlAkhFRomUqyTOi0GnT_OX5rqvHlkhSQEIKzgOxlLI6lAShqMikZoxTOdXr-lbHU",
+      "fids": [
+        "~1EpGQV4Zuwnw0PLVxVmDMiVKlAkhFRomUqyTOi0GnT_OX5rqvHlkhSQEIKzgOxlLI6lAShqMikZoxTOdXr-lbHU"
+      ],
+      "size": 3740448
+    },
+    {
+      "global_n": 48,
+      "season": 1,
+      "season_ep": 48,
+      "filename": "48_屁屁侦探-噗噗~包包乌龙事件（下） .mp3",
+      "title": "48_屁屁侦探-噗噗~包包乌龙事件（下） ",
+      "fid": "~16dj-RovUo_4CV0bYKgHbI1wV6b4Zam8i9YFuW72bVWSgo2zFqwV6c-rvQs6vpTT52lkyAnlYJ-7v4IrbImdsUk",
+      "fids": [
+        "~16dj-RovUo_4CV0bYKgHbI1wV6b4Zam8i9YFuW72bVWSgo2zFqwV6c-rvQs6vpTT52lkyAnlYJ-7v4IrbImdsUk"
+      ],
+      "size": 4615504
+    },
+    {
+      "global_n": 49,
+      "season": 1,
+      "season_ep": 49,
+      "filename": "49_屁屁侦探-噗噗，怪盗U也需要温暖（上） .mp3",
+      "title": "49_屁屁侦探-噗噗，怪盗U也需要温暖（上） ",
+      "fid": "~1RrQyyY5B-gAIW9L1Q66Rfqob_EhJrVWmxHNLU0vQmSn1goP3mEuLuSq3dVQZYGalUcjNm8VU_zAVGhkrwq0ePg",
+      "fids": [
+        "~1RrQyyY5B-gAIW9L1Q66Rfqob_EhJrVWmxHNLU0vQmSn1goP3mEuLuSq3dVQZYGalUcjNm8VU_zAVGhkrwq0ePg"
+      ],
+      "size": 4722071
+    },
+    {
+      "global_n": 50,
+      "season": 1,
+      "season_ep": 50,
+      "filename": "50_屁屁侦探-噗噗，怪盗U也需要温暖（下） .mp3",
+      "title": "50_屁屁侦探-噗噗，怪盗U也需要温暖（下） ",
+      "fid": "~1m2LIXAlCw8sezLrauBcpK41wHp-_KhG0Sm_QfzTbAlrJr7cGrSf6Tfo5zrcfk7Fn2Pf8aaJ0Eaeczq83sSukck",
+      "fids": [
+        "~1m2LIXAlCw8sezLrauBcpK41wHp-_KhG0Sm_QfzTbAlrJr7cGrSf6Tfo5zrcfk7Fn2Pf8aaJ0Eaeczq83sSukck"
+      ],
+      "size": 4957498
+    },
+    {
+      "global_n": 51,
+      "season": 1,
+      "season_ep": 51,
+      "filename": "51_屁屁侦探-噗噗~电影剧本里的阴谋（上） .mp3",
+      "title": "51_屁屁侦探-噗噗~电影剧本里的阴谋（上） ",
+      "fid": "~1-OZcGlyv_ZgCdAnLrzz2B48Z2kfrwwFKquL_HSlXNRBknY397JSnj48AegbqtuuPWq93v_LbfGQBUbLj0NlaVM",
+      "fids": [
+        "~1-OZcGlyv_ZgCdAnLrzz2B48Z2kfrwwFKquL_HSlXNRBknY397JSnj48AegbqtuuPWq93v_LbfGQBUbLj0NlaVM"
+      ],
+      "size": 4510645
+    },
+    {
+      "global_n": 52,
+      "season": 1,
+      "season_ep": 52,
+      "filename": "52_屁屁侦探-噗噗~电影剧本里的阴谋（下） .mp3",
+      "title": "52_屁屁侦探-噗噗~电影剧本里的阴谋（下） ",
+      "fid": "~1IT3Uo7vyKFc7TlP9ore5r5ukaYKhXatfA81Ly0UzwJvmujgoZGNGbjvzP_hB0WgdNG3UWtfqKjf5hR9-4NyKY4",
+      "fids": [
+        "~1IT3Uo7vyKFc7TlP9ore5r5ukaYKhXatfA81Ly0UzwJvmujgoZGNGbjvzP_hB0WgdNG3UWtfqKjf5hR9-4NyKY4"
+      ],
+      "size": 4479578
+    },
+    {
+      "global_n": 53,
+      "season": 1,
+      "season_ep": 53,
+      "filename": "53_屁屁侦探-噗噗~怪盗U大战怪盗U（1） .mp3",
+      "title": "53_屁屁侦探-噗噗~怪盗U大战怪盗U（1） ",
+      "fid": "~1h2uL93n2RXkXYct6zWtMudXwq6a5wJaCIO-OT0CH8ytUTKRkMeIHGxJCnSjefsATpUWE-Bi9jxGWmH9bEkzUFo",
+      "fids": [
+        "~1h2uL93n2RXkXYct6zWtMudXwq6a5wJaCIO-OT0CH8ytUTKRkMeIHGxJCnSjefsATpUWE-Bi9jxGWmH9bEkzUFo"
+      ],
+      "size": 4367346
+    },
+    {
+      "global_n": 54,
+      "season": 1,
+      "season_ep": 54,
+      "filename": "54_屁屁侦探-噗噗~怪盗U大战怪盗U（2） .mp3",
+      "title": "54_屁屁侦探-噗噗~怪盗U大战怪盗U（2） ",
+      "fid": "~1Ii4xOq9SRhgBLAxFs-A1FkLif1NrtqLgUQ89krKzo4SHb1cR2H1WtIsY4UqoZQImOZcs-PNsfadCZweiAhzP0w",
+      "fids": [
+        "~1Ii4xOq9SRhgBLAxFs-A1FkLif1NrtqLgUQ89krKzo4SHb1cR2H1WtIsY4UqoZQImOZcs-PNsfadCZweiAhzP0w"
+      ],
+      "size": 4133317
+    },
+    {
+      "global_n": 55,
+      "season": 1,
+      "season_ep": 55,
+      "filename": "55_屁屁侦探-噗噗~怪盗U大战怪盗U（3） .mp3",
+      "title": "55_屁屁侦探-噗噗~怪盗U大战怪盗U（3） ",
+      "fid": "~1I1NKHy3PgSANUlGzInI62znAG8sefMA0H4y5IoKjrEhk8Y4CCw3L6DzCAe14dqoBufEXvSXNN-Vek2Fqdf-_TY",
+      "fids": [
+        "~1I1NKHy3PgSANUlGzInI62znAG8sefMA0H4y5IoKjrEhk8Y4CCw3L6DzCAe14dqoBufEXvSXNN-Vek2Fqdf-_TY"
+      ],
+      "size": 4461748
+    },
+    {
+      "global_n": 56,
+      "season": 1,
+      "season_ep": 56,
+      "filename": "56_屁屁侦探-噗噗~怪盗U大战怪盗U（4） .mp3",
+      "title": "56_屁屁侦探-噗噗~怪盗U大战怪盗U（4） ",
+      "fid": "~1AeoCTQSRkkUPlXDz00HoEjWl6d2WA9MVvf5m4XGjvSOg4ZfXzZcxXZrnNyzrslziKJXByTRP-3CSOSQWGZvaLA",
+      "fids": [
+        "~1AeoCTQSRkkUPlXDz00HoEjWl6d2WA9MVvf5m4XGjvSOg4ZfXzZcxXZrnNyzrslziKJXByTRP-3CSOSQWGZvaLA"
+      ],
+      "size": 5135560
+    },
+    {
+      "global_n": 57,
+      "season": 1,
+      "season_ep": 57,
+      "filename": "57_屁屁侦探-瓢虫遗址的秘密（1） .mp3",
+      "title": "57_屁屁侦探-瓢虫遗址的秘密（1） ",
+      "fid": "~1Ojnq5hr1kn84mdZJ1oVkXJ4Gt3FfvHHhmRfGyqJawtcddRoy98Xtc2EhhYZ0dkZ2WPvg9O3SdP5Hyzc35JIuYA",
+      "fids": [
+        "~1Ojnq5hr1kn84mdZJ1oVkXJ4Gt3FfvHHhmRfGyqJawtcddRoy98Xtc2EhhYZ0dkZ2WPvg9O3SdP5Hyzc35JIuYA"
+      ],
+      "size": 5070836
+    },
+    {
+      "global_n": 58,
+      "season": 1,
+      "season_ep": 58,
+      "filename": "58_屁屁侦探-瓢虫遗址的秘密（2） .mp3",
+      "title": "58_屁屁侦探-瓢虫遗址的秘密（2） ",
+      "fid": "~1JMSTmvqio888WnTjewgf4ZFJMi8M1OEB1oQyA8o-TxPqBajV_ddyldGRbDSaRS6y_EpNI_Cp0PDnDiCVFsPotk",
+      "fids": [
+        "~1JMSTmvqio888WnTjewgf4ZFJMi8M1OEB1oQyA8o-TxPqBajV_ddyldGRbDSaRS6y_EpNI_Cp0PDnDiCVFsPotk"
+      ],
+      "size": 5445079
+    },
+    {
+      "global_n": 59,
+      "season": 1,
+      "season_ep": 59,
+      "filename": "59_屁屁侦探-瓢虫遗迹的秘密（3） .mp3",
+      "title": "59_屁屁侦探-瓢虫遗迹的秘密（3） ",
+      "fid": "~1_gbLdG32cbMB215Vam_uXgs4eueONskhAq4tNdb8wWo0wYltx3x9LxQ7K9_bvOY6iWn3I21-Mzr3fbF03wBGrw",
+      "fids": [
+        "~1_gbLdG32cbMB215Vam_uXgs4eueONskhAq4tNdb8wWo0wYltx3x9LxQ7K9_bvOY6iWn3I21-Mzr3fbF03wBGrw"
+      ],
+      "size": 5049650
+    },
+    {
+      "global_n": 60,
+      "season": 1,
+      "season_ep": 60,
+      "filename": "60_屁屁侦探-瓢虫遗址的秘密（4） .mp3",
+      "title": "60_屁屁侦探-瓢虫遗址的秘密（4） ",
+      "fid": "~1zIdh3PAE6vIT3MCGeMYmspAwK8IKI9W3Vi2xHpTD4Q_ZWL51-Gg1ip30x5RnCBL_pQL53tBMGqVaQ1DvcFl9bY",
+      "fids": [
+        "~1zIdh3PAE6vIT3MCGeMYmspAwK8IKI9W3Vi2xHpTD4Q_ZWL51-Gg1ip30x5RnCBL_pQL53tBMGqVaQ1DvcFl9bY"
+      ],
+      "size": 4122577
+    },
+    {
+      "global_n": 61,
+      "season": 1,
+      "season_ep": 61,
+      "filename": "61_屁屁侦探-瓢虫遗址的秘密（5）感恩好评，加更一集！ .mp3",
+      "title": "61_屁屁侦探-瓢虫遗址的秘密（5）感恩好评，加更一集！ ",
+      "fid": "~1J2Dxbe9e_KgbGDEQPt8TL1JxXYhlJkooquQ5hjBNKz-2HDCAm01aStrQGFv_fiQOjtBJIzqynreN_adyfU9jtk",
+      "fids": [
+        "~1J2Dxbe9e_KgbGDEQPt8TL1JxXYhlJkooquQ5hjBNKz-2HDCAm01aStrQGFv_fiQOjtBJIzqynreN_adyfU9jtk"
+      ],
+      "size": 4143221
+    },
+    {
+      "global_n": 62,
+      "season": 1,
+      "season_ep": 62,
+      "filename": "62_屁屁侦探-噗噗~马尔济斯局长与吉娃娃局长（上） .mp3",
+      "title": "62_屁屁侦探-噗噗~马尔济斯局长与吉娃娃局长（上） ",
+      "fid": "~19byf3V-C4xk30jM7mL4u8ZnGNvI2ZGxQ8KEGcsV0GLP732U9iL1Btepp5yK3EdQIaztGECooFNGahPT9qGcuXs",
+      "fids": [
+        "~19byf3V-C4xk30jM7mL4u8ZnGNvI2ZGxQ8KEGcsV0GLP732U9iL1Btepp5yK3EdQIaztGECooFNGahPT9qGcuXs"
+      ],
+      "size": 5872123
+    },
+    {
+      "global_n": 63,
+      "season": 1,
+      "season_ep": 63,
+      "filename": "63_屁屁侦探-噗噗~马尔济斯局长与吉娃娃局长（下） .mp3",
+      "title": "63_屁屁侦探-噗噗~马尔济斯局长与吉娃娃局长（下） ",
+      "fid": "~1GpG0NJx9F4UIedLpkipzgrH8DqoRPDeRq_XJY2m5bO0I1ocsBX-23sUNgf1SPd0JMH0Zq4zeRhGldKrMddd0V8",
+      "fids": [
+        "~1GpG0NJx9F4UIedLpkipzgrH8DqoRPDeRq_XJY2m5bO0I1ocsBX-23sUNgf1SPd0JMH0Zq4zeRhGldKrMddd0V8"
+      ],
+      "size": 6435169
+    },
+    {
+      "global_n": 64,
+      "season": 1,
+      "season_ep": 64,
+      "filename": "64_屁屁侦探-噗噗~画家失踪之谜（上） .mp3",
+      "title": "64_屁屁侦探-噗噗~画家失踪之谜（上） ",
+      "fid": "~1kxC6uCvdJd04UaWUfa3gUAEDVlYZAGSvmNNde-cCtXGoExY6m1pblVDdBF1c_zoWkGSfbHm8-EV9Cki3PFfFQM",
+      "fids": [
+        "~1kxC6uCvdJd04UaWUfa3gUAEDVlYZAGSvmNNde-cCtXGoExY6m1pblVDdBF1c_zoWkGSfbHm8-EV9Cki3PFfFQM"
+      ],
+      "size": 5343034
+    },
+    {
+      "global_n": 65,
+      "season": 1,
+      "season_ep": 65,
+      "filename": "65_屁屁侦探-噗噗~画家失踪之谜（下） .mp3",
+      "title": "65_屁屁侦探-噗噗~画家失踪之谜（下） ",
+      "fid": "~18AMDiifUUdYGEgopGEd0u6a-CzvC-ZzHpEZsDVtd14IT2XjP7PX7-OEGe1SztJ-lffSe6JFexNHcFS2xXZM7fQ",
+      "fids": [
+        "~18AMDiifUUdYGEgopGEd0u6a-CzvC-ZzHpEZsDVtd14IT2XjP7PX7-OEGe1SztJ-lffSe6JFexNHcFS2xXZM7fQ"
+      ],
+      "size": 4452998
+    },
+    {
+      "global_n": 66,
+      "season": 1,
+      "season_ep": 66,
+      "filename": "66_屁屁侦探-噗噗~布朗的侦探大考验（上） .mp3",
+      "title": "66_屁屁侦探-噗噗~布朗的侦探大考验（上） ",
+      "fid": "~10PeHDs60uqsVjE6xALgyTyVdyseRL077T0JEAk4zBFSvNuj5tjXHF6ChuexfBnHPxDbz52jqigSAQMrHO_8GZg",
+      "fids": [
+        "~10PeHDs60uqsVjE6xALgyTyVdyseRL077T0JEAk4zBFSvNuj5tjXHF6ChuexfBnHPxDbz52jqigSAQMrHO_8GZg"
+      ],
+      "size": 4648573
+    },
+    {
+      "global_n": 67,
+      "season": 1,
+      "season_ep": 67,
+      "filename": "67_屁屁侦探-噗噗~布朗的侦探大考验（下） .mp3",
+      "title": "67_屁屁侦探-噗噗~布朗的侦探大考验（下） ",
+      "fid": "~1i_3wv3mwptElOIwXPSvH9Quf-AOxKP_z84OJwNkijk2aW7S-vJ2H0aKYxSl7bn3QO1x3yvHb1lIVxlUbH1uYyU",
+      "fids": [
+        "~1i_3wv3mwptElOIwXPSvH9Quf-AOxKP_z84OJwNkijk2aW7S-vJ2H0aKYxSl7bn3QO1x3yvHb1lIVxlUbH1uYyU"
+      ],
+      "size": 5423574
+    },
+    {
+      "global_n": 68,
+      "season": 1,
+      "season_ep": 68,
+      "filename": "68_屁屁侦探-噗噗~猩球主编摊上大事了（上） .mp3",
+      "title": "68_屁屁侦探-噗噗~猩球主编摊上大事了（上） ",
+      "fid": "~1HryEAf_RnqgtnHkIWLhZo_oS0chSyNRyqWPtKVTtX4rQovKdm2-eCChkwABNrBw3dpUO4StjEfUcNw10lrllq8",
+      "fids": [
+        "~1HryEAf_RnqgtnHkIWLhZo_oS0chSyNRyqWPtKVTtX4rQovKdm2-eCChkwABNrBw3dpUO4StjEfUcNw10lrllq8"
+      ],
+      "size": 4371021
+    },
+    {
+      "global_n": 69,
+      "season": 1,
+      "season_ep": 69,
+      "filename": "69_屁屁侦探-噗噗~猩球主编摊上大事了（下） .mp3",
+      "title": "69_屁屁侦探-噗噗~猩球主编摊上大事了（下） ",
+      "fid": "~1gLZ0jlQrogIzSfVDqRshUmQJNvf-yQmZszQtOvTMxXIUWexfABZTAKwXiPQfTEG_1EDno8qYrTJR6nPEwTgJAU",
+      "fids": [
+        "~1gLZ0jlQrogIzSfVDqRshUmQJNvf-yQmZszQtOvTMxXIUWexfABZTAKwXiPQfTEG_1EDno8qYrTJR6nPEwTgJAU"
+      ],
+      "size": 5919324
+    },
+    {
+      "global_n": 70,
+      "season": 1,
+      "season_ep": 70,
+      "filename": "70_屁屁侦探-噗噗~歌剧院的怪盗（上） .mp3",
+      "title": "70_屁屁侦探-噗噗~歌剧院的怪盗（上） ",
+      "fid": "~1zK4zU1a65fA8u4ZB6PTryMMrekdPbgd9BGR68eKT_ikI25-5wMuO9IO0OYTzZXyCc1bBpp0X_-MLEo2-JNo4S4",
+      "fids": [
+        "~1zK4zU1a65fA8u4ZB6PTryMMrekdPbgd9BGR68eKT_ikI25-5wMuO9IO0OYTzZXyCc1bBpp0X_-MLEo2-JNo4S4"
+      ],
+      "size": 4078202
+    },
+    {
+      "global_n": 71,
+      "season": 1,
+      "season_ep": 71,
+      "filename": "71_屁屁侦探-噗噗~歌剧院的怪盗（中） .mp3",
+      "title": "71_屁屁侦探-噗噗~歌剧院的怪盗（中） ",
+      "fid": "~12PEcOSOJMTISvEuUW43Shr0Q8MPIJkNmD84fZN-BsxcvegifNTvXGvKUFihuB4BP_t1E3wkStLtTmfGbkV8P6A",
+      "fids": [
+        "~12PEcOSOJMTISvEuUW43Shr0Q8MPIJkNmD84fZN-BsxcvegifNTvXGvKUFihuB4BP_t1E3wkStLtTmfGbkV8P6A"
+      ],
+      "size": 3102244
+    },
+    {
+      "global_n": 72,
+      "season": 1,
+      "season_ep": 72,
+      "filename": "72_屁屁侦探-噗噗~歌剧院的怪盗（下） .mp3",
+      "title": "72_屁屁侦探-噗噗~歌剧院的怪盗（下） ",
+      "fid": "~1DjdACl-LXYAscch0PaRDaCfcwuBPQMmawGbO3HjzrwZNmV8KQhAIy5pfG9_QQOuZFQOXhGzP9Q-o9JoRenGnk0",
+      "fids": [
+        "~1DjdACl-LXYAscch0PaRDaCfcwuBPQMmawGbO3HjzrwZNmV8KQhAIy5pfG9_QQOuZFQOXhGzP9Q-o9JoRenGnk0"
+      ],
+      "size": 2892514
+    },
+    {
+      "global_n": 73,
+      "season": 1,
+      "season_ep": 73,
+      "filename": "73_屁屁侦探-噗噗~危险的背包（上） .mp3",
+      "title": "73_屁屁侦探-噗噗~危险的背包（上） ",
+      "fid": "~1QwPvu6v8iEAc1r7xD0LwLcAkuyTORXoBAoa9IjncDYr3hoQ55FiPNjhcNA2oy7w7bXLqebESm2Z8JjzGxUkKGU",
+      "fids": [
+        "~1QwPvu6v8iEAc1r7xD0LwLcAkuyTORXoBAoa9IjncDYr3hoQ55FiPNjhcNA2oy7w7bXLqebESm2Z8JjzGxUkKGU"
+      ],
+      "size": 3051369
+    },
+    {
+      "global_n": 74,
+      "season": 1,
+      "season_ep": 74,
+      "filename": "74_屁屁侦探-噗噗~危险的背包（中） .mp3",
+      "title": "74_屁屁侦探-噗噗~危险的背包（中） ",
+      "fid": "~1yKLv98xZveorEeXUEEmSXEdJawj-mYgjhDEnyGFjUiAWGmDwAtKJLiXqZ2y1ZcPpV9QWRutzhAJ-N5tznnIn9Q",
+      "fids": [
+        "~1yKLv98xZveorEeXUEEmSXEdJawj-mYgjhDEnyGFjUiAWGmDwAtKJLiXqZ2y1ZcPpV9QWRutzhAJ-N5tznnIn9Q"
+      ],
+      "size": 3230849
+    },
+    {
+      "global_n": 75,
+      "season": 1,
+      "season_ep": 75,
+      "filename": "75_屁屁侦探-噗噗~危险的背包（下） .mp3",
+      "title": "75_屁屁侦探-噗噗~危险的背包（下） ",
+      "fid": "~1eOoXbTqzFFgLU17N1x6bOWo9tTUTGHqu9INcb3fb1xibxTp-SqQX_OoiAS8SSQ9cxWb7rZAMuN6lgkNGEhcxLc",
+      "fids": [
+        "~1eOoXbTqzFFgLU17N1x6bOWo9tTUTGHqu9INcb3fb1xibxTp-SqQX_OoiAS8SSQ9cxWb7rZAMuN6lgkNGEhcxLc"
+      ],
+      "size": 2969969
+    },
+    {
+      "global_n": 76,
+      "season": 1,
+      "season_ep": 76,
+      "filename": "76_屁屁侦探-噗噗~斯弗雷岛的秘密（1） .mp3",
+      "title": "76_屁屁侦探-噗噗~斯弗雷岛的秘密（1） ",
+      "fid": "~1Rd_aBufVfdwAsdClTJxdCpbvUyg7P11y_Z0sKregteHvoLwjtI2NuWUH9wG6CZ7NlfV4oenWtvssMALmdpdsHI",
+      "fids": [
+        "~1Rd_aBufVfdwAsdClTJxdCpbvUyg7P11y_Z0sKregteHvoLwjtI2NuWUH9wG6CZ7NlfV4oenWtvssMALmdpdsHI"
+      ],
+      "size": 3688160
+    },
+    {
+      "global_n": 77,
+      "season": 1,
+      "season_ep": 77,
+      "filename": "77_屁屁侦探-噗噗~斯弗雷岛的秘密（2） .mp3",
+      "title": "77_屁屁侦探-噗噗~斯弗雷岛的秘密（2） ",
+      "fid": "~1jJ_K_N1Sv-soErmMxkpcl81mVuWHnrArQ7aVHhbdGESuJhsve2SIEHNlIB8uSXJ9y4mB-iYhkYVP39C9EfBMsE",
+      "fids": [
+        "~1jJ_K_N1Sv-soErmMxkpcl81mVuWHnrArQ7aVHhbdGESuJhsve2SIEHNlIB8uSXJ9y4mB-iYhkYVP39C9EfBMsE"
+      ],
+      "size": 4102227
+    },
+    {
+      "global_n": 78,
+      "season": 1,
+      "season_ep": 78,
+      "filename": "78_屁屁侦探-噗噗~斯弗雷岛的秘密（3） .mp3",
+      "title": "78_屁屁侦探-噗噗~斯弗雷岛的秘密（3） ",
+      "fid": "~1_d8VYWpaOBY8kgIsGbvLZRLTjDy_ewq8amgnooNfweQQipq_lePqhDvd7Ishd_PZrKIQ3jMvX-mBXn3GVuTIL0",
+      "fids": [
+        "~1_d8VYWpaOBY8kgIsGbvLZRLTjDy_ewq8amgnooNfweQQipq_lePqhDvd7Ishd_PZrKIQ3jMvX-mBXn3GVuTIL0"
+      ],
+      "size": 4280023
+    },
+    {
+      "global_n": 79,
+      "season": 1,
+      "season_ep": 79,
+      "filename": "79_屁屁侦探-噗噗~斯弗雷岛的秘密（4） .mp3",
+      "title": "79_屁屁侦探-噗噗~斯弗雷岛的秘密（4） ",
+      "fid": "~1cfNMCTUjHygBe1UG_06uDmZRd0gR5_6nls_75qxaAOtTBWlUWsIBf0NMyLy19ojmNATU9-_vGlGlv_0gNHOLAc",
+      "fids": [
+        "~1cfNMCTUjHygBe1UG_06uDmZRd0gR5_6nls_75qxaAOtTBWlUWsIBf0NMyLy19ojmNATU9-_vGlGlv_0gNHOLAc"
+      ],
+      "size": 4143775
+    },
+    {
+      "global_n": 80,
+      "season": 1,
+      "season_ep": 80,
+      "filename": "80_屁屁侦探-噗噗~斯弗雷岛的秘密（5） .mp3",
+      "title": "80_屁屁侦探-噗噗~斯弗雷岛的秘密（5） ",
+      "fid": "~1QS4QX7DVnokOzSlcSdKW-TImTQMsmkdpqHNP-WSx9BWqbt9ZJn4TYNoYq3AvGAJ6naxfVgp0xNXs_MG17OBE_E",
+      "fids": [
+        "~1QS4QX7DVnokOzSlcSdKW-TImTQMsmkdpqHNP-WSx9BWqbt9ZJn4TYNoYq3AvGAJ6naxfVgp0xNXs_MG17OBE_E"
+      ],
+      "size": 3667810
+    },
+    {
+      "global_n": 81,
+      "season": 1,
+      "season_ep": 81,
+      "filename": "81_屁屁侦探-噗噗~斯弗雷岛的秘密（6） .mp3",
+      "title": "81_屁屁侦探-噗噗~斯弗雷岛的秘密（6） ",
+      "fid": "~1i4JB2h4EpRECIUBSbTTpszQoP4FQ32zsyzEcKJc3Kp2s7ZZRPwN1X6KdfXZdAXKDOQLf96HYYXHJ3gQXraOYEM",
+      "fids": [
+        "~1i4JB2h4EpRECIUBSbTTpszQoP4FQ32zsyzEcKJc3Kp2s7ZZRPwN1X6KdfXZdAXKDOQLf96HYYXHJ3gQXraOYEM"
+      ],
+      "size": 3876963
+    },
+    {
+      "global_n": 82,
+      "season": 1,
+      "season_ep": 82,
+      "filename": "82_屁屁侦探-噗噗~难不倒俱乐部成立啦！（上） .mp3",
+      "title": "82_屁屁侦探-噗噗~难不倒俱乐部成立啦！（上） ",
+      "fid": "~1GJan7f_4pCYTlONrt5uo3sXaoY-S11vWD3n8F_vMNFfAxud1u611556NGq6aX69kmYAsSQBe2AxFWLgRWRxvWE",
+      "fids": [
+        "~1GJan7f_4pCYTlONrt5uo3sXaoY-S11vWD3n8F_vMNFfAxud1u611556NGq6aX69kmYAsSQBe2AxFWLgRWRxvWE"
+      ],
+      "size": 3466865
+    },
+    {
+      "global_n": 83,
+      "season": 1,
+      "season_ep": 83,
+      "filename": "83_屁屁侦探-噗噗~难不倒俱乐部成立啦！（中） .mp3",
+      "title": "83_屁屁侦探-噗噗~难不倒俱乐部成立啦！（中） ",
+      "fid": "~10iWZAOYiToIdcNWXVZg4vV1U3QZPaYvVv5Bnj0tr7lINB6qzQ9wBt4sy-5v8lprNtbvc0YMa7pXenynGBWoBI4",
+      "fids": [
+        "~10iWZAOYiToIdcNWXVZg4vV1U3QZPaYvVv5Bnj0tr7lINB6qzQ9wBt4sy-5v8lprNtbvc0YMa7pXenynGBWoBI4"
+      ],
+      "size": 4698317
+    },
+    {
+      "global_n": 84,
+      "season": 1,
+      "season_ep": 84,
+      "filename": "84_屁屁侦探-噗噗~难不倒俱乐部成立啦！（下） .mp3",
+      "title": "84_屁屁侦探-噗噗~难不倒俱乐部成立啦！（下） ",
+      "fid": "~1FYU2teHFZscdu7XuJPVIl8sNEpDWMZe-ebdGjDSni3Nx_j_H8WGHxhBeb6S25CNH5VPLzvDL_WeOJCqv6A98d8",
+      "fids": [
+        "~1FYU2teHFZscdu7XuJPVIl8sNEpDWMZe-ebdGjDSni3Nx_j_H8WGHxhBeb6S25CNH5VPLzvDL_WeOJCqv6A98d8"
+      ],
+      "size": 4827778
+    },
+    {
+      "global_n": 85,
+      "season": 1,
+      "season_ep": 85,
+      "filename": "85_屁屁侦探-噗噗~光辉之塔的约会（上） .mp3",
+      "title": "85_屁屁侦探-噗噗~光辉之塔的约会（上） ",
+      "fid": "~1nyoRaL5n9H8jmArqj0TNt_w5OS-LcaYi-NInLIOMo4mcNlZRet5L9Aj6I5wu4hPXYlHtb4cJPJH3gdr08LnIfg",
+      "fids": [
+        "~1nyoRaL5n9H8jmArqj0TNt_w5OS-LcaYi-NInLIOMo4mcNlZRet5L9Aj6I5wu4hPXYlHtb4cJPJH3gdr08LnIfg"
+      ],
+      "size": 4132752
+    },
+    {
+      "global_n": 86,
+      "season": 1,
+      "season_ep": 86,
+      "filename": "86_屁屁侦探-噗噗~光辉之塔的约会（中） .mp3",
+      "title": "86_屁屁侦探-噗噗~光辉之塔的约会（中） ",
+      "fid": "~1z7e9AFVppY0Z8gGcqe2DrYl8eaHYeRfPA7T3scYx6LL5G3UE_TSJGKlKkeYLGlZBDmP0YaV-J64rJRFoX07hgY",
+      "fids": [
+        "~1z7e9AFVppY0Z8gGcqe2DrYl8eaHYeRfPA7T3scYx6LL5G3UE_TSJGKlKkeYLGlZBDmP0YaV-J64rJRFoX07hgY"
+      ],
+      "size": 3891095
+    },
+    {
+      "global_n": 87,
+      "season": 1,
+      "season_ep": 87,
+      "filename": "87_屁屁侦探-噗噗~光辉之塔的约会（下） .mp3",
+      "title": "87_屁屁侦探-噗噗~光辉之塔的约会（下） ",
+      "fid": "~1l5OeMhOGYr8AwDtTpU9MUS2wpnPxP_lUNtKqDX__bkX5E9ofuEyDD0_5DAGJ-hRoJ9ElhI-5UwAOn3D-DsLfXw",
+      "fids": [
+        "~1l5OeMhOGYr8AwDtTpU9MUS2wpnPxP_lUNtKqDX__bkX5E9ofuEyDD0_5DAGJ-hRoJ9ElhI-5UwAOn3D-DsLfXw"
+      ],
+      "size": 3215869
+    },
+    {
+      "global_n": 88,
+      "season": 1,
+      "season_ep": 88,
+      "filename": "88_屁屁侦探-噗噗~深海遗址探秘 （1） .mp3",
+      "title": "88_屁屁侦探-噗噗~深海遗址探秘 （1） ",
+      "fid": "~17ivn0iG1ZrwoiETi9-XXCHrWJ86ov9qv_a8EtCrJVvl91tnSaeY1gTrBsFA6oSaWZecd51CPOUVu7gF--2q_Cw",
+      "fids": [
+        "~17ivn0iG1ZrwoiETi9-XXCHrWJ86ov9qv_a8EtCrJVvl91tnSaeY1gTrBsFA6oSaWZecd51CPOUVu7gF--2q_Cw"
+      ],
+      "size": 4241851
+    },
+    {
+      "global_n": 89,
+      "season": 1,
+      "season_ep": 89,
+      "filename": "89_屁屁侦探-噗噗~深海遗址探秘 （2） .mp3",
+      "title": "89_屁屁侦探-噗噗~深海遗址探秘 （2） ",
+      "fid": "~1P9FxiSjfPeMqmGuyGmKfgehd9WXOClhzwigccvK33enezpW1VY6sqfKN_hq8y2qiOgqS-nimD9pbf6SQgB7zoU",
+      "fids": [
+        "~1P9FxiSjfPeMqmGuyGmKfgehd9WXOClhzwigccvK33enezpW1VY6sqfKN_hq8y2qiOgqS-nimD9pbf6SQgB7zoU"
+      ],
+      "size": 4466836
+    },
+    {
+      "global_n": 90,
+      "season": 1,
+      "season_ep": 90,
+      "filename": "90_屁屁侦探-噗噗~深海遗址探秘 （3） .mp3",
+      "title": "90_屁屁侦探-噗噗~深海遗址探秘 （3） ",
+      "fid": "~1YZZgVcsftlQO23XGBDhz0RG2rp_b9qfhKr_XRw9rxJ-FvFklfxR9XPKTf6tCnh_BeovHja5cXEeTFvbaslMJOI",
+      "fids": [
+        "~1YZZgVcsftlQO23XGBDhz0RG2rp_b9qfhKr_XRw9rxJ-FvFklfxR9XPKTf6tCnh_BeovHja5cXEeTFvbaslMJOI"
+      ],
+      "size": 4049373
+    },
+    {
+      "global_n": 91,
+      "season": 1,
+      "season_ep": 91,
+      "filename": "91_屁屁侦探-噗噗~深海遗址探秘 （4） .mp3",
+      "title": "91_屁屁侦探-噗噗~深海遗址探秘 （4） ",
+      "fid": "~1fX5PwPmMrBcgtte0G6EpqRXeZ7M5Ld8ie67MtNEm54bsuAq6mzkj6X8-IYkoZ6BXTy1mPLD7alXVU3VUFcMSNw",
+      "fids": [
+        "~1fX5PwPmMrBcgtte0G6EpqRXeZ7M5Ld8ie67MtNEm54bsuAq6mzkj6X8-IYkoZ6BXTy1mPLD7alXVU3VUFcMSNw"
+      ],
+      "size": 4952127
+    },
+    {
+      "global_n": 92,
+      "season": 1,
+      "season_ep": 92,
+      "filename": "92_屁屁侦探-噗噗~深海遗址探秘 （5） .mp3",
+      "title": "92_屁屁侦探-噗噗~深海遗址探秘 （5） ",
+      "fid": "~1KLGBLyZtFrQCBeKOJKi3RNrpu2eJuPHbHDKZnDmSVLqhcidHahTfR4dy1KKHH6_gA7-RUzIhWx1oeaTUDFaCm0",
+      "fids": [
+        "~1KLGBLyZtFrQCBeKOJKi3RNrpu2eJuPHbHDKZnDmSVLqhcidHahTfR4dy1KKHH6_gA7-RUzIhWx1oeaTUDFaCm0"
+      ],
+      "size": 4539486
+    },
+    {
+      "global_n": 93,
+      "season": 1,
+      "season_ep": 93,
+      "filename": "93_屁屁侦探-噗噗~深海遗址探秘 （6） .mp3",
+      "title": "93_屁屁侦探-噗噗~深海遗址探秘 （6） ",
+      "fid": "~1hXI1RCBvCpQAktjZwlLlaME-FQzQLiVsOrBIXdYI0F_BCjX-ujp-h0Ff3-EDDq9xzmkcUTrIZVFenbC5armVAE",
+      "fids": [
+        "~1hXI1RCBvCpQAktjZwlLlaME-FQzQLiVsOrBIXdYI0F_BCjX-ujp-h0Ff3-EDDq9xzmkcUTrIZVFenbC5armVAE"
+      ],
+      "size": 4903243
+    }
+  ]
+}

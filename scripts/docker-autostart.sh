@@ -14,8 +14,8 @@ wait_for_docker() {
   local n=0
   until docker info >/dev/null 2>&1; do
     n=$((n + 1))
-    if [ "$n" -gt 120 ]; then
-      log "ERROR: docker 在 10 分钟内未就绪，退出"
+    if [ "$n" -gt 360 ]; then
+      log "ERROR: docker 在 30 分钟内未就绪，退出"
       exit 1
     fi
     sleep 5
@@ -48,6 +48,7 @@ main() {
 
   # 媒体 / 基础设施
   compose_up "$HOME/docker/jellyfin-stack"
+  compose_up "$HOME/docker/immich-stack"
   compose_up "$HOME/dev/yolo/tools-workspace/sidestore-infra" "--env-file .env"
   compose_up "$HOME/dev/yolo/tools-workspace/substore-clash" "--env-file .env"
 

@@ -61,10 +61,15 @@ _COMMERCE_SLOTS_BY_VERTICAL: dict[str, list[FigureSlot]] = {
 }
 
 
-def _figure_marker_lines(fname: str, caption: str = "") -> list[str]:
+def _figure_marker_lines(fname: str, style: str = "", caption: str = "") -> list[str]:
     """插图独占一段，前后留空行，避免与小标题挤进同一个 <p>。"""
-    _ = caption
-    return ["", f"[[fig:{fname}|]]", ""]
+    tokens: list[str] = []
+    if style:
+        tokens.append(style.strip().rstrip(";"))
+    if caption:
+        tokens.append(f"cap={caption.strip()}")
+    cap_str = ";".join(tokens)
+    return ["", f"[[fig:{fname}|{cap_str}]]", ""]
 
 
 def _figure_marker(fname: str, caption: str) -> str:
@@ -88,13 +93,27 @@ def _find_section_line(lines: list[str], section: str) -> int | None:
     return None
 
 
+def _find_section_line_fuzzy(lines: list[str], section: str) -> int | None:
+    hit = _find_section_line(lines, section)
+    if hit is not None:
+        return hit
+    key = (section or "").strip()
+    if not key:
+        return None
+    for i, line in enumerate(lines):
+        bare = _section_bare(line)
+        if bare and key in bare:
+            return i
+    return None
+
+
 def _inject_before_line(lines: list[str], idx: int, fname: str, caption: str) -> list[str]:
     block = _figure_marker_lines(fname, caption)
     return lines[:idx] + block + lines[idx:]
 
 
 def _inject_after_section(lines: list[str], section: str, fname: str, caption: str) -> list[str]:
-    start = _find_section_line(lines, section)
+    start = _find_section_line_fuzzy(lines, section)
     if start is None:
         return lines
     j = start + 1
@@ -205,7 +224,16 @@ def inject_commerce_figures(body: str, *, vertical: str = "home") -> str:
 
 
 def resolve_inline_path(filename: str) -> Path:
-    """财经五槽正文插图（仅 assets/wechat_mp/inline）；带货用 resolve_commerce_home_inline_path。"""
+    """财经五槽正文插图（assets/wechat_mp/inline）；影视试跑用 inline-tv/。"""
+    raw = (filename or "").strip().replace("\\", "/")
+    if raw.startswith("discussion/") or raw.startswith("discussion\\"):
+        from scripts.tools.wechat_mp_discussion_figures import resolve_discussion_inline_path
+
+        return resolve_discussion_inline_path(raw)
+    if raw.startswith("tv/") or raw.startswith("tv\\"):
+        from scripts.tools.wechat_mp_tv_figures import resolve_tv_inline_path
+
+        return resolve_tv_inline_path(raw)
     path = INLINE_ROOT / Path(filename).name
     if not path.is_file():
         raise FileNotFoundError(f"正文插图不存在: {path}")
@@ -221,23 +249,40 @@ def figure_max_height_px() -> int:
     return max(120, min(value, 320))
 
 
-def _figure_style_from_caption(caption: str) -> tuple[int, str]:
-    """解析 [[fig:file|max-h=480;fit=contain]] 中的展示参数。"""
+def _figure_style_from_caption(caption: str) -> tuple[int, str, str, str, int | None]:
+    """解析 [[fig:file|max-h=480;fit=contain;scene=桥段;cap=图源;mb=20]]。"""
     max_h = figure_max_height_px()
     fit = "cover"
+    cap = ""
+    scene = ""
+    margin_bottom: int | None = None
     for part in caption.split(";"):
-        token = part.strip().lower()
-        if token.startswith("max-h="):
+        raw = part.strip()
+        if not raw:
+            continue
+        lower = raw.lower()
+        if lower.startswith("max-h="):
             try:
-                max_h = int(token.split("=", 1)[1])
+                max_h = int(lower.split("=", 1)[1])
             except ValueError:
                 pass
-        elif token.startswith("fit="):
-            fit = token.split("=", 1)[1].strip() or fit
+        elif lower.startswith("fit="):
+            fit = raw.split("=", 1)[1].strip() or fit
+        elif lower.startswith("scene="):
+            scene = raw.split("=", 1)[1].strip()
+        elif lower.startswith("cap="):
+            cap = raw.split("=", 1)[1].strip()
+        elif lower.startswith("mb="):
+            try:
+                margin_bottom = int(lower.split("=", 1)[1])
+            except ValueError:
+                pass
     max_h = max(120, min(max_h, 720))
     if fit not in {"cover", "contain", "fill", "scale-down"}:
         fit = "cover"
-    return max_h, fit
+    if margin_bottom is not None:
+        margin_bottom = max(8, min(margin_bottom, 48))
+    return max_h, fit, cap, scene, margin_bottom
 
 
 def figure_to_html(
@@ -251,7 +296,7 @@ def figure_to_html(
     from scripts.tools.wechat_mp_layout import active_layout
 
     layout = active_layout()
-    max_h, fit = _figure_style_from_caption(caption)
+    max_h, fit, cap, scene, margin_bottom = _figure_style_from_caption(caption)
     if image_url:
         src = _escape_html(image_url)
     elif local_preview:
@@ -259,12 +304,28 @@ def figure_to_html(
         src = path.as_uri()
     else:
         return '<p style="color:#888;font-size:13px;text-align:center;">（配图）</p>'
+    bottom = margin_bottom if margin_bottom is not None else 16
+    section_margin = f"10px 0 {bottom}px"
+    cap_html = ""
+    if scene:
+        cap_html += (
+            f'<p style="margin:{layout.figure_caption_margin};'
+            f'font-size:13px;color:#555;text-align:center;line-height:1.5;">'
+            f"{_escape_html(scene)}</p>"
+        )
+    if cap:
+        cap_html += (
+            f'<p style="margin:4px 0 0;'
+            f'font-size:11px;color:#aaa;text-align:center;line-height:1.45;">'
+            f"{_escape_html(cap)}</p>"
+        )
     return (
-        f'<section style="margin:{layout.figure_margin};text-align:center;">'
+        f'<section style="margin:{section_margin};text-align:center;">'
         f'<img src="{src}" alt="" '
         f'style="max-width:100%;width:100%;max-height:{max_h}px;height:auto;'
         f"object-fit:{fit};border-radius:{layout.figure_radius};"
         'display:block;margin:0 auto;"/>'
+        f"{cap_html}"
         "</section>"
     )
 

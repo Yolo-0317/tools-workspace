@@ -1,0 +1,14 @@
+玛格丽特 v1.0.0-zh（中译 + 世界书 v1.0）
+
+扶她同事 · 办公室开场 · 单条 80～220 字 · talkativeness 0.65。
+
+NT 设置：
+1. 导入 玛格丽特-nativetavern.png（版本 1.0.0-zh）
+2. Main 留空；max tokens 256～384
+3. 勿绑 margaret-yangsheng-world.json
+4. Persona = 同事
+5. 新建聊天
+
+重建:
+  node scripts/build-worldbook-margaret.js
+  node scripts/build-character-margaret.js

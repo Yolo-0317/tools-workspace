@@ -1,9 +1,9 @@
-# 晚间三篇标准模板（evening batch 金标准）
+# 晚间两篇标准模板（evening batch 金标准）
 
-> 导航 [INDEX.md](INDEX.md) · 改这三篇**只读本文件**，勿在 [templates.md](templates.md) 重复改结构。
+> 导航 [INDEX.md](INDEX.md) · 改这两篇**只读本文件 + hotspot 节**，勿在 [templates.md](templates.md) 重复改结构。
 
-> **适用范围**：A 股交易日 `evening` 批次 — **`sector`（热点行业研究）** + `dragons`（`eod`）+ `top5`（推送顺序）。  
-> `market` / `news` 已移出定时，仅手动推稿；行业主题见 [sector-discovery.md](sector-discovery.md)。
+> **适用范围（2026-07-13 起）**：A 股交易日 `evening` 批次 — **`news`（10 条热股快讯）** + **`hotspot`（每日热点深评）**。  
+> `dragons` / `sector` / `market` 已移出定时，仅手动推稿。
 > **地位**：2026-06-04 审阅定稿版（含 **· 轻过渡完读钩子**、段长/序号排版）；改 prompt / 排版 / 变现时**以此为准**，勿回退旧版（`往下看`/`→` 导流、标题进正文、分节末 CPS 等）。  
 > **命令**：`uv run python -m scripts.tools.wechat_mp_draft_batch --batch evening`
 
@@ -201,6 +201,16 @@ A股行业｜{榜一+榜二}：产业链怎么拆？
 ### 流水线
 
 `build_sector_article` → `humanize_mp_text` → `ensure_blockquote_sections` → **`finalize_sector_body`** → `inject_market_figures` → `render` → `attach_footer_product`
+
+### evening 同批分工（2026-06-18 · 与 news 去重）
+
+| 篇 | 写什么 | sector 禁止 |
+|----|--------|-------------|
+| **news** 头条 | 东财人气 Top10 快讯 + AI 点评 | — |
+| **dragons** 次条 | 情绪/连板 | — |
+| **sector** 三条 | 东财**行业榜**榜一/榜二 + 产业链五节 | 再插「当日人气观察 Top10」；盘面节复述头条热股 |
+
+**代码**：`WECHAT_MP_SECTOR_EVENING_DEDUP=1`（evening 批次自动）· `WECHAT_MP_SECTOR_HOT_WATCH_TOP_N=0` · 代表股避开 news 人气前 2（`WECHAT_MP_SECTOR_EXCLUDE_NEWS_HOT_N`）· 标题优先**行业领涨股**而非人气榜首。
 
 ### 摘要
 

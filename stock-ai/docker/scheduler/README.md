@@ -11,10 +11,9 @@
 ```text
 stock-ai-scheduler (Docker)
   ├─ 17:30 sync · 18:00 emotion eod（容器内）
-  └─ 17:45 selection · 周五 advisor-weekly → host-jobs :9876
-launchd（勿与 monitor 重复）
-  ├─ macro-news-sync（15min）
-  └─ wechat-mp-draft-scheduled（19:00）
+  ├─ 09:00 / 11:00 / 15:00 / 18:00 wechat-mp-hotspot-*（host-jobs，每天 4 篇热点稿）
+launchd
+  └─ wechat-mp-whitelist-check（每小时）
 ```
 
 ---
@@ -66,8 +65,7 @@ launchctl print gui/$(id -u)/com.user.stock-emotion-intraday
 | 工作日 17:30 | Tushare → MySQL |
 | 工作日 17:45 | 选股 + SOP + 战报 |
 | 工作日 18:00 | 收盘龙头 eod → MySQL |
-| 每天 09/12/15/20 | 战报 |
-| 工作日 */5 | 持仓监控（交易时段内脚本才生效） |
+| 每天 09:00 / 11:00 / 15:00 / 18:00 | 公众号热点稿各 1 篇（09/11/15 深评，18 话题讨论；host-jobs） |
 
 完整表达式见 `crontab`。
 

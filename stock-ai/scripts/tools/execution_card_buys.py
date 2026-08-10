@@ -135,21 +135,9 @@ def execution_card_buys_from_selection(
     top_n: int = 8,
 ) -> list[dict[str, str]]:
     """
-    执行卡试探买入：从当日选股列表挑候选（按分数，去重，排除已持仓）。
-    减仓提示仍读 md P1。投顾阶段 0 仅返回减仓提示。
+    执行卡试探买入：只接受已写入「盘中确认」的候选。
+    收盘选股结果本身不再生成买入卡，减仓提示仍读 Markdown 执行卡。
     """
-    try:
-        from stock_ai.advisor_selection import execution_card_probe_enabled
-
-        if not execution_card_probe_enabled():
-            trim = load_execution_card_trim_hints()
-            return [
-                {**meta, "code": code, "kind": "trim"}
-                for code, meta in trim.items()
-            ]
-    except ImportError:
-        pass
-
     holdings = {_code6(c) for c in (holding_codes or [])}
     md_probe = load_execution_card_probe_buys()
     best_by_code: dict[str, dict[str, Any]] = {}
@@ -157,6 +145,8 @@ def execution_card_buys_from_selection(
     for row in rows:
         code = _row_code(row)
         if len(code) != 6 or code in holdings:
+            continue
+        if row.get("盘中确认") is not True:
             continue
         action = str(row.get("建议动作") or "")
         has_card = bool(row.get("执行卡触发") or row.get("执行卡优先级"))
@@ -184,19 +174,10 @@ def execution_card_buys_from_selection(
 
 
 def execution_card_buys_payload() -> list[dict[str, str]]:
-    """Home Hub / API：当前执行卡可试探买入与减仓提示（读持仓执行卡.md）。"""
+    """Home Hub / API：只展示人工确认后的交易卡，避免收盘候选自动变买入。"""
     trim = load_execution_card_trim_hints()
     trims = [{**meta, "code": code, "kind": "trim"} for code, meta in trim.items()]
-    try:
-        from stock_ai.advisor_selection import execution_card_probe_enabled
-
-        if not execution_card_probe_enabled():
-            return trims
-    except ImportError:
-        pass
-    probe = load_execution_card_probe_buys()
-    buys = [{**meta, "code": code, "kind": "probe_buy"} for code, meta in probe.items()]
-    return buys + trims
+    return trims
 
 
 def apply_execution_card_b_tier(
@@ -229,6 +210,8 @@ def apply_execution_card_b_tier(
     probe_buys = load_execution_card_probe_buys()
     n = 0
     for row in rows:
+        if row.get("盘中确认") is not True:
+            continue
         code = _code6(str(row.get("代码") or row.get("code") or ""))
         meta = probe_buys.get(code)
         if not meta:
