@@ -11,12 +11,11 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-
-DEFAULT_OPENCLI = Path.home() / ".nvm/versions/node/v24.14.1/bin/opencli"
 
 EXTRACT_QUOTE_JS = r"""
 JSON.stringify({
@@ -150,8 +149,44 @@ def _strip_proxy_env(env: dict[str, str]) -> dict[str, str]:
     return env
 
 
+def _node_version(path: Path) -> tuple[int, ...]:
+    match = re.fullmatch(r"v?(\d+(?:\.\d+)*)", path.name)
+    if match is None:
+        return ()
+    return tuple(int(part) for part in match.group(1).split("."))
+
+
+def resolve_opencli_bin(*, nvm_root: Path | None = None) -> str:
+    """Resolve OpenCLI from explicit config, PATH, then installed nvm versions."""
+
+    configured = os.getenv("OPENCLI_BIN")
+    if configured:
+        candidate = Path(configured).expanduser()
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            return str(candidate)
+        raise FileNotFoundError(f"OPENCLI_BIN 不可执行: {candidate}")
+
+    path_candidate = shutil.which("opencli")
+    if path_candidate:
+        return path_candidate
+
+    root = nvm_root or Path.home() / ".nvm" / "versions" / "node"
+    candidates = [
+        version / "bin" / "opencli"
+        for version in root.glob("v*")
+        if _node_version(version)
+        and (version / "bin" / "opencli").is_file()
+        and os.access(version / "bin" / "opencli", os.X_OK)
+    ]
+    if candidates:
+        return str(max(candidates, key=lambda item: _node_version(item.parents[1])))
+    raise FileNotFoundError(
+        "未找到 opencli；请运行 npm install -g @jackwener/opencli，或配置 OPENCLI_BIN"
+    )
+
+
 def _opencli_bin() -> str:
-    return os.getenv("OPENCLI_BIN", str(DEFAULT_OPENCLI))
+    return resolve_opencli_bin()
 
 
 _BROWSER_SUBCOMMANDS = frozenset(
@@ -642,6 +677,25 @@ def fetch_kline_rows_opencli(
     if not isinstance(klines, list):
         return []
     return kline_strings_to_rows([str(x) for x in klines])
+
+
+def fetch_chip_kline_rows_opencli(
+    code: str,
+    *,
+    limit: int = 210,
+    wait_seconds: float = 2.0,
+    close_browser: bool = True,
+    reset_browser: bool = True,
+) -> list[list[str]]:
+    """Fetch unadjusted daily rows including f61 turnover for CYQ calculation."""
+
+    return fetch_kline_rows_opencli(
+        code,
+        limit=limit,
+        wait_seconds=wait_seconds,
+        close_browser=close_browser,
+        reset_browser=reset_browser,
+    )
 
 
 def fetch_kline_rows_batch_opencli(
