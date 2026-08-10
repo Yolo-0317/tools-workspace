@@ -114,6 +114,43 @@ def test_validate_newspic_input_rejects_short_virtual_lifestyle_copy(
         )
 
 
+def test_validate_newspic_input_accepts_popular_film_four_image_post(
+    tmp_path: Path,
+) -> None:
+    images = []
+    for index in range(4):
+        image = tmp_path / f"film-{index}.jpg"
+        image.write_bytes(b"x")
+        images.append(image)
+
+    assert validate_newspic_input(
+        title="《一部电影》最安静的不是结尾",
+        content="甲" * 220,
+        image_paths=images,
+        draft_profile="virtual_lifestyle",
+        content_lane="popular_film",
+    ) == images
+
+
+def test_validate_newspic_input_enforces_classic_list_image_range(
+    tmp_path: Path,
+) -> None:
+    images = []
+    for index in range(5):
+        image = tmp_path / f"film-{index}.jpg"
+        image.write_bytes(b"x")
+        images.append(image)
+
+    with pytest.raises(ValueError, match="6-9"):
+        validate_newspic_input(
+            title="3部适合关掉消息以后慢慢看的老片",
+            content="甲" * 400,
+            image_paths=images,
+            draft_profile="virtual_lifestyle",
+            content_lane="classic_list",
+        )
+
+
 def test_validate_newspic_image_sources_requires_original_fallback_reason(tmp_path: Path) -> None:
     image = tmp_path / "image.jpg"
     image.write_bytes(b"x")
@@ -286,6 +323,113 @@ def test_virtual_report_image_cannot_receive_zhixia_watermark(tmp_path: Path) ->
             draft_profile="virtual_lifestyle",
             content_type="A",
         )
+
+
+def test_film_official_image_requires_traceable_film_metadata(tmp_path: Path) -> None:
+    image = tmp_path / "official.jpg"
+    image.write_bytes(b"x")
+    sources = tmp_path / "sources.json"
+    sources.write_text(
+        json.dumps(
+            {
+                image.name: {
+                    "source_type": "film_official",
+                    "visual_role": "topic",
+                    "position_role": "hook",
+                    "page_url": "https://example.com/film",
+                    "page_title": "官方剧照",
+                    "source_name": "影片官方",
+                    "allow_zhixia_watermark": False,
+                }
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="film_title"):
+        validate_newspic_image_sources(
+            image_paths=[image],
+            sources_path=sources,
+            content="甲" * 220,
+            draft_profile="virtual_lifestyle",
+            content_type="A",
+            content_lane="popular_film",
+            character_image_policy="optional_one",
+        )
+
+
+def test_film_media_image_cannot_receive_zhixia_watermark(tmp_path: Path) -> None:
+    image = tmp_path / "media.jpg"
+    image.write_bytes(b"x")
+    sources = tmp_path / "sources.json"
+    sources.write_text(
+        json.dumps(
+            {
+                image.name: {
+                    "source_type": "film_media",
+                    "film_title": "一部电影",
+                    "visual_role": "topic",
+                    "position_role": "evidence",
+                    "page_url": "https://example.com/film-review",
+                    "page_title": "影片报道",
+                    "source_name": "示例媒体",
+                    "allow_zhixia_watermark": True,
+                }
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="影视图.*水印"):
+        validate_newspic_image_sources(
+            image_paths=[image],
+            sources_path=sources,
+            content="甲" * 220,
+            draft_profile="virtual_lifestyle",
+            content_type="A",
+            content_lane="popular_film",
+            character_image_policy="optional_one",
+        )
+
+
+def test_film_sources_accept_topic_only_images_with_optional_character(
+    tmp_path: Path,
+) -> None:
+    images = [tmp_path / f"film-{index}.jpg" for index in range(4)]
+    for image in images:
+        image.write_bytes(b"x")
+    sources = tmp_path / "sources.json"
+    sources.write_text(
+        json.dumps(
+            {
+                image.name: {
+                    "source_type": "film_official",
+                    "film_title": "一部电影",
+                    "visual_role": "topic",
+                    "position_role": "hook" if index == 0 else "evidence",
+                    "page_url": f"https://example.com/film/{index}",
+                    "page_title": "官方剧照",
+                    "source_name": "影片官方",
+                    "allow_zhixia_watermark": False,
+                }
+                for index, image in enumerate(images)
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    validate_newspic_image_sources(
+        image_paths=images,
+        sources_path=sources,
+        content="甲" * 220,
+        draft_profile="virtual_lifestyle",
+        content_type="A",
+        content_lane="popular_film",
+        character_image_policy="optional_one",
+    )
 
 
 def test_virtual_character_image_requires_capture_mode(tmp_path: Path) -> None:
