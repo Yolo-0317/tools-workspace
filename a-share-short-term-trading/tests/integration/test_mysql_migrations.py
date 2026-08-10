@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import sys
 from uuid import uuid4
 
 import pytest
@@ -17,7 +18,8 @@ PROJECT = Path(__file__).resolve().parents[2]
 
 
 def test_migrations_are_repeatable_and_support_rollback_only_dml() -> None:
-    from scripts.apply_migrations import apply_migrations, create_root_engine
+    sys.path.insert(0, str(PROJECT / "scripts"))
+    from apply_migrations import apply_migrations, create_root_engine
 
     engine = create_root_engine()
     apply_migrations(engine)

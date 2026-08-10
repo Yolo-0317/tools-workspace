@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import subprocess
 import sys
 
@@ -116,3 +117,25 @@ def test_migration_cli_dry_run_lists_files_without_connecting() -> None:
         "004_portfolio_broker_facts.sql DRY-RUN",
     ]
     assert result.stderr == ""
+
+
+def test_migration_cli_defaults_to_dry_run_and_requires_explicit_apply() -> None:
+    environment = dict(os.environ)
+    environment["MYSQL_URL"] = "not-a-database-url"
+    environment["MYSQL_ROOT_PASSWORD"] = "must-not-be-used"
+    result = subprocess.run(
+        [sys.executable, str(PROJECT / "scripts" / "apply_migrations.py")],
+        cwd=PROJECT.parent,
+        env=environment,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.splitlines() == [
+        "001_stt_daily_sync_runs.sql DRY-RUN",
+        "002_stt_evidence_and_capture.sql DRY-RUN",
+        "003_stt_core_schema.sql DRY-RUN",
+        "004_portfolio_broker_facts.sql DRY-RUN",
+    ]

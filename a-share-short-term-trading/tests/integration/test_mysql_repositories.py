@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
+from pathlib import Path
+import sys
 
 import pytest
 
@@ -30,6 +32,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 AS_OF = datetime(2026, 8, 10, 8, 0, tzinfo=timezone.utc)
+PROJECT = Path(__file__).resolve().parents[2]
 IDS = {
     name: f"40000000-0000-4000-8000-{index:012d}"
     for index, name in enumerate(
@@ -106,7 +109,8 @@ def contracts() -> tuple[object, ...]:
 
 
 def test_every_contract_round_trips_inside_one_rollback_transaction() -> None:
-    from scripts.apply_migrations import create_root_engine
+    sys.path.insert(0, str(PROJECT / "scripts"))
+    from apply_migrations import create_root_engine
 
     engine = create_root_engine()
     connection = engine.connect()

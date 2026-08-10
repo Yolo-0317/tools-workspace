@@ -85,10 +85,12 @@ def apply_migrations(engine: Engine, *, emit: bool = False) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Apply short-term trading MySQL migrations")
-    parser.add_argument("--dry-run", action="store_true", help="list migrations without connecting")
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument("--dry-run", action="store_true", help="list migrations without connecting")
+    modes.add_argument("--apply", action="store_true", help="connect and apply migrations")
     args = parser.parse_args()
 
-    if args.dry_run:
+    if not args.apply:
         for path in migration_files():
             print(f"{path.name} DRY-RUN")
         return 0
@@ -99,7 +101,7 @@ def main() -> int:
     except MigrationError as exc:
         print(f"{exc.filename} FAILED")
         return 1
-    except RuntimeError:
+    except Exception:
         print("configuration FAILED")
         return 1
     finally:

@@ -10,7 +10,7 @@ def payload() -> dict:
     return {
         "source": "jywg.18.cn-opencli",
         "fetched_at": "2026-08-10T08:15:30+00:00",
-        "user": "测试用户(1234567890)",
+        "user": "测试用户(1234)",
         "account": {
             "总资产": "100,000.00",
             "可用资金": "30,000.00",
@@ -58,8 +58,8 @@ def test_broker_fact_conversion_preserves_every_position_and_account_field() -> 
     assert account.withdrawable_cash == Decimal("29000.00")
     assert account.frozen_cash == Decimal("1000.00")
     assert account.daily_pnl == Decimal("350.00")
-    assert account.masked_account_identifier != "1234567890"
-    assert "1234567890" not in account.masked_account_identifier
+    assert account.masked_account_identifier == "12****34"
+    assert "1234" not in account.masked_account_identifier
 
 
 def test_existing_card_conversion_keeps_total_quantity_not_available_quantity() -> None:
