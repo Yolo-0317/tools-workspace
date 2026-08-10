@@ -86,14 +86,14 @@ Add exact tests for `603011`, `sh603011`, and `603011.SH`; reject non-six-digit 
 
 ```python
 def test_holding_accepts_unknown_available_shares(self):
-    value = validate_holding(500, 22.75, None)
-    self.assertEqual(value.shares, 500)
-    self.assertEqual(value.cost_price, 22.75)
+    value = validate_holding(300, 12.34, None)
+    self.assertEqual(value.shares, 300)
+    self.assertEqual(value.cost_price, 12.34)
     self.assertIsNone(value.available_shares)
 
 def test_partial_holding_is_rejected(self):
     with self.assertRaisesRegex(ValueError, "shares.*cost_price"):
-        validate_holding(500, None, None)
+        validate_holding(300, None, None)
 ```
 
 - [ ] **Step 2: Run the focused test and verify RED**
@@ -270,7 +270,7 @@ Cover profitable hold, first-target reduction, support-loss reduction, invalidat
 def test_unknown_available_shares_never_emits_sell_quantity(self):
     result = diagnose(
         self.security, self.context, self.bars, self.quote,
-        HoldingInput(shares=500, cost_price=22.75, available_shares=None),
+        HoldingInput(shares=300, cost_price=12.34, available_shares=None),
         as_of=self.now,
     )
     self.assertIsNone(result.holding["suggested_sell_shares"])
@@ -365,14 +365,14 @@ From the Skill root, run:
 python3 -m unittest discover -s tests -v
 python3 -m compileall -q a_share_stock_diagnosis scripts tests
 python3 scripts/diagnose.py --symbol 603011 --output json
-python3 scripts/diagnose.py --symbol 603011 --shares 500 --cost-price 22.75 --available-shares 500 --output json
+python3 scripts/diagnose.py --symbol 603011 --shares 300 --cost-price 12.34 --available-shares 300 --output json
 ```
 
 Then copy the Skill to a temporary standalone directory and repeat the two CLI commands with `PYTHONPATH` unset. Validate `SKILL.md` frontmatter and run QClaw `skills check` against an approved temporary installation or, if installation approval is not granted, run its read-only structural checks and report the unexecuted discovery check explicitly.
 
 - [ ] **Step 5: Run security and scope checks**
 
-Review every file in the Skill. Confirm network destinations are named public HTTPS domains; no `eval`, `exec`, subprocess shell, credential reads, browser state, account files, absolute workspace paths, IP-address endpoints, or package installers exist. Scan for `MYSQL_URL`, `MYSQL_ROOT_PASSWORD`, `TUSHARE_TOKEN`, `shares=500`, `22.75`, `.env`, cookies, authorization headers, and private hostnames; test fixtures may use synthetic holding values but the packaged production files must not contain real holdings.
+Review every file in the Skill. Confirm network destinations are named public HTTPS domains; no `eval`, `exec`, subprocess shell, credential reads, browser state, account files, absolute workspace paths, IP-address endpoints, or package installers exist. Scan for `MYSQL_URL`, `MYSQL_ROOT_PASSWORD`, `TUSHARE_TOKEN`, `.env`, cookies, authorization headers, private hostnames, and any values copied from a real holding; test fixtures may use clearly synthetic holding values but packaged production files must not contain personal holdings.
 
 - [ ] **Step 6: Build archive and commit scoped source**
 

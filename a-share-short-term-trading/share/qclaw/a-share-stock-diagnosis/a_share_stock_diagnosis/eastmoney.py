@@ -5,9 +5,11 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 import json
 import math
+import shutil
+import subprocess
 from typing import Any, Mapping
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
@@ -21,6 +23,7 @@ QUOTE_URL = "https://push2.eastmoney.com/api/qt/stock/get"
 DAILY_URL = "https://push2his.eastmoney.com/api/qt/stock/kline/get"
 STOCK_LIST_URL = "https://push2.eastmoney.com/api/qt/clist/get"
 MAX_RESPONSE_BYTES = 2 * 1024 * 1024
+ALLOWED_HOSTS = frozenset({"push2.eastmoney.com", "push2his.eastmoney.com"})
 
 
 class DataSourceError(RuntimeError):
@@ -41,8 +44,16 @@ class AmbiguousSymbolError(ValueError):
 
 
 class JsonHttpClient:
-    def __init__(self, opener=urlopen) -> None:
+    def __init__(
+        self,
+        opener=urlopen,
+        *,
+        curl_path: str | None = None,
+        runner=subprocess.run,
+    ) -> None:
         self._opener = opener
+        self._curl_path = curl_path or shutil.which("curl")
+        self._runner = runner
 
     def get_json(
         self,
@@ -50,11 +61,21 @@ class JsonHttpClient:
         params: Mapping[str, str],
         timeout: float = 10.0,
     ) -> Any:
-        if not url.startswith("https://"):
+        parsed = urlparse(url)
+        if parsed.scheme != "https":
             raise DataSourceError("UNSAFE_URL", "行情地址不是 HTTPS")
+        if parsed.hostname not in ALLOWED_HOSTS:
+            raise DataSourceError("UNSAFE_HOST", "行情域名不在允许列表")
+        full_url = f"{url}?{urlencode(params)}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 QClaw-A-Share-Diagnosis/1.0",
+            "Referer": "https://quote.eastmoney.com/",
+            "Accept": "application/json,text/plain,*/*",
+            "Accept-Language": "zh-CN,zh;q=0.9",
+        }
         request = Request(
-            f"{url}?{urlencode(params)}",
-            headers={"User-Agent": "Mozilla/5.0 QClaw-A-Share-Diagnosis/1.0"},
+            full_url,
+            headers=headers,
         )
         try:
             with self._opener(request, timeout=timeout) as response:
@@ -65,13 +86,54 @@ class JsonHttpClient:
         except DataSourceError:
             raise
         except (HTTPError, URLError, OSError, ValueError) as exc:
-            raise DataSourceError("NETWORK_ERROR", "公开行情接口暂时不可用") from exc
+            raw = self._curl_get(full_url, headers, timeout, exc)
         if len(raw) > MAX_RESPONSE_BYTES:
             raise DataSourceError("RESPONSE_TOO_LARGE", "行情响应超过大小限制")
         try:
             return json.loads(raw.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise DataSourceError("INVALID_JSON", "公开行情响应格式异常") from exc
+
+    def _curl_get(
+        self,
+        full_url: str,
+        headers: Mapping[str, str],
+        timeout: float,
+        original_error: Exception,
+    ) -> bytes:
+        if not self._curl_path:
+            raise DataSourceError("NETWORK_ERROR", "公开行情接口暂时不可用") from original_error
+        arguments = [
+            self._curl_path,
+            "--fail",
+            "--silent",
+            "--show-error",
+            "--location",
+            "--max-redirs",
+            "2",
+            "--max-time",
+            str(max(1, int(timeout))),
+            "--max-filesize",
+            str(MAX_RESPONSE_BYTES),
+        ]
+        for key, value in headers.items():
+            arguments.extend(("--header", f"{key}: {value}"))
+        arguments.append(full_url)
+        try:
+            completed = self._runner(
+                arguments,
+                capture_output=True,
+                check=False,
+                timeout=timeout + 2,
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            raise DataSourceError("NETWORK_ERROR", "公开行情接口暂时不可用") from exc
+        raw = completed.stdout
+        if completed.returncode != 0:
+            raise DataSourceError("NETWORK_ERROR", "公开行情接口暂时不可用") from original_error
+        if len(raw) > MAX_RESPONSE_BYTES:
+            raise DataSourceError("RESPONSE_TOO_LARGE", "行情响应超过大小限制")
+        return raw
 
 
 def _secid(security: Security) -> str:

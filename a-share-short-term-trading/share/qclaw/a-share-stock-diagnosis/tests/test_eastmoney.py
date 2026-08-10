@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import timedelta
 import json
 from pathlib import Path
+import subprocess
 from tempfile import TemporaryDirectory
 import unittest
 
@@ -14,6 +15,7 @@ from a_share_stock_diagnosis.eastmoney import (
     EastmoneyClient,
     JsonHttpClient,
     MAX_RESPONSE_BYTES,
+    QUOTE_URL,
 )
 from a_share_stock_diagnosis.models import Security
 
@@ -62,22 +64,34 @@ class FakeResponse:
 class JsonHttpClientTests(unittest.TestCase):
     def test_http_client_parses_utf8_json_and_rejects_non_https(self) -> None:
         client = JsonHttpClient(lambda request, timeout: FakeResponse(b'{"ok":true}'))
-        self.assertEqual(client.get_json("https://example.com/data", {"q": "中文"}), {"ok": True})
+        self.assertEqual(client.get_json(QUOTE_URL, {"q": "中文"}), {"ok": True})
         with self.assertRaisesRegex(DataSourceError, "HTTPS"):
-            client.get_json("http://example.com/data", {})
+            client.get_json("http://push2.eastmoney.com/data", {})
 
     def test_http_client_rejects_invalid_or_oversized_responses(self) -> None:
         invalid = JsonHttpClient(lambda request, timeout: FakeResponse(b"not-json"))
         with self.assertRaises(DataSourceError) as invalid_error:
-            invalid.get_json("https://example.com/data", {})
+            invalid.get_json(QUOTE_URL, {})
         self.assertEqual(invalid_error.exception.code, "INVALID_JSON")
 
         oversized = JsonHttpClient(
             lambda request, timeout: FakeResponse(b"{}", MAX_RESPONSE_BYTES + 1)
         )
         with self.assertRaises(DataSourceError) as size_error:
-            oversized.get_json("https://example.com/data", {})
+            oversized.get_json(QUOTE_URL, {})
         self.assertEqual(size_error.exception.code, "RESPONSE_TOO_LARGE")
+
+    def test_http_client_uses_bounded_curl_fallback_after_urllib_transport_failure(self) -> None:
+        def failing_opener(request, timeout):
+            raise OSError("fixture transport closed")
+
+        def successful_runner(arguments, **kwargs):
+            self.assertIn("--max-filesize", arguments)
+            self.assertNotIn("shell", kwargs)
+            return subprocess.CompletedProcess(arguments, 0, b'{"ok":true}', b"")
+
+        client = JsonHttpClient(failing_opener, curl_path="/usr/bin/curl", runner=successful_runner)
+        self.assertEqual(client.get_json(QUOTE_URL, {}), {"ok": True})
 
 
 class EastmoneyClientTests(unittest.TestCase):

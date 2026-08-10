@@ -50,8 +50,8 @@ Skill 使用标准 YAML frontmatter，仅声明名称、描述和 QClaw/OpenClaw
 ```bash
 python3 scripts/diagnose.py --symbol 603011 --output json
 
-python3 scripts/diagnose.py --symbol 603011 --shares 500 \
-  --cost-price 22.75 --available-shares 500 --output json
+python3 scripts/diagnose.py --symbol 603011 --shares 300 \
+  --cost-price 12.34 --available-shares 300 --output json
 ```
 
 测试使用的 `--at` 只接受带时区 ISO 时间，并在 `SKILL.md` 中标记为复现参数，不作为用户手工选择交易时段的方式。

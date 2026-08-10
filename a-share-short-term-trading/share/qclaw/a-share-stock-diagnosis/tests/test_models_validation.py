@@ -44,27 +44,27 @@ class HoldingValidationTests(unittest.TestCase):
         self.assertIsNone(validate_holding(None, None, None))
 
     def test_holding_accepts_unknown_available_shares(self) -> None:
-        value = validate_holding(500, 22.75, None)
+        value = validate_holding(300, 12.34, None)
         self.assertIsNotNone(value)
         assert value is not None
-        self.assertEqual(value.shares, 500)
-        self.assertEqual(value.cost_price, 22.75)
+        self.assertEqual(value.shares, 300)
+        self.assertEqual(value.cost_price, 12.34)
         self.assertIsNone(value.available_shares)
 
     def test_partial_holding_is_rejected(self) -> None:
         with self.assertRaisesRegex(ValueError, "shares.*cost_price"):
-            validate_holding(500, None, None)
+            validate_holding(300, None, None)
         with self.assertRaisesRegex(ValueError, "shares.*cost_price"):
-            validate_holding(None, 22.75, None)
+            validate_holding(None, 12.34, None)
 
     def test_holding_rejects_invalid_numbers(self) -> None:
         invalid_cases = (
-            (-1, 22.75, 0),
-            (500, 0.0, 500),
-            (500, math.inf, 500),
-            (500, 22.75, -1),
-            (500, 22.75, 501),
-            (550, 22.75, 500),
+            (-1, 12.34, 0),
+            (300, 0.0, 300),
+            (300, math.inf, 300),
+            (300, 12.34, -1),
+            (300, 12.34, 301),
+            (350, 12.34, 300),
         )
         for values in invalid_cases:
             with self.subTest(values=values):

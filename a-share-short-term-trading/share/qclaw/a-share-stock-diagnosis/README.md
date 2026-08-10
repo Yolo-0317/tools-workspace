@@ -38,7 +38,7 @@ QClaw 会从其 OpenClaw 工作区加载 Skill，不需要修改 `openclaw.json`
 python3 scripts/diagnose.py --symbol 603011 --output json
 
 python3 scripts/diagnose.py --symbol 603011 \
-  --shares 500 --cost-price 22.75 --available-shares 500 --output json
+  --shares 300 --cost-price 12.34 --available-shares 300 --output json
 ```
 
 标准输出始终只有一个 JSON 对象。结果中的 `actionable` 固定为 `false`，不会自动提交交易。
@@ -71,4 +71,3 @@ python3 -m compileall -q a_share_stock_diagnosis scripts tests
 ## 卸载
 
 只删除安装的 `a-share-stock-diagnosis` Skill 文件夹。公开行情缓存可单独删除，不影响其他 QClaw 数据。
-
