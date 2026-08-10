@@ -32,3 +32,15 @@
 python3 -m unittest tests.workspace_governance.test_workspace_registry -v
 python3 scripts/workspace_registry.py --list --format json
 ```
+
+需要为具体任务选择最小上下文时，使用只读 preflight：
+
+```bash
+python3 scripts/workspace_preflight.py \
+  --project stock-ai \
+  --risk normal \
+  --task "任务摘要" \
+  --wiki-query "可选知识关键词"
+```
+
+preflight 只返回路径、验证建议和风险检查项，不读取推荐文档正文，也不执行任何命令。
