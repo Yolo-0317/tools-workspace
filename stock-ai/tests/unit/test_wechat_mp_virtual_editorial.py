@@ -6,6 +6,8 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from scripts.tools.wechat_mp_virtual_editorial import (
+    available_content_lanes,
+    content_lane_counts,
     content_mix_counts,
     next_content_type,
     validate_opinion_copy,
@@ -23,6 +25,7 @@ def _valid_card(**overrides: object) -> dict[str, object]:
         "observed_at": "2026-08-10T17:10:00+08:00",
         "discovery_platform": "百度热搜",
         "content_type": "A",
+        "content_lane": "nonfilm_hotspot",
         "fact_sources": [
             {
                 "url": "https://example.com/report",
@@ -88,6 +91,7 @@ def test_validate_topic_card_rejects_stale_hotspot() -> None:
 def test_validate_topic_card_allows_system_log_without_fact_source() -> None:
     card = _valid_card(
         content_type="C",
+        content_lane="system_log",
         observed_at=(NOW - timedelta(days=1)).isoformat(),
         fact_sources=[],
         topic="删除过于完美的工位照",
@@ -118,9 +122,10 @@ def test_validate_opinion_copy_accepts_original_post_between_180_and_320_chars()
     assert validate_opinion_copy(content, has_report_images=False) == content
 
 
-def test_next_content_type_fills_seven_two_one_round() -> None:
+def test_next_content_type_summarizes_four_three_two_one_round() -> None:
     posts = [
-        *[{"content_type": "A", "status": "published"} for _ in range(7)],
+        *[{"content_type": "A", "status": "published"} for _ in range(4)],
+        *[{"content_type": "B", "status": "published"} for _ in range(3)],
         *[{"content_type": "A+C", "status": "published"} for _ in range(2)],
     ]
 
@@ -129,12 +134,80 @@ def test_next_content_type_fills_seven_two_one_round() -> None:
 
 def test_mix_ignores_invalid_posts_and_previous_complete_round() -> None:
     posts = [
-        *[{"content_type": "A", "status": "published"} for _ in range(7)],
+        *[{"content_type": "A", "status": "published"} for _ in range(4)],
+        *[{"content_type": "B", "status": "published"} for _ in range(3)],
         *[{"content_type": "A+C", "status": "published"} for _ in range(2)],
         {"content_type": "C", "status": "published"},
         {"content_type": "C", "status": "invalid"},
         {"content_type": "A", "status": "published"},
     ]
 
-    assert content_mix_counts(posts) == {"A": 1, "A+C": 0, "C": 0}
+    assert content_mix_counts(posts) == {"A": 1, "B": 0, "A+C": 0, "C": 0}
     assert next_content_type(posts) == "A"
+
+
+def test_available_content_lanes_accepts_any_unfilled_lane() -> None:
+    posts = [{"content_lane": "popular_film", "status": "published"}]
+
+    available = available_content_lanes(posts)
+
+    assert "popular_film" in available
+    assert "classic_single" in available
+    assert "system_log" in available
+
+
+def test_filled_lane_is_removed_without_forcing_post_order() -> None:
+    posts = [
+        {"content_lane": "popular_film", "status": "published"},
+        {"content_lane": "popular_film", "status": "published"},
+    ]
+
+    assert "popular_film" not in available_content_lanes(posts)
+    assert "classic_list" in available_content_lanes(posts)
+
+
+def test_lane_counts_ignore_invalid_and_previous_complete_round() -> None:
+    first_round = [
+        *[
+            {"content_lane": "popular_film", "status": "published"}
+            for _ in range(2)
+        ],
+        {"content_lane": "classic_single", "status": "published"},
+        {"content_lane": "classic_list", "status": "published"},
+        {"content_lane": "ai_film", "status": "published"},
+        *[
+            {"content_lane": "nonfilm_hotspot", "status": "published"}
+            for _ in range(2)
+        ],
+        {"content_lane": "zhixia_daily", "status": "published"},
+        {"content_lane": "ai_human", "status": "published"},
+        {"content_lane": "system_log", "status": "published"},
+    ]
+    posts = [
+        *first_round,
+        {"content_lane": "popular_film", "status": "invalid"},
+        {"content_lane": "classic_single", "status": "published"},
+    ]
+
+    assert content_lane_counts(posts)["classic_single"] == 1
+    assert content_lane_counts(posts)["popular_film"] == 0
+
+
+def test_validate_topic_card_rejects_lane_type_mismatch() -> None:
+    card = _valid_card(content_type="B", content_lane="popular_film")
+
+    with pytest.raises(ValueError, match="内容类型应为 A"):
+        validate_topic_card(card, now=NOW)
+
+
+def test_validate_topic_card_allows_stale_classic_single() -> None:
+    card = _valid_card(
+        content_type="B",
+        content_lane="classic_single",
+        observed_at=(NOW - timedelta(days=30)).isoformat(),
+        character_image_policy="optional_one",
+    )
+
+    normalized = validate_topic_card(card, now=NOW)
+
+    assert normalized["content_lane"] == "classic_single"

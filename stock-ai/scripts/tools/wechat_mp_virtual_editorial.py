@@ -10,8 +10,40 @@ from zoneinfo import ZoneInfo
 
 
 TZ = ZoneInfo("Asia/Shanghai")
-CONTENT_TYPES = ("A", "A+C", "C")
-CHARACTER_POLICIES = ("default_one", "story_multiple")
+CONTENT_TYPES = ("A", "B", "A+C", "C")
+CONTENT_LANES = (
+    "popular_film",
+    "classic_single",
+    "classic_list",
+    "ai_film",
+    "nonfilm_hotspot",
+    "zhixia_daily",
+    "ai_human",
+    "system_log",
+)
+LANE_TARGETS = {
+    "popular_film": 2,
+    "classic_single": 1,
+    "classic_list": 1,
+    "ai_film": 1,
+    "nonfilm_hotspot": 2,
+    "zhixia_daily": 1,
+    "ai_human": 1,
+    "system_log": 1,
+}
+LANE_CONTENT_TYPES = {
+    "popular_film": "A",
+    "classic_single": "B",
+    "classic_list": "B",
+    "ai_film": "A+C",
+    "nonfilm_hotspot": "A",
+    "zhixia_daily": "B",
+    "ai_human": "A+C",
+    "system_log": "C",
+}
+FILM_LANES = {"popular_film", "classic_single", "classic_list", "ai_film"}
+TIME_SENSITIVE_LANES = {"popular_film", "nonfilm_hotspot"}
+CHARACTER_POLICIES = ("default_one", "optional_one", "story_multiple")
 SCORE_FIELDS = (
     "timing",
     "worker_relevance",
@@ -24,6 +56,7 @@ REQUIRED_FIELDS = (
     "observed_at",
     "discovery_platform",
     "content_type",
+    "content_lane",
     "fact_sources",
     "contrast",
     "zhixia_observation",
@@ -33,7 +66,7 @@ REQUIRED_FIELDS = (
     "scores",
     "character_image_policy",
 )
-ROUND_TARGETS = {"A": 7, "A+C": 2, "C": 1}
+ROUND_TARGETS = {"A": 4, "B": 3, "A+C": 2, "C": 1}
 MIN_SCORE = 70
 MIN_OBSERVATION_SCORE = 15
 HOTSPOT_MAX_AGE_SECONDS = 6 * 60 * 60
@@ -79,12 +112,24 @@ def validate_topic_card(
 
     content_type = _required_text(card, "content_type")
     if content_type not in CONTENT_TYPES:
-        raise ValueError("栀夏内容类型须为 A / A+C / C")
+        raise ValueError("栀夏内容类型须为 A / B / A+C / C")
     normalized["content_type"] = content_type
+
+    content_lane = _required_text(card, "content_lane")
+    if content_lane not in CONTENT_LANES:
+        raise ValueError("栀夏内容通道无效")
+    expected_type = LANE_CONTENT_TYPES[content_lane]
+    if content_type != expected_type:
+        raise ValueError(f"{content_lane} 内容类型应为 {expected_type}")
+    normalized["content_lane"] = content_lane
 
     character_policy = _required_text(card, "character_image_policy")
     if character_policy not in CHARACTER_POLICIES:
-        raise ValueError("栀夏角色图片策略须为 default_one / story_multiple")
+        raise ValueError(
+            "栀夏角色图片策略须为 default_one / optional_one / story_multiple"
+        )
+    if character_policy == "optional_one" and content_lane not in FILM_LANES:
+        raise ValueError("optional_one 角色图片策略只适用于影视内容")
     normalized["character_image_policy"] = character_policy
 
     image_plan = card.get("image_plan")
@@ -126,19 +171,20 @@ def validate_topic_card(
     current = now or datetime.now(TZ)
     if current.tzinfo is None:
         current = current.replace(tzinfo=TZ)
-    if content_type in {"A", "A+C"}:
+    fact_sources = card.get("fact_sources")
+    if content_lane in TIME_SENSITIVE_LANES:
         age_seconds = (current - observed_at).total_seconds()
         if age_seconds > HOTSPOT_MAX_AGE_SECONDS:
             raise ValueError("栀夏热点选题超过 6 小时，须重新核验")
-        fact_sources = card.get("fact_sources")
+    if content_lane in FILM_LANES | TIME_SENSITIVE_LANES:
         if not isinstance(fact_sources, list) or not any(
             isinstance(item, Mapping)
             and str(item.get("url") or "").startswith("https://")
             and str(item.get("title") or "").strip()
             for item in fact_sources
         ):
-            raise ValueError("A / A+C 选题须至少包含一个可追溯事实来源")
-    elif not isinstance(card.get("fact_sources"), list):
+            raise ValueError("影视或热点选题须至少包含一个可追溯事实来源")
+    elif not isinstance(fact_sources, list):
         raise ValueError("栀夏选题卡 fact_sources 须为数组")
 
     normalized["observed_at"] = observed_at.isoformat()
@@ -174,6 +220,24 @@ def content_mix_counts(posts: Iterable[Mapping[str, Any]]) -> dict[str, int]:
         if content_type in counts:
             counts[content_type] += 1
     return counts
+
+
+def content_lane_counts(posts: Iterable[Mapping[str, Any]]) -> dict[str, int]:
+    counts = {content_lane: 0 for content_lane in CONTENT_LANES}
+    for post in _current_round_posts(posts):
+        content_lane = str(post.get("content_lane") or "")
+        if content_lane in counts:
+            counts[content_lane] += 1
+    return counts
+
+
+def available_content_lanes(posts: Iterable[Mapping[str, Any]]) -> list[str]:
+    counts = content_lane_counts(posts)
+    return [
+        content_lane
+        for content_lane in CONTENT_LANES
+        if counts[content_lane] < LANE_TARGETS[content_lane]
+    ]
 
 
 def next_content_type(posts: Iterable[Mapping[str, Any]]) -> str:
