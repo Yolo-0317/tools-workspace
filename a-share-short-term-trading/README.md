@@ -46,6 +46,26 @@ stock-ai/.venv/bin/python a-share-short-term-trading/scripts/daily_bar_sync.py \
 
 收盘诊断只生成 `NO_TRADE` 或 `WAIT_ENTRY`。盘中只有冻结计划、行情证据、市场状态和组合风控全部通过时才会计算 `BUY_ALLOWED`；影子模式仍向聊天窗口输出不可执行的 `NO_TRADE` 主信号。任何流程都不会自动提交券商订单。
 
+统一个股诊断入口会根据上海时区和 SSE 交易日历自动识别盘前、盘中、午间休市、盘后或非交易日，不接受手工指定时段。盘前和非交易日使用最近完整收盘数据；盘中可刷新行情与资金流；午间只读取已保存证据；盘后若今日完整日线尚未入库，会明确回退到最近完整收盘日。
+
+默认是 `SHADOW`，且市场和组合风控默认不放行，因此不会仅凭命令调用产生可执行买入信号：
+
+```bash
+PYTHONPATH=a-share-short-term-trading:stock-ai \
+stock-ai/.venv/bin/python a-share-short-term-trading/scripts/diagnose_stock.py \
+  --code 600000
+```
+
+JSON 输出和关闭盘中实时采集：
+
+```bash
+PYTHONPATH=a-share-short-term-trading:stock-ai \
+stock-ai/.venv/bin/python a-share-short-term-trading/scripts/diagnose_stock.py \
+  --code 600000 --output json --no-intraday-refresh
+```
+
+只有同时提供已冻结的收盘计划、明确的市场状态、组合风控放行和 `LIVE` 模式，盘中五项证据全部通过后才可能输出可执行的 `BUY_ALLOWED`。`--at` 仅用于带时区的历史复现和测试，不用于手工选择交易时段。
+
 ## 验证
 
 本地单元与回归测试不会连接 MySQL：

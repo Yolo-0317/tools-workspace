@@ -55,6 +55,11 @@ def _data_label(context: TradingSessionContext, quote_as_of: str | None) -> str:
     if context.session in {TradingSession.PRE_MARKET, TradingSession.NON_TRADING_DAY}:
         return f"最近交易日收盘（{trade_date}）"
     if context.session is TradingSession.POST_MARKET:
+        if (
+            context.diagnosis_trade_date is not None
+            and context.diagnosis_trade_date != context.local_now.date()
+        ):
+            return f"最近完整收盘（{trade_date}）"
         return f"当日收盘（{trade_date}）"
     if context.session is TradingSession.MIDDAY_BREAK:
         return f"上午最新行情（{quote_as_of or '时间不可确认'}）"

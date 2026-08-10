@@ -1,0 +1,163 @@
+"""Runtime composition for one session-aware stock diagnosis."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, replace
+from datetime import date, datetime, timedelta
+from typing import Callable, Protocol
+
+from .contracts import ReleaseMode
+from .daily_sync import DailyBar, DailyBarRepository, bar_is_complete, normalize_code
+from .diagnosis import RiskProfile, TradePlanDraft, build_eod_trade_plan
+from .evidence import EvidenceRepository
+from .intraday import IntradayDecision, IntradayRiskGate, verify_intraday_plan
+from .session import TradingCalendar, TradingSession, classify_trading_session
+from .session_diagnosis import SessionAwareDiagnosis, diagnose_for_session
+
+
+class RuntimeEvidenceRepository(EvidenceRepository, Protocol):
+    def get_latest_valid_snapshot(self, code: str, kind: str): ...
+
+    def get_valid_snapshots_since(self, code: str, kind: str, since: datetime): ...
+
+
+class StockAiTradingCalendar:
+    """Strict adapter around the shared SSE calendar cache."""
+
+    def status(self, value: date) -> bool | None:
+        from stock_ai.trading_calendar import trading_day_status
+
+        return trading_day_status(value)
+
+    def latest_on_or_before(self, value: date) -> date | None:
+        from stock_ai.trading_calendar import latest_confirmed_a_share_trade_date
+
+        return latest_confirmed_a_share_trade_date(value)
+
+    def next_on_or_after(self, value: date) -> date | None:
+        from stock_ai.trading_calendar import next_confirmed_a_share_trade_date
+
+        return next_confirmed_a_share_trade_date(value)
+
+
+@dataclass
+class DiagnosisRuntime:
+    calendar: TradingCalendar
+    daily_repository: DailyBarRepository
+    evidence_repository: RuntimeEvidenceRepository
+    risk_profile: RiskProfile
+    frozen_plan: TradePlanDraft | None = None
+    risk_gate: IntradayRiskGate | None = None
+    intraday_refresh: Callable[[str], None] | None = None
+
+
+def _safe_plan(code: str, now: datetime, reason: str) -> TradePlanDraft:
+    return TradePlanDraft(
+        code=code,
+        status="NO_TRADE",
+        reason=reason,
+        as_of=now.isoformat(),
+        trigger_price=None,
+        entry_ceiling=None,
+        invalidation_price=None,
+        first_reduce_price=None,
+        pullback_low=None,
+        pullback_high=None,
+        maximum_shares=0,
+        indicators={},
+        evidence_refs={},
+    )
+
+
+def _missing_intraday_decision(code: str, now: datetime, reason: str) -> IntradayDecision:
+    return IntradayDecision(
+        code=code,
+        status="NO_TRADE",
+        reason=reason,
+        as_of=now.isoformat(),
+        maximum_shares=0,
+        passed_gates=[],
+        failed_gates=["plan", "portfolio"],
+        evidence_refs={},
+    )
+
+
+def build_runtime_diagnosis(
+    code: str,
+    runtime: DiagnosisRuntime,
+    *,
+    now: datetime,
+    release_mode: ReleaseMode,
+    is_holding: bool = False,
+) -> SessionAwareDiagnosis:
+    """Classify the clock, select the data path, and return one safe conclusion."""
+
+    normalized = normalize_code(code)
+    context = classify_trading_session(now, runtime.calendar)
+    if not context.calendar_confirmed:
+        return diagnose_for_session(
+            normalized,
+            context,
+            static_diagnose=lambda selected, _: _safe_plan(
+                selected, context.now_utc, "交易日历未确认，未访问行情或交易数据源"
+            ),
+            release_mode=release_mode,
+            is_holding=is_holding,
+        )
+
+    cached_bars: list[DailyBar] | None = None
+    if context.session not in {TradingSession.INTRADAY, TradingSession.MIDDAY_BREAK}:
+        retrieved_bars = runtime.daily_repository.get_recent_bars(normalized, 120)
+        cutoff = context.diagnosis_trade_date or context.local_now.date()
+        cached_bars = [
+            item
+            for item in retrieved_bars
+            if item.trade_date <= cutoff and bar_is_complete(item)
+        ]
+        latest_date = max((item.trade_date for item in cached_bars), default=None)
+        if latest_date is not None and latest_date != context.diagnosis_trade_date:
+            context = replace(context, diagnosis_trade_date=latest_date)
+
+    def static_diagnose(selected: str, _context) -> TradePlanDraft:
+        bars = cached_bars
+        if bars is None:
+            bars = runtime.daily_repository.get_recent_bars(selected, 120)
+        chip = runtime.evidence_repository.get_latest_valid_snapshot(selected, "chip")
+        return build_eod_trade_plan(
+            selected,
+            bars,
+            chip,
+            profile=runtime.risk_profile,
+            now=context.now_utc,
+        )
+
+    def intraday_diagnose(selected: str, _context) -> IntradayDecision:
+        if runtime.frozen_plan is None or runtime.risk_gate is None:
+            return _missing_intraday_decision(
+                selected, context.now_utc, "缺少冻结收盘计划或组合风控门禁"
+            )
+        if context.session is TradingSession.INTRADAY and runtime.intraday_refresh is not None:
+            runtime.intraday_refresh(selected)
+        repository = runtime.evidence_repository
+        return verify_intraday_plan(
+            runtime.frozen_plan,
+            quote=repository.get_latest_valid_snapshot(selected, "quote"),
+            fund_flow=repository.get_latest_valid_snapshot(selected, "fund_flow"),
+            sector=repository.get_latest_valid_snapshot(selected, "sector"),
+            chip=repository.get_latest_valid_snapshot(selected, "chip"),
+            order_books=repository.get_valid_snapshots_since(
+                selected, "order_book", context.now_utc - timedelta(minutes=5)
+            ),
+            risk_gate=runtime.risk_gate,
+            now=context.now_utc,
+            is_holding=is_holding,
+        )
+
+    return diagnose_for_session(
+        normalized,
+        context,
+        static_diagnose=static_diagnose,
+        intraday_diagnose=intraday_diagnose,
+        release_mode=release_mode,
+        is_holding=is_holding,
+    )
