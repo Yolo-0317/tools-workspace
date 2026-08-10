@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import date, datetime
 import math
 from typing import Any
 
 from short_term_trading.daily_sync import DailyBar, normalize_code
-from short_term_trading.evidence import EvidenceSnapshot, is_fresh
+from short_term_trading.evidence import (
+    EvidenceSnapshot,
+    is_chip_snapshot_for_trade_date,
+    is_fresh,
+)
 
 
 def _ceil_cent(value: float) -> float:
@@ -101,6 +105,7 @@ def build_eod_trade_plan(
     *,
     profile: RiskProfile = RiskProfile(),
     now: datetime,
+    expected_trade_date: date | None = None,
 ) -> TradePlanDraft:
     normalized_code = normalize_code(code)
     ordered = sorted(bars, key=lambda item: item.trade_date)
@@ -120,7 +125,12 @@ def build_eod_trade_plan(
         return _no_trade(normalized_code, now, str(exc), indicators)
     if chip_snapshot is None:
         return _no_trade(normalized_code, now, "缺少最近收盘筹码快照", indicators)
-    if chip_snapshot.kind != "chip" or not is_fresh(chip_snapshot, now):
+    chip_is_valid = (
+        is_chip_snapshot_for_trade_date(chip_snapshot, expected_trade_date)
+        if expected_trade_date is not None
+        else chip_snapshot.kind == "chip" and is_fresh(chip_snapshot, now)
+    )
+    if not chip_is_valid:
         return _no_trade(normalized_code, now, "筹码快照过期或类型错误", indicators)
     chip = chip_snapshot.data
     try:

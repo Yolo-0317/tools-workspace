@@ -46,7 +46,16 @@ def _chip() -> EvidenceSnapshot:
         as_of=NOW - timedelta(hours=1),
         source="eastmoney-opencli",
         parser_version="chip-v1",
-        data={"cost_90_low": 10.4, "cost_90_high": 10.5, "profit_ratio": 50.0, "concentration": 20.0},
+        data={
+            "source_trade_date": "2026-07-28",
+            "cost_90_low": 10.4,
+            "cost_90_high": 10.5,
+            "average_cost": 10.45,
+            "profit_ratio": 50.0,
+            "concentration": 20.0,
+            "input_bar_count": 210,
+            "method": "eastmoney-cyq-v1",
+        },
         raw_evidence_ref="fixture:chip-600000",
     )
 
@@ -94,3 +103,49 @@ def test_stale_chip_snapshot_is_no_trade() -> None:
 
     assert plan.status == "NO_TRADE"
     assert "过期" in plan.reason
+
+
+def test_eod_plan_rejects_a_chip_snapshot_from_the_wrong_trading_date() -> None:
+    snapshot = EvidenceSnapshot(
+        **{
+            **_chip().__dict__,
+            "data": {
+                **_chip().data,
+                "source_trade_date": "2026-08-07",
+            },
+        }
+    )
+
+    plan = build_eod_trade_plan(
+        "600000",
+        _bars(),
+        snapshot,
+        now=NOW,
+        expected_trade_date=date(2026, 8, 10),
+    )
+
+    assert plan.status == "NO_TRADE"
+    assert "过期" in plan.reason
+
+
+def test_eod_plan_accepts_a_wall_clock_old_chip_for_the_expected_trade_date() -> None:
+    snapshot = EvidenceSnapshot(
+        **{
+            **_chip().__dict__,
+            "as_of": NOW - timedelta(days=3),
+            "data": {
+                **_chip().data,
+                "source_trade_date": "2026-08-07",
+            },
+        }
+    )
+
+    plan = build_eod_trade_plan(
+        "600000",
+        _bars(),
+        snapshot,
+        now=NOW,
+        expected_trade_date=date(2026, 8, 7),
+    )
+
+    assert plan.status == "WAIT_ENTRY"

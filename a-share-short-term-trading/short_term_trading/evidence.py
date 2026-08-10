@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Literal, Protocol
 from uuid import uuid4
 
@@ -38,7 +38,16 @@ REQUIRED_FIELDS: dict[str, tuple[str, ...]] = {
     "sector": ("theme_name", "change_pct", "advancing_ratio", "leader_code"),
     "order_book": tuple([f"bid_{index}" for index in range(1, 6)] + [f"ask_{index}" for index in range(1, 6)]),
     "market": ("breadth", "amount"),
-    "chip": ("cost_90_low", "cost_90_high", "profit_ratio", "concentration"),
+    "chip": (
+        "source_trade_date",
+        "cost_90_low",
+        "cost_90_high",
+        "average_cost",
+        "profit_ratio",
+        "concentration",
+        "input_bar_count",
+        "method",
+    ),
     "daily_technical": ("ma5", "ma10", "ma20", "atr14", "high20", "low10"),
     "event_risk": ("title", "published_at", "url"),
     "theme_reference": ("industry", "concepts"),
@@ -99,13 +108,34 @@ def validate_snapshot(kind: SnapshotKind, code: str | None, data: dict[str, Any]
         return ["code is required"]
     missing = [field for field in REQUIRED_FIELDS[kind] if data.get(field) is None]
     errors = [f"missing:{field}" for field in missing]
-    for name in ("price", "amount", "turnover", "volume_ratio", "cost_90_low", "cost_90_high", "atr14"):
+    for name in (
+        "price",
+        "amount",
+        "turnover",
+        "volume_ratio",
+        "cost_90_low",
+        "cost_90_high",
+        "average_cost",
+        "atr14",
+    ):
         value = data.get(name)
         if value is not None and (not isinstance(value, (int, float)) or value < 0):
             errors.append(f"invalid:{name}")
     if data.get("cost_90_low") is not None and data.get("cost_90_high") is not None:
         if data["cost_90_low"] > data["cost_90_high"]:
             errors.append("invalid:cost_range")
+    if kind == "chip":
+        try:
+            date.fromisoformat(str(data.get("source_trade_date")))
+        except ValueError:
+            errors.append("invalid:source_trade_date")
+        for name in ("profit_ratio", "concentration"):
+            value = data.get(name)
+            if not isinstance(value, (int, float)) or not 0 <= value <= 100:
+                errors.append(f"invalid:{name}")
+        count = data.get("input_bar_count")
+        if not isinstance(count, int) or isinstance(count, bool) or count < 20:
+            errors.append("invalid:input_bar_count")
     return errors
 
 
@@ -117,6 +147,21 @@ def field_completeness(kind: SnapshotKind, data: dict[str, Any]) -> float:
 def is_fresh(snapshot: EvidenceSnapshot, now: datetime) -> bool:
     ttl_seconds = TTL_SECONDS[snapshot.kind]
     return _as_utc(snapshot.as_of) + timedelta(seconds=ttl_seconds) >= _as_utc(now)
+
+
+def is_chip_snapshot_for_trade_date(
+    snapshot: EvidenceSnapshot | None,
+    expected_trade_date: date,
+) -> bool:
+    if snapshot is None or snapshot.kind != "chip":
+        return False
+    if validate_snapshot("chip", snapshot.code, snapshot.data):
+        return False
+    try:
+        source_trade_date = date.fromisoformat(str(snapshot.data["source_trade_date"]))
+    except (KeyError, ValueError):
+        return False
+    return source_trade_date == expected_trade_date
 
 
 class CaptureRecorder:
