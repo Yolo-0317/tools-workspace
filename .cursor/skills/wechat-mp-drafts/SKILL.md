@@ -108,12 +108,16 @@ uv run python -m scripts.tools.wechat_mp_draft \
 
 ### Codex 图片续跑协议
 
-长图文与贴图都先由 Python 自动抓同题公开报道图。若命令提示 `需要 Codex 原创补图`，或抛出包含 `codex-image-request.json` 的错误：
+长图文与贴图都先由 Python 自动抓同题公开报道图。热点深评默认按 `research_urls` → 可追溯微博媒体/政务原帖 → 百度新闻 → 其他同题媒体的顺序找真实现场图；微博、百度只作为发现入口。无法核对原页、事件或来源的搬运图，以及页面明确写有禁止转载限制的图片，不自动进入正式草稿。合格素材在 `figure_sources.json` 记录原页面、图片地址、来源名、发布时间、来源类型和核验状态，图注优先显示具体媒体名。
+
+现场图不足时才使用已有原创解释图；若命令提示 `需要 Codex 原创补图`，或抛出包含 `codex-image-request.json` 的错误：
 
 1. 读取请求 JSON 的全部 `slots` 与 `safety_rules`。
 2. 每个 slot 单独调用一次内置 ImageGen，不使用额外 API 或 Composer。
 3. 从 `$CODEX_HOME/generated_images/` 选取结果，复制到该 slot 的绝对 `output_path`；不得覆盖请求未列出的图片。
 4. 重跑原命令，直到不再返回缺图请求；随后才允许进入草稿上传。
+
+已有 Codex 补图完成标记时，普通续跑不重复联网。需要重新寻找真实现场图时使用 `--force-figures` 或 `WECHAT_MP_DISCUSSION_FIGURES_FORCE=1`；强制刷新会绕过 ready 标记，但应保留 `manual-*` 和可用原创封面作为失败兜底。
 
 贴图自动入口：
 

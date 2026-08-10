@@ -50,6 +50,7 @@ _NEWS_DOMAINS = (
     "caixin.com",
     "toutiao.com",
     "baijiahao.baidu.com",
+    "weibo.com",
 )
 _SKIP_URL_HINTS = ("video", "login", "passport", "javascript:", "1x1.png", "default/1x1")
 _NEWS_URL_CACHE = (
@@ -287,6 +288,19 @@ def _fetch_sogou_news_urls(query: str, *, limit: int = 10) -> list[str]:
     return _collect_news_urls_from_html(html, limit=limit)
 
 
+def _fetch_weibo_search_urls(query: str, *, limit: int = 10) -> list[str]:
+    """微博搜索只负责发现可追溯原帖；后续仍需账号身份与页面限制校验。"""
+    q = urllib.parse.quote((query or "").strip())
+    if not q:
+        return []
+    url = f"https://s.weibo.com/weibo?q={q}"
+    try:
+        html = _fetch_html(url)
+    except Exception:
+        return []
+    return _collect_news_urls_from_html(html, limit=limit)
+
+
 def _fetch_baidu_news_urls(query: str, *, limit: int = 10) -> list[str]:
     """百度新闻检索：补 360/搜狗缺口，扩大同题报道页来源。"""
     q = urllib.parse.quote((query or "").strip())
@@ -318,6 +332,7 @@ def _fetch_news_search_urls(query: str, *, limit: int = 10) -> list[str]:
         if u not in seen:
             seen.append(u)
     for fetcher in (
+        _fetch_weibo_search_urls,
         _fetch_baidu_news_urls,
         _fetch_sogou_news_urls,
         _fetch_so_news_urls,
@@ -343,6 +358,15 @@ def figure_search_queries(topic: dict[str, Any]) -> list[str]:
     for raw in (trend, zh):
         if raw and raw not in queries:
             queries.append(raw)
+    event_date = str(topic.get("event_date") or "").strip()
+    if trend:
+        for variant in (
+            f"{trend} 现场",
+            f"{trend} {event_date}" if event_date else "",
+            f"{trend} 图片",
+        ):
+            if variant and variant not in queries:
+                queries.append(variant)
     for sep in ("，", ",", "：", ":", "、"):
         if sep in trend:
             head = trend.split(sep, 1)[0].strip()

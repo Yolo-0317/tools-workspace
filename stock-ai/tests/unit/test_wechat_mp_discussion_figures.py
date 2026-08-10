@@ -53,26 +53,24 @@ def test_strip_discussion_figures_removes_markers() -> None:
     assert "第一段" in out and "第二段" in out
 
 
-def test_is_junk_discussion_figure_detects_qr_and_tv() -> None:
-    from pathlib import Path
-
+def test_is_junk_discussion_figure_detects_qr_and_tv(tmp_path) -> None:
+    from PIL import Image
     from scripts.tools.wechat_mp_discussion_figures import (
         _is_junk_discussion_figure,
         _score_discussion_figure,
     )
 
-    root = Path(__file__).resolve().parents[2]
-    slug_dir = root / "assets" / "wechat_mp" / "inline-discussion" / "婚外试管丈夫发声明患"
-    qr = slug_dir / "still-01.jpg"
-    portrait = slug_dir / "still-02.jpg"
-    tv = slug_dir / "still-03.jpg"
-    if qr.is_file():
-        assert _is_junk_discussion_figure(qr)
-    if tv.is_file():
-        assert _is_junk_discussion_figure(tv)
-    if portrait.is_file():
-        assert not _is_junk_discussion_figure(portrait)
-        assert _score_discussion_figure(portrait) > 100
+    qr = tmp_path / "qr.jpg"
+    portrait = tmp_path / "portrait.jpg"
+    tv = tmp_path / "tv.jpg"
+    Image.new("RGB", (400, 400), "white").save(qr)
+    Image.effect_noise((800, 600), 80).convert("RGB").save(portrait, quality=80)
+    Image.effect_noise((1280, 720), 80).convert("RGB").save(tv, quality=80)
+
+    assert _is_junk_discussion_figure(qr)
+    assert _is_junk_discussion_figure(tv)
+    assert not _is_junk_discussion_figure(portrait)
+    assert _score_discussion_figure(portrait) > 100
 
 
 def test_distributed_inject_spreads_across_long_body(monkeypatch) -> None:
@@ -105,8 +103,10 @@ def test_distributed_inject_spreads_across_long_body(monkeypatch) -> None:
     paras = _split_body_paragraphs(out)
     fig_idxs = [i for i, p in enumerate(paras) if p.strip().startswith("[[fig:")]
     assert len(fig_idxs) == 3
-    assert fig_idxs[0] > 10
-    assert fig_idxs[-1] < len(paras) - 8
+    assert fig_idxs[0] >= 8
+    assert fig_idxs[1] - fig_idxs[0] >= 7
+    assert fig_idxs[2] - fig_idxs[1] >= 7
+    assert fig_idxs[-1] <= len(paras) - 7
     assert out.count("\n\n") >= 30
 
 
@@ -199,6 +199,291 @@ def test_codex_ready_marker_skips_repeated_report_search(tmp_path, monkeypatch) 
         {"cover_slug": "demo-topic", "trend_title": "演示事件"},
         max_images=3,
     ) == []
+
+
+def test_force_refetch_bypasses_codex_ready_marker(tmp_path, monkeypatch) -> None:
+    from scripts.tools import wechat_mp_discussion_figures as mod
+
+    out_dir = tmp_path / "demo-topic"
+    out_dir.mkdir()
+    (out_dir / "codex-images-ready.json").write_text("{}", encoding="utf-8")
+    called: list[bool] = []
+    monkeypatch.setattr(mod, "INLINE_DISCUSSION_ROOT", tmp_path)
+    monkeypatch.setenv("WECHAT_MP_DISCUSSION_FIGURES_FORCE", "1")
+    monkeypatch.setattr(
+        mod,
+        "fetch_discussion_research",
+        lambda *_args, **_kwargs: called.append(True) or [],
+    )
+    monkeypatch.setattr(
+        "scripts.tools.wechat_mp_discussion_research._fetch_news_search_urls",
+        lambda *_args, **_kwargs: [],
+    )
+
+    mod.ensure_discussion_figures(
+        {"cover_slug": "demo-topic", "trend_title": "演示事件"},
+        max_images=3,
+    )
+
+    assert called == [True]
+
+
+def test_generated_cover_does_not_suppress_verified_body_photo(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    import json
+    from pathlib import Path
+
+    from PIL import Image
+    from scripts.tools import wechat_mp_discussion_figures as mod
+
+    out_dir = tmp_path / "demo-topic"
+    out_dir.mkdir()
+    Image.effect_noise((900, 383), 80).convert("RGB").save(out_dir / "cover.jpg")
+    Image.effect_noise((800, 600), 70).convert("RGB").save(out_dir / "still-01.jpg")
+    Image.effect_noise((800, 600), 60).convert("RGB").save(out_dir / "manual-01.jpg")
+    (out_dir / "codex-images-ready.json").write_text("{}", encoding="utf-8")
+    (out_dir / "figure_sources.json").write_text(
+        json.dumps(
+            {
+                "still-01.jpg": {
+                    "page_title": "武康路积水现场",
+                    "page_url": "https://example.com/wukang",
+                    "source_name": "现场媒体",
+                    "verified": True,
+                }
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(mod, "INLINE_DISCUSSION_ROOT", tmp_path)
+
+    figures = mod.ensure_discussion_body_figures(
+        {"cover_slug": "demo-topic", "trend_title": "武康路 积水"},
+        max_images=2,
+    )
+
+    assert [Path(fig["rel"]).name for fig in figures] == [
+        "still-01.jpg",
+        "manual-01.jpg",
+    ]
+
+
+def test_figure_caption_uses_verified_source_name() -> None:
+    from scripts.tools.wechat_mp_discussion_figures import _figure_caption
+
+    assert (
+        _figure_caption({"source_name": "新民晚报", "verified": "true"})
+        == "图源：新民晚报现场报道"
+    )
+
+
+def test_legacy_figure_metadata_remains_readable() -> None:
+    from scripts.tools.wechat_mp_discussion_figures import _normalize_figure_source
+
+    normalized = _normalize_figure_source(
+        {"page_url": "https://example.com/a", "page_title": "同题报道"}
+    )
+
+    assert normalized["page_url"] == "https://example.com/a"
+    assert normalized["page_title"] == "同题报道"
+    assert normalized["verified"] == "false"
+
+
+def test_source_type_classifies_weibo_and_baidu_news() -> None:
+    from scripts.tools.wechat_mp_discussion_figures import _source_type_for_url
+
+    assert _source_type_for_url("https://weibo.com/123/abc") == "weibo"
+    assert _source_type_for_url("https://baijiahao.baidu.com/s?id=1") == "baidu_news"
+    assert _source_type_for_url("https://www.thepaper.cn/newsDetail_forward_1") == "news"
+
+
+def test_explicit_no_repost_notice_blocks_automatic_use() -> None:
+    from scripts.tools.wechat_mp_discussion_figures import _page_restricts_reuse
+
+    assert _page_restricts_reuse("未经正式授权严禁转载本文，侵权必究")
+    assert not _page_restricts_reuse("欢迎转发本文链接，图片来自现场采访。")
+
+
+def test_verified_figure_source_extracts_site_and_publish_time() -> None:
+    from scripts.tools.wechat_mp_discussion_figures import _verified_figure_source
+
+    html = """
+    <meta property="og:site_name" content="新民晚报">
+    <meta property="article:published_time" content="2026-08-09T18:30:00+08:00">
+    """
+    source = _verified_figure_source(
+        page_url="https://paper.xinmin.cn/article/1",
+        image_url="https://img.example.com/wukang.jpg",
+        html=html,
+        hit=None,
+    )
+
+    assert source["source_name"] == "新民晚报"
+    assert source["published_at"] == "2026-08-09T18:30:00+08:00"
+    assert source["source_type"] == "news"
+    assert source["verified"] == "true"
+    assert source["caption"] == "图源：新民晚报现场报道"
+
+
+def test_ordinary_weibo_page_is_not_automatically_verified() -> None:
+    from scripts.tools.wechat_mp_discussion_figures import _verified_figure_source
+
+    source = _verified_figure_source(
+        page_url="https://weibo.com/123456/abc",
+        image_url="https://wx1.sinaimg.cn/large/a.jpg",
+        html='<meta property="og:site_name" content="微博">',
+        hit=None,
+    )
+
+    assert source["source_type"] == "weibo"
+    assert source["verified"] == "false"
+
+
+def test_downloaded_figure_persists_traceable_source_metadata(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    import json
+
+    from PIL import Image
+    from scripts.tools import wechat_mp_discussion_figures as mod
+    from scripts.tools.wechat_mp_hotspot_research import ResearchHit
+
+    page_url = "https://paper.xinmin.cn/article/1"
+    image_url = "https://pic.rmb.bdstatic.com/news/wukang.jpg"
+    html = f"""
+    <title>武康路积水现场报道</title>
+    <meta name="description" content="武康路在强降雨后出现短时积水，现场人员正在排水处置并引导市民安全通行。">
+    <meta property="og:site_name" content="新民晚报">
+    <meta property="article:published_time" content="2026-08-09T18:30:00+08:00">
+    <img src="{image_url}">
+    """
+    monkeypatch.setattr(mod, "INLINE_DISCUSSION_ROOT", tmp_path)
+    monkeypatch.setattr(
+        mod,
+        "fetch_discussion_research",
+        lambda *_args, **_kwargs: [
+            ResearchHit(
+                title="武康路积水现场报道",
+                snippet="武康路在强降雨后出现短时积水，现场人员正在排水处置。",
+                source="新民晚报",
+                url=page_url,
+            )
+        ],
+    )
+    monkeypatch.setattr(mod, "_fetch_html", lambda _url: html)
+    monkeypatch.setattr(
+        "scripts.tools.wechat_mp_discussion_research._fetch_news_search_urls",
+        lambda *_args, **_kwargs: [],
+    )
+
+    def fake_download(_url, dest, *, referer="") -> bool:
+        Image.effect_noise((800, 600), 80).convert("RGB").save(dest, quality=70)
+        return True
+
+    monkeypatch.setattr(mod, "_download_image", fake_download)
+    monkeypatch.setattr(mod, "_is_junk_discussion_figure", lambda _path: False)
+    monkeypatch.setattr(mod, "_score_discussion_figure", lambda _path, page_url="": 500.0)
+
+    figures = mod.ensure_discussion_figures(
+        {"cover_slug": "wukang", "trend_title": "武康路 积水"},
+        max_images=1,
+    )
+
+    metadata = json.loads(
+        (tmp_path / "wukang" / "figure_sources.json").read_text(encoding="utf-8")
+    )["still-01.jpg"]
+    assert figures[0]["cap"] == "图源：新民晚报现场报道"
+    assert metadata["image_url"] == image_url
+    assert metadata["source_type"] == "news"
+    assert metadata["source_name"] == "新民晚报"
+    assert metadata["published_at"] == "2026-08-09T18:30:00+08:00"
+    assert metadata["verified"] == "true"
+
+
+def test_restricted_page_is_skipped_before_image_download(tmp_path, monkeypatch) -> None:
+    from scripts.tools import wechat_mp_discussion_figures as mod
+    from scripts.tools.wechat_mp_hotspot_research import ResearchHit
+
+    page_url = "https://www.jfdaily.com/article/1"
+    html = """
+    <title>武康路积水现场报道</title>
+    <meta name="description" content="武康路在强降雨后出现短时积水，现场人员正在进行排水处置。">
+    <meta property="og:site_name" content="上观新闻">
+    <p>未经正式授权严禁转载本文，侵权必究。</p>
+    <img src="https://img.example.com/news/wukang.jpg">
+    """
+    monkeypatch.setattr(mod, "INLINE_DISCUSSION_ROOT", tmp_path)
+    monkeypatch.setattr(
+        mod,
+        "fetch_discussion_research",
+        lambda *_args, **_kwargs: [
+            ResearchHit(
+                title="武康路积水现场报道",
+                snippet="武康路在强降雨后出现短时积水，现场人员正在进行排水处置。",
+                source="上观新闻",
+                url=page_url,
+            )
+        ],
+    )
+    monkeypatch.setattr(mod, "_fetch_html", lambda _url: html)
+    monkeypatch.setattr(
+        "scripts.tools.wechat_mp_discussion_research._fetch_news_search_urls",
+        lambda *_args, **_kwargs: [],
+    )
+    monkeypatch.setattr(
+        mod,
+        "_download_image",
+        lambda *_args, **_kwargs: pytest.fail("受限页面不应下载图片"),
+    )
+    monkeypatch.setattr(mod, "_supplement_missing_figures", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(mod, "_borrow_stills_from_pool", lambda *_args, **_kwargs: [])
+
+    assert mod.ensure_discussion_figures(
+        {"cover_slug": "wukang", "trend_title": "武康路积水"},
+        max_images=1,
+    ) == []
+
+
+def test_figure_queries_add_scene_and_date_variants() -> None:
+    queries = figure_search_queries(
+        {"trend_title": "武康路积水", "event_date": "2026-08-09"}
+    )
+
+    assert "武康路积水 现场" in queries
+    assert "武康路积水 2026-08-09" in queries
+    assert "武康路积水 图片" in queries
+
+
+def test_news_search_prioritizes_weibo_before_baidu(monkeypatch) -> None:
+    from scripts.tools import wechat_mp_discussion_research as research
+
+    monkeypatch.setattr(research, "_cached_news_urls", lambda _query: [])
+    monkeypatch.setattr(
+        research,
+        "_fetch_weibo_search_urls",
+        lambda _query, *, limit: ["https://weibo.com/media/1"],
+        raising=False,
+    )
+    monkeypatch.setattr(
+        research,
+        "_fetch_baidu_news_urls",
+        lambda _query, *, limit: ["https://baijiahao.baidu.com/s?id=1"],
+    )
+    monkeypatch.setattr(research, "_fetch_sogou_news_urls", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(research, "_fetch_so_news_urls", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(research, "_fetch_baidu_web_urls", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(research, "_remember_news_urls", lambda *_args, **_kwargs: None)
+
+    urls = research._fetch_news_search_urls("武康路积水", limit=4)
+
+    assert urls == [
+        "https://weibo.com/media/1",
+        "https://baijiahao.baidu.com/s?id=1",
+    ]
 
 
 def test_paragraph_blocks_skips_figure_lines() -> None:
@@ -342,16 +627,15 @@ def test_embedded_unrelated_photo_rejected() -> None:
     assert not _is_embedded_unrelated_photo(782, 721)
 
 
-def test_collect_page_figure_trials_skips_early_video_frames(monkeypatch) -> None:
+def test_collect_page_figure_trials_skips_early_video_frames(tmp_path, monkeypatch) -> None:
     from pathlib import Path
 
+    from PIL import Image
     from scripts.tools.wechat_mp_discussion_figures import _collect_page_figure_trials
 
     topic = {"trend_title": "员工用代码17小时删光公司89TB数据"}
-    root = Path(__file__).resolve().parents[2]
-    good = root / "assets/wechat_mp/inline-discussion/婚外试管丈夫发声明患/still-02.jpg"
-    if not good.is_file():
-        return
+    good = tmp_path / "good-fixture.jpg"
+    Image.effect_noise((800, 600), 80).convert("RGB").save(good, quality=80)
     urls = [
         "https://example.com/video1.jpg",
         "https://example.com/video2.jpg",
@@ -384,7 +668,7 @@ def test_collect_page_figure_trials_skips_early_video_frames(monkeypatch) -> Non
         "scripts.tools.wechat_mp_discussion_figures._score_discussion_figure",
         lambda _p, page_url="": 500.0,
     )
-    out = Path("/tmp/fig_collect_test")
+    out = tmp_path / "trials"
     out.mkdir(exist_ok=True)
     trials = _collect_page_figure_trials(
         topic=topic,
@@ -408,30 +692,26 @@ def test_collect_page_figure_trials_skips_early_video_frames(monkeypatch) -> Non
     assert not _is_video_news_frame(800, 600)
 
 
-def test_stock_matrix_illustration_rejected() -> None:
-    from pathlib import Path
-
+def test_stock_matrix_illustration_rejected(tmp_path) -> None:
+    from PIL import Image
     from scripts.tools.wechat_mp_discussion_figures import (
         _is_generic_stock_illustration,
         _is_junk_discussion_figure,
     )
 
-    root = Path(__file__).resolve().parents[2]
-    p = root / "assets/wechat_mp/inline-discussion/员工用代码17小时删光公司89tb数据/still-02.jpg"
-    if p.is_file():
-        assert _is_generic_stock_illustration(p)
-        assert _is_junk_discussion_figure(p)
+    p = tmp_path / "matrix.jpg"
+    Image.new("RGB", (800, 600), (10, 150, 30)).save(p, quality=90)
+    assert _is_generic_stock_illustration(p)
+    assert _is_junk_discussion_figure(p)
 
 
-def test_tv_broadcast_aspect_ratio_rejected() -> None:
-    from pathlib import Path
-
+def test_tv_broadcast_aspect_ratio_rejected(tmp_path) -> None:
+    from PIL import Image
     from scripts.tools.wechat_mp_discussion_figures import _is_junk_discussion_figure
 
-    root = Path(__file__).resolve().parents[2]
-    p = root / "assets/wechat_mp/inline-discussion/员工用代码17小时删光公司89tb数据/still-01.jpg"
-    if p.is_file():
-        assert _is_junk_discussion_figure(p)
+    p = tmp_path / "broadcast.jpg"
+    Image.effect_noise((1280, 720), 80).convert("RGB").save(p, quality=80)
+    assert _is_junk_discussion_figure(p)
 
 
 def test_figure_fingerprint_dedupes_byte_identical_stills() -> None:

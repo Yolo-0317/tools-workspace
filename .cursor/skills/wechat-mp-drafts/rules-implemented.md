@@ -15,6 +15,10 @@
 | 插图须 A股/科技/AI/交易屏 | `FIGURE_DOMAIN_TAGS` + `figure_matches_domain` | `test_wechat_mp_figure_pool.py` |
 | 无图题 caption（用户要求去掉） | `inject_*` 传空 caption 或 manifest 无 title | — |
 | `[[fig:]]` 须独占段落 | `split_wechat_body_blocks` | `test_wechat_mp_rich_html.py` |
+| hotspot 优先可追溯现场实拍，微博/百度仅作发现入口 | `wechat_mp_discussion_research.figure_search_queries` + `wechat_mp_discussion_figures._verified_figure_source` | `test_wechat_mp_discussion_figures.py` |
+| 明确禁止转载或普通用户微博图不自动进正式草稿 | `_page_restricts_reuse` + 微博账号身份提示校验 | `test_restricted_page_is_skipped_before_image_download` · `test_ordinary_weibo_page_is_not_automatically_verified` |
+| 实拍图保存具体来源图注与追溯元数据 | `figure_sources.json` + `_figure_caption` | `test_downloaded_figure_persists_traceable_source_metadata` |
+| 强制换图绕过 Codex ready，普通续跑仍不重复联网 | `ensure_discussion_figures` force-aware ready 分支 | `test_force_refetch_bypasses_codex_ready_marker` · `test_codex_ready_marker_skips_repeated_report_search` |
 
 ## 专业研究员口吻
 

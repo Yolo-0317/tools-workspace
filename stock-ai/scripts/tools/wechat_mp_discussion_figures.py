@@ -200,6 +200,7 @@ def _min_figure_bytes() -> int:
 
 _DISCUSSION_FIGURE_STYLE = "max-h=520;fit=contain"
 _FIGURE_SOURCES_META = "figure_sources.json"
+_COVER_SOURCE_META = "cover_source.json"
 _OFFTOPIC_PAGE_TITLE_HINTS = (
     "韩剧",
     "netflix",
@@ -233,6 +234,166 @@ def _figure_sources_meta_path(out_dir: Path) -> Path:
     return out_dir / _FIGURE_SOURCES_META
 
 
+def _cover_source_filename(out_dir: Path) -> str:
+    import json
+
+    path = out_dir / _COVER_SOURCE_META
+    if not path.is_file():
+        return ""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return str(data.get("source_filename") or "") if isinstance(data, dict) else ""
+    except Exception:
+        return ""
+
+
+def _save_cover_source(out_dir: Path, source: Path) -> None:
+    import json
+
+    (out_dir / _COVER_SOURCE_META).write_text(
+        json.dumps({"source_filename": source.name}, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def _source_type_for_url(page_url: str) -> str:
+    low = (page_url or "").lower()
+    if "weibo.com" in low or "weibo.cn" in low:
+        return "weibo"
+    if "baijiahao.baidu.com" in low or "mbd.baidu.com" in low:
+        return "baidu_news"
+    return "news"
+
+
+def _normalize_figure_source(info: dict[str, object]) -> dict[str, str]:
+    normalized = {str(k): str(v) for k, v in info.items() if v is not None}
+    verified = info.get("verified", False)
+    if isinstance(verified, bool):
+        normalized["verified"] = "true" if verified else "false"
+    else:
+        normalized["verified"] = (
+            "true" if str(verified).strip().lower() in {"1", "true", "yes"} else "false"
+        )
+    page_url = normalized.get("page_url", "")
+    normalized.setdefault("image_url", "")
+    normalized.setdefault("source_name", "")
+    normalized.setdefault("published_at", "")
+    normalized.setdefault("source_type", _source_type_for_url(page_url) if page_url else "news")
+    normalized.setdefault("caption", "")
+    return normalized
+
+
+def _figure_caption(info: dict[str, object]) -> str:
+    normalized = _normalize_figure_source(info)
+    explicit = normalized.get("caption", "").strip()
+    if explicit:
+        return explicit
+    source_name = normalized.get("source_name", "").strip()
+    if source_name and normalized.get("verified") == "true":
+        return f"图源：{source_name}现场报道"
+    return "图源：公开报道（引用）"
+
+
+def _page_restricts_reuse(html: str) -> bool:
+    text = re.sub(r"\s+", "", html or "")
+    return any(
+        notice in text
+        for notice in (
+            "未经正式授权严禁转载",
+            "未经授权严禁转载",
+            "未经许可不得转载",
+            "禁止转载本文",
+        )
+    )
+
+
+_SOURCE_DOMAIN_NAMES = (
+    ("xinmin.cn", "新民晚报"),
+    ("thepaper.cn", "澎湃新闻"),
+    ("jfdaily.com", "上观新闻"),
+    ("news.cn", "新华社"),
+    ("xinhuanet.com", "新华网"),
+    ("people.com.cn", "人民网"),
+    ("cctv.com", "央视新闻"),
+    ("chinanews.com", "中国新闻网"),
+    ("shanghai.gov.cn", "上海市政府"),
+)
+_VERIFIED_WEIBO_ACCOUNT_HINTS = (
+    "发布",
+    "新闻",
+    "日报",
+    "晚报",
+    "电视台",
+    "政府",
+    "公安",
+    "应急",
+    "水务",
+    "气象",
+)
+
+
+def _meta_value(html: str, name: str) -> str:
+    escaped = re.escape(name)
+    patterns = (
+        rf'<meta[^>]+(?:property|name)=["\']{escaped}["\'][^>]+content=["\']([^"\']+)',
+        rf'<meta[^>]+content=["\']([^"\']+)["\'][^>]+(?:property|name)=["\']{escaped}["\']',
+    )
+    for pattern in patterns:
+        match = re.search(pattern, html or "", flags=re.I)
+        if match:
+            return unescape(match.group(1).strip())
+    return ""
+
+
+def _source_name_for_page(
+    page_url: str,
+    html: str,
+    hit: ResearchHit | None,
+) -> str:
+    site_name = _meta_value(html, "og:site_name")
+    if site_name:
+        return site_name
+    low = (page_url or "").lower()
+    for domain, name in _SOURCE_DOMAIN_NAMES:
+        if domain in low:
+            return name
+    source = str(hit.source if hit else "").strip()
+    if source and source not in {"公开报道", "news"}:
+        return source
+    return ""
+
+
+def _verified_figure_source(
+    *,
+    page_url: str,
+    image_url: str,
+    html: str,
+    hit: ResearchHit | None,
+) -> dict[str, str]:
+    source_type = _source_type_for_url(page_url)
+    source_name = _source_name_for_page(page_url, html, hit)
+    published_at = _meta_value(html, "article:published_time") or _meta_value(
+        html, "datePublished"
+    )
+    verified = bool(source_name) and not _page_restricts_reuse(html)
+    if source_type == "weibo":
+        verified = verified and source_name.lower() != "微博" and any(
+            hint in source_name for hint in _VERIFIED_WEIBO_ACCOUNT_HINTS
+        )
+    info = _normalize_figure_source(
+        {
+            "page_url": page_url,
+            "image_url": image_url,
+            "source_name": source_name,
+            "published_at": published_at,
+            "source_type": source_type,
+            "verified": verified,
+        }
+    )
+    info["caption"] = _figure_caption(info)
+    return info
+
+
 def _load_figure_sources(out_dir: Path) -> dict[str, dict[str, str]]:
     path = _figure_sources_meta_path(out_dir)
     if not path.is_file():
@@ -242,7 +403,11 @@ def _load_figure_sources(out_dir: Path) -> dict[str, dict[str, str]]:
 
         data = json.loads(path.read_text(encoding="utf-8"))
         if isinstance(data, dict):
-            return {str(k): dict(v) for k, v in data.items() if isinstance(v, dict)}
+            return {
+                str(k): _normalize_figure_source(dict(v))
+                for k, v in data.items()
+                if isinstance(v, dict)
+            }
     except Exception:
         pass
     return {}
@@ -253,7 +418,11 @@ def _save_figure_sources(out_dir: Path, meta: dict[str, dict[str, str]]) -> None
 
     out_dir.mkdir(parents=True, exist_ok=True)
     _figure_sources_meta_path(out_dir).write_text(
-        json.dumps(meta, ensure_ascii=False, indent=2),
+        json.dumps(
+            {name: _normalize_figure_source(info) for name, info in meta.items()},
+            ensure_ascii=False,
+            indent=2,
+        ),
         encoding="utf-8",
     )
 
@@ -683,11 +852,14 @@ def _collect_page_figure_trials(
     page_idx: int,
     host_boost: int,
     used_urls: set[str],
+    source_info: dict[str, str] | None = None,
     max_per_page: int = 2,
     max_scan: int = 28,
-) -> list[tuple[int, float, int, int, Path, str, str, str, int]]:
+) -> list[tuple[int, float, int, int, Path, str, str, str, int, str, dict[str, str]]]:
     """逐张试下载，跳过 junk，每页最多保留 max_per_page 张。"""
-    out: list[tuple[int, float, int, int, Path, str, str, str, int]] = []
+    out: list[
+        tuple[int, float, int, int, Path, str, str, str, int, str, dict[str, str]]
+    ] = []
     for cand_idx, img_url in enumerate(candidates[:max_scan]):
         if len(out) >= max_per_page:
             break
@@ -722,7 +894,21 @@ def _collect_page_figure_trials(
             trial.unlink(missing_ok=True)
             continue
         used_urls.add(img_url)
-        out.append((rel_score, score, page_idx, cand_idx, trial, cap, page_title, page_url, host_boost))
+        out.append(
+            (
+                rel_score,
+                score,
+                page_idx,
+                cand_idx,
+                trial,
+                cap,
+                page_title,
+                page_url,
+                host_boost,
+                img_url,
+                dict(source_info or {}),
+            )
+        )
     return out
 
 
@@ -825,6 +1011,7 @@ def ensure_discussion_cover(topic: dict[str, Any]) -> Path:
         (COVER_W, COVER_H), Image.Resampling.LANCZOS
     )
     img.save(cover, format="JPEG", quality=93, optimize=True)
+    _save_cover_source(out_dir, src_path)
     return cover
 
 
@@ -1095,13 +1282,17 @@ def _consolidate_stills(
 
 
 def _figure_dicts_from_dir(out_dir: Path, *, slug: str, max_images: int) -> list[dict[str, str]]:
+    meta = _load_figure_sources(out_dir)
     paths = [
         p
         for p in sorted(out_dir.glob("still-*.jpg"))
         if p.is_file() and p.stat().st_size >= _min_figure_bytes()
     ][:max_images]
     return [
-        {"rel": f"discussion/{slug}/{p.name}", "cap": "图源：公开报道（引用）"}
+        {
+            "rel": f"discussion/{slug}/{p.name}",
+            "cap": _figure_caption(meta.get(p.name) or {}),
+        }
         for p in paths
     ]
 
@@ -1123,7 +1314,12 @@ def ensure_discussion_figures(topic: dict[str, Any], *, max_images: int = 3) -> 
         return []
     slug = _slug(topic)
     out_dir = INLINE_DISCUSSION_ROOT / slug
-    if (out_dir / "codex-images-ready.json").is_file():
+    force = os.getenv("WECHAT_MP_DISCUSSION_FIGURES_FORCE", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    if (out_dir / "codex-images-ready.json").is_file() and not force:
         return _figure_dicts_from_dir(
             out_dir,
             slug=slug,
@@ -1132,11 +1328,6 @@ def ensure_discussion_figures(topic: dict[str, Any], *, max_images: int = 3) -> 
     keywords = _topic_figure_keywords(topic)
     figure_meta = _load_figure_sources(out_dir)
     existing = sorted(out_dir.glob("still-*.*")) if out_dir.is_dir() else []
-    force = os.getenv("WECHAT_MP_DISCUSSION_FIGURES_FORCE", "").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-    }
     if existing and not force:
         if not figure_meta:
             existing = []
@@ -1162,7 +1353,7 @@ def ensure_discussion_figures(topic: dict[str, Any], *, max_images: int = 3) -> 
         result = [
             {
                 "rel": f"discussion/{slug}/{p.name}",
-                "cap": "图源：公开报道（引用）",
+                "cap": _figure_caption(figure_meta.get(p.name) or {}),
             }
             for p in use
         ]
@@ -1244,7 +1435,9 @@ def ensure_discussion_figures(topic: dict[str, Any], *, max_images: int = 3) -> 
             ordered_urls = tech_first + ordered_urls
 
     # 全页候选 → 下载 → 按「同题相关 + 非 junk + 清晰度」取 Top N
-    downloaded: list[tuple[int, float, int, int, Path, str, str, str, int]] = []
+    downloaded: list[
+        tuple[int, float, int, int, Path, str, str, str, int, str, dict[str, str]]
+    ] = []
     used_urls: set[str] = set()
     out_dir.mkdir(parents=True, exist_ok=True)
     figure_meta = figure_meta if figure_meta else {}
@@ -1254,6 +1447,8 @@ def ensure_discussion_figures(topic: dict[str, Any], *, max_images: int = 3) -> 
         try:
             html = _fetch_html(page_url)
         except Exception:
+            continue
+        if _page_restricts_reuse(html):
             continue
         ok, parsed = _page_relevant_for_figures(
             topic,
@@ -1266,6 +1461,15 @@ def ensure_discussion_figures(topic: dict[str, Any], *, max_images: int = 3) -> 
         if not ok:
             continue
         page_title = (parsed.title if parsed else "") or ""
+        source_info = _verified_figure_source(
+            page_url=page_url,
+            image_url="",
+            html=html,
+            hit=parsed or hit,
+        )
+        if source_info.get("verified") != "true":
+            continue
+        cap = _figure_caption(source_info)
         rel_score = _keyword_relevance_score(page_title, keywords)
         try:
             candidates = [_normalize_image_url(u) for u in _content_images_from_html(html, page_url)]
@@ -1289,12 +1493,11 @@ def ensure_discussion_figures(topic: dict[str, Any], *, max_images: int = 3) -> 
                 page_idx=page_idx,
                 host_boost=host_boost,
                 used_urls=used_urls,
+                source_info=source_info,
             )
         )
 
-    ranked: list[tuple[int, float, int, int, Path, str, str, str, int]] = []
-    for rel_score, img_score, page_idx, cand_idx, trial, cap, page_title, page_url, host_boost in downloaded:
-        ranked.append((rel_score, img_score, page_idx, cand_idx, trial, cap, page_title, page_url, host_boost))
+    ranked = list(downloaded)
     ranked.sort(
         key=lambda x: _figure_rank_tuple(
             rel_score=x[0],
@@ -1308,7 +1511,19 @@ def ensure_discussion_figures(topic: dict[str, Any], *, max_images: int = 3) -> 
     seen_fp: set[str] = set()
     seen_pages_saved: set[str] = set()
     still_no = 1
-    for _rel, _img_sc, _pi, _ci, trial, cap, page_title, page_url, _host in ranked:
+    for (
+        _rel,
+        _img_sc,
+        _pi,
+        _ci,
+        trial,
+        cap,
+        page_title,
+        page_url,
+        _host,
+        image_url,
+        source_info,
+    ) in ranked:
         if still_no > max_images:
             trial.unlink(missing_ok=True)
             continue
@@ -1332,8 +1547,11 @@ def ensure_discussion_figures(topic: dict[str, Any], *, max_images: int = 3) -> 
             dest.unlink()
         trial.rename(dest)
         figure_meta[dest.name] = {
+            **source_info,
             "page_title": page_title,
             "page_url": page_url,
+            "image_url": image_url,
+            "caption": cap,
         }
         saved.append({"rel": f"discussion/{slug}/{dest.name}", "cap": cap})
         still_no += 1
@@ -1459,13 +1677,17 @@ def _supplement_figures_from_queries(
         if len(page_urls) >= 12:
             break
 
-    downloaded: list[tuple[int, float, int, int, Path, str, str, str, int]] = []
+    downloaded: list[
+        tuple[int, float, int, int, Path, str, str, str, int, str, dict[str, str]]
+    ] = []
     used_urls: set[str] = set()
     out_dir.mkdir(parents=True, exist_ok=True)
     for page_idx, page_url in enumerate(page_urls):
         try:
             html = _fetch_html(page_url)
         except Exception:
+            continue
+        if _page_restricts_reuse(html):
             continue
         ok, parsed = _page_relevant_for_figures(
             topic,
@@ -1478,6 +1700,15 @@ def _supplement_figures_from_queries(
         if not ok:
             continue
         page_title = (parsed.title if parsed else "") or ""
+        source_info = _verified_figure_source(
+            page_url=page_url,
+            image_url="",
+            html=html,
+            hit=parsed,
+        )
+        if source_info.get("verified") != "true":
+            continue
+        page_cap = _figure_caption(source_info)
         rel_score = _keyword_relevance_score(page_title, keywords)
         try:
             candidates = [_normalize_image_url(u) for u in _content_images_from_html(html, page_url)]
@@ -1495,12 +1726,13 @@ def _supplement_figures_from_queries(
                 candidates=candidates,
                 out_dir=out_dir,
                 pool_name=pool_prefix,
-                cap=cap,
+                cap=page_cap,
                 page_title=page_title,
                 rel_score=rel_score,
                 page_idx=page_idx,
                 host_boost=host_boost,
                 used_urls=used_urls,
+                source_info=source_info,
             )
         )
 
@@ -1516,7 +1748,19 @@ def _supplement_figures_from_queries(
     saved: list[dict[str, str]] = []
     still_no = still_start
     seen_pages_saved: set[str] = set()
-    for _rel, _sc, _pi, _ci, trial, cap_text, page_title, page_url, _host in downloaded:
+    for (
+        _rel,
+        _sc,
+        _pi,
+        _ci,
+        trial,
+        cap_text,
+        page_title,
+        page_url,
+        _host,
+        image_url,
+        source_info,
+    ) in downloaded:
         if len(saved) >= need:
             trial.unlink(missing_ok=True)
             continue
@@ -1539,7 +1783,13 @@ def _supplement_figures_from_queries(
         if dest.is_file():
             dest.unlink()
         trial.rename(dest)
-        figure_meta[dest.name] = {"page_title": page_title, "page_url": page_url}
+        figure_meta[dest.name] = {
+            **source_info,
+            "page_title": page_title,
+            "page_url": page_url,
+            "image_url": image_url,
+            "caption": cap_text,
+        }
         saved.append({"rel": f"discussion/{slug}/{dest.name}", "cap": cap_text})
         still_no += 1
     for p in out_dir.glob(f"{pool_prefix}*.jpg"):
@@ -1703,7 +1953,13 @@ def ensure_discussion_body_figures(
     out_dir = INLINE_DISCUSSION_ROOT / slug
     figures = ensure_discussion_figures(topic, max_images=max(3, max_images + 2))
     cover_src = _pick_discussion_cover_source(out_dir, topic)
-    exclude = [cover_src] if cover_src and cover_src.is_file() else []
+    exclude = (
+        [cover_src]
+        if cover_src
+        and cover_src.is_file()
+        and _cover_source_filename(out_dir) == cover_src.name
+        else []
+    )
     figures = _dedupe_figure_dicts(figures, slug=slug, exclude_paths=exclude)
     figures = _sort_figure_dicts_for_body(figures, slug=slug)
     if len(figures) < max_images:
