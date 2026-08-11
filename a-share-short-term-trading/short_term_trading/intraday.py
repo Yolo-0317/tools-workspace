@@ -94,15 +94,15 @@ def verify_intraday_plan(
 ) -> IntradayDecision:
     if plan.status != "WAIT_ENTRY" or plan.trigger_price is None or plan.entry_ceiling is None or plan.invalidation_price is None:
         return _decision(plan, now, "NO_TRADE", "没有可验证的收盘价格计划", failed=["plan"])
-    if risk_gate.market_status == "FREEZE":
-        return _decision(plan, now, "NO_TRADE", "市场状态为 FREEZE", failed=["market"])
-    if not risk_gate.portfolio_approved or risk_gate.maximum_shares <= 0:
-        return _decision(plan, now, "NO_TRADE", risk_gate.reason or "组合风控未放行", failed=["portfolio"])
     if not _fresh(quote, "quote", now):
         return _decision(plan, now, "NO_TRADE", "报价快照缺失或过期", failed=["quote"])
     price = float(quote.data["price"])
     if is_holding and price <= plan.invalidation_price:
         return _decision(plan, now, "EXIT", "现价跌破硬失效价", passed=["quote"], refs={"quote": quote.raw_evidence_ref})
+    if risk_gate.market_status == "FREEZE":
+        return _decision(plan, now, "NO_TRADE", "市场状态为 FREEZE", failed=["market"])
+    if not risk_gate.portfolio_approved or risk_gate.maximum_shares <= 0:
+        return _decision(plan, now, "NO_TRADE", risk_gate.reason or "组合风控未放行", failed=["portfolio"])
     if price < plan.trigger_price:
         return _decision(plan, now, "WAIT_ENTRY", "未到突破触发价", passed=["quote"], refs={"quote": quote.raw_evidence_ref})
     if price > plan.entry_ceiling:

@@ -10,6 +10,7 @@ from short_term_trading.diagnosis import RiskProfile, TradePlanDraft
 from short_term_trading.diagnosis_runtime import DiagnosisRuntime, build_runtime_diagnosis
 from short_term_trading.evidence import EvidenceSnapshot
 from short_term_trading.intraday import IntradayRiskGate
+from short_term_trading.market_regime import MarketStateView
 from short_term_trading.session import TradingSession
 
 
@@ -208,6 +209,45 @@ def test_missing_frozen_plan_never_starts_external_refresh() -> None:
     assert subject.evidence_repository.calls == []
 
 
+def test_runtime_attaches_the_automatic_market_state_to_the_diagnosis() -> None:
+    calls: list[TradingSession] = []
+
+    class Provider:
+        def get_state(self, context):
+            calls.append(context.session)
+            return MarketStateView(
+                status="LIMITED",
+                trading_date=date(2026, 8, 10),
+                as_of=SHANGHAI_INTRADAY.astimezone(timezone.utc),
+                expires_at=(SHANGHAI_INTRADAY + timedelta(minutes=15)).astimezone(timezone.utc),
+                indexes_above_ma20=1,
+                breadth_pct=43.0,
+                amount_ratio=0.86,
+                strong_sector_count=1,
+                reasons=("市场广度偏弱",),
+                evidence_refs=("fixture:market",),
+            )
+
+    subject = DiagnosisRuntime(
+        calendar=FakeCalendar(True),
+        daily_repository=FakeDailyRepository([]),
+        evidence_repository=FakeEvidenceRepository(),
+        risk_profile=RiskProfile(),
+        frozen_plan=None,
+        risk_gate=IntradayRiskGate("ALLOW", True, 200),
+        market_state_provider=Provider(),
+    )
+
+    result = build_runtime_diagnosis(
+        "600000", subject, now=SHANGHAI_INTRADAY, release_mode=ReleaseMode.SHADOW
+    )
+
+    assert calls == [TradingSession.INTRADAY]
+    assert result.market is not None
+    assert result.market["status"] == "LIMITED"
+    assert result.market["breadth_pct"] == 43.0
+
+
 def test_post_market_falls_back_to_latest_complete_bar_date() -> None:
     subject = runtime(now_bars=[bar(date(2026, 8, 7))])
 
@@ -327,6 +367,7 @@ def test_cli_has_no_manual_session_override() -> None:
         for option in action.option_strings
     }
     assert "--session" not in option_strings
+    assert "--market-status" not in option_strings
     assert "--no-chip-refresh" in option_strings
 
 

@@ -30,6 +30,7 @@ class SessionAwareDiagnosis:
     reason: str
     next_action: str
     details: dict[str, object]
+    market: dict[str, object] | None = None
 
     def to_dict(self) -> dict[str, object]:
         values = asdict(self)
@@ -186,7 +187,26 @@ def diagnose_for_session(
 
 
 def render_session_diagnosis(result: SessionAwareDiagnosis) -> str:
-    return "\n".join(
+    lines: list[str] = []
+    if result.market is not None:
+        market = result.market
+        metrics: list[str] = []
+        if market.get("indexes_above_ma20") is not None:
+            metrics.append(f"三指数 {market['indexes_above_ma20']}/3 位于 MA20 上方")
+        if market.get("breadth_pct") is not None:
+            metrics.append(f"上涨家数占比 {float(market['breadth_pct']):.1f}%")
+        if market.get("amount_ratio") is not None:
+            metrics.append(f"成交额比 {float(market['amount_ratio']):.2f}")
+        if market.get("strong_sector_count") is not None:
+            metrics.append(f"强势板块 {market['strong_sector_count']} 个")
+        lines.append(f"大盘环境：{market['status']}（数据截至 {market['as_of']}）")
+        if metrics:
+            lines.append(f"大盘依据：{'；'.join(metrics)}")
+        reasons = market.get("reasons") or []
+        if reasons:
+            lines.append(f"大盘原因：{'；'.join(str(item) for item in reasons)}")
+        lines.append(f"对本股影响：{market['impact']}")
+    lines.extend(
         [
             f"当前状态：{result.session_label}",
             f"数据口径：{result.data_label}",
@@ -195,3 +215,4 @@ def render_session_diagnosis(result: SessionAwareDiagnosis) -> str:
             f"下一步：{result.next_action}",
         ]
     )
+    return "\n".join(lines)

@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import date, datetime, timezone
 
 import pytest
@@ -219,6 +220,35 @@ def test_non_trading_renderer_uses_close_wording_and_one_main_conclusion() -> No
     assert "最近交易日收盘" in rendered
     assert "现价" not in rendered
     assert rendered.count("主结论：NO_TRADE") == 1
+
+
+def test_renderer_explains_market_state_and_its_effect_on_the_stock() -> None:
+    result = diagnose_for_session(
+        "600000",
+        context_for(TradingSession.INTRADAY),
+        static_diagnose=lambda code, context: static_plan(),
+        intraday_diagnose=lambda code, context: intraday_decision("NO_TRADE"),
+    )
+    result = replace(
+        result,
+        market={
+            "status": "FREEZE",
+            "as_of": "2026-08-10T02:00:00+00:00",
+            "indexes_above_ma20": None,
+            "breadth_pct": 22.3,
+            "amount_ratio": None,
+            "strong_sector_count": 12,
+            "reasons": ["上一交易日指数 MA20 基准缺失"],
+            "impact": "禁止加仓；已有持仓的退出纪律不变",
+        },
+    )
+
+    rendered = render_session_diagnosis(result)
+
+    assert "大盘环境：FREEZE" in rendered
+    assert "上涨家数占比 22.3%" in rendered
+    assert "上一交易日指数 MA20 基准缺失" in rendered
+    assert "禁止加仓；已有持仓的退出纪律不变" in rendered
 
 
 @pytest.mark.parametrize(

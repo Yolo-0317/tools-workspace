@@ -11,6 +11,7 @@ from .daily_sync import DailyBar, DailyBarRepository, bar_is_complete, normalize
 from .diagnosis import RiskProfile, TradePlanDraft, build_eod_trade_plan
 from .evidence import EvidenceRepository, is_chip_snapshot_for_trade_date
 from .intraday import IntradayDecision, IntradayRiskGate, verify_intraday_plan
+from .market_regime import MarketStateProvider, MarketStateView, freeze_market_state
 from .session import TradingCalendar, TradingSession, classify_trading_session
 from .session_diagnosis import SessionAwareDiagnosis, diagnose_for_session
 
@@ -50,6 +51,32 @@ class DiagnosisRuntime:
     risk_gate: IntradayRiskGate | None = None
     intraday_refresh: Callable[[str], None] | None = None
     chip_refresh: Callable[[str], None] | None = None
+    market_state_provider: MarketStateProvider | None = None
+
+
+def _market_payload(state: MarketStateView, *, is_holding: bool) -> dict[str, object]:
+    if state.status == "ALLOW":
+        impact = "继续验证个股与组合门禁，不代表直接可以买入"
+    elif state.status == "LIMITED":
+        impact = "限制新增仓位；已有持仓的退出纪律不变"
+    else:
+        impact = "禁止加仓；已有持仓的退出纪律不变" if is_holding else "禁止新增风险"
+    return {
+        "status": state.status,
+        "trading_date": state.trading_date.isoformat() if state.trading_date else None,
+        "as_of": state.as_of.isoformat(),
+        "expires_at": state.expires_at.isoformat(),
+        "indexes_above_ma20": state.indexes_above_ma20,
+        "breadth_pct": state.breadth_pct,
+        "amount_ratio": state.amount_ratio,
+        "strong_sector_count": state.strong_sector_count,
+        "reasons": list(state.reasons),
+        "evidence_refs": list(state.evidence_refs),
+        "emotion_label": state.emotion_label,
+        "index_change_pct": state.index_change_pct,
+        "source": state.source,
+        "impact": impact,
+    }
 
 
 def _safe_plan(code: str, now: datetime, reason: str) -> TradePlanDraft:
@@ -106,6 +133,17 @@ def build_runtime_diagnosis(
             is_holding=is_holding,
         )
 
+    market_state: MarketStateView | None = None
+    if runtime.market_state_provider is not None:
+        try:
+            market_state = runtime.market_state_provider.get_state(context)
+        except Exception:  # noqa: BLE001
+            market_state = freeze_market_state(
+                trading_date=context.diagnosis_trade_date,
+                as_of=context.now_utc,
+                reason="自动大盘状态获取失败",
+            )
+
     cached_bars: list[DailyBar] | None = None
     if context.session not in {TradingSession.INTRADAY, TradingSession.MIDDAY_BREAK}:
         retrieved_bars = runtime.daily_repository.get_recent_bars(normalized, 120)
@@ -152,6 +190,14 @@ def build_runtime_diagnosis(
         if context.session is TradingSession.INTRADAY and runtime.intraday_refresh is not None:
             runtime.intraday_refresh(selected)
         repository = runtime.evidence_repository
+        risk_gate = runtime.risk_gate
+        if market_state is not None:
+            risk_gate = IntradayRiskGate(
+                market_state.status,
+                risk_gate.portfolio_approved,
+                risk_gate.maximum_shares,
+                risk_gate.reason,
+            )
         return verify_intraday_plan(
             runtime.frozen_plan,
             quote=repository.get_latest_valid_snapshot(selected, "quote"),
@@ -161,12 +207,12 @@ def build_runtime_diagnosis(
             order_books=repository.get_valid_snapshots_since(
                 selected, "order_book", context.now_utc - timedelta(minutes=5)
             ),
-            risk_gate=runtime.risk_gate,
+            risk_gate=risk_gate,
             now=context.now_utc,
             is_holding=is_holding,
         )
 
-    return diagnose_for_session(
+    result = diagnose_for_session(
         normalized,
         context,
         static_diagnose=static_diagnose,
@@ -174,3 +220,6 @@ def build_runtime_diagnosis(
         release_mode=release_mode,
         is_holding=is_holding,
     )
+    if market_state is not None:
+        result = replace(result, market=_market_payload(market_state, is_holding=is_holding))
+    return result

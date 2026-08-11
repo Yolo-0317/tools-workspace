@@ -109,3 +109,20 @@ def test_holding_below_invalidation_exits_before_new_entry_gates() -> None:
     )
 
     assert decision.status == "EXIT"
+
+
+def test_market_freeze_does_not_block_a_holding_hard_exit() -> None:
+    decision = verify_intraday_plan(
+        _plan(),
+        quote=_quote(9.7),
+        fund_flow=None,
+        sector=None,
+        chip=None,
+        order_books=[],
+        risk_gate=IntradayRiskGate("FREEZE", False, 0, "大盘情绪冻结"),
+        now=NOW,
+        is_holding=True,
+    )
+
+    assert decision.status == "EXIT"
+    assert decision.reason == "现价跌破硬失效价"

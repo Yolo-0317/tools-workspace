@@ -27,6 +27,7 @@ from short_term_trading.diagnosis_runtime import (
 )
 from short_term_trading.evidence import CaptureRecorder, SqlAlchemyEvidenceRepository
 from short_term_trading.intraday import IntradayRiskGate
+from short_term_trading.market_capture import build_default_market_state_provider
 from short_term_trading.session import TradingSession
 from short_term_trading.session_diagnosis import SessionAwareDiagnosis, render_session_diagnosis
 
@@ -36,7 +37,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--code", required=True)
     parser.add_argument("--output", choices=("text", "json"), default="text")
     parser.add_argument("--plan-json", help="上一交易日冻结计划 JSON")
-    parser.add_argument("--market-status", choices=("ALLOW", "LIMITED", "FREEZE"), default="FREEZE")
     parser.add_argument("--maximum-shares", type=int, default=0)
     parser.add_argument("--portfolio-approved", action="store_true")
     parser.add_argument("--is-holding", action="store_true")
@@ -83,13 +83,14 @@ def default_runtime(args: argparse.Namespace) -> DiagnosisRuntime:
         risk_profile=RiskProfile(args.risk_budget, args.ticket_limit, args.remaining_exposure),
         frozen_plan=_load_plan(args.plan_json),
         risk_gate=IntradayRiskGate(
-            args.market_status,
+            "FREEZE",
             args.portfolio_approved,
             args.maximum_shares,
             "命令参数未明确放行组合风险" if not args.portfolio_approved else "",
         ),
         intraday_refresh=refresh,
         chip_refresh=chip_refresh,
+        market_state_provider=build_default_market_state_provider(mysql_url),
     )
 
 
