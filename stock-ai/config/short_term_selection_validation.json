@@ -1,0 +1,56 @@
+{
+  "costs": {
+    "commission_rate": 0.001,
+    "slippage_rate": 0.001
+  },
+  "data_bounds": {
+    "end": "2026-07-31",
+    "start": "2024-01-02"
+  },
+  "generated_at": "2026-08-11T12:02:07.208267+00:00",
+  "metrics": {
+    "baseline_test": {
+      "expectancy": -1.7001832294417967,
+      "shape_counts": {
+        "BREAKOUT": 39,
+        "PULLBACK": 46
+      },
+      "trade_count": 85,
+      "wilson_lower_bound": 0.18759486332171668,
+      "win_rate": 0.27058823529411763,
+      "wins": 23
+    },
+    "candidate_test": {
+      "expectancy": 0.0,
+      "shape_counts": {
+        "BREAKOUT": 0,
+        "PULLBACK": 0
+      },
+      "trade_count": 0,
+      "wilson_lower_bound": 0.0,
+      "win_rate": 0.0,
+      "wins": 0
+    }
+  },
+  "promoted": false,
+  "reasons": [
+    "NO_VALIDATION_PROFILE"
+  ],
+  "rule_version": "short-term-selection-2.1.0",
+  "schema_version": "short-term-selection-validation-v1",
+  "selected_profile": null,
+  "split_bounds": {
+    "test": {
+      "end": "2026-07-31",
+      "start": "2026-01-23"
+    },
+    "train": {
+      "end": "2025-07-21",
+      "start": "2024-01-02"
+    },
+    "validation": {
+      "end": "2026-01-22",
+      "start": "2025-07-22"
+    }
+  }
+}

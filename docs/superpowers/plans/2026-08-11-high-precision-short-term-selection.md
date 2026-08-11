@@ -33,7 +33,7 @@
 - Consumes: a sequence of bar-like objects with `high`, `low`, `close`, and `amount_qian` attributes.
 - Produces: `TechnicalIndicatorSnapshot` and `compute_technical_indicators(bars) -> TechnicalIndicatorSnapshot`.
 
-- [ ] **Step 1: Write failing literal indicator tests**
+- [x] **Step 1: Write failing literal indicator tests**
 
 Add tests whose expected values are hand-derived, not computed with production helpers:
 
@@ -58,7 +58,7 @@ def test_all_up_closes_produce_rsi_100_and_adx_100() -> None:
 
 Add independent tests for `return20`, `breakout_pct`, `average_amount5`, `advance_amount5`, `pullback_amount5`, and `pullback_amount_ratio`. Add rejection tests for fewer than 60 bars, duplicate dates, non-finite values, zero close, and zero advance amount.
 
-- [ ] **Step 2: Run the indicator tests and verify RED**
+- [x] **Step 2: Run the indicator tests and verify RED**
 
 Run:
 
@@ -70,7 +70,7 @@ stock-ai/.venv/bin/pytest -q -p no:cacheprovider \
 
 Expected: collection fails because `stock_ai.technical_indicators` does not exist.
 
-- [ ] **Step 3: Implement the minimal immutable indicator module**
+- [x] **Step 3: Implement the minimal immutable indicator module**
 
 Use this public shape:
 
@@ -102,11 +102,11 @@ def compute_technical_indicators(bars: Sequence[BarLike]) -> TechnicalIndicatorS
 
 Implement Wilder smoothing for ATR, RSI, and ADX. Calculate trend regression on log closes with direct sums; do not add NumPy. `breakout_pct` must use `max(high[-21:-1])`, and `average_amount5` must use `amount[-6:-1]`.
 
-- [ ] **Step 4: Run GREEN and selector regression tests**
+- [x] **Step 4: Run GREEN and selector regression tests**
 
 Run the Task 1 test plus `stock-ai/tests/unit/test_short_term_selection.py`. Expected: all pass.
 
-- [ ] **Step 5: Commit Task 1**
+- [x] **Step 5: Commit Task 1**
 
 ```bash
 git add stock-ai/stock_ai/technical_indicators.py stock-ai/tests/unit/test_technical_indicators.py
@@ -125,7 +125,7 @@ git commit -m "feat(stock-ai): add high-precision technical indicators"
 - Consumes: normalized current/prior close pairs or one SQLAlchemy engine and analysis date.
 - Produces: `RelativeStrengthSnapshot(percentiles, eligible_count, current_count, coverage_ratio, prior_trade_date)` and `load_relative_strength_snapshot(engine, analysis_date)`.
 
-- [ ] **Step 1: Write failing percentile and coverage tests**
+- [x] **Step 1: Write failing percentile and coverage tests**
 
 ```python
 def test_tied_returns_receive_the_average_percentile_rank() -> None:
@@ -155,11 +155,11 @@ def test_coverage_below_95_percent_is_not_usable() -> None:
 
 Add tests that suffix and six-digit duplicate rows resolve to one code, invalid closes are excluded, and a one-code universe receives percentile 1.0.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run `pytest stock-ai/tests/unit/test_relative_strength.py` with the standard environment. Expected: module missing.
 
-- [ ] **Step 3: Implement pure ranking and the MySQL adapter**
+- [x] **Step 3: Implement pure ranking and the MySQL adapter**
 
 Use average ranks for ties and `(average_rank - 1) / (n - 1)`. The adapter must:
 
@@ -168,11 +168,11 @@ Use average ranks for ties and `(average_rank - 1) / (n - 1)`. The adapter must:
 3. Normalize `600000.SH` and `600000` to one code deterministically, preferring the suffixed row when duplicates exist.
 4. Return coverage rather than silently accepting missing pairs.
 
-- [ ] **Step 4: Run GREEN and a read-only rollback integration test**
+- [x] **Step 4: Run GREEN and a read-only rollback integration test**
 
 Add an integration assertion to `a-share-short-term-trading/tests/integration/test_mysql_repositories.py` that the configured database produces a snapshot with dates in order and percentiles in `[0, 1]`; keep it behind `STT_MYSQL_INTEGRATION=1` and perform no writes.
 
-- [ ] **Step 5: Commit Task 2**
+- [x] **Step 5: Commit Task 2**
 
 ```bash
 git add stock-ai/stock_ai/relative_strength.py stock-ai/tests/unit/test_relative_strength.py \
@@ -192,7 +192,7 @@ git commit -m "feat(stock-ai): calculate full-market relative strength"
 - Consumes: Task 1 indicators, Task 2 percentiles, and an explicit `SelectionPolicy`.
 - Produces: `BASELINE_POLICY`, `STRICT_A`, `STRICT_B`, `STRICT_C`, and policy-aware `select_short_term_candidates`.
 
-- [ ] **Step 1: Write failing high-precision gate tests**
+- [x] **Step 1: Write failing high-precision gate tests**
 
 Add real-bar tests where one mutation breaks one behavior:
 
@@ -214,17 +214,17 @@ def test_strict_breakout_rejects_an_overheated_rsi() -> None:
 
 Cover exact boundaries for ADX, RSI, ATR%, R², relative strength, breakout percentage, 2.5 amount ratio, pullback amount ratio, and stop confirmation. Add a no-lookahead test that appends and mutates bars after `analysis_date` and gets the identical signal. Add a compatibility test proving omitted policy retains the 2.0 result.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Expected failures: missing policy constants and unsupported selector arguments.
 
-- [ ] **Step 3: Implement policies and structured rejection codes**
+- [x] **Step 3: Implement policies and structured rejection codes**
 
 Use immutable policy fields with exact values from the spec. Keep `policy=None` equivalent to `BASELINE_POLICY`. For a 2.1 policy, require `relative_strength_by_code`; a missing code rejects with `RELATIVE_STRENGTH_MISSING`. Add every Task 1 metric and `relative_strength_percentile` to `CandidateSignal.metrics` when accepted.
 
 Do not replace current base-shape tests. Evaluate the 2.0 shape first, then apply the selected strict gate and return the first stable rejection code.
 
-- [ ] **Step 4: Run GREEN and adapter regressions**
+- [x] **Step 4: Run GREEN and adapter regressions**
 
 Run:
 
@@ -237,7 +237,7 @@ stock-ai/.venv/bin/pytest -q -p no:cacheprovider \
   stock-ai/tests/unit/test_short_term_trade.py
 ```
 
-- [ ] **Step 5: Commit Task 3**
+- [x] **Step 5: Commit Task 3**
 
 ```bash
 git add stock-ai/stock_ai/short_term_selection.py stock-ai/tests/unit/test_short_term_selection.py
@@ -256,7 +256,7 @@ git commit -m "feat(stock-ai): add strict high-precision selection policies"
 - Consumes: accepted `CandidateSignal`, its completed bars, and subsequent daily bars.
 - Produces: `TechnicalProxyPlan`, `ProxyTrade`, `PortfolioBacktestResult`, `build_proxy_plan`, `simulate_proxy_trade`, and `simulate_proxy_portfolio`.
 
-- [ ] **Step 1: Write failing plan and execution tests**
+- [x] **Step 1: Write failing plan and execution tests**
 
 Use literal prices:
 
@@ -282,19 +282,19 @@ def test_same_day_stop_and_target_uses_the_stop() -> None:
 
 Add tests for untriggered T+1, trigger fill, exact 1.5R target, risk below 1.5%, risk above 5%, five-day time exit, no same-code overlap, five-session cooldown, two-slot cap, one-position 50% allocation, and a hand-calculated daily equity drawdown.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Expected: `stock_ai.technical_execution` is missing.
 
-- [ ] **Step 3: Implement exact proxy plan formulas and conservative fills**
+- [x] **Step 3: Implement exact proxy plan formulas and conservative fills**
 
 Use the cent rounding and formulas from the design. Model every non-fill with a status code. A trade occupies one 50% slot from entry through exit. Compute equity for every market date using marked closes, cash, and realized proceeds; do not derive portfolio drawdown by multiplying standalone trade returns.
 
-- [ ] **Step 4: Run GREEN and mutation checks**
+- [x] **Step 4: Run GREEN and mutation checks**
 
 Verify that changing ceiling comparison from `>` to `>=`, changing stop-first ordering, removing cooldown, or allowing a third slot would each fail a named test.
 
-- [ ] **Step 5: Commit Task 4**
+- [x] **Step 5: Commit Task 4**
 
 ```bash
 git add stock-ai/stock_ai/technical_execution.py stock-ai/tests/unit/test_technical_execution.py
@@ -314,7 +314,7 @@ git commit -m "feat(stock-ai): simulate conservative technical execution"
 - Consumes: dated baseline/profile backtest summaries.
 - Produces: `chronological_splits`, `wilson_lower_bound`, `choose_validation_profile`, `evaluate_promotion`, `ValidationArtifact`, and `load_promoted_policy`.
 
-- [ ] **Step 1: Write failing time-isolation and promotion tests**
+- [x] **Step 1: Write failing time-isolation and promotion tests**
 
 ```python
 def test_profile_choice_never_reads_test_metrics() -> None:
@@ -336,19 +336,19 @@ def test_negative_expectancy_prevents_promotion_despite_high_win_rate() -> None:
 
 Cover fewer than 120 sessions per split, validation total below 75, either validation shape below 25, test total below 100, improvement exactly 5 percentage points, zero shape samples, malformed artifacts, unknown rule versions, and Wilson literals.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Expected: validation module missing.
 
-- [ ] **Step 3: Implement immutable validation logic**
+- [x] **Step 3: Implement immutable validation logic**
 
 `choose_validation_profile` accepts only validation metrics, making test-set leakage impossible through its public interface. Evaluate the chosen profile on test data later through `evaluate_promotion`. Serialize the artifact with schema version, data bounds, split bounds, costs, selected profile, all metrics, promotion boolean, reasons, and generation timestamp. `load_promoted_policy` returns `BASELINE_POLICY` unless every required field validates and `promoted` is true.
 
-- [ ] **Step 4: Run GREEN**
+- [x] **Step 4: Run GREEN**
 
 Run Task 5 tests plus Task 3 and Task 4 suites.
 
-- [ ] **Step 5: Commit Task 5 without a generated artifact**
+- [x] **Step 5: Commit Task 5 without a generated artifact**
 
 ```bash
 git add stock-ai/stock_ai/selection_validation.py stock-ai/tests/unit/test_selection_validation.py
@@ -368,7 +368,7 @@ git commit -m "feat(stock-ai): gate strict rules with walk-forward validation"
 - Consumes: Tasks 1–5 and MySQL `stock_daily`.
 - Produces: one baseline/profile comparison report and optional validated promotion artifact.
 
-- [ ] **Step 1: Write failing script-level behavior tests**
+- [x] **Step 1: Write failing script-level behavior tests**
 
 Run the script module against an in-memory DataFrame and assert:
 
@@ -380,11 +380,11 @@ Run the script module against an in-memory DataFrame and assert:
 - malformed chronology exits with code 2 and no promotion conclusion;
 - JSON output uses `technical_execution_proxy` and contains no credentials or holdings.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Expected: old `run_backtest` lacks policy comparison, portfolio result, and artifact CLI.
 
-- [ ] **Step 3: Implement cached daily orchestration**
+- [x] **Step 3: Implement cached daily orchestration**
 
 Compute indicators and relative-strength snapshots once per code/date, then reuse them across baseline and strict profiles. Run each policy once and collect both shapes in the same pass. Change default dates to `2024-01-02` through the latest configured completed date so 60/20/20 splits can each contain at least 120 sessions. Add:
 
@@ -399,11 +399,11 @@ Compute indicators and relative-strength snapshots once per code/date, then reus
 
 The report must include training, validation, and test metrics, rejection counters, the selected validation profile, and promotion reasons.
 
-- [ ] **Step 4: Run GREEN and one local fixture benchmark**
+- [x] **Step 4: Run GREEN and one local fixture benchmark**
 
 The test fixture benchmark must finish in under 5 seconds; this protects against accidentally recalculating indicators for every policy.
 
-- [ ] **Step 5: Commit Task 6**
+- [x] **Step 5: Commit Task 6**
 
 ```bash
 git add stock-ai/scripts/analysis/backtest_short_term_trade.py \
@@ -426,7 +426,7 @@ git commit -m "feat(stock-ai): compare strict selectors out of sample"
 - Consumes: validated artifact, selected policy, relative-strength snapshot, and current market state.
 - Produces: safely versioned 2.0 or 2.1 candidates, evidence, plans, and chat reports.
 
-- [ ] **Step 1: Write failing production-gate tests**
+- [x] **Step 1: Write failing production-gate tests**
 
 Add tests proving:
 
@@ -438,21 +438,21 @@ Add tests proving:
 - technical evidence persists ADX, RSI, ATR%, R², relative strength, and the shape-specific volume/breakout metric;
 - rerunning the same rule/date remains idempotent and does not overwrite 2.0 rows.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Expected: CLI always calls 2.0 and service still permits two LIMITED executable candidates.
 
-- [ ] **Step 3: Implement validated policy resolution**
+- [x] **Step 3: Implement validated policy resolution**
 
 Load `stock-ai/config/short_term_selection_validation.json` through Task 5. Load full-market relative strength only for a promoted 2.1 policy. Pass the explicit policy to the selector and its version to materialization. Keep 2.0 behavior unchanged.
 
 In materialization, apply the stricter market rule only when `request.rule_version == "short-term-selection-2.1.0"`; this prevents changing historical 2.0 semantics.
 
-- [ ] **Step 4: Run GREEN and MySQL rollback integration**
+- [x] **Step 4: Run GREEN and MySQL rollback integration**
 
 Run the CLI/service tests, repository tests, then the configured integration tests. Confirm 2.0 and 2.1 deterministic IDs coexist.
 
-- [ ] **Step 5: Commit Task 7**
+- [x] **Step 5: Commit Task 7**
 
 ```bash
 git add a-share-short-term-trading/scripts/select_short_term_candidates.py \
@@ -475,7 +475,7 @@ git commit -m "feat(stt): activate only validated strict selection rules"
 - Consumes: completed implementation and configured read-only market history.
 - Produces: reproducible validation evidence, the safe production policy decision, and operator documentation.
 
-- [ ] **Step 1: Run all local tests before accessing MySQL**
+- [x] **Step 1: Run all local tests before accessing MySQL**
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=stock-ai:a-share-short-term-trading \
@@ -491,7 +491,7 @@ stock-ai/.venv/bin/pytest -q -p no:cacheprovider \
   a-share-short-term-trading/tests --ignore=a-share-short-term-trading/tests/integration
 ```
 
-- [ ] **Step 2: Run the configured remote proxy backtest once**
+- [x] **Step 2: Run the configured remote proxy backtest once**
 
 ```bash
 PYTHONPATH=stock-ai stock-ai/.venv/bin/python \
@@ -502,11 +502,11 @@ PYTHONPATH=stock-ai stock-ai/.venv/bin/python \
 
 Do not modify thresholds after seeing test metrics. Record the actual selected profile, sample sizes, win-rate change, expectancy, and promotion reasons. A failed promotion is a valid completed outcome.
 
-- [ ] **Step 3: Verify artifact replay and production resolution**
+- [x] **Step 3: Verify artifact replay and production resolution**
 
 Run the backtest again without writing an artifact and require byte-stable metric JSON except `generated_at`. Load the committed artifact through `load_promoted_policy`; assert it resolves to 2.1 only if every approved gate passed, otherwise 2.0.
 
-- [ ] **Step 4: Run remote integration and one shadow CLI**
+- [x] **Step 4: Run remote integration and one shadow CLI**
 
 ```bash
 STT_MYSQL_INTEGRATION=1 PYTHONDONTWRITEBYTECODE=1 \
@@ -522,11 +522,11 @@ PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
 
 The shadow CLI must state the active rule, market state, and rejection counts and must not claim an order was placed.
 
-- [ ] **Step 5: Document operation and experimental outcome**
+- [x] **Step 5: Document operation and experimental outcome**
 
 Update README with indicator meanings, relative-strength coverage, proxy limitations, artifact promotion rules, exact backtest command, active rule version, actual out-of-sample results, and the fact that failed validation leaves 2.0 active.
 
-- [ ] **Step 6: Run final verification and commit exact files**
+- [x] **Step 6: Run final verification and commit exact files**
 
 Re-run the complete local suite, remote integration suite, `git diff --check`, and inspect `git status --short`. Then:
 
