@@ -126,3 +126,21 @@ def test_market_freeze_does_not_block_a_holding_hard_exit() -> None:
 
     assert decision.status == "EXIT"
     assert decision.reason == "现价跌破硬失效价"
+
+
+def test_missing_plan_size_fails_the_portfolio_gate_without_crashing() -> None:
+    plan = TradePlanDraft(**{**_plan().__dict__, "maximum_shares": None})
+
+    decision = verify_intraday_plan(
+        plan,
+        quote=_quote(),
+        fund_flow=_snapshot("fund_flow", {"main_net_inflow": 10.0}),
+        sector=_snapshot("sector", {"theme_name": "测试", "change_pct": 2.0, "advancing_ratio": 70.0, "leader_code": "600001"}),
+        chip=_snapshot("chip", {"cost_90_low": 9.6, "cost_90_high": 10.0, "profit_ratio": 60.0, "concentration": 30.0}),
+        order_books=_order_books(),
+        risk_gate=IntradayRiskGate("ALLOW", True, 200),
+        now=NOW,
+    )
+
+    assert decision.status == "NO_TRADE"
+    assert decision.failed_gates == ["portfolio"]

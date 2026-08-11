@@ -60,6 +60,32 @@ def _chip() -> EvidenceSnapshot:
     )
 
 
+def _pullback_bars() -> list[DailyBar]:
+    closes = [9.0 + index * 0.05 for index in range(20)] + [
+        10.10, 10.30, 10.50, 10.80, 11.10, 11.40, 11.20, 11.05, 10.95, 11.00,
+    ]
+    result: list[DailyBar] = []
+    for index, close in enumerate(closes):
+        last = index == len(closes) - 1
+        result.append(
+            DailyBar(
+                ts_code="600000",
+                exch_code="SH",
+                trade_date=date(2026, 6, 29) + timedelta(days=index),
+                open=10.90 if last else close - 0.03,
+                high=11.12 if last else close + 0.10,
+                low=10.80 if last else close - 0.10,
+                close=close,
+                pre_close=None,
+                change_amount=0.05,
+                pct_chg=0.5,
+                vol=1000,
+                amount=100.0,
+            )
+        )
+    return result
+
+
 def test_complete_eod_inputs_create_wait_entry_plan() -> None:
     plan = build_eod_trade_plan(
         "600000",
@@ -149,3 +175,97 @@ def test_eod_plan_accepts_a_wall_clock_old_chip_for_the_expected_trade_date() ->
     )
 
     assert plan.status == "WAIT_ENTRY"
+
+
+def test_breakout_plan_caps_entry_at_one_point_five_percent() -> None:
+    volatile = [
+        DailyBar(
+            **{
+                **bar.__dict__,
+                "low": bar.close - 0.80,
+            }
+        )
+        for bar in _bars()
+    ]
+
+    plan = build_eod_trade_plan(
+        "600000",
+        volatile,
+        _chip(),
+        candidate_type="BREAKOUT",
+        market_status="ALLOW",
+        portfolio_approved=True,
+        now=NOW,
+    )
+
+    assert plan.status == "WAIT_ENTRY"
+    assert plan.entry_ceiling <= round(plan.trigger_price * 1.015 + 0.005, 2)
+    assert plan.indicators["prior_high20"] == 10.94
+
+
+def test_pullback_plan_uses_reversal_high_and_support_invalidation() -> None:
+    plan = build_eod_trade_plan(
+        "600000",
+        _pullback_bars(),
+        _chip(),
+        candidate_type="PULLBACK",
+        market_status="ALLOW",
+        portfolio_approved=True,
+        now=NOW,
+    )
+
+    assert plan.status == "WAIT_ENTRY"
+    assert plan.trigger_price == 11.12
+    assert plan.invalidation_price < plan.trigger_price
+    assert plan.first_reduce_price > plan.entry_ceiling
+
+
+def test_unapproved_portfolio_keeps_plan_but_does_not_invent_shares() -> None:
+    plan = build_eod_trade_plan(
+        "600000",
+        _bars(),
+        _chip(),
+        candidate_type="BREAKOUT",
+        market_status="ALLOW",
+        portfolio_approved=False,
+        now=NOW,
+    )
+
+    assert plan.status == "WAIT_ENTRY"
+    assert plan.maximum_shares is None
+
+
+def test_market_status_reduces_or_freezes_position_sizing() -> None:
+    profile = RiskProfile(
+        per_trade_loss_budget=500,
+        ticket_limit=4000,
+        remaining_exposure=4000,
+    )
+    allowed = build_eod_trade_plan(
+        "600000", _bars(), _chip(), profile=profile, market_status="ALLOW",
+        portfolio_approved=True, now=NOW,
+    )
+    limited = build_eod_trade_plan(
+        "600000", _bars(), _chip(), profile=profile, market_status="LIMITED",
+        portfolio_approved=True, now=NOW,
+    )
+    frozen = build_eod_trade_plan(
+        "600000", _bars(), _chip(), profile=profile, market_status="FREEZE",
+        portfolio_approved=False, now=NOW,
+    )
+
+    assert allowed.maximum_shares is not None
+    assert limited.maximum_shares is not None
+    assert limited.maximum_shares <= allowed.maximum_shares // 2
+    assert frozen.status == "WAIT_ENTRY"
+    assert frozen.maximum_shares == 0
+
+
+def test_plan_exposes_final_reward_risk_ratio() -> None:
+    plan = build_eod_trade_plan(
+        "600000", _bars(), _chip(), portfolio_approved=True, now=NOW
+    )
+
+    assert plan.status == "WAIT_ENTRY"
+    assert plan.indicators["risk_reward_ratio"] >= 1.5
+    assert plan.indicators["atr14"] > 0

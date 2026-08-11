@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from datetime import date, datetime
 import math
-from typing import Any
+from typing import Any, Literal
 
 from short_term_trading.daily_sync import DailyBar, normalize_code
 from short_term_trading.evidence import (
@@ -57,7 +57,7 @@ class TradePlanDraft:
     first_reduce_price: float | None
     pullback_low: float | None
     pullback_high: float | None
-    maximum_shares: int
+    maximum_shares: int | None
     indicators: dict[str, float]
     evidence_refs: dict[str, str]
 
@@ -106,6 +106,9 @@ def build_eod_trade_plan(
     profile: RiskProfile = RiskProfile(),
     now: datetime,
     expected_trade_date: date | None = None,
+    candidate_type: Literal["BREAKOUT", "PULLBACK"] = "BREAKOUT",
+    market_status: Literal["ALLOW", "LIMITED", "FREEZE"] = "ALLOW",
+    portfolio_approved: bool = True,
 ) -> TradePlanDraft:
     normalized_code = normalize_code(code)
     ordered = sorted(bars, key=lambda item: item.trade_date)
@@ -117,6 +120,7 @@ def build_eod_trade_plan(
         "ma10": _mean(closes[-10:]),
         "ma20": _mean(closes[-20:]),
         "high20": max(bar.high for bar in ordered[-20:]),
+        "prior_high20": max(bar.high for bar in ordered[-21:-1]),
         "low10": min(bar.low for bar in ordered[-10:]),
     }
     try:
@@ -140,21 +144,50 @@ def build_eod_trade_plan(
         return _no_trade(normalized_code, now, "筹码成本区字段无效", indicators)
 
     atr = indicators["atr14"]
-    resistance = max(indicators["high20"], cost_high)
-    trigger = _ceil_cent(resistance + 0.10 * atr)
-    entry_ceiling = _ceil_cent(trigger + 0.50 * atr)
-    pullback_low = max(indicators["ma5"] - 0.25 * atr, cost_high - 0.25 * atr)
-    pullback_high = max(indicators["ma5"] + 0.25 * atr, cost_high + 0.25 * atr)
-    support = max(indicators["low10"], cost_low, indicators["ma10"])
+    if candidate_type == "PULLBACK":
+        trigger = _ceil_cent(ordered[-1].high)
+    else:
+        resistance = max(indicators["prior_high20"], cost_high)
+        trigger = _ceil_cent(resistance + 0.10 * atr)
+    entry_ceiling = _ceil_cent(min(trigger + 0.50 * atr, trigger * 1.015))
+    if candidate_type == "PULLBACK":
+        pullback_low = max(indicators["ma10"], cost_low)
+        pullback_high = max(indicators["ma5"], cost_high)
+        support = max(
+            value
+            for value in (ordered[-1].low, indicators["ma10"], cost_low)
+            if value < trigger
+        )
+    else:
+        pullback_low = max(indicators["ma5"] - 0.25 * atr, cost_high - 0.25 * atr)
+        pullback_high = max(indicators["ma5"] + 0.25 * atr, cost_high + 0.25 * atr)
+        support = max(indicators["low10"], cost_low, indicators["ma10"])
     invalidation = _floor_cent(support - 0.10 * atr)
     risk_fraction = (trigger - invalidation) / trigger if trigger > 0 else 0
     indicators["risk_fraction"] = risk_fraction
     if trigger <= invalidation or not 0.015 <= risk_fraction <= 0.05:
         return _no_trade(normalized_code, now, "触发价到失效价风险距离不在 1.5%–5.0%", indicators)
-    maximum_shares = _maximum_shares(normalized_code, trigger, invalidation, profile)
-    if maximum_shares == 0:
+    effective_profile = profile
+    if market_status == "LIMITED":
+        effective_profile = RiskProfile(
+            per_trade_loss_budget=profile.per_trade_loss_budget / 2,
+            ticket_limit=profile.ticket_limit / 2,
+            remaining_exposure=profile.remaining_exposure / 2,
+        )
+    if market_status == "FREEZE":
+        maximum_shares = 0
+    elif portfolio_approved:
+        maximum_shares = _maximum_shares(
+            normalized_code, trigger, invalidation, effective_profile
+        )
+    else:
+        maximum_shares = None
+    if market_status != "FREEZE" and portfolio_approved and maximum_shares == 0:
         return _no_trade(normalized_code, now, "风险预算不足以覆盖最小申报数量", indicators)
-    first_reduce = _ceil_cent(trigger + 2 * (trigger - invalidation))
+    first_reduce = _ceil_cent(trigger + 1.5 * (trigger - invalidation))
+    indicators["risk_reward_ratio"] = (
+        (first_reduce - trigger) / (trigger - invalidation)
+    )
     return TradePlanDraft(
         code=normalized_code,
         status="WAIT_ENTRY",

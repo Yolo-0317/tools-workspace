@@ -101,7 +101,11 @@ def verify_intraday_plan(
         return _decision(plan, now, "EXIT", "现价跌破硬失效价", passed=["quote"], refs={"quote": quote.raw_evidence_ref})
     if risk_gate.market_status == "FREEZE":
         return _decision(plan, now, "NO_TRADE", "市场状态为 FREEZE", failed=["market"])
-    if not risk_gate.portfolio_approved or risk_gate.maximum_shares <= 0:
+    if (
+        plan.maximum_shares is None
+        or not risk_gate.portfolio_approved
+        or risk_gate.maximum_shares <= 0
+    ):
         return _decision(plan, now, "NO_TRADE", risk_gate.reason or "组合风控未放行", failed=["portfolio"])
     if price < plan.trigger_price:
         return _decision(plan, now, "WAIT_ENTRY", "未到突破触发价", passed=["quote"], refs={"quote": quote.raw_evidence_ref})
