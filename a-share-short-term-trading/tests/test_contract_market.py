@@ -4,6 +4,8 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
+import short_term_trading.contracts as contracts
+from short_term_trading.contracts import market as market_contracts
 from short_term_trading.contracts.market import CandidateV1, EvidenceSnapshotV1, MarketStateV1
 
 
@@ -57,6 +59,39 @@ def test_candidate_only_accepts_breakout_and_normalizes_code() -> None:
     assert candidate.code == "000001"
     with pytest.raises(ValidationError):
         CandidateV1(candidate_type="PULLBACK", **valid)
+
+
+def test_candidate_v2_accepts_pullback_with_auditable_selection_fields() -> None:
+    candidate = market_contracts.CandidateV2(
+        candidate_id=CANDIDATE_ID,
+        as_of=AS_OF,
+        source="short-term-auto-selection",
+        data_status="VALID",
+        analysis_date=date(2026, 8, 10),
+        trading_date=date(2026, 8, 11),
+        code="1.SZ",
+        name="平安银行",
+        candidate_type="PULLBACK",
+        setup_score=Decimal("82.5"),
+        liquidity_score=Decimal("0.80"),
+        trend_score=Decimal("0.75"),
+        catalyst_score=Decimal("0"),
+        sector="银行",
+        rule_version="short-term-selection-2.0.0",
+        source_strategies=("MA5", "五因子"),
+        executable_status="OBSERVE",
+        rejected_reasons=("缺少筹码快照",),
+        evidence_refs=(EVIDENCE_ID,),
+    )
+
+    assert candidate.schema_version == "1.2"
+    assert candidate.code == "000001"
+    assert candidate.candidate_type == "PULLBACK"
+
+
+def test_v2_selection_contracts_are_publicly_exported() -> None:
+    assert contracts.CandidateV2 is market_contracts.CandidateV2
+    assert contracts.TradePlanV2.__name__ == "TradePlanV2"
 
 
 def test_evidence_requires_code_except_for_market_and_validates_quote_payload() -> None:

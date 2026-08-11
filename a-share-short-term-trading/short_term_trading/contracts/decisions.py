@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 from decimal import Decimal
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import AwareDatetime, Field, field_validator, model_validator
@@ -58,6 +58,62 @@ class TradePlanV1(ContractModel):
             raise ValueError("pullback_low must not exceed pullback_high")
         if self.valid_until <= self.as_of:
             raise ValueError("valid_until must be later than as_of")
+        return self
+
+
+class TradePlanV2(ContractModel):
+    schema_version: Literal["1.2"] = "1.2"
+    plan_id: str
+    candidate_id: str
+    analysis_date: date
+    trading_date: date
+    code: str
+    status: SignalStatus
+    trigger_price: Decimal = Field(gt=0)
+    entry_ceiling: Decimal = Field(gt=0)
+    invalidation_price: Decimal = Field(gt=0)
+    first_reduce_price: Decimal = Field(gt=0)
+    risk_distance: Decimal = Field(gt=0)
+    risk_reward_ratio: Decimal = Field(gt=0)
+    atr: Decimal = Field(gt=0)
+    chip_trade_date: date
+    maximum_shares: int | None = Field(default=None, ge=0)
+    market_status: MarketStatus
+    portfolio_status: Literal["APPROVED", "NOT_APPROVED"]
+    valid_until: AwareDatetime
+    rule_version: str = Field(min_length=1)
+    evidence_refs: tuple[str, ...] = Field(min_length=1)
+
+    _validate_plan_id = field_validator("plan_id")(_uuid_string)
+    _validate_candidate_id = field_validator("candidate_id")(_uuid_string)
+    _validate_code = field_validator("code")(validate_code)
+    _validate_evidence_refs = field_validator("evidence_refs")(
+        lambda values: tuple(_uuid_string(value) for value in values)
+    )
+    _normalize_valid_until = field_validator("valid_until")(_utc)
+
+    @model_validator(mode="after")
+    def validate_plan_state(self) -> "TradePlanV2":
+        if self.status not in {SignalStatus.NO_TRADE, SignalStatus.WAIT_ENTRY}:
+            raise ValueError("end-of-day plan status must be NO_TRADE or WAIT_ENTRY")
+        if not (
+            self.invalidation_price
+            < self.trigger_price
+            <= self.entry_ceiling
+            < self.first_reduce_price
+        ):
+            raise ValueError("price order must be invalidation < trigger <= entry ceiling < first reduce")
+        if self.status is SignalStatus.WAIT_ENTRY and self.risk_reward_ratio < Decimal("1.5"):
+            raise ValueError("risk_reward_ratio must be at least 1.5")
+        if self.valid_until <= self.as_of:
+            raise ValueError("valid_until must be later than as_of")
+        if self.market_status is MarketStatus.FREEZE:
+            if self.maximum_shares != 0:
+                raise ValueError("FREEZE market requires zero maximum_shares")
+        elif self.portfolio_status == "NOT_APPROVED" and self.maximum_shares is not None:
+            raise ValueError("unapproved portfolio requires unknown maximum_shares")
+        elif self.portfolio_status == "APPROVED" and self.maximum_shares is None:
+            raise ValueError("approved portfolio requires maximum_shares")
         return self
 
 

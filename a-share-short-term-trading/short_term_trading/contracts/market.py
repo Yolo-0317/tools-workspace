@@ -60,6 +60,32 @@ class CandidateV1(ContractModel):
     )
 
 
+class CandidateV2(ContractModel):
+    schema_version: Literal["1.2"] = "1.2"
+    candidate_id: str
+    analysis_date: date
+    trading_date: date
+    code: str
+    name: str = Field(min_length=1)
+    candidate_type: Literal["BREAKOUT", "PULLBACK"]
+    setup_score: Decimal = Field(ge=0, le=100)
+    liquidity_score: Decimal = Field(ge=0, le=1)
+    trend_score: Decimal = Field(ge=0, le=1)
+    catalyst_score: Decimal = Field(ge=0, le=1)
+    sector: str = Field(min_length=1)
+    rule_version: str = Field(min_length=1)
+    source_strategies: tuple[str, ...] = Field(min_length=1)
+    executable_status: Literal["OBSERVE", "EXECUTABLE", "REJECTED"]
+    rejected_reasons: tuple[str, ...]
+    evidence_refs: tuple[str, ...] = Field(min_length=1)
+
+    _validate_candidate_id = field_validator("candidate_id")(_uuid_string)
+    _validate_code = field_validator("code")(validate_code)
+    _validate_evidence_refs = field_validator("evidence_refs")(
+        lambda values: tuple(_uuid_string(value) for value in values)
+    )
+
+
 class EvidenceSnapshotV1(ContractModel):
     evidence_id: str
     kind: EvidenceKind

@@ -92,6 +92,29 @@ def test_broker_fact_migration_contains_every_compatibility_column() -> None:
     assert "information_schema.columns" in sql
 
 
+def test_short_term_selection_migration_is_additive_and_idempotent() -> None:
+    sql = (SQL_DIR / "005_short_term_automatic_selection.sql").read_text(encoding="utf-8").lower()
+    for column in (
+        "analysis_date",
+        "setup_score",
+        "rule_version",
+        "source_strategies_json",
+        "executable_status",
+        "risk_reward_ratio",
+        "atr",
+        "chip_trade_date",
+        "maximum_shares",
+        "market_status",
+        "portfolio_status",
+    ):
+        assert column in sql
+    assert "information_schema.columns" in sql
+    assert "information_schema.statistics" in sql
+    assert "drop index uk_candidate_code_date_type" in sql
+    assert "uk_candidate_analysis_code_type_rule" in sql
+    assert "values ('1.2'" in sql
+
+
 def test_migrations_do_not_embed_credentials() -> None:
     sql = migration_text().lower()
 
@@ -115,6 +138,7 @@ def test_migration_cli_dry_run_lists_files_without_connecting() -> None:
         "002_stt_evidence_and_capture.sql DRY-RUN",
         "003_stt_core_schema.sql DRY-RUN",
         "004_portfolio_broker_facts.sql DRY-RUN",
+        "005_short_term_automatic_selection.sql DRY-RUN",
     ]
     assert result.stderr == ""
 
@@ -138,4 +162,5 @@ def test_migration_cli_defaults_to_dry_run_and_requires_explicit_apply() -> None
         "002_stt_evidence_and_capture.sql DRY-RUN",
         "003_stt_core_schema.sql DRY-RUN",
         "004_portfolio_broker_facts.sql DRY-RUN",
+        "005_short_term_automatic_selection.sql DRY-RUN",
     ]

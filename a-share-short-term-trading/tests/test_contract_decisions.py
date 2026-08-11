@@ -4,6 +4,7 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
+from short_term_trading.contracts import decisions as decision_contracts
 from short_term_trading.contracts.decisions import (
     DecisionSnapshotV1,
     IntradayDecisionV1,
@@ -144,3 +145,72 @@ def test_reduce_requires_size() -> None:
 def test_actionable_requires_live_buy_allowed_status() -> None:
     with pytest.raises(ValidationError):
         IntradayDecisionV1(**valid_intraday(status="WAIT_ENTRY", release_mode="LIVE", actionable=True))
+
+
+def valid_plan_v2(**updates: object) -> dict[str, object]:
+    values: dict[str, object] = {
+        "plan_id": PLAN_ID,
+        "candidate_id": CANDIDATE_ID,
+        "as_of": AS_OF,
+        "source": "short-term-auto-selection",
+        "data_status": "VALID",
+        "analysis_date": date(2026, 8, 10),
+        "trading_date": date(2026, 8, 11),
+        "code": "600000",
+        "status": "WAIT_ENTRY",
+        "trigger_price": Decimal("12.30"),
+        "entry_ceiling": Decimal("12.45"),
+        "invalidation_price": Decimal("11.80"),
+        "first_reduce_price": Decimal("13.20"),
+        "risk_distance": Decimal("0.50"),
+        "risk_reward_ratio": Decimal("1.80"),
+        "atr": Decimal("0.40"),
+        "chip_trade_date": date(2026, 8, 10),
+        "maximum_shares": 500,
+        "market_status": "ALLOW",
+        "portfolio_status": "APPROVED",
+        "valid_until": AS_OF + timedelta(days=1),
+        "rule_version": "short-term-selection-2.0.0",
+        "evidence_refs": (EVIDENCE_ID,),
+    }
+    values.update(updates)
+    return values
+
+
+def test_trade_plan_v2_enforces_price_order_and_risk_ratio() -> None:
+    plan = decision_contracts.TradePlanV2(**valid_plan_v2())
+    assert plan.schema_version == "1.2"
+    assert plan.maximum_shares == 500
+
+    with pytest.raises(ValidationError, match="price order"):
+        decision_contracts.TradePlanV2(
+            **valid_plan_v2(invalidation_price=Decimal("12.35"))
+        )
+    with pytest.raises(ValidationError, match="risk_reward_ratio"):
+        decision_contracts.TradePlanV2(
+            **valid_plan_v2(risk_reward_ratio=Decimal("1.49"))
+        )
+
+
+def test_trade_plan_v2_fails_closed_for_market_and_portfolio_sizing() -> None:
+    with pytest.raises(ValidationError, match="FREEZE"):
+        decision_contracts.TradePlanV2(
+            **valid_plan_v2(
+                market_status="FREEZE",
+                portfolio_status="NOT_APPROVED",
+                maximum_shares=500,
+            )
+        )
+    with pytest.raises(ValidationError, match="unapproved portfolio"):
+        decision_contracts.TradePlanV2(
+            **valid_plan_v2(portfolio_status="NOT_APPROVED", maximum_shares=500)
+        )
+
+    frozen = decision_contracts.TradePlanV2(
+        **valid_plan_v2(
+            market_status="FREEZE",
+            portfolio_status="NOT_APPROVED",
+            maximum_shares=0,
+        )
+    )
+    assert frozen.maximum_shares == 0
