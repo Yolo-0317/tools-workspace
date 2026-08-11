@@ -246,6 +246,8 @@ def test_renderer_explains_market_state_and_its_effect_on_the_stock() -> None:
     rendered = render_session_diagnosis(result)
 
     assert "大盘环境：FREEZE" in rendered
+    assert "数据截至 2026-08-10 10:00:00" in rendered
+    assert "+00:00" not in rendered.splitlines()[0]
     assert "上涨家数占比 22.3%" in rendered
     assert "上一交易日指数 MA20 基准缺失" in rendered
     assert "禁止加仓；已有持仓的退出纪律不变" in rendered

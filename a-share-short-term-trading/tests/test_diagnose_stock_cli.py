@@ -210,14 +210,14 @@ def test_missing_frozen_plan_never_starts_external_refresh() -> None:
 
 
 def test_runtime_attaches_the_automatic_market_state_to_the_diagnosis() -> None:
-    calls: list[TradingSession] = []
+    calls: list[tuple[TradingSession, date | None]] = []
 
     class Provider:
         def get_state(self, context):
-            calls.append(context.session)
+            calls.append((context.session, context.diagnosis_trade_date))
             return MarketStateView(
                 status="LIMITED",
-                trading_date=date(2026, 8, 10),
+                trading_date=date(2026, 8, 7),
                 as_of=SHANGHAI_INTRADAY.astimezone(timezone.utc),
                 expires_at=(SHANGHAI_INTRADAY + timedelta(minutes=15)).astimezone(timezone.utc),
                 indexes_above_ma20=1,
@@ -242,10 +242,43 @@ def test_runtime_attaches_the_automatic_market_state_to_the_diagnosis() -> None:
         "600000", subject, now=SHANGHAI_INTRADAY, release_mode=ReleaseMode.SHADOW
     )
 
-    assert calls == [TradingSession.INTRADAY]
+    assert calls == [(TradingSession.INTRADAY, date(2026, 8, 7))]
     assert result.market is not None
     assert result.market["status"] == "LIMITED"
     assert result.market["breadth_pct"] == 43.0
+
+
+def test_market_freeze_blocks_a_new_static_entry_before_stock_evidence() -> None:
+    class Provider:
+        def get_state(self, context):
+            return MarketStateView(
+                status="FREEZE",
+                trading_date=date(2026, 8, 10),
+                as_of=SHANGHAI_POST_MARKET.astimezone(timezone.utc),
+                expires_at=SHANGHAI_POST_MARKET.astimezone(timezone.utc),
+                indexes_above_ma20=None,
+                breadth_pct=None,
+                amount_ratio=None,
+                strong_sector_count=None,
+                reasons=("大盘核心字段缺失",),
+            )
+
+    evidence = FakeEvidenceRepository()
+    subject = DiagnosisRuntime(
+        calendar=FakeCalendar(True),
+        daily_repository=FakeDailyRepository([]),
+        evidence_repository=evidence,
+        risk_profile=RiskProfile(),
+        market_state_provider=Provider(),
+    )
+
+    result = build_runtime_diagnosis(
+        "600000", subject, now=SHANGHAI_POST_MARKET, release_mode=ReleaseMode.SHADOW
+    )
+
+    assert result.signal == "NO_TRADE"
+    assert "市场状态为 FREEZE" in result.reason
+    assert evidence.calls == []
 
 
 def test_post_market_falls_back_to_latest_complete_bar_date() -> None:

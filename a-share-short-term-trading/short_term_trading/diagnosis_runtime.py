@@ -135,8 +135,16 @@ def build_runtime_diagnosis(
 
     market_state: MarketStateView | None = None
     if runtime.market_state_provider is not None:
+        market_context = context
+        if context.session in {TradingSession.INTRADAY, TradingSession.MIDDAY_BREAK}:
+            completed_market_date = runtime.calendar.latest_on_or_before(
+                context.local_now.date() - timedelta(days=1)
+            )
+            market_context = replace(
+                context, diagnosis_trade_date=completed_market_date
+            )
         try:
-            market_state = runtime.market_state_provider.get_state(context)
+            market_state = runtime.market_state_provider.get_state(market_context)
         except Exception:  # noqa: BLE001
             market_state = freeze_market_state(
                 trading_date=context.diagnosis_trade_date,
@@ -158,6 +166,8 @@ def build_runtime_diagnosis(
             context = replace(context, diagnosis_trade_date=latest_date)
 
     def static_diagnose(selected: str, _context) -> TradePlanDraft:
+        if market_state is not None and market_state.status == "FREEZE" and not is_holding:
+            return _safe_plan(selected, context.now_utc, "市场状态为 FREEZE，禁止新增风险")
         bars = cached_bars
         if bars is None:
             bars = runtime.daily_repository.get_recent_bars(selected, 120)
@@ -173,11 +183,14 @@ def build_runtime_diagnosis(
             except Exception:  # noqa: BLE001
                 pass
             chip = runtime.evidence_repository.get_latest_valid_snapshot(selected, "chip")
+        profile = runtime.risk_profile
+        if market_state is not None and market_state.status == "LIMITED" and not is_holding:
+            profile = replace(profile, ticket_limit=min(profile.ticket_limit, 2000.0))
         return build_eod_trade_plan(
             selected,
             bars,
             chip,
-            profile=runtime.risk_profile,
+            profile=profile,
             now=context.now_utc,
             expected_trade_date=expected_trade_date,
         )

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+from decimal import Decimal
 from types import SimpleNamespace
 
 from sqlalchemy import create_engine, text
@@ -11,7 +12,9 @@ from short_term_trading.market_capture import (
     build_intraday_market_view,
     live_market_metrics,
     load_close_breadth_amount,
+    restore_market_state_view,
 )
+from short_term_trading.contracts import EvidenceSnapshotV1, MarketStateV1
 from short_term_trading.session import TradingSession
 
 
@@ -60,6 +63,24 @@ def test_incomplete_index_history_freezes_without_fake_market_metrics() -> None:
     assert state.status == "FREEZE"
     assert state.indexes_above_ma20 is None
     assert "不足 20 根" in state.reasons[0]
+
+
+def test_closed_market_ignores_a_newer_unfinished_index_bar() -> None:
+    unfinished = ["2026-08-11", "10", "1", "10", "1", "1", "1", "", "-90", "0", "1"]
+    state = build_closed_market_view(
+        trading_date=TRADE_DATE,
+        as_of=NOW,
+        index_rows={
+            "000001": rows(11.0) + [unfinished],
+            "399001": rows(11.0) + [unfinished],
+            "000688": rows(9.0) + [unfinished],
+        },
+        breadth_pct=55.0,
+        amount_ratio=1.0,
+    )
+
+    assert state.status == "ALLOW"
+    assert state.indexes_above_ma20 == 2
 
 
 def test_intraday_market_can_only_downgrade_the_close_state() -> None:
@@ -213,3 +234,41 @@ def test_live_market_metrics_require_all_indices_and_count_distinct_strong_secto
     metrics = live_market_metrics(indices, breadth, sectors)
 
     assert metrics == (-0.4, 22.2601, 2, True)
+
+
+def test_saved_close_state_restores_index_ma20_count_from_its_evidence() -> None:
+    evidence_id = "30000000-0000-4000-8000-000000000001"
+    saved = MarketStateV1(
+        state_id="30000000-0000-4000-8000-000000000002",
+        as_of=NOW,
+        source="market-close",
+        data_status="VALID",
+        trading_date=TRADE_DATE,
+        index_change_pct=Decimal("0.80"),
+        breadth_ratio=Decimal("0.55"),
+        turnover_ratio=Decimal("1.00"),
+        strong_sector_count=0,
+        status="ALLOW",
+        reasons=["收盘市场状态 ALLOW"],
+        evidence_refs=[evidence_id],
+    )
+    evidence = EvidenceSnapshotV1(
+        evidence_id=evidence_id,
+        as_of=NOW,
+        source="market-close",
+        data_status="VALID",
+        kind="MARKET",
+        code=None,
+        payload={"status": "ALLOW", "indexes_above_ma20": 2},
+        parser_version="market-regime-v1",
+        raw_reference="fixture:market",
+        expires_at=NOW,
+        freshness_seconds=0,
+        quality_flags=[],
+    )
+
+    state = restore_market_state_view(saved, evidence)
+
+    assert state.indexes_above_ma20 == 2
+    assert state.breadth_pct == 55.0
+    assert state.amount_ratio == 1.0

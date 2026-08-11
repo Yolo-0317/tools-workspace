@@ -57,6 +57,18 @@ class EvidenceRepository:
             ).mappings().first()
         return None if row is None else restore_contract(EvidenceSnapshotV1, row, _EVIDENCE_JSON)
 
+    def get_snapshot(self, evidence_id: str) -> EvidenceSnapshotV1 | None:
+        statement = text(
+            "SELECT * FROM stt_evidence_snapshots WHERE evidence_id = :evidence_id"
+        )
+        with read_connection(self._connection) as connection:
+            row = connection.execute(
+                statement, {"evidence_id": evidence_id}
+            ).mappings().first()
+        return None if row is None else restore_contract(
+            EvidenceSnapshotV1, row, _EVIDENCE_JSON
+        )
+
     def _save_legacy(self, snapshot: Any) -> None:
         from ..evidence import TTL_SECONDS
 

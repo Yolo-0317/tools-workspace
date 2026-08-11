@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from datetime import datetime
 from typing import Callable
+from zoneinfo import ZoneInfo
 
 from .contracts import ReleaseMode
 from .diagnosis import TradePlanDraft
@@ -45,6 +47,16 @@ _SESSION_LABELS = {
     TradingSession.POST_MARKET: "交易日盘后",
     TradingSession.NON_TRADING_DAY: "非交易日",
 }
+
+
+def _shanghai_time(value: object) -> str:
+    try:
+        parsed = datetime.fromisoformat(str(value))
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            return str(value)
+        return parsed.astimezone(ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return str(value)
 
 
 def _data_label(context: TradingSessionContext, quote_as_of: str | None) -> str:
@@ -199,7 +211,7 @@ def render_session_diagnosis(result: SessionAwareDiagnosis) -> str:
             metrics.append(f"成交额比 {float(market['amount_ratio']):.2f}")
         if market.get("strong_sector_count") is not None:
             metrics.append(f"强势板块 {market['strong_sector_count']} 个")
-        lines.append(f"大盘环境：{market['status']}（数据截至 {market['as_of']}）")
+        lines.append(f"大盘环境：{market['status']}（数据截至 {_shanghai_time(market['as_of'])}）")
         if metrics:
             lines.append(f"大盘依据：{'；'.join(metrics)}")
         reasons = market.get("reasons") or []

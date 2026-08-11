@@ -76,6 +76,25 @@ def live_market_metrics(
     return round(index_change, 4), round(100 * up / count, 4), len(strong), True
 
 
+def restore_market_state_view(saved: object, evidence: object | None) -> MarketStateView:
+    payload = getattr(evidence, "payload", {}) if evidence is not None else {}
+    indexes_above = payload.get("indexes_above_ma20")
+    return MarketStateView(
+        status=getattr(saved, "status").value,
+        trading_date=getattr(saved, "trading_date"),
+        as_of=getattr(saved, "as_of"),
+        expires_at=getattr(saved, "as_of") + timedelta(days=1),
+        indexes_above_ma20=int(indexes_above) if indexes_above is not None else None,
+        breadth_pct=round(float(getattr(saved, "breadth_ratio")) * 100, 4),
+        amount_ratio=float(getattr(saved, "turnover_ratio")),
+        strong_sector_count=int(getattr(saved, "strong_sector_count")),
+        reasons=tuple(getattr(saved, "reasons")),
+        evidence_refs=tuple(getattr(saved, "evidence_refs")),
+        index_change_pct=float(getattr(saved, "index_change_pct")),
+        source=str(getattr(saved, "source")),
+    )
+
+
 class AutomaticMarketStateProvider:
     def __init__(
         self,
@@ -112,6 +131,10 @@ class AutomaticMarketStateProvider:
         return intraday
 
 
+def _completed_rows(rows: list[list[str]], trading_date: date) -> list[list[str]]:
+    return [row for row in rows if date.fromisoformat(str(row[0])) <= trading_date]
+
+
 def _above_ma20(rows: list[list[str]]) -> bool:
     if len(rows) < 20:
         raise ValueError("指数日线不足 20 根")
@@ -132,8 +155,12 @@ def build_closed_market_view(
 ) -> MarketStateView:
     required = ("000001", "399001", "000688")
     try:
-        above = sum(_above_ma20(index_rows.get(code, [])) for code in required)
-        index_change_pct = sum(float(index_rows[code][-1][8]) for code in required) / 3
+        completed = {
+            code: _completed_rows(index_rows.get(code, []), trading_date)
+            for code in required
+        }
+        above = sum(_above_ma20(completed[code]) for code in required)
+        index_change_pct = sum(float(completed[code][-1][8]) for code in required) / 3
         if not 0 <= breadth_pct <= 100:
             raise ValueError("全市场广度无效")
         if amount_ratio < 0:
@@ -250,20 +277,12 @@ def build_default_market_state_provider(mysql_url: str) -> AutomaticMarketStateP
         )
         if saved is None:
             return None
-        return MarketStateView(
-            status=saved.status.value,
-            trading_date=saved.trading_date,
-            as_of=saved.as_of,
-            expires_at=saved.as_of + timedelta(days=1),
-            indexes_above_ma20=None,
-            breadth_pct=float(saved.breadth_ratio) * 100,
-            amount_ratio=float(saved.turnover_ratio),
-            strong_sector_count=saved.strong_sector_count,
-            reasons=tuple(saved.reasons),
-            evidence_refs=tuple(saved.evidence_refs),
-            index_change_pct=float(saved.index_change_pct),
-            source=saved.source,
+        evidence = (
+            evidence_repository.get_snapshot(saved.evidence_refs[0])
+            if saved.evidence_refs
+            else None
         )
+        return restore_market_state_view(saved, evidence)
 
     def capture_close_state(trading_date: date, as_of: datetime) -> MarketStateView:
         try:
