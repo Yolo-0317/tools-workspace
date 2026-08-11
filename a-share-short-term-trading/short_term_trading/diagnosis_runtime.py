@@ -6,7 +6,7 @@ from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
 from typing import Callable, Protocol
 
-from .contracts import ReleaseMode
+from .contracts import ReleaseMode, TradePlanV2
 from .daily_sync import DailyBar, DailyBarRepository, bar_is_complete, normalize_code
 from .diagnosis import RiskProfile, TradePlanDraft, build_eod_trade_plan
 from .evidence import EvidenceRepository, is_chip_snapshot_for_trade_date
@@ -20,6 +20,10 @@ class RuntimeEvidenceRepository(EvidenceRepository, Protocol):
     def get_latest_valid_snapshot(self, code: str, kind: str): ...
 
     def get_valid_snapshots_since(self, code: str, kind: str, since: datetime): ...
+
+
+class PlanProvider(Protocol):
+    def get_latest_valid_plan(self, code: str, at: datetime) -> TradePlanV2 | None: ...
 
 
 class StockAiTradingCalendar:
@@ -52,6 +56,30 @@ class DiagnosisRuntime:
     intraday_refresh: Callable[[str], None] | None = None
     chip_refresh: Callable[[str], None] | None = None
     market_state_provider: MarketStateProvider | None = None
+    plan_repository: PlanProvider | None = None
+
+
+def trade_plan_v2_to_draft(plan: TradePlanV2) -> TradePlanDraft:
+    """Adapt a validated persisted plan to the legacy intraday verifier."""
+
+    return TradePlanDraft(
+        code=plan.code,
+        status=plan.status.value,
+        reason="读取已冻结的自动选股计划",
+        as_of=plan.as_of.isoformat(),
+        trigger_price=float(plan.trigger_price),
+        entry_ceiling=float(plan.entry_ceiling),
+        invalidation_price=float(plan.invalidation_price),
+        first_reduce_price=float(plan.first_reduce_price),
+        pullback_low=None,
+        pullback_high=None,
+        maximum_shares=plan.maximum_shares,
+        indicators={
+            "atr14": float(plan.atr),
+            "risk_reward_ratio": float(plan.risk_reward_ratio),
+        },
+        evidence_refs={"plan": plan.plan_id},
+    )
 
 
 def _market_payload(state: MarketStateView, *, is_holding: bool) -> dict[str, object]:
@@ -196,7 +224,14 @@ def build_runtime_diagnosis(
         )
 
     def intraday_diagnose(selected: str, _context) -> IntradayDecision:
-        if runtime.frozen_plan is None or runtime.risk_gate is None:
+        frozen_plan = runtime.frozen_plan
+        if frozen_plan is None and runtime.plan_repository is not None:
+            persisted = runtime.plan_repository.get_latest_valid_plan(
+                selected, context.now_utc
+            )
+            if persisted is not None:
+                frozen_plan = trade_plan_v2_to_draft(persisted)
+        if frozen_plan is None or runtime.risk_gate is None:
             return _missing_intraday_decision(
                 selected, context.now_utc, "缺少冻结收盘计划或组合风控门禁"
             )
@@ -212,7 +247,7 @@ def build_runtime_diagnosis(
                 risk_gate.reason,
             )
         return verify_intraday_plan(
-            runtime.frozen_plan,
+            frozen_plan,
             quote=repository.get_latest_valid_snapshot(selected, "quote"),
             fund_flow=repository.get_latest_valid_snapshot(selected, "fund_flow"),
             sector=repository.get_latest_valid_snapshot(selected, "sector"),

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
 import importlib.util
 from pathlib import Path
 
-from short_term_trading.contracts import ReleaseMode
+from short_term_trading.contracts import ReleaseMode, TradePlanV2
 from short_term_trading.daily_sync import DailyBar
 from short_term_trading.diagnosis import RiskProfile, TradePlanDraft
 from short_term_trading.diagnosis_runtime import DiagnosisRuntime, build_runtime_diagnosis
@@ -57,6 +58,16 @@ class FakeEvidenceRepository:
         return []
 
 
+class FakePlanRepository:
+    def __init__(self, latest: TradePlanV2 | None) -> None:
+        self.latest = latest
+        self.calls: list[tuple[str, datetime]] = []
+
+    def get_latest_valid_plan(self, code: str, at: datetime) -> TradePlanV2 | None:
+        self.calls.append((code, at))
+        return self.latest
+
+
 def bar(trade_date: date) -> DailyBar:
     return DailyBar(
         ts_code="600000",
@@ -89,6 +100,34 @@ def plan() -> TradePlanDraft:
         maximum_shares=300,
         indicators={},
         evidence_refs={},
+    )
+
+
+def plan_v2() -> TradePlanV2:
+    return TradePlanV2(
+        plan_id="00000000-0000-4000-8000-000000000101",
+        candidate_id="00000000-0000-4000-8000-000000000102",
+        analysis_date=date(2026, 8, 7),
+        trading_date=date(2026, 8, 10),
+        code="600000",
+        status="WAIT_ENTRY",
+        trigger_price=Decimal("10.00"),
+        entry_ceiling=Decimal("10.20"),
+        invalidation_price=Decimal("9.70"),
+        first_reduce_price=Decimal("10.45"),
+        risk_distance=Decimal("0.30"),
+        risk_reward_ratio=Decimal("1.5"),
+        atr=Decimal("0.20"),
+        chip_trade_date=date(2026, 8, 7),
+        maximum_shares=200,
+        market_status="ALLOW",
+        portfolio_status="APPROVED",
+        valid_until=datetime(2026, 8, 10, 8, 0, tzinfo=timezone.utc),
+        rule_version="short-term-selection-2.0.0",
+        evidence_refs=("00000000-0000-4000-8000-000000000103",),
+        as_of=datetime(2026, 8, 7, 8, 0, tzinfo=timezone.utc),
+        source="short-term-auto-selection",
+        data_status="VALID",
     )
 
 
@@ -126,6 +165,7 @@ def runtime(
     chip_refresh=None,
     frozen_plan: TradePlanDraft | None = None,
     evidence_repository: FakeEvidenceRepository | None = None,
+    plan_repository: FakePlanRepository | None = None,
 ) -> DiagnosisRuntime:
     return DiagnosisRuntime(
         calendar=FakeCalendar(calendar_status),
@@ -136,6 +176,7 @@ def runtime(
         risk_gate=IntradayRiskGate("FREEZE", False, 0),
         intraday_refresh=refresh,
         chip_refresh=chip_refresh,
+        plan_repository=plan_repository,
     )
 
 
@@ -207,6 +248,31 @@ def test_missing_frozen_plan_never_starts_external_refresh() -> None:
     assert "缺少冻结收盘计划" in result.reason
     assert refresh_calls == []
     assert subject.evidence_repository.calls == []
+
+
+def test_intraday_loads_latest_persisted_plan_when_no_json_override() -> None:
+    plans = FakePlanRepository(plan_v2())
+    subject = runtime(frozen_plan=None, plan_repository=plans)
+
+    build_runtime_diagnosis(
+        "600000", subject, now=SHANGHAI_INTRADAY, release_mode=ReleaseMode.SHADOW
+    )
+
+    assert plans.calls == [
+        ("600000", SHANGHAI_INTRADAY.astimezone(timezone.utc))
+    ]
+    assert ("600000", "quote") in subject.evidence_repository.calls
+
+
+def test_explicit_plan_override_does_not_query_repository() -> None:
+    plans = FakePlanRepository(plan_v2())
+    subject = runtime(frozen_plan=plan(), plan_repository=plans)
+
+    build_runtime_diagnosis(
+        "600000", subject, now=SHANGHAI_INTRADAY, release_mode=ReleaseMode.SHADOW
+    )
+
+    assert plans.calls == []
 
 
 def test_runtime_attaches_the_automatic_market_state_to_the_diagnosis() -> None:

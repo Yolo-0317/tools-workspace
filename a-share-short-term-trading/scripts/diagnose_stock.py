@@ -28,6 +28,7 @@ from short_term_trading.diagnosis_runtime import (
 from short_term_trading.evidence import CaptureRecorder, SqlAlchemyEvidenceRepository
 from short_term_trading.intraday import IntradayRiskGate
 from short_term_trading.market_capture import build_default_market_state_provider
+from short_term_trading.repositories import PlanningRepository, create_mysql_engine
 from short_term_trading.session import TradingSession
 from short_term_trading.session_diagnosis import SessionAwareDiagnosis, render_session_diagnosis
 
@@ -91,6 +92,7 @@ def default_runtime(args: argparse.Namespace) -> DiagnosisRuntime:
         intraday_refresh=refresh,
         chip_refresh=chip_refresh,
         market_state_provider=build_default_market_state_provider(mysql_url),
+        plan_repository=PlanningRepository(create_mysql_engine(mysql_url)),
     )
 
 
