@@ -3,8 +3,12 @@ from __future__ import annotations
 from datetime import date
 import importlib.util
 from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
 
 from short_term_trading.selection_service import SelectionReport
+from stock_ai.short_term_selection import BASELINE_POLICY, STRICT_B
 
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "select_short_term_candidates.py"
@@ -123,3 +127,55 @@ def test_empty_lane_is_persisted_as_a_completed_bucket(monkeypatch) -> None:
 
     assert result == 0
     assert calls == [(date(2026, 8, 11), [], "bottom_breakout")]
+
+
+def test_baseline_policy_does_not_load_a_relative_strength_snapshot(monkeypatch) -> None:
+    monkeypatch.setattr(MODULE, "load_promoted_policy", lambda *args, **kwargs: BASELINE_POLICY)
+    monkeypatch.setattr(
+        MODULE,
+        "load_relative_strength_snapshot",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("relative strength should not be loaded for 2.0")
+        ),
+    )
+
+    policy, percentiles = MODULE.resolve_runtime_policy(object(), date(2026, 8, 10))
+
+    assert policy == BASELINE_POLICY
+    assert percentiles is None
+
+
+def test_promoted_policy_requires_95_percent_cross_section_coverage(monkeypatch) -> None:
+    monkeypatch.setattr(MODULE, "load_promoted_policy", lambda *args, **kwargs: STRICT_B)
+    monkeypatch.setattr(
+        MODULE,
+        "load_relative_strength_snapshot",
+        lambda *args, **kwargs: SimpleNamespace(
+            current_trade_date=date(2026, 8, 10),
+            coverage_ratio=0.949,
+            is_usable=False,
+            percentiles={},
+        ),
+    )
+
+    with pytest.raises(MODULE.CliInputError, match="覆盖率"):
+        MODULE.resolve_runtime_policy(object(), date(2026, 8, 10))
+
+
+def test_promoted_policy_returns_the_full_market_percentiles(monkeypatch) -> None:
+    monkeypatch.setattr(MODULE, "load_promoted_policy", lambda *args, **kwargs: STRICT_B)
+    monkeypatch.setattr(
+        MODULE,
+        "load_relative_strength_snapshot",
+        lambda *args, **kwargs: SimpleNamespace(
+            current_trade_date=date(2026, 8, 10),
+            coverage_ratio=0.98,
+            is_usable=True,
+            percentiles={"600001": 0.91},
+        ),
+    )
+
+    policy, percentiles = MODULE.resolve_runtime_policy(object(), date(2026, 8, 10))
+
+    assert policy == STRICT_B
+    assert percentiles == {"600001": 0.91}

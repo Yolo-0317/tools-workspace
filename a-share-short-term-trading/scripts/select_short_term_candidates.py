@@ -35,14 +35,37 @@ from short_term_trading.selection_service import (
     render_selection_report,
 )
 from short_term_trading.session import TradingCalendar, TradingSession, classify_trading_session
-from stock_ai.short_term_selection import select_short_term_candidates
+from stock_ai.relative_strength import load_relative_strength_snapshot
+from stock_ai.selection_validation import load_promoted_policy
+from stock_ai.short_term_selection import SelectionPolicy, select_short_term_candidates
 
 
 LANES = ("combined", "ma5", "five_factor", "bottom_breakout")
+VALIDATION_ARTIFACT = STOCK_AI_ROOT / "config" / "short_term_selection_validation.json"
 
 
 class CliInputError(RuntimeError):
     """Expected safe failure whose message may be printed to the user."""
+
+
+def resolve_runtime_policy(
+    engine: object,
+    analysis_date: date,
+    *,
+    artifact_path: Path = VALIDATION_ARTIFACT,
+) -> tuple[SelectionPolicy, dict[str, float] | None]:
+    policy = load_promoted_policy(
+        artifact_path,
+        expected_data_end=analysis_date,
+    )
+    if not policy.strict:
+        return policy, None
+    snapshot = load_relative_strength_snapshot(engine, analysis_date)
+    if snapshot.current_trade_date != analysis_date or not snapshot.is_usable:
+        raise CliInputError(
+            f"2.1 全市场相对强度覆盖率不足 95%（当前 {snapshot.coverage_ratio:.2%}），已停止选股"
+        )
+    return policy, dict(snapshot.percentiles)
 
 
 class SelectionCliRuntime(Protocol):
@@ -148,6 +171,11 @@ class DefaultRuntime:
         )
         from scripts.tools.selection_results import merge_selection_strategies_df
 
+        policy, relative_strength_by_code = resolve_runtime_policy(
+            self._engine,
+            analysis_date,
+        )
+
         for lane in LANES:
             lane_date, lane_rows = load_selection_daily_results(
                 analysis_date, strategy=lane, engine=self._engine
@@ -182,6 +210,8 @@ class DefaultRuntime:
             bars_by_code=bars_by_code,
             holding_codes=load_holding_codes(engine=self._engine),
             st_codes=st_codes,
+            relative_strength_by_code=relative_strength_by_code,
+            policy=policy,
         )
         account = load_account(engine=self._engine)
         approved = bool(
@@ -214,6 +244,7 @@ class DefaultRuntime:
                 market_state=market_state,
                 risk_profile=risk_profile,
                 portfolio_approved=approved,
+                rule_version=policy.rule_version,
             ),
         )
 

@@ -117,7 +117,11 @@ class FakePlanning:
         self.saved_plans.append(plan)
 
 
-def _request(status: str = "ALLOW", approved: bool = True) -> SelectionRequest:
+def _request(
+    status: str = "ALLOW",
+    approved: bool = True,
+    rule_version: str = "short-term-selection-2.0.0",
+) -> SelectionRequest:
     return SelectionRequest(
         analysis_date=ANALYSIS_DATE,
         trading_date=date(2026, 8, 11),
@@ -135,6 +139,7 @@ def _request(status: str = "ALLOW", approved: bool = True) -> SelectionRequest:
         ),
         risk_profile=RiskProfile(1000, 20_000, 20_000),
         portfolio_approved=approved,
+        rule_version=rule_version,
     )
 
 
@@ -236,6 +241,69 @@ def test_limited_keeps_at_most_two_executable_candidates() -> None:
     assert planning.saved_plans[-1].maximum_shares is None
 
 
+def test_strict_limited_market_makes_every_candidate_observation_only() -> None:
+    signals = tuple(_signal(code) for code in ("600000", "600001", "000001"))
+    dependencies, _, planning, _ = _dependencies(
+        chips={code: _chip(code) for code in ("600000", "600001", "000001")}
+    )
+
+    report = materialize_short_term_selection(
+        _selection(*signals),
+        dependencies,
+        _request("LIMITED", rule_version="short-term-selection-2.1.0"),
+    )
+
+    assert all(item.status == "OBSERVE" for item in report.items)
+    assert all(plan.status.value == "NO_TRADE" for plan in planning.saved_plans)
+    assert all(plan.maximum_shares is None for plan in planning.saved_plans)
+    assert report.rule_version == "short-term-selection-2.1.0"
+
+
+def test_strict_technical_evidence_contains_all_auditable_metrics() -> None:
+    metrics = {
+        **_signal().metrics,
+        "adx14": 24.0,
+        "rsi14": 60.0,
+        "atr14": 0.25,
+        "atr_pct": 0.025,
+        "trend_r2_20": 0.61,
+        "relative_strength_percentile": 0.82,
+        "breakout_pct": 0.02,
+    }
+    signal = CandidateSignal(**{**_signal().__dict__, "metrics": metrics})
+    dependencies, evidence, _, _ = _dependencies()
+
+    materialize_short_term_selection(
+        _selection(signal),
+        dependencies,
+        _request(rule_version="short-term-selection-2.1.0"),
+    )
+
+    payload = evidence.saved[0].data
+    assert {
+        "adx14",
+        "rsi14",
+        "atr_pct",
+        "trend_r2_20",
+        "relative_strength_percentile",
+        "breakout_pct",
+    } <= payload.keys()
+    assert payload["atr14"] == 0.25
+
+
+def test_rule_versions_produce_distinct_deterministic_ids() -> None:
+    from short_term_trading.selection_service import deterministic_id
+
+    baseline = deterministic_id(
+        "candidate", ANALYSIS_DATE, "600000", "BREAKOUT", "short-term-selection-2.0.0"
+    )
+    strict = deterministic_id(
+        "candidate", ANALYSIS_DATE, "600000", "BREAKOUT", "short-term-selection-2.1.0"
+    )
+
+    assert baseline != strict
+
+
 def test_freeze_persists_zero_share_observation_plan() -> None:
     dependencies, _, planning, _ = _dependencies()
 
@@ -244,6 +312,25 @@ def test_freeze_persists_zero_share_observation_plan() -> None:
     assert report.items[0].status == "OBSERVE"
     assert planning.saved_plans[0].status.value == "NO_TRADE"
     assert planning.saved_plans[0].maximum_shares == 0
+
+
+def test_strict_freeze_keeps_the_same_zero_share_observation_plan() -> None:
+    dependencies, _, planning, _ = _dependencies()
+
+    report = materialize_short_term_selection(
+        _selection(),
+        dependencies,
+        _request(
+            "FREEZE",
+            False,
+            rule_version="short-term-selection-2.1.0",
+        ),
+    )
+
+    assert report.items[0].status == "OBSERVE"
+    assert planning.saved_plans[0].status.value == "NO_TRADE"
+    assert planning.saved_plans[0].maximum_shares == 0
+    assert planning.saved_plans[0].rule_version == "short-term-selection-2.1.0"
 
 
 def test_renderer_contains_auditable_plan_and_no_order_disclaimer() -> None:

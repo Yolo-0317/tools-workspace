@@ -74,6 +74,7 @@ class SelectionReport:
     market_reasons: tuple[str, ...]
     items: tuple[SelectionItem, ...]
     rejection_counts: dict[str, int]
+    rule_version: str = "short-term-selection-2.0.0"
 
 
 def deterministic_id(
@@ -119,7 +120,11 @@ def _technical_snapshot(
         "ma5": _mean(closes[-5:]),
         "ma10": _mean(closes[-10:]),
         "ma20": _mean(closes[-20:]),
-        "atr14": _atr14(bars),
+        "atr14": (
+            signal.metrics["atr14"]
+            if "atr14" in signal.metrics
+            else _atr14(bars)
+        ),
         "high20": max(bar.high for bar in bars[-20:]),
         "low10": min(bar.low for bar in bars[-10:]),
         "analysis_date": request.analysis_date.isoformat(),
@@ -270,10 +275,19 @@ def materialize_short_term_selection(
                 rejection_counts["CHIP_MISSING"] += 1
                 continue
 
-            limited_out = request.market_state.status == "LIMITED" and executable_count >= 2
+            strict_limited = (
+                request.rule_version == "short-term-selection-2.1.0"
+                and request.market_state.status == "LIMITED"
+            )
+            limited_out = (
+                request.market_state.status == "LIMITED"
+                and not strict_limited
+                and executable_count >= 2
+            )
             actionable = (
                 request.market_state.status != "FREEZE"
                 and request.portfolio_approved
+                and not strict_limited
                 and not limited_out
             )
             draft = build_eod_trade_plan(
@@ -304,6 +318,8 @@ def materialize_short_term_selection(
 
             if request.market_state.status == "FREEZE":
                 reason = "市场状态为 FREEZE，仅保留零股观察计划"
+            elif strict_limited:
+                reason = "2.1 严格规则在 LIMITED 市场仅保留观察计划"
             elif limited_out:
                 reason = "市场状态为 LIMITED，可执行候选已达到 2 只上限"
             elif not request.portfolio_approved:
@@ -346,6 +362,7 @@ def materialize_short_term_selection(
         market_reasons=request.market_state.reasons,
         items=tuple(items),
         rejection_counts=dict(sorted(rejection_counts.items())),
+        rule_version=request.rule_version,
     )
 
 
@@ -356,6 +373,7 @@ def _price(value: Decimal) -> str:
 def render_selection_report(report: SelectionReport) -> str:
     lines = [
         f"短线自动选股｜分析数据日：{report.analysis_date.isoformat()}｜适用交易日：{report.trading_date.isoformat()}",
+        f"规则版本：{report.rule_version}",
         f"市场状态：{report.market_status}（{'；'.join(report.market_reasons) or '无补充说明'}）",
     ]
     if not report.items:
