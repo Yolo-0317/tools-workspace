@@ -1,0 +1,105 @@
+from __future__ import annotations
+
+from datetime import date
+import importlib.util
+from pathlib import Path
+
+from short_term_trading.selection_service import SelectionReport
+
+
+SCRIPT = Path(__file__).parents[1] / "scripts" / "select_short_term_candidates.py"
+SPEC = importlib.util.spec_from_file_location("select_short_term_candidates", SCRIPT)
+assert SPEC and SPEC.loader
+MODULE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(MODULE)
+
+
+class FakeCalendar:
+    def status(self, value: date) -> bool | None:
+        return True
+
+    def latest_on_or_before(self, value: date) -> date | None:
+        return date(2026, 8, 7)
+
+    def next_on_or_after(self, value: date) -> date | None:
+        return date(2026, 8, 11)
+
+
+class FakeRuntime:
+    def __init__(self, latest_daily: date = date(2026, 8, 10)) -> None:
+        self.calendar = FakeCalendar()
+        self.latest_daily = latest_daily
+        self.lane_calls: list[tuple[str, ...]] = []
+        self.analysis_date: date | None = None
+
+    def run_lanes(self, strategies: tuple[str, ...]) -> int:
+        self.lane_calls.append(strategies)
+        return 0
+
+    def latest_daily_trade_date(self) -> date | None:
+        return self.latest_daily
+
+    def execute(self, *, context, analysis_date: date, trading_date: date) -> SelectionReport:
+        self.analysis_date = analysis_date
+        return SelectionReport(
+            analysis_date=analysis_date,
+            trading_date=trading_date,
+            market_status="ALLOW",
+            market_reasons=("测试",),
+            items=(),
+            rejection_counts={},
+        )
+
+
+def test_intraday_uses_previous_completed_trade_date() -> None:
+    runtime = FakeRuntime()
+
+    result = MODULE.main(
+        ["--at", "2026-08-10T10:00:00+08:00", "--skip-lanes"],
+        runtime_factory=lambda args: runtime,
+    )
+
+    assert result == 0
+    assert runtime.analysis_date == date(2026, 8, 7)
+
+
+def test_post_market_stale_daily_data_fails_without_prices(capsys) -> None:
+    runtime = FakeRuntime(latest_daily=date(2026, 8, 7))
+
+    result = MODULE.main(
+        ["--at", "2026-08-10T16:00:00+08:00", "--skip-lanes"],
+        runtime_factory=lambda args: runtime,
+    )
+
+    output = capsys.readouterr().out
+    assert result == 2
+    assert "当日日线尚未完整入库" in output
+    assert "触发价" not in output
+    assert runtime.analysis_date is None
+
+
+def test_default_manual_run_executes_all_four_lanes() -> None:
+    runtime = FakeRuntime()
+
+    result = MODULE.main(
+        ["--at", "2026-08-10T10:00:00+08:00"],
+        runtime_factory=lambda args: runtime,
+    )
+
+    assert result == 0
+    assert runtime.lane_calls == [
+        ("combined", "ma5", "five_factor", "bottom_breakout")
+    ]
+
+
+def test_unknown_calendar_fails_closed(capsys) -> None:
+    runtime = FakeRuntime()
+    runtime.calendar.status = lambda value: None
+
+    result = MODULE.main(
+        ["--at", "2026-08-10T10:00:00+08:00", "--skip-lanes"],
+        runtime_factory=lambda args: runtime,
+    )
+
+    assert result == 2
+    assert "交易日历无法确认" in capsys.readouterr().out

@@ -82,10 +82,10 @@ def _execute_lane(lane: str) -> tuple[str, int, str | None, float]:
 
 def _run_lanes_sequential() -> int:
     labels = {
-        "combined": "① A轨 combined + B轨 watch",
-        "ma5": "② MA5 回踩（strategy=ma5）",
-        "five_factor": "③ 五因子（strategy=five_factor）",
-        "bottom_breakout": "④ 筑底+放量突破（strategy=bottom_breakout）",
+        "combined": "1. A轨 combined + B轨 watch",
+        "ma5": "2. MA5 回踩（strategy=ma5）",
+        "five_factor": "3. 五因子（strategy=five_factor）",
+        "bottom_breakout": "4. 筑底+放量突破（strategy=bottom_breakout）",
     }
     failed: list[str] = []
     for lane in LANE_ORDER:
@@ -96,10 +96,10 @@ def _run_lanes_sequential() -> int:
         if code != 0:
             failed.append(f"{lane}: {err or code}")
     if failed:
-        print("❌ 串行选股部分失败:", "; ".join(failed), file=sys.stderr)
+        print("串行选股部分失败:", "; ".join(failed), file=sys.stderr)
         return 1
     print(
-        "\n✅ 选股完成：combined / watch / ma5 / five_factor / bottom_breakout 已分桶入库"
+        "\n选股完成：combined / watch / ma5 / five_factor / bottom_breakout 已分桶入库"
     )
     return 0
 
@@ -128,14 +128,14 @@ def _run_lanes_parallel(*, max_workers: int) -> int:
     for lane in LANE_ORDER:
         if lane in timings:
             print(f"  {lane}: {timings[lane]:.1f}s")
-    print(f"  合计墙钟: {total:.1f}s（≈最慢轨耗时，非四轨相加）")
+    print(f"  合计墙钟: {total:.1f}s（约等于最慢轨耗时，非四轨相加）")
     print("=" * 60)
 
     if failed:
-        print("❌ 并行选股部分失败:", "; ".join(failed), file=sys.stderr)
+        print("并行选股部分失败:", "; ".join(failed), file=sys.stderr)
         return 1
     print(
-        "\n✅ 并行选股完成：combined / watch / ma5 / five_factor / bottom_breakout 已分桶入库"
+        "\n并行选股完成：combined / watch / ma5 / five_factor / bottom_breakout 已分桶入库"
     )
     return 0
 
@@ -152,7 +152,7 @@ def main() -> int:
         "on",
     )
     if sequential:
-        print("SELECTION_LANES_SEQUENTIAL=1 → 四轨串行", flush=True)
+        print("SELECTION_LANES_SEQUENTIAL=1，四轨串行", flush=True)
         return _run_lanes_sequential()
 
     try:
