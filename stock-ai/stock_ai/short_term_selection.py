@@ -457,6 +457,7 @@ def select_short_term_candidates(
     holding_codes: set[str],
     st_codes: set[str],
     relative_strength_by_code: Mapping[str, float] | None = None,
+    technical_indicators_by_code: Mapping[str, TechnicalIndicatorSnapshot] | None = None,
     policy: SelectionPolicy | None = None,
     limit: int = 5,
     max_per_sector: int = 2,
@@ -517,7 +518,11 @@ def select_short_term_candidates(
             continue
         if resolved_policy.strict:
             try:
-                indicators = compute_technical_indicators(bars)
+                indicators = (
+                    technical_indicators_by_code.get(code)
+                    if technical_indicators_by_code is not None
+                    else None
+                ) or compute_technical_indicators(bars)
             except IndicatorInputError:
                 rejected.append(RejectedSignal(code, "INDICATOR_INVALID"))
                 continue

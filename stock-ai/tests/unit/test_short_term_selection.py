@@ -538,6 +538,38 @@ def test_strict_signal_exposes_all_indicator_metrics(monkeypatch) -> None:
     } <= metrics.keys()
 
 
+def test_strict_selector_reuses_a_precomputed_indicator_snapshot(monkeypatch) -> None:
+    selection = importlib.import_module("stock_ai.short_term_selection")
+    snapshot = _strict_snapshot()
+    monkeypatch.setattr(
+        selection,
+        "compute_technical_indicators",
+        lambda _: (_ for _ in ()).throw(AssertionError("indicator was recalculated")),
+    )
+
+    result = selection.select_short_term_candidates(
+        analysis_date=ANALYSIS_DATE,
+        rows=[
+            {
+                "代码": "600001",
+                "名称": "测试股票",
+                "所属行业": "测试",
+                "策略来源": "综合+底部突破",
+            }
+        ],
+        bars_by_code={"600001": _breakout_bars()},
+        relative_strength_by_code={"600001": 0.90},
+        technical_indicators_by_code={"600001": snapshot},
+        policy=selection.STRICT_A,
+        holding_codes=set(),
+        st_codes=set(),
+    )
+
+    assert [(item.code, item.candidate_type) for item in result.candidates] == [
+        ("600001", "BREAKOUT")
+    ]
+
+
 def test_future_bars_do_not_change_a_historical_strict_signal(monkeypatch) -> None:
     baseline = _strict_result(monkeypatch)
     future = _breakout_bars() + [
