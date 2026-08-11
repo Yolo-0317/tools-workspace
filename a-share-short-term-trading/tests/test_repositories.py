@@ -3,10 +3,12 @@ from decimal import Decimal
 import json
 
 from short_term_trading.contracts import (
+    CandidateV2,
     DecisionSnapshotV1,
     EvidenceSnapshotV1,
     MarketStateV1,
     PlanEvaluationV1,
+    TradePlanV2,
 )
 from short_term_trading.repositories.evidence import EvidenceRepository
 from short_term_trading.repositories.planning import PlanningRepository
@@ -178,6 +180,158 @@ def test_planning_repository_loads_the_latest_valid_state_for_one_trade_date() -
     assert state is not None
     assert state.status.value == "LIMITED"
     assert state.breadth_ratio == Decimal("0.43")
+
+
+def candidate_v2(**updates: object) -> CandidateV2:
+    values: dict[str, object] = {
+        "candidate_id": CANDIDATE_ID,
+        "as_of": AS_OF,
+        "source": "short-term-auto-selection",
+        "data_status": "VALID",
+        "analysis_date": date(2026, 8, 10),
+        "trading_date": date(2026, 8, 11),
+        "code": "600000",
+        "name": "浦发银行",
+        "candidate_type": "BREAKOUT",
+        "setup_score": Decimal("82.5"),
+        "liquidity_score": Decimal("0.8"),
+        "trend_score": Decimal("0.75"),
+        "catalyst_score": Decimal("0"),
+        "sector": "银行",
+        "rule_version": "short-term-selection-2.0.0",
+        "source_strategies": ("综合", "底部突破"),
+        "executable_status": "EXECUTABLE",
+        "rejected_reasons": (),
+        "evidence_refs": (EVIDENCE_ID,),
+    }
+    values.update(updates)
+    return CandidateV2(**values)
+
+
+def test_planning_repository_upserts_candidate_v2_with_json_fields() -> None:
+    engine = RecordingEngine()
+
+    PlanningRepository(engine).upsert_candidate(candidate_v2())
+
+    statement, values = engine.connection.calls[0]
+    assert "INSERT INTO stt_candidates" in statement
+    assert "ON DUPLICATE KEY UPDATE" in statement
+    assert values["candidate_id"] == CANDIDATE_ID
+    assert json.loads(str(values["source_strategies_json"])) == ["综合", "底部突破"]
+    assert json.loads(str(values["evidence_refs_json"])) == [EVIDENCE_ID]
+
+
+def plan_v2(**updates: object) -> TradePlanV2:
+    values: dict[str, object] = {
+        "plan_id": PLAN_ID,
+        "candidate_id": CANDIDATE_ID,
+        "as_of": AS_OF,
+        "source": "short-term-auto-selection",
+        "data_status": "VALID",
+        "analysis_date": date(2026, 8, 10),
+        "trading_date": date(2026, 8, 11),
+        "code": "600000",
+        "status": "WAIT_ENTRY",
+        "trigger_price": Decimal("12.30"),
+        "entry_ceiling": Decimal("12.45"),
+        "invalidation_price": Decimal("11.80"),
+        "first_reduce_price": Decimal("13.20"),
+        "risk_distance": Decimal("0.50"),
+        "risk_reward_ratio": Decimal("1.80"),
+        "atr": Decimal("0.40"),
+        "chip_trade_date": date(2026, 8, 10),
+        "maximum_shares": 500,
+        "market_status": "ALLOW",
+        "portfolio_status": "APPROVED",
+        "valid_until": AS_OF + timedelta(days=1),
+        "rule_version": "short-term-selection-2.0.0",
+        "evidence_refs": (EVIDENCE_ID,),
+    }
+    values.update(updates)
+    return TradePlanV2(**values)
+
+
+def test_planning_repository_upserts_and_loads_latest_valid_plan_v2() -> None:
+    saved_engine = RecordingEngine()
+    PlanningRepository(saved_engine).upsert_plan(plan_v2())
+    insert_statement, insert_values = saved_engine.connection.calls[0]
+    assert "INSERT INTO stt_trade_plans" in insert_statement
+    assert "ON DUPLICATE KEY UPDATE" in insert_statement
+    assert json.loads(str(insert_values["evidence_refs_json"])) == [EVIDENCE_ID]
+
+    row = {
+        **plan_v2().model_dump(mode="python"),
+        "as_of": datetime(2026, 8, 10, 7, 0),
+        "valid_until": datetime(2026, 8, 11, 7, 0),
+        "evidence_refs_json": f'["{EVIDENCE_ID}"]',
+    }
+    row.pop("evidence_refs")
+
+    class RowResult(RecordingResult):
+        def first(self):
+            return row
+
+    class RowConnection(RecordingConnection):
+        def execute(self, statement, parameters):
+            self.calls.append((str(statement), parameters))
+            return RowResult()
+
+    class RowEngine(RecordingEngine):
+        def __init__(self):
+            self.connection = RowConnection()
+
+    loaded_engine = RowEngine()
+    loaded = PlanningRepository(loaded_engine).get_latest_valid_plan("600000", AS_OF)
+    select_statement, select_values = loaded_engine.connection.calls[0]
+
+    assert "data_status = 'VALID'" in select_statement
+    assert "status = 'WAIT_ENTRY'" in select_statement
+    assert "valid_until > :at" in select_statement
+    assert "ORDER BY trading_date DESC, as_of DESC" in select_statement
+    assert select_values == {"code": "600000", "at": datetime(2026, 8, 10, 7, 0)}
+    assert loaded == plan_v2()
+
+
+def test_planning_repository_loads_v2_candidate_and_plan_by_id() -> None:
+    candidate_row = {
+        **candidate_v2().model_dump(mode="python"),
+        "as_of": datetime(2026, 8, 10, 7, 0),
+        "source_strategies_json": '["综合","底部突破"]',
+        "rejected_reasons_json": "[]",
+        "evidence_refs_json": f'["{EVIDENCE_ID}"]',
+    }
+    for field in ("source_strategies", "rejected_reasons", "evidence_refs"):
+        candidate_row.pop(field)
+    plan_row = {
+        **plan_v2().model_dump(mode="python"),
+        "as_of": datetime(2026, 8, 10, 7, 0),
+        "valid_until": datetime(2026, 8, 11, 7, 0),
+        "evidence_refs_json": f'["{EVIDENCE_ID}"]',
+    }
+    plan_row.pop("evidence_refs")
+
+    class RowResult(RecordingResult):
+        def __init__(self, row):
+            self.row = row
+
+        def first(self):
+            return self.row
+
+    class RowConnection(RecordingConnection):
+        def __init__(self, row):
+            super().__init__()
+            self.row = row
+
+        def execute(self, statement, parameters):
+            self.calls.append((str(statement), parameters))
+            return RowResult(self.row)
+
+    class RowEngine(RecordingEngine):
+        def __init__(self, row):
+            self.connection = RowConnection(row)
+
+    assert PlanningRepository(RowEngine(candidate_row)).get_candidate_v2(CANDIDATE_ID) == candidate_v2()
+    assert PlanningRepository(RowEngine(plan_row)).get_plan_v2(PLAN_ID) == plan_v2()
 
 
 def test_frozen_decision_payload_is_utf8_json_and_uuid_strings_stay_strings() -> None:

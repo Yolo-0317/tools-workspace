@@ -45,9 +45,34 @@ def test_migrations_are_repeatable_and_support_rollback_only_dml() -> None:
     }
     assert expected <= tables
 
+    candidate_columns = {item["name"] for item in inspect(engine).get_columns("stt_candidates")}
+    plan_columns = {item["name"] for item in inspect(engine).get_columns("stt_trade_plans")}
+    assert {
+        "analysis_date",
+        "setup_score",
+        "rule_version",
+        "source_strategies_json",
+        "executable_status",
+    } <= candidate_columns
+    assert {
+        "analysis_date",
+        "risk_reward_ratio",
+        "atr",
+        "chip_trade_date",
+        "maximum_shares",
+        "market_status",
+        "portfolio_status",
+    } <= plan_columns
+    candidate_indexes = {item["name"] for item in inspect(engine).get_indexes("stt_candidates")}
+    assert "uk_candidate_analysis_code_type_rule" in candidate_indexes
+    assert "uk_candidate_code_date_type" not in candidate_indexes
+
     with engine.connect() as connection:
         assert connection.execute(
             text("SELECT COUNT(*) FROM stt_schema_versions WHERE version = '1.1'")
+        ).scalar_one() == 1
+        assert connection.execute(
+            text("SELECT COUNT(*) FROM stt_schema_versions WHERE version = '1.2'")
         ).scalar_one() == 1
         connection.commit()
 

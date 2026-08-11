@@ -10,6 +10,7 @@ import pytest
 
 from short_term_trading.contracts import (
     CandidateV1,
+    CandidateV2,
     DecisionSnapshotV1,
     EvidenceSnapshotV1,
     IntradayDecisionV1,
@@ -19,11 +20,13 @@ from short_term_trading.contracts import (
     RiskDecisionV1,
     TradeJournalV1,
     TradePlanV1,
+    TradePlanV2,
 )
 from short_term_trading.repositories.evidence import EvidenceRepository
 from short_term_trading.repositories.planning import PlanningRepository
 from short_term_trading.repositories.review import ReviewRepository
 from short_term_trading.evidence import EvidenceSnapshot
+from sqlalchemy import text
 
 
 pytestmark = pytest.mark.skipif(
@@ -36,7 +39,7 @@ PROJECT = Path(__file__).resolve().parents[2]
 IDS = {
     name: f"40000000-0000-4000-8000-{index:012d}"
     for index, name in enumerate(
-        ["evidence", "state", "candidate", "plan", "risk", "decision", "intraday", "journal", "outcome", "evaluation"],
+        ["evidence", "state", "candidate", "plan", "risk", "decision", "intraday", "journal", "outcome", "evaluation", "candidate_v2", "plan_v2"],
         start=1,
     )
 }
@@ -163,6 +166,84 @@ def test_every_contract_round_trips_inside_one_rollback_transaction() -> None:
         )
         evidence_repo.save_snapshot(legacy)
         assert evidence_repo.get_latest_valid_snapshot("600001", "quote") == legacy
+    finally:
+        transaction.rollback()
+        connection.close()
+        engine.dispose()
+
+
+def test_v2_candidate_and_plan_upserts_are_idempotent_inside_rollback() -> None:
+    sys.path.insert(0, str(PROJECT / "scripts"))
+    from apply_migrations import apply_migrations, create_root_engine
+
+    engine = create_root_engine()
+    apply_migrations(engine)
+    connection = engine.connect()
+    transaction = connection.begin()
+    try:
+        repository = PlanningRepository(connection)
+        candidate = CandidateV2(
+            candidate_id=IDS["candidate_v2"],
+            as_of=AS_OF,
+            source="short-term-auto-selection",
+            data_status="VALID",
+            analysis_date=date(2026, 8, 10),
+            trading_date=date(2026, 8, 11),
+            code="600002",
+            name="齐鲁银行",
+            candidate_type="PULLBACK",
+            setup_score=Decimal("82.5"),
+            liquidity_score=Decimal("0.8"),
+            trend_score=Decimal("0.75"),
+            catalyst_score=Decimal("0"),
+            sector="银行",
+            rule_version="short-term-selection-2.0.0",
+            source_strategies=("MA5", "五因子"),
+            executable_status="EXECUTABLE",
+            rejected_reasons=(),
+            evidence_refs=(IDS["evidence"],),
+        )
+        updated = CandidateV2.model_validate(
+            {**candidate.model_dump(mode="python"), "setup_score": Decimal("84.0")}
+        )
+        plan = TradePlanV2(
+            plan_id=IDS["plan_v2"],
+            candidate_id=IDS["candidate_v2"],
+            as_of=AS_OF,
+            source="short-term-auto-selection",
+            data_status="VALID",
+            analysis_date=date(2026, 8, 10),
+            trading_date=date(2026, 8, 11),
+            code="600002",
+            status="WAIT_ENTRY",
+            trigger_price=Decimal("12.30"),
+            entry_ceiling=Decimal("12.45"),
+            invalidation_price=Decimal("11.80"),
+            first_reduce_price=Decimal("13.20"),
+            risk_distance=Decimal("0.50"),
+            risk_reward_ratio=Decimal("1.80"),
+            atr=Decimal("0.40"),
+            chip_trade_date=date(2026, 8, 10),
+            maximum_shares=500,
+            market_status="ALLOW",
+            portfolio_status="APPROVED",
+            valid_until=AS_OF + timedelta(days=2),
+            rule_version="short-term-selection-2.0.0",
+            evidence_refs=(IDS["evidence"],),
+        )
+
+        repository.upsert_candidate(candidate)
+        repository.upsert_candidate(updated)
+        repository.upsert_plan(plan)
+
+        count = connection.execute(
+            text("SELECT COUNT(*) FROM stt_candidates WHERE candidate_id = :candidate_id"),
+            {"candidate_id": IDS["candidate_v2"]},
+        ).scalar_one()
+        assert count == 1
+        assert repository.get_candidate_v2(IDS["candidate_v2"]).setup_score == Decimal("84.0")
+        assert repository.get_plan_v2(IDS["plan_v2"]) == plan
+        assert repository.get_latest_valid_plan("600002", AS_OF) == plan
     finally:
         transaction.rollback()
         connection.close()
