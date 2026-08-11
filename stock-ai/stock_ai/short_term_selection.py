@@ -52,6 +52,59 @@ class SelectionResult:
     rejected: tuple[RejectedSignal, ...]
 
 
+def _candidate_sort_key(candidate: CandidateSignal) -> tuple[float, float, float, str]:
+    return (
+        -candidate.setup_score,
+        -float(candidate.metrics.get("risk_reward_hint", 0)),
+        -float(candidate.metrics.get("average_amount5", 0)),
+        candidate.code,
+    )
+
+
+def allocate_candidates(
+    candidates: Sequence[CandidateSignal],
+    *,
+    limit: int = 5,
+    breakout_quota: int = 3,
+    pullback_quota: int = 2,
+    max_per_sector: int = 2,
+) -> tuple[CandidateSignal, ...]:
+    best_by_code: dict[str, CandidateSignal] = {}
+    for item in candidates:
+        current = best_by_code.get(item.code)
+        if current is None or _candidate_sort_key(item) < _candidate_sort_key(current):
+            best_by_code[item.code] = item
+    eligible = tuple(best_by_code.values())
+    selected: list[CandidateSignal] = []
+    sector_counts: dict[str, int] = {}
+    for candidate_type, quota in (("BREAKOUT", breakout_quota), ("PULLBACK", pullback_quota)):
+        taken = 0
+        matching = sorted(
+            (item for item in eligible if item.candidate_type == candidate_type),
+            key=_candidate_sort_key,
+        )
+        for item in matching:
+            if len(selected) >= limit or taken >= quota:
+                break
+            if sector_counts.get(item.sector, 0) >= max_per_sector:
+                continue
+            selected.append(item)
+            sector_counts[item.sector] = sector_counts.get(item.sector, 0) + 1
+            taken += 1
+    selected_keys = {(item.code, item.candidate_type) for item in selected}
+    for item in sorted(eligible, key=_candidate_sort_key):
+        if len(selected) >= limit:
+            break
+        if (item.code, item.candidate_type) in selected_keys:
+            continue
+        if sector_counts.get(item.sector, 0) >= max_per_sector:
+            continue
+        selected.append(item)
+        selected_keys.add((item.code, item.candidate_type))
+        sector_counts[item.sector] = sector_counts.get(item.sector, 0) + 1
+    return tuple(sorted(selected, key=_candidate_sort_key))
+
+
 def _as_date(value: object) -> date:
     if isinstance(value, date):
         return value
@@ -251,7 +304,6 @@ def select_short_term_candidates(
     limit: int = 5,
     max_per_sector: int = 2,
 ) -> SelectionResult:
-    del max_per_sector
     candidates: list[CandidateSignal] = []
     rejected: list[RejectedSignal] = []
     for row in rows:
@@ -299,5 +351,9 @@ def select_short_term_candidates(
             rejected.append(RejectedSignal(code, "未命中短线形态"))
             continue
         candidates.append(signal)
-    candidates.sort(key=lambda item: (-item.setup_score, item.code))
-    return SelectionResult(analysis_date, tuple(candidates[:limit]), tuple(rejected))
+    selected = allocate_candidates(
+        candidates,
+        limit=limit,
+        max_per_sector=max_per_sector,
+    )
+    return SelectionResult(analysis_date, selected, tuple(rejected))

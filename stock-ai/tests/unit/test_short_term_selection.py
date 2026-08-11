@@ -188,3 +188,87 @@ def test_selector_rejects_duplicate_daily_dates() -> None:
     assert [(item.code, item.reason) for item in result.rejected] == [
         ("600020", "日线交易日重复")
     ]
+
+
+def _candidate(code: str, candidate_type: str, score: float, sector: str):
+    short_term_selection = importlib.import_module("stock_ai.short_term_selection")
+    return short_term_selection.CandidateSignal(
+        code=code,
+        name=code,
+        sector=sector,
+        candidate_type=candidate_type,
+        setup_score=score,
+        liquidity_score=0.8,
+        trend_score=0.8,
+        catalyst_score=0.0,
+        source_strategies=("综合", "MA5"),
+        reasons=("fixture",),
+        metrics={"risk_reward_hint": 2.0, "average_amount5": 200_000.0},
+    )
+
+
+def test_allocator_enforces_shape_quotas_and_sector_cap() -> None:
+    short_term_selection = importlib.import_module("stock_ai.short_term_selection")
+    candidates = (
+        _candidate("600101", "BREAKOUT", 99, "银行"),
+        _candidate("600102", "BREAKOUT", 98, "银行"),
+        _candidate("600103", "BREAKOUT", 97, "银行"),
+        _candidate("600104", "BREAKOUT", 96, "电力"),
+        _candidate("000101", "PULLBACK", 95, "电力"),
+        _candidate("000102", "PULLBACK", 94, "消费"),
+        _candidate("000103", "PULLBACK", 93, "科技"),
+    )
+
+    selected = short_term_selection.allocate_candidates(candidates)
+
+    assert len(selected) == 5
+    assert sum(item.candidate_type == "BREAKOUT" for item in selected) == 3
+    assert sum(item.candidate_type == "PULLBACK" for item in selected) == 2
+    assert max(sum(item.sector == sector for item in selected) for sector in {item.sector for item in selected}) == 2
+
+
+def test_allocator_fills_unused_pullback_slot_with_breakout() -> None:
+    short_term_selection = importlib.import_module("stock_ai.short_term_selection")
+    candidates = tuple(
+        _candidate(f"60020{index}", "BREAKOUT", 95 - index, f"行业{index}")
+        for index in range(5)
+    ) + (_candidate("000201", "PULLBACK", 89, "消费"),)
+
+    selected = short_term_selection.allocate_candidates(candidates)
+
+    assert len(selected) == 5
+    assert sum(item.candidate_type == "BREAKOUT" for item in selected) == 4
+    assert sum(item.candidate_type == "PULLBACK" for item in selected) == 1
+
+
+def test_allocator_keeps_only_the_best_shape_for_one_code() -> None:
+    short_term_selection = importlib.import_module("stock_ai.short_term_selection")
+    candidates = (
+        _candidate("600300", "BREAKOUT", 80, "工业"),
+        _candidate("600300", "PULLBACK", 86, "工业"),
+        _candidate("600301", "BREAKOUT", 82, "银行"),
+    )
+
+    selected = short_term_selection.allocate_candidates(candidates)
+
+    assert [item.code for item in selected].count("600300") == 1
+    selected_shape = next(item.candidate_type for item in selected if item.code == "600300")
+    assert selected_shape == "PULLBACK"
+
+
+def test_selector_applies_the_sector_cap_to_final_candidates() -> None:
+    short_term_selection = importlib.import_module("stock_ai.short_term_selection")
+    codes = ("600401", "600402", "600403")
+    result = short_term_selection.select_short_term_candidates(
+        analysis_date=ANALYSIS_DATE,
+        rows=[
+            {"代码": code, "名称": code, "所属行业": "银行", "策略来源": "综合+底部突破"}
+            for code in codes
+        ],
+        bars_by_code={code: _breakout_bars() for code in codes},
+        holding_codes=set(),
+        st_codes=set(),
+        max_per_sector=2,
+    )
+
+    assert len(result.candidates) == 2

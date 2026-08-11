@@ -82,3 +82,22 @@ def test_merge_keeps_highest_score_per_code(mock_load, mock_latest) -> None:
     top = pick_wechat_top5(df, top_n=2)
     assert len(top) == 2
     assert float(top.iloc[0]["总分"]) >= float(top.iloc[1]["总分"])
+
+
+@patch("scripts.tools.selection_results.latest_selection_trade_date")
+@patch("scripts.tools.selection_results.load_selection_daily_results")
+def test_merge_labels_the_bottom_breakout_source(mock_load, mock_latest) -> None:
+    from datetime import date
+
+    mock_latest.return_value = date(2026, 8, 10)
+    mock_load.return_value = (
+        date(2026, 8, 10),
+        [{"代码": "600001", "总分": 88, "建议动作": "强势关注"}],
+    )
+
+    _, frame, _ = merge_selection_strategies_df(
+        trade_date=date(2026, 8, 10),
+        strategies=("bottom_breakout",),
+    )
+
+    assert frame.iloc[0]["策略来源"] == "底部突破"

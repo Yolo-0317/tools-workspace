@@ -72,6 +72,7 @@ _STRATEGY_DISPLAY = {
     "combined": "综合",
     "five_factor": "五因子",
     "ma5": "MA5",
+    "bottom_breakout": "底部突破",
     "watch": "观察池",
     "short_term_trade": "短线交易候选",
 }

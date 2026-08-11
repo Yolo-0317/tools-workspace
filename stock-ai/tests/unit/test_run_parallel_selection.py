@@ -30,19 +30,23 @@ def test_execute_lane_unknown():
 
 
 def test_main_uses_parallel_by_default():
-    with patch.object(rps, "_run_lanes_parallel", return_value=0) as parallel:
-        with patch.object(rps, "_run_lanes_sequential") as sequential:
-            with patch.dict(os.environ, {}, clear=False):
-                os.environ.pop("SELECTION_LANES_SEQUENTIAL", None)
-                assert rps.main() == 0
-                parallel.assert_called_once()
-                sequential.assert_not_called()
+    with patch("scripts.tools.ensure_daily_bars.ensure_daily_bars_at_selection_start") as ensure:
+        with patch.object(rps, "_run_lanes_parallel", return_value=0) as parallel:
+            with patch.object(rps, "_run_lanes_sequential") as sequential:
+                with patch.dict(os.environ, {}, clear=False):
+                    os.environ.pop("SELECTION_LANES_SEQUENTIAL", None)
+                    assert rps.main() == 0
+                    ensure.assert_called_once_with()
+                    parallel.assert_called_once()
+                    sequential.assert_not_called()
 
 
 def test_main_sequential_when_env_set():
-    with patch.object(rps, "_run_lanes_sequential", return_value=0) as sequential:
-        with patch.object(rps, "_run_lanes_parallel") as parallel:
-            with patch.dict(os.environ, {"SELECTION_LANES_SEQUENTIAL": "1"}):
-                assert rps.main() == 0
-                sequential.assert_called_once()
-                parallel.assert_not_called()
+    with patch("scripts.tools.ensure_daily_bars.ensure_daily_bars_at_selection_start") as ensure:
+        with patch.object(rps, "_run_lanes_sequential", return_value=0) as sequential:
+            with patch.object(rps, "_run_lanes_parallel") as parallel:
+                with patch.dict(os.environ, {"SELECTION_LANES_SEQUENTIAL": "1"}):
+                    assert rps.main() == 0
+                    ensure.assert_called_once_with()
+                    sequential.assert_called_once()
+                    parallel.assert_not_called()
