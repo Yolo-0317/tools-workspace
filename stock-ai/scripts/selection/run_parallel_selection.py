@@ -6,7 +6,9 @@ from __future__ import annotations
 import os
 import sys
 import time
+from contextlib import redirect_stderr, redirect_stdout
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from io import StringIO
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -62,7 +64,8 @@ def _execute_lane(lane: str) -> tuple[str, int, str | None, float]:
         return lane, 1, f"unknown lane: {lane}", 0.0
     print(f"[{lane}] 开始", flush=True)
     try:
-        runner()
+        with redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            runner()
     except SystemExit as exc:
         code = int(exc.code) if isinstance(exc.code, int) else (1 if exc.code else 0)
         elapsed = time.perf_counter() - t0
@@ -143,7 +146,8 @@ def _run_lanes_parallel(*, max_workers: int) -> int:
 def main() -> int:
     from scripts.tools.ensure_daily_bars import ensure_daily_bars_at_selection_start
 
-    ensure_daily_bars_at_selection_start()
+    with redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+        ensure_daily_bars_at_selection_start()
 
     sequential = os.getenv("SELECTION_LANES_SEQUENTIAL", "").strip().lower() in (
         "1",

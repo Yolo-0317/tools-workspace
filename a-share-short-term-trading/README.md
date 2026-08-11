@@ -26,7 +26,7 @@ PYTHONPATH=a-share-short-term-trading stock-ai/.venv/bin/python \
   a-share-short-term-trading/scripts/configure_mysql_permissions.py --apply
 ```
 
-迁移按 `sql/001` 至 `sql/004` 顺序幂等执行。`004` 只为既有账户和持仓表补充缺失的券商事实列，不删除或重建原表。
+迁移按 `sql/001` 至 `sql/005` 顺序幂等执行。`004` 只为既有账户和持仓表补充缺失的券商事实列；`005` 为自动选股候选与计划增加 v1.2 字段和幂等索引。迁移不删除或重建业务表。
 
 ## 券商持仓刷新
 
@@ -35,6 +35,41 @@ PYTHONPATH=a-share-short-term-trading stock-ai/.venv/bin/python \
 系统不会定时刷新持仓，也不会修改 `alert_rules`。未提供带时区的券商采集时间时，本轮数据会被拒绝，不使用估算时间补齐。
 
 ## 日线与交易诊断
+
+### 手动短线自动选股
+
+系统只由聊天或命令手动触发，不安装定时任务。默认先运行 `combined / ma5 / five_factor / bottom_breakout` 四轨，再用同一套生产规则识别突破与强趋势回踩，过滤持仓、ST、非沪深主板、停牌、上市不足 60 个交易日、流动性不足和当日涨幅超过 7% 的标的：
+
+```bash
+PYTHONPATH=stock-ai:a-share-short-term-trading \
+stock-ai/.venv/bin/python \
+  a-share-short-term-trading/scripts/select_short_term_candidates.py --output text
+```
+
+盘前、盘中和午间只使用上一完整交易日；盘后必须确认当日日线已经完整入库；非交易日使用最近完整交易日。`--skip-lanes` 只用于人工重试或测试，复用同一分析日已经落库的完整四轨结果；缺少任意一轨会停止评分。
+
+候选状态分为：
+
+- `EXECUTABLE`：价格计划、目标交易日筹码、市场状态和组合账户新鲜度均通过。
+- `OBSERVE`：研究形态成立，但筹码、账户、组合审批或市场许可不完整，禁止据此开仓。
+
+`ALLOW` 按正常风险预算计算；`LIMITED` 将风险预算和仓位上限减半，并最多保留两只可执行候选；`FREEZE` 只保存最大股数为 0 的观察计划。账户快照日期早于分析日或缺少可用资金时不会猜测仓位。输出的触发价、入场上限、失效价和第一减仓价都是交易计划，不代表已下单；系统没有自动委托能力。
+
+完成自动选股后，可直接诊断个股。盘中和午间在没有 `--plan-json` 时会自动读取数据库中最新、未过期的冻结计划：
+
+```bash
+PYTHONPATH=stock-ai:a-share-short-term-trading \
+stock-ai/.venv/bin/python \
+  a-share-short-term-trading/scripts/diagnose_stock.py --code 600060 --output text
+```
+
+生产规则回测固定使用 T 日及以前的数据生成信号，并从 T+1 开盘计入滑点和佣金，分别报告突破与回踩的样本量、胜率、盈亏比、期望值和最大回撤；回测不构成盈利承诺：
+
+```bash
+PYTHONPATH=stock-ai \
+stock-ai/.venv/bin/python \
+  stock-ai/scripts/analysis/backtest_short_term_trade.py --output json
+```
 
 关键标的日线同步示例：
 

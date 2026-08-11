@@ -235,15 +235,18 @@ def main(target_date: Optional[str] = None, max_enrich: int = 20):
 
     engine = get_db_engine()
     trade_date = target_date or get_latest_trade_date(engine)
-    print(f"🚀 纯技术面策略启动，基准日期：{trade_date}")
+    print(f"纯技术面策略启动，基准日期：{trade_date}")
     print("正在执行 MySQL 技术面筛选（筑底+放量突破）...")
 
     df_all = load_daily_data(engine, trade_date)
-    print(f"✓ 已加载日线记录: {len(df_all)}")
+    print(f"已加载日线记录: {len(df_all)}")
 
     technical_df = select_technical_candidates(df_all)
     if technical_df.empty:
-        print("❌ 技术面未筛到候选股票")
+        from scripts.tools.selection_strategy_bridge import persist_strategy_rows
+
+        persist_strategy_rows(trade_date, [], "bottom_breakout")
+        print("技术面未筛到候选股票，已保存空结果完成标记")
         return None, trade_date
 
     paths = save_outputs(technical_df, trade_date)
@@ -264,12 +267,12 @@ def main(target_date: Optional[str] = None, max_enrich: int = 20):
             csv_stem="stock_selection_bottom_breakout_eastmoney",
         )
     except Exception as exc:  # noqa: BLE001
-        print(f"⚠️ bottom_breakout MySQL 入库失败：{exc}")
+        print(f"bottom_breakout MySQL 入库失败：{exc}")
 
     print("\n" + "=" * 60)
-    print(f"✅ 技术面选股完成，输出: {len(technical_df)} 只")
-    print(f"📄 技术中间文件: {paths['technical']}")
-    print(f"📄 最终结果文件: {paths['final']}")
+    print(f"技术面选股完成，输出: {len(technical_df)} 只")
+    print(f"技术中间文件: {paths['technical']}")
+    print(f"最终结果文件: {paths['final']}")
     print("=" * 60)
     print(technical_df.head(20))
     return technical_df, trade_date

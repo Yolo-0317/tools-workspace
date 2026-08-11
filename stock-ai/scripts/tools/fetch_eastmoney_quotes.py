@@ -825,7 +825,7 @@ def _read_quote_payload(code: str, *, wait_seconds: float) -> dict[str, str] | N
         if page_code is None or page_code == c:
             return payload
         print(
-            f"⚠️ {c} 页面代码不匹配(page={page_code})，重试 {attempt + 1}/3",
+            f"{c} 页面代码不匹配(page={page_code})，重试 {attempt + 1}/3",
             file=sys.stderr,
         )
     return None
@@ -871,11 +871,11 @@ def fetch_sop_snapshots(
                     if ff_text:
                         snap.fund_flow_text = ff_text
                 except Exception as exc:  # noqa: BLE001
-                    print(f"⚠️ {c} 资金页采集失败: {exc}", file=sys.stderr)
+                    print(f"{c} 资金页采集失败: {exc}", file=sys.stderr)
 
             snapshots[c] = snap
         except Exception as exc:  # noqa: BLE001
-            print(f"⚠️ {c} 行情页采集失败: {exc}", file=sys.stderr)
+            print(f"{c} 行情页采集失败: {exc}", file=sys.stderr)
             continue
 
     if close_browser:

@@ -74,7 +74,7 @@
 - Consumes: merged selection rows with `代码`, `名称`, `所属行业`, `策略来源`, and 60–120 completed `stock_daily` rows per code.
 - Produces: `SelectionBar`, `CandidateSignal`, `RejectedSignal`, `SelectionResult`, the public selector documented below, and `is_sh_sz_main_board_code(code: str) -> bool`.
 
-- [ ] **Step 1: Write failing main-board and selector tests**
+- [x] **Step 1: Write failing main-board and selector tests**
 
 ```python
 def test_main_board_code_boundaries() -> None:
@@ -109,7 +109,7 @@ def test_selector_detects_a_shrinking_volume_pullback() -> None:
     assert result.candidates[0].candidate_type == "PULLBACK"
 ```
 
-- [ ] **Step 2: Run the focused tests and verify RED**
+- [x] **Step 2: Run the focused tests and verify RED**
 
 Run:
 
@@ -119,7 +119,7 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=stock-ai stock-ai/.venv/bin/pytest -q -p no
 
 Expected: FAIL because `is_sh_sz_main_board_code` and `short_term_selection` do not exist.
 
-- [ ] **Step 3: Implement exact normalized inputs and hard gates**
+- [x] **Step 3: Implement exact normalized inputs and hard gates**
 
 ```python
 CandidateType = Literal["BREAKOUT", "PULLBACK"]
@@ -176,11 +176,11 @@ def select_short_term_candidates(
 
 Implement the three private functions shown above in the same module: `_normalize_inputs` converts mappings into ordered `SelectionBar` tuples and rejects duplicate dates; `_evaluate_all` returns either one or two scored shapes plus structured rejection reasons for each code; `_build_result` de-duplicates and calls the allocator introduced in Task 2. Implement `is_sh_sz_main_board_code` with exact prefixes `600/601/603/605` and `000/001/002/003`. Normalize MySQL `amount` as Tushare thousands of yuan; the 1亿元 five-day threshold is `100_000` thousand yuan. Reject fewer than 60 bars, last bar date mismatch, incomplete OHLC/amount, holdings, names containing `ST`, `*ST`, or `退`, explicit ST codes, non-main-board codes, suspended bars (`amount_qian <= 0`), five-day average below `100_000`, and analysis-day gains above 7%.
 
-- [ ] **Step 4: Implement shape conditions and deterministic scoring**
+- [x] **Step 4: Implement shape conditions and deterministic scoring**
 
 Use prior windows that exclude the analysis bar for `prior_high20` and average amount. Award breakout points as: trend 20 alignment + 10 rising MA20 + 10 close 2–12% above MA20; quality 15 valid new high + up to 10 close-location + 5 gap at most 3%; liquidity 10 five-day average at least 2亿元 (otherwise 5) + 10 for amount ratio 1.2–2.0 (5 for 2.0–3.0); consensus 5 for two sources and 10 for at least three. Award pullback points as: trend 20 alignment + 10 rising MA20 + 10 for 10-day return 5–25%; quality 10 close inside the MA5/MA10 support band + 10 upper-half/recovery close + 10 for 2–6% drawdown (5 for 6–10%); liquidity 10 five-day average at least 2亿元 (otherwise 5) + 10 for amount ratio at most 0.9 (5 for 0.9–1.2); the same consensus points. Reject a pullback when either of the last two closes is below its MA10 while that day's amount exceeds the preceding five-day average. Keep only scores at least 70. Store a deterministic technical `risk_reward_hint = (prior_high20 - close) / (close - technical_support)` when the denominator is positive, otherwise zero; this is only a tie-breaker and never replaces the final chip-aware plan ratio.
 
-- [ ] **Step 5: Run tests and commit**
+- [x] **Step 5: Run tests and commit**
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=stock-ai stock-ai/.venv/bin/pytest -q -p no:cacheprovider stock-ai/tests/unit/test_market_codes.py stock-ai/tests/unit/test_short_term_selection.py
@@ -205,7 +205,7 @@ Expected: focused tests PASS.
 - Consumes: `CandidateSignal` values from Task 1.
 - Produces: `allocate_candidates(candidates, limit=5, breakout_quota=3, pullback_quota=2, max_per_sector=2) -> tuple[CandidateSignal, ...]` and a backward-compatible bars-aware `build_trade_candidates` DataFrame API.
 
-- [ ] **Step 1: Write failing allocation and wrapper tests**
+- [x] **Step 1: Write failing allocation and wrapper tests**
 
 ```python
 def test_allocator_keeps_three_breakouts_two_pullbacks_and_two_per_sector() -> None:
@@ -225,7 +225,7 @@ def test_dataframe_wrapper_can_return_both_candidate_types() -> None:
     assert set(output["候选类型"]) == {"突破启动", "强趋势回踩"}
 ```
 
-- [ ] **Step 2: Run the tests and verify RED**
+- [x] **Step 2: Run the tests and verify RED**
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=stock-ai stock-ai/.venv/bin/pytest -q -p no:cacheprovider stock-ai/tests/unit/test_short_term_selection.py stock-ai/tests/unit/test_short_term_trade.py
@@ -233,7 +233,7 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=stock-ai stock-ai/.venv/bin/pytest -q -p no
 
 Expected: FAIL because allocation and the bars-aware wrapper are absent.
 
-- [ ] **Step 3: Implement allocation and source merging**
+- [x] **Step 3: Implement allocation and source merging**
 
 Sort each type by `(-setup_score, -risk_reward_hint, -average_amount_qian, code)`, enforce per-sector count before appending, take the initial 3+2 quotas, then fill remaining slots from all unselected candidates with the same ordering and sector cap. If one code has both shapes, retain the higher score; on equal score retain the higher `risk_reward_hint` stored in metrics.
 
@@ -246,11 +246,11 @@ merge_selection_strategies_df(
 )
 ```
 
-- [ ] **Step 4: Replace the old breakthrough-only wrapper**
+- [x] **Step 4: Replace the old breakthrough-only wrapper**
 
 Keep the public function name, translate `CandidateSignal` fields into existing Chinese report columns, and remove the unconditional `candidate_type != "突破启动"` drop. Require `bars_by_code`; do not silently fall back to label-only classification.
 
-- [ ] **Step 5: Run tests and commit**
+- [x] **Step 5: Run tests and commit**
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=stock-ai stock-ai/.venv/bin/pytest -q -p no:cacheprovider stock-ai/tests/unit/test_short_term_selection.py stock-ai/tests/unit/test_short_term_trade.py stock-ai/tests/unit/test_run_parallel_selection.py
@@ -277,7 +277,7 @@ Expected: focused tests PASS and no legacy wrapper regression.
 - Consumes: normalized signals from Task 2.
 - Produces: `CandidateV2`, `TradePlanV2`, and schema version `1.2` storage columns.
 
-- [ ] **Step 1: Write failing v2 contract tests**
+- [x] **Step 1: Write failing v2 contract tests**
 
 ```python
 def test_candidate_v2_accepts_pullback_and_keeps_v1_strict() -> None:
@@ -296,7 +296,7 @@ def test_trade_plan_v2_rejects_invalid_price_order() -> None:
         )
 ```
 
-- [ ] **Step 2: Write failing migration assertions and run RED**
+- [x] **Step 2: Write failing migration assertions and run RED**
 
 ```python
 def test_short_term_selection_migration_is_additive_and_idempotent() -> None:
@@ -315,7 +315,7 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=a-share-short-term-trading stock-ai/.venv/b
 
 Expected: FAIL because v2 contracts and migration 005 do not exist.
 
-- [ ] **Step 3: Implement immutable v2 contracts**
+- [x] **Step 3: Implement immutable v2 contracts**
 
 ```python
 class CandidateV2(ContractModel):
@@ -363,11 +363,11 @@ class TradePlanV2(ContractModel):
 
 Validate UUID IDs, code, UTC timestamps, `invalidation < trigger <= ceiling < first_reduce`, `risk_reward_ratio >= 1.5` for `WAIT_ENTRY`, `maximum_shares == 0` under `FREEZE`, and `maximum_shares is None` whenever portfolio status is not approved except `FREEZE`.
 
-- [ ] **Step 4: Add migration 005 without deleting old data**
+- [x] **Step 4: Add migration 005 without deleting old data**
 
 Use the existing information-schema guarded pattern for every column and index. Add candidate columns `analysis_date`, `setup_score`, `rule_version`, `source_strategies_json`, and `executable_status`; add plan columns `analysis_date`, `risk_reward_ratio`, `atr`, `chip_trade_date`, `maximum_shares`, `market_status`, and `portfolio_status`. Add nullable columns first and backfill v1.1 rows conservatively. Guardedly drop `uk_candidate_code_date_type`, because it conflicts with rule-version idempotency, then create `uk_candidate_analysis_code_type_rule (analysis_date, code, candidate_type, rule_version)`. Reuse `uk_plan_candidate_rule`, and insert schema-version row `1.2`. The migration changes indexes but deletes no business rows.
 
-- [ ] **Step 5: Run tests and commit**
+- [x] **Step 5: Run tests and commit**
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=a-share-short-term-trading stock-ai/.venv/bin/pytest -q -p no:cacheprovider a-share-short-term-trading/tests/test_contract_market.py a-share-short-term-trading/tests/test_contract_decisions.py a-share-short-term-trading/tests/test_migration_files.py
@@ -391,7 +391,7 @@ Expected: focused tests PASS; dry-run lists migration 005 last.
 - Consumes: `CandidateV2` and `TradePlanV2` from Task 3.
 - Produces: `upsert_candidate(candidate: CandidateV2)`, `upsert_plan(plan: TradePlanV2)`, `get_candidate_v2(candidate_id)`, `get_plan_v2(plan_id)`, and `get_latest_valid_plan(code, at) -> TradePlanV2 | None`.
 
-- [ ] **Step 1: Write failing repository tests**
+- [x] **Step 1: Write failing repository tests**
 
 ```python
 def test_candidate_v2_upsert_replaces_only_same_deterministic_record() -> None:
@@ -405,7 +405,7 @@ def test_latest_valid_plan_filters_expired_and_wrong_code() -> None:
     assert repo.get_latest_valid_plan("000001", AT) is None
 ```
 
-- [ ] **Step 2: Run repository tests and verify RED**
+- [x] **Step 2: Run repository tests and verify RED**
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=a-share-short-term-trading stock-ai/.venv/bin/pytest -q -p no:cacheprovider a-share-short-term-trading/tests/test_repositories.py
@@ -413,15 +413,15 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=a-share-short-term-trading stock-ai/.venv/b
 
 Expected: FAIL because v2 repository methods do not exist.
 
-- [ ] **Step 3: Implement explicit safe upserts and readers**
+- [x] **Step 3: Implement explicit safe upserts and readers**
 
 Use named column maps, not a table name supplied by callers. Candidate conflict updates may change scores, sources, status, rejection reasons, evidence and `as_of`; they must not update `analysis_date`, `code`, type, rule version, or rows with `source <> 'short-term-auto-selection'`. Plan conflict updates the generated price/risk fields for the same deterministic ID and rule version. Latest plan SQL must require `code`, `data_status='VALID'`, `status='WAIT_ENTRY'`, `valid_until > :at`, and order by `trading_date DESC, as_of DESC`.
 
-- [ ] **Step 4: Add rollback integration coverage**
+- [x] **Step 4: Add rollback integration coverage**
 
 Extend the existing household-MySQL transaction test to apply v2 records twice, assert one row, assert the updated score, and confirm `get_latest_valid_plan` round-trips all Decimal/date/tuple fields. Keep the test behind `STT_MYSQL_INTEGRATION=1`.
 
-- [ ] **Step 5: Run unit tests, optional integration, and commit**
+- [x] **Step 5: Run unit tests, optional integration, and commit**
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=a-share-short-term-trading stock-ai/.venv/bin/pytest -q -p no:cacheprovider a-share-short-term-trading/tests/test_repositories.py a-share-short-term-trading/tests/test_migration_files.py
@@ -446,7 +446,7 @@ Expected: unit tests PASS; integration tests PASS when configured, otherwise rem
 - Consumes: completed `DailyBar` values, a valid close chip snapshot, `candidate_type`, `MarketStatus`, and optional approved account budgets.
 - Produces: an extended `build_eod_trade_plan` accepting keyword arguments `candidate_type`, `market_status`, and `portfolio_approved`, returning legal prices, risk/reward metrics, and `maximum_shares: int | None`.
 
-- [ ] **Step 1: Write failing breakout, pullback, and sizing tests**
+- [x] **Step 1: Write failing breakout, pullback, and sizing tests**
 
 ```python
 def test_breakout_plan_caps_entry_at_one_point_five_percent() -> None:
@@ -471,7 +471,7 @@ def test_limited_halves_budgets_and_freeze_forces_zero() -> None:
     assert frozen.maximum_shares == 0
 ```
 
-- [ ] **Step 2: Run diagnosis tests and verify RED**
+- [x] **Step 2: Run diagnosis tests and verify RED**
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=a-share-short-term-trading stock-ai/.venv/bin/pytest -q -p no:cacheprovider a-share-short-term-trading/tests/test_diagnosis.py
@@ -479,15 +479,15 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=a-share-short-term-trading stock-ai/.venv/b
 
 Expected: FAIL because candidate type, market state, and nullable sizing are not supported.
 
-- [ ] **Step 3: Implement exact price rules**
+- [x] **Step 3: Implement exact price rules**
 
 For breakout, compute resistance from prior 20 highs excluding the analysis bar and `cost_90_high`; trigger is resistance plus `0.10 ATR`; entry ceiling is `min(trigger + 0.50 ATR, trigger * 1.015)`. For pullback, trigger is the analysis reversal bar high; entry uses the same cap. Breakout support is the maximum of prior platform low, MA10 and `cost_90_low`; pullback support is the maximum valid support below trigger among analysis-bar low, MA10 and `cost_90_low`. Invalidation is support minus `0.10 ATR`. First reduction is the nearest valid chip/previous-high resistance yielding at least `1.5R`, otherwise exactly `1.5R`. Round upward for entry/targets and downward for invalidation.
 
-- [ ] **Step 4: Implement fail-closed sizing and validation**
+- [x] **Step 4: Implement fail-closed sizing and validation**
 
 Change `TradePlanDraft.maximum_shares` to `int | None`. Return `None` when portfolio approval/account freshness is absent, halve `RiskProfile.per_trade_loss_budget`, `ticket_limit`, and `remaining_exposure` under `LIMITED`, and return zero under `FREEZE`. Reject plans whose price order is illegal, risk distance is outside 1.5–5%, or reward/risk is below 1.5. In `verify_intraday_plan`, treat `plan.maximum_shares is None` as a failed portfolio gate before the final `min(...)`; this preserves fail-closed behavior and avoids nullable arithmetic.
 
-- [ ] **Step 5: Run tests and commit**
+- [x] **Step 5: Run tests and commit**
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=a-share-short-term-trading stock-ai/.venv/bin/pytest -q -p no:cacheprovider a-share-short-term-trading/tests/test_diagnosis.py a-share-short-term-trading/tests/test_intraday.py a-share-short-term-trading/tests/test_diagnose_stock_cli.py a-share-short-term-trading/tests/test_session_diagnosis.py
@@ -509,7 +509,7 @@ Expected: focused and existing diagnosis tests PASS.
 - Consumes: `SelectionResult` from Task 2, daily/evidence/planning repositories, `MarketStateView`, `RiskProfile`, account freshness, and next trade date.
 - Produces: `SelectionItem`, `SelectionReport`, `materialize_short_term_selection` with the request/dependency objects below, and `render_selection_report(report) -> str`.
 
-- [ ] **Step 1: Write failing orchestration tests**
+- [x] **Step 1: Write failing orchestration tests**
 
 ```python
 def test_materializer_saves_candidate_and_executable_plan() -> None:
@@ -532,7 +532,7 @@ def test_one_symbol_failure_does_not_hide_other_valid_symbols() -> None:
     assert report.rejection_counts["PLAN_ERROR"] == 1
 ```
 
-- [ ] **Step 2: Run service tests and verify RED**
+- [x] **Step 2: Run service tests and verify RED**
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/pytest -q -p no:cacheprovider a-share-short-term-trading/tests/test_selection_service.py
@@ -540,7 +540,7 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=stock-ai:a-share-short-term-trading stock-a
 
 Expected: FAIL because the service does not exist.
 
-- [ ] **Step 3: Implement deterministic materialization**
+- [x] **Step 3: Implement deterministic materialization**
 
 ```python
 @dataclass(frozen=True)
@@ -559,11 +559,11 @@ def deterministic_id(kind: str, analysis_date: date, code: str, candidate_type: 
 
 For each final signal, first save a deterministic `EvidenceSnapshot` of kind `daily_technical` containing the selector metrics, analysis date, source strategies, and raw reference `mysql:stock_daily:<code>:<analysis_date>`; use that saved snapshot ID in the candidate evidence refs. Refresh chip evidence once only when the latest snapshot is not for `analysis_date`; then reload it and include its snapshot ID in the plan refs. Save a v2 candidate, build the plan, convert valid `WAIT_ENTRY` drafts into `TradePlanV2`, save with deterministic IDs, and mark failures as observations. Under `FREEZE`, persist the candidate and a zero-share non-actionable plan status without a risk approval. Limit executable results to two under `LIMITED` after plan validation.
 
-- [ ] **Step 4: Implement stable text rendering**
+- [x] **Step 4: Implement stable text rendering**
 
 Render header date/session/market, numbered candidates grouped by type, score/source/reasons, four prices, max shares or approval reason, rejection counts, and the final line `这是交易计划，不代表已经下单。`. Never print credentials, raw connection URLs, or holdings details.
 
-- [ ] **Step 5: Run tests and commit**
+- [x] **Step 5: Run tests and commit**
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/pytest -q -p no:cacheprovider a-share-short-term-trading/tests/test_selection_service.py
@@ -586,7 +586,7 @@ Expected: service and renderer tests PASS.
 - Consumes: existing `run_parallel_selection.main`, `merge_selection_strategies_df`, `load_stock_daily_bars`, portfolio loaders, market-state provider, chip capture, selector, and selection service.
 - Produces: manual command `select_short_term_candidates.py [--output text|json] [--at ISO] [--skip-lanes]`.
 
-- [ ] **Step 1: Write failing CLI tests with injected dependencies**
+- [x] **Step 1: Write failing CLI tests with injected dependencies**
 
 ```python
 def test_intraday_uses_previous_completed_trade_date() -> None:
@@ -607,7 +607,7 @@ def test_default_manual_run_executes_all_four_lanes() -> None:
     assert factory.lane_calls == [("combined", "ma5", "five_factor", "bottom_breakout")]
 ```
 
-- [ ] **Step 2: Run CLI tests and verify RED**
+- [x] **Step 2: Run CLI tests and verify RED**
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/pytest -q -p no:cacheprovider a-share-short-term-trading/tests/test_select_short_term_candidates_cli.py
@@ -615,17 +615,17 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=stock-ai:a-share-short-term-trading stock-a
 
 Expected: FAIL because the CLI does not exist.
 
-- [ ] **Step 3: Implement session/date resolution and adapters**
+- [x] **Step 3: Implement session/date resolution and adapters**
 
 For pre-market, intraday, and midday use `calendar.latest_on_or_before(today - 1 day)`; post-market require `latest_stock_daily_trade_date() == today`; non-trading day use `latest_on_or_before(today)`. Default behavior runs the existing four-lane entry first. `--skip-lanes` only reuses already persisted lanes and is documented as a manual retry/test option. Require all four lane buckets for the resolved date; a missing lane fails closed instead of silently scoring a partial universe.
 
 Load at most 120 completed bars per merged code, convert amount from thousands of yuan without changing stored data, and load ST codes, positions, account and industry information through existing MySQL helpers. Treat the portfolio as approved only when the account snapshot date is at least the resolved analysis date and available cash is present; otherwise pass `portfolio_approved=False`.
 
-- [ ] **Step 4: Compose evidence, market state, persistence, and compatibility entry**
+- [x] **Step 4: Compose evidence, market state, persistence, and compatibility entry**
 
 Load `.env` from `stock-ai/.env`, build one SQLAlchemy engine, one evidence repository and one planning repository, call Task 1 selector and Task 6 materializer, and render text or JSON. Catch configuration/data errors at the outer boundary and return exit code 2 with a sanitized Chinese explanation. Change the old stock-ai script to `runpy.run_path` or import/call this CLI so only one production rule path remains.
 
-- [ ] **Step 5: Run tests and commit**
+- [x] **Step 5: Run tests and commit**
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/pytest -q -p no:cacheprovider a-share-short-term-trading/tests/test_select_short_term_candidates_cli.py stock-ai/tests/unit/test_short_term_trade.py stock-ai/tests/unit/test_run_parallel_selection.py
@@ -648,7 +648,7 @@ Expected: CLI tests PASS; no scheduler or background process is created.
 - Consumes: `PlanningRepository.get_latest_valid_plan(code, at)` from Task 4.
 - Produces: optional `plan_repository` on `DiagnosisRuntime` and automatic persisted-plan fallback; explicit `--plan-json` retains priority.
 
-- [ ] **Step 1: Write failing fallback tests**
+- [x] **Step 1: Write failing fallback tests**
 
 ```python
 def test_intraday_loads_latest_persisted_plan_when_no_json_override() -> None:
@@ -664,7 +664,7 @@ def test_explicit_plan_override_does_not_query_repository() -> None:
     assert subject.plan_repository.calls == []
 ```
 
-- [ ] **Step 2: Run diagnosis runtime tests and verify RED**
+- [x] **Step 2: Run diagnosis runtime tests and verify RED**
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/pytest -q -p no:cacheprovider a-share-short-term-trading/tests/test_diagnose_stock_cli.py
@@ -672,7 +672,7 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=stock-ai:a-share-short-term-trading stock-a
 
 Expected: FAIL because runtime cannot load persisted plans.
 
-- [ ] **Step 3: Add plan-provider protocol and conversion**
+- [x] **Step 3: Add plan-provider protocol and conversion**
 
 ```python
 class PlanProvider(Protocol):
@@ -692,11 +692,11 @@ def trade_plan_v2_to_draft(plan: TradePlanV2) -> TradePlanDraft:
 
 Query only in intraday/midday paths and only when `frozen_plan` is absent. An absent/expired persisted plan keeps the existing fail-closed conclusion and must not start quote refresh.
 
-- [ ] **Step 4: Inject the repository in the CLI**
+- [x] **Step 4: Inject the repository in the CLI**
 
 Construct `PlanningRepository(create_mysql_engine(mysql_url))` in `default_runtime`. Preserve `--plan-json` as an explicit reproduction override and keep the portfolio gate defaulting to unapproved.
 
-- [ ] **Step 5: Run tests and commit**
+- [x] **Step 5: Run tests and commit**
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/pytest -q -p no:cacheprovider a-share-short-term-trading/tests/test_diagnose_stock_cli.py a-share-short-term-trading/tests/test_session_diagnosis.py a-share-short-term-trading/tests/test_intraday.py
@@ -720,7 +720,7 @@ Expected: diagnosis tests PASS and explicit overrides remain deterministic.
 - Consumes: production selector and plan rules from Tasks 1–8.
 - Produces: reproducible per-shape metrics and documented manual commands.
 
-- [ ] **Step 1: Write a failing no-lookahead backtest test**
+- [x] **Step 1: Write a failing no-lookahead backtest test**
 
 ```python
 def test_backtest_entry_uses_only_the_next_session_after_signal() -> None:
@@ -730,7 +730,7 @@ def test_backtest_entry_uses_only_the_next_session_after_signal() -> None:
     assert trades[0].entry_price == fixture_frame().loc["2026-08-10", "open"]
 ```
 
-- [ ] **Step 2: Run the backtest test and verify RED**
+- [x] **Step 2: Run the backtest test and verify RED**
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=stock-ai stock-ai/.venv/bin/pytest -q -p no:cacheprovider stock-ai/tests/unit/test_short_term_selection.py -k backtest
@@ -738,11 +738,11 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=stock-ai stock-ai/.venv/bin/pytest -q -p no
 
 Expected: FAIL until the backtest exposes production-rule trade records.
 
-- [ ] **Step 3: Rework the backtest to call production rules**
+- [x] **Step 3: Rework the backtest to call production rules**
 
 Evaluate `BREAKOUT` and `PULLBACK` separately. Shift entry to the next session, include configurable commission and slippage, never read bars after the signal while classifying, and print JSON/text metrics for `sample_size`, `win_rate`, `profit_loss_ratio`, `expectancy_pct`, and `max_drawdown_pct`. Do not add a profitability pass gate; fail only on invalid chronology, empty required fields, or non-reproducible output.
 
-- [ ] **Step 4: Document the manual workflow and safety semantics**
+- [x] **Step 4: Document the manual workflow and safety semantics**
 
 Add these commands to README:
 
@@ -753,7 +753,7 @@ PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python a-share
 
 Document completed-bar dates, `ALLOW/LIMITED/FREEZE`, observation versus executable status, missing-account behavior, no automatic order, and `--skip-lanes` retry semantics.
 
-- [ ] **Step 5: Run all relevant verification**
+- [x] **Step 5: Run all relevant verification**
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/pytest -q -p no:cacheprovider stock-ai/tests/unit/test_market_codes.py stock-ai/tests/unit/test_short_term_selection.py stock-ai/tests/unit/test_short_term_trade.py stock-ai/tests/unit/test_run_parallel_selection.py a-share-short-term-trading/tests
@@ -763,7 +763,7 @@ PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python a-share
 
 Expected: all unit tests PASS, backtest emits both setup types without chronology errors, and dry-run lists migrations 001–005.
 
-- [ ] **Step 6: Apply the migration and run configured MySQL integration verification**
+- [x] **Step 6: Apply the migration and run configured MySQL integration verification**
 
 ```bash
 PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python a-share-short-term-trading/scripts/apply_migrations.py --apply
@@ -772,7 +772,7 @@ STT_MYSQL_INTEGRATION=1 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=stock-ai:a-share-sh
 
 Expected: migration 005 reports `OK`; integration tests PASS against the configured MySQL. Applying the reviewed additive migration is an authorized implementation step, but never print the root password or connection URL.
 
-- [ ] **Step 7: Run one manual shadow selection and inspect persistence**
+- [x] **Step 7: Run one manual shadow selection and inspect persistence**
 
 ```bash
 PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python a-share-short-term-trading/scripts/select_short_term_candidates.py --output text
@@ -780,7 +780,7 @@ PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python a-share
 
 Expected: a dated chat report with at most five names, both types when qualified, legal price ordering, explicit portfolio approval state, rejection summary, and no order execution. Re-run with `--skip-lanes`; candidate/plan row counts for the same date/rule remain unchanged.
 
-- [ ] **Step 8: Commit final verification and documentation changes**
+- [x] **Step 8: Commit final verification and documentation changes**
 
 ```bash
 git add stock-ai/scripts/analysis/backtest_short_term_trade.py stock-ai/tests/unit/test_short_term_selection.py a-share-short-term-trading/README.md a-share-short-term-trading/tests/test_select_short_term_candidates_cli.py

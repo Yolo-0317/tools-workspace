@@ -103,3 +103,23 @@ def test_unknown_calendar_fails_closed(capsys) -> None:
 
     assert result == 2
     assert "交易日历无法确认" in capsys.readouterr().out
+
+
+def test_empty_lane_is_persisted_as_a_completed_bucket(monkeypatch) -> None:
+    from scripts.tools import portfolio_db, selection_strategy_bridge
+
+    calls: list[tuple[date, list[dict[str, object]], str]] = []
+    monkeypatch.setattr(
+        portfolio_db,
+        "save_selection_daily_results",
+        lambda trade_date, rows, *, strategy: calls.append(
+            (trade_date, rows, strategy)
+        ) or 0,
+    )
+
+    result = selection_strategy_bridge.persist_strategy_rows(
+        date(2026, 8, 11), [], "bottom_breakout"
+    )
+
+    assert result == 0
+    assert calls == [(date(2026, 8, 11), [], "bottom_breakout")]

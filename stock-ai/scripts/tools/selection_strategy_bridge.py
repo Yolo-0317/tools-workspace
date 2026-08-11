@@ -145,10 +145,6 @@ def persist_strategy_rows(
 ) -> int:
     from scripts.tools.portfolio_db import load_account, save_selection_daily_results
 
-    if not rows:
-        print(f"⚠️ {strategy}：0 条，跳过入库")
-        return 0
-
     account_position_pct = 0.0
     try:
         from stock_ai.advisor_selection import parse_advisor_phase, reapply_advisor_to_rows
@@ -157,11 +153,12 @@ def persist_strategy_rows(
         if acct and acct.position_ratio is not None:
             r = float(acct.position_ratio)
             account_position_pct = r * 100 if r <= 1.0 else r
-        phase = parse_advisor_phase()
-        reapply_advisor_to_rows(
-            rows, phase=phase, account_position_pct=account_position_pct
-        )
-        rows = [r for r in rows if r.get("建议动作") != "禁止"]
+        if rows:
+            phase = parse_advisor_phase()
+            reapply_advisor_to_rows(
+                rows, phase=phase, account_position_pct=account_position_pct
+            )
+            rows = [r for r in rows if r.get("建议动作") != "禁止"]
     except ImportError:
         pass
 
@@ -175,6 +172,6 @@ def persist_strategy_rows(
         out = ROOT / "output" / f"{csv_stem}_{td}.csv"
         out.parent.mkdir(parents=True, exist_ok=True)
         pd.DataFrame(rows).to_csv(out, index=False, encoding="utf-8-sig")
-        print(f"📄 {strategy} CSV: {out}")
-    print(f"💾 MySQL selection_daily_results ({strategy}): {n} 条")
+        print(f"{strategy} CSV: {out}")
+    print(f"MySQL selection_daily_results ({strategy}): {n} 条")
     return n

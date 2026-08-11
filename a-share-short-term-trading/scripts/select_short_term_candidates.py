@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import asdict, replace
 from datetime import date, datetime, timedelta, timezone
 import json
+from io import StringIO
 from pathlib import Path
 import sys
 from typing import Callable, Protocol
@@ -150,7 +152,7 @@ class DefaultRuntime:
             lane_date, lane_rows = load_selection_daily_results(
                 analysis_date, strategy=lane, engine=self._engine
             )
-            if lane_date != analysis_date or not lane_rows:
+            if lane_date != analysis_date:
                 raise CliInputError(f"{lane} 轨在分析日缺少结果，已停止部分评分")
 
         merged_date, frame, _ = merge_selection_strategies_df(
@@ -172,12 +174,14 @@ class DefaultRuntime:
             bars_by_code[code] = raw_bars
             daily_bars[code] = [_bar(code, value) for value in raw_bars]
 
+        with redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            st_codes = load_st_codes(engine=self._engine)
         result = select_short_term_candidates(
             analysis_date=analysis_date,
             rows=rows,
             bars_by_code=bars_by_code,
             holding_codes=load_holding_codes(engine=self._engine),
-            st_codes=load_st_codes(engine=self._engine),
+            st_codes=st_codes,
         )
         account = load_account(engine=self._engine)
         approved = bool(

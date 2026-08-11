@@ -162,7 +162,7 @@ def ensure_daily_bars_sync(
 
     if not needs_sync and bar_count >= min_count:
         print(
-            f"✅ 日线已至期望交易日 {expected}（库内 MAX={db_max}，"
+            f"日线已至期望交易日 {expected}（库内 MAX={db_max}，"
             f"当日 {bar_count} 条）"
         )
         result["ready"] = True
@@ -171,7 +171,7 @@ def ensure_daily_bars_sync(
     if not needs_sync and bar_count < min_count:
         needs_sync = True
         print(
-            f"⚠️ MAX={db_max} 已到 {expected}，但当日仅 {bar_count} 条（需 ≥{min_count}）",
+            f"MAX={db_max} 已到 {expected}，但当日仅 {bar_count} 条（需 ≥{min_count}）",
             file=sys.stderr,
         )
 
@@ -179,7 +179,7 @@ def ensure_daily_bars_sync(
 
     result["sync_days"] = sync_days
     print(
-        f"⚠️ 日线落后：期望 {expected}，库内 MAX={db_max}，"
+        f"日线落后：期望 {expected}，库内 MAX={db_max}，"
         f"{'个股缺失 ' + ','.join(stale_codes) if stale_codes else '全市场'} → "
         f"{'仅检测' if dry_run else f'触发 Tushare by_date {sync_days} 天'}"
     )
@@ -188,7 +188,7 @@ def ensure_daily_bars_sync(
         return result
 
     if not os.getenv("TUSHARE_TOKEN"):
-        print("❌ 未配置 TUSHARE_TOKEN，无法补同步", file=sys.stderr)
+        print("未配置 TUSHARE_TOKEN，无法补同步", file=sys.stderr)
         return result
 
     from scripts.sync.sync_tushare_daily_to_mysql import sync_daily_data
@@ -203,12 +203,12 @@ def ensure_daily_bars_sync(
     result["ready"] = ready
     if ready:
         print(
-            f"✅ 补同步完成，库内 MAX={new_max}，"
+            f"补同步完成，库内 MAX={new_max}，"
             f"{expected} 共 {new_count} 条"
         )
     else:
         print(
-            f"⚠️ 补同步后 MAX={new_max}、{expected} 条数={new_count}，"
+            f"补同步后 MAX={new_max}、{expected} 条数={new_count}，"
             f"未达期望 {expected}（需 ≥{min_expected_bar_count()} 条）",
             file=sys.stderr,
         )
@@ -227,19 +227,19 @@ def ensure_daily_bars_at_selection_start(
 
     load_dotenv(REPO_ROOT / ".env")
     if not _mysql_url():
-        print("❌ 未配置 MYSQL_URL，无法检查日线", file=sys.stderr)
+        print("未配置 MYSQL_URL，无法检查日线", file=sys.stderr)
         raise SystemExit(1)
 
     ready, info = check_daily_bars_ready(tushare_ready_hour=tushare_ready_hour)
     if ready:
         print(
-            f"✅ 日线已更新：期望 {info['expected']}，"
+            f"日线已更新：期望 {info['expected']}，"
             f"库内 MAX={info['db_max']}，当日 {info['bar_count']} 条"
         )
         return
 
     print(
-        f"⚠️ 日线未就绪：期望 {info['expected']}，"
+        f"日线未就绪：期望 {info['expected']}，"
         f"库内 MAX={info['db_max']}，当日 {info['bar_count']} 条"
         f"（需 ≥{info['min_count']}）",
         file=sys.stderr,
@@ -248,20 +248,20 @@ def ensure_daily_bars_at_selection_start(
         raise SystemExit(1)
 
     if not os.getenv("TUSHARE_TOKEN"):
-        print("❌ 未配置 TUSHARE_TOKEN，无法补同步日线", file=sys.stderr)
+        print("未配置 TUSHARE_TOKEN，无法补同步日线", file=sys.stderr)
         raise SystemExit(1)
 
     ensure_daily_bars_sync(tushare_ready_hour=tushare_ready_hour)
     ready, info = check_daily_bars_ready(tushare_ready_hour=tushare_ready_hour)
     if not ready:
         print(
-            f"❌ 补同步后日线仍不可用：期望 {info['expected']}，"
+            f"补同步后日线仍不可用：期望 {info['expected']}，"
             f"MAX={info['db_max']}，当日 {info['bar_count']} 条",
             file=sys.stderr,
         )
         raise SystemExit(1)
     print(
-        f"✅ 日线补同步后已就绪：{info['expected']} 共 {info['bar_count']} 条"
+        f"日线补同步后已就绪：{info['expected']} 共 {info['bar_count']} 条"
     )
 
 
@@ -294,7 +294,7 @@ def main() -> int:
         ready, info = check_daily_bars_ready(tushare_ready_hour=args.ready_hour)
         if not ready:
             print(
-                f"⚠️ 日线未就绪：期望 {info['expected']} MAX={info['db_max']} "
+                f"日线未就绪：期望 {info['expected']} MAX={info['db_max']} "
                 f"条数={info['bar_count']}",
                 file=sys.stderr,
             )
@@ -308,7 +308,7 @@ def main() -> int:
     ready, info = check_daily_bars_ready(tushare_ready_hour=args.ready_hour)
     if args.require_ready and not ready:
         print(
-            f"❌ 日线未就绪：期望 {info['expected']} MAX={info['db_max']} "
+            f"日线未就绪：期望 {info['expected']} MAX={info['db_max']} "
             f"条数={info['bar_count']}",
             file=sys.stderr,
         )

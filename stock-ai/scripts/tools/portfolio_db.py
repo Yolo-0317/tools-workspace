@@ -1036,12 +1036,12 @@ def _fetch_opencli_market_name_cache(*, force: bool = False) -> dict[str, str]:
         from scripts.tools.fetch_eastmoney_quotes import fetch_market_names_opencli
 
         print(
-            "⏳ OpenCLI 东财 A 股列表 DOM 翻页（约 6～8 分钟）…",
+            "OpenCLI 东财 A 股列表 DOM 翻页（约 6～8 分钟）…",
             file=sys.stderr,
         )
         fetched = fetch_market_names_opencli(close_browser=True)
     except Exception as exc:  # noqa: BLE001
-        print(f"⚠️ OpenCLI A 股列表失败: {exc}", file=sys.stderr)
+        print(f"OpenCLI A 股列表失败: {exc}", file=sys.stderr)
         return cache
 
     merged = dict(cache)
@@ -1051,7 +1051,7 @@ def _fetch_opencli_market_name_cache(*, force: bool = False) -> dict[str, str]:
     global _STOCK_NAME_CACHE
     _STOCK_NAME_CACHE = None
     print(
-        f"✓ OpenCLI A 股列表: +{len(fetched)} 条，合计 {len(merged)} 条",
+        f"OpenCLI A 股列表: +{len(fetched)} 条，合计 {len(merged)} 条",
         file=sys.stderr,
     )
     return merged
@@ -1265,6 +1265,24 @@ def save_selection_daily_results(
             {"d": td.isoformat(), "s": strat},
         )
         n = 0
+        if not rows:
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO selection_daily_results
+                      (trade_date, strategy, ts_code, rank_no, raw_json)
+                    VALUES (:td, :strat, '000000', 0, :raw)
+                    """
+                ),
+                {
+                    "td": td.isoformat(),
+                    "strat": strat,
+                    "raw": json.dumps(
+                        {"_lane_completed": True, "_candidate_count": 0},
+                        ensure_ascii=False,
+                    ),
+                },
+            )
         for rank_no, row in enumerate(rows, 1):
             safe = _json_safe_selection_row(row)
             code = _selection_row_code(safe)
@@ -1449,7 +1467,7 @@ def load_selection_daily_results(
         return None, []
 
     if not rows:
-        return td, []
+        return None, []
 
     out: list[dict[str, Any]] = []
     resolved = td
@@ -1464,6 +1482,8 @@ def load_selection_daily_results(
         if isinstance(raw, str):
             raw = json.loads(raw)
         if isinstance(raw, dict):
+            if raw.get("_lane_completed") is True:
+                continue
             out.append(raw)
     return resolved, enrich_selection_row_names(out, engine=engine)
 

@@ -1,279 +1,333 @@
 #!/usr/bin/env python3
-"""短线交易候选的无未来数据日线回测。
-
-信号只使用 T 日收盘及更早日线；成交假设为 T+1 开盘，持有最多 5 个交易日。
-这是“量价趋势候选层”的机械验证：题材、资金流、筹码和盘口五项确认不在
-stock_daily 中，不能被伪造成历史可验证数据，仍须在实盘盘中补齐。
-"""
+"""No-lookahead backtest that calls the production short-term selector."""
 
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
+from datetime import date, timedelta
+import json
 import os
-import sys
-from dataclasses import dataclass, asdict
-from datetime import timedelta
 from pathlib import Path
+import sys
+from typing import Literal
 
-import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
-REPO = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO / "core_v2"))
-from board_filters import sql_universe_clause  # noqa: E402
 
-load_dotenv(REPO / ".env")
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from stock_ai.market_codes import is_sh_sz_main_board_code
+from stock_ai.short_term_selection import select_short_term_candidates
 
 
-@dataclass
-class Trade:
+load_dotenv(ROOT / ".env")
+CandidateType = Literal["BREAKOUT", "PULLBACK"]
+
+
+@dataclass(frozen=True)
+class BacktestTrade:
     code: str
-    signal_date: str
-    entry_date: str
-    exit_date: str
-    signal_type: str
+    candidate_type: CandidateType
+    signal_date: date
+    entry_date: date
+    exit_date: date
     signal_score: float
     entry_price: float
     exit_price: float
     exit_reason: str
-    gross_return_pct: float
     net_return_pct: float
     max_adverse_pct: float
 
 
 def _mysql_engine():
-    url = os.environ.get("MYSQL_URL", "").replace("host.docker.internal", "127.0.0.1")
+    url = os.environ.get("MYSQL_URL", "").replace(
+        "host.docker.internal", "127.0.0.1"
+    )
     if not url:
         raise RuntimeError("未配置 MYSQL_URL")
     return create_engine(url, pool_pre_ping=True)
 
 
-def load_prices(engine, start: str, end: str, board: str) -> pd.DataFrame:
-    history_start = (pd.Timestamp(start) - timedelta(days=80)).strftime("%Y-%m-%d")
+def load_prices(engine, start: str, end: str) -> pd.DataFrame:
+    history_start = (pd.Timestamp(start) - timedelta(days=180)).strftime("%Y-%m-%d")
     query = text(
-        f"""
+        """
         SELECT ts_code, trade_date, open, high, low, close, pct_chg, amount
         FROM stock_daily
         WHERE trade_date BETWEEN :history_start AND :end
-          AND {sql_universe_clause(board)}
         ORDER BY ts_code, trade_date
         """
     )
-    frame = pd.read_sql(query, engine, params={"history_start": history_start, "end": end})
-    frame["trade_date"] = pd.to_datetime(frame["trade_date"])
-    frame["code"] = frame["ts_code"].astype(str).str.split(".").str[0].str.zfill(6)
+    frame = pd.read_sql(
+        query, engine, params={"history_start": history_start, "end": end}
+    )
+    frame["code"] = (
+        frame["ts_code"].astype(str).str.split(".").str[0].str.zfill(6)
+    )
+    frame = frame[frame["code"].map(is_sh_sz_main_board_code)].copy()
+    frame["trade_date"] = pd.to_datetime(frame["trade_date"]).dt.date
     numeric = ["open", "high", "low", "close", "pct_chg", "amount"]
     frame[numeric] = frame[numeric].apply(pd.to_numeric, errors="coerce")
-    return frame.dropna(subset=["open", "high", "low", "close", "amount"])
+    frame = frame.dropna(subset=["open", "high", "low", "close", "amount"])
+    frame["name"] = frame["code"]
+    frame["sector"] = frame["code"]
+    return frame
 
 
-def add_signals(
-    frame: pd.DataFrame,
-    start: str,
-    end: str,
-    *,
-    signal_types: set[str],
-    breakout_volume_multiple: float,
-) -> pd.DataFrame:
-    """构建仅可在当日收盘后得到的趋势回踩 / 突破信号。"""
-    frame = frame.copy()
-    calculated = [
-        "ma5", "ma10", "ma20", "amount5", "prior_high20", "return10",
-        "future_open", "future_dates", "signal_type", "signal_score",
+def _bars(frame: pd.DataFrame) -> list[dict[str, object]]:
+    return [
+        {
+            "trade_date": row.trade_date,
+            "open": float(row.open),
+            "high": float(row.high),
+            "low": float(row.low),
+            "close": float(row.close),
+            "pct_chg": float(row.pct_chg or 0),
+            "amount": float(row.amount),
+        }
+        for row in frame.itertuples(index=False)
     ]
-    frame[["ma5", "ma10", "ma20", "amount5", "prior_high20", "return10", "future_open"]] = np.nan
-    frame["future_dates"] = pd.NaT
-    frame["signal_type"] = ""
-    frame["signal_score"] = np.nan
-    for _, group in frame.groupby("code", sort=False):
-        daily = group.copy()
-        daily["ma5"] = daily["close"].rolling(5).mean()
-        daily["ma10"] = daily["close"].rolling(10).mean()
-        daily["ma20"] = daily["close"].rolling(20).mean()
-        daily["amount5"] = daily["amount"].rolling(5).mean()
-        daily["prior_high20"] = daily["high"].shift(1).rolling(20).max()
-        daily["return10"] = daily["close"] / daily["close"].shift(10) - 1
-        daily["future_open"] = daily["open"].shift(-1)
-        daily["future_dates"] = daily["trade_date"].shift(-1)
-
-        trend = (daily["ma5"] > daily["ma10"]) & (daily["ma10"] > daily["ma20"])
-        liquid = daily["amount"] >= 50_000  # Tushare amount 单位：千元，至少 5000 万
-        sane_move = daily["pct_chg"].between(-2, 5)
-        pullback = (
-            trend
-            & daily["return10"].ge(0.08)
-            & daily["close"].between(daily["ma5"] * 0.98, daily["ma5"] * 1.02)
-            & daily["amount"].le(daily["amount5"] * 1.2)
-            & sane_move
-        )
-        breakout = (
-            trend
-            & daily["close"].gt(daily["prior_high20"])
-            & daily["close"].ge(daily["high"] * 0.985)
-            & daily["amount"].ge(daily["amount5"] * breakout_volume_multiple)
-            & daily["pct_chg"].between(0, 5)
-        )
-        daily["signal_type"] = np.select(
-            [pullback, breakout], ["强趋势回踩", "突破启动"], default=""
-        )
-        daily["signal_score"] = (
-            50
-            + (daily["ma5"] / daily["ma20"] - 1).clip(lower=0) * 500
-            + (daily["amount"] / daily["amount5"] - 1).clip(lower=0, upper=2) * 10
-            + daily["pct_chg"].clip(lower=0, upper=5)
-        )
-        frame.loc[daily.index, calculated] = daily[calculated]
-
-    signals = frame
-    signals = signals[
-        (signals["trade_date"] >= pd.Timestamp(start))
-        & (signals["trade_date"] <= pd.Timestamp(end))
-        & signals["signal_type"].ne("")
-        & signals["signal_type"].isin(signal_types)
-        & signals["future_open"].gt(0)
-    ].copy()
-    return signals.sort_values(["trade_date", "signal_score"], ascending=[True, False])
 
 
-def simulate(
-    signals: pd.DataFrame,
-    prices: pd.DataFrame,
+def run_backtest(
+    frame: pd.DataFrame,
     *,
-    hold_days: int,
-    stop_loss: float,
-    cost_pct: float,
-    top_n: int,
-    max_entry_gap: float | None,
-) -> list[Trade]:
-    panels = {code: group.reset_index(drop=True) for code, group in prices.groupby("code", sort=False)}
-    trades: list[Trade] = []
-    for _, signal in signals.groupby("trade_date", sort=True):
-        for row in signal.head(top_n).itertuples(index=False):
-            panel = panels[row.code]
-            entry_idx = panel.index[panel["trade_date"].eq(row.future_dates)]
-            if len(entry_idx) != 1:
+    candidate_type: CandidateType,
+    hold_days: int = 5,
+    stop_loss: float = 0.05,
+    commission_rate: float = 0.001,
+    slippage_rate: float = 0.001,
+    top_n: int = 5,
+    start: date | None = None,
+    end: date | None = None,
+) -> list[BacktestTrade]:
+    """Classify with bars through T only, then enter at T+1 open."""
+
+    if hold_days < 1 or top_n < 1:
+        raise ValueError("持有日和每日候选数必须为正数")
+    if not 0 <= commission_rate < 0.1 or not 0 <= slippage_rate < 0.1:
+        raise ValueError("佣金和滑点参数无效")
+    normalized = frame.copy()
+    normalized["trade_date"] = pd.to_datetime(normalized["trade_date"]).dt.date
+    normalized["code"] = normalized["code"].astype(str).str.zfill(6)
+    normalized = normalized.sort_values(["code", "trade_date"]).reset_index(drop=True)
+    grouped = normalized.groupby("code", sort=True)
+    normalized["ma5"] = grouped["close"].transform(lambda values: values.rolling(5).mean())
+    normalized["ma10"] = grouped["close"].transform(lambda values: values.rolling(10).mean())
+    normalized["ma20"] = grouped["close"].transform(lambda values: values.rolling(20).mean())
+    normalized["prior_amount5"] = grouped["amount"].transform(
+        lambda values: values.shift(1).rolling(5).mean()
+    )
+    normalized["prior_high20"] = grouped["high"].transform(
+        lambda values: values.shift(1).rolling(20).max()
+    )
+    normalized["return10"] = grouped["close"].transform(
+        lambda values: values / values.shift(10) - 1
+    )
+    normalized["recent_high10"] = grouped["high"].transform(
+        lambda values: values.rolling(10).max()
+    )
+    trend = (normalized["ma5"] > normalized["ma10"]) & (
+        normalized["ma10"] > normalized["ma20"]
+    )
+    liquid = normalized["prior_amount5"] >= 100_000
+    breakout_possible = (
+        normalized["close"] > normalized["prior_high20"]
+    ) & normalized["pct_chg"].between(0, 7)
+    pullback_possible = (
+        normalized["return10"].between(0.05, 0.25)
+        & (normalized["close"] >= normalized["ma10"])
+        & (normalized["close"] <= normalized["ma5"] * 1.02)
+        & (normalized["amount"] <= normalized["prior_amount5"] * 1.2)
+        & ((normalized["recent_high10"] - normalized["close"]) / normalized["recent_high10"]).between(0.02, 0.10)
+    )
+    normalized["prefilter"] = trend & liquid & (breakout_possible | pullback_possible)
+
+    panels: dict[str, list[dict[str, object]]] = {}
+    locations: dict[str, dict[date, int]] = {}
+    for code, group in normalized.groupby("code", sort=True):
+        records = group.to_dict("records")
+        panels[code] = records
+        locations[code] = {row["trade_date"]: index for index, row in enumerate(records)}
+    eligible_by_date = {
+        signal_date: group["code"].tolist()
+        for signal_date, group in normalized[normalized["prefilter"]].groupby("trade_date")
+    }
+    signal_dates = sorted(set(normalized["trade_date"]))
+    if start is not None:
+        signal_dates = [value for value in signal_dates if value >= start]
+    if end is not None:
+        signal_dates = [value for value in signal_dates if value <= end]
+
+    trades: list[BacktestTrade] = []
+    for signal_date in signal_dates:
+        rows: list[dict[str, object]] = []
+        histories: dict[str, list[dict[str, object]]] = {}
+        signal_locations: dict[str, int] = {}
+        for code in eligible_by_date.get(signal_date, []):
+            panel = panels[code]
+            index = locations[code][signal_date]
+            if index < 59 or index + 1 >= len(panel):
                 continue
-            entry_idx = int(entry_idx[0])
-            exit_idx = entry_idx + hold_days - 1
-            if exit_idx >= len(panel):
+            history = panel[max(0, index - 119) : index + 1]
+            histories[code] = [
+                {
+                    "trade_date": value["trade_date"],
+                    "open": value["open"],
+                    "high": value["high"],
+                    "low": value["low"],
+                    "close": value["close"],
+                    "pct_chg": value["pct_chg"],
+                    "amount": value["amount"],
+                }
+                for value in history
+            ]
+            signal_locations[code] = index
+            current = panel[index]
+            rows.append(
+                {
+                    "代码": code,
+                    "名称": str(current.get("name", code)),
+                    "所属行业": str(current.get("sector", code)),
+                    "策略来源": "production-backtest",
+                }
+            )
+        if not rows:
+            continue
+        selected = select_short_term_candidates(
+            analysis_date=signal_date,
+            rows=rows,
+            bars_by_code=histories,
+            holding_codes=set(),
+            st_codes=set(),
+            limit=top_n,
+        )
+        for candidate in selected.candidates:
+            if candidate.candidate_type != candidate_type:
                 continue
-            entry = float(row.future_open)
-            if max_entry_gap is not None and entry > float(row.close) * (1 + max_entry_gap):
-                continue
-            stop_price = entry * (1 - stop_loss)
-            window = panel.iloc[entry_idx : exit_idx + 1]
-            stop_rows = window[window["low"] <= stop_price]
-            if not stop_rows.empty:
-                stopped = stop_rows.iloc[0]
-                exit_price = min(float(stopped["open"]), stop_price)
-                exit_date = stopped["trade_date"]
-                reason = "止损"
+            panel = panels[candidate.code]
+            signal_index = signal_locations[candidate.code]
+            entry_index = signal_index + 1
+            entry_row = panel[entry_index]
+            entry_price = float(entry_row["open"]) * (1 + slippage_rate)
+            final_index = min(entry_index + hold_days - 1, len(panel) - 1)
+            window = panel[entry_index : final_index + 1]
+            stop_price = entry_price * (1 - stop_loss)
+            stop_rows = [row for row in window if float(row["low"]) <= stop_price]
+            if not stop_rows:
+                exit_row = window[-1]
+                raw_exit = float(exit_row["close"])
+                exit_reason = "到期"
             else:
-                final_day = window.iloc[-1]
-                exit_price = float(final_day["close"])
-                exit_date = final_day["trade_date"]
-                reason = "到期"
-            gross = (exit_price / entry - 1) * 100
-            max_adverse = (window["low"].min() / entry - 1) * 100
+                exit_row = stop_rows[0]
+                raw_exit = min(float(exit_row["open"]), stop_price)
+                exit_reason = "止损"
+            exit_price = raw_exit * (1 - slippage_rate)
+            net_return = (exit_price / entry_price - 1 - 2 * commission_rate) * 100
+            max_adverse = (min(float(row["low"]) for row in window) / entry_price - 1) * 100
             trades.append(
-                Trade(
-                    code=row.code,
-                    signal_date=row.trade_date.strftime("%Y-%m-%d"),
-                    entry_date=row.future_dates.strftime("%Y-%m-%d"),
-                    exit_date=exit_date.strftime("%Y-%m-%d"),
-                    signal_type=row.signal_type,
-                    signal_score=round(float(row.signal_score), 2),
-                    entry_price=round(entry, 3),
-                    exit_price=round(exit_price, 3),
-                    exit_reason=reason,
-                    gross_return_pct=round(gross, 3),
-                    net_return_pct=round(gross - cost_pct, 3),
-                    max_adverse_pct=round(max_adverse, 3),
+                BacktestTrade(
+                    code=candidate.code,
+                    candidate_type=candidate.candidate_type,
+                    signal_date=signal_date,
+                    entry_date=entry_row["trade_date"],
+                    exit_date=exit_row["trade_date"],
+                    signal_score=candidate.setup_score,
+                    entry_price=round(entry_price, 4),
+                    exit_price=round(exit_price, 4),
+                    exit_reason=exit_reason,
+                    net_return_pct=round(net_return, 4),
+                    max_adverse_pct=round(max_adverse, 4),
                 )
             )
-    return trades
+    return sorted(trades, key=lambda item: (item.signal_date, item.code))
 
 
-def report(trades: list[Trade], args: argparse.Namespace) -> tuple[pd.DataFrame, str]:
-    results = pd.DataFrame([asdict(item) for item in trades])
-    if results.empty:
-        return results, "# 短线交易候选回测\n\n无可验证交易。"
-    net = results["net_return_pct"]
-    wins = net.gt(0)
-    by_type = results.groupby("signal_type")["net_return_pct"].agg(["count", "mean", lambda x: (x > 0).mean()])
-    by_type.columns = ["交易数", "平均净收益%", "胜率"]
-    lines = [
-        "# 短线交易候选回测（机械日线层）",
-        "",
-        f"- 样本：{args.start} 至 {args.end}，{args.board}；T 日收盘生成信号，T+1 开盘成交。",
-        f"- 规则：每个信号日最多前 {args.top_n} 名；最多持有 {args.hold_days} 日；盘中低点触发 {args.stop_loss:.1%} 止损；单边成本 {args.cost_pct / 2:.2f}%。",
-        f"- 候选：{'、'.join(sorted(args.signal_types))}；突破量能至少为 5 日均量的 {args.breakout_volume_multiple:.1f} 倍；"
-        + (f"次日开盘高开超过 {args.max_entry_gap:.1%} 放弃。" if args.max_entry_gap is not None else "不限制次日高开。"),
-        "- 未回测项：题材强度、板块联动、资金流、筹码分布、买五卖五；这些是实盘次日确认门槛，不能由日线替代。",
-        "",
-        "## 汇总",
-        "",
-        f"- 交易数：{len(results)}；胜率：{wins.mean():.1%}；平均单笔净收益：{net.mean():.2f}%。",
-        f"- 中位数净收益：{net.median():.2f}%；平均盈利：{net[wins].mean():.2f}%；平均亏损：{net[~wins].mean():.2f}%。",
-        f"- 止损占比：{results['exit_reason'].eq('止损').mean():.1%}；平均最大不利波动：{results['max_adverse_pct'].mean():.2f}%。",
-        "",
-        "## 分类型",
-        "",
-        by_type.assign(胜率=by_type["胜率"].map(lambda value: f"{value:.1%}"), **{"平均净收益%": by_type["平均净收益%"].map(lambda value: f"{value:.2f}")}).to_markdown(),
-        "",
-        "## 使用边界",
-        "",
-        "该结果仅用于决定是否保留候选层，不能推导为自动买入或未来收益承诺。实盘仍执行 2%–4% 试错仓、单笔计划最大亏损 500 元、五项盘中确认后才可下单。",
-    ]
-    return results, "\n".join(lines) + "\n"
+def summarize(trades: list[BacktestTrade]) -> dict[str, float | int | None]:
+    returns = [trade.net_return_pct for trade in trades]
+    wins = [value for value in returns if value > 0]
+    losses = [value for value in returns if value <= 0]
+    equity = 1.0
+    peak = 1.0
+    max_drawdown = 0.0
+    for value in returns:
+        equity *= 1 + value / 100
+        peak = max(peak, equity)
+        max_drawdown = min(max_drawdown, equity / peak - 1)
+    profit_loss_ratio = None
+    if wins and losses:
+        profit_loss_ratio = (sum(wins) / len(wins)) / abs(sum(losses) / len(losses))
+    return {
+        "sample_size": len(returns),
+        "win_rate": round(len(wins) / len(returns), 6) if returns else None,
+        "profit_loss_ratio": round(profit_loss_ratio, 6) if profit_loss_ratio is not None else None,
+        "expectancy_pct": round(sum(returns) / len(returns), 6) if returns else None,
+        "max_drawdown_pct": round(max_drawdown * 100, 6),
+    }
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="短线交易候选的无未来数据回测")
+def _json_default(value: object) -> object:
+    if isinstance(value, date):
+        return value.isoformat()
+    raise TypeError(f"unsupported JSON type: {type(value).__name__}")
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="使用生产规则进行短线无未来函数回测")
     parser.add_argument("--start", default="2025-01-02")
     parser.add_argument("--end", default="2026-07-31")
-    parser.add_argument("--board", choices=("main", "kcb", "all"), default="main")
     parser.add_argument("--hold-days", type=int, default=5)
-    parser.add_argument("--stop-loss", type=float, default=0.06)
-    parser.add_argument("--cost-pct", type=float, default=0.20, help="往返成本百分比，例如 0.20 表示 0.20%%")
-    parser.add_argument("--top-n", type=int, default=3)
-    parser.add_argument(
-        "--signal-types",
-        default="强趋势回踩,突破启动",
-        help="逗号分隔，例如 突破启动",
-    )
-    parser.add_argument("--breakout-volume-multiple", type=float, default=1.0)
-    parser.add_argument("--max-entry-gap", type=float, default=None, help="次日允许的最高开盘溢价，例如 0.03")
-    args = parser.parse_args()
-    if args.hold_days < 1 or args.top_n < 1 or not 0 < args.stop_loss < 0.2:
-        raise SystemExit("持有日、候选数和止损参数不合法")
-
-    args.signal_types = {item.strip() for item in args.signal_types.split(",") if item.strip()}
-    if not args.signal_types or args.breakout_volume_multiple < 1 or (args.max_entry_gap is not None and args.max_entry_gap < 0):
-        raise SystemExit("候选类型、量能或开盘溢价参数不合法")
-    prices = load_prices(_mysql_engine(), args.start, args.end, args.board)
-    signals = add_signals(
-        prices, args.start, args.end,
-        signal_types=args.signal_types,
-        breakout_volume_multiple=args.breakout_volume_multiple,
-    )
-    trades = simulate(
-        signals, prices, hold_days=args.hold_days, stop_loss=args.stop_loss,
-        cost_pct=args.cost_pct, top_n=args.top_n, max_entry_gap=args.max_entry_gap,
-    )
-    results, markdown = report(trades, args)
-    output = REPO / "output"
-    output.mkdir(exist_ok=True)
-    type_suffix = "-".join(sorted(args.signal_types)).replace("强趋势回踩", "pullback").replace("突破启动", "breakout")
-    gap_suffix = "nogap" if args.max_entry_gap is None else f"gap{args.max_entry_gap:.0%}"
-    suffix = f"short_term_trade_{args.board}_{args.start.replace('-', '')}_{args.end.replace('-', '')}_{type_suffix}_vol{args.breakout_volume_multiple:g}_{gap_suffix}"
-    results.to_csv(output / f"{suffix}.csv", index=False, encoding="utf-8-sig")
-    (output / f"{suffix}.md").write_text(markdown, encoding="utf-8")
-    print(markdown)
-    print(f"明细：{output / f'{suffix}.csv'}")
+    parser.add_argument("--stop-loss", type=float, default=0.05)
+    parser.add_argument("--commission-rate", type=float, default=0.001)
+    parser.add_argument("--slippage-rate", type=float, default=0.001)
+    parser.add_argument("--top-n", type=int, default=5)
+    parser.add_argument("--output", choices=("text", "json"), default="text")
+    args = parser.parse_args(argv)
+    prices = load_prices(_mysql_engine(), args.start, args.end)
+    start_date = date.fromisoformat(args.start)
+    end_date = date.fromisoformat(args.end)
+    reports: dict[str, dict[str, object]] = {}
+    for candidate_type in ("BREAKOUT", "PULLBACK"):
+        trades = run_backtest(
+            prices,
+            candidate_type=candidate_type,
+            hold_days=args.hold_days,
+            stop_loss=args.stop_loss,
+            commission_rate=args.commission_rate,
+            slippage_rate=args.slippage_rate,
+            top_n=args.top_n,
+            start=start_date,
+            end=end_date,
+        )
+        reports[candidate_type] = {
+            "metrics": summarize(trades),
+        }
+    payload = {
+        "rule": "stock_ai.short_term_selection production rules",
+        "entry": "next_session_open",
+        "commission_rate": args.commission_rate,
+        "slippage_rate": args.slippage_rate,
+        "results": reports,
+    }
+    if args.output == "json":
+        print(json.dumps(payload, ensure_ascii=False, indent=2, default=_json_default))
+    else:
+        print("短线生产规则回测（T 日收盘信号，T+1 开盘入场）")
+        for candidate_type, result in reports.items():
+            metrics = result["metrics"]
+            print(
+                f"{candidate_type}: 样本 {metrics['sample_size']}，胜率 {metrics['win_rate']}，"
+                f"盈亏比 {metrics['profit_loss_ratio']}，期望 {metrics['expectancy_pct']}%，"
+                f"最大回撤 {metrics['max_drawdown_pct']}%"
+            )
+        print("回测不代表未来收益，也不会触发自动下单。")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

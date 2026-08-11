@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 import importlib
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -272,3 +273,58 @@ def test_selector_applies_the_sector_cap_to_final_candidates() -> None:
     )
 
     assert len(result.candidates) == 2
+
+
+def test_backtest_entry_uses_only_the_next_session_after_signal() -> None:
+    script = ROOT / "scripts" / "analysis" / "backtest_short_term_trade.py"
+    spec = importlib.util.spec_from_file_location("backtest_short_term_trade", script)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    bars = [
+        {
+            **bar,
+            "trade_date": (
+                date(2026, 8, 7) - timedelta(days=len(_breakout_bars()) - 1 - index)
+            ).isoformat(),
+        }
+        for index, bar in enumerate(_breakout_bars())
+    ]
+    frame = module.pd.DataFrame(
+        [
+            {
+                **bar,
+                "code": "600001",
+                "name": "测试银行",
+                "sector": "银行",
+            }
+            for bar in bars
+        ]
+        + [
+            {
+                "trade_date": "2026-08-10",
+                "open": 12.40,
+                "high": 12.60,
+                "low": 12.20,
+                "close": 12.50,
+                "pct_chg": 2.0,
+                "amount": 180_000.0,
+                "code": "600001",
+                "name": "测试银行",
+                "sector": "银行",
+            }
+        ]
+    )
+
+    trades = module.run_backtest(
+        frame,
+        candidate_type="BREAKOUT",
+        hold_days=1,
+        commission_rate=0,
+        slippage_rate=0,
+    )
+
+    assert trades[0].signal_date == date(2026, 8, 7)
+    assert trades[0].entry_date == date(2026, 8, 10)
+    assert trades[0].entry_price == 12.40
