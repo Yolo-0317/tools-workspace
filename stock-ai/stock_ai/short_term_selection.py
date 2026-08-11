@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import date
 import re
 from typing import Literal, Mapping, Sequence
 
 from .market_codes import is_sh_sz_main_board_code, normalize_code6
+from .technical_indicators import (
+    IndicatorInputError,
+    TechnicalIndicatorSnapshot,
+    compute_technical_indicators,
+)
 
 
 CandidateType = Literal["BREAKOUT", "PULLBACK"]
@@ -50,6 +55,84 @@ class SelectionResult:
     analysis_date: date
     candidates: tuple[CandidateSignal, ...]
     rejected: tuple[RejectedSignal, ...]
+
+
+@dataclass(frozen=True)
+class SelectionPolicy:
+    name: str
+    rule_version: str
+    strict: bool
+    breakout_adx_min: float = 0.0
+    breakout_rsi_min: float = 0.0
+    breakout_rsi_max: float = 100.0
+    breakout_atr_pct_min: float = 0.0
+    breakout_atr_pct_max: float = 1.0
+    breakout_trend_r2_min: float = 0.0
+    breakout_relative_strength_min: float = 0.0
+    breakout_pct_min: float = 0.0
+    breakout_pct_max: float = 1.0
+    breakout_amount_ratio_max: float = 3.0
+    pullback_adx_min: float = 0.0
+    pullback_rsi_min: float = 0.0
+    pullback_rsi_max: float = 100.0
+    pullback_atr_pct_min: float = 0.0
+    pullback_atr_pct_max: float = 1.0
+    pullback_trend_r2_min: float = 0.0
+    pullback_relative_strength_min: float = 0.0
+    pullback_amount_ratio_max: float = 1.0
+
+
+BASELINE_POLICY = SelectionPolicy(
+    name="BASELINE",
+    rule_version="short-term-selection-2.0.0",
+    strict=False,
+)
+
+STRICT_A = SelectionPolicy(
+    name="STRICT_A",
+    rule_version="short-term-selection-2.1.0",
+    strict=True,
+    breakout_adx_min=22.0,
+    breakout_rsi_min=55.0,
+    breakout_rsi_max=70.0,
+    breakout_atr_pct_min=0.015,
+    breakout_atr_pct_max=0.05,
+    breakout_trend_r2_min=0.55,
+    breakout_relative_strength_min=0.75,
+    breakout_pct_min=0.005,
+    breakout_pct_max=0.04,
+    breakout_amount_ratio_max=2.5,
+    pullback_adx_min=20.0,
+    pullback_rsi_min=48.0,
+    pullback_rsi_max=65.0,
+    pullback_atr_pct_min=0.012,
+    pullback_atr_pct_max=0.045,
+    pullback_trend_r2_min=0.50,
+    pullback_relative_strength_min=0.70,
+    pullback_amount_ratio_max=0.80,
+)
+
+STRICT_B = replace(
+    STRICT_A,
+    name="STRICT_B",
+    breakout_adx_min=24.0,
+    breakout_trend_r2_min=0.60,
+    breakout_relative_strength_min=0.80,
+    pullback_adx_min=22.0,
+    pullback_trend_r2_min=0.55,
+    pullback_relative_strength_min=0.75,
+)
+
+STRICT_C = replace(
+    STRICT_A,
+    name="STRICT_C",
+    breakout_rsi_min=57.0,
+    breakout_rsi_max=67.0,
+    breakout_atr_pct_max=0.04,
+    pullback_rsi_min=50.0,
+    pullback_rsi_max=62.0,
+    pullback_atr_pct_max=0.035,
+)
 
 
 def _candidate_sort_key(candidate: CandidateSignal) -> tuple[float, float, float, str]:
@@ -294,6 +377,78 @@ def _pullback_signal(
     )
 
 
+def _strict_rejection_reason(
+    signal: CandidateSignal,
+    bars: Sequence[SelectionBar],
+    indicators: TechnicalIndicatorSnapshot,
+    relative_strength: float | None,
+    policy: SelectionPolicy,
+) -> str | None:
+    if indicators.trend_slope_20 <= 0:
+        return "TREND_NOT_POSITIVE"
+    if relative_strength is None:
+        return "RELATIVE_STRENGTH_MISSING"
+
+    if signal.candidate_type == "BREAKOUT":
+        if indicators.adx14 < policy.breakout_adx_min:
+            return "ADX_WEAK"
+        if indicators.rsi14 < policy.breakout_rsi_min:
+            return "RSI_WEAK"
+        if indicators.rsi14 > policy.breakout_rsi_max:
+            return "RSI_OVERHEATED"
+        if not policy.breakout_atr_pct_min <= indicators.atr_pct <= policy.breakout_atr_pct_max:
+            return "VOLATILITY_OUT_OF_RANGE"
+        if indicators.trend_r2_20 < policy.breakout_trend_r2_min:
+            return "TREND_UNSTABLE"
+        if relative_strength < policy.breakout_relative_strength_min:
+            return "RELATIVE_STRENGTH_LOW"
+        if indicators.breakout_pct < policy.breakout_pct_min:
+            return "BREAKOUT_TOO_SHALLOW"
+        if indicators.breakout_pct > policy.breakout_pct_max:
+            return "BREAKOUT_OVEREXTENDED"
+        if indicators.amount_ratio < 1.2:
+            return "VOLUME_EXPANSION_INSUFFICIENT"
+        if indicators.amount_ratio > policy.breakout_amount_ratio_max:
+            return "VOLUME_EXPANSION_EXCESSIVE"
+        return None
+
+    if indicators.adx14 < policy.pullback_adx_min:
+        return "ADX_WEAK"
+    if indicators.rsi14 < policy.pullback_rsi_min:
+        return "RSI_WEAK"
+    if indicators.rsi14 > policy.pullback_rsi_max:
+        return "RSI_OVERHEATED"
+    if not policy.pullback_atr_pct_min <= indicators.atr_pct <= policy.pullback_atr_pct_max:
+        return "VOLATILITY_OUT_OF_RANGE"
+    if indicators.trend_r2_20 < policy.pullback_trend_r2_min:
+        return "TREND_UNSTABLE"
+    if relative_strength < policy.pullback_relative_strength_min:
+        return "RELATIVE_STRENGTH_LOW"
+    if indicators.pullback_amount_ratio > policy.pullback_amount_ratio_max:
+        return "PULLBACK_VOLUME_NOT_CONTRACTING"
+    latest = bars[-1]
+    day_range = latest.high - latest.low
+    close_location = (latest.close - latest.low) / day_range if day_range > 0 else 0.0
+    if latest.close < latest.open and close_location < 0.5:
+        return "STOP_CONFIRMATION_MISSING"
+    return None
+
+
+def _with_strict_metrics(
+    signal: CandidateSignal,
+    indicators: TechnicalIndicatorSnapshot,
+    relative_strength: float,
+) -> CandidateSignal:
+    return replace(
+        signal,
+        metrics={
+            **signal.metrics,
+            **asdict(indicators),
+            "relative_strength_percentile": relative_strength,
+        },
+    )
+
+
 def select_short_term_candidates(
     *,
     analysis_date: date,
@@ -301,9 +456,12 @@ def select_short_term_candidates(
     bars_by_code: Mapping[str, Sequence[Mapping[str, object] | SelectionBar]],
     holding_codes: set[str],
     st_codes: set[str],
+    relative_strength_by_code: Mapping[str, float] | None = None,
+    policy: SelectionPolicy | None = None,
     limit: int = 5,
     max_per_sector: int = 2,
 ) -> SelectionResult:
+    resolved_policy = policy or BASELINE_POLICY
     candidates: list[CandidateSignal] = []
     rejected: list[RejectedSignal] = []
     for row in rows:
@@ -319,7 +477,14 @@ def select_short_term_candidates(
             rejected.append(RejectedSignal(code, "风险股票"))
             continue
         try:
-            bars = tuple(sorted((_normalize_bar(item) for item in bars_by_code.get(code, ())), key=lambda item: item.trade_date))
+            bars = tuple(
+                bar
+                for bar in sorted(
+                    (_normalize_bar(item) for item in bars_by_code.get(code, ())),
+                    key=lambda item: item.trade_date,
+                )
+                if bar.trade_date <= analysis_date
+            )
         except (KeyError, TypeError, ValueError):
             rejected.append(RejectedSignal(code, "日线字段无效"))
             continue
@@ -350,6 +515,28 @@ def select_short_term_candidates(
         if signal is None:
             rejected.append(RejectedSignal(code, "未命中短线形态"))
             continue
+        if resolved_policy.strict:
+            try:
+                indicators = compute_technical_indicators(bars)
+            except IndicatorInputError:
+                rejected.append(RejectedSignal(code, "INDICATOR_INVALID"))
+                continue
+            relative_strength = (
+                relative_strength_by_code.get(code)
+                if relative_strength_by_code is not None
+                else None
+            )
+            strict_reason = _strict_rejection_reason(
+                signal,
+                bars,
+                indicators,
+                relative_strength,
+                resolved_policy,
+            )
+            if strict_reason is not None:
+                rejected.append(RejectedSignal(code, strict_reason))
+                continue
+            signal = _with_strict_metrics(signal, indicators, float(relative_strength))
         candidates.append(signal)
     selected = allocate_candidates(
         candidates,

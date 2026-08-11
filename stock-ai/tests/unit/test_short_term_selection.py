@@ -6,6 +6,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -273,6 +275,310 @@ def test_selector_applies_the_sector_cap_to_final_candidates() -> None:
     )
 
     assert len(result.candidates) == 2
+
+
+def _strict_snapshot(**changes: float):
+    indicators = importlib.import_module("stock_ai.technical_indicators")
+    values = {
+        "adx14": 25.0,
+        "rsi14": 60.0,
+        "atr14": 0.24,
+        "atr_pct": 0.02,
+        "trend_r2_20": 0.70,
+        "trend_slope_20": 0.01,
+        "return20": 0.10,
+        "breakout_pct": 0.02,
+        "average_amount5": 150_000.0,
+        "amount_ratio": 1.5,
+        "advance_amount5": 150_000.0,
+        "pullback_amount5": 105_000.0,
+        "pullback_amount_ratio": 0.70,
+    }
+    values.update(changes)
+    return indicators.TechnicalIndicatorSnapshot(**values)
+
+
+def _strict_result(
+    monkeypatch,
+    *,
+    candidate_type: str = "BREAKOUT",
+    snapshot=None,
+    relative_strength: float | None = 0.90,
+    bars: list[dict[str, object]] | None = None,
+):
+    selection = importlib.import_module("stock_ai.short_term_selection")
+    monkeypatch.setattr(
+        selection,
+        "compute_technical_indicators",
+        lambda _: snapshot or _strict_snapshot(),
+    )
+    code = "600001" if candidate_type == "BREAKOUT" else "000001"
+    relative_strength_by_code = (
+        {} if relative_strength is None else {code: relative_strength}
+    )
+    return selection.select_short_term_candidates(
+        analysis_date=ANALYSIS_DATE,
+        rows=[
+            {
+                "代码": code,
+                "名称": "测试股票",
+                "所属行业": "测试",
+                "策略来源": "综合+底部突破",
+            }
+        ],
+        bars_by_code={
+            code: bars
+            or (_breakout_bars() if candidate_type == "BREAKOUT" else _pullback_bars())
+        },
+        relative_strength_by_code=relative_strength_by_code,
+        policy=selection.STRICT_A,
+        holding_codes=set(),
+        st_codes=set(),
+    )
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (
+        ("adx14", 22.0),
+        ("rsi14", 55.0),
+        ("rsi14", 70.0),
+        ("atr_pct", 0.015),
+        ("atr_pct", 0.05),
+        ("trend_r2_20", 0.55),
+        ("breakout_pct", 0.005),
+        ("breakout_pct", 0.04),
+        ("amount_ratio", 2.5),
+    ),
+)
+def test_strict_breakout_accepts_exact_gate_boundaries(
+    monkeypatch, field: str, value: float
+) -> None:
+    result = _strict_result(monkeypatch, snapshot=_strict_snapshot(**{field: value}))
+
+    assert [(item.code, item.candidate_type) for item in result.candidates] == [
+        ("600001", "BREAKOUT")
+    ]
+
+
+@pytest.mark.parametrize(
+    ("changes", "relative_strength", "reason"),
+    (
+        ({"trend_slope_20": 0.0}, 0.90, "TREND_NOT_POSITIVE"),
+        ({"adx14": 21.99}, 0.90, "ADX_WEAK"),
+        ({"rsi14": 54.99}, 0.90, "RSI_WEAK"),
+        ({"rsi14": 70.01}, 0.90, "RSI_OVERHEATED"),
+        ({"atr_pct": 0.0149}, 0.90, "VOLATILITY_OUT_OF_RANGE"),
+        ({"atr_pct": 0.0501}, 0.90, "VOLATILITY_OUT_OF_RANGE"),
+        ({"trend_r2_20": 0.549}, 0.90, "TREND_UNSTABLE"),
+        ({}, 0.749, "RELATIVE_STRENGTH_LOW"),
+        ({"breakout_pct": 0.0049}, 0.90, "BREAKOUT_TOO_SHALLOW"),
+        ({"breakout_pct": 0.0401}, 0.90, "BREAKOUT_OVEREXTENDED"),
+        ({"amount_ratio": 2.501}, 0.90, "VOLUME_EXPANSION_EXCESSIVE"),
+    ),
+)
+def test_strict_breakout_rejects_each_failed_gate(
+    monkeypatch,
+    changes: dict[str, float],
+    relative_strength: float,
+    reason: str,
+) -> None:
+    result = _strict_result(
+        monkeypatch,
+        snapshot=_strict_snapshot(**changes),
+        relative_strength=relative_strength,
+    )
+
+    assert [(item.code, item.reason) for item in result.rejected] == [
+        ("600001", reason)
+    ]
+
+
+def test_strict_breakout_rejects_missing_relative_strength(monkeypatch) -> None:
+    result = _strict_result(monkeypatch, relative_strength=None)
+
+    assert [(item.code, item.reason) for item in result.rejected] == [
+        ("600001", "RELATIVE_STRENGTH_MISSING")
+    ]
+
+
+def test_real_breakout_bars_reject_an_overheated_rsi() -> None:
+    selection = importlib.import_module("stock_ai.short_term_selection")
+
+    result = selection.select_short_term_candidates(
+        analysis_date=ANALYSIS_DATE,
+        rows=[
+            {
+                "代码": "600001",
+                "名称": "测试股票",
+                "所属行业": "测试",
+                "策略来源": "综合+底部突破",
+            }
+        ],
+        bars_by_code={"600001": _breakout_bars()},
+        relative_strength_by_code={"600001": 0.90},
+        policy=selection.STRICT_A,
+        holding_codes=set(),
+        st_codes=set(),
+    )
+
+    assert [(item.code, item.reason) for item in result.rejected] == [
+        ("600001", "RSI_OVERHEATED")
+    ]
+
+
+def test_strict_profile_thresholds_are_frozen_as_designed() -> None:
+    selection = importlib.import_module("stock_ai.short_term_selection")
+
+    assert (
+        selection.STRICT_B.breakout_adx_min,
+        selection.STRICT_B.breakout_trend_r2_min,
+        selection.STRICT_B.breakout_relative_strength_min,
+        selection.STRICT_B.pullback_adx_min,
+        selection.STRICT_B.pullback_trend_r2_min,
+        selection.STRICT_B.pullback_relative_strength_min,
+    ) == (24.0, 0.60, 0.80, 22.0, 0.55, 0.75)
+    assert (
+        selection.STRICT_C.breakout_rsi_min,
+        selection.STRICT_C.breakout_rsi_max,
+        selection.STRICT_C.breakout_atr_pct_max,
+        selection.STRICT_C.pullback_rsi_min,
+        selection.STRICT_C.pullback_rsi_max,
+        selection.STRICT_C.pullback_atr_pct_max,
+    ) == (57.0, 67.0, 0.04, 50.0, 62.0, 0.035)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (
+        ("adx14", 20.0),
+        ("rsi14", 48.0),
+        ("rsi14", 65.0),
+        ("atr_pct", 0.012),
+        ("atr_pct", 0.045),
+        ("trend_r2_20", 0.50),
+        ("pullback_amount_ratio", 0.80),
+    ),
+)
+def test_strict_pullback_accepts_exact_gate_boundaries(
+    monkeypatch, field: str, value: float
+) -> None:
+    result = _strict_result(
+        monkeypatch,
+        candidate_type="PULLBACK",
+        snapshot=_strict_snapshot(**{field: value}),
+    )
+
+    assert [(item.code, item.candidate_type) for item in result.candidates] == [
+        ("000001", "PULLBACK")
+    ]
+
+
+@pytest.mark.parametrize(
+    ("changes", "relative_strength", "reason"),
+    (
+        ({"adx14": 19.99}, 0.90, "ADX_WEAK"),
+        ({"rsi14": 47.99}, 0.90, "RSI_WEAK"),
+        ({"rsi14": 65.01}, 0.90, "RSI_OVERHEATED"),
+        ({"atr_pct": 0.0119}, 0.90, "VOLATILITY_OUT_OF_RANGE"),
+        ({"atr_pct": 0.0451}, 0.90, "VOLATILITY_OUT_OF_RANGE"),
+        ({"trend_r2_20": 0.499}, 0.90, "TREND_UNSTABLE"),
+        ({}, 0.699, "RELATIVE_STRENGTH_LOW"),
+        ({"pullback_amount_ratio": 0.801}, 0.90, "PULLBACK_VOLUME_NOT_CONTRACTING"),
+    ),
+)
+def test_strict_pullback_rejects_each_failed_gate(
+    monkeypatch,
+    changes: dict[str, float],
+    relative_strength: float,
+    reason: str,
+) -> None:
+    result = _strict_result(
+        monkeypatch,
+        candidate_type="PULLBACK",
+        snapshot=_strict_snapshot(**changes),
+        relative_strength=relative_strength,
+    )
+
+    assert [(item.code, item.reason) for item in result.rejected] == [
+        ("000001", reason)
+    ]
+
+
+def test_strict_pullback_requires_a_stop_confirmation(monkeypatch) -> None:
+    bars = _pullback_bars()
+    bars[-1] = {**bars[-1], "open": 11.70, "high": 11.75, "low": 11.55}
+
+    result = _strict_result(monkeypatch, candidate_type="PULLBACK", bars=bars)
+
+    assert [(item.code, item.reason) for item in result.rejected] == [
+        ("000001", "STOP_CONFIRMATION_MISSING")
+    ]
+
+
+def test_strict_signal_exposes_all_indicator_metrics(monkeypatch) -> None:
+    result = _strict_result(monkeypatch)
+
+    metrics = result.candidates[0].metrics
+    assert {
+        "adx14",
+        "rsi14",
+        "atr14",
+        "atr_pct",
+        "trend_r2_20",
+        "trend_slope_20",
+        "return20",
+        "breakout_pct",
+        "average_amount5",
+        "amount_ratio",
+        "advance_amount5",
+        "pullback_amount5",
+        "pullback_amount_ratio",
+        "relative_strength_percentile",
+    } <= metrics.keys()
+
+
+def test_future_bars_do_not_change_a_historical_strict_signal(monkeypatch) -> None:
+    baseline = _strict_result(monkeypatch)
+    future = _breakout_bars() + [
+        {
+            **_breakout_bars()[-1],
+            "trade_date": (ANALYSIS_DATE + timedelta(days=offset)).isoformat(),
+            "close": 1.0,
+            "high": 1.0,
+            "low": 1.0,
+        }
+        for offset in (1, 2)
+    ]
+
+    with_future = _strict_result(monkeypatch, bars=future)
+
+    assert with_future == baseline
+
+
+def test_omitted_policy_retains_the_2_0_result() -> None:
+    selection = importlib.import_module("stock_ai.short_term_selection")
+    arguments = {
+        "analysis_date": ANALYSIS_DATE,
+        "rows": [
+            {
+                "代码": "600001",
+                "名称": "测试股票",
+                "所属行业": "测试",
+                "策略来源": "综合+底部突破",
+            }
+        ],
+        "bars_by_code": {"600001": _breakout_bars()},
+        "holding_codes": set(),
+        "st_codes": set(),
+    }
+
+    omitted = selection.select_short_term_candidates(**arguments)
+    explicit = selection.select_short_term_candidates(
+        **arguments, policy=selection.BASELINE_POLICY
+    )
+
+    assert omitted == explicit
 
 
 def test_backtest_entry_uses_only_the_next_session_after_signal() -> None:
