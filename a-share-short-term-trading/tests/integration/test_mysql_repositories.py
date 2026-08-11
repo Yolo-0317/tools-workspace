@@ -248,3 +248,24 @@ def test_v2_candidate_and_plan_upserts_are_idempotent_inside_rollback() -> None:
         transaction.rollback()
         connection.close()
         engine.dispose()
+
+
+def test_full_market_relative_strength_snapshot_is_read_only_and_bounded() -> None:
+    sys.path.insert(0, str(PROJECT / "scripts"))
+    from apply_migrations import create_root_engine
+    from stock_ai.relative_strength import load_relative_strength_snapshot
+
+    engine = create_root_engine()
+    try:
+        with engine.connect() as connection:
+            analysis_date = connection.execute(
+                text("SELECT MAX(trade_date) FROM stock_daily")
+            ).scalar_one()
+        snapshot = load_relative_strength_snapshot(engine, analysis_date)
+
+        assert snapshot.prior_trade_date < snapshot.current_trade_date <= analysis_date
+        assert snapshot.current_count > 0
+        assert snapshot.eligible_count > 0
+        assert all(0.0 <= value <= 1.0 for value in snapshot.percentiles.values())
+    finally:
+        engine.dispose()
