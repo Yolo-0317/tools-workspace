@@ -139,6 +139,47 @@ def test_planning_repository_serializes_nested_fields_without_mutating_contracts
     assert state.as_of.tzinfo is timezone.utc
 
 
+def test_planning_repository_loads_the_latest_valid_state_for_one_trade_date() -> None:
+    row = {
+        "state_id": STATE_ID,
+        "schema_version": "1.1",
+        "as_of": datetime(2026, 8, 10, 7, 0),
+        "source": "market_regime",
+        "data_status": "VALID",
+        "trading_date": date(2026, 8, 10),
+        "index_change_pct": Decimal("-0.20"),
+        "breadth_ratio": Decimal("0.43"),
+        "turnover_ratio": Decimal("0.86"),
+        "strong_sector_count": 1,
+        "status": "LIMITED",
+        "reasons_json": '["市场广度偏弱"]',
+        "evidence_refs_json": f'["{EVIDENCE_ID}"]',
+    }
+
+    class RowResult(RecordingResult):
+        def first(self):
+            return row
+
+    class RowConnection(RecordingConnection):
+        def execute(self, statement, parameters):
+            self.calls.append((str(statement), parameters))
+            return RowResult()
+
+    class RowEngine(RecordingEngine):
+        def __init__(self):
+            self.connection = RowConnection()
+
+    engine = RowEngine()
+    state = PlanningRepository(engine).get_latest_market_state(date(2026, 8, 10))
+
+    statement, parameters = engine.connection.calls[0]
+    assert "ORDER BY as_of DESC" in statement
+    assert parameters == {"trading_date": date(2026, 8, 10)}
+    assert state is not None
+    assert state.status.value == "LIMITED"
+    assert state.breadth_ratio == Decimal("0.43")
+
+
 def test_frozen_decision_payload_is_utf8_json_and_uuid_strings_stay_strings() -> None:
     engine = RecordingEngine()
     snapshot = DecisionSnapshotV1(

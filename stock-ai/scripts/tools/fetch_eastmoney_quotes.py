@@ -139,6 +139,21 @@ def secid(code: str) -> str:
     raise ValueError(f"无法识别证券代码的市场类型: {code}")
 
 
+_INDEX_SECIDS = {
+    "000001": "1.000001",
+    "399001": "0.399001",
+    "000688": "1.000688",
+}
+
+
+def index_secid(code: str) -> str:
+    c = code6(code)
+    try:
+        return _INDEX_SECIDS[c]
+    except KeyError as exc:
+        raise ValueError(f"不支持的大盘指数: {c}") from exc
+
+
 def _strip_proxy_env(env: dict[str, str]) -> dict[str, str]:
     for key in (
         "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY",
@@ -730,6 +745,37 @@ def fetch_kline_rows_batch_opencli(
         except Exception:  # noqa: BLE001
             out[c] = []
 
+    if close_browser:
+        release_browser_session(close_tabs=True)
+    return out
+
+
+def fetch_index_kline_rows_opencli(
+    index_codes: list[str] | None = None,
+    *,
+    limit: int = 30,
+    wait_seconds: float = 2.0,
+    close_browser: bool = True,
+    reset_browser: bool = True,
+) -> dict[str, list[list[str]]]:
+    """Fetch configured domestic index daily rows inside the OpenCLI browser."""
+    codes = [code6(code) for code in (index_codes or list(_INDEX_SECIDS))]
+    out: dict[str, list[list[str]]] = {}
+    _reset_browser_if(reset_browser)
+    for code in dict.fromkeys(codes):
+        try:
+            sid = index_secid(code)
+            _open_page(index_url(code), label=f"index-{code}-kline")
+            _wait_page_ready(fallback_seconds=wait_seconds)
+            raw = _eval_js(_kline_jsonp_js(sid, limit), timeout=90)
+            values = json.loads(raw) if raw else []
+            out[code] = (
+                kline_strings_to_rows([str(item) for item in values])
+                if isinstance(values, list)
+                else []
+            )
+        except Exception:  # noqa: BLE001
+            out[code] = []
     if close_browser:
         release_browser_session(close_tabs=True)
     return out

@@ -22,6 +22,8 @@ class MarketStateView:
     reasons: tuple[str, ...]
     evidence_refs: tuple[str, ...] = ()
     emotion_label: str | None = None
+    index_change_pct: float | None = None
+    source: str = "market-close"
 
 
 class MarketStateProvider(Protocol):

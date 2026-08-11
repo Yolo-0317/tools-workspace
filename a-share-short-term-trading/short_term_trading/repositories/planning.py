@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
 
 from sqlalchemy import text
@@ -40,6 +41,28 @@ class PlanningRepository:
 
     def get_market_state(self, state_id: str) -> MarketStateV1 | None:
         return self._get("stt_market_states", "state_id", state_id, MarketStateV1, {"reasons": "reasons_json", "evidence_refs": "evidence_refs_json"})
+
+    def get_latest_market_state(
+        self, trading_date: date, *, source: str | None = None
+    ) -> MarketStateV1 | None:
+        source_clause = " AND source = :source" if source is not None else ""
+        statement = text(
+            "SELECT * FROM stt_market_states "
+            "WHERE trading_date = :trading_date AND data_status = 'VALID'"
+            f"{source_clause} ORDER BY as_of DESC, created_at DESC LIMIT 1"
+        )
+        parameters: dict[str, object] = {"trading_date": trading_date}
+        if source is not None:
+            parameters["source"] = source
+        with read_connection(self._connection) as connection:
+            row = connection.execute(
+                statement, parameters
+            ).mappings().first()
+        return None if row is None else restore_contract(
+            MarketStateV1,
+            row,
+            {"reasons": "reasons_json", "evidence_refs": "evidence_refs_json"},
+        )
 
     def save_candidate(self, candidate: CandidateV1) -> None:
         self._save("stt_candidates", candidate, {"rejected_reasons": "rejected_reasons_json", "evidence_refs": "evidence_refs_json"})
