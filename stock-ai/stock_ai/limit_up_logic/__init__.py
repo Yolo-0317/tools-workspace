@@ -1,4 +1,5 @@
 from .features import extract_limit_up_features, limit_up_threshold, normalize_bars
+from .formatting import format_limit_up_logic_card
 from .models import (
     LimitUpBar,
     LimitUpContext,
@@ -30,4 +31,5 @@ __all__ = [
     "classify_limit_up_identity",
     "score_limit_up_setup",
     "analyze_limit_up_logic",
+    "format_limit_up_logic_card",
 ]
