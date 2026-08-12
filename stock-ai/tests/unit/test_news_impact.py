@@ -13,6 +13,7 @@ from stock_ai.news_impact import (
     deduplicate_events,
     filter_fresh_events,
 )
+from stock_ai.news_impact.mappings import iter_event_mapped_stocks
 
 
 NOW = datetime(2026, 8, 12, 9, 0, tzinfo=timezone(timedelta(hours=8)))
@@ -79,6 +80,27 @@ def test_fixed_stock_mapping_works_when_batch_fundamental_lacks_concepts():
         stock, [event()], ProbabilityPaths(35, 45, 20), now=NOW, existing_holding=True
     )
     assert result.score == 2.4
+
+
+def test_event_mapped_stocks_are_code_name_pairs_without_duplicates():
+    stocks = iter_event_mapped_stocks(event())
+
+    lotus = next(item for item in stocks if item.code == "600186")
+    assert lotus.name == "莲花控股"
+    assert lotus.theme == "ai_cloud"
+    assert "算力租赁" in lotus.sectors
+    assert len({item.code for item in stocks}) == len(stocks)
+
+
+def test_sector_only_mapping_does_not_invent_stock_candidates():
+    memory_event = event(
+        event_id="memory",
+        title="SK海力士HBM需求增长",
+        summary="存储芯片需求改善",
+        subjects=("SK海力士",),
+    )
+
+    assert iter_event_mapped_stocks(memory_event) == ()
 
 
 def test_rumor_does_not_change_score_or_probabilities():

@@ -1,12 +1,22 @@
 from __future__ import annotations
 
 import json
+import re
+from dataclasses import dataclass
 from pathlib import Path
 
 from .models import NewsEvent, StockContext, StockEventImpact
 
 CONFIG_PATH = Path(__file__).with_name("industry_mappings.json")
 NEGATIVE_TYPES = {"investigation", "fraud", "delisting", "contract_termination", "customer_loss", "impairment", "default", "safety_incident", "business_ban"}
+
+
+@dataclass(frozen=True)
+class MappedStock:
+    code: str
+    name: str
+    theme: str
+    sectors: tuple[str, ...]
 
 
 def load_fixed_mappings() -> dict:
@@ -21,6 +31,27 @@ def infer_event_themes(event: NewsEvent) -> list[tuple[str, dict]]:
         if any(token.lower() in blob for token in tokens):
             matches.append((theme, rule))
     return matches
+
+
+def iter_event_mapped_stocks(event: NewsEvent) -> tuple[MappedStock, ...]:
+    """Return only explicitly reviewed code/name pairs from matching rules."""
+    by_code: dict[str, MappedStock] = {}
+    for theme, rule in infer_event_themes(event):
+        values = tuple(str(value).strip() for value in rule.get("stocks", ()))
+        for index in range(0, len(values) - 1, 2):
+            code, name = values[index], values[index + 1]
+            if not re.fullmatch(r"\d{6}", code) or re.fullmatch(r"\d{6}", name):
+                continue
+            by_code.setdefault(
+                code,
+                MappedStock(
+                    code=code,
+                    name=name,
+                    theme=theme,
+                    sectors=tuple(rule.get("sectors", ())),
+                ),
+            )
+    return tuple(by_code.values())
 
 
 def map_event_to_stock(event: NewsEvent, stock: StockContext) -> StockEventImpact | None:
