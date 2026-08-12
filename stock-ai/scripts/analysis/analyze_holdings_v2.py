@@ -22,6 +22,44 @@ from core_v2.fetch_opencli_sop import (
     prefetch_sop_snapshots,
     clear_sop_cache,
 )
+from stock_ai.news_impact import ProbabilityPaths, StockContext, analyze_stock_news_impact
+from stock_ai.news_impact.formatting import format_portfolio_impact_table, format_stock_impact_card
+from stock_ai.news_impact.providers import load_news_coverage
+
+
+def build_holdings_prompt(
+    *, row, full_code, name, fundamental, fund_flow, market_sentiment, tech_report, news_result
+):
+    return f"""
+        你是一个专业的A股短线交易分析师。请根据持仓、市场数据和消息影响给出条件化操作建议。
+
+        ## 1. 持仓现状
+        - 代码: {full_code} | 名称: {name}
+        - 成本价: {row['成本价']} | 当前价: {row['当前价']}
+        - 盈亏比例: {row['盈亏比例']} | 持仓数量: {row['证券数量']}
+
+        ## 2. 资金流向
+        - 主力净流入: {fund_flow.get('main_net_inflow', 'N/A')}
+
+        ## 3. 消息面影响（共享消息服务）
+        {format_stock_impact_card(news_result)}
+
+        ## 4. 基本面指标
+        - PE(动): {fundamental.get('pe_ttm', 'N/A')} | PB: {fundamental.get('pb', 'N/A')}
+        - 市值: {fundamental.get('total_mv', 'N/A')} | 换手: {fundamental.get('turnover_rate', 'N/A')}
+
+        ## 5. 大盘背景
+        - 上证: {market_sentiment.get('indices', {}).get('shanghai', {})}
+        - 涨跌家数: {market_sentiment.get('breadth', 'N/A')}
+
+        ## 6. 技术面趋势分析
+        {tech_report}
+
+        ## 任务要求
+        1. 消息只有限修正概率；单一利好不得绕过风险门禁。
+        2. 给出持股/减仓/清仓等条件化结论，不自动下单。
+        3. 输出强/中/弱三种路径、概率、触发价格和失效条件。
+        """
 
 def _holdings_df_from_db():
     from scripts.tools.portfolio_db import load_latest_closes, load_positions
@@ -67,6 +105,8 @@ def analyze_holdings_v2():
     # 1. 获取大盘情绪
     print("📊 获取大盘情绪...")
     market_sentiment = get_market_sentiment()
+    now = datetime.now().astimezone()
+    news_coverage = load_news_coverage(now=now)
 
     stock_codes = [
         str(row["证券代码"]).zfill(6)
@@ -108,43 +148,29 @@ def analyze_holdings_v2():
 
         time.sleep(1)
 
-        # 3. 整合 Prompt 发给 DeepSeek
-        combined_prompt = f"""
-        你是一个顶级的量化私募策略师。请根据以下【持仓数据】和【全维度市场数据】，给出该股票今天的具体操作建议。
-
-        ## 1. 持仓现状
-        - 代码: {full_code} | 名称: {name}
-        - 成本价: {row['成本价']} | 当前价: {row['当前价']}
-        - 盈亏比例: {row['盈亏比例']} | 持仓数量: {row['证券数量']}
-
-        ## 2. 资金流向 (OpenCLI SOP)
-        - 主力净流入: {fund_flow.get('main_net_inflow', 'N/A')}
-
-        ## 3. 舆情新闻 (最近 3 条)
-        {chr(10).join(['- ' + str(n) for n in news[:3]]) if news else '暂无重大新闻'}
-
-        ## 4. 基本面指标
-        - PE(动): {fundamental.get('pe_ttm', 'N/A')} | PB: {fundamental.get('pb', 'N/A')}
-        - 市值: {fundamental.get('total_mv', 'N/A')} | 换手: {fundamental.get('turnover_rate', 'N/A')}
-
-        ## 5. 大盘背景
-        - 上证: {market_sentiment.get('indices', {}).get('shanghai', {})}
-        - 涨跌家数: {market_sentiment.get('breadth', 'N/A')}
-
-        ## 6. 技术面趋势分析 (基于历史日线)
-        {tech_report}
-
-        ## 任务要求
-        1. **盈亏诊断**：分析当前盈亏的原因（是系统性回调、个股走弱、还是正常震荡）。
-        2. **操作建议**：给出明确指令：加仓 / 减仓 / 持股不动 / 清仓。
-        3. **核心理由**：结合资金流、技术面支撑/压力位、以及基本面。
-        4. **今日计划**：给出具体的触发价格和预期目标。
-
-        ## 输出格式
-        操作建议: [加仓/减仓/持股/清仓]
-        核心逻辑: [简述理由]
-        今日计划: [触发价/目标/止损]
-        """
+        stock = StockContext(
+            code,
+            name,
+            fundamental.get("industry") or fundamental.get("行业") or "",
+            tuple(fundamental.get("concepts") or ()),
+        )
+        news_result = analyze_stock_news_impact(
+            stock,
+            list(news_coverage.events),
+            ProbabilityPaths(35, 45, 20),
+            now=now,
+            existing_holding=True,
+        )
+        combined_prompt = build_holdings_prompt(
+            row=row,
+            full_code=full_code,
+            name=name,
+            fundamental=fundamental,
+            fund_flow=fund_flow,
+            market_sentiment=market_sentiment,
+            tech_report=tech_report,
+            news_result=news_result,
+        )
         
         print(f"  🧠 DeepSeek 综合决策中...")
         try:
@@ -157,7 +183,8 @@ def analyze_holdings_v2():
                 'full_code': full_code,
                 'name': name,
                 'profit_loss': row['盈亏比例'],
-                'final_report': final_report
+                'final_report': final_report,
+                'news_result': news_result,
             })
         except Exception as e:
             print(f"  ❌ AI 决策失败: {e}")
@@ -172,6 +199,9 @@ def analyze_holdings_v2():
         f.write(f"- 涨跌分布: {market_sentiment.get('涨跌分布')}\n\n")
         
         f.write(f"## 📊 持仓诊断摘要\n\n")
+        f.write("## 消息面影响摘要\n\n")
+        f.write(format_portfolio_impact_table({r['full_code'].split('.')[0]: r['news_result'] for r in reports}))
+        f.write("\n\n")
         f.write("| 股票 | 盈亏 | 操作建议 | 核心逻辑摘要 |\n")
         f.write("|---|---|---|---|\n")
         for r in reports:

@@ -1451,6 +1451,8 @@ INTERNATIONAL_INDEX_SPECS: list[tuple[str, str]] = [
     ("标普500", "100.SPX"),
     ("恒生指数", "100.HSI"),
     ("日经225", "100.N225"),
+    ("韩国KOSPI", "100.KS11"),
+    ("韩国KOSDAQ", "100.KQ11"),
 ]
 
 WTI_OIL_INDEX_URL = "https://data.eastmoney.com/cjsj/hyzs_EMI01508580.html"

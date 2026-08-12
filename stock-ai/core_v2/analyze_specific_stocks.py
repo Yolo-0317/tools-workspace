@@ -19,6 +19,44 @@ from fetch_opencli_sop import (
     get_stock_fund_flow, 
     get_stock_news
 )
+from stock_ai.news_impact import ProbabilityPaths, StockContext, analyze_stock_news_impact
+from stock_ai.news_impact.formatting import format_stock_impact_card
+from stock_ai.news_impact.providers import load_news_coverage
+
+
+def build_single_stock_prompt(
+    *, full_code, fundamental, fund_flow, market_sentiment, tech_report, news_result
+):
+    news_card = format_stock_impact_card(news_result)
+    return f"""
+        你是一个专业的A股短线交易分析师。请根据以下全维度数据给出条件化决策支持。
+
+        ## 1. 股票基础
+        - 代码: {full_code} | 名称: {fundamental.get('name') or fundamental.get('名称', 'N/A')} | 行业: {fundamental.get('industry') or fundamental.get('行业', 'N/A')}
+
+        ## 2. 资金流向
+        - 主力净流入: {fund_flow.get('main_net_inflow', fund_flow.get('今日主力净流入', 'N/A'))}
+        - 净流入占比: {fund_flow.get('main_net_pct', fund_flow.get('主力净流入占比', 'N/A'))}
+
+        ## 3. 消息面影响（共享消息服务）
+        {news_card}
+
+        ## 4. 基本面指标
+        - PE(动): {fundamental.get('pe_ttm', fundamental.get('市盈率-动态', 'N/A'))} | PB: {fundamental.get('pb', fundamental.get('市净率', 'N/A'))}
+        - 总市值: {fundamental.get('total_mv', fundamental.get('总市值', 'N/A'))}
+
+        ## 5. 大盘背景
+        - 指数: {market_sentiment.get('上证指数', 'N/A')}
+        - 涨跌分布: {market_sentiment.get('涨跌分布', 'N/A')}
+
+        ## 6. 技术面预分析
+        {tech_report}
+
+        ## 任务要求
+        1. 消息只允许有限修正概率，不得用单一利好绕过风险门禁。
+        2. 输出交易结论、核心逻辑、强/中/弱三种路径及对应条件。
+        3. 明确支撑、压力、失效条件、风险预算和数据缺口。
+        """
 
 def analyze_specific_stocks(codes):
     print(f"🚀 开始对指定股票进行全维度分析: {codes}...")
@@ -26,6 +64,8 @@ def analyze_specific_stocks(codes):
     # 1. 获取全局信息
     print("📊 获取大盘情绪...")
     market_sentiment = get_market_sentiment()
+    now = datetime.now().astimezone()
+    news_coverage = load_news_coverage(now=now)
     
     reports = []
     for code in codes:
@@ -49,46 +89,27 @@ def analyze_specific_stocks(codes):
 
         time.sleep(1)
 
-        # 3. 整合 Prompt 发给 DeepSeek
-        combined_prompt = f"""
-        你是一个顶级的量化私募策略师。请根据以下【全维度数据】，给出该股票的最终投资决策。
-
-        ## 1. 股票基础
-        - 代码: {full_code} | 名称: {fundamental.get('名称', 'N/A')} | 行业: {fundamental.get('行业', 'N/A')}
-
-        ## 2. 资金流向 (OpenCLI SOP)
-        - 主力净流入: {fund_flow.get('今日主力净流入', 'N/A')}
-        - 超大单/大单: {fund_flow.get('今日超大单净流入', 'N/A')} / {fund_flow.get('今日大单净流入', 'N/A')}
-        - 净流入占比: {fund_flow.get('主力净流入占比', 'N/A')}
-
-        ## 3. 舆情新闻 (最近 5 条)
-        {chr(10).join(['- ' + n for n in news]) if news else '暂无重大新闻'}
-
-        ## 4. 基本面指标
-        - PE(动): {fundamental.get('市盈率-动态', 'N/A')} | PB: {fundamental.get('市净率', 'N/A')}
-        - ROE: {fundamental.get('ROE', 'N/A')}% | 净利增长: {fundamental.get('净利润增长率', 'N/A')}%
-        - 总市值: {fundamental.get('总市值', 'N/A')}
-
-        ## 5. 大盘背景
-        - 指数: {market_sentiment.get('上证指数', 'N/A')}
-        - 涨跌分布: {market_sentiment.get('涨跌分布', 'N/A')}
-        - 热门板块: {', '.join(market_sentiment.get('热门板块', []))}
-
-        ## 6. 技术面预分析
-        {tech_report}
-
-        ## 任务要求
-        1. **真伪辨别**：结合资金流和新闻，判断技术面的“突破”或“走势”是主力真金白银建仓，还是诱多/利好兑现。
-        2. **风险评估**：结合大盘情绪 and *ST 风险（如有），给出该股的防御性评价。
-        3. **最终结论**：强烈推荐 / 建议关注 / 继续观望 / 回避。
-        4. **操盘计划**：给出精确的买入区间、止损位、目标位、预期持有周期。
-
-        ## 输出格式
-        最终结论: [结论]
-        确定性评分: [0-100]
-        核心逻辑: [1. 资金面; 2. 消息面; 3. 技术面共振点]
-        操盘计划: [买入/止损/目标/周期]
-        """
+        stock = StockContext(
+            code_6,
+            fundamental.get("name") or fundamental.get("名称") or code_6,
+            fundamental.get("industry") or fundamental.get("行业") or "",
+            tuple(fundamental.get("concepts") or ()),
+        )
+        news_result = analyze_stock_news_impact(
+            stock,
+            list(news_coverage.events),
+            ProbabilityPaths(35, 45, 20),
+            now=now,
+            existing_holding=False,
+        )
+        combined_prompt = build_single_stock_prompt(
+            full_code=full_code,
+            fundamental=fundamental,
+            fund_flow=fund_flow,
+            market_sentiment=market_sentiment,
+            tech_report=tech_report,
+            news_result=news_result,
+        )
         
         print(f"  🧠 DeepSeek 综合决策中...")
         try:

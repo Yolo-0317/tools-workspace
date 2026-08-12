@@ -1,0 +1,39 @@
+{
+  "ai_cloud": {
+    "subjects": ["CoreWeave", "Nebius", "Supermicro", "超微电脑"],
+    "keywords": ["AI云", "算力", "GPU", "数据中心", "资本开支", "服务器"],
+    "sectors": ["算力租赁", "AI服务器", "光模块", "液冷", "数据中心供配电"],
+    "stocks": ["600186", "莲花控股", "300442", "润泽科技", "300383", "光环新网", "300738", "奥飞数据", "603881", "数据港"]
+  },
+  "memory_chip": {
+    "subjects": ["三星电子", "SK海力士", "Samsung", "SK Hynix"],
+    "keywords": ["HBM", "DRAM", "NAND", "存储芯片"],
+    "sectors": ["存储芯片", "半导体设备", "半导体材料"]
+  },
+  "semiconductor_equipment": {
+    "subjects": ["东京电子", "爱德万测试", "迪斯科", "Tokyo Electron", "Advantest", "Disco"],
+    "keywords": ["半导体设备", "晶圆测试", "切割设备"],
+    "sectors": ["半导体设备", "半导体材料"]
+  },
+  "robotics": {
+    "subjects": ["发那科", "安川电机", "Fanuc", "Yaskawa"],
+    "keywords": ["机器人", "伺服", "工业自动化"],
+    "sectors": ["机器人", "工业自动化"]
+  },
+  "commodities": {
+    "subjects": [],
+    "keywords": ["原油", "黄金", "铜价", "铝价", "航运"],
+    "sectors": ["原油", "黄金", "有色金属", "航运"]
+  },
+  "power": {
+    "subjects": [],
+    "keywords": ["电网", "储能", "变压器", "用电"],
+    "sectors": ["电网", "储能", "电力"],
+    "stocks": ["600089", "特变电工", "002498", "汉缆股份", "600995", "南网储能", "003816", "中国广核", "000543", "皖能电力", "600098", "广州发展"]
+  },
+  "battery_display_auto_pharma_export": {
+    "subjects": [],
+    "keywords": ["动力电池", "面板", "汽车", "医药", "出口"],
+    "sectors": ["动力电池", "面板", "汽车", "医药", "出口链"]
+  }
+}
