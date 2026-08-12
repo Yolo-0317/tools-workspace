@@ -25,10 +25,30 @@ from core_v2.fetch_opencli_sop import (
 from stock_ai.news_impact import ProbabilityPaths, StockContext, analyze_stock_news_impact
 from stock_ai.news_impact.formatting import format_portfolio_impact_table, format_stock_impact_card
 from stock_ai.news_impact.providers import load_news_coverage
+from stock_ai.limit_up_logic import (
+    LimitUpContext,
+    analyze_limit_up_logic,
+    format_limit_up_logic_card,
+)
+
+
+def _limit_up_card(limit_up_result) -> str:
+    if limit_up_result is None:
+        return "【涨停逻辑】涨停逻辑数据未提供；不得推断封板概率。"
+    return format_limit_up_logic_card(limit_up_result)
 
 
 def build_holdings_prompt(
-    *, row, full_code, name, fundamental, fund_flow, market_sentiment, tech_report, news_result
+    *,
+    row,
+    full_code,
+    name,
+    fundamental,
+    fund_flow,
+    market_sentiment,
+    tech_report,
+    news_result,
+    limit_up_result=None,
 ):
     return f"""
         你是一个专业的A股短线交易分析师。请根据持仓、市场数据和消息影响给出条件化操作建议。
@@ -44,21 +64,25 @@ def build_holdings_prompt(
         ## 3. 消息面影响（共享消息服务）
         {format_stock_impact_card(news_result)}
 
-        ## 4. 基本面指标
+        ## 4. 涨停与加速逻辑
+        {_limit_up_card(limit_up_result)}
+
+        ## 5. 基本面指标
         - PE(动): {fundamental.get('pe_ttm', 'N/A')} | PB: {fundamental.get('pb', 'N/A')}
         - 市值: {fundamental.get('total_mv', 'N/A')} | 换手: {fundamental.get('turnover_rate', 'N/A')}
 
-        ## 5. 大盘背景
+        ## 6. 大盘背景
         - 上证: {market_sentiment.get('indices', {}).get('shanghai', {})}
         - 涨跌家数: {market_sentiment.get('breadth', 'N/A')}
 
-        ## 6. 技术面趋势分析
+        ## 7. 技术面趋势分析
         {tech_report}
 
         ## 任务要求
         1. 消息只有限修正概率；单一利好不得绕过风险门禁。
-        2. 给出持股/减仓/清仓等条件化结论，不自动下单。
-        3. 输出强/中/弱三种路径、概率、触发价格和失效条件。
+        2. 涨停逻辑必须区分直接主营、参股映射和概念标签；缺少板块共振、竞价或封单数据时必须披露。
+        3. 给出持股/减仓/清仓等条件化结论，不自动下单。
+        4. 输出涨停加速/趋势延续/接力失败三种路径、概率、触发价格和失效条件。
         """
 
 def _holdings_df_from_db():
@@ -148,11 +172,15 @@ def analyze_holdings_v2():
 
         time.sleep(1)
 
+        from scripts.tools.portfolio_db import load_stock_daily_bars, load_stock_profiles_by_codes
+
+        profile = load_stock_profiles_by_codes([code]).get(code, {})
+        profile_concepts = tuple(profile.get("concepts") or ())
         stock = StockContext(
             code,
             name,
-            fundamental.get("industry") or fundamental.get("行业") or "",
-            tuple(fundamental.get("concepts") or ()),
+            fundamental.get("industry") or fundamental.get("行业") or profile.get("industry") or "",
+            tuple(fundamental.get("concepts") or profile_concepts),
         )
         news_result = analyze_stock_news_impact(
             stock,
@@ -160,6 +188,40 @@ def analyze_holdings_v2():
             ProbabilityPaths(35, 45, 20),
             now=now,
             existing_holding=True,
+        )
+        concepts = tuple(profile.get("concepts") or stock.concepts)
+        mapped_sectors = {
+            sector
+            for impact in news_result.impacts
+            for sector in impact.mapped_sectors
+        }
+        active_themes = tuple(
+            concept
+            for concept in concepts
+            if any(concept in sector or sector in concept for sector in mapped_sectors)
+        )
+        main_pct = fund_flow.get("main_net_pct")
+        try:
+            main_pct = float(main_pct) if main_pct is not None else None
+        except (TypeError, ValueError):
+            main_pct = None
+        bars = load_stock_daily_bars(code, limit=60)
+        limit_up_result = (
+            analyze_limit_up_logic(
+                code,
+                name,
+                bars,
+                LimitUpContext(
+                    concepts=concepts,
+                    active_themes=active_themes,
+                    main_net_inflow_ratio=main_pct,
+                    material_risk=news_result.veto.new_risk_forbidden,
+                    material_risk_reasons=news_result.veto.reasons,
+                    observed_at=now,
+                ),
+            )
+            if bars
+            else None
         )
         combined_prompt = build_holdings_prompt(
             row=row,
@@ -170,6 +232,7 @@ def analyze_holdings_v2():
             market_sentiment=market_sentiment,
             tech_report=tech_report,
             news_result=news_result,
+            limit_up_result=limit_up_result,
         )
         
         print(f"  🧠 DeepSeek 综合决策中...")

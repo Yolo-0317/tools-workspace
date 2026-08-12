@@ -26,7 +26,14 @@ def test_card_contains_required_audit_fields_without_inevitable_language() -> No
         drivers=("近20日出现1次涨停", "首板后连续承接，未破首板低点"),
         prerequisites=("板块形成共振", "突破前高后回踩不破"),
         suppressors=("业绩预亏",),
-        missing_fields=("auction_strength", "seal_quality"),
+        missing_fields=(
+            "turnover_rate",
+            "sector_change_pct",
+            "sector_limit_up_count",
+            "sector_leader_strength",
+            "auction_strength",
+            "seal_quality",
+        ),
         data_cutoff=datetime(2026, 8, 6, 15, 0),
     )
 
@@ -44,5 +51,7 @@ def test_card_contains_required_audit_fields_without_inevitable_language() -> No
     ):
         assert text in card
     assert "涨停加速40% / 趋势延续40% / 接力失败20%" in card
+    assert "竞价强度" in card
+    assert "封单质量" in card
     assert "必然涨停" not in card
     assert "自动买入" not in card

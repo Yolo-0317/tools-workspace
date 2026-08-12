@@ -62,8 +62,7 @@ def format_limit_up_logic_card(result: LimitUpResult) -> str:
             f"- 封板前提：{_joined(result.prerequisites, '需要盘中重新验证')}",
             f"- 压制因素：{_joined(result.suppressors, '暂无结构性压制证据')}",
             f"- 三路径：涨停加速{paths.acceleration}% / 趋势延续{paths.continuation}% / 接力失败{paths.failure}%",
-            f"- 数据缺口：{_joined(missing, '无')}",
+            f"- 数据缺口：{'；'.join(missing) if missing else '无'}",
             f"- 数据截止：{_cutoff(result.data_cutoff)}",
         )
     )
-

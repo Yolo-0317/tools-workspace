@@ -6,6 +6,11 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from stock_ai.news_impact import ProbabilityPaths, StockContext, analyze_stock_news_impact
+from stock_ai.limit_up_logic import (
+    LimitUpPaths,
+    LimitUpResult,
+    LimitUpScoreBreakdown,
+)
 from core_v2.analyze_specific_stocks import build_single_stock_prompt
 from scripts.analysis.analyze_holdings_v2 import build_holdings_prompt
 
@@ -17,6 +22,19 @@ RESULT = analyze_stock_news_impact(
     ProbabilityPaths(35, 45, 20),
     now=NOW,
     existing_holding=True,
+)
+LIMIT_UP_RESULT = LimitUpResult(
+    code="600186",
+    name="莲花控股",
+    identity="SECOND_WAVE_CANDIDATE",
+    gene="STRONG",
+    score=LimitUpScoreBreakdown(30, 24, 10, 5),
+    paths=LimitUpPaths(40, 40, 20),
+    drivers=("首板后连续承接，未破首板低点",),
+    prerequisites=("板块形成共振",),
+    suppressors=("封单数据缺失",),
+    missing_fields=("auction_strength", "seal_quality"),
+    data_cutoff=NOW,
 )
 
 
@@ -48,3 +66,33 @@ def test_holdings_prompt_contains_shared_news_card():
     assert "【消息面影响】" in prompt
     assert "消息数据缺失" not in prompt
     assert "最终概率：强35% / 中45% / 弱20%" in prompt
+
+
+def test_single_stock_prompt_contains_shared_limit_up_card():
+    prompt = build_single_stock_prompt(
+        full_code="600186.SH",
+        fundamental={"name": "莲花控股", "industry": "食品"},
+        fund_flow={},
+        market_sentiment={},
+        tech_report="技术摘要",
+        news_result=RESULT,
+        limit_up_result=LIMIT_UP_RESULT,
+    )
+    assert "【涨停逻辑】" in prompt
+    assert "涨停加速40%" in prompt
+    assert "区分直接主营、参股映射和概念标签" in prompt
+
+
+def test_holdings_prompt_discloses_missing_limit_up_data():
+    prompt = build_holdings_prompt(
+        row={"成本价": 11.41, "当前价": 11.45, "盈亏比例": "+0.4%", "证券数量": 500},
+        full_code="600186.SH",
+        name="莲花控股",
+        fundamental={},
+        fund_flow={},
+        market_sentiment={},
+        tech_report="技术摘要",
+        news_result=RESULT,
+        limit_up_result=None,
+    )
+    assert "涨停逻辑数据未提供" in prompt

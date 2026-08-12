@@ -22,12 +22,31 @@ from fetch_opencli_sop import (
 from stock_ai.news_impact import ProbabilityPaths, StockContext, analyze_stock_news_impact
 from stock_ai.news_impact.formatting import format_stock_impact_card
 from stock_ai.news_impact.providers import load_news_coverage
+from stock_ai.limit_up_logic import (
+    LimitUpContext,
+    analyze_limit_up_logic,
+    format_limit_up_logic_card,
+)
+
+
+def _limit_up_card(limit_up_result) -> str:
+    if limit_up_result is None:
+        return "【涨停逻辑】涨停逻辑数据未提供；不得推断封板概率。"
+    return format_limit_up_logic_card(limit_up_result)
 
 
 def build_single_stock_prompt(
-    *, full_code, fundamental, fund_flow, market_sentiment, tech_report, news_result
+    *,
+    full_code,
+    fundamental,
+    fund_flow,
+    market_sentiment,
+    tech_report,
+    news_result,
+    limit_up_result=None,
 ):
     news_card = format_stock_impact_card(news_result)
+    limit_up_card = _limit_up_card(limit_up_result)
     return f"""
         你是一个专业的A股短线交易分析师。请根据以下全维度数据给出条件化决策支持。
 
@@ -41,21 +60,25 @@ def build_single_stock_prompt(
         ## 3. 消息面影响（共享消息服务）
         {news_card}
 
-        ## 4. 基本面指标
+        ## 4. 涨停与加速逻辑
+        {limit_up_card}
+
+        ## 5. 基本面指标
         - PE(动): {fundamental.get('pe_ttm', fundamental.get('市盈率-动态', 'N/A'))} | PB: {fundamental.get('pb', fundamental.get('市净率', 'N/A'))}
         - 总市值: {fundamental.get('total_mv', fundamental.get('总市值', 'N/A'))}
 
-        ## 5. 大盘背景
+        ## 6. 大盘背景
         - 指数: {market_sentiment.get('上证指数', 'N/A')}
         - 涨跌分布: {market_sentiment.get('涨跌分布', 'N/A')}
 
-        ## 6. 技术面预分析
+        ## 7. 技术面预分析
         {tech_report}
 
         ## 任务要求
         1. 消息只允许有限修正概率，不得用单一利好绕过风险门禁。
-        2. 输出交易结论、核心逻辑、强/中/弱三种路径及对应条件。
-        3. 明确支撑、压力、失效条件、风险预算和数据缺口。
+        2. 涨停逻辑必须区分直接主营、参股映射和概念标签；没有板块共振、竞价和封单确认时不得写成买入指令。
+        3. 输出交易结论、核心逻辑、涨停加速/趋势延续/接力失败三种路径及对应条件。
+        4. 明确支撑、压力、失效条件、风险预算和数据缺口。
         """
 
 def analyze_specific_stocks(codes):
@@ -89,11 +112,15 @@ def analyze_specific_stocks(codes):
 
         time.sleep(1)
 
+        from scripts.tools.portfolio_db import load_stock_daily_bars, load_stock_profiles_by_codes
+
+        profile = load_stock_profiles_by_codes([code_6]).get(code_6, {})
+        profile_concepts = tuple(profile.get("concepts") or ())
         stock = StockContext(
             code_6,
             fundamental.get("name") or fundamental.get("名称") or code_6,
-            fundamental.get("industry") or fundamental.get("行业") or "",
-            tuple(fundamental.get("concepts") or ()),
+            fundamental.get("industry") or fundamental.get("行业") or profile.get("industry") or "",
+            tuple(fundamental.get("concepts") or profile_concepts),
         )
         news_result = analyze_stock_news_impact(
             stock,
@@ -102,6 +129,40 @@ def analyze_specific_stocks(codes):
             now=now,
             existing_holding=False,
         )
+        concepts = tuple(profile.get("concepts") or stock.concepts)
+        mapped_sectors = {
+            sector
+            for impact in news_result.impacts
+            for sector in impact.mapped_sectors
+        }
+        active_themes = tuple(
+            concept
+            for concept in concepts
+            if any(concept in sector or sector in concept for sector in mapped_sectors)
+        )
+        main_pct = fund_flow.get("main_net_pct")
+        try:
+            main_pct = float(main_pct) if main_pct is not None else None
+        except (TypeError, ValueError):
+            main_pct = None
+        bars = load_stock_daily_bars(code_6, limit=60)
+        limit_up_result = (
+            analyze_limit_up_logic(
+                code_6,
+                stock.name,
+                bars,
+                LimitUpContext(
+                    concepts=concepts,
+                    active_themes=active_themes,
+                    main_net_inflow_ratio=main_pct,
+                    material_risk=news_result.veto.new_risk_forbidden,
+                    material_risk_reasons=news_result.veto.reasons,
+                    observed_at=now,
+                ),
+            )
+            if bars
+            else None
+        )
         combined_prompt = build_single_stock_prompt(
             full_code=full_code,
             fundamental=fundamental,
@@ -109,6 +170,7 @@ def analyze_specific_stocks(codes):
             market_sentiment=market_sentiment,
             tech_report=tech_report,
             news_result=news_result,
+            limit_up_result=limit_up_result,
         )
         
         print(f"  🧠 DeepSeek 综合决策中...")
