@@ -38,6 +38,24 @@ Typical output:
 
 - `output/stock_selection_combined_YYYYMMDD.csv`
 
+After all technical lanes for the day have landed, run the dual-pool merge before publishing Top5:
+
+```bash
+cd /Users/huan.yu/dev/tools-workspace/stock-ai
+uv run python -m scripts.analysis.merge_dual_pool_selection --top 5
+```
+
+This adds bounded major-news context to technical candidates and persists a separate
+`news_event_watch` lane. News-only stocks remain observation items and never acquire
+buy eligibility without a technical signal. Use `--no-db` for a read-only dry run or
+`--date YYYYMMDD` for a specific selection date.
+
+Dual-pool output:
+
+- `output/stock_selection_dual_pool_YYYYMMDD.csv`
+- MySQL strategy `dual_pool` for enriched technical rows
+- MySQL strategy `news_event_watch` for non-actionable event-only rows
+
 Useful columns from the combined strategy output:
 
 - `代码`

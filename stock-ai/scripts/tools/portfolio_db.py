@@ -1434,6 +1434,7 @@ def load_selection_daily_results(
     *,
     strategy: str = "combined",
     engine: Engine | None = None,
+    enrich_names: bool = True,
 ) -> tuple[date | None, list[dict[str, Any]]]:
     """读取选股结果，返回与 CSV 列一致的字典列表。"""
     engine = engine or get_engine()
@@ -1485,7 +1486,9 @@ def load_selection_daily_results(
             if raw.get("_lane_completed") is True:
                 continue
             out.append(raw)
-    return resolved, enrich_selection_row_names(out, engine=engine)
+    if enrich_names:
+        out = enrich_selection_row_names(out, engine=engine)
+    return resolved, out
 
 
 def _profile_row_from_dict(item: dict[str, Any]) -> dict[str, Any]:

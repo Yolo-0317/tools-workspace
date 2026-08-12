@@ -77,8 +77,10 @@ def _sample_frames() -> None:
         ]
     )
 
-    def _fake_load(td, *, strategy: str, engine=None):
+    def _fake_load(td, *, strategy: str, engine=None, enrich_names: bool = True):
         del td, engine
+        if enrich_names:
+            raise AssertionError("多策略合并不应触发外部股票名称缓存刷新")
         if strategy == "combined":
             return __import__("datetime").date(2026, 6, 2), combined.to_dict("records")
         if strategy == "five_factor":

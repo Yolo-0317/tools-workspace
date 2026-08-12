@@ -122,7 +122,11 @@ def merge_selection_strategies_df(
 
     for strat in strategies:
         try:
-            td, rows = load_selection_daily_results(anchor, strategy=strat)
+            td, rows = load_selection_daily_results(
+                anchor,
+                strategy=strat,
+                enrich_names=False,
+            )
             if not rows:
                 continue
             df = pd.DataFrame(rows)
