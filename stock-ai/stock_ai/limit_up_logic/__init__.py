@@ -8,6 +8,12 @@ from .models import (
     LimitUpResult,
     LimitUpScoreBreakdown,
 )
+from .scoring import (
+    allocate_limit_up_paths,
+    classify_limit_up_identity,
+    score_limit_up_setup,
+)
+from .service import analyze_limit_up_logic
 
 __all__ = [
     "LimitUpBar",
@@ -20,4 +26,8 @@ __all__ = [
     "extract_limit_up_features",
     "limit_up_threshold",
     "normalize_bars",
+    "allocate_limit_up_paths",
+    "classify_limit_up_identity",
+    "score_limit_up_setup",
+    "analyze_limit_up_logic",
 ]

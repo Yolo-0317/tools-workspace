@@ -166,7 +166,7 @@ def extract_limit_up_features(
     post_limit_shrink = bool(
         last_bar
         and len(post) >= 2
-        and latest.amount < _mean([item.amount for item in normalized[last_index : -1]])
+        and latest.amount < _mean([item.amount for item in post[:-1]])
     )
     missing: list[str] = []
     if n < 20:
@@ -208,4 +208,3 @@ def extract_limit_up_features(
         latest_trade_date=latest.trade_date,
         missing_fields=tuple(missing),
     )
-
