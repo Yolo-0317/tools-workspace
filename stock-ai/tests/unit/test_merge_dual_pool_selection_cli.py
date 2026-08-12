@@ -61,7 +61,9 @@ def test_run_writes_enriched_csv_and_non_actionable_event_watch_lane(tmp_path, m
         lambda **_kwargs: NewsCoverage((_event(),), ("verified_cache",), (), NOW),
     )
 
-    def fake_save(_trade_date, rows, *, strategy):
+    def fake_save(_trade_date, rows, *, strategy, enrich_names: bool = True):
+        if enrich_names:
+            raise AssertionError("双池落库不应触发外部股票名称缓存刷新")
         saved[strategy] = list(rows)
         return len(rows)
 

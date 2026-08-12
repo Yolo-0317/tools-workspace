@@ -1246,6 +1246,7 @@ def save_selection_daily_results(
     rows: list[dict[str, Any]],
     *,
     strategy: str = "combined",
+    enrich_names: bool = True,
 ) -> int:
     """写入选股全量结果：同日 + 同 strategy 先删后插（覆盖）；不同日期或策略保留。"""
     engine = get_engine()
@@ -1254,7 +1255,7 @@ def save_selection_daily_results(
 
     td = _parse_selection_trade_date(trade_date)
     strat = (strategy or "combined").strip() or "combined"
-    if rows:
+    if rows and enrich_names:
         enrich_selection_row_names(rows, engine=engine)
     with engine.begin() as conn:
         conn.execute(

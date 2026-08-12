@@ -70,11 +70,13 @@ def run_dual_pool_selection(
             resolved_date,
             list(merged.technical_rows),
             strategy="dual_pool",
+            enrich_names=False,
         )
         mysql_rows += save_selection_daily_results(
             resolved_date,
             list(merged.event_watch_rows),
             strategy="news_event_watch",
+            enrich_names=False,
         )
 
     states = [str(row.get("候选池来源", "technical")) for row in merged.technical_rows]
