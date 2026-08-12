@@ -11,6 +11,8 @@ from typing import Sequence
 
 import pandas as pd
 
+from stock_ai.news_impact import NewsEvent
+
 from scripts.tools.portfolio_db import (
     latest_selection_trade_date,
     load_selection_daily_results,
@@ -95,6 +97,9 @@ def merge_selection_strategies_df(
     *,
     trade_date: date | str | None = None,
     strategies: Sequence[str] | None = None,
+    include_news: bool = True,
+    news_events: Sequence[NewsEvent] | None = None,
+    now: datetime | None = None,
 ) -> tuple[date, pd.DataFrame, str]:
     """
     合并多策略选股结果：同代码保留总分最高行，并标注策略来源。
@@ -166,6 +171,33 @@ def merge_selection_strategies_df(
     out_df = pd.DataFrame(best_rows).drop(columns=["_code6", "_score"], errors="ignore")
     out_df = sort_selection_df(out_df)
     source = f"merge[{','.join(loaded)}]@{resolved_td.isoformat()}"
+    if include_news:
+        from stock_ai.dual_pool_selection import merge_dual_pool_rows
+
+        resolved_now = now or datetime.now().astimezone()
+        coverage_status = "完整"
+        resolved_events: Sequence[NewsEvent]
+        if news_events is not None:
+            resolved_events = news_events
+        else:
+            try:
+                from stock_ai.news_impact.providers import load_news_coverage
+
+                coverage = load_news_coverage(now=resolved_now)
+                resolved_events = coverage.events
+                if coverage.missing_scopes:
+                    coverage_status = "不足"
+            except Exception:
+                resolved_events = ()
+                coverage_status = "不足"
+        dual_pool = merge_dual_pool_rows(
+            out_df.to_dict(orient="records"),
+            resolved_events,
+            now=resolved_now,
+            coverage_status=coverage_status,
+        )
+        out_df = sort_selection_df(pd.DataFrame(dual_pool.technical_rows))
+        source += f"+dual-pool[{coverage_status}]"
     return resolved_td, out_df, source
 
 
@@ -200,6 +232,9 @@ def pick_selection_top(
     for idx, row in df.iterrows():
         if len(picked) >= top_n:
             break
+        pool_source = str(row.get("候选池来源", "technical") or "technical")
+        if pool_source in {"event_watch", "vetoed"}:
+            continue
         code = str(row.get("代码", "")).split(".")[0].zfill(6)
         if code in holdings_codes:
             continue
