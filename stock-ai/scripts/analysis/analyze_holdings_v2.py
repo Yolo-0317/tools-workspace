@@ -5,6 +5,7 @@ import json
 import time
 from pathlib import Path
 from datetime import datetime
+from datetime import timedelta
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from scripts._bootstrap import ensure_repo_root_on_path
@@ -49,9 +50,16 @@ def build_holdings_prompt(
     tech_report,
     news_result,
     limit_up_result=None,
+    diagnosis_decision=None,
 ):
+    memory_context = ""
+    if diagnosis_decision is not None:
+        from stock_ai.advisor_memory.diagnosis import format_memory_context
+
+        memory_context = f"\n{format_memory_context(diagnosis_decision)}\n"
     return f"""
         你是一个专业的A股短线交易分析师。请根据持仓、市场数据和消息影响给出条件化操作建议。
+        {memory_context}
 
         ## 1. 持仓现状
         - 代码: {full_code} | 名称: {name}
@@ -83,6 +91,7 @@ def build_holdings_prompt(
         2. 涨停逻辑必须区分直接主营、参股映射和概念标签；缺少板块共振、竞价或封单数据时必须披露。
         3. 给出持股/减仓/清仓等条件化结论，不自动下单。
         4. 输出涨停加速/趋势延续/接力失败三种路径、概率、触发价格和失效条件。
+        5. 若存在决策记忆约束，禁止改变锁定动作；只解释新增证据与后续触发条件。
         """
 
 def _holdings_df_from_db():
@@ -111,6 +120,7 @@ def _holdings_df_from_db():
                 "当前价": current,
                 "盈亏比例": pnl_str,
                 "证券数量": p.shares,
+                "上次建议": p.action,
             }
         )
     return pd.DataFrame(rows)
@@ -223,6 +233,40 @@ def analyze_holdings_v2():
             if bars
             else None
         )
+        from stock_ai.advisor_memory.diagnosis import prepare_diagnosis
+        from stock_ai.advisor_memory.hard_events import HardEventInputs, detect_hard_events
+        from stock_ai.advisor_memory.repository import AdvisorLedgerRepository
+        from stock_ai.trading_calendar import is_a_share_trading_day
+        from scripts.tools.portfolio_db import get_engine
+
+        as_of = now.date()
+        calendar_start = as_of - timedelta(days=14)
+        calendar_end = as_of + timedelta(days=21)
+        decision_calendar = tuple(
+            calendar_start + timedelta(days=offset)
+            for offset in range((calendar_end - calendar_start).days + 1)
+            if is_a_share_trading_day(calendar_start + timedelta(days=offset))
+        )
+        hard_events = detect_hard_events(
+            HardEventInputs(
+                material_risk=news_result.veto.new_risk_forbidden,
+                material_risk_reasons=tuple(news_result.veto.reasons),
+                observed_at=now,
+            )
+        )
+        decision_engine = get_engine()
+        if decision_engine is None:
+            raise RuntimeError("未配置 MYSQL_URL，无法读取决策记忆")
+        with decision_engine.begin() as decision_conn:
+            diagnosis_decision = prepare_diagnosis(
+                code,
+                name=name,
+                as_of=as_of,
+                trading_days=decision_calendar,
+                hard_events=hard_events,
+                repository=AdvisorLedgerRepository(decision_conn),
+                initial_action=str(row.get("上次建议") or "").strip() or "持有观察",
+            )
         combined_prompt = build_holdings_prompt(
             row=row,
             full_code=full_code,
@@ -233,15 +277,32 @@ def analyze_holdings_v2():
             tech_report=tech_report,
             news_result=news_result,
             limit_up_result=limit_up_result,
+            diagnosis_decision=diagnosis_decision,
         )
         
         print(f"  🧠 DeepSeek 综合决策中...")
         try:
             from scripts.tools.decision_context import inject_decision_context
 
-            final_report = _call_deepseek_api(
+            ai_report = _call_deepseek_api(
                 inject_decision_context(combined_prompt), temperature=0.2
             )
+            from stock_ai.advisor_memory.diagnosis import enforce_locked_action
+
+            final_report, rejected = enforce_locked_action(ai_report, diagnosis_decision)
+            if rejected:
+                with decision_engine.begin() as decision_conn:
+                    AdvisorLedgerRepository(decision_conn).append_decision_event(
+                        cycle_id=int(diagnosis_decision.cycle_id),
+                        event_type="AI_ACTION_REJECTED",
+                        previous_action=diagnosis_decision.previous_action,
+                        new_action=diagnosis_decision.locked_action,
+                        reason={"reason": "conflicting_ai_action"},
+                        evidence={"ai_action_removed": True},
+                        source="diagnosis_guard",
+                        observed_at=now,
+                        effective_trade_date=as_of,
+                    )
             reports.append({
                 'full_code': full_code,
                 'name': name,

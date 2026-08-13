@@ -9,6 +9,8 @@ from typing import Any, Mapping
 
 from sqlalchemy import text
 
+from .models import CycleStatus, CycleTransition, DecisionCycle
+
 
 def _json_default(value: Any) -> Any:
     if isinstance(value, (date, datetime)):
@@ -95,12 +97,126 @@ class AdvisorLedgerRepository:
             {"code": str(code).zfill(6)},
         ).mappings().first()
 
+    def load_active_cycle_model(self, code: str) -> DecisionCycle | None:
+        row = self.load_active_cycle(code)
+        if row is None:
+            return None
+        return DecisionCycle(
+            cycle_id=int(row["cycle_id"]),
+            code=str(row["ts_code"]).zfill(6),
+            name=str(row["name"] or row["ts_code"]),
+            started_trade_date=row["started_trade_date"],
+            review_trade_date=row["review_trade_date"],
+            expiry_trade_date=row["expiry_trade_date"],
+            initial_action=str(row["initial_action"]),
+            current_action=str(row["current_action"]),
+            status=CycleStatus(str(row["status"])),
+        )
+
+    def open_cycle(
+        self,
+        *,
+        code: str,
+        name: str,
+        started_trade_date: date,
+        review_trade_date: date,
+        expiry_trade_date: date,
+        initial_action: str,
+        current_action: str,
+    ) -> DecisionCycle:
+        result = self.connection.execute(
+            text(
+                """
+                INSERT INTO advisor_decision_cycles
+                  (ts_code, name, started_trade_date, review_trade_date,
+                   expiry_trade_date, initial_action, current_action, status, source)
+                VALUES
+                  (:code, :name, :started, :review, :expiry,
+                   :initial_action, :current_action, 'ACTIVE', 'advisor')
+                """
+            ),
+            {
+                "code": str(code).zfill(6),
+                "name": name,
+                "started": started_trade_date,
+                "review": review_trade_date,
+                "expiry": expiry_trade_date,
+                "initial_action": initial_action,
+                "current_action": current_action,
+            },
+        )
+        cycle_id = int(result.lastrowid)
+        self.append_decision_event(
+            cycle_id=cycle_id,
+            event_type="CYCLE_OPENED",
+            previous_action=None,
+            new_action=current_action,
+            reason={"cycle_days": "3-5"},
+            evidence={},
+            source="advisor",
+            observed_at=datetime.combine(started_trade_date, datetime.min.time()),
+            effective_trade_date=started_trade_date,
+        )
+        return DecisionCycle(
+            cycle_id=cycle_id,
+            code=str(code).zfill(6),
+            name=name,
+            started_trade_date=started_trade_date,
+            review_trade_date=review_trade_date,
+            expiry_trade_date=expiry_trade_date,
+            initial_action=initial_action,
+            current_action=current_action,
+            status=CycleStatus.ACTIVE,
+        )
+
+    def record_transition(
+        self,
+        cycle: DecisionCycle,
+        transition: CycleTransition,
+        *,
+        as_of: date,
+        observed_at: datetime,
+    ) -> None:
+        evidence = (
+            dict(transition.hard_event.evidence)
+            if transition.hard_event is not None
+            else {"relation": transition.relation}
+        )
+        source = transition.hard_event.source if transition.hard_event else "advisor"
+        self.append_decision_event(
+            cycle_id=int(cycle.cycle_id),
+            event_type=transition.event_type,
+            previous_action=cycle.current_action,
+            new_action=transition.action,
+            reason={"relation": transition.relation},
+            evidence=evidence,
+            source=source,
+            observed_at=observed_at,
+            effective_trade_date=as_of,
+        )
+        if transition.status != cycle.status or transition.action != cycle.current_action:
+            self.connection.execute(
+                text(
+                    """
+                    UPDATE advisor_decision_cycles
+                    SET current_action=:action, status=:status
+                    WHERE cycle_id=:cycle_id
+                    """
+                ),
+                {
+                    "cycle_id": int(cycle.cycle_id),
+                    "action": transition.action,
+                    "status": transition.status.value,
+                },
+            )
+
     def open_legacy_closed_cycle(
         self,
         *,
         code: str,
         name: str,
         trade_date: date,
+        initial_action: str = "UNKNOWN",
         source: str = "LEGACY_IMPORT",
     ) -> int:
         result = self.connection.execute(
@@ -111,12 +227,36 @@ class AdvisorLedgerRepository:
                    expiry_trade_date, initial_action, current_action,
                    status, source)
                 VALUES
-                  (:code, :name, :d, :d, :d, 'UNKNOWN', '已清仓', 'CLOSED', :source)
+                  (:code, :name, :d, :d, :d, :initial_action, '已清仓', 'CLOSED', :source)
                 """
             ),
-            {"code": str(code).zfill(6), "name": name, "d": trade_date, "source": source},
+            {
+                "code": str(code).zfill(6),
+                "name": name,
+                "d": trade_date,
+                "initial_action": initial_action,
+                "source": source,
+            },
         )
         return int(result.lastrowid)
+
+    def position_event_exists(self, event) -> bool:
+        fingerprint = position_event_fingerprint(
+            event.source,
+            event.broker_captured_at,
+            event.code,
+            event.shares_before,
+            event.shares_after,
+            event.event_type,
+        )
+        value = self.connection.execute(
+            text(
+                "SELECT 1 FROM portfolio_position_events "
+                "WHERE event_fingerprint = :fingerprint LIMIT 1"
+            ),
+            {"fingerprint": fingerprint},
+        ).scalar()
+        return value is not None
 
     def append_position_event(self, event, *, cycle_id: int | None = None) -> bool:
         fingerprint = position_event_fingerprint(

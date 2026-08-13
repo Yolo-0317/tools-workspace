@@ -13,6 +13,8 @@ from stock_ai.limit_up_logic import (
 )
 from core_v2.analyze_specific_stocks import build_single_stock_prompt
 from scripts.analysis.analyze_holdings_v2 import build_holdings_prompt
+from stock_ai.advisor_memory.diagnosis import DiagnosisDecision
+from stock_ai.advisor_memory.models import CycleStatus
 
 
 NOW = datetime(2026, 8, 12, 9, 0, tzinfo=timezone(timedelta(hours=8)))
@@ -35,6 +37,18 @@ LIMIT_UP_RESULT = LimitUpResult(
     suppressors=("封单数据缺失",),
     missing_fields=("auction_strength", "seal_quality"),
     data_cutoff=NOW,
+)
+MEMORY_DECISION = DiagnosisDecision(
+    cycle_id=1,
+    cycle_day=2,
+    next_review_date=NOW.date(),
+    expiry_date=NOW.date(),
+    previous_action="持有观察",
+    locked_action="持有观察",
+    relation="维持",
+    status=CycleStatus.ACTIVE,
+    hard_events=(),
+    allowed_actions=("持有观察",),
 )
 
 
@@ -96,3 +110,21 @@ def test_holdings_prompt_discloses_missing_limit_up_data():
         limit_up_result=None,
     )
     assert "涨停逻辑数据未提供" in prompt
+
+
+def test_holdings_prompt_contains_locked_decision_memory():
+    prompt = build_holdings_prompt(
+        row={"成本价": 10.0, "当前价": 10.1, "盈亏比例": "+1%", "证券数量": 500},
+        full_code="600000.SH",
+        name="测试股份",
+        fundamental={},
+        fund_flow={},
+        market_sentiment={},
+        tech_report="技术摘要",
+        news_result=RESULT,
+        diagnosis_decision=MEMORY_DECISION,
+    )
+
+    assert "当前周期第2/5日" in prompt
+    assert "锁定动作：持有观察" in prompt
+    assert "禁止改变锁定动作" in prompt
