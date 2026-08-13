@@ -206,6 +206,7 @@ def _gene_artifact_payload(*, end: str = "2026-08-12") -> dict:
             "test": {"start": "2025-06-02", "end": end},
         },
         "costs": {"commission_rate": 0.0008, "slippage_rate": 0.001},
+        "execution_model": "next-session-box-breakout-stop-v1",
         "hold_days": 5,
         "selected_profile": "limit_up_gene_watch",
         "metrics": {
@@ -237,6 +238,24 @@ def test_gene_watch_promotion_accepts_current_passing_artifact(tmp_path) -> None
     path.write_text(json.dumps(_gene_artifact_payload()), encoding="utf-8")
 
     assert load_gene_watch_promotion(path, expected_data_end=date(2026, 8, 12)) is True
+
+
+def test_gene_watch_promotion_rejects_legacy_next_open_execution_artifact(tmp_path) -> None:
+    payload = _gene_artifact_payload()
+    payload.pop("execution_model")
+    path = tmp_path / "legacy-gene.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    assert load_gene_watch_promotion(path, expected_data_end=date(2026, 8, 12)) is False
+
+
+def test_gene_watch_promotion_rejects_artifact_without_invalidation_exit(tmp_path) -> None:
+    payload = _gene_artifact_payload()
+    payload["execution_model"] = "next-session-box-breakout-v1"
+    path = tmp_path / "no-stop-gene.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    assert load_gene_watch_promotion(path, expected_data_end=date(2026, 8, 12)) is False
 
 
 def _artifact(*, promoted: bool = True, profile: str = "STRICT_B") -> ValidationArtifact:

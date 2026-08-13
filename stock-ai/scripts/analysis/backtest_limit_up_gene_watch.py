@@ -22,6 +22,7 @@ from stock_ai.limit_up_logic import LimitUpContext, analyze_limit_up_logic
 from stock_ai.selection_validation import (
     BacktestMetrics,
     GENE_WATCH_CRITERIA,
+    GENE_WATCH_EXECUTION_MODEL,
     chronological_splits,
     evaluate_promotion,
 )
@@ -32,7 +33,20 @@ if str(ROOT / "core_v2") not in sys.path:
     sys.path.insert(0, str(ROOT / "core_v2"))
 SCHEMA_VERSION = "limit-up-gene-watch-validation-v1"
 RULE_VERSION = "limit-up-gene-watch-1.0.0"
-Evaluator = Callable[[str, pd.DataFrame, date], Iterable[str] | Mapping[str, float]]
+@dataclass(frozen=True)
+class SignalIntent:
+    """Execution instructions known at the signal-date close."""
+
+    score: float
+    trigger_price: float
+    max_gap_pct: float = 5.0
+    invalidation_price: float | None = None
+
+
+Evaluator = Callable[
+    [str, pd.DataFrame, date],
+    Iterable[str] | Mapping[str, float | SignalIntent],
+]
 
 
 @dataclass(frozen=True)
@@ -47,6 +61,22 @@ class BacktestTrade:
     score: float = 0.0
     entry_day_pct_chg: float = 0.0
     next_day_limit_up: bool = False
+
+
+@dataclass(frozen=True)
+class _BacktestOpportunity:
+    code: str
+    signal_date: date
+    entry_date: date
+    exit_date: date
+    entry_open: float
+    entry_high: float
+    exit_close: float
+    score: float
+    entry_day_pct_chg: float
+    next_day_limit_up: bool
+    intent: SignalIntent | None
+    future_bars: tuple[tuple[date, float, float, float], ...]
 
 
 def trade_return(
@@ -78,12 +108,14 @@ def run_backtest(
     """Pass only bars through T to the evaluator and execute on later bars."""
     if hold_days < 1:
         raise ValueError("hold_days must be positive")
+    if max_signals_per_day is not None and max_signals_per_day < 1:
+        raise ValueError("max_signals_per_day must be positive")
     frame = panel.copy()
     frame["trade_date"] = pd.to_datetime(frame["trade_date"]).dt.date
     frame["ts_code"] = frame["ts_code"].astype(str)
     frame = frame.sort_values(["ts_code", "trade_date"]).reset_index(drop=True)
     dates = tuple(sorted(set(signal_dates or frame["trade_date"].unique())))
-    trades: list[BacktestTrade] = []
+    opportunities: list[_BacktestOpportunity] = []
 
     for ts_code, bars in frame.groupby("ts_code", sort=True):
         bars = bars.sort_values("trade_date").reset_index(drop=True)
@@ -95,9 +127,15 @@ def run_backtest(
                 continue
             history = bars.iloc[: position + 1].copy()
             evaluated = evaluator(code, history, signal_date)
+            intent: SignalIntent | None = None
             if isinstance(evaluated, Mapping):
                 selected = set(evaluated)
-                score = float(evaluated.get(code, 0.0))
+                value = evaluated.get(code, 0.0)
+                if isinstance(value, SignalIntent):
+                    intent = value
+                    score = float(value.score)
+                else:
+                    score = float(value)
             else:
                 selected = set(evaluated)
                 score = 0.0
@@ -105,46 +143,93 @@ def run_backtest(
                 continue
             entry = bars.iloc[position + 1]
             exit_row = bars.iloc[position + hold_days]
-            entry_price = float(entry["open"])
+            future = bars.iloc[position + 1 : position + hold_days + 1]
+            entry_open = float(entry["open"])
             exit_price = float(exit_row["close"])
-            if entry_price <= 0 or exit_price <= 0:
+            if entry_open <= 0 or exit_price <= 0:
                 continue
-            trades.append(
-                BacktestTrade(
+            entry_day_pct_chg = float(entry.get("pct_chg") or 0.0)
+            opportunities.append(
+                _BacktestOpportunity(
                     code=code,
                     signal_date=signal_date,
                     entry_date=entry["trade_date"],
                     exit_date=exit_row["trade_date"],
-                    entry_price=entry_price,
-                    exit_price=exit_price,
-                    net_return=trade_return(
-                        entry_price,
-                        exit_price,
-                        commission_rate=commission_rate,
-                        slippage_rate=slippage_rate,
-                    ),
+                    entry_open=entry_open,
+                    entry_high=float(entry["high"]),
+                    exit_close=exit_price,
                     score=score,
-                    entry_day_pct_chg=float(entry.get("pct_chg") or 0.0),
+                    entry_day_pct_chg=entry_day_pct_chg,
                     next_day_limit_up=(
-                        float(entry.get("pct_chg") or 0.0)
+                        entry_day_pct_chg
                         >= (19.5 if code.startswith(("30", "68")) else 9.5)
+                    ),
+                    intent=intent,
+                    future_bars=tuple(
+                        (
+                            row["trade_date"],
+                            float(row["open"]),
+                            float(row["low"]),
+                            float(row["close"]),
+                        )
+                        for _, row in future.iterrows()
                     ),
                 )
             )
-    ordered = sorted(trades, key=lambda item: (item.signal_date, -item.score, item.code))
-    if max_signals_per_day is None:
-        return ordered
-    if max_signals_per_day < 1:
-        raise ValueError("max_signals_per_day must be positive")
-    capped: list[BacktestTrade] = []
+    ordered = sorted(
+        opportunities,
+        key=lambda item: (item.signal_date, -item.score, item.code),
+    )
+    selected_opportunities: list[_BacktestOpportunity] = []
     counts: dict[date, int] = {}
-    for trade in ordered:
-        count = counts.get(trade.signal_date, 0)
-        if count >= max_signals_per_day:
+    for opportunity in ordered:
+        count = counts.get(opportunity.signal_date, 0)
+        if max_signals_per_day is not None and count >= max_signals_per_day:
             continue
-        capped.append(trade)
-        counts[trade.signal_date] = count + 1
-    return capped
+        selected_opportunities.append(opportunity)
+        counts[opportunity.signal_date] = count + 1
+
+    trades: list[BacktestTrade] = []
+    for opportunity in selected_opportunities:
+        intent = opportunity.intent
+        if intent is not None:
+            if opportunity.entry_high < intent.trigger_price:
+                continue
+            if opportunity.entry_open > intent.trigger_price * (
+                1.0 + intent.max_gap_pct / 100.0
+            ):
+                continue
+            entry_price = max(opportunity.entry_open, intent.trigger_price)
+        else:
+            entry_price = opportunity.entry_open
+        exit_date = opportunity.exit_date
+        exit_price = opportunity.exit_close
+        if intent is not None and intent.invalidation_price is not None:
+            for bar_date, bar_open, bar_low, _ in opportunity.future_bars:
+                if bar_low <= intent.invalidation_price:
+                    exit_date = bar_date
+                    exit_price = min(bar_open, intent.invalidation_price)
+                    break
+        trades.append(
+            BacktestTrade(
+                code=opportunity.code,
+                signal_date=opportunity.signal_date,
+                entry_date=opportunity.entry_date,
+                exit_date=exit_date,
+                entry_price=entry_price,
+                exit_price=exit_price,
+                net_return=trade_return(
+                    entry_price,
+                    exit_price,
+                    commission_rate=commission_rate,
+                    slippage_rate=slippage_rate,
+                ),
+                score=opportunity.score,
+                entry_day_pct_chg=opportunity.entry_day_pct_chg,
+                next_day_limit_up=opportunity.next_day_limit_up,
+            )
+        )
+    return trades
 
 
 def catch_metrics(trades: Iterable[BacktestTrade]) -> dict[str, float | int]:
@@ -186,7 +271,9 @@ def _metrics(trades: Iterable[BacktestTrade], *, shape: str) -> BacktestMetrics:
     )
 
 
-def _gene_evaluator(code: str, bars: pd.DataFrame, signal_date: date) -> tuple[str, ...]:
+def _gene_evaluator(
+    code: str, bars: pd.DataFrame, signal_date: date
+) -> Mapping[str, SignalIntent]:
     latest = bars.iloc[-1]
     amount = float(latest["amount"] or 0.0)
     if not passes_base_filter(code, float(latest["close"]), amount):
@@ -203,7 +290,20 @@ def _gene_evaluator(code: str, bars: pd.DataFrame, signal_date: date) -> tuple[s
         base_filter_passed=True,
         policy=PRECISION_POLICY,
     )
-    return {code: float(candidate.score)} if candidate is not None else {}
+    if candidate is None or result.consolidation_high is None:
+        return {}
+    return {
+        code: SignalIntent(
+            score=float(candidate.score),
+            trigger_price=float(result.consolidation_high),
+            max_gap_pct=5.0,
+            invalidation_price=(
+                float(result.last_limit_up_low)
+                if result.last_limit_up_low is not None
+                else None
+            ),
+        )
+    }
 
 
 def _combined_evaluator(code: str, bars: pd.DataFrame, signal_date: date) -> tuple[str, ...]:
@@ -329,6 +429,7 @@ def main(argv: list[str] | None = None) -> int:
             "commission_rate": args.commission_rate,
             "slippage_rate": args.slippage_rate,
         },
+        "execution_model": GENE_WATCH_EXECUTION_MODEL,
         "hold_days": args.hold_days,
         "selected_profile": "limit_up_gene_watch" if decision.promoted else None,
         "metrics": {

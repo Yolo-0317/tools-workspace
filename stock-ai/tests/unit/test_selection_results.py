@@ -28,6 +28,7 @@ def test_promoted_current_gene_lane_enters_top5_sources(monkeypatch, tmp_path) -
             "test": {"start": "2025-06-02", "end": "2026-08-12"},
         },
         "costs": {"commission_rate": 0.0008, "slippage_rate": 0.001},
+        "execution_model": "next-session-box-breakout-stop-v1",
         "hold_days": 5,
         "selected_profile": "limit_up_gene_watch",
         "metrics": {

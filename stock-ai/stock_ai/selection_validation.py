@@ -25,6 +25,7 @@ STRICT_POLICIES = {
 }
 GENE_WATCH_SCHEMA_VERSION = "limit-up-gene-watch-validation-v1"
 GENE_WATCH_RULE_VERSION = "limit-up-gene-watch-1.0.0"
+GENE_WATCH_EXECUTION_MODEL = "next-session-box-breakout-stop-v1"
 
 
 class ValidationError(ValueError):
@@ -338,6 +339,8 @@ def _validate_gene_watch_payload(payload: object, *, expected_data_end: date) ->
         raise ValueError("unknown gene-watch schema")
     if payload.get("rule_version") != GENE_WATCH_RULE_VERSION:
         raise ValueError("unknown gene-watch rule")
+    if payload.get("execution_model") != GENE_WATCH_EXECUTION_MODEL:
+        raise ValueError("unknown gene-watch execution model")
     datetime.fromisoformat(str(payload["generated_at"]))
     if payload.get("selected_profile") != "limit_up_gene_watch":
         raise ValueError("gene-watch profile was not selected")
