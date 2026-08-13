@@ -101,6 +101,12 @@ class AdvisorLedgerRepository:
         row = self.load_active_cycle(code)
         if row is None:
             return None
+        trigger_plan = row.get("trigger_plan_json")
+        if isinstance(trigger_plan, str):
+            try:
+                trigger_plan = json.loads(trigger_plan)
+            except json.JSONDecodeError:
+                trigger_plan = {}
         return DecisionCycle(
             cycle_id=int(row["cycle_id"]),
             code=str(row["ts_code"]).zfill(6),
@@ -111,6 +117,7 @@ class AdvisorLedgerRepository:
             initial_action=str(row["initial_action"]),
             current_action=str(row["current_action"]),
             status=CycleStatus(str(row["status"])),
+            trigger_plan=dict(trigger_plan or {}),
         )
 
     def open_cycle(
@@ -123,16 +130,18 @@ class AdvisorLedgerRepository:
         expiry_trade_date: date,
         initial_action: str,
         current_action: str,
+        trigger_plan: Mapping[str, Any] | None = None,
     ) -> DecisionCycle:
         result = self.connection.execute(
             text(
                 """
                 INSERT INTO advisor_decision_cycles
                   (ts_code, name, started_trade_date, review_trade_date,
-                   expiry_trade_date, initial_action, current_action, status, source)
+                   expiry_trade_date, initial_action, current_action,
+                   trigger_plan_json, status, source)
                 VALUES
                   (:code, :name, :started, :review, :expiry,
-                   :initial_action, :current_action, 'ACTIVE', 'advisor')
+                   :initial_action, :current_action, :trigger_plan, 'ACTIVE', 'advisor')
                 """
             ),
             {
@@ -143,6 +152,7 @@ class AdvisorLedgerRepository:
                 "expiry": expiry_trade_date,
                 "initial_action": initial_action,
                 "current_action": current_action,
+                "trigger_plan": json.dumps(trigger_plan or {}, ensure_ascii=False, default=_json_default),
             },
         )
         cycle_id = int(result.lastrowid)
@@ -152,7 +162,7 @@ class AdvisorLedgerRepository:
             previous_action=None,
             new_action=current_action,
             reason={"cycle_days": "3-5"},
-            evidence={},
+            evidence={"trigger_plan": dict(trigger_plan or {})},
             source="advisor",
             observed_at=datetime.combine(started_trade_date, datetime.min.time()),
             effective_trade_date=started_trade_date,
@@ -167,7 +177,44 @@ class AdvisorLedgerRepository:
             initial_action=initial_action,
             current_action=current_action,
             status=CycleStatus.ACTIVE,
+            trigger_plan=dict(trigger_plan or {}),
         )
+
+    def attach_trigger_plan(
+        self,
+        cycle: DecisionCycle,
+        trigger_plan: Mapping[str, Any],
+        *,
+        as_of: date,
+        observed_at: datetime,
+    ) -> None:
+        """Backfill a plan only when an older active cycle has none."""
+        result = self.connection.execute(
+            text(
+                """
+                UPDATE advisor_decision_cycles
+                SET trigger_plan_json = :plan
+                WHERE cycle_id = :cycle_id
+                  AND (trigger_plan_json IS NULL OR JSON_LENGTH(trigger_plan_json) = 0)
+                """
+            ),
+            {
+                "cycle_id": int(cycle.cycle_id),
+                "plan": json.dumps(trigger_plan, ensure_ascii=False, default=_json_default),
+            },
+        )
+        if int(result.rowcount or 0) == 1:
+            self.append_decision_event(
+                cycle_id=int(cycle.cycle_id),
+                event_type="CORRECTION",
+                previous_action=cycle.current_action,
+                new_action=cycle.current_action,
+                reason={"relation": "补齐执行计划"},
+                evidence={"trigger_plan": dict(trigger_plan)},
+                source="advisor_plan_backfill",
+                observed_at=observed_at,
+                effective_trade_date=as_of,
+            )
 
     def record_transition(
         self,

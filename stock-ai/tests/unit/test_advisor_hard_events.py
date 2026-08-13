@@ -86,3 +86,11 @@ def test_target_hit_is_a_price_hard_event() -> None:
 
     assert events[0].suggested_action == "分批止盈"
     assert events[0].evidence["trigger"] == "target_price"
+
+
+def test_price_remaining_above_pressure_does_not_repeat_hard_event() -> None:
+    events = detect_hard_events(
+        HardEventInputs(price=11.2, previous_price=11.1, pressure_price=11.0)
+    )
+
+    assert events == ()

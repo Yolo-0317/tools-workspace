@@ -53,7 +53,16 @@ def detect_hard_events(inputs: HardEventInputs) -> tuple[HardEvent, ...]:
     events: list[HardEvent] = []
 
     if inputs.price is not None:
-        if inputs.stop_loss is not None and inputs.price <= inputs.stop_loss:
+        def crossed_down(threshold: float) -> bool:
+            return (
+                inputs.previous_price is None or inputs.previous_price > threshold
+            ) and inputs.price <= threshold
+
+        def crossed_up(threshold: float) -> bool:
+            return (
+                inputs.previous_price is None or inputs.previous_price < threshold
+            ) and inputs.price >= threshold
+        if inputs.stop_loss is not None and crossed_down(inputs.stop_loss):
             events.append(
                 _event(
                     HardEventKind.PRICE_TRIGGER,
@@ -67,7 +76,7 @@ def detect_hard_events(inputs: HardEventInputs) -> tuple[HardEvent, ...]:
                     observed_at,
                 )
             )
-        elif inputs.target_price is not None and inputs.price >= inputs.target_price:
+        elif inputs.target_price is not None and crossed_up(inputs.target_price):
             events.append(
                 _event(
                     HardEventKind.PRICE_TRIGGER,
@@ -81,7 +90,7 @@ def detect_hard_events(inputs: HardEventInputs) -> tuple[HardEvent, ...]:
                     observed_at,
                 )
             )
-        elif inputs.support_price is not None and inputs.price < inputs.support_price:
+        elif inputs.support_price is not None and crossed_down(inputs.support_price):
             events.append(
                 _event(
                     HardEventKind.PRICE_TRIGGER,
@@ -95,7 +104,7 @@ def detect_hard_events(inputs: HardEventInputs) -> tuple[HardEvent, ...]:
                     observed_at,
                 )
             )
-        elif inputs.pressure_price is not None and inputs.price > inputs.pressure_price:
+        elif inputs.pressure_price is not None and crossed_up(inputs.pressure_price):
             events.append(
                 _event(
                     HardEventKind.PRICE_TRIGGER,

@@ -33,6 +33,7 @@ class DecisionCycle:
     initial_action: str
     current_action: str
     status: CycleStatus
+    trigger_plan: Mapping[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

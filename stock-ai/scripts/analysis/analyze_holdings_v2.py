@@ -247,25 +247,46 @@ def analyze_holdings_v2():
             for offset in range((calendar_end - calendar_start).days + 1)
             if is_a_share_trading_day(calendar_start + timedelta(days=offset))
         )
-        hard_events = detect_hard_events(
-            HardEventInputs(
-                material_risk=news_result.veto.new_risk_forbidden,
-                material_risk_reasons=tuple(news_result.veto.reasons),
-                observed_at=now,
-            )
-        )
         decision_engine = get_engine()
         if decision_engine is None:
             raise RuntimeError("未配置 MYSQL_URL，无法读取决策记忆")
         with decision_engine.begin() as decision_conn:
+            from stock_ai.advisor_memory.trade_plan import build_trade_plan
+
+            initial_action = str(row.get("上次建议") or "").strip() or "持有观察"
+            proposed_plan = build_trade_plan(
+                initial_action,
+                current_price=float(row.get("当前价") or 0) or None,
+                bars=bars,
+            )
+            repository = AdvisorLedgerRepository(decision_conn)
+            active_cycle = repository.load_active_cycle_model(code)
+            cycle_plan = dict(active_cycle.trigger_plan) if active_cycle and active_cycle.trigger_plan else proposed_plan
+            previous_price = (
+                float(bars[-2]["close"])
+                if len(bars) >= 2 and bars[-2].get("close") is not None
+                else None
+            )
+            hard_events = detect_hard_events(
+                HardEventInputs(
+                    price=float(row.get("当前价") or 0) or None,
+                    previous_price=previous_price,
+                    support_price=cycle_plan.get("defense_trigger_price"),
+                    pressure_price=cycle_plan.get("strength_trigger_price"),
+                    material_risk=news_result.veto.new_risk_forbidden,
+                    material_risk_reasons=tuple(news_result.veto.reasons),
+                    observed_at=now,
+                )
+            )
             diagnosis_decision = prepare_diagnosis(
                 code,
                 name=name,
                 as_of=as_of,
                 trading_days=decision_calendar,
                 hard_events=hard_events,
-                repository=AdvisorLedgerRepository(decision_conn),
-                initial_action=str(row.get("上次建议") or "").strip() or "持有观察",
+                repository=repository,
+                initial_action=initial_action,
+                trigger_plan=cycle_plan,
             )
         combined_prompt = build_holdings_prompt(
             row=row,

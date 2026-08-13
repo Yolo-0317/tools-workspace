@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime, time
-from typing import Sequence
+from typing import Any, Mapping, Sequence
 
 from .models import CycleStatus, DecisionCycle, HardEvent
 from .state_machine import advance_cycle, resolve_cycle_dates
@@ -20,6 +20,7 @@ class DiagnosisDecision:
     status: CycleStatus
     hard_events: tuple[HardEvent, ...]
     allowed_actions: tuple[str, ...]
+    trigger_plan: Mapping[str, Any]
 
 
 def _cycle_day(cycle: DecisionCycle, as_of: date, trading_days: Sequence[date]) -> int:
@@ -41,6 +42,7 @@ def prepare_diagnosis(
     repository,
     initial_action: str = "持有观察",
     extend_at_review: bool = True,
+    trigger_plan: Mapping[str, Any] | None = None,
 ) -> DiagnosisDecision:
     """Resolve the action before AI analysis and persist the transition."""
     cycle = repository.load_active_cycle_model(str(code).zfill(6))
@@ -54,6 +56,7 @@ def prepare_diagnosis(
             expiry_trade_date=expiry,
             initial_action=initial_action,
             current_action=initial_action,
+            trigger_plan=trigger_plan,
         )
         return DiagnosisDecision(
             cycle_id=cycle.cycle_id,
@@ -66,7 +69,20 @@ def prepare_diagnosis(
             status=CycleStatus.ACTIVE,
             hard_events=tuple(hard_events),
             allowed_actions=(initial_action,),
+            trigger_plan=dict(trigger_plan or {}),
         )
+
+    resolved_plan = dict(cycle.trigger_plan or {})
+    if not resolved_plan and trigger_plan:
+        resolved_plan = dict(trigger_plan)
+        attach = getattr(repository, "attach_trigger_plan", None)
+        if callable(attach):
+            attach(
+                cycle,
+                resolved_plan,
+                as_of=as_of,
+                observed_at=datetime.combine(as_of, time(15, 0)),
+            )
 
     transition = advance_cycle(
         cycle,
@@ -96,15 +112,17 @@ def prepare_diagnosis(
         status=transition.status,
         hard_events=tuple(hard_events),
         allowed_actions=(transition.action,),
+        trigger_plan=resolved_plan,
     )
 
 
 def format_memory_context(decision: DiagnosisDecision) -> str:
+    from .trade_plan import format_trade_plan
     review = decision.next_review_date.isoformat() if decision.next_review_date else "周期已结束"
     hard_event = "无" if not decision.hard_events else "；".join(
         f"{item.kind.value}:{item.suggested_action}" for item in decision.hard_events
     )
-    return "\n".join(
+    memory = "\n".join(
         [
             "## 决策记忆与状态机约束",
             f"- 当前周期第{decision.cycle_day}/5日",
@@ -117,6 +135,7 @@ def format_memory_context(decision: DiagnosisDecision) -> str:
             "- AI 只能解释新增证据，不得提出锁定集合之外的动作。",
         ]
     )
+    return memory + "\n" + format_trade_plan(decision.trigger_plan)
 
 
 def enforce_locked_action(
@@ -126,13 +145,21 @@ def enforce_locked_action(
     """Replace an AI-authored operation line with the deterministic action."""
     rejected = False
     kept: list[str] = []
+    protected_prefixes = (
+        "操作建议", "建议动作", "决策", "仓位计划", "强势触发",
+        "入场触发", "失效条件", "追高纪律", "周期纪律",
+    )
     for line in str(ai_text or "").splitlines():
         compact = line.strip().lstrip("#*- ").strip()
-        if compact.startswith(("操作建议", "建议动作", "决策")):
+        if compact.startswith(protected_prefixes):
             if decision.locked_action not in compact:
                 rejected = True
             continue
         kept.append(line)
     header = f"操作建议：{decision.locked_action}（{decision.relation}）"
+    from .trade_plan import format_trade_plan
+
+    plan = format_trade_plan(decision.trigger_plan)
     body = "\n".join(kept).strip()
-    return (f"{header}\n{body}" if body else header), rejected
+    fixed = f"{header}\n{plan}"
+    return (f"{fixed}\n{body}" if body else fixed), rejected

@@ -42,6 +42,7 @@ def active_cycle() -> DecisionCycle:
         initial_action="持有观察",
         current_action="持有观察",
         status=CycleStatus.ACTIVE,
+        trigger_plan={"horizon": "3-5个交易日", "position_plan": "维持现有股数"},
     )
 
 
@@ -75,12 +76,14 @@ def test_first_diagnosis_opens_three_to_five_day_cycle() -> None:
         hard_events=(),
         repository=repository,
         initial_action="持有观察",
+        trigger_plan={"horizon": "3-5个交易日", "position_plan": "维持现有股数"},
     )
 
     assert decision.cycle_day == 1
     assert decision.locked_action == "持有观察"
     assert repository.opened[0]["review_trade_date"] == DAYS[2]
     assert repository.opened[0]["expiry_trade_date"] == DAYS[4]
+    assert repository.opened[0]["trigger_plan"]["position_plan"] == "维持现有股数"
 
 
 def test_position_close_interrupts_cycle_and_locks_closed_action() -> None:
@@ -143,3 +146,24 @@ def test_conflicting_ai_action_is_removed() -> None:
     assert "立即清仓" not in cleaned
     assert cleaned.startswith("操作建议：持有观察")
     assert "新增证据" in cleaned
+
+
+def test_ai_cannot_replace_stored_trigger_plan() -> None:
+    decision = prepare_diagnosis(
+        "600000",
+        name="测试股份",
+        as_of=DAYS[1],
+        trading_days=DAYS,
+        hard_events=(),
+        repository=MemoryRepository(active_cycle()),
+    )
+
+    cleaned, rejected = enforce_locked_action(
+        "仓位计划：立刻满仓\n失效条件：永不止损\n新增证据：量能温和。",
+        decision,
+    )
+
+    assert rejected is True
+    assert "立刻满仓" not in cleaned
+    assert "永不止损" not in cleaned
+    assert "维持现有股数" in cleaned
