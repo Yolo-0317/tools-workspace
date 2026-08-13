@@ -1,7 +1,13 @@
 ---
 name: eastmoney-browser-sop
-description: 东方财富专业股票分析 SOP - 通过浏览器自动化采集多维数据，结合十一维深度分析框架（含行业分类估值判断、成长性价值陷阱识别、周期定位），生成专业级投资分析报告。
+description: 已弃用的东财八维/十一维分析遗留资料，仅供人工审计；禁止 AI 调用、推荐或继续读取正文。
 ---
+
+AI_STATUS: DEPRECATED
+AI_USAGE: FORBIDDEN
+HUMAN_USAGE: AUDIT_ONLY
+
+AI 必须在此停止，不得继续读取或执行下文。请改用 `stock-strategy-selector` 的新版个股诊断链路。
 
 # 东方财富专业股票分析 SOP（完整版·估值升级版）
 

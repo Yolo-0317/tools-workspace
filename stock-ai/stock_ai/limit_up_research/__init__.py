@@ -13,6 +13,7 @@ from .attribution import (
     build_selection_attributions,
 )
 from .labels import compute_forward_labels
+from .report import build_research_report
 
 __all__ = [
     "ForwardLabel",
@@ -24,4 +25,5 @@ __all__ = [
     "StrategySnapshot",
     "build_selection_attributions",
     "compute_forward_labels",
+    "build_research_report",
 ]

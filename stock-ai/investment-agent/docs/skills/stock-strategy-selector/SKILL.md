@@ -1,6 +1,6 @@
 ---
 name: stock-strategy-selector
-description: A股投顾带操工作台 — 投顾主策略决策 → 数据/选股/SOP/监控工具 → 看板/微信交付。支持 Tushare 与东财 OpenCLI。
+description: A股投顾带操工作台 — 投顾主策略决策 → 数据/选股/新版诊断/监控工具 → 看板/微信交付。支持 Tushare 与东财 OpenCLI 数据。
 ---
 
 # Stock Strategy Selector（投顾带操）
@@ -11,9 +11,9 @@ Use the local project at `/Users/yolo/dev/yolo/tools-workspace/stock-ai` as the 
 
 ## 投顾阶段门控（必读）
 
-| 阶段 | 含义 | Top5 / combined | SOP & AI 简评 | 次日监控 | 新开仓建议 |
+| 阶段 | 含义 | Top5 / combined | 新版诊断与 AI 简评 | 次日监控 | 新开仓建议 |
 |------|------|-----------------|---------------|----------|------------|
-| **0** | 止血降仓 | 情报池（继续观察） | **SOP 启用** / AI 简评跳过 | **不写** selection 规则 | **禁止**；仅减仓 |
+| **0** | 止血降仓 | 情报池（继续观察） | 新版诊断可用 / AI 简评跳过 | **不写** selection 规则 | **禁止**；仅减仓 |
 | **1** | 稳态组合 | 小仓试探 | 启用 | 启用 | ≤1 只试探 |
 | **2** | 进攻试探 | 可进攻 | 启用 | 启用 | 每月 ≤2 只 |
 
@@ -50,7 +50,7 @@ Use the local project at `/Users/yolo/dev/yolo/tools-workspace/stock-ai` as the 
 | 脚本 | 功能 | 数据源 |
 |------|------|--------|
 | `scripts/sync/sync_tushare_daily_to_mysql.py` | 同步日线数据到 MySQL | Tushare |
-| `scripts/tools/fetch_eastmoney_quotes.py` | 实时现价、K 线、SOP、战报指数 | OpenCLI（东财页面） |
+| `scripts/tools/fetch_eastmoney_quotes.py` | 实时现价、客观页面数据、战报指数 | OpenCLI（东财页面） |
 | `scripts/tools/fetch_eastmoney_macro_news.py` | 宏观财经快讯 | OpenCLI |
 
 ### 使用方式
@@ -114,7 +114,7 @@ Run two or more strategy scripts and compare:
 
 Use `scripts/analysis/ai_review_combined_top5.py` after screening, with `DEEPSEEK_API_KEY`.
 
-**投顾门控**：阶段 0 跳过 AI 简评与次日监控（`ai_selection_review_enabled()` / `selection_watch_sync_enabled()`）。**Top5 东财 SOP 默认关**（`DISABLE_SOP_TOP5=1` / `sop_review_enabled()`）；恢复 SOP 设 `DISABLE_SOP_TOP5=0`。
+**投顾门控**：阶段 0 跳过 AI 简评与次日监控（`ai_selection_review_enabled()` / `selection_watch_sync_enabled()`）。东财八维/十一维 SOP 已标记 `AI_USAGE: FORBIDDEN`；AI 不得修改开关恢复、调用或推荐该遗留流程。
 
 During AI review, inject `load_full_decision_context()` (投顾主策略 > 执行卡 > 通用策略).
 
@@ -145,7 +145,7 @@ Base on:
 - `投顾主策略.md` weekly must-do / forbidden
 - MySQL `portfolio_positions` + execution card triggers
 - latest screening (advisor-capped actions)
-- AI/SOP if phase ≥1
+- 新版个股诊断 / AI 简评（仅在阶段允许时）
 - OpenCLI live price for intraday (not Tushare last close as 现价)
 
 Frame as next-day watchlist with risk notes; user executes in **东方财富证券** (East Money brokerage).

@@ -50,6 +50,7 @@ selection_watchlist --sync  ──►  selection_watch_picks + alert_rules（sel
 | `portfolio_positions_daily` | 持仓每日快照（含现价/盈亏） | 同上 |
 | `sop_review_daily` / `sop_review_items` | SOP+DeepSeek 审查 | 17:30 SOP 链路；`dashboard_data backfill-sop` |
 | `emotion_cycle_daily` / `emotion_cycle_dragon_watch` | 游资轨情绪周期日检 | `emotion_cycle_checklist save/show`；Agent 读 `load_emotion_cycle_checklist` |
+| `limit_up_research_*` | 东财涨停全量事实、前日选股归因与 T+1/T+3/T+5 标签 | `sync_limit_up_research` 手动触发 |
 | `macro_news_items` | 东财 7×24 快讯（含 `sentiment` 利好/利空/中性） | `sync_macro_news`（每 15min） |
 | `macro_news_fetch_runs` | 快讯同步批次 | 同上 |
 | `briefing_snapshots` | Cursor AI 财经解读 | `sync_macro_news`（每 15min） |

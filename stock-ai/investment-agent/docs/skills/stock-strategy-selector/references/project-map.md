@@ -32,7 +32,7 @@
 
 - `scripts/sync/sync_tushare_daily_to_mysql.py`
 - `scripts/tools/ensure_daily_bars.py`
-- `scripts/tools/fetch_eastmoney_quotes.py` — OpenCLI quotes / SOP / indices
+- `scripts/tools/fetch_eastmoney_quotes.py` — OpenCLI quotes / objective page data / indices
 
 ### Screening
 
@@ -44,7 +44,7 @@
 ### Review / analysis
 
 - `scripts/analysis/ai_review_combined_top5.py`
-- `scripts/analysis/sop_review_top5_concurrent.py`
+- `scripts/analysis/sop_review_top5_concurrent.py` — legacy human-audit entry; forbidden to AI
 - `scripts/analysis/analyze_holdings_v2.py`
 - `scripts/tools/check_why_not_selected.py`
 - `scripts/tools/debug_signal.py`

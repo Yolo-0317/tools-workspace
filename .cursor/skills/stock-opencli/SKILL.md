@@ -1,7 +1,7 @@
 ---
 name: stock-opencli
 description: >-
-  OpenCLI browser automation for stock-ai: Eastmoney quotes/SOP, WeChat MP backend
+  OpenCLI browser automation for stock-ai: Eastmoney quotes and objective page data, WeChat MP backend
   analytics, JYWG positions, hot sectors. Use when user says OpenCLI, 东财浏览器,
   公众号后台抓取, fetch_*_opencli, or browser eval fails. Do NOT use Playwright for
   these paths (project rule).
@@ -15,15 +15,15 @@ paths:
 
 # stock-opencli · 浏览器自动化（OpenCLI）
 
-> **不必每次现查命令**。Agent 遇到下表场景时 **先读本 skill**，再调对应 Python 入口；东财 **十一维深度分析** 另读 [eastmoney-browser-sop](../../stock-ai/investment-agent/docs/skills/eastmoney-browser-sop/SKILL.md)。
+> **不必每次现查命令**。Agent 遇到下表场景时 **先读本 skill**，再调对应 Python 入口。东财八维/十一维 SOP 已弃用并禁止 AI 使用；单股分析转到 `stock-strategy-selector` 的新版个股诊断。
 
-**上下文预算**：普通行情/后台抓取只用本页的场景路由和对应命令；仅在 SOP 深度分析或浏览器故障时再读取后续参考章节。
+**上下文预算**：普通行情/后台抓取只用本页的场景路由和对应命令；仅在浏览器故障时再读取后续参考章节。
 
 ## 何时用 / 不用
 
 | 用 OpenCLI | 不用（改走别的） |
 |------------|------------------|
-| 东财现价、SOP、快讯、行业榜、技术面摘要 | 历史日线批量 → MySQL / Tushare |
+| 东财现价、快讯、行业榜、技术面摘要 | 历史日线批量 → MySQL / Tushare |
 | 公众号 **内容分析**、登录态探测 | 公众号草稿 API → `wechat_mp_client`（官方） |
 | 交易软件持仓页抓取（JYWG） | 搜一搜看板「搜索后阅读/关注」→ 常需 **人工/小程序**（插件页易「遇到问题」） |
 
@@ -126,8 +126,6 @@ from scripts.tools.fetch_eastmoney_quotes import (
 |----------|------|------|
 | 单股现价 | `fetch_quotes_opencli(['600995'])` | 或 CLI 同模块 `main` |
 | 指数快照 | `fetch_index_snapshots()` | 上证/深证等 |
-| SOP 多维快照 | `fetch_sop_snapshots(codes)` | 战报/Top5 审查 |
-| 批量 SOP | `fetch_full_sop_batch(codes)` | 并发宜控制数量 |
 | 7×24 快讯 | `fetch_macro_news_opencli` | `sync_macro_news.sh` |
 | 快讯+评论数 | `fetch_kuaixun_engagement_opencli` | 要闻排序用 |
 | **行业涨幅榜** | `fetch_hot_industry_sectors_opencli` / `fetch_hot_industry_board_rows_opencli`（含领涨股 JSONP） | `sector` 代表股样本 |
@@ -136,7 +134,7 @@ from scripts.tools.fetch_eastmoney_quotes import (
 | 技术面摘要 | `fetch_technical_summary_opencli` / `batch` | dragons/top5 注入 |
 | K 线 JSONP | `fetch_kline_rows_opencli` | 浏览器内 JSONP，非 HTTP 直连 |
 
-深度分析流程：[eastmoney-browser-sop](../../stock-ai/investment-agent/docs/skills/eastmoney-browser-sop/SKILL.md)。
+个股分析统一转到 `stock-strategy-selector` 的新版个股诊断；本技能只提供东财客观数据采集。
 
 ### B. 微信公众号「牛马也智能」后台
 

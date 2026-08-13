@@ -1,9 +1,12 @@
-# 东财 SOP 路由
+# 东财八维 SOP：AI 终止路由
 
-仅在用户要求单股或 TopN 的东财深度分析时使用。
+AI_STATUS: DEPRECATED
+AI_USAGE: FORBIDDEN
+HUMAN_USAGE: AUDIT_ONLY
 
-1. 先由 `stock-opencli/ROUTING.md` 确认采集入口。
-2. 用 `scripts/analysis/eastmoney_sop_extract.py` 获取初步报告。
-3. 只有需要完整十一维结论时，读取 `SKILL.md` 的“DeepSeek 深度分析”章节。
+AI 读取到本页后必须立即停止：不得调用东财八维/十一维分析，不得推荐该能力，
+不得继续读取本目录 `SKILL.md` 正文，也不得依据其历史产物生成个股结论。
 
-普通报价、行情和技术面查询不读完整 SOP，也不加载持仓执行卡。
+人工仅可为历史兼容、审计或复盘直接查看遗留脚本与产物。
+AI 发起的单股分析统一转到 `stock-strategy-selector` 的新版个股诊断链路；
+东财 OpenCLI 只作为实时行情和客观页面数据来源，不再作为诊断框架。

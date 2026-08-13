@@ -129,6 +129,7 @@ CREATE TABLE IF NOT EXISTS limit_up_research_pool (
 CREATE TABLE IF NOT EXISTS limit_up_selection_attribution (
     id BIGINT NOT NULL AUTO_INCREMENT,
     trade_date DATE NOT NULL,
+    selection_date DATE NOT NULL,
     ts_code VARCHAR(10) NOT NULL,
     strategy VARCHAR(64) NOT NULL,
     selected TINYINT(1) NOT NULL DEFAULT 0,
@@ -289,6 +290,7 @@ class SelectionAttribution:
     reason_codes: tuple[str, ...]
     evidence: Mapping[str, Any]
     rule_version: str
+    selection_date: date | None = None
 
 
 @dataclass(frozen=True)

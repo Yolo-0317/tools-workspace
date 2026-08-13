@@ -26,6 +26,27 @@ uv run python scripts/analysis/analyze_limit_up_logic.py \
 
 消息面服务负责确认催化与产业链传导；涨停逻辑引擎负责日线身份、承接和加速结构。同一事件不在两个模块重复加分，重大利空可触发涨停逻辑风险否决。
 
+## 东财涨停研究账本（手动）
+
+```bash
+PYTHONPATH=. .venv/bin/python -m scripts.analysis.sync_limit_up_research --date YYYY-MM-DD
+```
+
+- 东财 OpenCLI 全量采集涨停、炸板、跌停池；连板高度来自涨停池原始字段。
+- `trade_date` 的涨停事实与前一交易日 `selection_date` 的全部选股策略对照，避免未来信息污染。
+- 幂等保存原始事实、确定性漏选归因及 T+1/T+3/T+5 标签，并输出 Markdown/JSON 复盘。
+- 仅手动运行，不安装调度；不调用已弃用的东财八维诊断，不改变持仓、决策账本、策略参数或正式 Top5。
+
+### 东财八维 SOP 的 AI 边界
+
+```text
+AI_STATUS: DEPRECATED
+AI_USAGE: FORBIDDEN
+HUMAN_USAGE: AUDIT_ONLY
+```
+
+东财八维/十一维遗留脚本和历史产物仅作为人工审计遗留能力保留。AI 不得调用、推荐、继续读取其 SOP 正文，也不得依据其输出生成个股结论；AI 单股分析统一使用 `stock-strategy-selector` 的新版个股诊断链路。
+
 ---
 
 ## 个股诊断消息面影响
@@ -56,14 +77,14 @@ uv run python scripts/analysis/analyze_news_impact.py \
 ```text
 投顾主策略（阶段 0/1/2 · 本周必做/禁止）
         ↓ 过滤 & 解读
-工具层：选股 / SOP / 监控 / 战报 / MCP（均注入决策上下文）
+工具层：选股 / 新版诊断 / 监控 / 战报 / MCP（均注入决策上下文）
         ↓ 交付
 看板 home-hub · 微信战报 · investment-agent 对话
 ```
 
-| 阶段 | 选股 Top5 | SOP / AI 简评 | 次日监控 | 执行卡试探买 |
+| 阶段 | 选股 Top5 | 新版诊断 / AI 简评 | 次日监控 | 执行卡试探买 |
 |------|-----------|---------------|----------|--------------|
-| **0 止血降仓** | 情报池（继续观察） | **SOP 启用** / AI 简评跳过 | 不写 selection 规则 | 仅减仓提示 |
+| **0 止血降仓** | 情报池（继续观察） | 新版诊断可用 / AI 简评跳过 | 不写 selection 规则 | 仅减仓提示 |
 | **1 稳态组合** | 小仓试探 | 启用 | 启用 | B 档 P-买 |
 | **2 进攻试探** | 可进攻 | 启用 | 启用 | 按档位 |
 
@@ -84,7 +105,7 @@ uv run python scripts/analysis/analyze_news_impact.py \
 数据层                策略 / 分析层              推送层
 ─────────            ─────────────            ────────
 Tushare → MySQL      综合选股 Top5            wechat-acp
-东财实时 / 盘中       东财 SOP + DeepSeek      （wechat-cursor-acp）
+东财实时 / 盘中       新版诊断 + AI 简评       （wechat-cursor-acp）
                      战报 + AI 解读
                      MCP 盘中 / 做T 信号
                      持仓 + 选股池监控
@@ -96,8 +117,8 @@ Agent 排查「是否漏接 DB/OpenCLI」时，先对号入座；**只有第一�
 
 | 档位 | 含义 | 典型入口 / 产物 | 为何如此 |
 |------|------|-----------------|----------|
-| **① 主链路** | 该进 DB 的进 DB，该用 OpenCLI 的用 OpenCLI | Tushare sync → `stock_daily`；综合选股 → `selection_daily_results`；执行卡 sync → `portfolio_positions` / `alert_rules`；战报/SOP/监控现价 → `fetch_eastmoney_quotes.py` | 生产自动化单一真相源 |
-| **② 不进 DB，用 OpenCLI** | 实时/页面型，抓完即用 | 现价、SOP 八维、7×24 快讯、战报指数/国际盘 | 变化快、结构杂，入库性价比低 |
+| **① 主链路** | 该进 DB 的进 DB，该用 OpenCLI 的用 OpenCLI | Tushare sync → `stock_daily`；综合选股 → `selection_daily_results`；执行卡 sync → `portfolio_positions` / `alert_rules`；战报/监控现价 → `fetch_eastmoney_quotes.py` | 生产自动化单一真相源 |
+| **② 不进 DB，用 OpenCLI** | 实时/页面型，抓完即用 | 现价、7×24 快讯、战报指数/国际盘 | 变化快、结构杂，入库性价比低 |
 | **③ 仍用文件（辅助）** | DB 已是主源，文件作备份或桥接 | 选股 CSV 备份；`sop_review_latest.json`（与 DB 双写，JSON 兜底）；监控去重 JSON | 人读备份 / 兼容桥接 |
 | **④ 设计如此（不进 DB / 不用 OpenCLI）** | 既不当结构化数据源入库，也不靠浏览器抓东财 | 见下表 | 旁路、推理层或交付层，非行情主库 |
 
@@ -123,7 +144,7 @@ Agent 排查「是否漏接 DB/OpenCLI」时，先对号入座；**只有第一�
 | 1 | **投顾主策略**（阶段、回本路径、本周必做） | `investment-agent/投顾主策略.md` |
 | 2 | 持仓执行卡（执行价位、监控） | `investment-agent/持仓执行卡.md` |
 | 3 | 通用操盘策略 | `investment-agent/memory/trading-strategies.md` |
-| 4 | 个股东财 SOP | `investment-agent/docs/skills/eastmoney-browser-sop/` |
+| 4 | 个股新版诊断 | `investment-agent/docs/skills/stock-strategy-selector/` |
 
 注入方式：
 
@@ -135,12 +156,12 @@ Agent 排查「是否漏接 DB/OpenCLI」时，先对号入座；**只有第一�
 
 - API：`GET /api/dashboard/advisor`；`summary` 响应含 `advisor` 块（阶段、回本进度、本周必做）
 - **周五周复盘**：`push_advisor_weekly_review.sh` → MySQL `advisor_weekly_reviews` → 看板 `advisor.weekly_review_latest`；API `GET /api/dashboard/advisor/weekly-reviews`
-- 选股 Top5 经 `advisor_selection` 过滤；阶段 0 = 情报池，**仍跑 Top5 SOP**，跳过 AI 简评与 `selection_watchlist --sync`
+- 选股 Top5 经 `advisor_selection` 过滤；阶段 0 = 情报池，跳过 AI 简评与 `selection_watchlist --sync`
 - 战报 `daily_briefing_report.py` 首行含投顾横幅
 
 **Agent Skill 权威副本**（与 `~/.codex/skills/` 不一致时以 repo 为准）：
 
-- 东财 SOP：`investment-agent/docs/skills/eastmoney-browser-sop/SKILL.md`
+- 东财八维遗留资料：`investment-agent/docs/skills/eastmoney-browser-sop/`（人工审计；AI 禁止进入正文）
 - 选股工作台：`investment-agent/docs/skills/stock-strategy-selector/SKILL.md`
 
 ---
@@ -206,8 +227,8 @@ cd wechat-cursor-acp && cp -n .env.example .env && ./scripts/start.sh
 push_selection_wechat.sh
   └─ run_selection_daily.sh
        ├─ ensure_daily_bars --sync-if-stale --require-ready  # 期望日+条数门禁，未就绪 exit 1
-       └─ daily_selection_report              # 综合选股 Top5 + 东财 SOP（默认）
-  └─ selection_watchlist --sync                # SOP → MySQL selection_watch_picks + alert_rules
+       └─ daily_selection_report              # 综合选股 Top5；遗留东财 SOP 默认关闭
+  └─ selection_watchlist --sync                # 既有审查结果 → MySQL selection_watch_picks + alert_rules
   └─ 微信推送选股报告（wechat-acp）
 ```
 
@@ -215,8 +236,8 @@ push_selection_wechat.sh
 |------|------|------|
 | 日线门禁 | `scripts/tools/ensure_daily_bars.py` | 期望交易日 + 当日≥3500 条；落后 by_date 补同步，仍不满足中止选股 |
 | 综合选股 | `core_v2/stock_selection_combined.py` | MySQL `selection_daily_results` + CSV 导出 |
-| SOP 采集 | `scripts/tools/fetch_eastmoney_quotes.py` → `eastmoney_sop_extract.py` | OpenCLI 8 维度 → `output/sop_preliminary/YYYYMMDD/` |
-| SOP + DeepSeek | `scripts/analysis/sop_review_top5_concurrent.py` | MySQL `sop_review_*` + `sop_review_latest.json` 双写 |
+| 遗留 SOP 采集 | `scripts/tools/fetch_eastmoney_quotes.py` → `eastmoney_sop_extract.py` | 人工审计专用；AI 禁止调用 |
+| 遗留 SOP + DeepSeek | `scripts/analysis/sop_review_top5_concurrent.py` | 历史兼容入口；AI 禁止调用 |
 | 干净 AI 摘要 | `daily_selection_report.py` | `output/daily_selection_ai_latest.txt`（无 stderr 日志） |
 | 次日监控 | `scripts/tools/selection_watchlist.py` | MySQL `selection_watch_picks` + `alert_rules`（source=selection） |
 
@@ -224,7 +245,7 @@ push_selection_wechat.sh
 
 **环境变量**
 
-- `DISABLE_SOP_TOP5=1`（**默认**）— 跳过 Top5 东财 SOP；阶段 ≥1 可改用轻量 AI 简评
+- `DISABLE_SOP_TOP5=1`（**必须保持**）— 跳过 Top5 东财八维 SOP；AI 不得改为 `0`
 - `DISABLE_SELECTION_REPORT=1`（**默认**）— 跳过 `daily_selection_report` 与 `daily_selection_full_latest.txt` 落盘
 - `SOP_WORKERS` — 已弃用（OpenCLI 单会话）；`DEEPSEEK_WORKERS` — 并发数（默认 3）
 - `REPORT_ONLY=1` — 不重跑选股，仅战报+推送
@@ -339,7 +360,7 @@ MCP 工具：`tushare_mcp.py` — `deepseek_trade_signal` 等。详见 [DEEPSEEK
 | 持仓 + 策略上下文 | `scripts/tools/holdings_context.py`（读 MySQL + 执行卡计划/红线） |
 | 执行卡同步 MySQL | `scripts/tools/sync_portfolio_from_card.py` |
 | 决策 prompt 注入 | `scripts/tools/decision_context.py` |
-| 东财 SOP 单股 | `investment-agent/docs/skills/eastmoney-browser-sop/SKILL.md` |
+| 东财八维遗留单股 | `investment-agent/docs/skills/eastmoney-browser-sop/`（人工审计遗留能力；AI 禁止读取正文或调用） |
 | 持仓 DeepSeek 整合 | `scripts/analysis/analyze_holdings_v2.py` |
 | 五因子 DeepSeek 逐股 | `core_v3/deepseek_analyze_five_factor.py`（读 MySQL `five_factor` 优先） |
 | 看板数据导出 | `scripts/tools/dashboard_data.py` |

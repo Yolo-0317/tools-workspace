@@ -54,6 +54,7 @@ class SelectionAttribution:
     reason_codes: tuple[str, ...]
     evidence: Mapping[str, Any]
     rule_version: str
+    selection_date: date | None = None
 
 
 @dataclass(frozen=True)

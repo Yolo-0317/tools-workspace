@@ -6,7 +6,9 @@ from stock_ai.limit_up_research.attribution import (
     ExplainResult,
     StrategySnapshot,
     build_selection_attributions,
+    explain_limit_up_gene_result,
 )
+from stock_ai.limit_up_logic import LimitUpPaths, LimitUpResult, LimitUpScoreBreakdown
 
 
 DATE = date(2026, 8, 13)
@@ -85,3 +87,22 @@ def test_deterministic_explainer_supplies_ordered_hard_rejection() -> None:
     assert row.first_reason_code == "SIGNAL_DAY_TOO_HOT"
     assert row.reason_codes == ("SIGNAL_DAY_TOO_HOT", "NOT_MATURE_CONSOLIDATION")
     assert row.evidence["pct_chg"] == 10.02
+
+
+def test_gene_explainer_reports_signal_day_too_hot_without_ai_text() -> None:
+    result = LimitUpResult(
+        code="601991", name="大唐发电", identity="NORMAL_TREND", gene="STRONG",
+        score=LimitUpScoreBreakdown(30, 25, 0, 0), paths=LimitUpPaths(10, 60, 30),
+        drivers=(), prerequisites=(), suppressors=(), missing_fields=(), data_cutoff=DATE,
+        recent_limit_up_count=1, post_limit_support_broken=False, post_limit_shrink=True,
+        consolidation_high=6.5, distance_to_consolidation_high=-0.02,
+        latest_pct_chg=10.02, days_since_last_limit_up=12, return5=0.01,
+        distance_from_last_limit_close=0.02,
+    )
+
+    explanation = explain_limit_up_gene_result(
+        result, amount_wan=50_000, base_filter_passed=True
+    )
+
+    assert explanation is not None
+    assert explanation.reason_codes[0] == "SIGNAL_DAY_TOO_HOT"

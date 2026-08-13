@@ -2670,3 +2670,322 @@ def list_advisor_weekly_reviews(*, limit: int = 12) -> list[dict[str, Any]]:
 def latest_advisor_weekly_review() -> dict[str, Any] | None:
     rows = list_advisor_weekly_reviews(limit=1)
     return rows[0] if rows else None
+
+
+def start_limit_up_research_run(
+    trade_date: date | str,
+    *,
+    source: str,
+    engine: Engine | None = None,
+) -> int:
+    """Append a STARTED audit row outside the snapshot business transaction."""
+    eng = engine or get_engine()
+    if eng is None:
+        raise RuntimeError("未配置 MYSQL_URL，无法写入涨停研究运行记录")
+    td = _parse_selection_trade_date(trade_date)
+    with eng.begin() as conn:
+        result = conn.execute(
+            text(
+                """
+                INSERT INTO limit_up_research_runs
+                  (trade_date, status, source, missing_fields_json, raw_meta_json)
+                VALUES (:trade_date, 'STARTED', :source, :missing, :meta)
+                """
+            ),
+            {
+                "trade_date": td.isoformat(),
+                "source": str(source),
+                "missing": "[]",
+                "meta": "{}",
+            },
+        )
+    return int(result.lastrowid)
+
+
+def finish_limit_up_research_run(
+    run_id: int,
+    *,
+    status: str,
+    snapshot_hash: str | None = None,
+    counts: dict[str, int] | None = None,
+    missing_fields: list[str] | tuple[str, ...] = (),
+    error: str | None = None,
+    raw_meta: dict[str, Any] | None = None,
+    engine: Engine | None = None,
+) -> None:
+    """Close a run audit row in its own short transaction."""
+    if status not in {"SUCCEEDED", "FAILED"}:
+        raise ValueError("status must be SUCCEEDED or FAILED")
+    eng = engine or get_engine()
+    if eng is None:
+        raise RuntimeError("未配置 MYSQL_URL，无法更新涨停研究运行记录")
+    values = counts or {}
+    with eng.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE limit_up_research_runs
+                SET status = :status,
+                    snapshot_hash = :snapshot_hash,
+                    limit_up_count = :limit_up_count,
+                    exploded_count = :exploded_count,
+                    limit_down_count = :limit_down_count,
+                    missing_fields_json = :missing,
+                    error_code = :error_code,
+                    error_message = :error_message,
+                    raw_meta_json = :meta,
+                    completed_at = CURRENT_TIMESTAMP(6)
+                WHERE run_id = :run_id
+                """
+            ),
+            {
+                "run_id": int(run_id),
+                "status": status,
+                "snapshot_hash": snapshot_hash,
+                "limit_up_count": values.get("LIMIT_UP"),
+                "exploded_count": values.get("EXPLODED"),
+                "limit_down_count": values.get("LIMIT_DOWN"),
+                "missing": json.dumps(list(missing_fields), ensure_ascii=False),
+                "error_code": "RUN_FAILED" if error else None,
+                "error_message": error,
+                "meta": json.dumps(raw_meta or {}, ensure_ascii=False, default=str),
+            },
+        )
+
+
+def save_limit_up_research_bundle(
+    run_id: int,
+    trade_date: date | str,
+    facts,
+    attributions,
+    labels,
+    *,
+    engine: Engine | None = None,
+) -> dict[str, int]:
+    """Atomically upsert a normalized pool snapshot, attribution, and labels."""
+    if int(run_id) <= 0:
+        raise ValueError("run_id must be positive")
+    td = _parse_selection_trade_date(trade_date)
+    allowed_pools = {"LIMIT_UP", "EXPLODED", "LIMIT_DOWN"}
+    allowed_attributions = {
+        "SELECTED", "RANKED_OUT", "HARD_REJECTED", "DATA_MISSING",
+        "EXPLAINER_UNAVAILABLE", "STRATEGY_NOT_RUN",
+    }
+    for item in tuple(facts) + tuple(attributions) + tuple(labels):
+        if re.fullmatch(r"\d{6}", str(item.code)) is None:
+            raise ValueError("research row code must be a six-digit A-share code")
+    for fact in facts:
+        if fact.pool_kind not in allowed_pools:
+            raise ValueError("invalid limit-up research pool kind")
+        if fact.trade_date != td:
+            raise ValueError("pool fact trade_date must match bundle trade_date")
+    for item in attributions:
+        if item.attribution not in allowed_attributions:
+            raise ValueError("invalid limit-up selection attribution")
+        if item.trade_date != td:
+            raise ValueError("attribution trade_date must match bundle trade_date")
+    for item in labels:
+        if item.horizon not in {"T1", "T3", "T5"}:
+            raise ValueError("invalid limit-up forward horizon")
+    eng = engine or get_engine()
+    if eng is None:
+        raise RuntimeError("未配置 MYSQL_URL，无法写入涨停研究账本")
+    with eng.begin() as conn:
+        for fact in facts:
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO limit_up_research_pool
+                      (trade_date, pool_kind, ts_code, name, pct_chg, amount_wan,
+                       board_height, main_theme, first_seal_time, last_seal_time,
+                       reopen_count, seal_amount_wan, missing_fields_json,
+                       source_run_id, raw_json)
+                    VALUES
+                      (:d, :kind, :code, :name, :pct, :amount, :height, :theme,
+                       :first_seal, :last_seal, :reopens, :seal_amount, :missing,
+                       :run_id, :raw)
+                    ON DUPLICATE KEY UPDATE
+                      name=VALUES(name), pct_chg=VALUES(pct_chg), amount_wan=VALUES(amount_wan),
+                      board_height=VALUES(board_height), main_theme=VALUES(main_theme),
+                      first_seal_time=VALUES(first_seal_time), last_seal_time=VALUES(last_seal_time),
+                      reopen_count=VALUES(reopen_count), seal_amount_wan=VALUES(seal_amount_wan),
+                      missing_fields_json=VALUES(missing_fields_json),
+                      source_run_id=VALUES(source_run_id), raw_json=VALUES(raw_json)
+                    """
+                ),
+                {
+                    "d": td.isoformat(), "kind": fact.pool_kind, "code": fact.code,
+                    "name": fact.name, "pct": fact.pct_chg, "amount": fact.amount_wan,
+                    "height": fact.board_height, "theme": fact.main_theme,
+                    "first_seal": fact.first_seal_time, "last_seal": fact.last_seal_time,
+                    "reopens": fact.reopen_count, "seal_amount": fact.seal_amount_wan,
+                    "missing": json.dumps(list(fact.missing_fields), ensure_ascii=False),
+                    "run_id": int(run_id),
+                    "raw": json.dumps(dict(fact.raw_json), ensure_ascii=False, default=str),
+                },
+            )
+        for item in attributions:
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO limit_up_selection_attribution
+                      (trade_date, selection_date, ts_code, strategy, selected, rank_no, score, action,
+                       attribution, first_reason_code, reason_codes_json, evidence_json,
+                       rule_version, source_run_id)
+                    VALUES
+                      (:d, :selection_date, :code, :strategy, :selected, :rank, :score, :action,
+                       :attribution, :first_reason, :reasons, :evidence, :version, :run_id)
+                    ON DUPLICATE KEY UPDATE
+                      selection_date=VALUES(selection_date), selected=VALUES(selected), rank_no=VALUES(rank_no), score=VALUES(score),
+                      action=VALUES(action), attribution=VALUES(attribution),
+                      first_reason_code=VALUES(first_reason_code),
+                      reason_codes_json=VALUES(reason_codes_json), evidence_json=VALUES(evidence_json),
+                      rule_version=VALUES(rule_version), source_run_id=VALUES(source_run_id)
+                    """
+                ),
+                {
+                    "d": td.isoformat(),
+                    "selection_date": item.selection_date.isoformat() if item.selection_date else td.isoformat(),
+                    "code": item.code, "strategy": item.strategy,
+                    "selected": bool(item.selected), "rank": item.rank_no, "score": item.score,
+                    "action": item.action, "attribution": item.attribution,
+                    "first_reason": item.first_reason_code,
+                    "reasons": json.dumps(list(item.reason_codes), ensure_ascii=False),
+                    "evidence": json.dumps(dict(item.evidence), ensure_ascii=False, default=str),
+                    "version": item.rule_version, "run_id": int(run_id),
+                },
+            )
+        for item in labels:
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO limit_up_forward_labels
+                      (signal_date, ts_code, horizon, outcome_date, signal_close, outcome_close,
+                       close_return_pct, max_return_pct, max_drawdown_pct, closed_limit_up,
+                       board_height, data_complete, missing_fields_json, label_version)
+                    VALUES
+                      (:signal_date, :code, :horizon, :outcome_date, :signal_close, :outcome_close,
+                       :close_return, :max_return, :max_drawdown, :closed_limit_up,
+                       :board_height, :complete, :missing, :version)
+                    ON DUPLICATE KEY UPDATE
+                      outcome_date=VALUES(outcome_date), signal_close=VALUES(signal_close),
+                      outcome_close=VALUES(outcome_close), close_return_pct=VALUES(close_return_pct),
+                      max_return_pct=VALUES(max_return_pct), max_drawdown_pct=VALUES(max_drawdown_pct),
+                      closed_limit_up=VALUES(closed_limit_up), board_height=VALUES(board_height),
+                      data_complete=VALUES(data_complete), missing_fields_json=VALUES(missing_fields_json),
+                      label_version=VALUES(label_version)
+                    """
+                ),
+                {
+                    "signal_date": item.signal_date.isoformat(), "code": item.code,
+                    "horizon": item.horizon,
+                    "outcome_date": item.outcome_date.isoformat() if item.outcome_date else None,
+                    "signal_close": item.signal_close, "outcome_close": item.outcome_close,
+                    "close_return": item.close_return_pct, "max_return": item.max_return_pct,
+                    "max_drawdown": item.max_drawdown_pct, "closed_limit_up": item.closed_limit_up,
+                    "board_height": item.board_height, "complete": item.data_complete,
+                    "missing": json.dumps(list(item.missing_fields), ensure_ascii=False),
+                    "version": item.label_version,
+                },
+            )
+    return {
+        "pool": len(facts),
+        "attributions": len(attributions),
+        "labels": len(labels),
+    }
+
+
+def _limit_up_research_row(row: Any) -> dict[str, Any]:
+    """Convert a SQLAlchemy row into a stable, JSON-decoded research mapping."""
+    item = dict(row._mapping)
+    for key, value in tuple(item.items()):
+        if isinstance(value, (date, datetime)):
+            item[key] = value.isoformat()
+    for key in (
+        "missing_fields_json",
+        "raw_json",
+        "raw_meta_json",
+        "reason_codes_json",
+        "evidence_json",
+    ):
+        value = item.get(key)
+        if isinstance(value, str):
+            try:
+                item[key] = json.loads(value)
+            except (TypeError, ValueError):
+                item[key] = None
+    return item
+
+
+def load_limit_up_pool(
+    trade_date: date | str,
+    *,
+    pool_kind: str | None = None,
+    engine: Engine | None = None,
+) -> list[dict[str, Any]]:
+    """Read normalized Eastmoney pool facts for one trading date."""
+    kind = str(pool_kind).upper() if pool_kind is not None else None
+    if kind not in {None, "LIMIT_UP", "EXPLODED", "LIMIT_DOWN"}:
+        raise ValueError("pool_kind must be LIMIT_UP, EXPLODED, or LIMIT_DOWN")
+    eng = engine or get_engine()
+    if eng is None:
+        raise RuntimeError("未配置 MYSQL_URL，无法读取涨停研究账本")
+    td = _parse_selection_trade_date(trade_date)
+    sql = "SELECT * FROM limit_up_research_pool WHERE trade_date = :d"
+    params: dict[str, Any] = {"d": td.isoformat()}
+    if kind is not None:
+        sql += " AND pool_kind = :kind"
+        params["kind"] = kind
+    sql += " ORDER BY pool_kind, ts_code"
+    with eng.connect() as conn:
+        rows = conn.execute(text(sql), params).fetchall()
+    return [_limit_up_research_row(row) for row in rows]
+
+
+def load_limit_up_research_bundle(
+    trade_date: date | str,
+    *,
+    engine: Engine | None = None,
+) -> dict[str, Any]:
+    """Read the latest successful run plus facts, attribution, and labels for a date."""
+    eng = engine or get_engine()
+    if eng is None:
+        raise RuntimeError("未配置 MYSQL_URL，无法读取涨停研究账本")
+    td = _parse_selection_trade_date(trade_date)
+    params = {"d": td.isoformat()}
+    with eng.connect() as conn:
+        run = conn.execute(
+            text(
+                "SELECT * FROM limit_up_research_runs "
+                "WHERE trade_date = :d AND status = 'SUCCEEDED' "
+                "ORDER BY run_id DESC LIMIT 1"
+            ),
+            params,
+        ).first()
+        pool = conn.execute(
+            text(
+                "SELECT * FROM limit_up_research_pool WHERE trade_date = :d "
+                "ORDER BY pool_kind, ts_code"
+            ),
+            params,
+        ).fetchall()
+        attributions = conn.execute(
+            text(
+                "SELECT * FROM limit_up_selection_attribution WHERE trade_date = :d "
+                "ORDER BY strategy, ts_code"
+            ),
+            params,
+        ).fetchall()
+        labels = conn.execute(
+            text(
+                "SELECT * FROM limit_up_forward_labels WHERE signal_date = :d "
+                "ORDER BY horizon, ts_code"
+            ),
+            params,
+        ).fetchall()
+    return {
+        "run": _limit_up_research_row(run) if run is not None else None,
+        "pool": [_limit_up_research_row(row) for row in pool],
+        "attributions": [_limit_up_research_row(row) for row in attributions],
+        "labels": [_limit_up_research_row(row) for row in labels],
+    }

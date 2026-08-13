@@ -97,8 +97,9 @@ PYTHONPATH=. .venv/bin/python -m scripts.analysis.sync_limit_up_research \
 
 ### 5.3 `limit_up_selection_attribution`
 
-唯一键为 `(trade_date, ts_code, strategy)`，保存涨停池股票与当日每个已运行策略的关系：
+唯一键为 `(trade_date, ts_code, strategy)`，保存涨停池股票与前一交易日每个已运行策略的关系：
 
+- `trade_date`：涨停事实发生日；`selection_date`：被检查的前一交易日；
 - `selected`、`rank_no`、`score`、`action`；
 - `attribution`：`SELECTED|RANKED_OUT|HARD_REJECTED|DATA_MISSING|EXPLAINER_UNAVAILABLE|STRATEGY_NOT_RUN`；
 - `first_reason_code`；
@@ -142,13 +143,13 @@ PYTHONPATH=. .venv/bin/python -m scripts.analysis.sync_limit_up_research \
 
 ### 7.1 持久化结果对照
 
-先读取目标日各策略的 `selection_daily_results`：
+先按交易日历解析目标日的前一交易日，再读取该日各策略的 `selection_daily_results`：
 
 - 股票存在且在策略正式保留名额内：`SELECTED`；
 - 股票存在于完整候选但未进入该策略保留名额：`RANKED_OUT`；
 - 当日没有策略运行证据：`STRATEGY_NOT_RUN`。
 
-排名判断只使用当日已经持久化的排名和分数，不能用今天的代码重新排序过去的数据。
+排名判断只使用 `selection_date` 当日已经持久化的排名和分数，不能用今天的代码重新排序过去的数据。
 
 ### 7.2 确定性解释器
 
