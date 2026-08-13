@@ -670,7 +670,7 @@ def _broker_timestamp(value: datetime) -> datetime:
 def _sync_broker_facts_with_connection(
     positions, account, *, source: str, conn
 ) -> dict[str, int]:
-    active_codes = [position.code for position in positions]
+    active_codes = [position.code for position in positions if int(position.shares) > 0]
     if active_codes:
         placeholders = ", ".join(f":c{i}" for i in range(len(active_codes)))
         params = {f"c{i}": code for i, code in enumerate(active_codes)}
@@ -696,7 +696,7 @@ def _sync_broker_facts_with_connection(
                 VALUES
                   (:code, :name, :atype, :shares, :available, :cost,
                    :price, :market, :pnl, :pnl_pct, :daily_pnl, :daily_pnl_pct,
-                   :captured_at, :status, :action, :source, 1)
+                   :captured_at, :status, :action, :source, :is_active)
                 ON DUPLICATE KEY UPDATE
                   name = VALUES(name),
                   asset_type = VALUES(asset_type),
@@ -713,7 +713,7 @@ def _sync_broker_facts_with_connection(
                   status_note = VALUES(status_note),
                   action_note = VALUES(action_note),
                   source = VALUES(source),
-                  is_active = 1
+                  is_active = VALUES(is_active)
                 """
             ),
             {
@@ -733,6 +733,7 @@ def _sync_broker_facts_with_connection(
                 "status": position.status,
                 "action": position.action,
                 "source": source,
+                "is_active": 1 if int(position.shares) > 0 else 0,
             },
         )
 

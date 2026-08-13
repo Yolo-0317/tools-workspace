@@ -214,10 +214,10 @@ def jywg_payload_to_card(payload: dict[str, Any]) -> tuple[list[CardPosition], C
 
 
 def sync_jywg_payload(payload: dict[str, Any]) -> dict[str, int]:
-    """写入持仓与账户；不修改 alert_rules（仍由执行卡 sync 维护）。"""
-    from scripts.tools.portfolio_db import sync_broker_positions_and_account
+    """原子写入券商事实、仓位事件与决策事件；不修改 alert_rules。"""
+    from stock_ai.advisor_memory.position_sync import sync_broker_facts_with_memory
 
     positions, account = jywg_payload_to_broker_facts(payload)
     if not positions:
         raise RuntimeError("东方财富证券网页持仓 payload 无持仓行")
-    return sync_broker_positions_and_account(positions, account, source="jywg")
+    return sync_broker_facts_with_memory(positions, account, source="jywg")
