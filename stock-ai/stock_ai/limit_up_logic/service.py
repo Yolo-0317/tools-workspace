@@ -98,5 +98,23 @@ def analyze_limit_up_logic(
         missing_fields=_missing_fields(context, features.missing_fields),
         data_cutoff=cutoff,
         new_risk_forbidden=context.material_risk,
+        recent_limit_up_count=features.recent_limit_up_count,
+        post_limit_support_broken=features.post_limit_support_broken,
+        post_limit_shrink=features.post_limit_shrink,
+        consolidation_high=(
+            max(item.high for item in normalized[-9:-1])
+            if len(normalized) >= 9
+            else None
+        ),
+        distance_to_consolidation_high=(
+            normalized[-1].close / max(item.high for item in normalized[-9:-1]) - 1
+            if len(normalized) >= 9
+            and max(item.high for item in normalized[-9:-1]) > 0
+            else None
+        ),
+        last_limit_up_low=features.last_limit_up_low,
+        latest_pct_chg=features.latest_pct_chg,
+        days_since_last_limit_up=features.days_since_last_limit_up,
+        return5=features.return5,
+        distance_from_last_limit_close=features.distance_from_last_limit_close,
     )
-

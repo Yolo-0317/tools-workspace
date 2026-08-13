@@ -13,12 +13,13 @@ sys.path.insert(0, str(ROOT))
 from scripts.selection import run_parallel_selection as rps
 
 
-def test_lane_order_has_four_entries():
+def test_lane_order_contains_gene_watch_lane():
     assert rps.LANE_ORDER == (
         "combined",
         "ma5",
         "five_factor",
         "bottom_breakout",
+        "limit_up_gene_watch",
     )
 
 

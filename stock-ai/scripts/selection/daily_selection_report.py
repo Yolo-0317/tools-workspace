@@ -107,6 +107,30 @@ def _format_aux_pools(trade_date: date, holdings_codes: set[str]) -> str:
     return "\n".join(lines)
 
 
+def _format_gene_shadow_pool(trade_date: date, holdings_codes: set[str]) -> str:
+    """Render the experimental lane separately; it is not a formal Top5 source."""
+    from scripts.tools.portfolio_db import load_selection_daily_results
+    from scripts.tools.selection_results import sort_selection_df
+
+    _, rows = load_selection_daily_results(
+        trade_date,
+        strategy="limit_up_gene_watch",
+    )
+    lines = ["", "【影子策略】涨停基因蓄势观察池（不进入正式 Top5）", ""]
+    if not rows:
+        lines.append("· 当日无候选")
+        return "\n".join(lines)
+    df = sort_selection_df(pd.DataFrame(rows)).head(5)
+    for i, (_, row) in enumerate(df.iterrows(), 1):
+        code = str(row.get("代码", "")).split(".")[0].zfill(6)
+        held = "（持仓）" if code in holdings_codes else ""
+        lines.append(
+            f"  {i}. {code}{held} | {row.get('策略标签', '—')} | "
+            f"分{row.get('总分', 0)} | {row.get('建议动作', '—')}"
+        )
+    return "\n".join(lines)
+
+
 def _format_report(
     df: pd.DataFrame,
     trade_date: str,
@@ -298,6 +322,7 @@ def main() -> int:
     sections = [
         _format_report(top_df, trade_date_str, holdings_codes, names),
         _format_aux_pools(trade_date, holdings_codes),
+        _format_gene_shadow_pool(trade_date, holdings_codes),
         "",
     ]
 

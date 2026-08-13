@@ -115,4 +115,13 @@ class LimitUpResult:
     missing_fields: tuple[str, ...]
     data_cutoff: datetime | date | None
     new_risk_forbidden: bool = False
-
+    recent_limit_up_count: int = 0
+    post_limit_support_broken: bool = False
+    post_limit_shrink: bool = False
+    consolidation_high: float | None = None
+    distance_to_consolidation_high: float | None = None
+    last_limit_up_low: float | None = None
+    latest_pct_chg: float | None = None
+    days_since_last_limit_up: int | None = None
+    return5: float | None = None
+    distance_from_last_limit_close: float | None = None

@@ -21,7 +21,13 @@ from dotenv import load_dotenv
 
 load_dotenv(ROOT / ".env")
 
-LANE_ORDER = ("combined", "ma5", "five_factor", "bottom_breakout")
+LANE_ORDER = (
+    "combined",
+    "ma5",
+    "five_factor",
+    "bottom_breakout",
+    "limit_up_gene_watch",
+)
 
 
 def _run_combined() -> None:
@@ -48,11 +54,18 @@ def _run_bottom_breakout() -> None:
     run_bottom()
 
 
+def _run_limit_up_gene_watch() -> None:
+    from scripts.selection.stock_selection_limit_up_gene import main as run_gene_watch
+
+    raise SystemExit(run_gene_watch())
+
+
 _LANE_RUNNERS = {
     "combined": _run_combined,
     "ma5": _run_ma5,
     "five_factor": _run_five_factor,
     "bottom_breakout": _run_bottom_breakout,
+    "limit_up_gene_watch": _run_limit_up_gene_watch,
 }
 
 
@@ -89,6 +102,7 @@ def _run_lanes_sequential() -> int:
         "ma5": "2. MA5 回踩（strategy=ma5）",
         "five_factor": "3. 五因子（strategy=five_factor）",
         "bottom_breakout": "4. 筑底+放量突破（strategy=bottom_breakout）",
+        "limit_up_gene_watch": "5. 涨停基因蓄势影子池（strategy=limit_up_gene_watch）",
     }
     failed: list[str] = []
     for lane in LANE_ORDER:
@@ -102,7 +116,7 @@ def _run_lanes_sequential() -> int:
         print("串行选股部分失败:", "; ".join(failed), file=sys.stderr)
         return 1
     print(
-        "\n选股完成：combined / watch / ma5 / five_factor / bottom_breakout 已分桶入库"
+        "\n选股完成：combined / watch / ma5 / five_factor / bottom_breakout / limit_up_gene_watch 已分桶入库"
     )
     return 0
 
@@ -138,7 +152,7 @@ def _run_lanes_parallel(*, max_workers: int) -> int:
         print("并行选股部分失败:", "; ".join(failed), file=sys.stderr)
         return 1
     print(
-        "\n并行选股完成：combined / watch / ma5 / five_factor / bottom_breakout 已分桶入库"
+        "\n并行选股完成：combined / watch / ma5 / five_factor / bottom_breakout / limit_up_gene_watch 已分桶入库"
     )
     return 0
 

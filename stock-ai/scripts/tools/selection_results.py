@@ -77,6 +77,7 @@ _STRATEGY_DISPLAY = {
     "bottom_breakout": "底部突破",
     "watch": "观察池",
     "short_term_trade": "短线交易候选",
+    "limit_up_gene_watch": "涨停基因蓄势",
 }
 
 
@@ -86,7 +87,22 @@ def wechat_top5_strategies() -> tuple[str, ...]:
         ",".join(DEFAULT_WECHAT_TOP5_STRATEGIES),
     )
     out = tuple(s.strip() for s in raw.split(",") if s.strip())
-    return out or DEFAULT_WECHAT_TOP5_STRATEGIES
+    resolved = tuple(
+        strategy for strategy in (out or DEFAULT_WECHAT_TOP5_STRATEGIES)
+        if strategy != "limit_up_gene_watch"
+    )
+    artifact = os.getenv("LIMIT_UP_GENE_PROMOTION_ARTIFACT", "").strip()
+    if not artifact:
+        return resolved
+    try:
+        from stock_ai.selection_validation import load_gene_watch_promotion
+
+        latest = latest_selection_trade_date(strategy="combined")
+        if latest and load_gene_watch_promotion(artifact, expected_data_end=latest):
+            return resolved + ("limit_up_gene_watch",)
+    except Exception:
+        pass
+    return resolved
 
 
 def _strategy_label(strategy: str) -> str:

@@ -7,6 +7,8 @@ import pytest
 
 from stock_ai.selection_validation import (
     BacktestMetrics,
+    GENE_WATCH_CRITERIA,
+    load_gene_watch_promotion,
     ValidationArtifact,
     ValidationError,
     choose_validation_profile,
@@ -26,6 +28,8 @@ def _metrics(
     expectancy: float = 0.1,
     breakout: int | None = None,
     pullback: int | None = None,
+    max_drawdown_pct: float = 0.0,
+    profit_loss_ratio: float = 0.0,
 ) -> BacktestMetrics:
     return BacktestMetrics(
         trade_count=trades,
@@ -35,6 +39,8 @@ def _metrics(
             "BREAKOUT": breakout if breakout is not None else trades // 2,
             "PULLBACK": pullback if pullback is not None else trades - trades // 2,
         },
+        max_drawdown_pct=max_drawdown_pct,
+        profit_loss_ratio=profit_loss_ratio,
     )
 
 
@@ -140,6 +146,97 @@ def test_each_test_promotion_gate_fails_closed(
 
     assert decision.promoted is False
     assert reason in decision.reasons
+
+
+def test_gene_watch_rejects_excessive_drawdown() -> None:
+    decision = evaluate_promotion(
+        baseline=_metrics(200, 80),
+        candidate=_metrics(
+            120,
+            72,
+            expectancy=0.8,
+            max_drawdown_pct=15.1,
+            profit_loss_ratio=1.8,
+        ),
+        criteria=GENE_WATCH_CRITERIA,
+    )
+
+    assert "MAX_DRAWDOWN_TOO_HIGH" in decision.reasons
+
+
+def test_gene_watch_rejects_weak_profit_loss_ratio() -> None:
+    decision = evaluate_promotion(
+        baseline=_metrics(200, 80),
+        candidate=_metrics(
+            120,
+            72,
+            expectancy=0.8,
+            max_drawdown_pct=10.0,
+            profit_loss_ratio=1.49,
+        ),
+        criteria=GENE_WATCH_CRITERIA,
+    )
+
+    assert "PROFIT_LOSS_RATIO_TOO_LOW" in decision.reasons
+
+
+def test_gene_watch_metrics_round_trip() -> None:
+    metrics = _metrics(
+        120,
+        72,
+        max_drawdown_pct=9.5,
+        profit_loss_ratio=1.7,
+    )
+
+    restored = BacktestMetrics.from_dict(metrics.to_dict())
+
+    assert restored.max_drawdown_pct == 9.5
+    assert restored.profit_loss_ratio == 1.7
+
+
+def _gene_artifact_payload(*, end: str = "2026-08-12") -> dict:
+    return {
+        "schema_version": "limit-up-gene-watch-validation-v1",
+        "rule_version": "limit-up-gene-watch-1.0.0",
+        "generated_at": "2026-08-13T01:00:00+00:00",
+        "data_bounds": {"start": "2023-01-03", "end": end},
+        "split_bounds": {
+            "train": {"start": "2023-01-03", "end": "2024-08-01"},
+            "validation": {"start": "2024-08-02", "end": "2025-06-01"},
+            "test": {"start": "2025-06-02", "end": end},
+        },
+        "costs": {"commission_rate": 0.0008, "slippage_rate": 0.001},
+        "hold_days": 5,
+        "selected_profile": "limit_up_gene_watch",
+        "metrics": {
+            "baseline_test": _metrics(200, 80).to_dict(),
+            "candidate_test": _metrics(
+                120,
+                72,
+                expectancy=0.8,
+                max_drawdown_pct=10,
+                profit_loss_ratio=1.8,
+            ).to_dict(),
+        },
+        "promoted": True,
+        "reasons": [],
+    }
+
+
+def test_gene_watch_promotion_fails_closed_for_missing_or_stale_artifact(tmp_path) -> None:
+    assert load_gene_watch_promotion(
+        tmp_path / "missing.json", expected_data_end=date(2026, 8, 12)
+    ) is False
+    path = tmp_path / "gene.json"
+    path.write_text(json.dumps(_gene_artifact_payload(end="2026-08-11")), encoding="utf-8")
+    assert load_gene_watch_promotion(path, expected_data_end=date(2026, 8, 12)) is False
+
+
+def test_gene_watch_promotion_accepts_current_passing_artifact(tmp_path) -> None:
+    path = tmp_path / "gene.json"
+    path.write_text(json.dumps(_gene_artifact_payload()), encoding="utf-8")
+
+    assert load_gene_watch_promotion(path, expected_data_end=date(2026, 8, 12)) is True
 
 
 def _artifact(*, promoted: bool = True, profile: str = "STRICT_B") -> ValidationArtifact:
