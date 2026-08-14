@@ -338,7 +338,19 @@ def freeze_threshold_profiles(
     )
 
 
-def _validate_freeze(value: ThresholdProfileFreeze) -> None:
+def validate_threshold_freeze(value: ThresholdProfileFreeze) -> None:
+    if (
+        value.schema != "buy-point-threshold-shadow-v1"
+        or len(value.training_identities) != 2
+        or tuple(sorted(set(value.training_identities)))
+        != value.training_identities
+        or value.empty != (not value.profiles)
+        or value.promotion_eligible
+        or tuple(item.rank for item in value.profiles)
+        != tuple(range(1, len(value.profiles) + 1))
+        or any(not item.training_metrics.qualifies for item in value.profiles)
+    ):
+        raise ValueError("freeze model mismatch")
     expected = _calculate_freeze_hash(
         training_identities=value.training_identities,
         formal_rule_version=value.formal_rule_version,
@@ -357,7 +369,7 @@ def select_frozen_daily_candidates(
     *,
     maximum_per_date: int = 5,
 ) -> tuple[ThresholdShadowCandidate, ...]:
-    _validate_freeze(freeze)
+    validate_threshold_freeze(freeze)
     if maximum_per_date < 1:
         raise ValueError("maximum_per_date must be positive")
     rank_by_profile = {
