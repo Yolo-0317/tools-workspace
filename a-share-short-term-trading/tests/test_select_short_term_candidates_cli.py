@@ -108,6 +108,32 @@ def test_default_manual_run_executes_all_four_lanes() -> None:
     ]
 
 
+def test_shadow_only_skips_legacy_lanes() -> None:
+    runtime = FakeRuntime()
+
+    result = MODULE.main(
+        ["--at", "2026-08-10T10:00:00+08:00", "--shadow-only"],
+        runtime_factory=lambda args: runtime,
+    )
+
+    assert result == 0
+    assert runtime.lane_calls == []
+
+
+def test_default_runtime_receives_shadow_only_flag(monkeypatch) -> None:
+    captured = []
+    monkeypatch.setattr(
+        MODULE,
+        "DefaultRuntime",
+        lambda *, shadow_only: captured.append(shadow_only) or object(),
+    )
+
+    args = MODULE.build_parser().parse_args(["--shadow-only"])
+
+    MODULE.default_runtime(args)
+    assert captured == [True]
+
+
 def test_legacy_lane_failure_cannot_block_the_new_full_universe_selector() -> None:
     runtime = FakeRuntime(lane_result=1)
     result = MODULE.main(

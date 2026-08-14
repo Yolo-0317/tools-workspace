@@ -139,6 +139,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="仅在人工重试/测试时复用已落库的旧策略影子结果",
     )
     parser.add_argument(
+        "--shadow-only",
+        action="store_true",
+        help="仅生成买点优先影子观察，跳过旧策略与筹码联网抓取，禁止正式计划",
+    )
+    parser.add_argument(
         "--refresh-reference-data",
         action="store_true",
         help="显式刷新点时行业、ST 与重大公告参考数据",
@@ -409,7 +414,7 @@ def _resolve_dates(now: datetime, calendar: TradingCalendar) -> tuple[object, da
 
 
 class DefaultRuntime:
-    def __init__(self) -> None:
+    def __init__(self, *, shadow_only: bool = False) -> None:
         from dotenv import load_dotenv
         from scripts.tools import portfolio_db
         from short_term_trading.diagnosis_runtime import StockAiTradingCalendar
@@ -422,6 +427,7 @@ class DefaultRuntime:
             raise CliInputError("MySQL 配置不可用")
         self._evidence = EvidenceRepository(self._engine)
         self._planning = PlanningRepository(self._engine)
+        self._shadow_only = shadow_only
 
     def run_lanes(self, strategies: tuple[str, ...]) -> int:
         if strategies != LANES:
@@ -465,26 +471,29 @@ class DefaultRuntime:
 
         legacy_rows: list[LegacyShadow] = []
         seen_legacy: set[tuple[str, str]] = set()
-        for lane in LANES:
-            lane_date, rows = load_selection_daily_results(
-                analysis_date, strategy=lane, engine=self._engine
-            )
-            if lane_date != analysis_date:
-                continue
-            for row in rows:
-                code = normalize_code6(str(row.get("代码") or row.get("code") or ""))
-                identity = (code, lane)
-                if identity in seen_legacy:
-                    continue
-                seen_legacy.add(identity)
-                legacy_rows.append(
-                    LegacyShadow(
-                        code=code,
-                        name=str(row.get("名称") or row.get("name") or code),
-                        source=f"legacy-{lane}",
-                        reasons=("RESEARCH_ONLY",),
-                    )
+        if not self._shadow_only:
+            for lane in LANES:
+                lane_date, rows = load_selection_daily_results(
+                    analysis_date, strategy=lane, engine=self._engine
                 )
+                if lane_date != analysis_date:
+                    continue
+                for row in rows:
+                    code = normalize_code6(
+                        str(row.get("代码") or row.get("code") or "")
+                    )
+                    identity = (code, lane)
+                    if identity in seen_legacy:
+                        continue
+                    seen_legacy.add(identity)
+                    legacy_rows.append(
+                        LegacyShadow(
+                            code=code,
+                            name=str(row.get("名称") or row.get("name") or code),
+                            source=f"legacy-{lane}",
+                            reasons=("RESEARCH_ONLY",),
+                        )
+                    )
 
         account = load_account(engine=self._engine)
         account_fresh = bool(
@@ -535,7 +544,7 @@ class DefaultRuntime:
         chips: dict[str, ChipEvidence] = {}
         evidence_refs: dict[str, tuple[str, ...]] = {}
         recorder = CaptureRecorder(self._evidence)
-        for item in result.qualified:
+        for item in (() if self._shadow_only else result.qualified):
             snapshot = self._evidence.get_latest_valid_snapshot(item.code, "chip")
             if not is_chip_snapshot_for_trade_date(snapshot, analysis_date):
                 try:
@@ -579,7 +588,7 @@ class DefaultRuntime:
             trading_date=trading_date,
             as_of=getattr(context, "now_utc"),
             market_status=resolved_market_status,
-            request_live=True,
+            request_live=not self._shadow_only,
             rule_version=policy.rule_version,
         )
         report = materialize_buy_point_selection(result, dependencies, request)
@@ -596,7 +605,7 @@ class DefaultRuntime:
 
 
 def default_runtime(_: argparse.Namespace) -> SelectionCliRuntime:
-    return DefaultRuntime()
+    return DefaultRuntime(shadow_only=_.shadow_only)
 
 
 def _report_dict(report: object) -> dict[str, object]:
@@ -629,7 +638,7 @@ def main(
             return 2
     try:
         runtime = (runtime_factory or default_runtime)(args)
-        if not args.skip_lanes:
+        if not args.skip_lanes and not args.shadow_only:
             with redirect_stdout(StringIO()), redirect_stderr(StringIO()):
                 runtime.run_lanes(LANES)
         context, analysis_date, trading_date = _resolve_dates(now, runtime.calendar)
