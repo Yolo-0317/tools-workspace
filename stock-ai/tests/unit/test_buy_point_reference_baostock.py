@@ -1,0 +1,149 @@
+from __future__ import annotations
+
+from datetime import date
+
+import pytest
+
+from stock_ai.buy_point_selection.reference_baostock import BaoStockReferenceProvider
+from stock_ai.buy_point_selection.reference_sources import ProviderFailure
+
+
+class Result:
+    def __init__(self, error_code: str = "0", error_msg: str = "") -> None:
+        self.error_code = error_code
+        self.error_msg = error_msg
+
+
+class QueryResult(Result):
+    def __init__(self, rows, *, fields=None, fail_during_iteration=False) -> None:
+        super().__init__()
+        self.fields = fields or ["code", "tradeStatus", "code_name"]
+        self._rows = list(rows)
+        self._index = -1
+        self._fail_during_iteration = fail_during_iteration
+
+    def next(self):
+        self._index += 1
+        if self._fail_during_iteration and self._index == 1:
+            raise RuntimeError("socket closed with secret provider detail")
+        return self._index < len(self._rows)
+
+    def get_row_data(self):
+        return list(self._rows[self._index])
+
+
+class FakeBaoStock:
+    def __init__(
+        self,
+        rows=(),
+        *,
+        login_code="0",
+        query_code="0",
+        fields=None,
+        fail_during_iteration=False,
+    ) -> None:
+        self.login_code = login_code
+        self.query_code = query_code
+        self.rows = rows
+        self.fields = fields
+        self.fail_during_iteration = fail_during_iteration
+        self.login_calls = 0
+        self.logout_calls = 0
+        self.requested_days = []
+
+    def login(self):
+        self.login_calls += 1
+        return Result(self.login_code, "login detail")
+
+    def logout(self):
+        self.logout_calls += 1
+        return Result()
+
+    def query_all_stock(self, *, day):
+        self.requested_days.append(day)
+        result = QueryResult(
+            self.rows,
+            fields=self.fields,
+            fail_during_iteration=self.fail_during_iteration,
+        )
+        result.error_code = self.query_code
+        return result
+
+
+def test_baostock_adapter_logs_out_and_preserves_requested_day() -> None:
+    """Catches current-day fallback or a successful query leaking its SDK session."""
+    sdk = FakeBaoStock(
+        rows=[("sh.600001", "1", "*ST 示例"), ("sz.000002", "0", "普通股份")]
+    )
+
+    rows = BaoStockReferenceProvider(sdk=sdk).fetch_security_statuses(
+        date(2025, 8, 6)
+    )
+
+    assert [(row.code, row.name, row.trade_status) for row in rows] == [
+        ("000002", "普通股份", "0"),
+        ("600001", "*ST 示例", "1"),
+    ]
+    assert all(row.trade_date == date(2025, 8, 6) for row in rows)
+    assert sdk.requested_days == ["2025-08-06"]
+    assert sdk.login_calls == 1 and sdk.logout_calls == 1
+
+
+def test_baostock_maps_fields_by_name_not_position() -> None:
+    """Catches an upstream field reorder assigning names to trade status."""
+    sdk = FakeBaoStock(
+        rows=[("普通股份", "sh.600001", "0")],
+        fields=["code_name", "code", "tradeStatus"],
+    )
+
+    row = BaoStockReferenceProvider(sdk=sdk).fetch_security_statuses(
+        date(2025, 8, 6)
+    )[0]
+
+    assert (row.code, row.name, row.trade_status) == ("600001", "普通股份", "0")
+
+
+@pytest.mark.parametrize(
+    ("sdk", "error_code"),
+    [
+        (FakeBaoStock(login_code="10001001"), "PROVIDER_AUTH_FAILED"),
+        (FakeBaoStock(query_code="10002007"), "PROVIDER_UNAVAILABLE"),
+        (
+            FakeBaoStock(rows=[("sh.600001", "1", "普通股份")], fields=["code"]),
+            "PROVIDER_SCHEMA_CHANGED",
+        ),
+    ],
+)
+def test_baostock_failures_use_safe_codes(sdk, error_code: str) -> None:
+    """Catches raw SDK messages being persisted or malformed rows marked complete."""
+    with pytest.raises(ProviderFailure) as caught:
+        BaoStockReferenceProvider(sdk=sdk).fetch_security_statuses(date(2025, 8, 6))
+
+    assert caught.value.error_code == error_code
+    assert error_code in str(caught.value)
+
+
+def test_baostock_logs_out_when_iteration_fails() -> None:
+    """Catches a half-read provider result leaving the shared session open."""
+    sdk = FakeBaoStock(
+        rows=[("sh.600001", "1", "普通股份"), ("sh.600002", "1", "普通股份")],
+        fail_during_iteration=True,
+    )
+
+    with pytest.raises(ProviderFailure) as caught:
+        BaoStockReferenceProvider(sdk=sdk).fetch_security_statuses(date(2025, 8, 6))
+
+    assert caught.value.error_code == "PROVIDER_UNAVAILABLE"
+    assert sdk.logout_calls == 1
+
+
+def test_baostock_rejects_duplicate_codes() -> None:
+    """Catches duplicated rows inflating the daily coverage numerator."""
+    sdk = FakeBaoStock(
+        rows=[("sh.600001", "1", "普通股份"), ("sh.600001", "1", "普通股份")]
+    )
+
+    with pytest.raises(ProviderFailure) as caught:
+        BaoStockReferenceProvider(sdk=sdk).fetch_security_statuses(date(2025, 8, 6))
+
+    assert caught.value.error_code == "PROVIDER_SCHEMA_CHANGED"

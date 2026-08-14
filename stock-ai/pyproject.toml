@@ -13,6 +13,7 @@ dependencies = [
     "pymysql>=1.1.0",
     "python-dotenv>=1.0.0",
     "akshare>=1.18.38",
+    "baostock>=0.9.3,<0.10",
     "playwright>=1.40.0",
     "pydantic>=2.12,<3",
 ]
