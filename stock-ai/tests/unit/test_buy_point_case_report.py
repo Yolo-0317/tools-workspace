@@ -21,6 +21,13 @@ from stock_ai.buy_point_selection.case_review import (
 )
 from stock_ai.buy_point_selection.models import DetectedSetup, SetupType
 from stock_ai.buy_point_selection.planning import PricePlan
+from stock_ai.buy_point_selection.resistance_research import (
+    LEGACY_ANY_HIGH,
+    LOCAL_PIVOT_HIGH,
+    REPEATED_PIVOT_CLUSTER,
+    ResistanceVariantProfile,
+    SignificantResistanceProfile,
+)
 
 
 SIGNAL_START = date(2026, 8, 3)
@@ -32,10 +39,11 @@ def _candidate(
     structure_id: str,
     *,
     code: str = "600001",
+    setup_type: SetupType = SetupType.TREND_PULLBACK,
 ) -> CaseCandidate:
     setup = DetectedSetup(
         code,
-        SetupType.TREND_PULLBACK,
+        setup_type,
         signal_date,
         SIGNAL_START,
         Decimal("9.99"),
@@ -115,20 +123,219 @@ def test_case_payload_is_deterministic_and_explicitly_non_trading() -> None:
     )
 
 
-def test_v2_schema_participates_in_immutable_case_identity() -> None:
-    """Catches a v2 report colliding with the existing immutable v1 revision."""
+def test_v3_schema_participates_in_immutable_case_identity() -> None:
+    """Catches a v3 report colliding with an existing immutable revision."""
     review = _review(outcomes=())
 
     payload = case_payload(review)
 
-    assert payload["schema"] == "buy-point-case-review-v2"
+    assert payload["schema"] == "buy-point-case-review-v3"
     assert case_identity(
         review,
-        schema="buy-point-case-review-v1",
+        schema="buy-point-case-review-v2",
     ) != case_identity(
         review,
-        schema="buy-point-case-review-v2",
+        schema="buy-point-case-review-v3",
     )
+
+
+def test_v3_payload_serializes_resistance_profiles() -> None:
+    candidate = _candidate(SIGNAL_START, "structure-first")
+    review = replace(
+        _review(outcomes=()),
+        episodes=(
+            OpportunityEpisode(
+                "episode-1",
+                candidate,
+                (SIGNAL_START,),
+                (candidate.tier,),
+            ),
+        ),
+        resistance_profiles=(
+            SignificantResistanceProfile(
+                "episode-1",
+                candidate.code,
+                candidate.signal_date,
+                candidate.plan.structure_id,
+                candidate.setup.setup_type.value,
+                Decimal("0.20"),
+                Decimal("0.10"),
+                True,
+                (
+                    ResistanceVariantProfile(
+                        LEGACY_ANY_HIGH,
+                        Decimal("10.20"),
+                        Decimal("0.20"),
+                        False,
+                        1,
+                    ),
+                    ResistanceVariantProfile(
+                        LOCAL_PIVOT_HIGH,
+                        Decimal("12.20"),
+                        Decimal("2.20"),
+                        True,
+                        1,
+                    ),
+                    ResistanceVariantProfile(
+                        REPEATED_PIVOT_CLUSTER,
+                        None,
+                        None,
+                        True,
+                        0,
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    payload = case_payload(review)
+
+    assert payload["resistance_profiles"][0]["variants"][0] == {
+        "variant": "LEGACY_ANY_HIGH",
+        "level": "10.20",
+        "effective_resistance_r": "0.20",
+        "passes_two_r": False,
+        "touch_count": 1,
+    }
+
+
+def test_resistance_comparison_uses_only_passing_exact_representatives() -> None:
+    first = _candidate(
+        SIGNAL_START,
+        "structure-first",
+        code="600001",
+        setup_type=SetupType.FIRST_LAUNCH_PULLBACK,
+    )
+    second = _candidate(
+        SIGNAL_START,
+        "structure-second",
+        code="600002",
+        setup_type=SetupType.FIRST_LAUNCH_PULLBACK,
+    )
+    trend = _candidate(
+        SIGNAL_START,
+        "structure-trend",
+        code="600003",
+        setup_type=SetupType.TREND_PULLBACK,
+    )
+
+    def profile(episode_id: str, candidate: CaseCandidate) -> SignificantResistanceProfile:
+        return SignificantResistanceProfile(
+            episode_id,
+            candidate.code,
+            candidate.signal_date,
+            candidate.plan.structure_id,
+            candidate.setup.setup_type.value,
+            Decimal("0.20"),
+            Decimal("0.10"),
+            True,
+            (
+                ResistanceVariantProfile(
+                    LEGACY_ANY_HIGH, Decimal("10.20"), Decimal("0.20"), False, 1
+                ),
+                ResistanceVariantProfile(
+                    LOCAL_PIVOT_HIGH, Decimal("12.20"), Decimal("2.20"), True, 1
+                ),
+                ResistanceVariantProfile(
+                    REPEATED_PIVOT_CLUSTER,
+                    Decimal("12.15"),
+                    Decimal("2.15"),
+                    True,
+                    2,
+                ),
+            ),
+        )
+
+    candidates = (first, second, trend)
+    episodes = tuple(
+        OpportunityEpisode(
+            f"episode-{index}",
+            candidate,
+            (candidate.signal_date,),
+            (candidate.tier,),
+        )
+        for index, candidate in enumerate(candidates, start=1)
+    )
+    outcomes = (
+        CaseOutcome(
+            first.code,
+            first.signal_date,
+            first.tier,
+            "CLOSED",
+            Decimal("0.09"),
+            Decimal("0.02"),
+            trigger_date=date(2026, 8, 4),
+            net_return=Decimal("0.06"),
+            structure_id=first.plan.structure_id,
+        ),
+        CaseOutcome(
+            second.code,
+            second.signal_date,
+            second.tier,
+            "EXPIRED",
+            None,
+            None,
+            structure_id=second.plan.structure_id,
+        ),
+        CaseOutcome(
+            trend.code,
+            trend.signal_date,
+            trend.tier,
+            "CLOSED",
+            Decimal("0.02"),
+            Decimal("0.08"),
+            trigger_date=date(2026, 8, 4),
+            net_return=Decimal("-0.05"),
+            stop_first=True,
+            structure_id=trend.plan.structure_id,
+        ),
+    )
+    review = replace(
+        _review(outcomes=outcomes),
+        episodes=episodes,
+        resistance_profiles=tuple(
+            profile(episode.episode_id, episode.representative)
+            for episode in episodes
+        ),
+    )
+
+    payload = case_payload(review)
+    comparison = {
+        (value.pop("setup_type"), value.pop("variant")): value
+        for value in payload["resistance_comparison"]
+    }
+
+    assert comparison[("FIRST_LAUNCH_PULLBACK", LOCAL_PIVOT_HIGH)] == {
+        "complete_profiles": 2,
+        "variant_passes": 2,
+        "triggered": 1,
+        "resolved": 2,
+        "successes": 1,
+        "stop_first": 0,
+        "mean_net_return": "0.06",
+        "mean_mfe": "0.09",
+        "mean_mae": "0.02",
+        "codes": ["600001", "600002"],
+        "episode_ids": ["episode-1", "episode-2"],
+    }
+    assert comparison[("TREND_PULLBACK", LOCAL_PIVOT_HIGH)] == {
+        "complete_profiles": 1,
+        "variant_passes": 1,
+        "triggered": 1,
+        "resolved": 1,
+        "successes": 0,
+        "stop_first": 1,
+        "mean_net_return": "-0.05",
+        "mean_mfe": "0.02",
+        "mean_mae": "0.08",
+        "codes": ["600003"],
+        "episode_ids": ["episode-3"],
+    }
+    markdown = render_case_markdown(review)
+    assert "## 显著阻力影子对照" in markdown
+    assert "假设通过仅用于研究，不能生成正式计划" in markdown
+    assert "CASE_ANALYSIS_ONLY" in markdown
+    assert "NO-TRADE" in markdown
 
 
 def test_v2_payload_preserves_raw_rows_and_adds_episode_and_shadow_rows() -> None:

@@ -10,9 +10,10 @@ from pathlib import Path
 from typing import Mapping
 
 from .case_review import CaseCandidate, CaseOutcome, CaseReview, summarize_case_outcomes
+from .resistance_research import SignificantResistanceProfile, VARIANT_ORDER
 
 
-CASE_REPORT_SCHEMA = "buy-point-case-review-v2"
+CASE_REPORT_SCHEMA = "buy-point-case-review-v3"
 
 
 def _decimal(value: Decimal | None) -> str | None:
@@ -77,6 +78,125 @@ def _outcome_payload(value: CaseOutcome) -> dict[str, object]:
         "intraday_order_ambiguous": value.intraday_order_ambiguous,
         "structure_id": value.structure_id,
     }
+
+
+def _resistance_profile_payload(
+    value: SignificantResistanceProfile,
+) -> dict[str, object]:
+    variant_rank = {name: index for index, name in enumerate(VARIANT_ORDER)}
+    variants = sorted(
+        value.variants,
+        key=lambda item: variant_rank[item.variant],
+    )
+    return {
+        "episode_id": value.episode_id,
+        "code": value.code,
+        "signal_date": value.signal_date.isoformat(),
+        "structure_id": value.structure_id,
+        "setup_type": value.setup_type,
+        "atr14": str(value.atr14),
+        "tolerance": str(value.tolerance),
+        "complete": value.complete,
+        "executable_shares": 0,
+        "variants": [
+            {
+                "variant": item.variant,
+                "level": _decimal(item.level),
+                "effective_resistance_r": _decimal(item.effective_resistance_r),
+                "passes_two_r": item.passes_two_r,
+                "touch_count": item.touch_count,
+            }
+            for item in variants
+        ],
+    }
+
+
+def _resistance_comparison(
+    review: CaseReview,
+    profiles: tuple[SignificantResistanceProfile, ...],
+    outcome_by_identity: Mapping[tuple[object, ...], CaseOutcome],
+) -> list[dict[str, object]]:
+    episode_by_id = {
+        episode.episode_id: episode
+        for episode in review.episodes
+    }
+    rows = []
+    for setup_type in sorted({value.setup_type for value in profiles}):
+        setup_profiles = tuple(
+            value
+            for value in profiles
+            if value.setup_type == setup_type and value.complete
+        )
+        for variant_name in VARIANT_ORDER:
+            passing = tuple(
+                profile
+                for profile in setup_profiles
+                if next(
+                    value
+                    for value in profile.variants
+                    if value.variant == variant_name
+                ).passes_two_r
+            )
+            selected_outcomes = []
+            for profile in passing:
+                episode = episode_by_id.get(profile.episode_id)
+                if episode is None:
+                    continue
+                representative = episode.representative
+                outcome = outcome_by_identity.get(
+                    (
+                        representative.code,
+                        representative.signal_date,
+                        representative.tier,
+                        representative.plan.structure_id,
+                    )
+                )
+                if outcome is not None:
+                    selected_outcomes.append(outcome)
+            outcome_summary = summarize_case_outcomes(tuple(selected_outcomes))
+            rows.append(
+                {
+                    "setup_type": setup_type,
+                    "variant": variant_name,
+                    "complete_profiles": len(setup_profiles),
+                    "variant_passes": len(passing),
+                    "triggered": sum(
+                        value.trigger_date is not None
+                        for value in selected_outcomes
+                    ),
+                    "resolved": outcome_summary.resolved,
+                    "successes": outcome_summary.successes,
+                    "stop_first": sum(
+                        value.stop_first for value in selected_outcomes
+                    ),
+                    "mean_net_return": _mean_decimal(
+                        [
+                            value.net_return
+                            for value in selected_outcomes
+                            if value.net_return is not None
+                        ]
+                    ),
+                    "mean_mfe": _mean_decimal(
+                        [
+                            value.mfe
+                            for value in selected_outcomes
+                            if value.mfe is not None
+                        ]
+                    ),
+                    "mean_mae": _mean_decimal(
+                        [
+                            value.mae
+                            for value in selected_outcomes
+                            if value.mae is not None
+                        ]
+                    ),
+                    "codes": sorted(value.code for value in passing),
+                    "episode_ids": sorted(
+                        value.episode_id for value in passing
+                    ),
+                }
+            )
+    return rows
 
 
 def case_payload(review: CaseReview) -> dict[str, object]:
@@ -162,6 +282,17 @@ def case_payload(review: CaseReview) -> dict[str, object]:
         if value.episode_id in episode_outcome_by_id
     )
     conditional_summary = summarize_case_outcomes(conditional_outcomes)
+    resistance_profiles = tuple(
+        sorted(
+            review.resistance_profiles,
+            key=lambda value: (value.signal_date, value.code, value.episode_id),
+        )
+    )
+    resistance_comparison = _resistance_comparison(
+        review,
+        resistance_profiles,
+        outcome_by_identity,
+    )
     return {
         "schema": CASE_REPORT_SCHEMA,
         "status": "CASE_ANALYSIS_ONLY",
@@ -179,6 +310,11 @@ def case_payload(review: CaseReview) -> dict[str, object]:
         "outcomes": [_outcome_payload(value) for value in outcomes],
         "opportunity_episodes": episodes,
         "conditional_two_r_shadow": conditional,
+        "resistance_profiles": [
+            _resistance_profile_payload(value)
+            for value in resistance_profiles
+        ],
+        "resistance_comparison": resistance_comparison,
         "winners": [
             {
                 "code": value.code,
@@ -226,6 +362,13 @@ def case_payload(review: CaseReview) -> dict[str, object]:
             "conditional_episodes": len(review.conditional_two_r_shadow),
             "conditional_outcome_resolved": conditional_summary.resolved,
             "conditional_outcome_successes": conditional_summary.successes,
+            "resistance_profile_total": len(resistance_profiles),
+            "resistance_profile_complete": sum(
+                value.complete for value in resistance_profiles
+            ),
+            "resistance_profile_incomplete": sum(
+                not value.complete for value in resistance_profiles
+            ),
             "strict_candidates": len(review.replay.strict_shadow),
             "near_misses": len(review.replay.near_misses),
             "buyable_winners": len(winners),
@@ -242,6 +385,8 @@ def render_case_markdown(review: CaseReview) -> str:
     assert isinstance(metrics, Mapping)
     winners = payload["winners"]
     assert isinstance(winners, list)
+    resistance_comparison = payload["resistance_comparison"]
+    assert isinstance(resistance_comparison, list)
     lines = [
         "# 短窗口买点案例复盘",
         "",
@@ -293,9 +438,35 @@ def render_case_markdown(review: CaseReview) -> str:
         ),
         "- 可执行仓位：0（研究专用）",
         "",
+        "## 显著阻力影子对照",
+        "",
+        (
+            f"- 完整画像：{metrics['resistance_profile_complete']}"
+            f"/{metrics['resistance_profile_total']}"
+        ),
+        "- 假设通过仅用于研究，不能生成正式计划；可执行仓位始终为 0。",
+    ]
+    if not resistance_comparison:
+        lines.append("- 无可比较画像。")
+    else:
+        lines.extend(
+            (
+                f"- {value['setup_type']} / {value['variant']}："
+                f"通过 {value['variant_passes']}/{value['complete_profiles']}，"
+                f"触发 {value['triggered']}，"
+                f"成功 {value['successes']}/{value['resolved']}，"
+                f"止损优先 {value['stop_first']}，"
+                f"平均净收益 {value['mean_net_return']}"
+            )
+            for value in resistance_comparison
+        )
+    lines.extend(
+        (
+        "",
         "## 漏选可买上涨股",
         "",
-    ]
+        )
+    )
     missed = [value for value in winners if not value["captured_tiers"]]
     if not metrics["recall_complete"]:
         lines.append("信号日数据不完整，不能进行漏选归因。")
