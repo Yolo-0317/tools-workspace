@@ -10,6 +10,11 @@ from pathlib import Path
 from typing import Mapping
 
 from .case_review import CaseCandidate, CaseOutcome, CaseReview, summarize_case_outcomes
+from .recall_research import (
+    DailyRecallWinner,
+    MarketFreezeDiagnostic,
+    SetupTemplateDiagnostic,
+)
 from .resistance_research import (
     LEVEL_AT_OR_ABOVE_2R,
     NO_LEVEL,
@@ -19,7 +24,7 @@ from .resistance_research import (
 )
 
 
-CASE_REPORT_SCHEMA = "buy-point-case-review-v4"
+CASE_REPORT_SCHEMA = "buy-point-case-review-v5"
 
 
 def _decimal(value: Decimal | None) -> str | None:
@@ -83,6 +88,56 @@ def _outcome_payload(value: CaseOutcome) -> dict[str, object]:
         "stop_first": value.stop_first,
         "intraday_order_ambiguous": value.intraday_order_ambiguous,
         "structure_id": value.structure_id,
+    }
+
+
+def _daily_recall_winner_payload(
+    value: DailyRecallWinner,
+) -> dict[str, object]:
+    return {
+        "code": value.code,
+        "signal_date": value.signal_date.isoformat(),
+        "horizon_end_date": value.horizon_end_date.isoformat(),
+        "entry_date": value.entry_date.isoformat(),
+        "entry_price": str(value.entry_price),
+        "forward_maximum_gain": str(value.forward_maximum_gain),
+        "maximum_gain_date": value.maximum_gain_date.isoformat(),
+        "captured_tiers": list(value.captured_tiers),
+        "first_rejection": value.first_rejection,
+        "executable_shares": 0,
+    }
+
+
+def _market_freeze_payload(
+    value: MarketFreezeDiagnostic,
+) -> dict[str, object]:
+    return {
+        "code": value.code,
+        "signal_date": value.signal_date.isoformat(),
+        "market_reason": value.market_reason,
+        "base_passed": value.base_passed,
+        "base_reasons": list(value.base_reasons),
+        "setup_types": list(value.setup_types),
+        "setup_qualities": [str(item) for item in value.setup_qualities],
+        "executable_shares": 0,
+    }
+
+
+def _setup_diagnostic_payload(
+    value: SetupTemplateDiagnostic,
+) -> dict[str, object]:
+    return {
+        "code": value.code,
+        "signal_date": value.signal_date.isoformat(),
+        "template": value.template,
+        "window_sessions": value.window_sessions,
+        "failures": list(value.failures),
+        "boundary_deviation": str(value.boundary_deviation),
+        "metrics": {
+            key: str(item)
+            for key, item in sorted(value.metrics.items())
+        },
+        "executable_shares": 0,
     }
 
 
@@ -404,6 +459,59 @@ def case_payload(review: CaseReview) -> dict[str, object]:
         resistance_profiles,
         outcome_by_identity,
     )
+    daily_cohorts = tuple(
+        sorted(review.daily_recall_cohorts, key=lambda value: value.signal_date)
+    )
+    daily_winners = tuple(
+        sorted(
+            (
+                winner
+                for cohort in daily_cohorts
+                for winner in cohort.winners
+            ),
+            key=lambda value: (value.signal_date, value.code),
+        )
+    )
+    captured_tier_counts = Counter(
+        tier
+        for winner in daily_winners
+        for tier in winner.captured_tiers
+    )
+    missed_reason_counts = Counter(
+        winner.first_rejection or "NO_TRACE"
+        for winner in daily_winners
+        if not winner.captured_tiers
+    )
+    market_diagnostics = tuple(
+        sorted(
+            review.market_freeze_diagnostics,
+            key=lambda value: (value.signal_date, value.code),
+        )
+    )
+    market_diagnostic_counts = Counter(
+        (
+            value.market_reason,
+            value.base_passed,
+            bool(value.setup_types),
+        )
+        for value in market_diagnostics
+    )
+    setup_diagnostics = tuple(
+        sorted(
+            review.no_setup_diagnostics,
+            key=lambda value: (
+                value.signal_date,
+                value.code,
+                value.template,
+                -1 if value.window_sessions is None else value.window_sessions,
+            ),
+        )
+    )
+    setup_diagnostic_counts = Counter(
+        (value.template, failure)
+        for value in setup_diagnostics
+        for failure in value.failures
+    )
     return {
         "schema": CASE_REPORT_SCHEMA,
         "status": "CASE_ANALYSIS_ONLY",
@@ -437,6 +545,74 @@ def case_payload(review: CaseReview) -> dict[str, object]:
                 "first_rejection": value.first_rejection,
             }
             for value in winners
+        ],
+        "daily_recall_winners": [
+            _daily_recall_winner_payload(value)
+            for value in daily_winners
+        ],
+        "daily_recall_metrics": {
+            "complete_dates": sum(value.complete for value in daily_cohorts),
+            "incomplete_dates": [
+                value.signal_date.isoformat()
+                for value in daily_cohorts
+                if not value.complete
+            ],
+            "winner_pairs": len(daily_winners),
+            "unique_winner_codes": len({value.code for value in daily_winners}),
+            "captured_pairs": sum(
+                bool(value.captured_tiers) for value in daily_winners
+            ),
+            "captured_by_tier": dict(sorted(captured_tier_counts.items())),
+            "missed_by_first_rejection": dict(
+                sorted(missed_reason_counts.items())
+            ),
+            "by_date": [
+                {
+                    "signal_date": cohort.signal_date.isoformat(),
+                    "complete": cohort.complete,
+                    "outcome_dates": [
+                        value.isoformat() for value in cohort.outcome_dates
+                    ],
+                    "winner_pairs": len(cohort.winners),
+                    "unique_winner_codes": len(
+                        {value.code for value in cohort.winners}
+                    ),
+                    "captured_pairs": sum(
+                        bool(value.captured_tiers)
+                        for value in cohort.winners
+                    ),
+                }
+                for cohort in daily_cohorts
+            ],
+        },
+        "market_freeze_diagnostics": [
+            _market_freeze_payload(value)
+            for value in market_diagnostics
+        ],
+        "market_diagnostic_counts": [
+            {
+                "market_reason": reason,
+                "base_passed": base_passed,
+                "has_setup": has_setup,
+                "count": count,
+            }
+            for (reason, base_passed, has_setup), count in sorted(
+                market_diagnostic_counts.items()
+            )
+        ],
+        "no_setup_diagnostics": [
+            _setup_diagnostic_payload(value)
+            for value in setup_diagnostics
+        ],
+        "setup_diagnostic_counts": [
+            {
+                "template": template,
+                "failure": failure,
+                "count": count,
+            }
+            for (template, failure), count in sorted(
+                setup_diagnostic_counts.items()
+            )
         ],
         "metrics": {
             "outcome_total": summary.total,
@@ -501,6 +677,12 @@ def render_case_markdown(review: CaseReview) -> str:
     assert isinstance(resistance_comparison, list)
     resistance_evidence_comparison = payload["resistance_evidence_comparison"]
     assert isinstance(resistance_evidence_comparison, list)
+    daily_recall_metrics = payload["daily_recall_metrics"]
+    assert isinstance(daily_recall_metrics, Mapping)
+    market_diagnostic_counts = payload["market_diagnostic_counts"]
+    assert isinstance(market_diagnostic_counts, list)
+    setup_diagnostic_counts = payload["setup_diagnostic_counts"]
+    assert isinstance(setup_diagnostic_counts, list)
     lines = [
         "# 短窗口买点案例复盘",
         "",
@@ -613,6 +795,65 @@ def render_case_markdown(review: CaseReview) -> str:
         lines.extend(
             f"- {value['code']}：最大涨幅 {value['maximum_gain']}，首个淘汰原因 {value['first_rejection']}"
             for value in missed
+        )
+    lines.extend(
+        (
+            "",
+            "## 逐日五日召回",
+            "",
+            "股票-日期样本存在重叠，不能视为相互独立；本节只用于定位漏选原因。",
+            (
+                f"- 完整信号日：{daily_recall_metrics['complete_dates']}个；"
+                f"不完整信号日：{len(daily_recall_metrics['incomplete_dates'])}个"
+            ),
+            (
+                f"- 可买上涨股票-日期：{daily_recall_metrics['winner_pairs']}个；"
+                f"涉及股票：{daily_recall_metrics['unique_winner_codes']}只"
+            ),
+            (
+                f"- 精确同日捕获：{daily_recall_metrics['captured_pairs']}"
+                f"/{daily_recall_metrics['winner_pairs']}"
+            ),
+        )
+    )
+    missed_reasons = daily_recall_metrics["missed_by_first_rejection"]
+    assert isinstance(missed_reasons, Mapping)
+    if missed_reasons:
+        lines.append(
+            "- 漏选首因："
+            + "，".join(
+                f"{reason} {count}"
+                for reason, count in missed_reasons.items()
+            )
+        )
+    if market_diagnostic_counts:
+        lines.append("- 市场冻结反事实诊断：")
+        lines.extend(
+            (
+                f"  - {value['market_reason']} / "
+                f"基础门{'通过' if value['base_passed'] else '未通过'} / "
+                f"{'检测到形态' if value['has_setup'] else '未检测到形态'}："
+                f"{value['count']}个"
+            )
+            for value in market_diagnostic_counts
+        )
+    lines.extend(
+        (
+            "",
+            "## 无买点形态诊断",
+            "",
+            "诊断不生成交易计划，可执行仓位为 0。",
+        )
+    )
+    if not setup_diagnostic_counts:
+        lines.append("- 无可汇总诊断。")
+    else:
+        lines.extend(
+            (
+                f"- {value['template']} / {value['failure']}："
+                f"{value['count']}个"
+            )
+            for value in setup_diagnostic_counts
         )
     lines.extend(
         (

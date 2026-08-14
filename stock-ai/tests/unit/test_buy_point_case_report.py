@@ -21,6 +21,12 @@ from stock_ai.buy_point_selection.case_review import (
 )
 from stock_ai.buy_point_selection.models import DetectedSetup, SetupType
 from stock_ai.buy_point_selection.planning import PricePlan
+from stock_ai.buy_point_selection.recall_research import (
+    DailyRecallCohort,
+    DailyRecallWinner,
+    MarketFreezeDiagnostic,
+    SetupTemplateDiagnostic,
+)
 from stock_ai.buy_point_selection.resistance_research import (
     LEGACY_ANY_HIGH,
     LOCAL_PIVOT_HIGH,
@@ -123,19 +129,19 @@ def test_case_payload_is_deterministic_and_explicitly_non_trading() -> None:
     )
 
 
-def test_v4_schema_participates_in_immutable_case_identity() -> None:
-    """Catches a v4 report colliding with an existing immutable revision."""
+def test_v5_schema_participates_in_immutable_case_identity() -> None:
+    """Catches a v5 report colliding with an existing immutable revision."""
     review = _review(outcomes=())
 
     payload = case_payload(review)
 
-    assert payload["schema"] == "buy-point-case-review-v4"
+    assert payload["schema"] == "buy-point-case-review-v5"
     assert case_identity(
         review,
-        schema="buy-point-case-review-v3",
+        schema="buy-point-case-review-v4",
     ) != case_identity(
         review,
-        schema="buy-point-case-review-v4",
+        schema="buy-point-case-review-v5",
     )
 
 
@@ -210,6 +216,166 @@ def test_v4_payload_serializes_resistance_evidence() -> None:
         "resistance_comparison",
         "metrics",
     } <= payload.keys()
+
+
+def test_v5_payload_reconciles_daily_recall_and_diagnostics() -> None:
+    second = date(2026, 8, 4)
+    winners = (
+        DailyRecallWinner(
+            "600001",
+            SIGNAL_START,
+            date(2026, 8, 8),
+            date(2026, 8, 4),
+            Decimal("10.00"),
+            Decimal("0.06"),
+            date(2026, 8, 6),
+            ("STRICT_SHADOW",),
+            None,
+        ),
+        DailyRecallWinner(
+            "600002",
+            SIGNAL_START,
+            date(2026, 8, 8),
+            date(2026, 8, 4),
+            Decimal("20.00"),
+            Decimal("0.08"),
+            date(2026, 8, 7),
+            (),
+            "NO_BUY_POINT_SETUP",
+        ),
+        DailyRecallWinner(
+            "600001",
+            second,
+            date(2026, 8, 9),
+            date(2026, 8, 5),
+            Decimal("10.20"),
+            Decimal("0.07"),
+            date(2026, 8, 8),
+            (),
+            "INDEX_AND_BREADTH_WEAK",
+        ),
+    )
+    review = replace(
+        _review(outcomes=()),
+        daily_recall_cohorts=(
+            DailyRecallCohort(
+                SIGNAL_START,
+                tuple(date(2026, 8, day) for day in range(4, 9)),
+                True,
+                winners[:2],
+            ),
+            DailyRecallCohort(
+                second,
+                tuple(date(2026, 8, day) for day in range(5, 10)),
+                True,
+                winners[2:],
+            ),
+            DailyRecallCohort(SIGNAL_END, (), False, ()),
+        ),
+        market_freeze_diagnostics=(
+            MarketFreezeDiagnostic(
+                "600001",
+                second,
+                "INDEX_AND_BREADTH_WEAK",
+                True,
+                (),
+                ("PRE_BREAKOUT",),
+                (Decimal("0.80"),),
+            ),
+        ),
+        no_setup_diagnostics=(
+            SetupTemplateDiagnostic(
+                "600002",
+                SIGNAL_START,
+                "PRE_BREAKOUT",
+                30,
+                ("PLATFORM_NOT_NEAR_TOP",),
+                Decimal("0.50"),
+                {"distance_to_platform_top": Decimal("0.045")},
+            ),
+        ),
+    )
+
+    payload = case_payload(review)
+
+    assert payload["daily_recall_winners"][0] == {
+        "code": "600001",
+        "signal_date": "2026-08-03",
+        "horizon_end_date": "2026-08-08",
+        "entry_date": "2026-08-04",
+        "entry_price": "10.00",
+        "forward_maximum_gain": "0.06",
+        "maximum_gain_date": "2026-08-06",
+        "captured_tiers": ["STRICT_SHADOW"],
+        "first_rejection": None,
+        "executable_shares": 0,
+    }
+    metrics = payload["daily_recall_metrics"]
+    assert metrics["complete_dates"] == 2
+    assert metrics["incomplete_dates"] == ["2026-08-07"]
+    assert metrics["winner_pairs"] == 3
+    assert metrics["unique_winner_codes"] == 2
+    assert metrics["captured_pairs"] == 1
+    assert metrics["captured_by_tier"] == {"STRICT_SHADOW": 1}
+    assert metrics["missed_by_first_rejection"] == {
+        "INDEX_AND_BREADTH_WEAK": 1,
+        "NO_BUY_POINT_SETUP": 1,
+    }
+    assert sum(value["winner_pairs"] for value in metrics["by_date"]) == 3
+    assert payload["market_freeze_diagnostics"][0]["executable_shares"] == 0
+    assert payload["no_setup_diagnostics"][0]["failures"] == [
+        "PLATFORM_NOT_NEAR_TOP"
+    ]
+    assert payload["setup_diagnostic_counts"] == [
+        {
+            "template": "PRE_BREAKOUT",
+            "failure": "PLATFORM_NOT_NEAR_TOP",
+            "count": 1,
+        }
+    ]
+
+
+def test_v5_markdown_labels_daily_recall_as_non_trading_case_evidence() -> None:
+    winner = DailyRecallWinner(
+        "600002",
+        SIGNAL_START,
+        date(2026, 8, 8),
+        date(2026, 8, 4),
+        Decimal("20.00"),
+        Decimal("0.08"),
+        date(2026, 8, 7),
+        (),
+        "NO_BUY_POINT_SETUP",
+    )
+    review = replace(
+        _review(outcomes=()),
+        daily_recall_cohorts=(
+            DailyRecallCohort(
+                SIGNAL_START,
+                tuple(date(2026, 8, day) for day in range(4, 9)),
+                True,
+                (winner,),
+            ),
+        ),
+        no_setup_diagnostics=(
+            SetupTemplateDiagnostic(
+                "600002",
+                SIGNAL_START,
+                "PRE_BREAKOUT",
+                30,
+                ("PLATFORM_NOT_NEAR_TOP",),
+                Decimal("0.50"),
+                {},
+            ),
+        ),
+    )
+
+    markdown = render_case_markdown(review)
+
+    assert "## 逐日五日召回" in markdown
+    assert "## 无买点形态诊断" in markdown
+    assert "股票-日期样本存在重叠，不能视为相互独立" in markdown
+    assert "诊断不生成交易计划，可执行仓位为 0" in markdown
 
 
 def test_resistance_comparison_uses_only_passing_exact_representatives() -> None:
