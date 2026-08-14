@@ -256,6 +256,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             point_in_time_complete=args.point_in_time_complete,
         )
         observations = _load_observations(args.observations)
+        if manifest is not None:
+            if int(manifest.get("observation_count", -1)) != len(observations):
+                raise ValidationError("replay observation count mismatch")
+            if any(
+                value.signal_date is None
+                or not value.code
+                or not value.structure_id
+                or value.risk_fraction <= 0
+                for value in observations
+            ):
+                raise ValidationError("replay observation identity is incomplete")
 
         if args.freeze_profile:
             if manifest is not None:
