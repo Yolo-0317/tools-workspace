@@ -33,6 +33,11 @@ from .reference_data import (
 )
 
 if TYPE_CHECKING:
+    from .recall_research import (
+        DailyRecallCohort,
+        MarketFreezeDiagnostic,
+        SetupTemplateDiagnostic,
+    )
     from .resistance_research import SignificantResistanceProfile
 
 
@@ -291,6 +296,9 @@ class CaseReview:
     episodes: tuple[OpportunityEpisode, ...] = ()
     conditional_two_r_shadow: tuple[ConditionalShadowOpportunity, ...] = ()
     resistance_profiles: tuple[SignificantResistanceProfile, ...] = ()
+    daily_recall_cohorts: tuple[DailyRecallCohort, ...] = ()
+    market_freeze_diagnostics: tuple[MarketFreezeDiagnostic, ...] = ()
+    no_setup_diagnostics: tuple[SetupTemplateDiagnostic, ...] = ()
 
 
 def classify_near_miss(

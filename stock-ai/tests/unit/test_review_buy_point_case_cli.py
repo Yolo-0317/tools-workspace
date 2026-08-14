@@ -10,6 +10,7 @@ from scripts.analysis.review_buy_point_case import (
     CaseReviewInputs,
     DefaultRuntime,
     _build_case_research_layers,
+    _build_daily_recall,
     _build_resistance_profiles,
     _load_holdings_by_date,
     _merge_missing_index_bars,
@@ -148,6 +149,76 @@ def test_resistance_profiles_include_only_zero_share_two_r_near_misses() -> None
     assert not missing[0].complete
 
 
+def test_daily_recall_runtime_uses_exact_signal_date_and_builds_diagnostics() -> None:
+    """Catches weekly candidates being credited to a different daily winner."""
+    signal = date(2026, 8, 3)
+    trading_dates = tuple(signal + timedelta(days=index) for index in range(6))
+    history_start = signal - timedelta(days=59)
+    history = tuple(
+        BuyPointBar(
+            history_start + timedelta(days=index),
+            Decimal("10.00"),
+            Decimal("10.10"),
+            Decimal("9.90"),
+            Decimal("10.00"),
+            Decimal("0"),
+            Decimal("200000"),
+        )
+        for index in range(60)
+    )
+    outcome = tuple(
+        BuyPointBar(
+            value,
+            Decimal("10.00"),
+            Decimal("10.60") if index == 2 else Decimal("10.20"),
+            Decimal("9.90"),
+            Decimal("10.10"),
+            Decimal("1"),
+            Decimal("200000"),
+        )
+        for index, value in enumerate(trading_dates[1:])
+    )
+    replay = CaseSignalReplay(
+        traces={
+            (signal, "600001"): GateTrace(
+                "600001",
+                signal,
+                ("NO_BUY_POINT_SETUP",),
+                ("LATEST_BAR", "MARKET", "BASE"),
+                {},
+            )
+        },
+        incomplete_dates=(),
+        near_misses=(
+            _research_candidate(signal - timedelta(days=1), signal),
+        ),
+    )
+
+    cohorts, market_rows, setup_rows = _build_daily_recall(
+        signal_dates=(signal,),
+        trading_dates=trading_dates,
+        outcome_cutoff=trading_dates[-1],
+        bars_by_code={"600001": (*history, *outcome)},
+        risk_flags=(),
+        holding_codes_by_date={signal: frozenset()},
+        holdings_complete_by_date={signal: True},
+        replay=replay,
+    )
+
+    assert len(cohorts) == 1
+    assert cohorts[0].complete
+    assert len(cohorts[0].winners) == 1
+    assert cohorts[0].winners[0].captured_tiers == ()
+    assert cohorts[0].winners[0].first_rejection == "NO_BUY_POINT_SETUP"
+    assert market_rows == ()
+    assert [value.template for value in setup_rows] == [
+        "FIRST_LAUNCH_PULLBACK",
+        "PRE_BREAKOUT",
+        "TREND_PULLBACK",
+    ]
+    assert all(value.executable_shares == 0 for value in setup_rows)
+
+
 def test_cli_rejects_outcome_cutoff_before_signal_end(tmp_path, capsys) -> None:
     """Catches invalid chronology reaching the database runtime."""
     runtime = FakeRuntime()
@@ -234,6 +305,9 @@ def test_default_runtime_builds_review_from_bounded_injected_inputs() -> None:
     assert review.episodes == ()
     assert review.conditional_two_r_shadow == ()
     assert review.resistance_profiles == ()
+    assert [value.complete for value in review.daily_recall_cohorts] == [False, False]
+    assert review.market_freeze_diagnostics == ()
+    assert review.no_setup_diagnostics == ()
 
 
 def test_missing_historical_holdings_marks_signal_date_incomplete() -> None:

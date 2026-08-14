@@ -39,6 +39,16 @@ from stock_ai.buy_point_selection.reference_data import (
     RiskFlag,
     SectorMembership,
 )
+from stock_ai.buy_point_selection.recall_research import (
+    DailyRecallCohort,
+    MarketFreezeDiagnostic,
+    SetupTemplateDiagnostic,
+    attribute_daily_recall_winners,
+    diagnose_market_freeze_winners,
+    diagnose_no_setup,
+    find_daily_actionable_winners,
+    next_five_trading_dates,
+)
 from stock_ai.buy_point_selection.resistance_research import (
     SignificantResistanceProfile,
     analyze_significant_resistance,
@@ -103,6 +113,88 @@ def _build_resistance_profiles(
     return tuple(sorted(profiles, key=lambda value: value.episode_id))
 
 
+def _build_daily_recall(
+    *,
+    signal_dates: Sequence[date],
+    trading_dates: Sequence[date],
+    outcome_cutoff: date,
+    bars_by_code: Mapping[str, Sequence[BuyPointBar]],
+    risk_flags: Sequence[RiskFlag],
+    holding_codes_by_date: Mapping[date, frozenset[str]],
+    holdings_complete_by_date: Mapping[date, bool],
+    replay: CaseSignalReplay,
+) -> tuple[
+    tuple[DailyRecallCohort, ...],
+    tuple[MarketFreezeDiagnostic, ...],
+    tuple[SetupTemplateDiagnostic, ...],
+]:
+    normalized_bars = {
+        normalize_code6(code): tuple(values)
+        for code, values in bars_by_code.items()
+    }
+    cohorts = []
+    attributed_winners = []
+    incomplete_dates = set(replay.incomplete_dates)
+    for signal_date in sorted(set(signal_dates)):
+        horizon = next_five_trading_dates(
+            signal_date,
+            trading_dates,
+            outcome_cutoff,
+        )
+        holdings_complete = (
+            not holdings_complete_by_date
+            or holdings_complete_by_date.get(signal_date, False)
+        )
+        if (
+            len(horizon) != 5
+            or signal_date in incomplete_dates
+            or not holdings_complete
+        ):
+            cohorts.append(DailyRecallCohort(signal_date, horizon, False, ()))
+            continue
+        cohort = find_daily_actionable_winners(
+            signal_date=signal_date,
+            outcome_dates=horizon,
+            bars_by_code=normalized_bars,
+            risk_flags=risk_flags,
+            holding_codes=holding_codes_by_date.get(signal_date, frozenset()),
+        )
+        winners = attribute_daily_recall_winners(cohort.winners, replay)
+        cohorts.append(replace(cohort, winners=winners))
+        attributed_winners.extend(winners)
+    market_rows = diagnose_market_freeze_winners(
+        attributed_winners,
+        bars_by_code=normalized_bars,
+        risk_flags=risk_flags,
+        holding_codes_by_date=holding_codes_by_date,
+    )
+    setup_rows = []
+    for winner in attributed_winners:
+        if winner.captured_tiers or winner.first_rejection != "NO_BUY_POINT_SETUP":
+            continue
+        setup_rows.extend(
+            diagnose_no_setup(
+                winner.code,
+                winner.signal_date,
+                normalized_bars.get(winner.code, ()),
+            )
+        )
+    return (
+        tuple(sorted(cohorts, key=lambda value: value.signal_date)),
+        market_rows,
+        tuple(
+            sorted(
+                setup_rows,
+                key=lambda value: (
+                    value.signal_date,
+                    value.code,
+                    value.template,
+                ),
+            )
+        ),
+    )
+
+
 class DefaultRuntime:
     def __init__(
         self,
@@ -152,6 +244,18 @@ class DefaultRuntime:
             episodes,
             inputs.bars_by_code,
         )
+        daily_cohorts, market_diagnostics, no_setup_diagnostics = (
+            _build_daily_recall(
+                signal_dates=signal_dates,
+                trading_dates=inputs.trading_dates,
+                outcome_cutoff=effective_cutoff,
+                bars_by_code=inputs.bars_by_code,
+                risk_flags=inputs.risk_flags,
+                holding_codes_by_date=inputs.holding_codes_by_date,
+                holdings_complete_by_date=inputs.holdings_complete_by_date,
+                replay=replay,
+            )
+        )
         outcomes = tuple(
             evaluate_case_plan(
                 candidate,
@@ -197,6 +301,9 @@ class DefaultRuntime:
             episodes=episodes,
             conditional_two_r_shadow=conditional,
             resistance_profiles=resistance_profiles,
+            daily_recall_cohorts=daily_cohorts,
+            market_freeze_diagnostics=market_diagnostics,
+            no_setup_diagnostics=no_setup_diagnostics,
         )
 
 
