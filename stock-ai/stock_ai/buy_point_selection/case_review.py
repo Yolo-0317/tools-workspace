@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR
 from bisect import bisect_right
 from typing import Mapping, Sequence
 
-from stock_ai.market_codes import normalize_code6
+from stock_ai.market_codes import is_sh_sz_main_board_code, normalize_code6
 
 from .gates import anti_chase_gate, base_gate, classify_market, sector_gate
 from .historical_replay import second_trading_date_after
+from .execution import ExecutionCosts, simulate_plan
 from .models import BuyPointBar, DetectedSetup, MarketSnapshot, SelectionPolicy
 from .patterns import detect_setups
 from .planning import (
@@ -90,6 +91,50 @@ class CaseSignalReplay:
     near_misses: tuple[CaseCandidate, ...] = ()
 
 
+@dataclass(frozen=True)
+class CaseOutcome:
+    code: str
+    signal_date: date
+    tier: str
+    status: str
+    mfe: Decimal | None
+    mae: Decimal | None
+    trigger_date: date | None = None
+    entry_price: Decimal | None = None
+    net_return: Decimal | None = None
+    close_return: Decimal | None = None
+    stop_first: bool = False
+    intraday_order_ambiguous: bool = False
+
+    @property
+    def success(self) -> bool | None:
+        return classify_case_success(
+            triggered=self.mfe is not None and self.mae is not None,
+            pending=self.status == "PENDING",
+            mfe=self.mfe,
+            mae=self.mae,
+        )
+
+
+@dataclass(frozen=True)
+class CaseOutcomeSummary:
+    total: int
+    pending: int
+    resolved: int
+    successes: int
+    failures: int
+
+
+@dataclass(frozen=True)
+class BuyableWinner:
+    code: str
+    signal_date: date
+    maximum_gain: Decimal
+    first_buyable_date: date
+    captured_tiers: tuple[str, ...] = ()
+    first_rejection: str | None = None
+
+
 def classify_near_miss(
     trace: GateTrace,
     *,
@@ -111,6 +156,166 @@ def classify_near_miss(
             normalize_code6(trace.code),
         ),
     )
+
+
+def classify_case_success(
+    *,
+    triggered: bool,
+    pending: bool,
+    mfe: Decimal | None,
+    mae: Decimal | None,
+) -> bool | None:
+    if pending:
+        return None
+    if not triggered or mfe is None or mae is None:
+        return False
+    return mfe >= Decimal("0.05") and mae <= Decimal("0.03")
+
+
+def summarize_case_outcomes(
+    outcomes: Sequence[CaseOutcome],
+) -> CaseOutcomeSummary:
+    pending = sum(value.success is None for value in outcomes)
+    successes = sum(value.success is True for value in outcomes)
+    resolved = len(outcomes) - pending
+    return CaseOutcomeSummary(
+        total=len(outcomes),
+        pending=pending,
+        resolved=resolved,
+        successes=successes,
+        failures=resolved - successes,
+    )
+
+
+def evaluate_case_plan(
+    candidate: CaseCandidate,
+    bars: Sequence[BuyPointBar],
+    *,
+    outcome_cutoff: date,
+    costs: ExecutionCosts | None = None,
+) -> CaseOutcome:
+    """Evaluate a frozen case plan only through the requested complete cutoff."""
+    bounded = tuple(
+        sorted(
+            (
+                value
+                for value in bars
+                if candidate.signal_date < value.trade_date <= outcome_cutoff
+            ),
+            key=lambda value: value.trade_date,
+        )
+    )
+    trade = simulate_plan(
+        candidate.plan,
+        bounded,
+        costs,
+        sector_code="",
+    )
+    status = "PENDING" if trade.outcome.value == "PENDING" else trade.status
+    close_return = None
+    if trade.entry_price is not None and bounded:
+        close_return = bounded[-1].close / trade.entry_price - Decimal("1")
+    return CaseOutcome(
+        code=candidate.code,
+        signal_date=candidate.signal_date,
+        tier=candidate.tier,
+        status=status,
+        mfe=trade.mfe,
+        mae=trade.mae,
+        trigger_date=trade.entry_date,
+        entry_price=trade.entry_price,
+        net_return=trade.net_return,
+        close_return=close_return,
+        stop_first=trade.outcome.value == "STOP_FIRST",
+        intraday_order_ambiguous=trade.intraday_order_ambiguous,
+    )
+
+
+def find_buyable_winners(
+    *,
+    signal_date: date,
+    outcome_dates: Sequence[date],
+    bars_by_code: Mapping[str, Sequence[BuyPointBar]],
+    risk_flags: Sequence[RiskFlag],
+    holding_codes: frozenset[str],
+    policy: SelectionPolicy | None = None,
+) -> tuple[BuyableWinner, ...]:
+    """Find hindsight winners that still offered a normal, compliant entry."""
+    resolved = policy or SelectionPolicy()
+    dated_flags = risk_flags_on(risk_flags, signal_date)
+    vetoed = {
+        code
+        for code, flags in dated_flags.items()
+        if any(value.severity == "VETO" for value in flags)
+    }
+    held = {normalize_code6(value) for value in holding_codes}
+    outcome_set = frozenset(outcome_dates)
+    winners: list[BuyableWinner] = []
+    for raw_code, values in sorted(bars_by_code.items()):
+        code = normalize_code6(raw_code)
+        if not is_sh_sz_main_board_code(code) or code in vetoed or code in held:
+            continue
+        ordered = tuple(sorted(values, key=lambda value: value.trade_date))
+        history = tuple(value for value in ordered if value.trade_date <= signal_date)
+        if len(history) < 5 or history[-1].trade_date != signal_date:
+            continue
+        average_amount5 = _average([value.amount_qian for value in history[-5:]])
+        if average_amount5 < resolved.min_average_amount5_qian:
+            continue
+        outcome = tuple(value for value in ordered if value.trade_date in outcome_set)
+        if not outcome:
+            continue
+        maximum_gain = max(value.high for value in outcome) / history[-1].close - Decimal("1")
+        if maximum_gain < Decimal("0.05"):
+            continue
+        previous_close = history[-1].close
+        first_buyable_date: date | None = None
+        for value in outcome:
+            locked_limit_up = (
+                value.open == value.high == value.low == value.close
+                and value.pct_chg >= Decimal("9.5")
+            )
+            gap = value.open / previous_close - Decimal("1")
+            if not locked_limit_up and gap <= Decimal("0.03"):
+                first_buyable_date = value.trade_date
+                break
+            previous_close = value.close
+        if first_buyable_date is None:
+            continue
+        winners.append(
+            BuyableWinner(code, signal_date, maximum_gain, first_buyable_date)
+        )
+    return tuple(sorted(winners, key=lambda value: value.code))
+
+
+def attribute_buyable_winners(
+    winners: Sequence[BuyableWinner],
+    replay: CaseSignalReplay,
+) -> tuple[BuyableWinner, ...]:
+    """Join hindsight winners to frozen candidate tiers and signal-date traces."""
+    candidates = (*replay.strict_shadow, *replay.near_misses)
+    attributed: list[BuyableWinner] = []
+    for winner in winners:
+        tiers = tuple(
+            sorted(
+                {
+                    value.tier
+                    for value in candidates
+                    if value.code == winner.code
+                }
+            )
+        )
+        trace = replay.traces.get((winner.signal_date, winner.code))
+        attributed.append(
+            replace(
+                winner,
+                captured_tiers=tiers,
+                first_rejection=(
+                    None if tiers or trace is None else trace.first_rejection
+                ),
+            )
+        )
+    return tuple(sorted(attributed, key=lambda value: value.code))
 
 
 def _bars_on_or_before(
