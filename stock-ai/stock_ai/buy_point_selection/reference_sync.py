@@ -158,6 +158,7 @@ def _sync_sector(
     existing = repository.memberships_between(start, end)
     existing_codes = {row.code for row in existing}
     checkpoints = repository.load_checkpoints("CNINFO", "sector", codes)
+    confirmed_empty_codes: set[str] = set()
 
     def checkpoint_has_current_empty_result(checkpoint: ReferenceCheckpoint) -> bool:
         try:
@@ -179,6 +180,15 @@ def _sync_sector(
                 code in existing_codes
                 or checkpoint_has_current_empty_result(checkpoint)
             )
+        )
+    )
+    confirmed_empty_codes.update(
+        code
+        for code in codes
+        if (
+            (checkpoint := checkpoints.get(code))
+            and checkpoint.status == "COMPLETE"
+            and checkpoint_has_current_empty_result(checkpoint)
         )
     )
     new_rows: list[SectorMembership] = []
@@ -230,6 +240,8 @@ def _sync_sector(
                     previous_trade_date=previous_trade_date,
                 )
                 new_rows.extend(rows)
+                if not rows:
+                    confirmed_empty_codes.add(code)
                 save_sector_checkpoint(
                     _checkpoint(
                         provider="CNINFO",
@@ -261,12 +273,18 @@ def _sync_sector(
     all_rows = tuple(existing) + tuple(new_rows)
     expected = 0
     observed = 0
+    mapped = 0
+    unclassified = 0
     try:
         for day in request.trade_dates:
             active = membership_on(all_rows, day)
             universe = request.universe_by_date[day]
             expected += len(universe)
-            observed += len(universe.intersection(active))
+            mapped_on_day = universe.intersection(active)
+            unclassified_on_day = universe.intersection(confirmed_empty_codes)
+            mapped += len(mapped_on_day)
+            unclassified += len(unclassified_on_day)
+            observed += len(mapped_on_day.union(unclassified_on_day))
         coverage = _ratio(observed, expected)
     except Exception as exc:  # noqa: BLE001
         coverage = Decimal("0")
@@ -290,6 +308,8 @@ def _sync_sector(
             "partition_count": len(codes),
             "failed_partitions": [code for code, _ in failures],
             "observed_count": observed,
+            "mapped_count": mapped,
+            "unclassified_count": unclassified,
         },
     )
 

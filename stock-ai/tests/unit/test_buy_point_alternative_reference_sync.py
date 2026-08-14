@@ -89,6 +89,7 @@ class FakeCninfoProvider:
         self.industry_calls: list[str] = []
         self.announcement_calls: list[tuple[date, int]] = []
         self.failed_industry_code: str | None = None
+        self.empty_industry_code: str | None = None
         self.failed_announcement_day: date | None = None
         self.risky_announcement = False
         self.multiple_historical_changes = False
@@ -100,6 +101,8 @@ class FakeCninfoProvider:
         self.industry_calls.append(code)
         if code == self.failed_industry_code:
             raise ProviderFailure("CNINFO", "industry_changes", "PROVIDER_UNAVAILABLE")
+        if code == self.empty_industry_code:
+            return ()
         values = (
             IndustryChange(
                 code,
@@ -317,6 +320,29 @@ def test_same_day_complete_empty_sector_checkpoint_is_not_reprobed() -> None:
     )
 
     assert cninfo.industry_calls == []
+
+
+def test_confirmed_empty_industry_is_covered_but_remains_unmapped() -> None:
+    """Catches a fully queried unclassified stock freezing every mapped candidate."""
+    day = date(2025, 8, 6)
+    repository = MemoryRepository()
+    cninfo = FakeCninfoProvider()
+    cninfo.empty_industry_code = "600001"
+
+    runs = sync_alternative_reference_data(
+        _request(day, size=100),
+        cninfo=cninfo,
+        baostock=FakeBaoStockProvider(),
+        repository=repository,
+        sleep=lambda _: None,
+    )
+
+    sector = next(run for run in runs if run.dataset == "sector")
+    assert sector.status == "COMPLETE"
+    assert sector.coverage_ratio == Decimal("1")
+    assert sector.details["mapped_count"] == 99
+    assert sector.details["unclassified_count"] == 1
+    assert not any(row.code == "600001" for row in repository.memberships.values())
 
 
 def test_missing_announcement_page_fails_only_announcement_dataset() -> None:
