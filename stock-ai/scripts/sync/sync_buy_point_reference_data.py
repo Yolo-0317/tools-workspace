@@ -105,24 +105,6 @@ def _row_value(row: object, name: str):
     return getattr(row, name)
 
 
-def _latest_observation_by_date(
-    observed_dates: tuple[date, ...] | list[date],
-    trade_dates: tuple[date, ...],
-) -> dict[date, date | None]:
-    """Resolve the latest non-future observation with one monotonic scan."""
-
-    ordered = tuple(sorted(set(observed_dates)))
-    pointer = 0
-    latest = None
-    resolved: dict[date, date | None] = {}
-    for day in trade_dates:
-        while pointer < len(ordered) and ordered[pointer] <= day:
-            latest = ordered[pointer]
-            pointer += 1
-        resolved[day] = latest
-    return resolved
-
-
 def _universe_by_date(
     engine, trade_dates: tuple[date, ...], *, lookback_calendar_days: int = 180
 ) -> dict[date, frozenset[str]]:
@@ -136,32 +118,40 @@ def _universe_by_date(
         rows = list(
             connection.execute(
                 text(
-                    "SELECT ts_code, trade_date FROM stock_daily "
+                    "SELECT ts_code, MIN(trade_date) AS first_date, "
+                    "MAX(trade_date) AS last_date FROM stock_daily "
                     "WHERE trade_date BETWEEN :lookback_start AND :end_date "
-                    "ORDER BY ts_code, trade_date"
+                    "GROUP BY ts_code ORDER BY ts_code"
                 ),
                 {"lookback_start": lookback_start, "end_date": end_date},
             ).mappings()
         )
-    observed: dict[str, list[date]] = {}
+    lifespans: dict[str, tuple[date, date]] = {}
     for row in rows:
         code = normalize_code6(str(_row_value(row, "ts_code")))
         if not is_sh_sz_main_board_code(code):
             continue
-        raw_date = _row_value(row, "trade_date")
-        trade_date = (
-            raw_date
-            if isinstance(raw_date, date)
-            else date.fromisoformat(str(raw_date)[:10])
+        raw_first = _row_value(row, "first_date")
+        raw_last = _row_value(row, "last_date")
+        first = (
+            raw_first
+            if isinstance(raw_first, date)
+            else date.fromisoformat(str(raw_first)[:10])
         )
-        observed.setdefault(code, []).append(trade_date)
-    universe: dict[date, set[str]] = {day: set() for day in trade_dates}
-    for code, dates in observed.items():
-        latest_by_date = _latest_observation_by_date(dates, trade_dates)
-        for day, latest in latest_by_date.items():
-            if latest is not None and latest >= day - timedelta(days=lookback_calendar_days):
-                universe[day].add(code)
-    return {day: frozenset(codes) for day, codes in universe.items()}
+        last = (
+            raw_last
+            if isinstance(raw_last, date)
+            else date.fromisoformat(str(raw_last)[:10])
+        )
+        lifespans[code] = (first, last)
+    return {
+        day: frozenset(
+            code
+            for code, (first, last) in lifespans.items()
+            if first <= day and last >= day - timedelta(days=lookback_calendar_days)
+        )
+        for day in trade_dates
+    }
 
 
 def _safe_cli_error(exc: Exception) -> str:

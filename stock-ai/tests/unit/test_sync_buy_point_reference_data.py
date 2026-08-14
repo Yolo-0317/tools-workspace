@@ -233,9 +233,13 @@ def test_universe_by_date_uses_one_query_and_keeps_recently_suspended_main_board
     end = date(2025, 8, 6)
     engine = _Engine(
         [
-            {"ts_code": "600001.SH", "trade_date": date(2025, 2, 8)},
-            {"ts_code": "600002.SH", "trade_date": end},
-            {"ts_code": "300001.SZ", "trade_date": end},
+            {
+                "ts_code": "600001.SH",
+                "first_date": date(2025, 2, 8),
+                "last_date": date(2025, 2, 8),
+            },
+            {"ts_code": "600002.SH", "first_date": end, "last_date": end},
+            {"ts_code": "300001.SZ", "first_date": end, "last_date": end},
         ]
     )
 
@@ -244,6 +248,9 @@ def test_universe_by_date_uses_one_query_and_keeps_recently_suspended_main_board
     assert len(engine.connection.calls) == 1
     statement, parameters = engine.connection.calls[0]
     assert "BETWEEN :lookback_start AND :end_date" in statement
+    assert "MIN(trade_date) AS first_date" in statement
+    assert "MAX(trade_date) AS last_date" in statement
+    assert "GROUP BY ts_code" in statement
     assert parameters == {
         "lookback_start": date(2025, 2, 6),
         "end_date": end,
@@ -251,27 +258,6 @@ def test_universe_by_date_uses_one_query_and_keeps_recently_suspended_main_board
     assert universe == {
         start: frozenset({"600001"}),
         end: frozenset({"600001", "600002"}),
-    }
-
-
-def test_latest_observation_by_date_advances_monotonically() -> None:
-    """Catches the historical universe rebuilding every code's full date list per day."""
-    module = _load_script()
-    trade_dates = (
-        date(2025, 8, 4),
-        date(2025, 8, 5),
-        date(2025, 8, 6),
-    )
-
-    resolved = module._latest_observation_by_date(
-        (date(2025, 8, 1), date(2025, 8, 5), date(2025, 8, 8)),
-        trade_dates,
-    )
-
-    assert resolved == {
-        date(2025, 8, 4): date(2025, 8, 1),
-        date(2025, 8, 5): date(2025, 8, 5),
-        date(2025, 8, 6): date(2025, 8, 5),
     }
 
 
