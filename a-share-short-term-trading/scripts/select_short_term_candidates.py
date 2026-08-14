@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Manually run four-lane short-term selection and print an auditable report."""
+"""Manually run buy-point-first full-universe selection and print an auditable report."""
 
 from __future__ import annotations
 
@@ -37,16 +37,11 @@ from short_term_trading.buy_point_selection_service import (
     persist_buy_point_runtime,
     render_buy_point_runtime_report,
 )
-from short_term_trading.daily_sync import DailyBar
-from short_term_trading.diagnosis import RiskProfile
 from short_term_trading.evidence import CaptureRecorder
 from short_term_trading.market_capture import build_default_market_state_provider
 from short_term_trading.repositories import EvidenceRepository, PlanningRepository
 from short_term_trading.selection_service import (
-    SelectionDependencies,
     SelectionReport,
-    SelectionRequest,
-    materialize_short_term_selection,
     render_selection_report,
 )
 from short_term_trading.session import TradingCalendar, TradingSession, classify_trading_session
@@ -85,7 +80,7 @@ from stock_ai.buy_point_selection.validation import (
 from short_term_trading.evidence import is_chip_snapshot_for_trade_date
 from stock_ai.relative_strength import load_relative_strength_snapshot
 from stock_ai.selection_validation import load_promoted_policy
-from stock_ai.short_term_selection import SelectionPolicy, select_short_term_candidates
+from stock_ai.short_term_selection import SelectionPolicy
 
 
 LANES = ("combined", "ma5", "five_factor", "bottom_breakout")
@@ -140,7 +135,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--skip-lanes",
         action="store_true",
-        help="仅在人工重试/测试时复用已落库的四轨结果",
+        help="仅在人工重试/测试时复用已落库的旧策略影子结果",
     )
     parser.add_argument(
         "--refresh-reference-data",
@@ -271,6 +266,25 @@ def _cumulative_return_pct(bars: tuple[BuyPointBar, ...], sessions: int) -> Deci
     return (bars[-1].close / bars[-sessions - 1].close - Decimal("1")) * Decimal("100")
 
 
+def market_snapshot_from_view(value: object, analysis_date: date) -> MarketSnapshot:
+    indexes = getattr(value, "indexes_above_ma20", None)
+    breadth = getattr(value, "breadth_pct", None)
+    amount_ratio = getattr(value, "amount_ratio", None)
+    complete = (
+        getattr(value, "trading_date", None) == analysis_date
+        and indexes is not None
+        and breadth is not None
+        and amount_ratio is not None
+        and bool(getattr(value, "evidence_refs", ()))
+    )
+    return MarketSnapshot(
+        indexes_above_ma20=int(indexes or 0),
+        breadth_pct=float(breadth or 0),
+        amount_ratio=float(amount_ratio or 0),
+        complete=complete,
+    )
+
+
 def scan_buy_point_universe(
     *,
     panel: dict[str, tuple[BuyPointBar, ...]],
@@ -391,23 +405,6 @@ def _resolve_dates(now: datetime, calendar: TradingCalendar) -> tuple[object, da
     ), analysis_date, trading_date
 
 
-def _bar(code: str, value: dict[str, object]) -> DailyBar:
-    return DailyBar(
-        ts_code=code,
-        exch_code="SH" if code.startswith("6") else "SZ",
-        trade_date=date.fromisoformat(str(value["trade_date"])[:10]),
-        open=float(value["open"]),
-        high=float(value["high"]),
-        low=float(value["low"]),
-        close=float(value["close"]),
-        pre_close=None,
-        change_amount=None,
-        pct_chg=float(value.get("pct_chg") or 0),
-        vol=int(value.get("vol") or 0),
-        amount=float(value.get("amount") or 0),
-    )
-
-
 class DefaultRuntime:
     def __init__(self) -> None:
         from dotenv import load_dotenv
@@ -496,15 +493,7 @@ class DefaultRuntime:
             remaining_exposure=max(Decimal("0"), Decimal("40000") - market_value),
         )
         market_state = build_default_market_state_provider(mysql_url()).get_state(context)
-        market_snapshot = MarketSnapshot(
-            indexes_above_ma20=int(market_state.indexes_above_ma20),
-            breadth_pct=float(market_state.breadth_pct),
-            amount_ratio=float(market_state.amount_ratio),
-            complete=(
-                market_state.trading_date == analysis_date
-                and bool(market_state.evidence_refs)
-            ),
-        )
+        market_snapshot = market_snapshot_from_view(market_state, analysis_date)
 
         prepared = self._planning.load_prepared_buy_point_plans(policy.rule_version)
         resolved_market_status = getattr(
@@ -637,7 +626,8 @@ def main(
     try:
         runtime = (runtime_factory or default_runtime)(args)
         if not args.skip_lanes:
-            runtime.run_lanes(LANES)
+            with redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+                runtime.run_lanes(LANES)
         context, analysis_date, trading_date = _resolve_dates(now, runtime.calendar)
         if args.refresh_reference_data:
             refresh = getattr(runtime, "refresh_reference_data", None)

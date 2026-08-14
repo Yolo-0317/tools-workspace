@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+import importlib.util
+from pathlib import Path
 
 from stock_ai.buy_point_selection.reference_data import sync_reference_data
+
+
+SCRIPT = Path(__file__).parents[2] / "scripts" / "sync" / "sync_buy_point_reference_data.py"
 
 
 class MemoryRepository:
@@ -100,3 +105,13 @@ def test_sync_failure_marks_only_failed_dataset_and_continues() -> None:
     assert [run.status for run in runs] == ["COMPLETE", "FAILED", "COMPLETE"]
     assert runs[1].error_code == "RuntimeError"
     assert any(flag.flag_type == "REGULATORY_INVESTIGATION" for flag in repository.flags)
+
+
+def test_manual_sync_accepts_latest_as_the_end_boundary() -> None:
+    """Catches the documented safe refresh command diverging from its CLI parser."""
+    spec = importlib.util.spec_from_file_location("sync_buy_point_reference_data", SCRIPT)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    args = module.build_parser().parse_args(["--start", "2024-01-02", "--end", "latest"])
+    assert args.end is None

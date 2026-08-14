@@ -1,6 +1,6 @@
 # A 股短线交易辅助系统
 
-当前实现为 v1.1 第一阶段基础设施：严格数据契约、15 张 MySQL 业务表、完整券商事实、专用仓储层和最小权限运行账号。系统只响应聊天指令，不安装看板、定时刷新、推送任务或自动下单能力。
+当前实现包含 V1.3 买点优先选股：严格数据契约、点时行业/ST/公告风险、三类入场前结构、两日条件触发、五日退出模拟、不可覆盖计划事件和券商确认后的 3—5 日决策记忆。系统只响应聊天指令，不为该选股器安装定时刷新、推送任务或自动下单能力。
 
 ## 数据库管理
 
@@ -26,7 +26,7 @@ PYTHONPATH=a-share-short-term-trading stock-ai/.venv/bin/python \
   a-share-short-term-trading/scripts/configure_mysql_permissions.py --apply
 ```
 
-迁移按 `sql/001` 至 `sql/005` 顺序幂等执行。`004` 只为既有账户和持仓表补充缺失的券商事实列；`005` 为自动选股候选与计划增加 v1.2 字段和幂等索引。迁移不删除或重建业务表。
+迁移按 `sql/001` 至 `sql/006` 顺序幂等执行。`004` 只为既有账户和持仓表补充缺失的券商事实列；`005` 为旧自动选股候选与计划增加 V1.2 字段；`006` 增加 V1.3 结构 ID、三层资格、计划状态、不可覆盖事件和手动前向运行账本。迁移不删除或重建业务表。投顾账本的 `stock-mysql/sql/016_buy_point_advisor_link.sql` 只新增可空的 `selection_plan_id`，需由数据库管理员显式应用。
 
 ## 券商持仓刷新
 
@@ -36,9 +36,60 @@ PYTHONPATH=a-share-short-term-trading stock-ai/.venv/bin/python \
 
 ## 日线与交易诊断
 
-### 手动短线自动选股
+### 手动买点优先选股
 
-系统只由聊天或命令手动触发，不安装定时任务。默认先运行 `combined / ma5 / five_factor / bottom_breakout` 四轨，再用同一套生产规则识别突破与强趋势回踩，过滤持仓、ST、非沪深主板、停牌、上市不足 60 个交易日、流动性不足和当日涨幅超过 7% 的标的：
+正式手动入口使用规则 `buy-point-selection-3.0.0`。它一次有界读取完整沪深主板日线面板，不从旧四轨候选池反推全市场；旧 `combined / ma5 / five_factor / bottom_breakout` 即使运行失败也不能阻塞新引擎，已有结果只进入影子研究。
+
+新引擎只允许三类入场前结构：平台临界突破、强趋势缩量回踩、首次启动后的浅回踩。普通三连阳、连续加速、旧策略高分和事件利好不能独立取得交易资格。报告固定分为：
+
+- `正式候选`：通过全部门禁的 0—3 只，可为 0；只有这一层显示最大股数。
+- `准备中观察`：结构接近成立但缺少筹码、点时参考、账户或组合证据，固定无交易资格。
+- `影子研究`：旧策略、未晋级的新计划和漏选复盘，最大股数为 0。
+- `拒绝统计`：保留每条硬门槛的当日拒绝数量。
+
+手动运行：
+
+```bash
+PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
+  a-share-short-term-trading/scripts/select_short_term_candidates.py --output text
+```
+
+只有显式要求时才刷新 Tushare 点时参考；普通运行只读缓存，覆盖缺失即失败关闭正式资格：
+
+```bash
+PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
+  stock-ai/scripts/sync/sync_buy_point_reference_data.py \
+  --start 2024-01-02 --end latest
+
+PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
+  a-share-short-term-trading/scripts/select_short_term_candidates.py \
+  --refresh-reference-data --output text
+```
+
+收盘计划不代表已经成交。后两个交易日真实价格触及触发价才把条件状态记为 `TRIGGERED`；高开超过 3%、触发时相对信号收盘超过 5%、市场冻结、风险否决或结构跌破会取消。模拟触发不会开启持仓决策周期，只有券商事实确认持仓从 0 变为正数，且能匹配同代码的 V1.3 `TRIGGERED` 计划时，才把 `selection_plan_id` 和冻结触发计划写入新的 3—5 日周期。
+
+历史研究采用按时间顺序的 60%/20%/20% 训练、验证和一次性冻结测试，至少需要 252/126/126 个交易日。研究数据准备后依次运行：
+
+```bash
+PYTHONPATH=stock-ai stock-ai/.venv/bin/python \
+  stock-ai/scripts/analysis/backtest_buy_point_selection.py \
+  --research-train-validation --trading-dates <dates.json> --observations <net-observations.json>
+
+PYTHONPATH=stock-ai stock-ai/.venv/bin/python \
+  stock-ai/scripts/analysis/backtest_buy_point_selection.py \
+  --freeze-profile --trading-dates <dates.json>
+
+PYTHONPATH=stock-ai stock-ai/.venv/bin/python \
+  stock-ai/scripts/analysis/backtest_buy_point_selection.py \
+  --run-test --write-artifact --trading-dates <dates.json> \
+  --observations <net-observations.json>
+```
+
+历史通过仍不足以切到 `LIVE`：还必须有至少 20 个不同手动前向日期、20 个已触发/取消/失效/过期的完整计划，并且完整性违规为 0。验证产物缺失、规则哈希不一致、样本不足或任何门槛失败时保持 `SHADOW`；旧负期望策略不作正式兜底。回测和输出都不构成盈利承诺。
+
+#### V1.2 历史研究记录
+
+以下内容仅保留旧 V1.2/2.1 实验的可复现结果，不再描述当前正式手动入口。旧规则继续作为影子基线，不得覆盖 V1.3 硬门禁：
 
 ```bash
 PYTHONPATH=stock-ai:a-share-short-term-trading \

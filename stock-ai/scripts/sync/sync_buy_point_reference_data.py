@@ -30,10 +30,14 @@ def _date_arg(value: str) -> date:
         raise argparse.ArgumentTypeError("日期必须为 YYYY-MM-DD") from exc
 
 
+def _end_arg(value: str) -> date | None:
+    return None if value.strip().lower() == "latest" else _date_arg(value)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="同步买点选股点时参考数据")
     parser.add_argument("--start", type=_date_arg, required=True)
-    parser.add_argument("--end", type=_date_arg, required=True)
+    parser.add_argument("--end", type=_end_arg, required=True)
     return parser
 
 
@@ -73,7 +77,7 @@ def main(argv: list[str] | None = None) -> int:
     load_dotenv(ROOT / ".env", override=False)
     try:
         engine = _engine()
-        trade_dates = _trade_dates(engine, args.start, args.end)
+        trade_dates = _trade_dates(engine, args.start, args.end or date.today())
         if not trade_dates:
             raise RuntimeError("指定区间没有 MySQL 交易日")
         runs = sync_reference_data(

@@ -339,6 +339,7 @@ MCP 工具：`tushare_mcp.py` — `deepseek_trade_signal` 等。详见 [DEEPSEEK
 
 | 策略 | 脚本 | 输出 |
 |------|------|------|
+| 买点优先 V1.3（正式入口，当前按晋级门禁决定 SHADOW/LIVE） | `../a-share-short-term-trading/scripts/select_short_term_candidates.py` | `正式候选 / 准备中观察 / 影子研究 / 拒绝统计` + V1.3 计划账本 |
 | 综合选股（17:30 默认） | `core_v2/stock_selection_combined.py` | MySQL `selection_daily_results` + CSV 备份 |
 | 五因子（v3） | `core_v3/stock_selection_five_factor_mysql.py` | MySQL `strategy=five_factor` + CSV 备份 |
 | 量价突破 | `scripts/selection/stock_selection.py` | `stock_selection_*.csv` |
@@ -347,6 +348,15 @@ MCP 工具：`tushare_mcp.py` — `deepseek_trade_signal` 等。详见 [DEEPSEEK
 | 底部启动（旧） | `scripts/selection/stock_selection_bottom_breakout.py` | `stock_selection_bottom_breakout_*.csv`（手动） |
 
 筛选条件详解见 [SELECTION_STRATEGIES.md](SELECTION_STRATEGIES.md)。
+
+买点优先规则版本为 `buy-point-selection-3.0.0`。它一次读取完整沪深主板面板，只识别平台临界突破、强趋势缩量回踩和首次启动后浅回踩；普通三连阳、旧四轨、涨停基因和事件池只能进入影子研究，不能升级正式资格。正式候选每天为 0—3 只，市场或点时数据不完整时允许为 0。入口仅手动运行，不安装定时任务：
+
+```bash
+PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
+  a-share-short-term-trading/scripts/select_short_term_candidates.py --output text
+```
+
+`LIVE` 不由 AI 或单次回测决定。必须先通过冻结历史门槛，再完成至少 20 个不同交易日的手动前向运行和至少 20 个已解决计划，且完整性违规为 0；否则统一输出 `SHADOW`。只有正式层显示最大股数，观察和影子层固定显示无交易资格。
 
 盘后 DeepSeek 审查（非 17:30 自动化路径）：见 [pipelines/daily_stock_deepseek_pipeline.md](pipelines/daily_stock_deepseek_pipeline.md)。
 

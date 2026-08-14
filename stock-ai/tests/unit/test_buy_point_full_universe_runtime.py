@@ -5,6 +5,7 @@ from dataclasses import replace
 from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
+from types import SimpleNamespace
 
 from stock_ai.buy_point_selection.models import BuyPointBar, MarketSnapshot, SelectionPolicy
 from stock_ai.buy_point_selection.planning import RiskBudget
@@ -174,3 +175,19 @@ def test_symbol_without_analysis_date_bar_cannot_form_a_new_plan() -> None:
     )
     assert result.qualified == ()
     assert result.rejection_counts["LATEST_BAR_MISSING"] == 6
+
+
+def test_missing_market_evidence_becomes_freeze_snapshot_instead_of_crashing() -> None:
+    """Catches absent index evidence aborting the whole report instead of failing closed."""
+    snapshot = MODULE.market_snapshot_from_view(
+        SimpleNamespace(
+            trading_date=date(2026, 8, 10),
+            indexes_above_ma20=None,
+            breadth_pct=None,
+            amount_ratio=None,
+            evidence_refs=(),
+        ),
+        date(2026, 8, 10),
+    )
+    assert not snapshot.complete
+    assert snapshot.indexes_above_ma20 == 0
