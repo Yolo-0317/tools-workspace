@@ -326,8 +326,74 @@ def test_historical_holdings_use_daily_snapshot_then_append_only_events() -> Non
     holdings, complete = _load_holdings_by_date(engine, (first, second))
 
     assert holdings[first] == frozenset({"600001"})
-    assert holdings[second] == frozenset({"600002"})
+    assert holdings[second] == frozenset({"600001", "600002"})
     assert complete == {first: True, second: True}
+
+
+def test_historical_holdings_respect_snapshot_and_event_boundaries() -> None:
+    """Catches event-only state, same-day replay, or future data leaking backward."""
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    before = date(2026, 8, 2)
+    first = date(2026, 8, 3)
+    gap = date(2026, 8, 4)
+    exact = date(2026, 8, 5)
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "CREATE TABLE portfolio_account_daily ("
+                "snapshot_date DATE, snapshot_slot TEXT)"
+            )
+        )
+        connection.execute(
+            text(
+                "CREATE TABLE portfolio_positions_daily ("
+                "snapshot_date DATE, snapshot_slot TEXT, ts_code TEXT, shares INTEGER)"
+            )
+        )
+        connection.execute(
+            text(
+                "CREATE TABLE portfolio_position_events ("
+                "ts_code TEXT, shares_after INTEGER, broker_captured_at TEXT)"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO portfolio_account_daily VALUES "
+                "(:first, 'eod'), (:exact, 'eod')"
+            ),
+            {"first": first, "exact": exact},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO portfolio_positions_daily VALUES "
+                "(:first, 'eod', '600001', 100), "
+                "(:exact, 'eod', '600003', 300)"
+            ),
+            {"first": first, "exact": exact},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO portfolio_position_events VALUES "
+                "('600001', 0, '2026-08-04 09:00:00'), "
+                "('600002', 200, '2026-08-04 10:00:00'), "
+                "('600002', 0, '2026-08-04 11:00:00'), "
+                "('600002', 250, '2026-08-04 12:00:00'), "
+                "('600009', 900, '2026-08-05 10:00:00')"
+            )
+        )
+
+    holdings, complete = _load_holdings_by_date(
+        engine,
+        (before, first, gap, exact),
+    )
+
+    assert holdings == {
+        before: frozenset(),
+        first: frozenset({"600001"}),
+        gap: frozenset({"600002"}),
+        exact: frozenset({"600003"}),
+    }
+    assert complete == {before: False, first: True, gap: True, exact: True}
 
 
 def test_runtime_uses_latest_complete_market_date_as_effective_cutoff() -> None:

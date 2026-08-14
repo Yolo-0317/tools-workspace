@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from bisect import bisect_right
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal, InvalidOperation
@@ -221,8 +222,16 @@ def _load_holdings_by_date(
     ordered_dates = tuple(sorted(set(signal_dates)))
     if not ordered_dates:
         return {}, {}
-    parameters = {"start": ordered_dates[0], "end": ordered_dates[-1]}
     with engine.connect() as connection:
+        anchor = connection.execute(
+            text(
+                "SELECT MAX(snapshot_date) FROM portfolio_account_daily "
+                "WHERE snapshot_slot = 'eod' AND snapshot_date <= :start"
+            ),
+            {"start": ordered_dates[0]},
+        ).scalar_one_or_none()
+        history_start = ordered_dates[0] if anchor is None else _as_date(anchor)
+        parameters = {"start": history_start, "end": ordered_dates[-1]}
         account_rows = list(
             connection.execute(
                 text(
@@ -249,26 +258,31 @@ def _load_holdings_by_date(
                 text(
                     "SELECT ts_code, shares_after, broker_captured_at "
                     "FROM portfolio_position_events "
-                    "WHERE broker_captured_at < :cutoff "
+                    "WHERE broker_captured_at >= :event_start "
+                    "AND broker_captured_at < :cutoff "
                     "ORDER BY broker_captured_at, ts_code"
                 ),
                 {
+                    "event_start": datetime.combine(
+                        history_start + timedelta(days=1), time.min
+                    ),
                     "cutoff": datetime.combine(
                         ordered_dates[-1] + timedelta(days=1), time.min
                     )
                 },
             ).mappings()
         )
-    snapshot_dates = {_as_date(row["snapshot_date"]) for row in account_rows}
-    snapshot_holdings: dict[date, set[str]] = {
-        value: set() for value in snapshot_dates
+    snapshot_dates = tuple(
+        sorted({_as_date(row["snapshot_date"]) for row in account_rows})
+    )
+    snapshot_shares: dict[date, dict[str, int]] = {
+        value: {} for value in snapshot_dates
     }
     for row in position_rows:
         snapshot_date = _as_date(row["snapshot_date"])
-        if int(row["shares"] or 0) > 0:
-            snapshot_holdings.setdefault(snapshot_date, set()).add(
-                normalize_code6(str(row["ts_code"]))
-            )
+        snapshot_shares.setdefault(snapshot_date, {})[
+            normalize_code6(str(row["ts_code"]))
+        ] = int(row["shares"] or 0)
     events = tuple(
         (
             _as_datetime(row["broker_captured_at"]),
@@ -280,21 +294,25 @@ def _load_holdings_by_date(
     holdings: dict[date, frozenset[str]] = {}
     complete: dict[date, bool] = {}
     for signal_date in ordered_dates:
-        if signal_date in snapshot_dates:
-            holdings[signal_date] = frozenset(
-                snapshot_holdings.get(signal_date, set())
-            )
-            complete[signal_date] = True
+        position = bisect_right(snapshot_dates, signal_date)
+        if position == 0:
+            holdings[signal_date] = frozenset()
+            complete[signal_date] = False
             continue
+        snapshot_date = snapshot_dates[position - 1]
+        latest_by_code = dict(snapshot_shares.get(snapshot_date, {}))
+        snapshot_cutoff = datetime.combine(
+            snapshot_date + timedelta(days=1), time.min
+        )
         cutoff = datetime.combine(signal_date + timedelta(days=1), time.min)
-        applicable = tuple(value for value in events if value[0] < cutoff)
-        latest_by_code: dict[str, int] = {}
-        for _, code, shares_after in applicable:
+        for captured_at, code, shares_after in events:
+            if not snapshot_cutoff <= captured_at < cutoff:
+                continue
             latest_by_code[code] = shares_after
         holdings[signal_date] = frozenset(
             code for code, shares in latest_by_code.items() if shares > 0
         )
-        complete[signal_date] = bool(applicable)
+        complete[signal_date] = True
     return holdings, complete
 
 
