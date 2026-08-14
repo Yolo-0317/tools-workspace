@@ -36,19 +36,27 @@ class BaoStockReferenceProvider:
         *,
         sdk: Any | None = None,
         socket_context: Any | None = None,
+        sdk_constants: Any | None = None,
         socket_timeout_seconds: float = 15.0,
+        query_page_size: int = 10000,
     ) -> None:
         if sdk is None:
             import baostock as bs
+            import baostock.common.contants as bs_constants
             import baostock.common.context as bs_context
 
             sdk = bs
             socket_context = socket_context or bs_context
+            sdk_constants = sdk_constants or bs_constants
         if socket_timeout_seconds <= 0:
             raise ValueError("socket_timeout_seconds must be positive")
+        if query_page_size <= 0:
+            raise ValueError("query_page_size must be positive")
         self._sdk = sdk
         self._socket_context = socket_context
+        self._sdk_constants = sdk_constants
         self._socket_timeout_seconds = socket_timeout_seconds
+        self._query_page_size = query_page_size
         self._session_active = False
 
     @contextmanager
@@ -56,8 +64,17 @@ class BaoStockReferenceProvider:
         if self._session_active:
             yield self
             return
-        with redirect_stdout(StringIO()):
-            self._login()
+        previous_page_size = None
+        if self._sdk_constants is not None:
+            previous_page_size = self._sdk_constants.BAOSTOCK_PER_PAGE_COUNT
+            self._sdk_constants.BAOSTOCK_PER_PAGE_COUNT = self._query_page_size
+        try:
+            with redirect_stdout(StringIO()):
+                self._login()
+        except Exception:
+            if previous_page_size is not None:
+                self._sdk_constants.BAOSTOCK_PER_PAGE_COUNT = previous_page_size
+            raise
         self._session_active = True
         try:
             yield self
@@ -65,6 +82,8 @@ class BaoStockReferenceProvider:
             with redirect_stdout(StringIO()):
                 self._logout()
             self._session_active = False
+            if previous_page_size is not None:
+                self._sdk_constants.BAOSTOCK_PER_PAGE_COUNT = previous_page_size
 
     def fetch_security_statuses(self, day: date) -> tuple[SecurityStatus, ...]:
         with redirect_stdout(StringIO()):

@@ -222,3 +222,28 @@ def test_baostock_session_reuses_one_login_across_many_dates() -> None:
     assert sdk.login_calls == 1
     assert sdk.logout_calls == 1
     assert sdk.requested_days == ["2025-08-05", "2025-08-06"]
+
+
+def test_baostock_requests_one_large_page_and_restores_sdk_constant() -> None:
+    constants = SimpleNamespace(BAOSTOCK_PER_PAGE_COUNT=2000)
+
+    class PageAwareBaoStock(FakeBaoStock):
+        def __init__(self):
+            super().__init__(rows=[("sh.600001", "1", "普通股份")])
+            self.page_sizes = []
+
+        def query_all_stock(self, *, day):
+            self.page_sizes.append(constants.BAOSTOCK_PER_PAGE_COUNT)
+            return super().query_all_stock(day=day)
+
+    sdk = PageAwareBaoStock()
+    provider = BaoStockReferenceProvider(
+        sdk=sdk,
+        sdk_constants=constants,
+        query_page_size=10000,
+    )
+
+    provider.fetch_security_statuses(date(2025, 8, 6))
+
+    assert sdk.page_sizes == [10000]
+    assert constants.BAOSTOCK_PER_PAGE_COUNT == 2000
