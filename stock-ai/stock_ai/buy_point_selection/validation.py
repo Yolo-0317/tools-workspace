@@ -38,6 +38,11 @@ class TradeObservation:
     sector_resonating: bool
     mfe: Decimal | None
     mae: Decimal | None
+    signal_date: date | None = None
+    entry_date: date | None = None
+    code: str = ""
+    structure_id: str = ""
+    risk_fraction: Decimal = Decimal("0")
 
 
 @dataclass(frozen=True)
@@ -568,6 +573,17 @@ def _calibration_from_payload(key: str, value: object) -> OutcomeCalibration:
     )
 
 
+def outcome_calibrations_from_payload(
+    value: object,
+) -> dict[str, OutcomeCalibration]:
+    if not isinstance(value, dict):
+        raise ValueError("calibrations must be an object")
+    return {
+        str(key): _calibration_from_payload(str(key), payload)
+        for key, payload in sorted(value.items())
+    }
+
+
 def write_artifact(path: str | Path, payload: Mapping[str, Any]) -> None:
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -611,10 +627,7 @@ def load_historical_release(
             raw_calibrations = payload.get("calibrations")
             if not isinstance(raw_calibrations, dict):
                 raise ValueError("calibrations must be an object")
-            calibrations = {
-                str(key): _calibration_from_payload(str(key), value)
-                for key, value in raw_calibrations.items()
-            }
+            calibrations = outcome_calibrations_from_payload(raw_calibrations)
         except (KeyError, TypeError, ValueError):
             reasons.append("VALIDATION_CALIBRATIONS_INVALID")
             calibrations = {}
