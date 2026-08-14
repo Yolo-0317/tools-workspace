@@ -44,6 +44,57 @@ class SignificantResistanceProfile:
     variants: tuple[ResistanceVariantProfile, ...]
 
 
+def _closed_variants() -> tuple[ResistanceVariantProfile, ...]:
+    return tuple(
+        ResistanceVariantProfile(variant, None, None, False, 0)
+        for variant in VARIANT_ORDER
+    )
+
+
+def _incomplete_profile(
+    episode: OpportunityEpisode,
+) -> SignificantResistanceProfile:
+    candidate = episode.representative
+    return SignificantResistanceProfile(
+        episode.episode_id,
+        candidate.code,
+        candidate.signal_date,
+        candidate.plan.structure_id,
+        candidate.setup.setup_type.value,
+        Decimal("NaN"),
+        Decimal("NaN"),
+        False,
+        _closed_variants(),
+    )
+
+
+def _valid_input(
+    candidate: CaseCandidate,
+    bars: Sequence[BuyPointBar],
+) -> bool:
+    if len(bars) != 60:
+        return False
+    if bars[-1].trade_date != candidate.signal_date:
+        return False
+    if len({value.trade_date for value in bars}) != len(bars):
+        return False
+    prices = tuple(
+        price
+        for value in bars
+        for price in (value.open, value.high, value.low, value.close)
+    )
+    if any(not value.is_finite() or value <= 0 for value in prices):
+        return False
+    trigger = candidate.plan.trigger_price
+    risk = candidate.plan.risk_distance
+    return (
+        trigger.is_finite()
+        and trigger > 0
+        and risk.is_finite()
+        and risk > 0
+    )
+
+
 def _variant(
     variant: str,
     level: Decimal | None,
@@ -79,6 +130,45 @@ def _local_pivots(bars: Sequence[BuyPointBar]) -> tuple[tuple[int, date, Decimal
     return tuple(pivots)
 
 
+def _repeated_pivot_cluster(
+    pivots: Sequence[tuple[int, date, Decimal]],
+    tolerance: Decimal,
+) -> tuple[Decimal | None, int]:
+    ordered = tuple(sorted(pivots, key=lambda value: (value[2], value[1], value[0])))
+    windows: list[tuple[tuple[int, date, Decimal], ...]] = []
+    for start in range(len(ordered)):
+        for stop in range(start + 2, len(ordered) + 1):
+            members = ordered[start:stop]
+            if members[-1][2] - members[0][2] > tolerance:
+                break
+            indexes = tuple(value[0] for value in members)
+            if all(
+                abs(left - right) >= 3
+                for position, left in enumerate(indexes)
+                for right in indexes[position + 1 :]
+            ):
+                windows.append(members)
+    maximal = tuple(
+        members
+        for members in windows
+        if not any(
+            set(members) < set(other)
+            for other in windows
+        )
+    )
+    if not maximal:
+        return None, 0
+    selected = min(
+        maximal,
+        key=lambda members: (
+            sum((value[2] for value in members), Decimal("0")) / len(members),
+            tuple(value[1] for value in members),
+        ),
+    )
+    level = sum((value[2] for value in selected), Decimal("0")) / len(selected)
+    return level, len(selected)
+
+
 def analyze_significant_resistance(
     episode: OpportunityEpisode,
     bars: Sequence[BuyPointBar],
@@ -90,7 +180,11 @@ def analyze_significant_resistance(
             key=lambda value: value.trade_date,
         )[-60:]
     )
+    if not _valid_input(candidate, bounded):
+        return _incomplete_profile(episode)
     volatility = atr14(bounded)
+    if not volatility.is_finite() or volatility <= 0:
+        return _incomplete_profile(episode)
     tolerance = max(
         Decimal("0.5") * volatility,
         Decimal("0.005") * candidate.plan.trigger_price,
@@ -104,6 +198,7 @@ def analyze_significant_resistance(
     )
     pivot_level = min((value[2] for value in pivots), default=None)
     pivot_touches = sum(value[2] == pivot_level for value in pivots)
+    cluster_level, cluster_touches = _repeated_pivot_cluster(pivots, tolerance)
     return SignificantResistanceProfile(
         episode.episode_id,
         candidate.code,
@@ -116,6 +211,11 @@ def analyze_significant_resistance(
         (
             _variant(LEGACY_ANY_HIGH, legacy_level, candidate, 1),
             _variant(LOCAL_PIVOT_HIGH, pivot_level, candidate, pivot_touches),
-            _variant(REPEATED_PIVOT_CLUSTER, None, candidate, 0),
+            _variant(
+                REPEATED_PIVOT_CLUSTER,
+                cluster_level,
+                candidate,
+                cluster_touches,
+            ),
         ),
     )

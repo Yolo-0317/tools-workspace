@@ -4,12 +4,15 @@ from dataclasses import replace
 from datetime import date, timedelta
 from decimal import Decimal
 
+import pytest
+
 from stock_ai.buy_point_selection.case_review import CaseCandidate, OpportunityEpisode
 from stock_ai.buy_point_selection.models import BuyPointBar, DetectedSetup, SetupType
 from stock_ai.buy_point_selection.planning import PricePlan
 from stock_ai.buy_point_selection.resistance_research import (
     LEGACY_ANY_HIGH,
     LOCAL_PIVOT_HIGH,
+    REPEATED_PIVOT_CLUSTER,
     analyze_significant_resistance,
 )
 
@@ -79,6 +82,22 @@ def _bars() -> tuple[BuyPointBar, ...]:
     return tuple(mutable)
 
 
+def _flat_bars() -> tuple[BuyPointBar, ...]:
+    start = SIGNAL - timedelta(days=59)
+    return tuple(
+        BuyPointBar(
+            start + timedelta(days=index),
+            Decimal("9.80"),
+            Decimal("9.90"),
+            Decimal("9.70"),
+            Decimal("9.80"),
+            Decimal("0"),
+            Decimal("200000"),
+        )
+        for index in range(60)
+    )
+
+
 def test_profile_separates_any_high_from_a_two_sided_local_pivot() -> None:
     """Catches an ordinary endpoint high being mistaken for a local pivot."""
     profile = analyze_significant_resistance(_episode(), _bars())
@@ -128,3 +147,100 @@ def test_local_pivot_counts_equal_height_double_tops() -> None:
 
     assert variants[LOCAL_PIVOT_HIGH].level == Decimal("12.20")
     assert variants[LOCAL_PIVOT_HIGH].touch_count == 3
+
+
+def test_repeated_pivot_cluster_uses_the_mean_of_independent_touches() -> None:
+    bars = list(_flat_bars())
+    bars[10] = replace(bars[10], high=Decimal("12.10"))
+    bars[20] = replace(bars[20], high=Decimal("12.20"))
+
+    profile = analyze_significant_resistance(_episode(), tuple(bars))
+    variants = {value.variant: value for value in profile.variants}
+
+    assert profile.atr14 == Decimal("0.20")
+    assert profile.tolerance == Decimal("0.100")
+    assert variants[REPEATED_PIVOT_CLUSTER].level == Decimal("12.15")
+    assert variants[REPEATED_PIVOT_CLUSTER].touch_count == 2
+    assert variants[REPEATED_PIVOT_CLUSTER].effective_resistance_r == Decimal("2.15")
+    assert variants[REPEATED_PIVOT_CLUSTER].passes_two_r
+
+
+def test_incomplete_history_fails_closed_for_every_variant() -> None:
+    profile = analyze_significant_resistance(_episode(), _flat_bars()[1:])
+
+    assert not profile.complete
+    assert all(not value.passes_two_r for value in profile.variants)
+    assert all(value.level is None for value in profile.variants)
+
+
+def test_repeated_cluster_rejects_touches_less_than_three_bars_apart() -> None:
+    bars = list(_flat_bars())
+    bars[10] = replace(bars[10], high=Decimal("12.10"))
+    bars[12] = replace(bars[12], high=Decimal("12.10"))
+
+    profile = analyze_significant_resistance(_episode(), tuple(bars))
+    variants = {value.variant: value for value in profile.variants}
+
+    assert variants[REPEATED_PIVOT_CLUSTER].level is None
+    assert variants[REPEATED_PIVOT_CLUSTER].touch_count == 0
+
+
+def test_repeated_cluster_rejects_prices_outside_tolerance() -> None:
+    bars = list(_flat_bars())
+    bars[10] = replace(bars[10], high=Decimal("12.10"))
+    bars[20] = replace(bars[20], high=Decimal("12.21"))
+
+    profile = analyze_significant_resistance(_episode(), tuple(bars))
+    variants = {value.variant: value for value in profile.variants}
+
+    assert profile.tolerance == Decimal("0.100")
+    assert variants[REPEATED_PIVOT_CLUSTER].level is None
+
+
+def test_repeated_cluster_selects_the_lower_valid_resistance_zone() -> None:
+    bars = list(_flat_bars())
+    for index, high in (
+        (8, "12.10"),
+        (18, "12.20"),
+        (32, "13.00"),
+        (42, "13.05"),
+    ):
+        bars[index] = replace(bars[index], high=Decimal(high))
+
+    profile = analyze_significant_resistance(_episode(), tuple(bars))
+    variants = {value.variant: value for value in profile.variants}
+
+    assert variants[REPEATED_PIVOT_CLUSTER].level == Decimal("12.15")
+    assert variants[REPEATED_PIVOT_CLUSTER].touch_count == 2
+
+
+@pytest.mark.parametrize(
+    ("level", "passes"),
+    (("11.99", False), ("12.00", True), ("12.01", True)),
+)
+def test_local_pivot_two_r_boundary_is_inclusive(level: str, passes: bool) -> None:
+    bars = list(_flat_bars())
+    bars[30] = replace(bars[30], high=Decimal(level))
+
+    profile = analyze_significant_resistance(_episode(), tuple(bars))
+    variants = {value.variant: value for value in profile.variants}
+
+    assert variants[LOCAL_PIVOT_HIGH].passes_two_r is passes
+
+
+def test_no_resistance_is_complete_and_passes_by_absence() -> None:
+    profile = analyze_significant_resistance(_episode(), _flat_bars())
+
+    assert profile.complete
+    assert all(value.level is None for value in profile.variants)
+    assert all(value.passes_two_r for value in profile.variants)
+
+
+def test_duplicate_trade_dates_fail_closed() -> None:
+    bars = list(_flat_bars())
+    bars[10] = replace(bars[10], trade_date=bars[9].trade_date)
+
+    profile = analyze_significant_resistance(_episode(), tuple(bars))
+
+    assert not profile.complete
+    assert all(not value.passes_two_r for value in profile.variants)
