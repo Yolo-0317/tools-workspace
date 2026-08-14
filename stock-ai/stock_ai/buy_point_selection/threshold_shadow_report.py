@@ -241,6 +241,8 @@ def threshold_shadow_payload(review: ThresholdWindowReview) -> dict[str, object]
         "formal_rule_version": review.formal_rule_version,
         "formal_policy_hash": review.formal_policy_hash,
         "profile_matrix_hash": review.profile_matrix_hash,
+        "evaluator_version": "case-evaluator-v1",
+        "cost_version": "execution-costs-default-v1",
         "freeze_hash": review.freeze_hash,
         "risk_coverage_complete": review.risk_coverage_complete,
         "promotion_eligible": False,

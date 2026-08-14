@@ -117,6 +117,8 @@ def test_research_payload_reconciles_rows_and_is_explicitly_non_trading() -> Non
     assert payload["stage"] == "research"
     assert payload["status"] == "CASE_ANALYSIS_ONLY"
     assert payload["trade_permission"] == "NO-TRADE"
+    assert payload["evaluator_version"] == "case-evaluator-v1"
+    assert payload["cost_version"] == "execution-costs-default-v1"
     assert len(payload["raw_setups"]) == payload["metrics"]["raw_setups"] == 1
     assert len(payload["candidates"]) == payload["metrics"]["candidates"] == 1
     assert payload["candidates"][0]["executable_shares"] == 0

@@ -408,6 +408,34 @@ PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
 
 观察集同时保存信号日、代码、结构 ID、实际入场日和风险距离，测试段排名不能读取候选结果。训练/验证共 80% 日期形成冻结校准；剩余 20% 日期只做一次组合级测试，并执行每日候选数、同板块和最多三笔并发持仓限制。完整性清单、观察集、冻结 profile 和验证产物均为本地运行文件，不提交 Git。
 
+### 买点阈值影子研究
+
+该流程只研究 48 组单一形态阈值放宽，不修改正式规则。所有候选固定为 `CASE_ANALYSIS_ONLY / NO-TRADE`、可执行股数为 0；仅手动运行，不安装调度、不发送通知、不写持仓、决策账本或订单。必须先生成两段研究产物，再冻结合格 profile，最后只运行一次独立测试窗：
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/analysis/review_buy_point_threshold_shadows.py research \
+  --signal-start 2026-07-20 --signal-end 2026-07-24 \
+  --outcome-cutoff 2026-07-31 \
+  --v5-case output/research/buy_point_cases/20260720_20260724_cutoff-20260731_da99d57b7b78fc3e.json
+
+PYTHONPATH=. .venv/bin/python scripts/analysis/review_buy_point_threshold_shadows.py research \
+  --signal-start 2026-07-27 --signal-end 2026-07-31 \
+  --outcome-cutoff 2026-08-07 \
+  --v5-case output/research/buy_point_cases/20260727_20260731_cutoff-20260807_38b1bdbe2cf95faa.json
+
+PYTHONPATH=. .venv/bin/python scripts/analysis/review_buy_point_threshold_shadows.py freeze \
+  --research-artifact <第一段研究 JSON> \
+  --research-artifact <第二段研究 JSON>
+
+PYTHONPATH=. .venv/bin/python scripts/analysis/review_buy_point_threshold_shadows.py test \
+  --signal-start 2026-08-03 --signal-end 2026-08-07 \
+  --outcome-cutoff 2026-08-14 \
+  --v5-case output/research/buy_point_cases/20260803_20260807_cutoff-20260814_1476b69b11fda315.json \
+  --freeze-artifact <冻结 JSON>
+```
+
+短窗口通过只允许进入扩大历史验证，不能晋级正式规则；空冻结集是有效研究结果，禁止为了凑候选而补位。
+
 `LIVE` 不由 AI 或单次回测决定。必须先通过冻结历史门槛，再完成至少 20 个不同交易日的手动前向运行和至少 20 个已解决计划，且完整性违规为 0；否则统一输出 `SHADOW`。只有正式层显示最大股数，观察和影子层固定显示无交易资格。
 
 盘后 DeepSeek 审查（非 17:30 自动化路径）：见 [pipelines/daily_stock_deepseek_pipeline.md](pipelines/daily_stock_deepseek_pipeline.md)。
