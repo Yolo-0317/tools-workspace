@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import date
-from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR
+from decimal import Decimal, InvalidOperation, ROUND_CEILING, ROUND_FLOOR
 from bisect import bisect_right
 from typing import Mapping, Sequence
 
@@ -72,6 +72,13 @@ class NearMissDecision:
 
 
 @dataclass(frozen=True)
+class ConditionalShadowDecision:
+    admitted: bool
+    tier: str | None
+    effective_resistance_r: Decimal | None
+
+
+@dataclass(frozen=True)
 class CaseCandidate:
     code: str
     signal_date: date
@@ -81,6 +88,37 @@ class CaseCandidate:
     soft_reason: str | None
     ranking_key: tuple[Decimal | str, ...]
     executable_shares: int = 0
+
+
+def classify_conditional_two_r_shadow(
+    candidate: CaseCandidate,
+    trace: GateTrace,
+) -> ConditionalShadowDecision:
+    """Admit only zero-share 2R near misses with at least 1.5R room."""
+    reasons = tuple(dict.fromkeys(trace.failed_reasons))
+    if (
+        candidate.tier != "NEAR_MISS"
+        or candidate.soft_reason != "INSUFFICIENT_TWO_R_SPACE"
+        or candidate.executable_shares != 0
+        or reasons != ("INSUFFICIENT_TWO_R_SPACE",)
+    ):
+        return ConditionalShadowDecision(False, None, None)
+    try:
+        resistance = Decimal(str(trace.metrics["nearest_resistance"]))
+    except (InvalidOperation, KeyError, TypeError, ValueError):
+        return ConditionalShadowDecision(False, None, None)
+    risk = candidate.plan.risk_distance
+    if not resistance.is_finite() or not risk.is_finite() or risk <= 0:
+        return ConditionalShadowDecision(False, None, None)
+    effective_r = (resistance - candidate.plan.trigger_price) / risk
+    if not effective_r.is_finite():
+        return ConditionalShadowDecision(False, None, None)
+    admitted = Decimal("1.5") <= effective_r < Decimal("2")
+    return ConditionalShadowDecision(
+        admitted,
+        "TWO_R_CONDITIONAL_SHADOW" if admitted else None,
+        effective_r,
+    )
 
 
 @dataclass(frozen=True)

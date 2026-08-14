@@ -8,12 +8,15 @@ import pytest
 
 from stock_ai.buy_point_selection.case_review import (
     BuyableWinner,
+    CaseCandidate,
     CaseOutcome,
     CaseSignalReplay,
+    ConditionalShadowDecision,
     GateTrace,
     attribute_buyable_winners,
     classify_near_miss,
     classify_case_success,
+    classify_conditional_two_r_shadow,
     evaluate_case_plan,
     find_buyable_winners,
     replay_case_signals,
@@ -21,9 +24,12 @@ from stock_ai.buy_point_selection.case_review import (
 )
 from stock_ai.buy_point_selection.models import (
     BuyPointBar,
+    DetectedSetup,
     MarketSnapshot,
     SelectionPolicy,
+    SetupType,
 )
+from stock_ai.buy_point_selection.planning import PricePlan
 from stock_ai.buy_point_selection.reference_data import (
     ReferenceCoverage,
     RiskFlag,
@@ -32,6 +38,137 @@ from stock_ai.buy_point_selection.reference_data import (
 
 
 SIGNAL = date(2026, 8, 3)
+
+
+def _case_candidate(
+    signal_date: date,
+    *,
+    code: str = "600001",
+    valid_through: date | None = None,
+    tier: str = "NEAR_MISS",
+    executable_shares: int = 0,
+) -> CaseCandidate:
+    setup = DetectedSetup(
+        code,
+        SetupType.TREND_PULLBACK,
+        signal_date,
+        signal_date - timedelta(days=2),
+        Decimal("9.99"),
+        Decimal("9.10"),
+        Decimal("0.40"),
+        ("ORDERLY_LOW_VOLUME_PULLBACK",),
+        {},
+    )
+    plan = PricePlan(
+        f"structure-{code}-{signal_date.isoformat()}",
+        code,
+        setup.setup_type,
+        signal_date,
+        Decimal("9.80"),
+        Decimal("10.00"),
+        Decimal("9.00"),
+        Decimal("12.00"),
+        Decimal("1.00"),
+        Decimal("2.00"),
+        100,
+        valid_through or signal_date + timedelta(days=2),
+    )
+    return CaseCandidate(
+        code,
+        signal_date,
+        setup,
+        plan,
+        tier,
+        "INSUFFICIENT_TWO_R_SPACE" if tier == "NEAR_MISS" else None,
+        (Decimal("0.25"), Decimal("-0.40"), Decimal("-200000"), code),
+        executable_shares,
+    )
+
+
+def test_conditional_two_r_shadow_accepts_inclusive_one_point_five_r() -> None:
+    """Catches the conservative shadow lane excluding its 1.5R boundary."""
+    candidate = _case_candidate(SIGNAL)
+    trace = GateTrace(
+        "600001",
+        SIGNAL,
+        ("INSUFFICIENT_TWO_R_SPACE",),
+        ("BASE", "SETUP", "SECTOR"),
+        {"nearest_resistance": Decimal("11.50")},
+    )
+
+    decision = classify_conditional_two_r_shadow(candidate, trace)
+
+    assert decision == ConditionalShadowDecision(
+        True,
+        "TWO_R_CONDITIONAL_SHADOW",
+        Decimal("1.50"),
+    )
+    assert candidate.executable_shares == 0
+
+
+@pytest.mark.parametrize(
+    ("resistance", "expected"),
+    (("11.49", False), ("11.50", True), ("12.00", False)),
+)
+def test_conditional_two_r_shadow_enforces_both_r_boundaries(
+    resistance: str,
+    expected: bool,
+) -> None:
+    """Catches sub-1.5R or production-2R plans leaking into the cohort."""
+    candidate = _case_candidate(SIGNAL)
+    trace = GateTrace(
+        "600001",
+        SIGNAL,
+        ("INSUFFICIENT_TWO_R_SPACE",),
+        ("BASE", "SETUP", "SECTOR"),
+        {"nearest_resistance": Decimal(resistance)},
+    )
+
+    decision = classify_conditional_two_r_shadow(candidate, trace)
+
+    assert decision.admitted is expected
+    assert (decision.tier is not None) is expected
+
+
+@pytest.mark.parametrize(
+    ("candidate_kwargs", "reasons", "metrics"),
+    (
+        (
+            {},
+            ("SECTOR_BREADTH_WEAK",),
+            {"nearest_resistance": Decimal("11.50")},
+        ),
+        (
+            {},
+            ("INSUFFICIENT_TWO_R_SPACE", "SECTOR_BREADTH_WEAK"),
+            {"nearest_resistance": Decimal("11.50")},
+        ),
+        ({}, ("INSUFFICIENT_TWO_R_SPACE",), {}),
+        (
+            {"tier": "STRICT_SHADOW"},
+            ("INSUFFICIENT_TWO_R_SPACE",),
+            {"nearest_resistance": Decimal("11.50")},
+        ),
+        (
+            {"executable_shares": 100},
+            ("INSUFFICIENT_TWO_R_SPACE",),
+            {"nearest_resistance": Decimal("11.50")},
+        ),
+    ),
+)
+def test_conditional_two_r_shadow_rejects_non_diagnostic_inputs(
+    candidate_kwargs: dict[str, object],
+    reasons: tuple[str, ...],
+    metrics: dict[str, Decimal],
+) -> None:
+    """Catches the research cohort weakening another gate or becoming executable."""
+    candidate = _case_candidate(SIGNAL, **candidate_kwargs)
+    trace = GateTrace("600001", SIGNAL, reasons, (), metrics)
+
+    decision = classify_conditional_two_r_shadow(candidate, trace)
+
+    assert not decision.admitted
+    assert decision.tier is None
 
 
 def test_exactly_one_allowed_soft_gate_enters_near_miss() -> None:
