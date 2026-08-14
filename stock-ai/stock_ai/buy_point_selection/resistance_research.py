@@ -15,6 +15,10 @@ from .planning import atr14, nearest_resistance_above
 LEGACY_ANY_HIGH = "LEGACY_ANY_HIGH"
 LOCAL_PIVOT_HIGH = "LOCAL_PIVOT_HIGH"
 REPEATED_PIVOT_CLUSTER = "REPEATED_PIVOT_CLUSTER"
+LEVEL_AT_OR_ABOVE_2R = "LEVEL_AT_OR_ABOVE_2R"
+NO_LEVEL = "NO_LEVEL"
+LEVEL_BELOW_2R = "LEVEL_BELOW_2R"
+INCOMPLETE = "INCOMPLETE"
 VARIANT_ORDER = (
     LEGACY_ANY_HIGH,
     LOCAL_PIVOT_HIGH,
@@ -42,6 +46,19 @@ class SignificantResistanceProfile:
     tolerance: Decimal
     complete: bool
     variants: tuple[ResistanceVariantProfile, ...]
+
+
+def resistance_evidence_basis(
+    complete: bool,
+    variant: ResistanceVariantProfile,
+) -> str:
+    if not complete:
+        return INCOMPLETE
+    if variant.level is None:
+        return NO_LEVEL
+    if variant.passes_two_r:
+        return LEVEL_AT_OR_ABOVE_2R
+    return LEVEL_BELOW_2R
 
 
 def _closed_variants() -> tuple[ResistanceVariantProfile, ...]:

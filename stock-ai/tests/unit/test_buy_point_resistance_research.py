@@ -10,10 +10,16 @@ from stock_ai.buy_point_selection.case_review import CaseCandidate, OpportunityE
 from stock_ai.buy_point_selection.models import BuyPointBar, DetectedSetup, SetupType
 from stock_ai.buy_point_selection.planning import PricePlan
 from stock_ai.buy_point_selection.resistance_research import (
+    INCOMPLETE,
     LEGACY_ANY_HIGH,
+    LEVEL_AT_OR_ABOVE_2R,
+    LEVEL_BELOW_2R,
     LOCAL_PIVOT_HIGH,
+    NO_LEVEL,
     REPEATED_PIVOT_CLUSTER,
+    ResistanceVariantProfile,
     analyze_significant_resistance,
+    resistance_evidence_basis,
 )
 
 
@@ -244,3 +250,36 @@ def test_duplicate_trade_dates_fail_closed() -> None:
 
     assert not profile.complete
     assert all(not value.passes_two_r for value in profile.variants)
+
+
+def test_resistance_evidence_basis_keeps_pass_reasons_separate() -> None:
+    """Catches no-level passes being pooled with observed levels above 2R."""
+    level_pass = ResistanceVariantProfile(
+        LOCAL_PIVOT_HIGH,
+        Decimal("12.20"),
+        Decimal("2.20"),
+        True,
+        1,
+    )
+    no_level = ResistanceVariantProfile(
+        REPEATED_PIVOT_CLUSTER,
+        None,
+        None,
+        True,
+        0,
+    )
+    below_level = ResistanceVariantProfile(
+        LEGACY_ANY_HIGH,
+        Decimal("10.20"),
+        Decimal("0.20"),
+        False,
+        1,
+    )
+
+    assert resistance_evidence_basis(True, level_pass) == LEVEL_AT_OR_ABOVE_2R
+    assert resistance_evidence_basis(True, no_level) == NO_LEVEL
+    assert resistance_evidence_basis(True, below_level) == LEVEL_BELOW_2R
+    assert resistance_evidence_basis(False, no_level) == INCOMPLETE
+    assert level_pass.passes_two_r
+    assert no_level.passes_two_r
+    assert not below_level.passes_two_r
