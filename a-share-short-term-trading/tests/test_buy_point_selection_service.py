@@ -276,3 +276,30 @@ def test_materialized_daily_run_is_handed_to_one_atomic_repository_call() -> Non
     assert forward.formal_count == 1
     assert forward.shadow_count == 1
     assert forward.resolved_count == 2
+
+
+def test_symbol_evidence_failure_persists_observe_candidate_without_integrity_violation() -> None:
+    """Catches an expected one-symbol downgrade corrupting or disappearing from the daily ledger."""
+    complete = _deps()
+    dependencies = MaterializationDependencies(
+        chips_by_code={},
+        account=complete.account,
+        historical_release=complete.historical_release,
+        forward_gate=complete.forward_gate,
+        evidence_refs_by_code={},
+    )
+    report = materialize_buy_point_selection(_result(), dependencies, _request())
+
+    class Repository:
+        def save_buy_point_run(self, rows, forward_run):
+            self.rows = rows
+            self.forward_run = forward_run
+
+    repository = Repository()
+    persist_buy_point_runtime(
+        report, _result(), dependencies, _request(), repository
+    )
+    assert len(repository.rows) == 1
+    assert repository.rows[0][0].selection_tier == "OBSERVE"
+    assert repository.rows[0][1] is None
+    assert repository.forward_run.integrity_violations == ()

@@ -109,7 +109,7 @@ class CandidateV3(ContractModel):
     missing_fields: tuple[str, ...]
     rejected_reasons: tuple[str, ...]
     rule_version: str = Field(min_length=1)
-    evidence_refs: tuple[str, ...] = Field(min_length=1)
+    evidence_refs: tuple[str, ...]
 
     _validate_candidate_id = field_validator("candidate_id")(_uuid_string)
     _validate_code = field_validator("code")(validate_code)
@@ -130,6 +130,8 @@ class CandidateV3(ContractModel):
             raise ValueError("observe and shadow candidates cannot be executable")
         if self.selection_tier == "FORMAL" and self.missing_fields:
             raise ValueError("formal candidates cannot have missing fields")
+        if self.selection_tier == "FORMAL" and not self.evidence_refs:
+            raise ValueError("formal candidates require evidence references")
         return self
 
 

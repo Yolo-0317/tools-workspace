@@ -6,12 +6,16 @@ from __future__ import annotations
 import argparse
 from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import asdict, replace
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 import json
 from io import StringIO
 from pathlib import Path
 import sys
 from typing import Callable, Protocol
+
+from collections import Counter
+from decimal import Decimal
+from sqlalchemy import text
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -22,6 +26,17 @@ for path in (PROJECT_ROOT, STOCK_AI_ROOT):
         sys.path.insert(0, str(path))
 
 from short_term_trading.capture import capture_chip
+from short_term_trading.buy_point_selection_service import (
+    AccountEvidence,
+    BuyPointRuntimeReport,
+    ChipEvidence,
+    MaterializationDependencies,
+    MaterializationRequest,
+    advance_buy_point_plan_states,
+    materialize_buy_point_selection,
+    persist_buy_point_runtime,
+    render_buy_point_runtime_report,
+)
 from short_term_trading.daily_sync import DailyBar
 from short_term_trading.diagnosis import RiskProfile
 from short_term_trading.evidence import CaptureRecorder
@@ -35,6 +50,39 @@ from short_term_trading.selection_service import (
     render_selection_report,
 )
 from short_term_trading.session import TradingCalendar, TradingSession, classify_trading_session
+from stock_ai.buy_point_selection.gates import (
+    anti_chase_gate,
+    base_gate,
+    classify_market,
+    sector_gate,
+)
+from stock_ai.buy_point_selection.models import (
+    BuyPointBar,
+    MarketSnapshot,
+    SectorSnapshot,
+    SelectionPolicy as BuyPointPolicy,
+)
+from stock_ai.buy_point_selection.patterns import detect_setups
+from stock_ai.buy_point_selection.planning import RiskBudget
+from stock_ai.buy_point_selection.reference_data import (
+    ReferenceCoverage,
+    RiskFlag,
+    SQLReferenceRepository,
+    SectorMembership,
+)
+from stock_ai.buy_point_selection.service import (
+    BuyPointSelectionResult,
+    CandidateEvidence,
+    LegacyShadow,
+    SelectionInput as BuyPointSelectionInput,
+    select_buy_points,
+)
+from stock_ai.market_codes import is_sh_sz_main_board_code, normalize_code6
+from stock_ai.buy_point_selection.validation import (
+    load_historical_release,
+    policy_hash as buy_point_policy_hash,
+)
+from short_term_trading.evidence import is_chip_snapshot_for_trade_date
 from stock_ai.relative_strength import load_relative_strength_snapshot
 from stock_ai.selection_validation import load_promoted_policy
 from stock_ai.short_term_selection import SelectionPolicy, select_short_term_candidates
@@ -42,6 +90,9 @@ from stock_ai.short_term_selection import SelectionPolicy, select_short_term_can
 
 LANES = ("combined", "ma5", "five_factor", "bottom_breakout")
 VALIDATION_ARTIFACT = STOCK_AI_ROOT / "config" / "short_term_selection_validation.json"
+BUY_POINT_VALIDATION_ARTIFACT = (
+    STOCK_AI_ROOT / "config" / "buy_point_selection_validation.json"
+)
 
 
 class CliInputError(RuntimeError):
@@ -75,9 +126,11 @@ class SelectionCliRuntime(Protocol):
 
     def latest_daily_trade_date(self) -> date | None: ...
 
+    def refresh_reference_data(self, start: date, end: date) -> int: ...
+
     def execute(
         self, *, context: object, analysis_date: date, trading_date: date
-    ) -> SelectionReport: ...
+    ) -> object: ...
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -89,7 +142,230 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="仅在人工重试/测试时复用已落库的四轨结果",
     )
+    parser.add_argument(
+        "--refresh-reference-data",
+        action="store_true",
+        help="显式刷新点时行业、ST 与重大公告参考数据",
+    )
     return parser
+
+
+def _row_value(row: object, name: str):
+    if isinstance(row, dict):
+        return row[name]
+    return getattr(row, name)
+
+
+def load_main_board_panel(
+    engine: object,
+    analysis_date: date,
+    *,
+    lookback_calendar_days: int = 180,
+) -> dict[str, tuple[BuyPointBar, ...]]:
+    """Load the complete bounded main-board panel in one SQL query."""
+    start_date = analysis_date - timedelta(days=lookback_calendar_days)
+    statement = """
+        SELECT ts_code, trade_date, open, high, low, close, pct_chg, amount
+        FROM stock_daily
+        WHERE trade_date BETWEEN :start_date AND :analysis_date
+        ORDER BY ts_code, trade_date
+    """
+    with engine.connect() as connection:
+        rows = connection.execute(
+            text(statement),
+            {"start_date": start_date, "analysis_date": analysis_date},
+        ).mappings()
+        loaded = list(rows)
+    grouped: dict[str, dict[date, BuyPointBar]] = {}
+    for row in loaded:
+        code = normalize_code6(str(_row_value(row, "ts_code")))
+        if not is_sh_sz_main_board_code(code):
+            continue
+        trade_date = _row_value(row, "trade_date")
+        if not isinstance(trade_date, date):
+            trade_date = date.fromisoformat(str(trade_date)[:10])
+        values = (
+            _row_value(row, "open"),
+            _row_value(row, "high"),
+            _row_value(row, "low"),
+            _row_value(row, "close"),
+            _row_value(row, "amount"),
+        )
+        if any(value is None for value in values):
+            continue
+        grouped.setdefault(code, {})[trade_date] = BuyPointBar(
+            trade_date=trade_date,
+            open=Decimal(str(values[0])),
+            high=Decimal(str(values[1])),
+            low=Decimal(str(values[2])),
+            close=Decimal(str(values[3])),
+            pct_chg=Decimal(str(_row_value(row, "pct_chg") or 0)),
+            amount_qian=Decimal(str(values[4])),
+        )
+    return {
+        code: tuple(value for _, value in sorted(by_date.items()))[-120:]
+        for code, by_date in grouped.items()
+    }
+
+
+def _average(values: list[Decimal]) -> Decimal:
+    return sum(values, Decimal("0")) / Decimal(len(values))
+
+
+def _sector_snapshots(
+    panel: dict[str, tuple[BuyPointBar, ...]],
+    memberships: dict[str, SectorMembership],
+    policy: BuyPointPolicy,
+) -> dict[str, SectorSnapshot]:
+    grouped: dict[str, list[tuple[str, tuple[BuyPointBar, ...]]]] = {}
+    names: dict[str, str] = {}
+    for code, membership in memberships.items():
+        bars = panel.get(code, ())
+        if len(bars) < 20:
+            continue
+        grouped.setdefault(membership.sector_code, []).append((code, bars))
+        names[membership.sector_code] = membership.sector_name
+    returns = {
+        sector: _average([bars[-1].close / bars[-6].close - Decimal("1") for _, bars in members])
+        for sector, members in grouped.items()
+        if members and all(len(bars) >= 10 for _, bars in members)
+    }
+    ordered_returns = sorted(returns.values())
+    snapshots: dict[str, SectorSnapshot] = {}
+    for sector, members in grouped.items():
+        if sector not in returns:
+            continue
+        liquid = [
+            (code, bars)
+            for code, bars in members
+            if _average([value.amount_qian for value in bars[-5:]])
+            >= policy.min_average_amount5_qian
+        ]
+        strengthening = sum(
+            bars[-1].close >= _average([value.close for value in bars[-20:]])
+            and bars[-1].pct_chg > 0
+            for _, bars in liquid
+        )
+        advancing = sum(bars[-1].pct_chg > 0 for _, bars in liquid)
+        recent_amount = sum(
+            (value.amount_qian for _, bars in liquid for value in bars[-5:]), Decimal("0")
+        )
+        prior_amount = sum(
+            (value.amount_qian for _, bars in liquid for value in bars[-10:-5]), Decimal("0")
+        )
+        rank = ordered_returns.index(returns[sector]) + 1
+        snapshots[sector] = SectorSnapshot(
+            sector_code=sector,
+            sector_name=names[sector],
+            return_percentile=rank / len(ordered_returns),
+            liquid_member_count=len(liquid),
+            strengthening_member_count=strengthening,
+            breadth_ratio=advancing / len(liquid) if liquid else 0.0,
+            amount_ratio=float(recent_amount / prior_amount) if prior_amount > 0 else 0.0,
+            membership_complete=True,
+        )
+    return snapshots
+
+
+def _cumulative_return_pct(bars: tuple[BuyPointBar, ...], sessions: int) -> Decimal:
+    return (bars[-1].close / bars[-sessions - 1].close - Decimal("1")) * Decimal("100")
+
+
+def scan_buy_point_universe(
+    *,
+    panel: dict[str, tuple[BuyPointBar, ...]],
+    analysis_date: date,
+    holding_codes: set[str],
+    risk_flags_by_code: dict[str, tuple[RiskFlag, ...]],
+    memberships: dict[str, SectorMembership],
+    coverage: ReferenceCoverage,
+    market_snapshot: MarketSnapshot,
+    risk_budget: RiskBudget,
+    account_fresh: bool,
+    existing_structure_ids: frozenset[str],
+    legacy_shadow: tuple[LegacyShadow, ...],
+    policy: BuyPointPolicy | None = None,
+) -> BuyPointSelectionResult:
+    resolved = policy or BuyPointPolicy()
+    sector_values = _sector_snapshots(panel, memberships, resolved)
+    candidates: list[CandidateEvidence] = []
+    prefilter_rejections: Counter[str] = Counter()
+    for code, bars in sorted(panel.items()):
+        if not bars or bars[-1].trade_date != analysis_date:
+            prefilter_rejections["LATEST_BAR_MISSING"] += 1
+            continue
+        base = base_gate(code, bars, holding_codes, risk_flags_by_code, resolved)
+        if not base.passed:
+            prefilter_rejections.update(base.reasons)
+            continue
+        setups = detect_setups(code, bars, resolved)
+        if not setups:
+            prefilter_rejections["NO_BUY_POINT_SETUP"] += 1
+            continue
+        setup = max(setups, key=lambda value: (value.quality, value.setup_type.value))
+        ma5 = _average([value.close for value in bars[-5:]])
+        ma20 = _average([value.close for value in bars[-20:]])
+        anti = anti_chase_gate(
+            bars[-1].pct_chg,
+            _cumulative_return_pct(bars, 3),
+            _cumulative_return_pct(bars, 5),
+            (bars[-1].close / ma5 - Decimal("1")) * Decimal("100"),
+            (bars[-1].close / ma20 - Decimal("1")) * Decimal("100"),
+            resolved,
+        )
+        if not anti.passed:
+            prefilter_rejections.update(anti.reasons)
+            continue
+        membership = memberships.get(code)
+        missing: list[str] = []
+        gate_reasons: tuple[str, ...] = ()
+        percentile: Decimal | None = None
+        sector_code: str | None = None
+        if not coverage.sector_complete or membership is None:
+            missing.append("SECTOR")
+        else:
+            sector_code = membership.sector_code
+            sector_value = sector_values.get(sector_code)
+            if sector_value is None:
+                missing.append("SECTOR")
+            else:
+                decision = sector_gate(sector_value, resolved)
+                gate_reasons = decision.reasons
+                percentile = Decimal(str(sector_value.return_percentile))
+        candidates.append(
+            CandidateEvidence(
+                code=code,
+                name=code,
+                setup=setup,
+                bars=bars,
+                sector_code=sector_code,
+                sector_percentile=percentile,
+                average_amount5_qian=_average([value.amount_qian for value in bars[-5:]]),
+                gate_reasons=gate_reasons,
+                missing_fields=tuple(missing),
+            )
+        )
+    market = classify_market(market_snapshot)
+    result = select_buy_points(
+        BuyPointSelectionInput(
+            market_status=market.status,
+            candidates=tuple(candidates),
+            legacy_shadow=legacy_shadow,
+            risk_budget=risk_budget,
+            existing_structure_ids=existing_structure_ids,
+            risk_coverage_complete=coverage.st_complete and coverage.announcement_complete,
+            account_fresh=account_fresh,
+            policy=resolved,
+        )
+    )
+    combined = Counter(result.rejection_counts)
+    combined.update(prefilter_rejections)
+    return BuyPointSelectionResult(
+        qualified=result.qualified,
+        observe=result.observe,
+        shadow=result.shadow,
+        rejection_counts=dict(sorted(combined.items())),
+    )
 
 
 def _resolve_dates(now: datetime, calendar: TradingCalendar) -> tuple[object, date, date]:
@@ -157,110 +433,188 @@ class DefaultRuntime:
     def latest_daily_trade_date(self) -> date | None:
         return self._portfolio_db.latest_stock_daily_trade_date(engine=self._engine)
 
+    def refresh_reference_data(self, start: date, end: date) -> int:
+        from scripts.sync.sync_buy_point_reference_data import main as sync_references
+
+        return sync_references(
+            ["--start", start.isoformat(), "--end", end.isoformat()]
+        )
+
     def execute(
         self, *, context: object, analysis_date: date, trading_date: date
-    ) -> SelectionReport:
+    ) -> BuyPointRuntimeReport:
         from scripts.tools.portfolio_db import (
             load_account,
             load_holding_codes,
-            load_industry_map,
             load_selection_daily_results,
-            load_st_codes,
-            load_stock_daily_bars,
             mysql_url,
         )
-        from scripts.tools.selection_results import merge_selection_strategies_df
+        policy = BuyPointPolicy()
+        panel = load_main_board_panel(self._engine, analysis_date)
+        if not panel:
+            raise CliInputError("主板全市场日线面板为空")
+        references = SQLReferenceRepository(self._engine)
+        coverage = references.coverage(analysis_date)
+        memberships = references.membership_on(analysis_date)
+        risk_flags = references.risk_flags_on(analysis_date)
 
-        policy, relative_strength_by_code = resolve_runtime_policy(
-            self._engine,
-            analysis_date,
-        )
-
+        legacy_rows: list[LegacyShadow] = []
+        seen_legacy: set[tuple[str, str]] = set()
         for lane in LANES:
-            lane_date, lane_rows = load_selection_daily_results(
+            lane_date, rows = load_selection_daily_results(
                 analysis_date, strategy=lane, engine=self._engine
             )
             if lane_date != analysis_date:
-                raise CliInputError(f"{lane} 轨在分析日缺少结果，已停止部分评分")
+                continue
+            for row in rows:
+                code = normalize_code6(str(row.get("代码") or row.get("code") or ""))
+                identity = (code, lane)
+                if identity in seen_legacy:
+                    continue
+                seen_legacy.add(identity)
+                legacy_rows.append(
+                    LegacyShadow(
+                        code=code,
+                        name=str(row.get("名称") or row.get("name") or code),
+                        source=f"legacy-{lane}",
+                        reasons=("RESEARCH_ONLY",),
+                    )
+                )
 
-        merged_date, frame, _ = merge_selection_strategies_df(
-            trade_date=analysis_date,
-            strategies=LANES,
-        )
-        if merged_date != analysis_date:
-            raise CliInputError("四轨合并结果日期不一致")
-        industries = load_industry_map(engine=self._engine)
-        rows = frame.to_dict("records")
-        bars_by_code: dict[str, list[dict[str, object]]] = {}
-        daily_bars: dict[str, list[DailyBar]] = {}
-        for row in rows:
-            code = str(row.get("代码", "")).split(".")[0].zfill(6)
-            row["所属行业"] = row.get("所属行业") or industries.get(code, "未知行业")
-            raw_bars = load_stock_daily_bars(
-                code, end_date=analysis_date, limit=120, engine=self._engine
-            )
-            bars_by_code[code] = raw_bars
-            daily_bars[code] = [_bar(code, value) for value in raw_bars]
-
-        with redirect_stdout(StringIO()), redirect_stderr(StringIO()):
-            st_codes = load_st_codes(engine=self._engine)
-        result = select_short_term_candidates(
-            analysis_date=analysis_date,
-            rows=rows,
-            bars_by_code=bars_by_code,
-            holding_codes=load_holding_codes(engine=self._engine),
-            st_codes=st_codes,
-            relative_strength_by_code=relative_strength_by_code,
-            policy=policy,
-        )
         account = load_account(engine=self._engine)
-        approved = bool(
+        account_fresh = bool(
             account is not None
             and account.snapshot_date is not None
             and account.snapshot_date >= analysis_date
             and account.available_cash is not None
         )
-        cash = float(account.available_cash) if approved and account.available_cash is not None else 4000.0
-        risk_profile = RiskProfile(
-            per_trade_loss_budget=min(500.0, cash * 0.01),
-            ticket_limit=min(4000.0, cash),
-            remaining_exposure=max(0.0, cash),
+        cash = Decimal(str(account.available_cash or 0)) if account else Decimal("0")
+        market_value = Decimal(str(account.market_value or 0)) if account else Decimal("0")
+        risk_budget = RiskBudget(
+            loss_budget=min(Decimal("500"), cash * Decimal("0.01")),
+            ticket_limit=min(Decimal("4000"), cash),
+            remaining_exposure=max(Decimal("0"), Decimal("40000") - market_value),
         )
         market_state = build_default_market_state_provider(mysql_url()).get_state(context)
-        recorder = CaptureRecorder(self._evidence)
-        dependencies = SelectionDependencies(
-            evidence_repository=self._evidence,
-            planning_repository=self._planning,
-            load_daily_bars=lambda code, _: daily_bars.get(code, []),
-            refresh_chip=lambda code, _: capture_chip(code, recorder),
-        )
-        return materialize_short_term_selection(
-            result,
-            dependencies,
-            SelectionRequest(
-                analysis_date=analysis_date,
-                trading_date=trading_date,
-                now=getattr(context, "now_utc"),
-                market_state=market_state,
-                risk_profile=risk_profile,
-                portfolio_approved=approved,
-                rule_version=policy.rule_version,
+        market_snapshot = MarketSnapshot(
+            indexes_above_ma20=int(market_state.indexes_above_ma20),
+            breadth_pct=float(market_state.breadth_pct),
+            amount_ratio=float(market_state.amount_ratio),
+            complete=(
+                market_state.trading_date == analysis_date
+                and bool(market_state.evidence_refs)
             ),
         )
+
+        prepared = self._planning.load_prepared_buy_point_plans(policy.rule_version)
+        resolved_market_status = getattr(
+            market_state.status, "value", str(market_state.status)
+        )
+        state_events = advance_buy_point_plan_states(
+            prepared,
+            panel,
+            resolved_market_status,
+            risk_flags,
+        )
+        for event in state_events:
+            self._planning.append_plan_event(event)
+        existing = self._planning.load_buy_point_structure_ids(policy.rule_version)
+        result = scan_buy_point_universe(
+            panel=panel,
+            analysis_date=analysis_date,
+            holding_codes=load_holding_codes(engine=self._engine),
+            risk_flags_by_code=risk_flags,
+            memberships=memberships,
+            coverage=coverage,
+            market_snapshot=market_snapshot,
+            risk_budget=risk_budget,
+            account_fresh=account_fresh,
+            existing_structure_ids=existing,
+            legacy_shadow=tuple(legacy_rows),
+            policy=policy,
+        )
+
+        chips: dict[str, ChipEvidence] = {}
+        evidence_refs: dict[str, tuple[str, ...]] = {}
+        recorder = CaptureRecorder(self._evidence)
+        for item in result.qualified:
+            snapshot = self._evidence.get_latest_valid_snapshot(item.code, "chip")
+            if not is_chip_snapshot_for_trade_date(snapshot, analysis_date):
+                try:
+                    capture_chip(item.code, recorder)
+                except Exception:
+                    snapshot = None
+                else:
+                    snapshot = self._evidence.get_latest_valid_snapshot(item.code, "chip")
+            if is_chip_snapshot_for_trade_date(snapshot, analysis_date):
+                chips[item.code] = ChipEvidence(
+                    item.code,
+                    analysis_date,
+                    Decimal(str(snapshot.data["cost_90_high"])),
+                )
+                evidence_refs[item.code] = (str(snapshot.snapshot_id),)
+
+        sector_exposure: dict[str, Decimal] = {}
+        for holding_code in load_holding_codes(engine=self._engine):
+            membership = memberships.get(holding_code)
+            if membership is not None:
+                sector_exposure[membership.sector_code] = Decimal("1")
+        account_evidence = None
+        if account is not None and account.snapshot_date is not None:
+            account_evidence = AccountEvidence(
+                captured_at=datetime.combine(
+                    account.snapshot_date, time(7, 0), tzinfo=timezone.utc
+                ),
+                available_cash=cash,
+                total_exposure=market_value,
+                sector_exposure=sector_exposure,
+            )
+        historical_release = load_historical_release(
+            BUY_POINT_VALIDATION_ARTIFACT,
+            expected_rule_version=policy.rule_version,
+            expected_policy_hash=buy_point_policy_hash(policy),
+        )
+        dependencies = MaterializationDependencies(
+            chips_by_code=chips,
+            account=account_evidence,
+            historical_release=historical_release,
+            forward_gate=self._planning.forward_gate_summary(policy.rule_version),
+            evidence_refs_by_code=evidence_refs,
+        )
+        request = MaterializationRequest(
+            analysis_date=analysis_date,
+            trading_date=trading_date,
+            as_of=getattr(context, "now_utc"),
+            market_status=resolved_market_status,
+            request_live=True,
+            rule_version=policy.rule_version,
+        )
+        report = materialize_buy_point_selection(result, dependencies, request)
+        persist_buy_point_runtime(
+            report,
+            result,
+            dependencies,
+            request,
+            self._planning,
+            resolved_count=len(state_events),
+            duplicate_count=int(result.rejection_counts.get("EXISTING_STRUCTURE", 0)),
+        )
+        return report
 
 
 def default_runtime(_: argparse.Namespace) -> SelectionCliRuntime:
     return DefaultRuntime()
 
 
-def _report_dict(report: SelectionReport) -> dict[str, object]:
+def _report_dict(report: object) -> dict[str, object]:
     payload = asdict(report)
     payload["analysis_date"] = report.analysis_date.isoformat()
     payload["trading_date"] = report.trading_date.isoformat()
-    for item in payload["items"]:
-        plan = item.get("plan")
-        if plan is not None:
-            item["plan"] = plan.model_dump(mode="json")
+    for key in ("items", "formal", "observe", "shadow"):
+        for item in payload.get(key, []):
+            plan = item.get("plan")
+            if plan is not None and hasattr(plan, "model_dump"):
+                item["plan"] = plan.model_dump(mode="json")
     return payload
 
 
@@ -282,9 +636,15 @@ def main(
             return 2
     try:
         runtime = (runtime_factory or default_runtime)(args)
-        if not args.skip_lanes and runtime.run_lanes(LANES) != 0:
-            raise CliInputError("四轨选股执行失败")
+        if not args.skip_lanes:
+            runtime.run_lanes(LANES)
         context, analysis_date, trading_date = _resolve_dates(now, runtime.calendar)
+        if args.refresh_reference_data:
+            refresh = getattr(runtime, "refresh_reference_data", None)
+            if not callable(refresh):
+                raise CliInputError("运行时不支持点时参考数据刷新")
+            if refresh(analysis_date - timedelta(days=180), analysis_date) != 0:
+                raise CliInputError("点时参考数据刷新失败")
         latest = runtime.latest_daily_trade_date()
         if context.session is TradingSession.POST_MARKET and latest != analysis_date:
             raise CliInputError("当日日线尚未完整入库，未生成交易价位")
@@ -305,7 +665,10 @@ def main(
     if args.output == "json":
         print(json.dumps(_report_dict(report), ensure_ascii=False, indent=2))
     else:
-        print(render_selection_report(report))
+        if isinstance(report, BuyPointRuntimeReport):
+            print(render_buy_point_runtime_report(report))
+        else:
+            print(render_selection_report(report))
     return 0
 
 

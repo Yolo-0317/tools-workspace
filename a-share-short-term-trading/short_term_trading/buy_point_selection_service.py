@@ -373,7 +373,7 @@ def persist_buy_point_runtime(
         if runtime is None:
             continue
         evidence_refs = dependencies.evidence_refs_by_code.get(code, ())
-        if not evidence_refs:
+        if not evidence_refs and runtime.tier is CandidateTier.FORMAL:
             violations.append(f"EVIDENCE_MISSING:{code}")
             continue
         candidate = CandidateV3(

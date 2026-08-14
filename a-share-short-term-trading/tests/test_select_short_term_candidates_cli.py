@@ -8,6 +8,11 @@ from types import SimpleNamespace
 import pytest
 
 from short_term_trading.selection_service import SelectionReport
+from short_term_trading.buy_point_selection_service import (
+    BuyPointRuntimeItem,
+    BuyPointRuntimeReport,
+)
+from stock_ai.buy_point_selection.models import CandidateTier, SetupType
 from stock_ai.short_term_selection import BASELINE_POLICY, STRICT_B
 
 
@@ -30,18 +35,24 @@ class FakeCalendar:
 
 
 class FakeRuntime:
-    def __init__(self, latest_daily: date = date(2026, 8, 10)) -> None:
+    def __init__(self, latest_daily: date = date(2026, 8, 10), lane_result: int = 0) -> None:
         self.calendar = FakeCalendar()
         self.latest_daily = latest_daily
         self.lane_calls: list[tuple[str, ...]] = []
         self.analysis_date: date | None = None
+        self.refresh_calls: list[tuple[date, date]] = []
+        self.lane_result = lane_result
 
     def run_lanes(self, strategies: tuple[str, ...]) -> int:
         self.lane_calls.append(strategies)
-        return 0
+        return self.lane_result
 
     def latest_daily_trade_date(self) -> date | None:
         return self.latest_daily
+
+    def refresh_reference_data(self, start: date, end: date) -> int:
+        self.refresh_calls.append((start, end))
+        return 0
 
     def execute(self, *, context, analysis_date: date, trading_date: date) -> SelectionReport:
         self.analysis_date = analysis_date
@@ -94,6 +105,68 @@ def test_default_manual_run_executes_all_four_lanes() -> None:
     assert runtime.lane_calls == [
         ("combined", "ma5", "five_factor", "bottom_breakout")
     ]
+
+
+def test_legacy_lane_failure_cannot_block_the_new_full_universe_selector() -> None:
+    runtime = FakeRuntime(lane_result=1)
+    result = MODULE.main(
+        ["--at", "2026-08-10T10:00:00+08:00"],
+        runtime_factory=lambda args: runtime,
+    )
+    assert result == 0
+    assert runtime.analysis_date == date(2026, 8, 7)
+
+
+def test_reference_refresh_is_explicit_and_uses_the_bounded_analysis_window() -> None:
+    runtime = FakeRuntime()
+    result = MODULE.main(
+        [
+            "--at",
+            "2026-08-10T10:00:00+08:00",
+            "--skip-lanes",
+            "--refresh-reference-data",
+        ],
+        runtime_factory=lambda args: runtime,
+    )
+    assert result == 0
+    assert runtime.refresh_calls == [(date(2026, 2, 8), date(2026, 8, 7))]
+
+
+def test_json_output_serializes_new_tiers_and_setup_types(capsys) -> None:
+    class Runtime(FakeRuntime):
+        def execute(self, *, context, analysis_date: date, trading_date: date):
+            self.analysis_date = analysis_date
+            item = BuyPointRuntimeItem(
+                code="600001",
+                name="虚构股份",
+                tier=CandidateTier.SHADOW,
+                setup_type=SetupType.PRE_BREAKOUT,
+                reason_code="FORWARD_GATE_NOT_READY",
+                missing_fields=(),
+                plan=None,
+                maximum_shares=0,
+            )
+            return BuyPointRuntimeReport(
+                analysis_date,
+                trading_date,
+                "buy-point-selection-3.0.0",
+                "SHADOW",
+                (),
+                (),
+                (item,),
+                {},
+            )
+
+    runtime = Runtime()
+    assert MODULE.main(
+        ["--at", "2026-08-10T10:00:00+08:00", "--skip-lanes", "--output", "json"],
+        runtime_factory=lambda args: runtime,
+    ) == 0
+    import json
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["shadow"][0]["tier"] == "SHADOW"
+    assert payload["shadow"][0]["setup_type"] == "PRE_BREAKOUT"
 
 
 def test_unknown_calendar_fails_closed(capsys) -> None:

@@ -376,6 +376,35 @@ class PlanningRepository:
             ),
         )
 
+    def load_buy_point_structure_ids(self, rule_version: str) -> frozenset[str]:
+        statement = text(
+            "SELECT structure_id FROM stt_trade_plans "
+            "WHERE schema_version = '1.3' AND rule_version = :rule_version "
+            "AND structure_id IS NOT NULL"
+        )
+        with read_connection(self._connection) as connection:
+            rows = connection.execute(
+                statement, {"rule_version": rule_version}
+            ).mappings()
+            return frozenset(str(row["structure_id"]) for row in rows)
+
+    def load_prepared_buy_point_plans(self, rule_version: str) -> tuple[TradePlanV3, ...]:
+        statement = text(
+            "SELECT * FROM stt_trade_plans WHERE schema_version = '1.3' "
+            "AND rule_version = :rule_version AND plan_state = 'PREPARED' "
+            "AND data_status = 'VALID' ORDER BY analysis_date, code"
+        )
+        with read_connection(self._connection) as connection:
+            rows = list(
+                connection.execute(statement, {"rule_version": rule_version}).mappings()
+            )
+        return tuple(
+            restore_contract(
+                TradePlanV3, row, {"evidence_refs": "evidence_refs_json"}
+            )
+            for row in rows
+        )
+
     def get_latest_valid_plan(self, code: str, at: datetime) -> TradePlanV2 | None:
         statement = text(
             "SELECT * FROM stt_trade_plans "
