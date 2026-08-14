@@ -343,8 +343,9 @@ def discover_historical_plans(
 
 
 def _load_daily_bars(engine, start: date, end: date) -> dict[str, tuple[BuyPointBar, ...]]:
+    grouped: dict[str, dict[date, BuyPointBar]] = {}
     with engine.connect() as connection:
-        rows = connection.execute(
+        rows = connection.execution_options(stream_results=True).execute(
             text(
                 "SELECT ts_code, trade_date, open, high, low, close, pct_chg, amount "
                 "FROM stock_daily WHERE trade_date BETWEEN :start AND :end "
@@ -352,27 +353,31 @@ def _load_daily_bars(engine, start: date, end: date) -> dict[str, tuple[BuyPoint
             ),
             {"start": start, "end": end},
         ).mappings()
-        loaded = list(rows)
-    grouped: dict[str, dict[date, BuyPointBar]] = {}
-    for row in loaded:
-        code = normalize_code6(str(row["ts_code"]))
-        if not is_sh_sz_main_board_code(code):
-            continue
-        trade_date = row["trade_date"]
-        if not isinstance(trade_date, date):
-            trade_date = date.fromisoformat(str(trade_date)[:10])
-        required = (row["open"], row["high"], row["low"], row["close"], row["amount"])
-        if any(value is None for value in required):
-            continue
-        grouped.setdefault(code, {})[trade_date] = BuyPointBar(
-            trade_date=trade_date,
-            open=Decimal(str(row["open"])),
-            high=Decimal(str(row["high"])),
-            low=Decimal(str(row["low"])),
-            close=Decimal(str(row["close"])),
-            pct_chg=Decimal(str(row["pct_chg"] or 0)),
-            amount_qian=Decimal(str(row["amount"])),
-        )
+        for row in rows:
+            code = normalize_code6(str(row["ts_code"]))
+            if not is_sh_sz_main_board_code(code):
+                continue
+            trade_date = row["trade_date"]
+            if not isinstance(trade_date, date):
+                trade_date = date.fromisoformat(str(trade_date)[:10])
+            required = (
+                row["open"],
+                row["high"],
+                row["low"],
+                row["close"],
+                row["amount"],
+            )
+            if any(value is None for value in required):
+                continue
+            grouped.setdefault(code, {})[trade_date] = BuyPointBar(
+                trade_date=trade_date,
+                open=Decimal(str(row["open"])),
+                high=Decimal(str(row["high"])),
+                low=Decimal(str(row["low"])),
+                close=Decimal(str(row["close"])),
+                pct_chg=Decimal(str(row["pct_chg"] or 0)),
+                amount_qian=Decimal(str(row["amount"])),
+            )
     return {
         code: tuple(value for _, value in sorted(rows.items()))
         for code, rows in grouped.items()
