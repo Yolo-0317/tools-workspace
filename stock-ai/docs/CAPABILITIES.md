@@ -356,6 +356,22 @@ PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
   a-share-short-term-trading/scripts/select_short_term_candidates.py --output text
 ```
 
+点时行业、ST/停牌和重大公告风险默认由巨潮资讯 + BaoStock 手动同步。普通选股不刷新参考数据；只有显式执行下面的同步命令或传入 `--refresh-reference-data` 才会联网更新。同步按 provider、数据集和分区保存检查点，行业与日级覆盖率低于 98% 时失败关闭正式资格。该命令不会安装定时任务：
+
+```bash
+PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
+  stock-ai/scripts/sync/sync_buy_point_reference_data.py \
+  --start 2024-01-02 --end latest
+```
+
+Tushare 仅作为显式回退；当前 token 缺少对应接口权限时预期返回失败，不会把不完整数据标成成功：
+
+```bash
+PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
+  stock-ai/scripts/sync/sync_buy_point_reference_data.py \
+  --start 2024-01-02 --end latest --provider tushare
+```
+
 `LIVE` 不由 AI 或单次回测决定。必须先通过冻结历史门槛，再完成至少 20 个不同交易日的手动前向运行和至少 20 个已解决计划，且完整性违规为 0；否则统一输出 `SHADOW`。只有正式层显示最大股数，观察和影子层固定显示无交易资格。
 
 盘后 DeepSeek 审查（非 17:30 自动化路径）：见 [pipelines/daily_stock_deepseek_pipeline.md](pipelines/daily_stock_deepseek_pipeline.md)。

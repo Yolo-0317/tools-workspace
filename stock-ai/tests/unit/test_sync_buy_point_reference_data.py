@@ -181,6 +181,17 @@ def test_reference_cli_keeps_tushare_as_explicit_fallback() -> None:
     assert args.provider == "tushare"
 
 
+def test_reference_cli_help_lists_both_provider_modes(capsys) -> None:
+    module = _load_script()
+    try:
+        module.build_parser().parse_args(["--help"])
+    except SystemExit as exc:
+        assert exc.code == 0
+    output = capsys.readouterr().out
+    assert "cninfo-baostock" in output
+    assert "tushare" in output
+
+
 class _Rows:
     def __init__(self, rows):
         self.rows = rows

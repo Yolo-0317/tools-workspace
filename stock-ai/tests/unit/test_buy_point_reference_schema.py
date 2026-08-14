@@ -35,3 +35,26 @@ def test_provider_audit_migration_is_additive_and_has_checkpoints() -> None:
     assert "information_schema.columns" in sql
     assert "drop table" not in sql
     assert "delete from" not in sql
+    assert not any(
+        secret in sql
+        for secret in ("mysql_url", "tushare_token", "password=", "access_token")
+    )
+
+
+def test_alternative_reference_sync_is_documented_as_manual_and_default() -> None:
+    workspace = Path(__file__).resolve().parents[3]
+    capabilities = (workspace / "stock-ai" / "docs" / "CAPABILITIES.md").read_text(
+        encoding="utf-8"
+    )
+    layout = (workspace / "stock-ai" / "docs" / "PROJECT_LAYOUT.md").read_text(
+        encoding="utf-8"
+    )
+    readme = (workspace / "a-share-short-term-trading" / "README.md").read_text(
+        encoding="utf-8"
+    )
+    combined = "\n".join((capabilities, layout, readme))
+
+    assert "巨潮资讯 + BaoStock" in combined
+    assert "--provider tushare" in combined
+    assert "普通选股不刷新参考数据" in combined
+    assert "不会安装定时任务" in combined

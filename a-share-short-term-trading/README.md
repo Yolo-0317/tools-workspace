@@ -54,13 +54,25 @@ PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
   a-share-short-term-trading/scripts/select_short_term_candidates.py --output text
 ```
 
-只有显式要求时才刷新 Tushare 点时参考；普通运行只读缓存，覆盖缺失即失败关闭正式资格：
+点时行业、ST/停牌和重大公告风险默认由巨潮资讯 + BaoStock 提供。普通选股不刷新参考数据，只读 MySQL 缓存；覆盖缺失即失败关闭正式资格。下面的同步命令是手动入口，不会安装定时任务：
 
 ```bash
 PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
   stock-ai/scripts/sync/sync_buy_point_reference_data.py \
   --start 2024-01-02 --end latest
+```
 
+Tushare 保留为显式回退；token 缺少行业、ST 或公告接口权限时预期失败，不会伪造完整覆盖：
+
+```bash
+PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
+  stock-ai/scripts/sync/sync_buy_point_reference_data.py \
+  --start 2024-01-02 --end latest --provider tushare
+```
+
+选择器的 `--refresh-reference-data` 使用同一默认 provider；不传该参数时不会联网。
+
+```bash
 PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
   a-share-short-term-trading/scripts/select_short_term_candidates.py \
   --refresh-reference-data --output text
