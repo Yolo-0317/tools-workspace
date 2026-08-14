@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from enum import Enum
+from typing import Mapping
 
 
 class SetupType(str, Enum):
@@ -63,6 +64,19 @@ class GateDecision:
     passed: bool
     status: str
     reasons: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class DetectedSetup:
+    code: str
+    setup_type: SetupType
+    analysis_date: date
+    structure_start: date
+    structure_high: Decimal
+    structure_low: Decimal
+    quality: Decimal
+    reasons: tuple[str, ...]
+    metrics: Mapping[str, Decimal]
 
 
 @dataclass(frozen=True)
