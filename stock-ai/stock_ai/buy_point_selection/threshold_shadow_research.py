@@ -7,17 +7,34 @@ from datetime import date
 from decimal import Decimal
 import hashlib
 import json
-from typing import Callable, Sequence
+from typing import Callable, Mapping, Sequence
 
 from stock_ai.market_codes import normalize_code6
 
-from .models import BuyPointBar, DetectedSetup, SelectionPolicy, SetupType
+from .case_review import CASE_RISK_BUDGET
+from .gates import anti_chase_gate, base_gate, classify_market, sector_gate
+from .historical_replay import second_trading_date_after
+from .models import (
+    BuyPointBar,
+    DetectedSetup,
+    MarketSnapshot,
+    SelectionPolicy,
+    SetupType,
+)
 from .patterns import (
     detect_first_launch_pullback,
     detect_pre_breakout,
     detect_trend_pullback,
 )
 from .recall_research import diagnose_setup_windows
+from .planning import PricePlan, build_price_plan, nearest_resistance_above
+from .reference_data import (
+    ReferenceCoverage,
+    RiskFlag,
+    SectorMembership,
+    membership_on,
+    risk_flags_on,
+)
 
 
 @dataclass(frozen=True)
@@ -41,6 +58,38 @@ class ThresholdShadowSetup:
     setup: DetectedSetup
     actual_deviation: Decimal
     executable_shares: int = 0
+
+
+@dataclass(frozen=True)
+class ThresholdShadowCandidate:
+    code: str
+    signal_date: date
+    profile_id: str
+    shadow_setup: ThresholdShadowSetup
+    plan: PricePlan
+    average_amount5_qian: Decimal
+    two_r_space_buffer: Decimal
+    executable_shares: int = 0
+    status: str = "CASE_ANALYSIS_ONLY"
+    trade_permission: str = "NO-TRADE"
+
+
+@dataclass(frozen=True)
+class ThresholdShadowRejection:
+    code: str
+    signal_date: date
+    profile_id: str | None
+    stage: str
+    reasons: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ThresholdShadowReplay:
+    signal_dates: tuple[date, ...]
+    incomplete_dates: tuple[date, ...]
+    raw_setups: tuple[ThresholdShadowSetup, ...]
+    candidates: tuple[ThresholdShadowCandidate, ...]
+    rejections: tuple[ThresholdShadowRejection, ...]
 
 
 _FIELD_SPECS = (
@@ -192,3 +241,236 @@ def generate_threshold_shadow_setups(
             )
         )
     return tuple(rows)
+
+
+def _bars_on_or_before(
+    bars: Sequence[BuyPointBar], signal_date: date
+) -> tuple[BuyPointBar, ...]:
+    return tuple(
+        sorted(
+            (value for value in bars if value.trade_date <= signal_date),
+            key=lambda value: value.trade_date,
+        )[-120:]
+    )
+
+
+def _average(values: Sequence[Decimal]) -> Decimal:
+    return sum(values, Decimal("0")) / Decimal(len(values))
+
+
+def _cumulative_return_pct(
+    bars: Sequence[BuyPointBar], sessions: int
+) -> Decimal:
+    return (
+        bars[-1].close / bars[-sessions - 1].close - Decimal("1")
+    ) * Decimal("100")
+
+
+def replay_threshold_shadows(
+    *,
+    signal_dates: Sequence[date],
+    trading_dates: Sequence[date],
+    bars_by_code: Mapping[str, Sequence[BuyPointBar]],
+    memberships: Sequence[SectorMembership],
+    risk_flags: Sequence[RiskFlag],
+    coverage_by_date: Mapping[date, ReferenceCoverage],
+    market_snapshots: Mapping[date, MarketSnapshot],
+    holding_codes_by_date: Mapping[date, frozenset[str]],
+    profiles: Sequence[ThresholdProfile],
+    formal_policy: SelectionPolicy | None = None,
+    setup_generator: Callable[
+        [
+            str,
+            date,
+            Sequence[BuyPointBar],
+            Sequence[ThresholdProfile],
+            SelectionPolicy,
+        ],
+        tuple[ThresholdShadowSetup, ...],
+    ] = generate_threshold_shadow_setups,
+) -> ThresholdShadowReplay:
+    policy = formal_policy or SelectionPolicy()
+    dated_signal_dates = tuple(sorted(set(signal_dates)))
+    raw_setups = []
+    candidates = []
+    rejections = []
+    incomplete_dates = []
+    for signal_date in dated_signal_dates:
+        coverage = coverage_by_date.get(signal_date)
+        market_snapshot = market_snapshots.get(signal_date)
+        if (
+            coverage is None
+            or not coverage.sector_complete
+            or not coverage.st_complete
+            or market_snapshot is None
+            or not market_snapshot.complete
+        ):
+            incomplete_dates.append(signal_date)
+            continue
+        panel = {
+            normalize_code6(code): _bars_on_or_before(values, signal_date)
+            for code, values in bars_by_code.items()
+        }
+        dated_flags = risk_flags_on(risk_flags, signal_date)
+        dated_memberships = membership_on(memberships, signal_date)
+        from .historical_replay_runtime import _sector_snapshots
+
+        sectors = _sector_snapshots(panel, dated_memberships, policy)
+        market = classify_market(market_snapshot)
+        for code, bars in sorted(panel.items()):
+            if not bars or bars[-1].trade_date != signal_date:
+                rejections.append(
+                    ThresholdShadowRejection(
+                        code, signal_date, None, "LATEST_BAR", ("LATEST_BAR_MISSING",)
+                    )
+                )
+                continue
+            base = base_gate(
+                code,
+                bars,
+                set(holding_codes_by_date.get(signal_date, frozenset())),
+                dated_flags,
+                policy,
+            )
+            if not base.passed:
+                rejections.append(
+                    ThresholdShadowRejection(
+                        code, signal_date, None, "BASE", base.reasons
+                    )
+                )
+                continue
+            setups = setup_generator(code, signal_date, bars, profiles, policy)
+            if any(value.executable_shares != 0 for value in setups):
+                raise ValueError("shadow setup must be zero-share")
+            raw_setups.extend(setups)
+            for shadow in setups:
+                if not market.passed:
+                    rejections.append(
+                        ThresholdShadowRejection(
+                            code,
+                            signal_date,
+                            shadow.profile.profile_id,
+                            "MARKET",
+                            market.reasons,
+                        )
+                    )
+                    continue
+                ma5 = _average([value.close for value in bars[-5:]])
+                ma20 = _average([value.close for value in bars[-20:]])
+                anti = anti_chase_gate(
+                    bars[-1].pct_chg,
+                    _cumulative_return_pct(bars, 3),
+                    _cumulative_return_pct(bars, 5),
+                    (bars[-1].close / ma5 - Decimal("1")) * Decimal("100"),
+                    (bars[-1].close / ma20 - Decimal("1")) * Decimal("100"),
+                    policy,
+                )
+                if not anti.passed:
+                    rejections.append(
+                        ThresholdShadowRejection(
+                            code,
+                            signal_date,
+                            shadow.profile.profile_id,
+                            "ANTI_CHASE",
+                            anti.reasons,
+                        )
+                    )
+                    continue
+                membership = dated_memberships.get(code)
+                if membership is None or membership.sector_code not in sectors:
+                    rejections.append(
+                        ThresholdShadowRejection(
+                            code,
+                            signal_date,
+                            shadow.profile.profile_id,
+                            "SECTOR",
+                            ("SECTOR_MISSING",),
+                        )
+                    )
+                    continue
+                sector = sector_gate(sectors[membership.sector_code], policy)
+                if not sector.passed:
+                    rejections.append(
+                        ThresholdShadowRejection(
+                            code,
+                            signal_date,
+                            shadow.profile.profile_id,
+                            "SECTOR",
+                            sector.reasons,
+                        )
+                    )
+                    continue
+                decision = build_price_plan(
+                    shadow.setup,
+                    bars,
+                    CASE_RISK_BUDGET,
+                    market.status,
+                    policy,
+                    valid_through_trade_date=second_trading_date_after(
+                        trading_dates, signal_date
+                    ),
+                )
+                if decision.plan is None:
+                    rejections.append(
+                        ThresholdShadowRejection(
+                            code,
+                            signal_date,
+                            shadow.profile.profile_id,
+                            "PRICE_PLAN",
+                            decision.reasons,
+                        )
+                    )
+                    continue
+                average_amount5 = _average(
+                    [value.amount_qian for value in bars[-5:]]
+                )
+                resistance = nearest_resistance_above(
+                    decision.plan.trigger_price, bars
+                )
+                candidates.append(
+                    ThresholdShadowCandidate(
+                        code,
+                        signal_date,
+                        shadow.profile.profile_id,
+                        shadow,
+                        decision.plan,
+                        average_amount5,
+                        resistance - decision.plan.target_2r,
+                    )
+                )
+    return ThresholdShadowReplay(
+        dated_signal_dates,
+        tuple(sorted(set(incomplete_dates))),
+        tuple(
+            sorted(
+                raw_setups,
+                key=lambda value: (
+                    value.signal_date,
+                    value.code,
+                    value.profile.profile_id,
+                ),
+            )
+        ),
+        tuple(
+            sorted(
+                candidates,
+                key=lambda value: (
+                    value.signal_date,
+                    value.code,
+                    value.profile_id,
+                ),
+            )
+        ),
+        tuple(
+            sorted(
+                rejections,
+                key=lambda value: (
+                    value.signal_date,
+                    value.code,
+                    value.profile_id or "",
+                    value.stage,
+                    value.reasons,
+                ),
+            )
+        ),
+    )
