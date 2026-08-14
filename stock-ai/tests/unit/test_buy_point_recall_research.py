@@ -19,6 +19,7 @@ from stock_ai.buy_point_selection.recall_research import (
     DailyRecallWinner,
     attribute_daily_recall_winners,
     diagnose_market_freeze_winners,
+    diagnose_no_setup,
     find_daily_actionable_winners,
     next_five_trading_dates,
 )
@@ -82,6 +83,62 @@ def _platform_history() -> tuple[BuyPointBar, ...]:
                 amount,
             )
         )
+    return tuple(bars)
+
+
+def _bars_from_closes(
+    closes: tuple[str, ...],
+    amounts: tuple[str, ...],
+) -> tuple[BuyPointBar, ...]:
+    bars = []
+    for index, (close_text, amount_text) in enumerate(zip(closes, amounts)):
+        close = Decimal(close_text)
+        previous = Decimal(closes[index - 1]) if index else close
+        bars.append(
+            BuyPointBar(
+                SIGNAL - timedelta(days=len(closes) - 1 - index),
+                close,
+                close + Decimal("0.08"),
+                close - Decimal("0.08"),
+                close,
+                (close / previous - Decimal("1")) * Decimal("100"),
+                Decimal(amount_text),
+            )
+        )
+    return tuple(bars)
+
+
+def _trend_history() -> tuple[BuyPointBar, ...]:
+    closes = (
+        *("10.00",) * 47,
+        "10.10",
+        "10.20",
+        "10.30",
+        "10.40",
+        "10.50",
+        "10.60",
+        "10.70",
+        "10.80",
+        "10.90",
+        "10.82",
+        "10.74",
+        "10.70",
+        "10.69",
+    )
+    amounts = (*("110000",) * 47, *("140000",) * 9, *("85000",) * 4)
+    return _bars_from_closes(closes, amounts)
+
+
+def _launch_history() -> tuple[BuyPointBar, ...]:
+    closes = (*("10.00",) * 57, "10.40", "10.35", "10.40")
+    amounts = (*("100000",) * 57, "160000", "110000", "105000")
+    bars = list(_bars_from_closes(closes, amounts))
+    bars[57] = replace(
+        bars[57],
+        open=Decimal("10.02"),
+        high=Decimal("10.48"),
+        low=Decimal("9.98"),
+    )
     return tuple(bars)
 
 
@@ -344,3 +401,63 @@ def test_market_freeze_diagnostic_is_zero_share_and_does_not_add_candidates() ->
     assert rows[0].executable_shares == 0
     assert replay.strict_shadow == ()
     assert replay.near_misses == ()
+
+
+def test_setup_diagnostics_match_production_positive_shapes() -> None:
+    """Catches the research mirror drifting from existing detector gates."""
+    fixtures = (
+        ("PRE_BREAKOUT", _platform_history()),
+        ("TREND_PULLBACK", _trend_history()),
+        ("FIRST_LAUNCH_PULLBACK", _launch_history()),
+    )
+
+    for template, bars in fixtures:
+        diagnostics = {
+            value.template: value
+            for value in diagnose_no_setup("600001", SIGNAL, bars)
+        }
+        assert diagnostics[template].failures == ()
+        assert diagnostics[template].boundary_deviation == Decimal("0")
+        assert diagnostics[template].executable_shares == 0
+
+    trend = {
+        value.template: value
+        for value in diagnose_no_setup("600001", SIGNAL, _trend_history())
+    }["TREND_PULLBACK"]
+    launch = {
+        value.template: value
+        for value in diagnose_no_setup("600001", SIGNAL, _launch_history())
+    }["FIRST_LAUNCH_PULLBACK"]
+    assert trend.window_sessions == 4
+    assert launch.window_sessions == 2
+
+    platform = {
+        value.template: value
+        for value in diagnose_no_setup(
+            "600001",
+            SIGNAL,
+            _platform_history(),
+        )
+    }["PRE_BREAKOUT"]
+    assert platform.metrics["platform_width"] == Decimal(
+        "0.072164948453608247422680412"
+    )
+    assert platform.metrics["distance_to_platform_top"] == Decimal(
+        "0.01009615384615384615384615385"
+    )
+
+
+def test_setup_diagnostics_ignore_bars_after_the_signal_date() -> None:
+    """Catches outcome information changing the selected failure template."""
+    bars = _trend_history()
+    future = replace(
+        bars[-1],
+        trade_date=SIGNAL + timedelta(days=1),
+        high=Decimal("99"),
+        close=Decimal("90"),
+    )
+
+    baseline = diagnose_no_setup("600001", SIGNAL, bars)
+    with_future = diagnose_no_setup("600001", SIGNAL, (*bars, future))
+
+    assert with_future == baseline
