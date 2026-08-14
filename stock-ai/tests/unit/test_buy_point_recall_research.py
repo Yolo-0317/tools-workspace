@@ -20,6 +20,7 @@ from stock_ai.buy_point_selection.recall_research import (
     attribute_daily_recall_winners,
     diagnose_market_freeze_winners,
     diagnose_no_setup,
+    diagnose_setup_windows,
     find_daily_actionable_winners,
     next_five_trading_dates,
 )
@@ -461,3 +462,23 @@ def test_setup_diagnostics_ignore_bars_after_the_signal_date() -> None:
     with_future = diagnose_no_setup("600001", SIGNAL, (*bars, future))
 
     assert with_future == baseline
+
+
+def test_all_setup_windows_are_exposed_without_changing_closest_selection() -> None:
+    """Catches shadow research losing a valid non-closest setup window."""
+    bars = _launch_history()
+
+    rows = diagnose_setup_windows("600001", SIGNAL, bars)
+
+    assert [(value.template, value.window_sessions) for value in rows] == [
+        ("PRE_BREAKOUT", 30),
+        ("TREND_PULLBACK", 2),
+        ("TREND_PULLBACK", 3),
+        ("TREND_PULLBACK", 4),
+        ("FIRST_LAUNCH_PULLBACK", 1),
+        ("FIRST_LAUNCH_PULLBACK", 2),
+    ]
+    assert diagnose_no_setup("600001", SIGNAL, bars)[2] == rows[5]
+    assert rows[5].metrics["quiet_max_abs_gain"] == Decimal(
+        "0.004830917874396135265700483"
+    )

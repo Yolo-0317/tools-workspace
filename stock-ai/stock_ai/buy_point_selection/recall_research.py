@@ -332,6 +332,10 @@ def _launch_window_diagnostic(
         (value.amount_qian / launch.amount_qian for value in quiet),
         default=Decimal("Infinity"),
     ) if launch.amount_qian > 0 else Decimal("Infinity")
+    quiet_max_abs_gain = max(
+        (abs(value.pct_chg / Decimal("100")) for value in quiet),
+        default=Decimal("Infinity"),
+    )
     failures = []
     deviation = Decimal("0")
     if not policy.launch_gain_min <= launch_gain <= policy.launch_gain_max:
@@ -357,12 +361,12 @@ def _launch_window_diagnostic(
     if preceding_three_up:
         failures.append("LAUNCH_PRECEDING_THREE_UP")
         deviation += Decimal("1")
-    if any(
-        abs(value.pct_chg / Decimal("100")) > policy.consolidation_gain_abs_max
-        for value in quiet
-    ):
+    if quiet_max_abs_gain > policy.consolidation_gain_abs_max:
         failures.append("LAUNCH_QUIET_PRICE_LOUD")
-        deviation += Decimal("1")
+        deviation += _above_deviation(
+            quiet_max_abs_gain,
+            policy.consolidation_gain_abs_max,
+        )
     if quiet_amount_ratio > policy.consolidation_amount_ratio_max:
         failures.append("LAUNCH_QUIET_AMOUNT_LOUD")
         deviation += _above_deviation(
@@ -382,12 +386,13 @@ def _launch_window_diagnostic(
             "launch_close_location": close_location,
             "preceding_return5": preceding_return,
             "quiet_sessions": Decimal(quiet_sessions),
+            "quiet_max_abs_gain": quiet_max_abs_gain,
             "quiet_amount_ratio": quiet_amount_ratio,
         },
     )
 
 
-def diagnose_no_setup(
+def diagnose_setup_windows(
     code: str,
     signal_date: date,
     bars: Sequence[BuyPointBar],
@@ -401,9 +406,9 @@ def diagnose_no_setup(
             key=lambda value: value.trade_date,
         )[-120:]
     )
-    platform = _platform_diagnostic(normalized, signal_date, bounded, resolved)
-    trend = min(
-        (
+    return (
+        _platform_diagnostic(normalized, signal_date, bounded, resolved),
+        *(
             _trend_window_diagnostic(
                 normalized,
                 signal_date,
@@ -413,14 +418,7 @@ def diagnose_no_setup(
             )
             for sessions in range(2, 5)
         ),
-        key=lambda value: (
-            len(value.failures),
-            value.boundary_deviation,
-            value.window_sessions or 0,
-        ),
-    )
-    launch = min(
-        (
+        *(
             _launch_window_diagnostic(
                 normalized,
                 signal_date,
@@ -430,13 +428,33 @@ def diagnose_no_setup(
             )
             for sessions in (1, 2)
         ),
+    )
+
+
+def diagnose_no_setup(
+    code: str,
+    signal_date: date,
+    bars: Sequence[BuyPointBar],
+    policy: SelectionPolicy | None = None,
+) -> tuple[SetupTemplateDiagnostic, ...]:
+    windows = diagnose_setup_windows(code, signal_date, bars, policy)
+    trend = min(
+        windows[1:4],
         key=lambda value: (
             len(value.failures),
             value.boundary_deviation,
             value.window_sessions or 0,
         ),
     )
-    return platform, trend, launch
+    launch = min(
+        windows[4:6],
+        key=lambda value: (
+            len(value.failures),
+            value.boundary_deviation,
+            value.window_sessions or 0,
+        ),
+    )
+    return windows[0], trend, launch
 
 
 def attribute_daily_recall_winners(
