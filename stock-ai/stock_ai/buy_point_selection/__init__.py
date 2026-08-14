@@ -1,5 +1,6 @@
 """Buy-point-first selection domain."""
 
+from .case_review import GateTrace, NearMissDecision, classify_near_miss
 from .gates import anti_chase_gate, base_gate, classify_market, sector_gate
 from .models import (
     BuyPointBar,
@@ -49,7 +50,9 @@ __all__ = [
     "CandidateTier",
     "CninfoReferenceSource",
     "GateDecision",
+    "GateTrace",
     "MarketSnapshot",
+    "NearMissDecision",
     "IndustryCategory",
     "IndustryChange",
     "PlanState",
@@ -65,6 +68,7 @@ __all__ = [
     "anti_chase_gate",
     "base_gate",
     "classify_announcement_title",
+    "classify_near_miss",
     "classify_market",
     "membership_on",
     "normalize_announcement_flags",
