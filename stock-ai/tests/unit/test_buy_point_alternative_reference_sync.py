@@ -90,6 +90,7 @@ class FakeCninfoProvider:
         self.failed_industry_code: str | None = None
         self.failed_announcement_day: date | None = None
         self.risky_announcement = False
+        self.multiple_historical_changes = False
 
     def fetch_industry_categories(self):
         return (IndustryCategory("801000", "", "农林牧渔", 1, None),)
@@ -98,7 +99,7 @@ class FakeCninfoProvider:
         self.industry_calls.append(code)
         if code == self.failed_industry_code:
             raise ProviderFailure("CNINFO", "industry_changes", "PROVIDER_UNAVAILABLE")
-        return (
+        values = (
             IndustryChange(
                 code,
                 date(2024, 1, 2),
@@ -106,6 +107,22 @@ class FakeCninfoProvider:
                 "801000",
             ),
         )
+        if self.multiple_historical_changes:
+            values = (
+                IndustryChange(
+                    code,
+                    date(2020, 1, 2),
+                    "申银万国行业分类标准",
+                    "801000",
+                ),
+                IndustryChange(
+                    code,
+                    date(2022, 1, 4),
+                    "申银万国行业分类标准",
+                    "801120",
+                ),
+            )
+        return values
 
     def fetch_announcement_page(self, day, page_no):
         self.announcement_calls.append((day, page_no))
@@ -303,6 +320,26 @@ def test_failed_industry_code_prevents_broad_sector_complete_run() -> None:
     sector = next(run for run in runs if run.dataset == "sector")
     assert sector.status == "FAILED"
     assert sector.error_code == "PROVIDER_UNAVAILABLE"
+
+
+def test_historical_industry_intervals_do_not_require_calendar_before_sync_window() -> None:
+    cninfo = FakeCninfoProvider()
+    cninfo.multiple_historical_changes = True
+    original_categories = cninfo.fetch_industry_categories
+    cninfo.fetch_industry_categories = lambda: original_categories() + (
+        IndustryCategory("801120", "", "食品饮料", 1, None),
+    )
+
+    runs = sync_alternative_reference_data(
+        _request(date(2025, 8, 5), date(2025, 8, 6)),
+        cninfo=cninfo,
+        baostock=FakeBaoStockProvider(),
+        repository=MemoryRepository(),
+        sleep=lambda _: None,
+    )
+
+    sector = next(run for run in runs if run.dataset == "sector")
+    assert sector.status == "COMPLETE"
 
 
 def test_repeated_sync_keeps_fact_keys_stable() -> None:

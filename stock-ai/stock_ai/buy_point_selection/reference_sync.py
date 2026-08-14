@@ -193,7 +193,10 @@ def _sync_sector(
         categories = ()
 
     def previous_trade_date(value: date) -> date | None:
-        return max((day for day in request.trade_dates if day < value), default=None)
+        return max(
+            (day for day in request.trade_dates if day < value),
+            default=value - timedelta(days=1),
+        )
 
     if categories:
         for code in pending:
