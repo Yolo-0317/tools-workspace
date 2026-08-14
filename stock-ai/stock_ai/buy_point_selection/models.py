@@ -28,6 +28,16 @@ class PlanState(str, Enum):
     INVALIDATED = "INVALIDATED"
 
 
+class OutcomeLabel(str, Enum):
+    NOT_TRIGGERED = "NOT_TRIGGERED"
+    TARGET_2R_FIRST = "TARGET_2R_FIRST"
+    STOP_FIRST = "STOP_FIRST"
+    EXPIRY_GAIN = "EXPIRY_GAIN"
+    EXPIRY_LOSS = "EXPIRY_LOSS"
+    EXPIRY_FLAT = "EXPIRY_FLAT"
+    PENDING = "PENDING"
+
+
 @dataclass(frozen=True)
 class BuyPointBar:
     trade_date: date

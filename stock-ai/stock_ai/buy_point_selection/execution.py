@@ -7,7 +7,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Sequence
 
-from .models import BuyPointBar
+from .models import BuyPointBar, OutcomeLabel
 from .planning import PricePlan
 
 
@@ -41,6 +41,10 @@ class SimulatedTrade:
     exit_legs: tuple[ExitLeg, ...]
     net_pnl: Decimal
     net_return: Decimal | None
+    outcome: OutcomeLabel
+    mfe: Decimal | None
+    mae: Decimal | None
+    intraday_order_ambiguous: bool
 
     @property
     def exit_reason(self) -> str | None:
@@ -71,6 +75,10 @@ def _empty_trade(plan: PricePlan, sector_code: str, status: str) -> SimulatedTra
         exit_legs=(),
         net_pnl=Decimal("0"),
         net_return=None,
+        outcome=OutcomeLabel.NOT_TRIGGERED,
+        mfe=None,
+        mae=None,
+        intraday_order_ambiguous=False,
     )
 
 
@@ -120,12 +128,19 @@ def _simulate_exits(
     holding_bars: Sequence[BuyPointBar],
     entry_price: Decimal,
     costs: ExecutionCosts,
-) -> tuple[ExitLeg, ...]:
+) -> tuple[tuple[ExitLeg, ...], bool]:
     remaining = plan.maximum_shares
     protection = plan.invalidation_price
     target_taken = False
+    intraday_order_ambiguous = False
     exits: list[ExitLeg] = []
     for session_index, value in enumerate(holding_bars):
+        if (
+            not target_taken
+            and value.low <= protection
+            and value.high >= plan.target_2r
+        ):
+            intraday_order_ambiguous = True
         if value.low <= protection:
             raw_price = value.open if value.open <= protection else protection
             reason = "BREAKEVEN_STOP" if target_taken else "STOP"
@@ -152,7 +167,46 @@ def _simulate_exits(
             exits.append(_sell_leg(value, value.close, remaining, "TIME_EXIT", costs))
             remaining = 0
             break
-    return tuple(exits)
+    return tuple(exits), intraday_order_ambiguous
+
+
+def _excursions(
+    holding_bars: Sequence[BuyPointBar],
+    entry_price: Decimal,
+    exits: Sequence[ExitLeg],
+) -> tuple[Decimal, Decimal]:
+    final_date = exits[-1].exit_date if exits else None
+    observed = tuple(
+        value
+        for value in holding_bars
+        if final_date is None or value.trade_date <= final_date
+    )
+    mfe = max(
+        (max(Decimal("0"), value.high / entry_price - Decimal("1")) for value in observed),
+        default=Decimal("0"),
+    )
+    mae = max(
+        (max(Decimal("0"), Decimal("1") - value.low / entry_price) for value in observed),
+        default=Decimal("0"),
+    )
+    return mfe, mae
+
+
+def _outcome(
+    exits: Sequence[ExitLeg],
+    net_return: Decimal | None,
+) -> OutcomeLabel:
+    if any(value.reason == "TARGET_2R" for value in exits):
+        return OutcomeLabel.TARGET_2R_FIRST
+    if any(value.reason == "STOP" for value in exits):
+        return OutcomeLabel.STOP_FIRST
+    if net_return is None:
+        return OutcomeLabel.PENDING
+    if net_return > 0:
+        return OutcomeLabel.EXPIRY_GAIN
+    if net_return < 0:
+        return OutcomeLabel.EXPIRY_LOSS
+    return OutcomeLabel.EXPIRY_FLAT
 
 
 def simulate_plan(
@@ -188,7 +242,13 @@ def simulate_plan(
 
     entry_gross = entry_price * Decimal(plan.maximum_shares)
     entry_fees = _commission(entry_gross, resolved_costs)
-    exits = _simulate_exits(plan, ordered[entry_index : entry_index + 5], entry_price, resolved_costs)
+    holding_bars = ordered[entry_index : entry_index + 5]
+    exits, intraday_order_ambiguous = _simulate_exits(
+        plan,
+        holding_bars,
+        entry_price,
+        resolved_costs,
+    )
     exited_quantity = sum(value.quantity for value in exits)
     closed = exited_quantity == plan.maximum_shares
     if closed:
@@ -203,6 +263,7 @@ def simulate_plan(
         net_pnl = Decimal("0")
         net_return = None
         status = "OPEN"
+    mfe, mae = _excursions(holding_bars, entry_price, exits)
     return SimulatedTrade(
         structure_id=plan.structure_id,
         code=plan.code,
@@ -215,6 +276,10 @@ def simulate_plan(
         exit_legs=exits,
         net_pnl=net_pnl,
         net_return=net_return,
+        outcome=_outcome(exits, net_return),
+        mfe=mfe,
+        mae=mae,
+        intraday_order_ambiguous=intraday_order_ambiguous,
     )
 
 
