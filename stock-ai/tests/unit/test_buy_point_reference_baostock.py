@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from types import SimpleNamespace
 
 import pytest
 
@@ -168,3 +169,43 @@ def test_baostock_ignores_index_rows_before_six_digit_duplicate_check() -> None:
         ("000001", "平安银行"),
         ("600001", "普通股份"),
     ]
+
+
+def test_baostock_sets_a_bounded_timeout_on_the_sdk_socket() -> None:
+    class Socket:
+        def __init__(self) -> None:
+            self.timeouts = []
+
+        def settimeout(self, value):
+            self.timeouts.append(value)
+
+    socket = Socket()
+    sdk = FakeBaoStock(rows=[("sh.600001", "1", "普通股份")])
+    provider = BaoStockReferenceProvider(
+        sdk=sdk,
+        socket_context=SimpleNamespace(default_socket=socket),
+        socket_timeout_seconds=12.5,
+    )
+
+    provider.fetch_security_statuses(date(2025, 8, 6))
+
+    assert socket.timeouts == [12.5]
+
+
+def test_baostock_suppresses_sdk_console_noise(capsys) -> None:
+    class NoisyBaoStock(FakeBaoStock):
+        def login(self):
+            print("login success with provider noise")
+            return super().login()
+
+        def logout(self):
+            print("logout success with provider noise")
+            return super().logout()
+
+    provider = BaoStockReferenceProvider(
+        sdk=NoisyBaoStock(rows=[("sh.600001", "1", "普通股份")])
+    )
+
+    provider.fetch_security_statuses(date(2025, 8, 6))
+
+    assert capsys.readouterr().out == ""

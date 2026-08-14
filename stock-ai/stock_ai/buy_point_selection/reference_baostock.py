@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from contextlib import redirect_stdout
 from datetime import date
+from io import StringIO
 from typing import Any
 
 from .reference_sources import ProviderFailure, SecurityStatus
@@ -29,14 +31,30 @@ def _is_sh_sz_equity(value: object) -> bool:
 class BaoStockReferenceProvider:
     provider_name = "BAOSTOCK"
 
-    def __init__(self, *, sdk: Any | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        sdk: Any | None = None,
+        socket_context: Any | None = None,
+        socket_timeout_seconds: float = 15.0,
+    ) -> None:
         if sdk is None:
             import baostock as bs
+            import baostock.common.context as bs_context
 
             sdk = bs
+            socket_context = socket_context or bs_context
+        if socket_timeout_seconds <= 0:
+            raise ValueError("socket_timeout_seconds must be positive")
         self._sdk = sdk
+        self._socket_context = socket_context
+        self._socket_timeout_seconds = socket_timeout_seconds
 
     def fetch_security_statuses(self, day: date) -> tuple[SecurityStatus, ...]:
+        with redirect_stdout(StringIO()):
+            return self._fetch_security_statuses(day)
+
+    def _fetch_security_statuses(self, day: date) -> tuple[SecurityStatus, ...]:
         try:
             login = self._sdk.login()
         except Exception as exc:
@@ -50,6 +68,9 @@ class BaoStockReferenceProvider:
 
         try:
             try:
+                socket = getattr(self._socket_context, "default_socket", None)
+                if socket is not None:
+                    socket.settimeout(self._socket_timeout_seconds)
                 result = self._sdk.query_all_stock(day=day.isoformat())
                 if str(getattr(result, "error_code", "")) != "0":
                     raise ProviderFailure(

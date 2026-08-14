@@ -157,13 +157,27 @@ def _sync_sector(
     existing = repository.memberships_between(start, end)
     existing_codes = {row.code for row in existing}
     checkpoints = repository.load_checkpoints("CNINFO", "sector", codes)
+
+    def checkpoint_has_current_empty_result(checkpoint: ReferenceCheckpoint) -> bool:
+        try:
+            membership_count = int(checkpoint.details.get("membership_count", -1))
+        except (TypeError, ValueError):
+            return False
+        return (
+            membership_count == 0
+            and checkpoint.updated_at.date() == request.captured_at.date()
+        )
+
     pending = tuple(
         code
         for code in codes
         if not (
             (checkpoint := checkpoints.get(code))
             and checkpoint.status == "COMPLETE"
-            and code in existing_codes
+            and (
+                code in existing_codes
+                or checkpoint_has_current_empty_result(checkpoint)
+            )
         )
     )
     new_rows: list[SectorMembership] = []

@@ -278,6 +278,34 @@ def test_complete_sector_checkpoint_without_fact_is_refetched() -> None:
     assert next(run for run in runs if run.dataset == "sector").status == "COMPLETE"
 
 
+def test_same_day_complete_empty_sector_checkpoint_is_not_reprobed() -> None:
+    day = date(2025, 8, 6)
+    repository = MemoryRepository()
+    repository.save_checkpoint(
+        ReferenceCheckpoint(
+            "CNINFO",
+            "sector",
+            "600001",
+            None,
+            "COMPLETE",
+            None,
+            {"membership_count": 0},
+            NOW,
+        )
+    )
+    cninfo = FakeCninfoProvider()
+
+    sync_alternative_reference_data(
+        _request(day, size=1),
+        cninfo=cninfo,
+        baostock=FakeBaoStockProvider(),
+        repository=repository,
+        sleep=lambda _: None,
+    )
+
+    assert cninfo.industry_calls == []
+
+
 def test_missing_announcement_page_fails_only_announcement_dataset() -> None:
     day = date(2025, 8, 6)
     cninfo = FakeCninfoProvider()
