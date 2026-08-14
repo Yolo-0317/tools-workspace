@@ -135,6 +135,18 @@ class BuyableWinner:
     first_rejection: str | None = None
 
 
+@dataclass(frozen=True)
+class CaseReview:
+    signal_dates: tuple[date, ...]
+    outcome_cutoff: date
+    rule_version: str
+    policy_hash: str
+    replay: CaseSignalReplay
+    outcomes: tuple[CaseOutcome, ...]
+    winners: tuple[BuyableWinner, ...]
+    risk_coverage_complete: bool
+
+
 def classify_near_miss(
     trace: GateTrace,
     *,
