@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from contextlib import redirect_stdout
+from contextlib import contextmanager, redirect_stdout
 from datetime import date
 from io import StringIO
 from typing import Any
@@ -49,12 +49,31 @@ class BaoStockReferenceProvider:
         self._sdk = sdk
         self._socket_context = socket_context
         self._socket_timeout_seconds = socket_timeout_seconds
+        self._session_active = False
+
+    @contextmanager
+    def session(self):
+        if self._session_active:
+            yield self
+            return
+        with redirect_stdout(StringIO()):
+            self._login()
+        self._session_active = True
+        try:
+            yield self
+        finally:
+            with redirect_stdout(StringIO()):
+                self._logout()
+            self._session_active = False
 
     def fetch_security_statuses(self, day: date) -> tuple[SecurityStatus, ...]:
         with redirect_stdout(StringIO()):
-            return self._fetch_security_statuses(day)
+            if self._session_active:
+                return self._query_security_statuses(day)
+            with self.session():
+                return self._query_security_statuses(day)
 
-    def _fetch_security_statuses(self, day: date) -> tuple[SecurityStatus, ...]:
+    def _login(self) -> None:
         try:
             login = self._sdk.login()
         except Exception as exc:
@@ -65,64 +84,65 @@ class BaoStockReferenceProvider:
             raise ProviderFailure(
                 self.provider_name, "login", "PROVIDER_AUTH_FAILED"
             )
+        socket = getattr(self._socket_context, "default_socket", None)
+        if socket is not None:
+            socket.settimeout(self._socket_timeout_seconds)
 
+    def _logout(self) -> None:
         try:
-            try:
-                socket = getattr(self._socket_context, "default_socket", None)
-                if socket is not None:
-                    socket.settimeout(self._socket_timeout_seconds)
-                result = self._sdk.query_all_stock(day=day.isoformat())
-                if str(getattr(result, "error_code", "")) != "0":
-                    raise ProviderFailure(
-                        self.provider_name, "query_all_stock", "PROVIDER_UNAVAILABLE"
-                    )
-                fields = [str(value) for value in getattr(result, "fields", ())]
-                required = {"code", "tradeStatus", "code_name"}
-                if not required.issubset(fields):
+            self._sdk.logout()
+        except Exception:
+            pass
+
+    def _query_security_statuses(self, day: date) -> tuple[SecurityStatus, ...]:
+        try:
+            result = self._sdk.query_all_stock(day=day.isoformat())
+            if str(getattr(result, "error_code", "")) != "0":
+                raise ProviderFailure(
+                    self.provider_name, "query_all_stock", "PROVIDER_UNAVAILABLE"
+                )
+            fields = [str(value) for value in getattr(result, "fields", ())]
+            required = {"code", "tradeStatus", "code_name"}
+            if not required.issubset(fields):
+                raise ProviderFailure(
+                    self.provider_name,
+                    "query_all_stock",
+                    "PROVIDER_SCHEMA_CHANGED",
+                )
+            positions = {name: fields.index(name) for name in required}
+            rows: list[SecurityStatus] = []
+            seen: set[str] = set()
+            while result.next():
+                raw = list(result.get_row_data())
+                if len(raw) != len(fields):
                     raise ProviderFailure(
                         self.provider_name,
                         "query_all_stock",
                         "PROVIDER_SCHEMA_CHANGED",
                     )
-                positions = {name: fields.index(name) for name in required}
-                rows: list[SecurityStatus] = []
-                seen: set[str] = set()
-                while result.next():
-                    raw = list(result.get_row_data())
-                    if len(raw) != len(fields):
-                        raise ProviderFailure(
-                            self.provider_name,
-                            "query_all_stock",
-                            "PROVIDER_SCHEMA_CHANGED",
-                        )
-                    raw_code = raw[positions["code"]]
-                    if not _is_sh_sz_equity(raw_code):
-                        continue
-                    code = _code6(raw_code)
-                    if code in seen:
-                        raise ProviderFailure(
-                            self.provider_name,
-                            "query_all_stock",
-                            "PROVIDER_SCHEMA_CHANGED",
-                        )
-                    seen.add(code)
-                    rows.append(
-                        SecurityStatus(
-                            code=code,
-                            name=str(raw[positions["code_name"]]).strip(),
-                            trade_status=str(raw[positions["tradeStatus"]]).strip(),
-                            trade_date=day,
-                        )
+                raw_code = raw[positions["code"]]
+                if not _is_sh_sz_equity(raw_code):
+                    continue
+                code = _code6(raw_code)
+                if code in seen:
+                    raise ProviderFailure(
+                        self.provider_name,
+                        "query_all_stock",
+                        "PROVIDER_SCHEMA_CHANGED",
                     )
-                return tuple(sorted(rows, key=lambda row: row.code))
-            except ProviderFailure:
-                raise
-            except Exception as exc:
-                raise ProviderFailure(
-                    self.provider_name, "query_all_stock", "PROVIDER_UNAVAILABLE"
-                ) from exc
-        finally:
-            try:
-                self._sdk.logout()
-            except Exception:
-                pass
+                seen.add(code)
+                rows.append(
+                    SecurityStatus(
+                        code=code,
+                        name=str(raw[positions["code_name"]]).strip(),
+                        trade_status=str(raw[positions["tradeStatus"]]).strip(),
+                        trade_date=day,
+                    )
+                )
+            return tuple(sorted(rows, key=lambda row: row.code))
+        except ProviderFailure:
+            raise
+        except Exception as exc:
+            raise ProviderFailure(
+                self.provider_name, "query_all_stock", "PROVIDER_UNAVAILABLE"
+            ) from exc

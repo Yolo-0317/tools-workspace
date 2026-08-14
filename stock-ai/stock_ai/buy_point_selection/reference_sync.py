@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
+from contextlib import nullcontext
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal
@@ -538,10 +539,13 @@ def sync_alternative_reference_data(
     runs.append(sector)
 
     refresh_days = _recent_days(request)
-    for day in request.trade_dates:
-        st = _sync_st_day(request, day, baostock, repository, sleep, refresh_days)
-        repository.save_sync_run(st)
-        runs.append(st)
+    session_factory = getattr(baostock, "session", None)
+    session_manager = session_factory() if callable(session_factory) else nullcontext()
+    with session_manager:
+        for day in request.trade_dates:
+            st = _sync_st_day(request, day, baostock, repository, sleep, refresh_days)
+            repository.save_sync_run(st)
+            runs.append(st)
 
     previous = None
     for day in request.trade_dates:

@@ -209,3 +209,16 @@ def test_baostock_suppresses_sdk_console_noise(capsys) -> None:
     provider.fetch_security_statuses(date(2025, 8, 6))
 
     assert capsys.readouterr().out == ""
+
+
+def test_baostock_session_reuses_one_login_across_many_dates() -> None:
+    sdk = FakeBaoStock(rows=[("sh.600001", "1", "普通股份")])
+    provider = BaoStockReferenceProvider(sdk=sdk)
+
+    with provider.session():
+        provider.fetch_security_statuses(date(2025, 8, 5))
+        provider.fetch_security_statuses(date(2025, 8, 6))
+
+    assert sdk.login_calls == 1
+    assert sdk.logout_calls == 1
+    assert sdk.requested_days == ["2025-08-05", "2025-08-06"]

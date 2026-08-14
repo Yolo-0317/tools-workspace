@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
@@ -164,6 +165,16 @@ class FakeBaoStockProvider:
     def __init__(self, missing: int = 0) -> None:
         self.calls: list[date] = []
         self.missing = missing
+        self.session_entries = 0
+        self.session_exits = 0
+
+    @contextmanager
+    def session(self):
+        self.session_entries += 1
+        try:
+            yield self
+        finally:
+            self.session_exits += 1
 
     def fetch_security_statuses(self, day):
         self.calls.append(day)
@@ -188,11 +199,12 @@ def _request(*days: date, size: int = 2, refresh: int = 2):
 def test_sync_marks_daily_st_and_announcement_coverage_complete() -> None:
     request = _request(date(2025, 8, 5), date(2025, 8, 6))
     repository = MemoryRepository()
+    baostock = FakeBaoStockProvider()
 
     runs = sync_alternative_reference_data(
         request,
         cninfo=FakeCninfoProvider(),
-        baostock=FakeBaoStockProvider(),
+        baostock=baostock,
         repository=repository,
         sleep=lambda _: None,
     )
@@ -203,6 +215,7 @@ def test_sync_marks_daily_st_and_announcement_coverage_complete() -> None:
         ("announcement", "COMPLETE"),
     }
     assert repository.membership_queries == 1
+    assert baostock.session_entries == 1 and baostock.session_exits == 1
 
 
 def test_complete_checkpoint_skips_old_partition_but_refreshes_last_two() -> None:
