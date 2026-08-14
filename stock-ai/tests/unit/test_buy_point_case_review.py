@@ -12,8 +12,12 @@ from stock_ai.buy_point_selection.case_review import (
     CaseOutcome,
     CaseSignalReplay,
     ConditionalShadowDecision,
+    ConditionalShadowOpportunity,
     GateTrace,
+    OpportunityEpisode,
     attribute_buyable_winners,
+    build_conditional_two_r_shadow,
+    build_opportunity_episodes,
     classify_near_miss,
     classify_case_success,
     classify_conditional_two_r_shadow,
@@ -169,6 +173,118 @@ def test_conditional_two_r_shadow_rejects_non_diagnostic_inputs(
 
     assert not decision.admitted
     assert decision.tier is None
+
+
+def test_overlapping_same_code_signals_form_one_opportunity_episode() -> None:
+    """Catches repeated active signals being counted as independent trades."""
+    first = _case_candidate(
+        date(2026, 8, 3),
+        valid_through=date(2026, 8, 5),
+    )
+    overlapping = _case_candidate(
+        date(2026, 8, 4),
+        valid_through=date(2026, 8, 6),
+    )
+
+    episodes = build_opportunity_episodes((overlapping, first))
+
+    assert len(episodes) == 1
+    assert isinstance(episodes[0], OpportunityEpisode)
+    assert episodes[0].representative == first
+    assert episodes[0].member_signal_dates == (
+        date(2026, 8, 3),
+        date(2026, 8, 4),
+    )
+
+
+def test_signal_after_representative_validity_starts_new_episode() -> None:
+    """Catches an expired plan suppressing a later independent opportunity."""
+    first = _case_candidate(
+        date(2026, 8, 3),
+        valid_through=date(2026, 8, 5),
+    )
+    later = _case_candidate(
+        date(2026, 8, 6),
+        valid_through=date(2026, 8, 10),
+    )
+
+    episodes = build_opportunity_episodes((first, later))
+
+    assert len(episodes) == 2
+    assert tuple(value.representative for value in episodes) == (first, later)
+
+
+def test_conditional_cohort_contains_only_admitted_episode_representatives() -> None:
+    """Catches rejected raw signals leaking into the episode-level shadow cohort."""
+    admitted = _case_candidate(date(2026, 8, 3), code="600001")
+    rejected = _case_candidate(date(2026, 8, 3), code="600002")
+    episodes = build_opportunity_episodes((admitted, rejected))
+    traces = {
+        (date(2026, 8, 3), "600001"): GateTrace(
+            "600001",
+            date(2026, 8, 3),
+            ("INSUFFICIENT_TWO_R_SPACE",),
+            (),
+            {"nearest_resistance": Decimal("11.50")},
+        ),
+        (date(2026, 8, 3), "600002"): GateTrace(
+            "600002",
+            date(2026, 8, 3),
+            ("INSUFFICIENT_TWO_R_SPACE",),
+            (),
+            {"nearest_resistance": Decimal("11.49")},
+        ),
+    }
+
+    cohort = build_conditional_two_r_shadow(episodes, traces)
+
+    assert len(cohort) == 1
+    assert isinstance(cohort[0], ConditionalShadowOpportunity)
+    assert cohort[0].candidate == admitted
+    assert cohort[0].effective_resistance_r == Decimal("1.50")
+
+
+def test_different_codes_never_share_an_episode() -> None:
+    """Catches the active-plan index merging across securities."""
+    first = _case_candidate(date(2026, 8, 3), code="600001")
+    second = _case_candidate(date(2026, 8, 4), code="600002")
+
+    assert len(build_opportunity_episodes((first, second))) == 2
+
+
+def test_tier_and_setup_changes_do_not_split_an_active_episode() -> None:
+    """Catches detector labels overriding the one-stock one-opportunity rule."""
+    first = _case_candidate(
+        date(2026, 8, 3),
+        valid_through=date(2026, 8, 5),
+    )
+    second = _case_candidate(
+        date(2026, 8, 4),
+        valid_through=date(2026, 8, 6),
+        tier="STRICT_SHADOW",
+    )
+    second = replace(
+        second,
+        setup=replace(second.setup, setup_type=SetupType.PRE_BREAKOUT),
+        plan=replace(second.plan, setup_type=SetupType.PRE_BREAKOUT),
+    )
+
+    episodes = build_opportunity_episodes((first, second))
+
+    assert len(episodes) == 1
+    assert episodes[0].representative == first
+    assert episodes[0].member_tiers == ("NEAR_MISS", "STRICT_SHADOW")
+
+
+def test_exact_duplicate_candidate_is_recorded_once() -> None:
+    """Catches duplicate replay rows inflating episode membership."""
+    candidate = _case_candidate(date(2026, 8, 3))
+
+    episodes = build_opportunity_episodes((candidate, candidate))
+
+    assert len(episodes) == 1
+    assert episodes[0].member_signal_dates == (date(2026, 8, 3),)
+    assert episodes[0].member_tiers == ("NEAR_MISS",)
 
 
 def test_exactly_one_allowed_soft_gate_enters_near_miss() -> None:

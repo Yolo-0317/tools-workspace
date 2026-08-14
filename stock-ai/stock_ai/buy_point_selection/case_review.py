@@ -6,6 +6,7 @@ from dataclasses import dataclass, replace
 from datetime import date
 from decimal import Decimal, InvalidOperation, ROUND_CEILING, ROUND_FLOOR
 from bisect import bisect_right
+import hashlib
 from typing import Mapping, Sequence
 
 from stock_ai.market_codes import is_sh_sz_main_board_code, normalize_code6
@@ -90,6 +91,21 @@ class CaseCandidate:
     executable_shares: int = 0
 
 
+@dataclass(frozen=True)
+class OpportunityEpisode:
+    episode_id: str
+    representative: CaseCandidate
+    member_signal_dates: tuple[date, ...]
+    member_tiers: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ConditionalShadowOpportunity:
+    episode_id: str
+    candidate: CaseCandidate
+    effective_resistance_r: Decimal
+
+
 def classify_conditional_two_r_shadow(
     candidate: CaseCandidate,
     trace: GateTrace,
@@ -119,6 +135,91 @@ def classify_conditional_two_r_shadow(
         "TWO_R_CONDITIONAL_SHADOW" if admitted else None,
         effective_r,
     )
+
+
+def _episode_id(representative: CaseCandidate) -> str:
+    payload = ":".join(
+        (
+            normalize_code6(representative.code),
+            representative.signal_date.isoformat(),
+            representative.plan.structure_id,
+        )
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+
+
+def build_opportunity_episodes(
+    candidates: Sequence[CaseCandidate],
+) -> tuple[OpportunityEpisode, ...]:
+    """Merge same-code signals while the earliest plan remains active."""
+    ordered = sorted(
+        candidates,
+        key=lambda value: (
+            value.signal_date,
+            normalize_code6(value.code),
+            value.ranking_key,
+            value.tier,
+            value.plan.structure_id,
+        ),
+    )
+    episodes: list[OpportunityEpisode] = []
+    latest_by_code: dict[str, int] = {}
+    for candidate in ordered:
+        code = normalize_code6(candidate.code)
+        episode_index = latest_by_code.get(code)
+        if episode_index is not None:
+            episode = episodes[episode_index]
+            if (
+                candidate.signal_date
+                <= episode.representative.plan.valid_through_trade_date
+            ):
+                episodes[episode_index] = replace(
+                    episode,
+                    member_signal_dates=tuple(
+                        sorted(
+                            set(episode.member_signal_dates)
+                            | {candidate.signal_date}
+                        )
+                    ),
+                    member_tiers=tuple(
+                        dict.fromkeys((*episode.member_tiers, candidate.tier))
+                    ),
+                )
+                continue
+        latest_by_code[code] = len(episodes)
+        episodes.append(
+            OpportunityEpisode(
+                _episode_id(candidate),
+                candidate,
+                (candidate.signal_date,),
+                (candidate.tier,),
+            )
+        )
+    return tuple(episodes)
+
+
+def build_conditional_two_r_shadow(
+    episodes: Sequence[OpportunityEpisode],
+    traces: Mapping[tuple[date, str], GateTrace],
+) -> tuple[ConditionalShadowOpportunity, ...]:
+    """Classify episode representatives without consulting outcomes."""
+    cohort: list[ConditionalShadowOpportunity] = []
+    for episode in episodes:
+        candidate = episode.representative
+        trace = traces.get((candidate.signal_date, normalize_code6(candidate.code)))
+        if trace is None:
+            continue
+        decision = classify_conditional_two_r_shadow(candidate, trace)
+        if not decision.admitted or decision.effective_resistance_r is None:
+            continue
+        cohort.append(
+            ConditionalShadowOpportunity(
+                episode.episode_id,
+                candidate,
+                decision.effective_resistance_r,
+            )
+        )
+    return tuple(sorted(cohort, key=lambda value: value.episode_id))
 
 
 @dataclass(frozen=True)
