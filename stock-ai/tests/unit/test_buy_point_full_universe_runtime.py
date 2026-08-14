@@ -7,13 +7,14 @@ from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
 
-from stock_ai.buy_point_selection.models import BuyPointBar, MarketSnapshot, SelectionPolicy
-from stock_ai.buy_point_selection.planning import RiskBudget
+from stock_ai.buy_point_selection.models import BuyPointBar, MarketSnapshot, SelectionPolicy, SetupType
+from stock_ai.buy_point_selection.planning import PlanDecision, PricePlan, RiskBudget
 from stock_ai.buy_point_selection.reference_data import (
     ReferenceCoverage,
     SectorMembership,
 )
 from stock_ai.buy_point_selection.service import LegacyShadow
+from stock_ai.buy_point_selection.validation import OutcomeCalibration, calibration_key
 
 
 SCRIPT = Path(__file__).parents[3] / "a-share-short-term-trading" / "scripts" / "select_short_term_candidates.py"
@@ -121,6 +122,35 @@ def _platform_bars(code_offset: int = 0) -> tuple[BuyPointBar, ...]:
     return tuple(bars)
 
 
+def _calibration() -> OutcomeCalibration:
+    key = calibration_key(SetupType.PRE_BREAKOUT, None, None)
+    return OutcomeCalibration(
+        key=key,
+        setup_type=SetupType.PRE_BREAKOUT,
+        market_status=None,
+        sector_resonating=None,
+        data_end=date(2026, 5, 29),
+        total_plans=45,
+        triggered_trades=40,
+        untriggered_plans=5,
+        target_2r_rate=Decimal("0.50"),
+        target_2r_interval=(Decimal("0.35"), Decimal("0.65")),
+        stop_first_rate=Decimal("0.25"),
+        stop_first_interval=(Decimal("0.14"), Decimal("0.40")),
+        net_expectancy=Decimal("0.01"),
+        positive_rolling_window_ratio=Decimal("0.80"),
+        frozen_test_expectancy=Decimal("0.005"),
+        average_profit_loss_ratio=Decimal("1.8"),
+        profit_factor=Decimal("1.5"),
+        mfe_median=Decimal("0.06"),
+        mfe_p25=Decimal("0.03"),
+        mae_median=Decimal("0.02"),
+        mae_p75=Decimal("0.035"),
+        promoted=True,
+        reasons=(),
+    )
+
+
 def test_missing_point_in_time_coverage_downgrades_valid_setups_and_legacy_stays_shadow() -> None:
     """Catches technical strength or legacy research overriding missing historical facts."""
     analysis_date = _platform_bars()[-1].trade_date
@@ -175,6 +205,58 @@ def test_symbol_without_analysis_date_bar_cannot_form_a_new_plan() -> None:
     )
     assert result.qualified == ()
     assert result.rejection_counts["LATEST_BAR_MISSING"] == 6
+
+
+def test_complete_scan_uses_passed_historical_calibration(monkeypatch) -> None:
+    """Catches the manual full-universe path dropping calibration before ranking."""
+    analysis_date = _platform_bars()[-1].trade_date
+    panel = {f"60000{index}": _platform_bars(index) for index in range(1, 7)}
+    memberships = {
+        code: SectorMembership(code, "S1", "虚构行业", date(2025, 1, 1), None, "test")
+        for code in panel
+    }
+    calibration = _calibration()
+
+    def valid_price_plan(setup, bars, budget, market_status, policy):
+        return PlanDecision(
+            PricePlan(
+                structure_id=f"structure-{setup.code}",
+                code=setup.code,
+                setup_type=setup.setup_type,
+                signal_date=setup.analysis_date,
+                signal_close=bars[-1].close,
+                trigger_price=Decimal("10.40"),
+                invalidation_price=Decimal("10.10"),
+                target_2r=Decimal("11.00"),
+                risk_distance=Decimal("0.30"),
+                risk_reward_ratio=Decimal("2"),
+                maximum_shares=300,
+                valid_through_trade_date=setup.analysis_date + timedelta(days=2),
+            ),
+            (),
+        )
+
+    monkeypatch.setattr(
+        "stock_ai.buy_point_selection.service.build_price_plan",
+        valid_price_plan,
+    )
+    result = MODULE.scan_buy_point_universe(
+        panel=panel,
+        analysis_date=analysis_date,
+        holding_codes=set(),
+        risk_flags_by_code={},
+        memberships=memberships,
+        coverage=ReferenceCoverage(analysis_date, True, True, True),
+        market_snapshot=MarketSnapshot(2, 55.0, 0.95, True),
+        risk_budget=RiskBudget(Decimal("500"), Decimal("4000"), Decimal("40000")),
+        account_fresh=True,
+        existing_structure_ids=frozenset(),
+        legacy_shadow=(),
+        policy=SelectionPolicy(),
+        calibrations={calibration.key: calibration},
+    )
+    assert result.qualified
+    assert result.qualified[0].calibration is calibration
 
 
 def test_missing_market_evidence_becomes_freeze_snapshot_instead_of_crashing() -> None:

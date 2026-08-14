@@ -11,7 +11,7 @@ import json
 from io import StringIO
 from pathlib import Path
 import sys
-from typing import Callable, Protocol
+from typing import Callable, Mapping, Protocol
 
 from collections import Counter
 from decimal import Decimal
@@ -74,6 +74,7 @@ from stock_ai.buy_point_selection.service import (
 )
 from stock_ai.market_codes import is_sh_sz_main_board_code, normalize_code6
 from stock_ai.buy_point_selection.validation import (
+    OutcomeCalibration,
     load_historical_release,
     policy_hash as buy_point_policy_hash,
 )
@@ -299,6 +300,7 @@ def scan_buy_point_universe(
     existing_structure_ids: frozenset[str],
     legacy_shadow: tuple[LegacyShadow, ...],
     policy: BuyPointPolicy | None = None,
+    calibrations: Mapping[str, OutcomeCalibration] | None = None,
 ) -> BuyPointSelectionResult:
     resolved = policy or BuyPointPolicy()
     sector_values = _sector_snapshots(panel, memberships, resolved)
@@ -370,6 +372,7 @@ def scan_buy_point_universe(
             risk_coverage_complete=coverage.st_complete and coverage.announcement_complete,
             account_fresh=account_fresh,
             policy=resolved,
+            calibrations=calibrations or {},
         )
     )
     combined = Counter(result.rejection_counts)
@@ -447,6 +450,11 @@ class DefaultRuntime:
             mysql_url,
         )
         policy = BuyPointPolicy()
+        historical_release = load_historical_release(
+            BUY_POINT_VALIDATION_ARTIFACT,
+            expected_rule_version=policy.rule_version,
+            expected_policy_hash=buy_point_policy_hash(policy),
+        )
         panel = load_main_board_panel(self._engine, analysis_date)
         if not panel:
             raise CliInputError("主板全市场日线面板为空")
@@ -521,6 +529,7 @@ class DefaultRuntime:
             existing_structure_ids=existing,
             legacy_shadow=tuple(legacy_rows),
             policy=policy,
+            calibrations=historical_release.calibrations,
         )
 
         chips: dict[str, ChipEvidence] = {}
@@ -558,11 +567,6 @@ class DefaultRuntime:
                 total_exposure=market_value,
                 sector_exposure=sector_exposure,
             )
-        historical_release = load_historical_release(
-            BUY_POINT_VALIDATION_ARTIFACT,
-            expected_rule_version=policy.rule_version,
-            expected_policy_hash=buy_point_policy_hash(policy),
-        )
         dependencies = MaterializationDependencies(
             chips_by_code=chips,
             account=account_evidence,
@@ -653,7 +657,14 @@ def main(
         return 2
 
     if args.output == "json":
-        print(json.dumps(_report_dict(report), ensure_ascii=False, indent=2))
+        print(
+            json.dumps(
+                _report_dict(report),
+                ensure_ascii=False,
+                indent=2,
+                default=str,
+            )
+        )
     else:
         if isinstance(report, BuyPointRuntimeReport):
             print(render_buy_point_runtime_report(report))

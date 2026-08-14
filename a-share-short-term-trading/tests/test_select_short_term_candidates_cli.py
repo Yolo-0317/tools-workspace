@@ -13,6 +13,7 @@ from short_term_trading.buy_point_selection_service import (
     BuyPointRuntimeReport,
 )
 from stock_ai.buy_point_selection.models import CandidateTier, SetupType
+from stock_ai.buy_point_selection.validation import OutcomeCalibration, calibration_key
 from stock_ai.short_term_selection import BASELINE_POLICY, STRICT_B
 
 
@@ -145,11 +146,36 @@ def test_json_output_serializes_new_tiers_and_setup_types(capsys) -> None:
                 missing_fields=(),
                 plan=None,
                 maximum_shares=0,
+                calibration=OutcomeCalibration(
+                    key=calibration_key(SetupType.PRE_BREAKOUT, None, None),
+                    setup_type=SetupType.PRE_BREAKOUT,
+                    market_status=None,
+                    sector_resonating=None,
+                    data_end=date(2026, 8, 7),
+                    total_plans=45,
+                    triggered_trades=40,
+                    untriggered_plans=5,
+                    target_2r_rate=MODULE.Decimal("0.50"),
+                    target_2r_interval=(MODULE.Decimal("0.35"), MODULE.Decimal("0.65")),
+                    stop_first_rate=MODULE.Decimal("0.25"),
+                    stop_first_interval=(MODULE.Decimal("0.14"), MODULE.Decimal("0.40")),
+                    net_expectancy=MODULE.Decimal("0.01"),
+                    positive_rolling_window_ratio=MODULE.Decimal("0.80"),
+                    frozen_test_expectancy=MODULE.Decimal("0.005"),
+                    average_profit_loss_ratio=MODULE.Decimal("1.8"),
+                    profit_factor=MODULE.Decimal("1.5"),
+                    mfe_median=MODULE.Decimal("0.06"),
+                    mfe_p25=MODULE.Decimal("0.03"),
+                    mae_median=MODULE.Decimal("0.02"),
+                    mae_p75=MODULE.Decimal("0.035"),
+                    promoted=True,
+                    reasons=(),
+                ),
             )
             return BuyPointRuntimeReport(
                 analysis_date,
                 trading_date,
-                "buy-point-selection-3.0.0",
+                "buy-point-selection-3.1.0",
                 "SHADOW",
                 (),
                 (),
@@ -167,6 +193,8 @@ def test_json_output_serializes_new_tiers_and_setup_types(capsys) -> None:
     payload = json.loads(capsys.readouterr().out)
     assert payload["shadow"][0]["tier"] == "SHADOW"
     assert payload["shadow"][0]["setup_type"] == "PRE_BREAKOUT"
+    assert payload["shadow"][0]["calibration"]["triggered_trades"] == 40
+    assert payload["shadow"][0]["calibration"]["net_expectancy"] == "0.01"
 
 
 def test_unknown_calendar_fails_closed(capsys) -> None:

@@ -28,7 +28,11 @@ from stock_ai.buy_point_selection.service import (
     LegacyShadow,
     SelectionItem,
 )
-from stock_ai.buy_point_selection.validation import HistoricalRelease
+from stock_ai.buy_point_selection.validation import (
+    HistoricalRelease,
+    OutcomeCalibration,
+    calibration_key,
+)
 
 
 ANALYSIS_DATE = date(2026, 8, 10)
@@ -69,6 +73,35 @@ def _price_plan() -> PricePlan:
     )
 
 
+def _calibration() -> OutcomeCalibration:
+    key = calibration_key(SetupType.PRE_BREAKOUT, None, None)
+    return OutcomeCalibration(
+        key=key,
+        setup_type=SetupType.PRE_BREAKOUT,
+        market_status=None,
+        sector_resonating=None,
+        data_end=date(2026, 8, 9),
+        total_plans=45,
+        triggered_trades=40,
+        untriggered_plans=5,
+        target_2r_rate=Decimal("0.50"),
+        target_2r_interval=(Decimal("0.35"), Decimal("0.65")),
+        stop_first_rate=Decimal("0.25"),
+        stop_first_interval=(Decimal("0.14"), Decimal("0.40")),
+        net_expectancy=Decimal("0.01"),
+        positive_rolling_window_ratio=Decimal("0.80"),
+        frozen_test_expectancy=Decimal("0.005"),
+        average_profit_loss_ratio=Decimal("1.8"),
+        profit_factor=Decimal("1.5"),
+        mfe_median=Decimal("0.06"),
+        mfe_p25=Decimal("0.03"),
+        mae_median=Decimal("0.02"),
+        mae_p75=Decimal("0.035"),
+        promoted=True,
+        reasons=(),
+    )
+
+
 def _result() -> BuyPointSelectionResult:
     item = SelectionItem(
         code="600001",
@@ -81,6 +114,7 @@ def _result() -> BuyPointSelectionResult:
         plan=_price_plan(),
         missing_fields=(),
         reasons=(),
+        calibration=_calibration(),
     )
     return BuyPointSelectionResult(
         qualified=(item,),
@@ -117,6 +151,7 @@ def _deps(
             POLICY.rule_version,
             "policy-hash",
             () if historical_live else ("HISTORICAL_PROMOTION_FAILED",),
+            {_calibration().key: _calibration()},
         ),
         forward_gate=ForwardGateSummary(20, 20, 0, forward_live),
         evidence_refs_by_code={"600001": (EVIDENCE_ID,)},
@@ -159,7 +194,13 @@ def test_unpromoted_release_keeps_every_new_plan_shadow_only() -> None:
     assert report.release_mode == "SHADOW"
     assert report.formal == ()
     assert report.shadow[0].maximum_shares == 0
-    assert all("最大股数" not in line for line in render_buy_point_runtime_report(report).splitlines()[1:])
+    text = render_buy_point_runtime_report(report)
+    assert "2R概率 35%-65%" in text
+    assert "止损概率 14%-40%" in text
+    assert "触发价 10.01" in text
+    assert "2R目标 10.61" in text
+    assert "无交易资格" in text
+    assert all("最大股数" not in line for line in text.splitlines()[1:])
 
 
 def test_cost_overhang_before_two_r_downgrades_candidate() -> None:
@@ -303,3 +344,19 @@ def test_symbol_evidence_failure_persists_observe_candidate_without_integrity_vi
     assert repository.rows[0][0].selection_tier == "OBSERVE"
     assert repository.rows[0][1] is None
     assert repository.forward_run.integrity_violations == ()
+
+
+def test_candidate_audit_payload_contains_calibration_identity() -> None:
+    """Catches calibrated ranking evidence disappearing from the append-only candidate row."""
+    report = materialize_buy_point_selection(_result(), _deps(), _request())
+
+    class Repository:
+        def save_buy_point_run(self, rows, forward_run):
+            self.rows = rows
+
+    repository = Repository()
+    persist_buy_point_runtime(report, _result(), _deps(), _request(), repository)
+    metrics = repository.rows[0][0].sector_metrics
+    assert metrics["calibration_key"] == _calibration().key
+    assert metrics["calibration_triggered_trades"] == 40
+    assert metrics["calibration_data_end"] == "2026-08-09"

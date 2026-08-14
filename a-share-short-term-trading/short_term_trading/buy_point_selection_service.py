@@ -17,7 +17,7 @@ from stock_ai.buy_point_selection.models import (
 )
 from stock_ai.buy_point_selection.planning import PricePlan
 from stock_ai.buy_point_selection.service import BuyPointSelectionResult, SelectionItem
-from stock_ai.buy_point_selection.validation import HistoricalRelease
+from stock_ai.buy_point_selection.validation import HistoricalRelease, OutcomeCalibration
 
 from .contracts import CandidateV3, ForwardSelectionRunV1, PlanEventV1, TradePlanV3
 from .repositories.planning import ForwardGateSummary
@@ -68,6 +68,7 @@ class BuyPointRuntimeItem:
     missing_fields: tuple[str, ...]
     plan: TradePlanV3 | None
     maximum_shares: int | None
+    calibration: OutcomeCalibration | None = None
 
 
 @dataclass(frozen=True)
@@ -200,6 +201,7 @@ def materialize_buy_point_selection(
                     (),
                     plan,
                     0,
+                    item.calibration,
                 )
             )
             continue
@@ -228,6 +230,7 @@ def materialize_buy_point_selection(
                     missing,
                     plan,
                     None,
+                    item.calibration,
                 )
             )
             continue
@@ -251,6 +254,7 @@ def materialize_buy_point_selection(
                 (),
                 plan,
                 item.plan.maximum_shares,
+                item.calibration,
             )
         )
         nominal = item.plan.trigger_price * Decimal(item.plan.maximum_shares)
@@ -272,6 +276,7 @@ def materialize_buy_point_selection(
                 item.missing_fields,
                 None,
                 None,
+                item.calibration,
             )
         )
     for item in result.shadow:
@@ -285,6 +290,7 @@ def materialize_buy_point_selection(
                 (),
                 None,
                 0,
+                None,
             )
         )
     return BuyPointRuntimeReport(
@@ -299,10 +305,45 @@ def materialize_buy_point_selection(
     )
 
 
+def _calibration_text(value: OutcomeCalibration | None) -> str:
+    if value is None:
+        return ""
+    return " ".join(
+        (
+            f"2R概率 {value.target_2r_interval[0]:.0%}-{value.target_2r_interval[1]:.0%}",
+            f"止损概率 {value.stop_first_interval[0]:.0%}-{value.stop_first_interval[1]:.0%}",
+            f"样本 {value.triggered_trades}",
+            f"净期望 {value.net_expectancy:.2%}",
+        )
+    )
+
+
+def _research_plan_text(item: BuyPointRuntimeItem) -> str:
+    if item.plan is None:
+        return ""
+    return " ".join(
+        (
+            f"触发价 {item.plan.trigger_price:.2f}",
+            f"失效价 {item.plan.invalidation_price:.2f}",
+            f"2R目标 {item.plan.target_2r:.2f}",
+        )
+    )
+
+
 def render_buy_point_runtime_report(report: BuyPointRuntimeReport) -> str:
     lines = [f"发布模式: {report.release_mode}", "正式候选"]
     lines.extend(
-        f"{item.code} {item.name} 触发价 {item.plan.trigger_price:.2f} 最大股数 {item.maximum_shares}"
+        " ".join(
+            part
+            for part in (
+                item.code,
+                item.name,
+                _research_plan_text(item),
+                _calibration_text(item.calibration),
+                f"最大股数 {item.maximum_shares}",
+            )
+            if part
+        )
         for item in report.formal
         if item.plan is not None
     )
@@ -310,14 +351,35 @@ def render_buy_point_runtime_report(report: BuyPointRuntimeReport) -> str:
         lines.append("无")
     lines.append("准备中观察")
     lines.extend(
-        f"{item.code} {item.name} 无交易资格 {item.reason_code}"
+        " ".join(
+            part
+            for part in (
+                item.code,
+                item.name,
+                "无交易资格",
+                item.reason_code,
+                _calibration_text(item.calibration),
+            )
+            if part
+        )
         for item in report.observe
     )
     if not report.observe:
         lines.append("无")
     lines.append("影子研究")
     lines.extend(
-        f"{item.code} {item.name} 无交易资格 {item.reason_code}"
+        " ".join(
+            part
+            for part in (
+                item.code,
+                item.name,
+                "无交易资格",
+                item.reason_code,
+                _research_plan_text(item),
+                _calibration_text(item.calibration),
+            )
+            if part
+        )
         for item in report.shadow
     )
     if not report.shadow:
@@ -401,7 +463,35 @@ def persist_buy_point_runtime(
             sector_metrics={
                 "percentile": str(source.sector_percentile)
                 if source.sector_percentile is not None
-                else None
+                else None,
+                "calibration_key": (
+                    source.calibration.key if source.calibration is not None else None
+                ),
+                "calibration_triggered_trades": (
+                    source.calibration.triggered_trades
+                    if source.calibration is not None
+                    else None
+                ),
+                "calibration_target_2r_interval": (
+                    [str(value) for value in source.calibration.target_2r_interval]
+                    if source.calibration is not None
+                    else None
+                ),
+                "calibration_stop_first_interval": (
+                    [str(value) for value in source.calibration.stop_first_interval]
+                    if source.calibration is not None
+                    else None
+                ),
+                "calibration_net_expectancy": (
+                    str(source.calibration.net_expectancy)
+                    if source.calibration is not None
+                    else None
+                ),
+                "calibration_data_end": (
+                    source.calibration.data_end.isoformat()
+                    if source.calibration is not None
+                    else None
+                ),
             },
             missing_fields=runtime.missing_fields,
             rejected_reasons=(
