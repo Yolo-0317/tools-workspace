@@ -12,12 +12,26 @@ from typing import Mapping
 from .case_review import CaseCandidate, CaseOutcome, CaseReview, summarize_case_outcomes
 
 
+CASE_REPORT_SCHEMA = "buy-point-case-review-v2"
+
+
 def _decimal(value: Decimal | None) -> str | None:
     return None if value is None else str(value)
 
 
-def case_identity(review: CaseReview) -> str:
+def _mean_decimal(values: list[Decimal]) -> str | None:
+    if not values:
+        return None
+    return str(sum(values, Decimal("0")) / Decimal(len(values)))
+
+
+def case_identity(
+    review: CaseReview,
+    *,
+    schema: str = CASE_REPORT_SCHEMA,
+) -> str:
     identity = {
+        "schema": schema,
         "signal_dates": [value.isoformat() for value in sorted(review.signal_dates)],
         "outcome_cutoff": review.outcome_cutoff.isoformat(),
         "rule_version": review.rule_version,
@@ -37,6 +51,7 @@ def _candidate_payload(value: CaseCandidate) -> dict[str, object]:
         "soft_reason": value.soft_reason,
         "executable_shares": 0,
         "plan": {
+            "structure_id": value.plan.structure_id,
             "trigger_price": str(value.plan.trigger_price),
             "invalidation_price": str(value.plan.invalidation_price),
             "target_2r": str(value.plan.target_2r),
@@ -60,6 +75,7 @@ def _outcome_payload(value: CaseOutcome) -> dict[str, object]:
         "mae": _decimal(value.mae),
         "stop_first": value.stop_first,
         "intraday_order_ambiguous": value.intraday_order_ambiguous,
+        "structure_id": value.structure_id,
     }
 
 
@@ -84,8 +100,70 @@ def case_payload(review: CaseReview) -> dict[str, object]:
         )
     )
     winners = tuple(sorted(review.winners, key=lambda value: value.code))
+    outcome_by_identity = {
+        (
+            value.code,
+            value.signal_date,
+            value.tier,
+            value.structure_id,
+        ): value
+        for value in outcomes
+    }
+    episodes = []
+    episode_outcomes: list[CaseOutcome] = []
+    episode_outcome_by_id: dict[str, CaseOutcome] = {}
+    for episode in sorted(review.episodes, key=lambda value: value.episode_id):
+        representative = episode.representative
+        outcome = outcome_by_identity.get(
+            (
+                representative.code,
+                representative.signal_date,
+                representative.tier,
+                representative.plan.structure_id,
+            )
+        )
+        if outcome is not None:
+            episode_outcomes.append(outcome)
+            episode_outcome_by_id[episode.episode_id] = outcome
+        episodes.append(
+            {
+                "episode_id": episode.episode_id,
+                "representative": {
+                    "code": representative.code,
+                    "signal_date": representative.signal_date.isoformat(),
+                    "tier": representative.tier,
+                    "structure_id": representative.plan.structure_id,
+                },
+                "member_signal_dates": [
+                    value.isoformat() for value in episode.member_signal_dates
+                ],
+                "member_tiers": list(episode.member_tiers),
+                "outcome": None if outcome is None else _outcome_payload(outcome),
+            }
+        )
+    conditional = [
+        {
+            "episode_id": value.episode_id,
+            "code": value.candidate.code,
+            "signal_date": value.candidate.signal_date.isoformat(),
+            "tier": "TWO_R_CONDITIONAL_SHADOW",
+            "effective_resistance_r": str(value.effective_resistance_r),
+            "executable_shares": 0,
+        }
+        for value in sorted(
+            review.conditional_two_r_shadow,
+            key=lambda item: item.episode_id,
+        )
+    ]
+    episode_summary = summarize_case_outcomes(tuple(episode_outcomes))
+    conditional_outcomes = tuple(
+        episode_outcome_by_id[value.episode_id]
+        for value in review.conditional_two_r_shadow
+        if value.episode_id in episode_outcome_by_id
+    )
+    conditional_summary = summarize_case_outcomes(conditional_outcomes)
     return {
-        "schema": "buy-point-case-review-v1",
+        "schema": CASE_REPORT_SCHEMA,
         "status": "CASE_ANALYSIS_ONLY",
         "trade_permission": "NO-TRADE",
         "case_identity": case_identity(review),
@@ -99,6 +177,8 @@ def case_payload(review: CaseReview) -> dict[str, object]:
         ],
         "candidates": [_candidate_payload(value) for value in candidates],
         "outcomes": [_outcome_payload(value) for value in outcomes],
+        "opportunity_episodes": episodes,
+        "conditional_two_r_shadow": conditional,
         "winners": [
             {
                 "code": value.code,
@@ -116,6 +196,36 @@ def case_payload(review: CaseReview) -> dict[str, object]:
             "outcome_resolved": summary.resolved,
             "outcome_successes": summary.successes,
             "outcome_failures": summary.failures,
+            "raw_candidates": len(candidates),
+            "opportunity_episodes": len(episodes),
+            "raw_outcome_successes": summary.successes,
+            "episode_outcome_resolved": episode_summary.resolved,
+            "episode_outcome_successes": episode_summary.successes,
+            "episode_triggered": sum(
+                value.trigger_date is not None for value in episode_outcomes
+            ),
+            "episode_expired": sum(
+                value.status == "EXPIRED" for value in episode_outcomes
+            ),
+            "episode_stop_first": sum(
+                value.stop_first for value in episode_outcomes
+            ),
+            "episode_mean_net_return": _mean_decimal(
+                [
+                    value.net_return
+                    for value in episode_outcomes
+                    if value.net_return is not None
+                ]
+            ),
+            "episode_mean_mfe": _mean_decimal(
+                [value.mfe for value in episode_outcomes if value.mfe is not None]
+            ),
+            "episode_mean_mae": _mean_decimal(
+                [value.mae for value in episode_outcomes if value.mae is not None]
+            ),
+            "conditional_episodes": len(review.conditional_two_r_shadow),
+            "conditional_outcome_resolved": conditional_summary.resolved,
+            "conditional_outcome_successes": conditional_summary.successes,
             "strict_candidates": len(review.replay.strict_shadow),
             "near_misses": len(review.replay.near_misses),
             "buyable_winners": len(winners),
@@ -136,6 +246,7 @@ def render_case_markdown(review: CaseReview) -> str:
         "# 短窗口买点案例复盘",
         "",
         "状态：`CASE_ANALYSIS_ONLY`",
+        "交易权限：`NO-TRADE`",
         "",
         "本报告只能用于发现策略问题，不能用于规则晋级或交易。",
         "",
@@ -146,8 +257,9 @@ def render_case_markdown(review: CaseReview) -> str:
         f"- 规则版本：{payload['rule_version']}",
         f"- 风险覆盖完整：{'是' if payload['risk_coverage_complete'] else '否（NO-TRADE）'}",
         "",
-        "## 结果",
+        "## 原始信号（可能重复）",
         "",
+        f"- 原始候选：{metrics['raw_candidates']}只",
         f"- 严格影子：{metrics['strict_candidates']}只",
         f"- 单软门近失：{metrics['near_misses']}只",
         f"- 已解决成功：{metrics['outcome_successes']}/{metrics['outcome_resolved']}",
@@ -157,6 +269,29 @@ def render_case_markdown(review: CaseReview) -> str:
             if metrics["recall_complete"]
             else "- 可买上涨股召回：不可计算（信号日数据不完整）"
         ),
+        "",
+        "## 去重交易机会",
+        "",
+        f"- 机会数：{metrics['opportunity_episodes']}个",
+        (
+            f"- 已解决成功：{metrics['episode_outcome_successes']}"
+            f"/{metrics['episode_outcome_resolved']}"
+        ),
+        f"- 已触发：{metrics['episode_triggered']}个",
+        f"- 未触发过期：{metrics['episode_expired']}个",
+        f"- 止损优先：{metrics['episode_stop_first']}个",
+        f"- 平均净收益：{metrics['episode_mean_net_return']}",
+        f"- 平均 MFE：{metrics['episode_mean_mfe']}",
+        f"- 平均 MAE：{metrics['episode_mean_mae']}",
+        "",
+        "## 1.5R—2R 条件影子组",
+        "",
+        f"- 影子机会：{metrics['conditional_episodes']}个",
+        (
+            f"- 已解决成功：{metrics['conditional_outcome_successes']}"
+            f"/{metrics['conditional_outcome_resolved']}"
+        ),
+        "- 可执行仓位：0（研究专用）",
         "",
         "## 漏选可买上涨股",
         "",
