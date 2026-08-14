@@ -188,3 +188,23 @@ def test_historical_holdings_use_daily_snapshot_then_append_only_events() -> Non
     assert holdings[first] == frozenset({"600001"})
     assert holdings[second] == frozenset({"600002"})
     assert complete == {first: True, second: True}
+
+
+def test_runtime_uses_latest_complete_market_date_as_effective_cutoff() -> None:
+    """Catches a requested future cutoff being presented as complete market data."""
+    signal = date(2026, 8, 3)
+    latest = date(2026, 8, 5)
+    inputs = CaseReviewInputs(
+        trading_dates=(signal, date(2026, 8, 4), latest),
+        bars_by_code={},
+        memberships=(),
+        risk_flags=(),
+        coverage_by_date={signal: ReferenceCoverage(signal, True, True, True)},
+        market_snapshots={signal: MarketSnapshot(3, 60.0, 1.1, True)},
+        holding_codes_by_date={signal: frozenset()},
+    )
+    runtime = DefaultRuntime(input_loader=lambda *_: inputs)
+
+    review = runtime.build_review(signal, signal, date(2026, 8, 6))
+
+    assert review.outcome_cutoff == latest

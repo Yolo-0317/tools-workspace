@@ -66,6 +66,12 @@ class DefaultRuntime:
         )
         if not signal_dates:
             raise ValueError("信号窗口没有交易日")
+        complete_dates = tuple(
+            value for value in inputs.trading_dates if value <= cutoff
+        )
+        if not complete_dates:
+            raise ValueError("结果截止日前没有完整市场数据")
+        effective_cutoff = complete_dates[-1]
         replay = replay_case_signals(
             signal_dates=signal_dates,
             trading_dates=inputs.trading_dates,
@@ -94,7 +100,7 @@ class DefaultRuntime:
             evaluate_case_plan(
                 candidate,
                 inputs.bars_by_code.get(candidate.code, ()),
-                outcome_cutoff=cutoff,
+                outcome_cutoff=effective_cutoff,
             )
             for candidate in candidates
         )
@@ -102,7 +108,7 @@ class DefaultRuntime:
         outcome_dates = tuple(
             value
             for value in inputs.trading_dates
-            if final_signal_date < value <= cutoff
+            if final_signal_date < value <= effective_cutoff
         )
         winners = find_buyable_winners(
             signal_date=final_signal_date,
@@ -122,7 +128,7 @@ class DefaultRuntime:
         selection_policy = SelectionPolicy()
         return CaseReview(
             signal_dates=signal_dates,
-            outcome_cutoff=cutoff,
+            outcome_cutoff=effective_cutoff,
             rule_version=selection_policy.rule_version,
             policy_hash=policy_hash(selection_policy),
             replay=replay,
