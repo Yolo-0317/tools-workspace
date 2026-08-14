@@ -261,6 +261,32 @@ def test_universe_by_date_uses_one_query_and_keeps_recently_suspended_main_board
     }
 
 
+def test_universe_merges_suffixed_and_unsuffixed_code_lifespans() -> None:
+    """Catches a short duplicate code history shrinking early PIT universe coverage."""
+    module = _load_script()
+    start = date(2023, 12, 26)
+    end = date(2025, 2, 7)
+    engine = _Engine(
+        [
+            {
+                "ts_code": "600001",
+                "first_date": date(2023, 6, 29),
+                "last_date": end,
+            },
+            {
+                "ts_code": "600001.SH",
+                "first_date": date(2025, 1, 2),
+                "last_date": end,
+            },
+        ]
+    )
+
+    universe = module._universe_by_date(engine, (start, end))
+
+    assert universe[start] == frozenset({"600001"})
+    assert universe[end] == frozenset({"600001"})
+
+
 def test_provider_failure_prints_only_safe_error_code(monkeypatch, capsys) -> None:
     module = _load_script()
     engine = object()

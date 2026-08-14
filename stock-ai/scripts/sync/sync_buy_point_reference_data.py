@@ -143,7 +143,11 @@ def _universe_by_date(
             if isinstance(raw_last, date)
             else date.fromisoformat(str(raw_last)[:10])
         )
-        lifespans[code] = (first, last)
+        current = lifespans.get(code)
+        lifespans[code] = (
+            min(first, current[0]) if current is not None else first,
+            max(last, current[1]) if current is not None else last,
+        )
     return {
         day: frozenset(
             code
