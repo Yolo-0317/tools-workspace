@@ -11,10 +11,12 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any, Sequence
 
-from stock_ai.buy_point_selection.models import SelectionPolicy, SetupType
+from stock_ai.buy_point_selection.models import OutcomeLabel, SelectionPolicy, SetupType
 from stock_ai.buy_point_selection.validation import (
     TradeObservation,
     ValidationError,
+    build_outcome_calibrations,
+    calibrations_payload,
     chronological_split,
     compute_metrics,
     evaluate_promotion,
@@ -48,16 +50,52 @@ def _load_observations(path: Path | None) -> tuple[TradeObservation, ...]:
     if path is None:
         return ()
     payload = json.loads(path.read_text(encoding="utf-8"))
-    return tuple(
-        TradeObservation(
-            exit_date=date.fromisoformat(str(value["exit_date"])),
-            setup_type=SetupType(str(value["setup_type"])),
-            sector_code=str(value["sector_code"]),
-            net_return=Decimal(str(value["net_return"])),
-            net_pnl=Decimal(str(value["net_pnl"])),
-        )
-        for value in payload
+    required = frozenset(
+        {
+            "exit_date",
+            "setup_type",
+            "sector_code",
+            "net_return",
+            "net_pnl",
+            "outcome",
+            "market_status",
+            "sector_resonating",
+            "mfe",
+            "mae",
+        }
     )
+    observations: list[TradeObservation] = []
+    for index, value in enumerate(payload):
+        if not isinstance(value, dict):
+            raise ValidationError(f"observation {index} must be an object")
+        missing = sorted(required - set(value))
+        if missing:
+            raise ValidationError(
+                f"observation {index} missing required fields: {','.join(missing)}"
+            )
+        observations.append(
+            TradeObservation(
+                exit_date=date.fromisoformat(str(value["exit_date"])),
+                setup_type=SetupType(str(value["setup_type"])),
+                sector_code=str(value["sector_code"]),
+                net_return=Decimal(str(value["net_return"])),
+                net_pnl=Decimal(str(value["net_pnl"])),
+                outcome=OutcomeLabel(str(value["outcome"])),
+                market_status=str(value["market_status"]),
+                sector_resonating=bool(value["sector_resonating"]),
+                mfe=(
+                    Decimal(str(value["mfe"]))
+                    if value["mfe"] is not None
+                    else None
+                ),
+                mae=(
+                    Decimal(str(value["mae"]))
+                    if value["mae"] is not None
+                    else None
+                ),
+            )
+        )
+    return tuple(observations)
 
 
 def _split_bounds(split) -> dict[str, Any]:
@@ -107,7 +145,18 @@ def main(argv: Sequence[str] | None = None) -> int:
                 trading_dates=(*split.train, *split.validation),
                 point_in_time_complete=args.point_in_time_complete,
             )
-            _print_json({"technical_core_metrics": metrics_payload(metrics), "split_bounds": bounds})
+            calibrations = build_outcome_calibrations(
+                research,
+                test_dates=(),
+                trading_dates=(*split.train, *split.validation),
+            )
+            _print_json(
+                {
+                    "technical_core_metrics": metrics_payload(metrics),
+                    "calibrations": calibrations_payload(calibrations),
+                    "split_bounds": bounds,
+                }
+            )
             return 0
 
         if not args.profile.exists():
@@ -136,8 +185,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             point_in_time_complete=args.point_in_time_complete,
         )
         decision = evaluate_promotion(metrics)
+        calibrations = build_outcome_calibrations(
+            observations,
+            test_dates=split.test,
+            trading_dates=trading_dates,
+        )
         payload = {
-            "schema": "buy-point-selection-validation-v1",
+            "schema": "buy-point-selection-validation-v2",
             "rule_version": policy.rule_version,
             "policy_hash": current_hash,
             "split_bounds": bounds,
@@ -148,6 +202,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 for key, value in decision.setup_decisions.items()
             },
             "technical_core_metrics": metrics_payload(metrics),
+            "calibrations": calibrations_payload(calibrations),
             "fully_gated_metrics": (
                 metrics_payload(metrics) if args.point_in_time_complete else None
             ),

@@ -73,7 +73,8 @@ def test_freeze_then_run_writes_separate_non_promotable_technical_metrics(tmp_pa
         ]
     ) == 0
     payload = json.loads(artifact.read_text(encoding="utf-8"))
-    assert payload["schema"] == "buy-point-selection-validation-v1"
+    assert payload["schema"] == "buy-point-selection-validation-v2"
+    assert payload["calibrations"] == {}
     assert payload["promoted"] is False
     assert "POINT_IN_TIME_COVERAGE_INCOMPLETE" in payload["reasons"]
     assert payload["technical_core_metrics"] is not None
@@ -103,3 +104,36 @@ def test_run_rejects_a_tampered_frozen_hash(tmp_path, capsys) -> None:
     )
     assert result == 2
     assert "hash mismatch" in capsys.readouterr().err.lower()
+
+
+def test_observation_without_path_fields_fails_closed(tmp_path, capsys) -> None:
+    """Catches legacy net-return-only rows entering calibrated validation."""
+    module = _load_module()
+    dates = tmp_path / "dates.json"
+    observations = tmp_path / "observations.json"
+    _write_dates(dates)
+    observations.write_text(
+        json.dumps(
+            [
+                {
+                    "exit_date": "2026-01-02",
+                    "setup_type": "PRE_BREAKOUT",
+                    "sector_code": "S1",
+                    "net_return": "0.01",
+                    "net_pnl": "100",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    result = module.main(
+        [
+            "--research-train-validation",
+            "--trading-dates",
+            str(dates),
+            "--observations",
+            str(observations),
+        ]
+    )
+    assert result == 2
+    assert "outcome" in capsys.readouterr().err.lower()

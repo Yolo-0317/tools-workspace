@@ -91,7 +91,7 @@ class DetectedSetup:
 
 @dataclass(frozen=True)
 class SelectionPolicy:
-    rule_version: str = "buy-point-selection-3.0.0"
+    rule_version: str = "buy-point-selection-3.1.0"
     min_history: int = 60
     min_average_amount5_qian: Decimal = Decimal("100000")
     max_signal_gain_pct: Decimal = Decimal("5")
