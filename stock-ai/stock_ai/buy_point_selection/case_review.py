@@ -244,6 +244,7 @@ class CaseOutcome:
     close_return: Decimal | None = None
     stop_first: bool = False
     intraday_order_ambiguous: bool = False
+    structure_id: str = ""
 
     @property
     def success(self) -> bool | None:
@@ -284,6 +285,8 @@ class CaseReview:
     outcomes: tuple[CaseOutcome, ...]
     winners: tuple[BuyableWinner, ...]
     risk_coverage_complete: bool
+    episodes: tuple[OpportunityEpisode, ...] = ()
+    conditional_two_r_shadow: tuple[ConditionalShadowOpportunity, ...] = ()
 
 
 def classify_near_miss(
@@ -379,6 +382,7 @@ def evaluate_case_plan(
         close_return=close_return,
         stop_first=trade.outcome.value == "STOP_FIRST",
         intraday_order_ambiguous=trade.intraday_order_ambiguous,
+        structure_id=candidate.plan.structure_id,
     )
 
 

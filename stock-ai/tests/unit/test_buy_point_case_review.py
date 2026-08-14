@@ -684,6 +684,7 @@ def test_case_plan_uses_two_entry_sessions_and_five_post_trigger_sessions() -> N
     assert partial.success is None
     assert complete.status == "CLOSED"
     assert complete.success is True
+    assert complete.structure_id == candidate.plan.structure_id
 
 
 def test_buyable_winner_excludes_unbuyable_and_hard_veto_cases() -> None:

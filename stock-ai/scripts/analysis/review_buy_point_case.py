@@ -20,8 +20,14 @@ if str(ROOT) not in sys.path:
 
 from stock_ai.buy_point_selection.case_report import write_case_revision
 from stock_ai.buy_point_selection.case_review import (
+    CaseCandidate,
     CaseReview,
+    CaseSignalReplay,
+    ConditionalShadowOpportunity,
+    OpportunityEpisode,
     attribute_buyable_winners,
+    build_conditional_two_r_shadow,
+    build_opportunity_episodes,
     evaluate_case_plan,
     find_buyable_winners,
     replay_case_signals,
@@ -51,6 +57,19 @@ class CaseReviewInputs:
     market_snapshots: Mapping[date, MarketSnapshot]
     holding_codes_by_date: Mapping[date, frozenset[str]]
     holdings_complete_by_date: Mapping[date, bool] = field(default_factory=dict)
+
+
+def _build_case_research_layers(
+    replay: CaseSignalReplay,
+) -> tuple[
+    tuple[CaseCandidate, ...],
+    tuple[OpportunityEpisode, ...],
+    tuple[ConditionalShadowOpportunity, ...],
+]:
+    candidates = (*replay.strict_shadow, *replay.near_misses)
+    episodes = build_opportunity_episodes(candidates)
+    conditional = build_conditional_two_r_shadow(episodes, replay.traces)
+    return candidates, episodes, conditional
 
 
 class DefaultRuntime:
@@ -97,7 +116,7 @@ class DefaultRuntime:
                     sorted(set(replay.incomplete_dates) | incomplete_holdings)
                 ),
             )
-        candidates = (*replay.strict_shadow, *replay.near_misses)
+        candidates, episodes, conditional = _build_case_research_layers(replay)
         outcomes = tuple(
             evaluate_case_plan(
                 candidate,
@@ -140,6 +159,8 @@ class DefaultRuntime:
             outcomes=outcomes,
             winners=attributed,
             risk_coverage_complete=risk_coverage_complete,
+            episodes=episodes,
+            conditional_two_r_shadow=conditional,
         )
 
 

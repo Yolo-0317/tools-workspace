@@ -8,13 +8,25 @@ from sqlalchemy import create_engine, text
 from scripts.analysis.review_buy_point_case import (
     CaseReviewInputs,
     DefaultRuntime,
+    _build_case_research_layers,
     _load_holdings_by_date,
     _merge_missing_index_bars,
     main,
 )
-from stock_ai.buy_point_selection.models import BuyPointBar, MarketSnapshot
+from stock_ai.buy_point_selection.models import (
+    BuyPointBar,
+    DetectedSetup,
+    MarketSnapshot,
+    SetupType,
+)
+from stock_ai.buy_point_selection.planning import PricePlan
 from stock_ai.buy_point_selection.reference_data import ReferenceCoverage
-from stock_ai.buy_point_selection.case_review import CaseReview, CaseSignalReplay
+from stock_ai.buy_point_selection.case_review import (
+    CaseCandidate,
+    CaseReview,
+    CaseSignalReplay,
+    GateTrace,
+)
 from stock_ai.buy_point_selection.reference_sources import IndexBar
 
 
@@ -34,6 +46,69 @@ class FakeRuntime:
             winners=(),
             risk_coverage_complete=False,
         )
+
+
+def _research_candidate(signal_date: date, valid_through: date) -> CaseCandidate:
+    setup = DetectedSetup(
+        "600001",
+        SetupType.TREND_PULLBACK,
+        signal_date,
+        signal_date - timedelta(days=2),
+        Decimal("9.99"),
+        Decimal("9.10"),
+        Decimal("0.40"),
+        (),
+        {},
+    )
+    return CaseCandidate(
+        "600001",
+        signal_date,
+        setup,
+        PricePlan(
+            f"structure-{signal_date.isoformat()}",
+            "600001",
+            setup.setup_type,
+            signal_date,
+            Decimal("9.80"),
+            Decimal("10.00"),
+            Decimal("9.00"),
+            Decimal("12.00"),
+            Decimal("1.00"),
+            Decimal("2.00"),
+            100,
+            valid_through,
+        ),
+        "NEAR_MISS",
+        "INSUFFICIENT_TWO_R_SPACE",
+        (Decimal("0.25"), Decimal("-0.40"), Decimal("-200000"), "600001"),
+    )
+
+
+def test_research_layers_keep_raw_candidates_and_build_one_episode() -> None:
+    """Catches runtime assembly dropping audit rows or recounting active signals."""
+    first = _research_candidate(date(2026, 8, 3), date(2026, 8, 5))
+    second = _research_candidate(date(2026, 8, 4), date(2026, 8, 6))
+    replay = CaseSignalReplay(
+        {
+            (date(2026, 8, 3), "600001"): GateTrace(
+                "600001",
+                date(2026, 8, 3),
+                ("INSUFFICIENT_TWO_R_SPACE",),
+                (),
+                {"nearest_resistance": Decimal("11.50")},
+            )
+        },
+        (),
+        (),
+        (first, second),
+    )
+
+    candidates, episodes, conditional = _build_case_research_layers(replay)
+
+    assert candidates == (first, second)
+    assert len(episodes) == 1
+    assert len(conditional) == 1
+    assert conditional[0].episode_id == episodes[0].episode_id
 
 
 def test_cli_rejects_outcome_cutoff_before_signal_end(tmp_path, capsys) -> None:
@@ -119,6 +194,8 @@ def test_default_runtime_builds_review_from_bounded_injected_inputs() -> None:
     assert review.signal_dates == signal_dates
     assert review.outcomes == ()
     assert review.winners == ()
+    assert review.episodes == ()
+    assert review.conditional_two_r_shadow == ()
 
 
 def test_missing_historical_holdings_marks_signal_date_incomplete() -> None:
