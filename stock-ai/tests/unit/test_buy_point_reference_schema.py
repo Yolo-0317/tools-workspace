@@ -20,3 +20,18 @@ def test_advisor_link_migration_adds_nullable_plan_id_without_rewriting_cycles()
     assert "idx_advisor_selection_plan" in sql
     assert "update advisor_decision_cycles" not in sql
     assert "delete from advisor_decision_cycles" not in sql
+
+
+def test_provider_audit_migration_is_additive_and_has_checkpoints() -> None:
+    """Catches a provider rollout without resumable, inspectable coverage state."""
+    sql = (
+        SQL_DIR / "017_buy_point_reference_provider_audit.sql"
+    ).read_text(encoding="utf-8").lower()
+
+    for column in ("provider", "expected_count", "coverage_ratio", "details_json"):
+        assert column in sql
+    assert "create table if not exists buy_point_reference_checkpoints" in sql
+    assert "primary key (provider, dataset, partition_key)" in sql
+    assert "information_schema.columns" in sql
+    assert "drop table" not in sql
+    assert "delete from" not in sql

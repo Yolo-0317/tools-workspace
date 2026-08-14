@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
+from decimal import Decimal
 import hashlib
 import json
 from typing import Callable, Iterable, Literal, Mapping, Protocol, Sequence
@@ -59,6 +60,22 @@ class ReferenceSyncRun:
     row_count: int
     error_code: str | None
     captured_at: datetime
+    provider: str = "TUSHARE"
+    expected_count: int | None = None
+    coverage_ratio: Decimal | None = None
+    details: Mapping[str, object] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class ReferenceCheckpoint:
+    provider: str
+    dataset: str
+    partition_key: str
+    cursor_value: str | None
+    status: Literal["RUNNING", "COMPLETE", "FAILED"]
+    error_code: str | None
+    details: Mapping[str, object]
+    updated_at: datetime
 
 
 class ReferenceRepository(Protocol):
@@ -69,6 +86,16 @@ class ReferenceRepository(Protocol):
     def upsert_risk_flags(self, rows: Sequence[RiskFlag], captured_at: datetime) -> int: ...
 
     def save_sync_run(self, run: ReferenceSyncRun) -> None: ...
+
+    def save_checkpoint(self, checkpoint: ReferenceCheckpoint) -> None: ...
+
+    def load_checkpoint(
+        self, provider: str, dataset: str, partition_key: str
+    ) -> ReferenceCheckpoint | None: ...
+
+    def memberships_between(
+        self, start: date, end: date
+    ) -> tuple[SectorMembership, ...]: ...
 
 
 class SQLReferenceRepository:
@@ -149,14 +176,101 @@ class SQLReferenceRepository:
     def save_sync_run(self, run: ReferenceSyncRun) -> None:
         statement = text(
             "INSERT INTO buy_point_reference_sync_runs "
-            "(run_id, dataset, start_date, end_date, status, row_count, error_code, captured_at) "
-            "VALUES (:run_id, :dataset, :start_date, :end_date, :status, :row_count, "
-            ":error_code, :captured_at) ON DUPLICATE KEY UPDATE "
+            "(run_id, dataset, provider, start_date, end_date, status, row_count, "
+            "expected_count, coverage_ratio, error_code, details_json, captured_at) "
+            "VALUES (:run_id, :dataset, :provider, :start_date, :end_date, :status, "
+            ":row_count, :expected_count, :coverage_ratio, :error_code, :details_json, "
+            ":captured_at) ON DUPLICATE KEY UPDATE "
             "status=VALUES(status), row_count=VALUES(row_count), "
-            "error_code=VALUES(error_code), captured_at=VALUES(captured_at)"
+            "provider=VALUES(provider), expected_count=VALUES(expected_count), "
+            "coverage_ratio=VALUES(coverage_ratio), error_code=VALUES(error_code), "
+            "details_json=VALUES(details_json), captured_at=VALUES(captured_at)"
+        )
+        values = dict(run.__dict__)
+        values.pop("details")
+        values["details_json"] = json.dumps(
+            dict(run.details), ensure_ascii=False, separators=(",", ":"), default=str
         )
         with self._begin() as connection:
-            connection.execute(statement, run.__dict__)
+            connection.execute(statement, values)
+
+    def save_checkpoint(self, checkpoint: ReferenceCheckpoint) -> None:
+        statement = text(
+            "INSERT INTO buy_point_reference_checkpoints "
+            "(provider, dataset, partition_key, cursor_value, status, error_code, "
+            "details_json, updated_at) VALUES (:provider, :dataset, :partition_key, "
+            ":cursor_value, :status, :error_code, :details_json, :updated_at) "
+            "ON DUPLICATE KEY UPDATE cursor_value=VALUES(cursor_value), "
+            "status=VALUES(status), error_code=VALUES(error_code), "
+            "details_json=VALUES(details_json), updated_at=VALUES(updated_at)"
+        )
+        values = dict(checkpoint.__dict__)
+        values.pop("details")
+        values["details_json"] = json.dumps(
+            dict(checkpoint.details), ensure_ascii=False, separators=(",", ":"), default=str
+        )
+        with self._begin() as connection:
+            connection.execute(statement, values)
+
+    def load_checkpoint(
+        self, provider: str, dataset: str, partition_key: str
+    ) -> ReferenceCheckpoint | None:
+        statement = text(
+            "SELECT provider, dataset, partition_key, cursor_value, status, error_code, "
+            "details_json, updated_at FROM buy_point_reference_checkpoints "
+            "WHERE provider=:provider AND dataset=:dataset AND partition_key=:partition_key"
+        )
+        rows = self._read(
+            statement,
+            {
+                "provider": provider,
+                "dataset": dataset,
+                "partition_key": partition_key,
+            },
+        )
+        if not rows:
+            return None
+        row = rows[0]
+        raw_details = row["details_json"]
+        details = (
+            json.loads(raw_details)
+            if isinstance(raw_details, str)
+            else dict(raw_details or {})
+        )
+        return ReferenceCheckpoint(
+            provider=str(row["provider"]),
+            dataset=str(row["dataset"]),
+            partition_key=str(row["partition_key"]),
+            cursor_value=(
+                None if row["cursor_value"] is None else str(row["cursor_value"])
+            ),
+            status=str(row["status"]),
+            error_code=(None if row["error_code"] is None else str(row["error_code"])),
+            details=details,
+            updated_at=row["updated_at"],
+        )
+
+    def memberships_between(
+        self, start: date, end: date
+    ) -> tuple[SectorMembership, ...]:
+        statement = text(
+            "SELECT code, sector_code, sector_name, valid_from, valid_to, source "
+            "FROM buy_point_sector_memberships WHERE valid_from <= :end "
+            "AND (valid_to IS NULL OR valid_to >= :start) "
+            "ORDER BY code, valid_from, sector_code"
+        )
+        rows = self._read(statement, {"start": start, "end": end})
+        return tuple(
+            SectorMembership(
+                code=str(row["code"]),
+                sector_code=str(row["sector_code"]),
+                sector_name=str(row["sector_name"]),
+                valid_from=row["valid_from"],
+                valid_to=row["valid_to"],
+                source=str(row["source"]),
+            )
+            for row in rows
+        )
 
     def membership_on(self, analysis_date: date) -> dict[str, SectorMembership]:
         statement = text(
