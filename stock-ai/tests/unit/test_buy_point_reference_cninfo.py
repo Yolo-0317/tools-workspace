@@ -99,6 +99,32 @@ def test_cninfo_adapter_maps_only_sw_industry_rows() -> None:
     ]
 
 
+def test_cninfo_adapter_treats_pandas_nat_as_missing_termination_date() -> None:
+    """Catches an open category interval becoming an uncomparable pandas NaT value."""
+
+    def categories_with_nat(symbol: str):
+        assert symbol == "申银万国行业分类标准"
+        return pd.DataFrame(
+            [
+                {
+                    "类目编码": "801000",
+                    "父类编码": "",
+                    "类目名称": "农林牧渔",
+                    "分级": 1,
+                    "终止日期": pd.NaT,
+                }
+            ]
+        )
+
+    provider = CninfoReferenceProvider(
+        category_fetcher=categories_with_nat,
+        change_fetcher=_change_fetcher,
+        session=FakeSession(FakeResponse(200, _announcement_payload())),
+    )
+
+    assert provider.fetch_industry_categories()[0].terminated_on is None
+
+
 def test_cninfo_announcement_page_preserves_declared_totals_and_timezone() -> None:
     """Catches a transport that hides missing pages or treats UTC as Shanghai time."""
     session = FakeSession(FakeResponse(200, _announcement_payload(total=31)))

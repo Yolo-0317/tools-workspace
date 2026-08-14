@@ -40,7 +40,8 @@ class CheckpointConnection:
         sql = str(statement)
         self.statements.append(sql)
         if sql.startswith("INSERT INTO buy_point_reference_checkpoints"):
-            self.saved = dict(parameters)
+            payload = parameters[-1] if isinstance(parameters, list) else parameters
+            self.saved = dict(payload)
             return FakeResult()
         if sql.startswith("SELECT provider, dataset, partition_key"):
             return FakeResult([self.saved] if self.saved is not None else [])
@@ -95,3 +96,30 @@ def test_repository_loads_many_checkpoints_with_one_query() -> None:
     selects = [value for value in connection.statements if value.startswith("SELECT")]
     assert len(selects) == 1
     assert "partition_key IN" in selects[0]
+
+
+def test_repository_saves_many_checkpoints_with_one_statement() -> None:
+    connection = CheckpointConnection()
+    repository = SQLReferenceRepository(connection)
+    checkpoints = tuple(
+        ReferenceCheckpoint(
+            provider="CNINFO",
+            dataset="sector",
+            partition_key=f"60000{index}",
+            cursor_value=None,
+            status="COMPLETE",
+            error_code=None,
+            details={"membership_count": 1},
+            updated_at=NOW,
+        )
+        for index in range(1, 4)
+    )
+
+    repository.save_checkpoints(checkpoints)
+
+    inserts = [
+        value
+        for value in connection.statements
+        if value.startswith("INSERT INTO buy_point_reference_checkpoints")
+    ]
+    assert len(inserts) == 1

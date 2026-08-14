@@ -8,6 +8,7 @@ import math
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from pandas import isna
 import requests
 
 from .reference_normalization import SW_STANDARD
@@ -26,7 +27,7 @@ SHANGHAI = ZoneInfo("Asia/Shanghai")
 
 
 def _optional_date(value: object) -> date | None:
-    if value is None:
+    if value is None or bool(isna(value)):
         return None
     if isinstance(value, datetime):
         return value.date()

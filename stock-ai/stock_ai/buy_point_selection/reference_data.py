@@ -89,6 +89,8 @@ class ReferenceRepository(Protocol):
 
     def save_checkpoint(self, checkpoint: ReferenceCheckpoint) -> None: ...
 
+    def save_checkpoints(self, checkpoints: Sequence[ReferenceCheckpoint]) -> None: ...
+
     def load_checkpoint(
         self, provider: str, dataset: str, partition_key: str
     ) -> ReferenceCheckpoint | None: ...
@@ -199,6 +201,9 @@ class SQLReferenceRepository:
             connection.execute(statement, values)
 
     def save_checkpoint(self, checkpoint: ReferenceCheckpoint) -> None:
+        self.save_checkpoints((checkpoint,))
+
+    def save_checkpoints(self, checkpoints: Sequence[ReferenceCheckpoint]) -> None:
         statement = text(
             "INSERT INTO buy_point_reference_checkpoints "
             "(provider, dataset, partition_key, cursor_value, status, error_code, "
@@ -208,11 +213,19 @@ class SQLReferenceRepository:
             "status=VALUES(status), error_code=VALUES(error_code), "
             "details_json=VALUES(details_json), updated_at=VALUES(updated_at)"
         )
-        values = dict(checkpoint.__dict__)
-        values.pop("details")
-        values["details_json"] = json.dumps(
-            dict(checkpoint.details), ensure_ascii=False, separators=(",", ":"), default=str
-        )
+        values = []
+        for checkpoint in checkpoints:
+            row = dict(checkpoint.__dict__)
+            row.pop("details")
+            row["details_json"] = json.dumps(
+                dict(checkpoint.details),
+                ensure_ascii=False,
+                separators=(",", ":"),
+                default=str,
+            )
+            values.append(row)
+        if not values:
+            return
         with self._begin() as connection:
             connection.execute(statement, values)
 

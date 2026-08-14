@@ -34,6 +34,7 @@ class MemoryRepository:
         self.checkpoints: dict[tuple[str, str, str], ReferenceCheckpoint] = {}
         self.membership_queries = 0
         self.bulk_checkpoint_queries = 0
+        self.bulk_checkpoint_writes = 0
 
     def upsert_sector_memberships(self, rows, captured_at):
         for row in rows:
@@ -52,6 +53,11 @@ class MemoryRepository:
         self.checkpoints[
             (checkpoint.provider, checkpoint.dataset, checkpoint.partition_key)
         ] = checkpoint
+
+    def save_checkpoints(self, checkpoints):
+        self.bulk_checkpoint_writes += 1
+        for checkpoint in checkpoints:
+            self.save_checkpoint(checkpoint)
 
     def load_checkpoint(self, provider, dataset, partition_key):
         return self.checkpoints.get((provider, dataset, partition_key))
@@ -223,6 +229,7 @@ def test_sector_checkpoint_lookup_is_batched_for_the_full_universe() -> None:
     )
 
     assert repository.bulk_checkpoint_queries == 1
+    assert repository.bulk_checkpoint_writes == 2
 
 
 def test_missing_announcement_page_fails_only_announcement_dataset() -> None:

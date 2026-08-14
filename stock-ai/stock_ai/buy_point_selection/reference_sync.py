@@ -35,6 +35,7 @@ RETRYABLE_PROVIDER_ERRORS = frozenset(
     {"PROVIDER_RATE_LIMITED", "PROVIDER_UNAVAILABLE"}
 )
 RETRY_DELAYS = (1, 2, 4)
+CHECKPOINT_WRITE_BATCH_SIZE = 50
 T = TypeVar("T")
 
 
@@ -165,13 +166,20 @@ def _sync_sector(
     )
     new_rows: list[SectorMembership] = []
     failures: list[tuple[str, str]] = []
+    checkpoint_buffer: list[ReferenceCheckpoint] = []
+
+    def save_sector_checkpoint(checkpoint: ReferenceCheckpoint) -> None:
+        checkpoint_buffer.append(checkpoint)
+        if len(checkpoint_buffer) >= CHECKPOINT_WRITE_BATCH_SIZE:
+            repository.save_checkpoints(tuple(checkpoint_buffer))
+            checkpoint_buffer.clear()
 
     try:
         categories = _retry(cninfo.fetch_industry_categories, sleep) if pending else ()
     except Exception as exc:  # noqa: BLE001 - converted to a safe audit code
         error_code = _safe_error(exc)
         for code in pending:
-            repository.save_checkpoint(
+            save_sector_checkpoint(
                 _checkpoint(
                     provider="CNINFO",
                     dataset="sector",
@@ -202,7 +210,7 @@ def _sync_sector(
                     previous_trade_date=previous_trade_date,
                 )
                 new_rows.extend(rows)
-                repository.save_checkpoint(
+                save_sector_checkpoint(
                     _checkpoint(
                         provider="CNINFO",
                         dataset="sector",
@@ -215,7 +223,7 @@ def _sync_sector(
             except Exception as exc:  # noqa: BLE001 - converted to safe audit data
                 error_code = _safe_error(exc)
                 failures.append((code, error_code))
-                repository.save_checkpoint(
+                save_sector_checkpoint(
                     _checkpoint(
                         provider="CNINFO",
                         dataset="sector",
@@ -226,6 +234,9 @@ def _sync_sector(
                     )
                 )
 
+    if checkpoint_buffer:
+        repository.save_checkpoints(tuple(checkpoint_buffer))
+        checkpoint_buffer.clear()
     row_count = repository.upsert_sector_memberships(new_rows, request.captured_at)
     all_rows = tuple(existing) + tuple(new_rows)
     expected = 0
