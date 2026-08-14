@@ -125,8 +125,8 @@ def test_cninfo_adapter_treats_pandas_nat_as_missing_termination_date() -> None:
     assert provider.fetch_industry_categories()[0].terminated_on is None
 
 
-def test_cninfo_transient_empty_industry_frame_is_retryable() -> None:
-    """Catches AKShare's empty-response KeyError being mislabeled as a schema change."""
+def test_cninfo_empty_industry_history_is_a_valid_uncovered_result() -> None:
+    """Catches a stable no-record security being mislabeled as a provider failure."""
 
     def transient_empty(**kwargs):
         raise KeyError("变更日期")
@@ -137,12 +137,9 @@ def test_cninfo_transient_empty_industry_frame_is_retryable() -> None:
         session=FakeSession(FakeResponse(200, _announcement_payload())),
     )
 
-    with pytest.raises(ProviderFailure) as caught:
-        provider.fetch_industry_changes(
-            "000017", date(1990, 1, 1), date(2025, 8, 6)
-        )
-
-    assert caught.value.error_code == "PROVIDER_UNAVAILABLE"
+    assert provider.fetch_industry_changes(
+        "000017", date(1990, 1, 1), date(2025, 8, 6)
+    ) == ()
 
 
 def test_cninfo_announcement_page_preserves_declared_totals_and_timezone() -> None:

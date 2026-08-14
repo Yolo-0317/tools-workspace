@@ -139,11 +139,16 @@ class CninfoReferenceProvider:
             )
         except ProviderFailure:
             raise
+        except KeyError as exc:
+            if exc.args == ("变更日期",):
+                return ()
+            raise ProviderFailure(
+                self.provider_name, "industry_changes", "PROVIDER_SCHEMA_CHANGED"
+            ) from exc
         except Exception as exc:
             error_code = (
                 "PROVIDER_UNAVAILABLE"
                 if isinstance(exc, requests.RequestException)
-                or (isinstance(exc, KeyError) and exc.args == ("变更日期",))
                 else "PROVIDER_SCHEMA_CHANGED"
             )
             raise ProviderFailure(
