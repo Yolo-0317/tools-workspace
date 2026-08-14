@@ -69,6 +69,20 @@ class FakePro:
         ]
 
 
+class NoPermissionPro:
+    def _deny(self):
+        raise Exception("抱歉，您没有接口(stock_st)访问权限")
+
+    def index_classify(self, **kwargs):
+        self._deny()
+
+    def stock_st(self, **kwargs):
+        self._deny()
+
+    def anns_d(self, **kwargs):
+        self._deny()
+
+
 NOW = datetime(2025, 8, 6, 10, tzinfo=timezone.utc)
 
 
@@ -105,6 +119,24 @@ def test_sync_failure_marks_only_failed_dataset_and_continues() -> None:
     assert [run.status for run in runs] == ["COMPLETE", "FAILED", "COMPLETE"]
     assert runs[1].error_code == "RuntimeError"
     assert any(flag.flag_type == "REGULATORY_INVESTIGATION" for flag in repository.flags)
+
+
+def test_sync_classifies_tushare_permission_denial_for_audit() -> None:
+    """Catches Tushare's bare Exception hiding the actionable failure reason."""
+    repository = MemoryRepository()
+
+    runs = sync_reference_data(
+        NoPermissionPro(),
+        repository,
+        (date(2025, 8, 5), date(2025, 8, 6)),
+        captured_at=NOW,
+    )
+
+    assert [run.error_code for run in runs] == [
+        "TUSHARE_PERMISSION_DENIED",
+        "TUSHARE_PERMISSION_DENIED",
+        "TUSHARE_PERMISSION_DENIED",
+    ]
 
 
 def test_manual_sync_accepts_latest_as_the_end_boundary() -> None:

@@ -409,6 +409,13 @@ def _sync_run(
     )
 
 
+def _provider_error_code(exc: Exception) -> str:
+    message = str(exc)
+    if "没有接口(" in message and "访问权限" in message:
+        return "TUSHARE_PERMISSION_DENIED"
+    return type(exc).__name__
+
+
 def sync_reference_data(
     pro: object,
     repository: ReferenceRepository,
@@ -451,7 +458,7 @@ def sync_reference_data(
         run = _sync_run("sector", start, end, "COMPLETE", count, captured_at)
     except Exception as exc:  # noqa: BLE001 - provider failures become auditable coverage
         run = _sync_run(
-            "sector", start, end, "FAILED", 0, captured_at, type(exc).__name__
+            "sector", start, end, "FAILED", 0, captured_at, _provider_error_code(exc)
         )
     repository.save_sync_run(run)
     runs.append(run)
@@ -466,7 +473,9 @@ def sync_reference_data(
         count = repository.upsert_risk_flags(flags, captured_at)
         run = _sync_run("st", start, end, "COMPLETE", count, captured_at)
     except Exception as exc:  # noqa: BLE001
-        run = _sync_run("st", start, end, "FAILED", 0, captured_at, type(exc).__name__)
+        run = _sync_run(
+            "st", start, end, "FAILED", 0, captured_at, _provider_error_code(exc)
+        )
     repository.save_sync_run(run)
     runs.append(run)
 
@@ -481,7 +490,13 @@ def sync_reference_data(
         run = _sync_run("announcement", start, end, "COMPLETE", count, captured_at)
     except Exception as exc:  # noqa: BLE001
         run = _sync_run(
-            "announcement", start, end, "FAILED", 0, captured_at, type(exc).__name__
+            "announcement",
+            start,
+            end,
+            "FAILED",
+            0,
+            captured_at,
+            _provider_error_code(exc),
         )
     repository.save_sync_run(run)
     runs.append(run)
