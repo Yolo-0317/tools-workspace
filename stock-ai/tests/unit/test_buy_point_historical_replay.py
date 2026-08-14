@@ -122,6 +122,23 @@ def test_incomplete_pit_date_emits_no_plan_and_fails_integrity() -> None:
     assert result.integrity.missing_announcement_dates == (signal,)
 
 
+def test_integrity_checks_every_signal_date_even_when_no_setup_exists() -> None:
+    """Catches a reference or market gap disappearing on a day with zero candidates."""
+    signal = date(2024, 2, 7)
+
+    result = replay_historical_plans(
+        (),
+        {},
+        {signal: ReferenceCoverage(signal, True, True, False)},
+        signal_dates=(signal,),
+        market_complete_by_date={signal: False},
+    )
+
+    assert not result.integrity.complete
+    assert result.integrity.missing_announcement_dates == (signal,)
+    assert result.integrity.missing_market_dates == (signal,)
+
+
 def test_observation_payload_retains_signal_identity_and_resolution_date() -> None:
     """Catches calibration rows becoming impossible to rank or audit by signal date."""
     signal = date(2024, 2, 7)

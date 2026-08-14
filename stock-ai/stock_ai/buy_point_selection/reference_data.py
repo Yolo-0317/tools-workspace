@@ -103,6 +103,12 @@ class ReferenceRepository(Protocol):
         self, start: date, end: date
     ) -> tuple[SectorMembership, ...]: ...
 
+    def risk_flags_between(self, start: date, end: date) -> tuple[RiskFlag, ...]: ...
+
+    def coverage_between(
+        self, analysis_dates: Sequence[date]
+    ) -> Mapping[date, ReferenceCoverage]: ...
+
 
 class SQLReferenceRepository:
     """MySQL adapter; all reads preserve the requested analysis date."""
@@ -333,6 +339,28 @@ class SQLReferenceRepository:
             analysis_date,
         )
 
+    def risk_flags_between(self, start: date, end: date) -> tuple[RiskFlag, ...]:
+        statement = text(
+            "SELECT code, flag_type, severity, effective_from, effective_to, "
+            "source, evidence_ref FROM buy_point_risk_flags "
+            "WHERE effective_from <= :end "
+            "AND (effective_to IS NULL OR effective_to >= :start) "
+            "ORDER BY code, effective_from, flag_type"
+        )
+        rows = self._read(statement, {"start": start, "end": end})
+        return tuple(
+            RiskFlag(
+                str(row["code"]),
+                str(row["flag_type"]),
+                str(row["severity"]),
+                row["effective_from"],
+                row["effective_to"],
+                str(row["source"]),
+                str(row["evidence_ref"] or ""),
+            )
+            for row in rows
+        )
+
     def risk_flags_on(self, analysis_date: date) -> dict[str, tuple[RiskFlag, ...]]:
         statement = text(
             "SELECT code, flag_type, severity, effective_from, effective_to, source, evidence_ref "
@@ -372,6 +400,40 @@ class SQLReferenceRepository:
             st_complete="st" in datasets,
             announcement_complete="announcement" in datasets,
         )
+
+    def coverage_between(
+        self, analysis_dates: Sequence[date]
+    ) -> Mapping[date, ReferenceCoverage]:
+        dates = tuple(sorted(set(analysis_dates)))
+        if not dates:
+            return {}
+        statement = text(
+            "SELECT dataset, start_date, end_date FROM buy_point_reference_sync_runs "
+            "WHERE status='COMPLETE' AND start_date <= :end_date "
+            "AND end_date >= :start_date ORDER BY dataset, start_date, end_date"
+        )
+        rows = self._read(
+            statement,
+            {"start_date": dates[0], "end_date": dates[-1]},
+        )
+        intervals: dict[str, list[tuple[date, date]]] = {}
+        for row in rows:
+            intervals.setdefault(str(row["dataset"]), []).append(
+                (row["start_date"], row["end_date"])
+            )
+
+        def complete(dataset: str, value: date) -> bool:
+            return any(start <= value <= end for start, end in intervals.get(dataset, ()))
+
+        return {
+            value: ReferenceCoverage(
+                value,
+                sector_complete=complete("sector", value),
+                st_complete=complete("st", value),
+                announcement_complete=complete("announcement", value),
+            )
+            for value in dates
+        }
 
     def _read(self, statement, parameters: Mapping[str, object]):
         if isinstance(self._database, Engine):

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Protocol
 
 
@@ -30,6 +31,14 @@ class SecurityStatus:
     name: str
     trade_status: str
     trade_date: date
+
+
+@dataclass(frozen=True)
+class IndexBar:
+    code: str
+    trade_date: date
+    close: Decimal
+    pct_chg: Decimal
 
 
 @dataclass(frozen=True)
@@ -76,3 +85,7 @@ class CninfoReferenceSource(ReferenceProvider, Protocol):
 
 class BaoStockReferenceSource(ReferenceProvider, Protocol):
     def fetch_security_statuses(self, day: date) -> tuple[SecurityStatus, ...]: ...
+
+    def fetch_index_bars(
+        self, code: str, start: date, end: date
+    ) -> tuple[IndexBar, ...]: ...

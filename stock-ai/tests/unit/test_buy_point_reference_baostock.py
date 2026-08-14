@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 from types import SimpleNamespace
 
 import pytest
@@ -247,3 +248,48 @@ def test_baostock_requests_one_large_page_and_restores_sdk_constant() -> None:
 
     assert sdk.page_sizes == [10000]
     assert constants.BAOSTOCK_PER_PAGE_COUNT == 2000
+
+
+def test_baostock_fetches_benchmark_index_bars_for_exact_range() -> None:
+    """Catches historical market state falling back to today's index regime."""
+
+    class IndexBaoStock(FakeBaoStock):
+        def __init__(self) -> None:
+            super().__init__()
+            self.requests = []
+
+        def query_history_k_data_plus(
+            self, code, fields, *, start_date, end_date, frequency, adjustflag
+        ):
+            self.requests.append(
+                (code, fields, start_date, end_date, frequency, adjustflag)
+            )
+            return QueryResult(
+                [
+                    ("2025-08-05", "3200.00", "0.50"),
+                    ("2025-08-06", "3210.00", "0.31"),
+                ],
+                fields=["date", "close", "pctChg"],
+            )
+
+    sdk = IndexBaoStock()
+    provider = BaoStockReferenceProvider(sdk=sdk)
+
+    rows = provider.fetch_index_bars(
+        "sh.000001", date(2025, 8, 5), date(2025, 8, 6)
+    )
+
+    assert [(row.trade_date, row.close, row.pct_chg) for row in rows] == [
+        (date(2025, 8, 5), Decimal("3200.00"), Decimal("0.50")),
+        (date(2025, 8, 6), Decimal("3210.00"), Decimal("0.31")),
+    ]
+    assert sdk.requests == [
+        (
+            "sh.000001",
+            "date,close,pctChg",
+            "2025-08-05",
+            "2025-08-06",
+            "d",
+            "3",
+        )
+    ]

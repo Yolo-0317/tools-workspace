@@ -85,6 +85,18 @@ def test_memberships_between_uses_one_bounded_query() -> None:
     assert "valid_to IS NULL OR valid_to >=" in selects[0]
 
 
+def test_risk_flags_between_uses_one_bounded_query() -> None:
+    """Catches historical risk vetoes being loaded one signal date at a time."""
+    connection = CheckpointConnection()
+    repository = SQLReferenceRepository(connection)
+
+    assert repository.risk_flags_between(date(2025, 8, 1), date(2025, 8, 6)) == ()
+    selects = [value for value in connection.statements if value.startswith("SELECT")]
+    assert len(selects) == 1
+    assert "effective_from <=" in selects[0]
+    assert "effective_to IS NULL OR effective_to >=" in selects[0]
+
+
 def test_repository_loads_many_checkpoints_with_one_query() -> None:
     connection = CheckpointConnection()
     repository = SQLReferenceRepository(connection)
@@ -123,3 +135,47 @@ def test_repository_saves_many_checkpoints_with_one_statement() -> None:
         if value.startswith("INSERT INTO buy_point_reference_checkpoints")
     ]
     assert len(inserts) == 1
+
+
+def test_coverage_between_uses_one_bounded_query_and_resolves_each_date() -> None:
+    """Catches historical replay issuing three queries per signal day or spanning gaps."""
+
+    class CoverageConnection(CheckpointConnection):
+        def execute(self, statement, parameters=None):
+            sql = str(statement)
+            self.statements.append(sql)
+            if sql.startswith("SELECT dataset, start_date, end_date"):
+                return FakeResult(
+                    [
+                        {
+                            "dataset": "sector",
+                            "start_date": date(2025, 8, 5),
+                            "end_date": date(2025, 8, 6),
+                        },
+                        {
+                            "dataset": "st",
+                            "start_date": date(2025, 8, 5),
+                            "end_date": date(2025, 8, 5),
+                        },
+                        {
+                            "dataset": "announcement",
+                            "start_date": date(2025, 8, 5),
+                            "end_date": date(2025, 8, 6),
+                        },
+                    ]
+                )
+            return FakeResult()
+
+    connection = CoverageConnection()
+    repository = SQLReferenceRepository(connection)
+    first = date(2025, 8, 5)
+    second = date(2025, 8, 6)
+
+    result = repository.coverage_between((first, second))
+
+    assert result[first].complete
+    assert result[second].sector_complete
+    assert not result[second].st_complete
+    assert result[second].announcement_complete
+    selects = [value for value in connection.statements if value.startswith("SELECT")]
+    assert len(selects) == 1

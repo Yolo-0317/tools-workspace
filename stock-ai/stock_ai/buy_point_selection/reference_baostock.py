@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from contextlib import contextmanager, redirect_stdout
 from datetime import date
+from decimal import Decimal
 from io import StringIO
 from typing import Any
 
-from .reference_sources import ProviderFailure, SecurityStatus
+from .reference_sources import IndexBar, ProviderFailure, SecurityStatus
 
 
 def _code6(value: object) -> str:
@@ -92,6 +93,17 @@ class BaoStockReferenceProvider:
             with self.session():
                 return self._query_security_statuses(day)
 
+    def fetch_index_bars(
+        self, code: str, start: date, end: date
+    ) -> tuple[IndexBar, ...]:
+        if end < start:
+            raise ValueError("index history end precedes start")
+        with redirect_stdout(StringIO()):
+            if self._session_active:
+                return self._query_index_bars(code, start, end)
+            with self.session():
+                return self._query_index_bars(code, start, end)
+
     def _login(self) -> None:
         try:
             login = self._sdk.login()
@@ -164,4 +176,66 @@ class BaoStockReferenceProvider:
         except Exception as exc:
             raise ProviderFailure(
                 self.provider_name, "query_all_stock", "PROVIDER_UNAVAILABLE"
+            ) from exc
+
+    def _query_index_bars(
+        self, code: str, start: date, end: date
+    ) -> tuple[IndexBar, ...]:
+        try:
+            result = self._sdk.query_history_k_data_plus(
+                code,
+                "date,close,pctChg",
+                start_date=start.isoformat(),
+                end_date=end.isoformat(),
+                frequency="d",
+                adjustflag="3",
+            )
+            if str(getattr(result, "error_code", "")) != "0":
+                raise ProviderFailure(
+                    self.provider_name,
+                    "query_history_k_data_plus",
+                    "PROVIDER_UNAVAILABLE",
+                )
+            fields = [str(value) for value in getattr(result, "fields", ())]
+            required = {"date", "close", "pctChg"}
+            if not required.issubset(fields):
+                raise ProviderFailure(
+                    self.provider_name,
+                    "query_history_k_data_plus",
+                    "PROVIDER_SCHEMA_CHANGED",
+                )
+            positions = {name: fields.index(name) for name in required}
+            rows: list[IndexBar] = []
+            seen: set[date] = set()
+            while result.next():
+                raw = list(result.get_row_data())
+                if len(raw) != len(fields):
+                    raise ProviderFailure(
+                        self.provider_name,
+                        "query_history_k_data_plus",
+                        "PROVIDER_SCHEMA_CHANGED",
+                    )
+                trade_date = date.fromisoformat(str(raw[positions["date"]]))
+                close = Decimal(str(raw[positions["close"]]))
+                pct_chg = Decimal(str(raw[positions["pctChg"]] or "0"))
+                if (
+                    trade_date in seen
+                    or not start <= trade_date <= end
+                    or close <= 0
+                ):
+                    raise ProviderFailure(
+                        self.provider_name,
+                        "query_history_k_data_plus",
+                        "PROVIDER_SCHEMA_CHANGED",
+                    )
+                seen.add(trade_date)
+                rows.append(IndexBar(code, trade_date, close, pct_chg))
+            return tuple(sorted(rows, key=lambda value: value.trade_date))
+        except ProviderFailure:
+            raise
+        except Exception as exc:
+            raise ProviderFailure(
+                self.provider_name,
+                "query_history_k_data_plus",
+                "PROVIDER_UNAVAILABLE",
             ) from exc

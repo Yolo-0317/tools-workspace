@@ -51,6 +51,7 @@ class ReplayIntegrity:
     missing_sector_dates: tuple[date, ...]
     missing_st_dates: tuple[date, ...]
     missing_announcement_dates: tuple[date, ...]
+    missing_market_dates: tuple[date, ...] = ()
 
     @property
     def complete(self) -> bool:
@@ -59,6 +60,7 @@ class ReplayIntegrity:
             or self.missing_sector_dates
             or self.missing_st_dates
             or self.missing_announcement_dates
+            or self.missing_market_dates
         )
 
 
@@ -66,6 +68,15 @@ class ReplayIntegrity:
 class HistoricalReplayResult:
     opportunities: tuple[HistoricalOpportunity, ...]
     integrity: ReplayIntegrity
+
+
+@dataclass(frozen=True)
+class ReplayBundle:
+    trading_dates: tuple[date, ...]
+    replay: HistoricalReplayResult
+    rule_version: str
+    policy_hash: str
+    rejection_counts: Mapping[str, int]
 
 
 def second_trading_date_after(
@@ -96,6 +107,8 @@ def replay_historical_plans(
     coverage_by_date: Mapping[date, ReferenceCoverage],
     *,
     costs: ExecutionCosts | None = None,
+    signal_dates: Sequence[date] | None = None,
+    market_complete_by_date: Mapping[date, bool] | None = None,
 ) -> HistoricalReplayResult:
     opportunities: list[HistoricalOpportunity] = []
     seen_structures: set[str] = set()
@@ -104,6 +117,24 @@ def replay_historical_plans(
     missing_sector: set[date] = set()
     missing_st: set[date] = set()
     missing_announcement: set[date] = set()
+    missing_market: set[date] = set()
+
+    integrity_dates = tuple(
+        sorted(set(signal_dates or (value.signal_date for value in plans)))
+    )
+    for signal_date in integrity_dates:
+        coverage = coverage_by_date.get(signal_date)
+        if coverage is None or not coverage.sector_complete:
+            missing_sector.add(signal_date)
+        if coverage is None or not coverage.st_complete:
+            missing_st.add(signal_date)
+        if coverage is None or not coverage.announcement_complete:
+            missing_announcement.add(signal_date)
+        if (
+            market_complete_by_date is not None
+            and not market_complete_by_date.get(signal_date, False)
+        ):
+            missing_market.add(signal_date)
 
     for value in sorted(
         plans,
@@ -159,6 +190,7 @@ def replay_historical_plans(
             missing_sector_dates=tuple(sorted(missing_sector)),
             missing_st_dates=tuple(sorted(missing_st)),
             missing_announcement_dates=tuple(sorted(missing_announcement)),
+            missing_market_dates=tuple(sorted(missing_market)),
         ),
     )
 
