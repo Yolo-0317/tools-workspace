@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, time, timedelta
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 import sys
 from typing import Callable, Mapping, Protocol, Sequence
@@ -33,6 +34,7 @@ from stock_ai.buy_point_selection.reference_data import (
 )
 from stock_ai.buy_point_selection.validation import policy_hash
 from stock_ai.market_codes import normalize_code6
+from stock_ai.buy_point_selection.reference_sources import IndexBar
 
 
 class CaseReviewRuntime(Protocol):
@@ -110,16 +112,19 @@ class DefaultRuntime:
             for value in inputs.trading_dates
             if final_signal_date < value <= effective_cutoff
         )
-        winners = find_buyable_winners(
-            signal_date=final_signal_date,
-            outcome_dates=outcome_dates,
-            bars_by_code=inputs.bars_by_code,
-            risk_flags=inputs.risk_flags,
-            holding_codes=inputs.holding_codes_by_date.get(
-                final_signal_date, frozenset()
-            ),
-        )
-        attributed = attribute_buyable_winners(winners, replay)
+        if replay.incomplete_dates:
+            attributed = ()
+        else:
+            winners = find_buyable_winners(
+                signal_date=final_signal_date,
+                outcome_dates=outcome_dates,
+                bars_by_code=inputs.bars_by_code,
+                risk_flags=inputs.risk_flags,
+                holding_codes=inputs.holding_codes_by_date.get(
+                    final_signal_date, frozenset()
+                ),
+            )
+            attributed = attribute_buyable_winners(winners, replay)
         risk_coverage_complete = all(
             inputs.coverage_by_date.get(value) is not None
             and inputs.coverage_by_date[value].announcement_complete
@@ -237,6 +242,75 @@ def _load_holdings_by_date(
     return holdings, complete
 
 
+def _merge_missing_index_bars(
+    primary: Mapping[str, Sequence[IndexBar]],
+    fallback_rows: Mapping[str, Sequence[Sequence[str]]],
+    *,
+    start: date,
+    end: date,
+) -> dict[str, tuple[IndexBar, ...]]:
+    """Fill only empty primary index series with normalized Eastmoney rows."""
+    merged: dict[str, tuple[IndexBar, ...]] = {}
+    for code, primary_bars in primary.items():
+        if primary_bars:
+            merged[code] = tuple(primary_bars)
+            continue
+        parsed: dict[date, IndexBar] = {}
+        code6 = code.rsplit(".", 1)[-1]
+        for row in fallback_rows.get(code6, ()):
+            if len(row) < 9:
+                continue
+            try:
+                trade_date = date.fromisoformat(str(row[0]))
+                close = Decimal(str(row[2]))
+                pct_chg = Decimal(str(row[8] or "0"))
+            except (InvalidOperation, TypeError, ValueError):
+                continue
+            if not start <= trade_date <= end or close <= 0:
+                continue
+            parsed[trade_date] = IndexBar(code, trade_date, close, pct_chg)
+        merged[code] = tuple(parsed[value] for value in sorted(parsed))
+    return merged
+
+
+def _load_benchmark_index_bars(
+    start: date,
+    end: date,
+) -> dict[str, tuple[IndexBar, ...]]:
+    """Load BaoStock benchmarks and use Eastmoney only for empty series."""
+    from stock_ai.buy_point_selection.historical_replay_runtime import (
+        BENCHMARK_INDEX_CODES,
+    )
+    from stock_ai.buy_point_selection.reference_baostock import (
+        BaoStockReferenceProvider,
+    )
+
+    index_provider = BaoStockReferenceProvider()
+    with index_provider.session():
+        primary = {
+            code: index_provider.fetch_index_bars(code, start, end)
+            for code in BENCHMARK_INDEX_CODES
+        }
+    missing = [code.rsplit(".", 1)[-1] for code, bars in primary.items() if not bars]
+    if not missing:
+        return {code: tuple(bars) for code, bars in primary.items()}
+    try:
+        from scripts.tools.fetch_eastmoney_quotes import (
+            fetch_index_kline_rows_opencli,
+        )
+
+        limit = max(240, (date.today() - start).days + 30)
+        fallback_rows = fetch_index_kline_rows_opencli(missing, limit=limit)
+    except Exception:  # noqa: BLE001 - incomplete data is surfaced by market coverage
+        fallback_rows = {}
+    return _merge_missing_index_bars(
+        primary,
+        fallback_rows,
+        start=start,
+        end=end,
+    )
+
+
 def load_mysql_case_inputs(
     start: date,
     end: date,
@@ -249,14 +323,10 @@ def load_mysql_case_inputs(
     from sqlalchemy import create_engine
 
     from stock_ai.buy_point_selection.historical_replay_runtime import (
-        BENCHMARK_INDEX_CODES,
         _load_daily_bars,
         _load_market_aggregates,
         _trade_dates,
         build_historical_market_snapshots,
-    )
-    from stock_ai.buy_point_selection.reference_baostock import (
-        BaoStockReferenceProvider,
     )
     from stock_ai.buy_point_selection.reference_data import SQLReferenceRepository
 
@@ -281,12 +351,7 @@ def load_mysql_case_inputs(
     risk_flags = repository.risk_flags_between(start, end)
     market_dates = tuple(value for value in trading_dates if value <= end)
     market_aggregates = _load_market_aggregates(engine, history_start, end)
-    index_provider = BaoStockReferenceProvider()
-    with index_provider.session():
-        index_bars = {
-            code: index_provider.fetch_index_bars(code, history_start, end)
-            for code in BENCHMARK_INDEX_CODES
-        }
+    index_bars = _load_benchmark_index_bars(history_start, end)
     market_snapshots = build_historical_market_snapshots(
         market_dates,
         bars_by_code,

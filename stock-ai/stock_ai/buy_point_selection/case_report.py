@@ -120,6 +120,7 @@ def case_payload(review: CaseReview) -> dict[str, object]:
             "near_misses": len(review.replay.near_misses),
             "buyable_winners": len(winners),
             "captured_winners": sum(bool(value.captured_tiers) for value in winners),
+            "recall_complete": not review.replay.incomplete_dates,
         },
         "rejection_counts": dict(sorted(rejection_counts.items())),
     }
@@ -151,13 +152,19 @@ def render_case_markdown(review: CaseReview) -> str:
         f"- 单软门近失：{metrics['near_misses']}只",
         f"- 已解决成功：{metrics['outcome_successes']}/{metrics['outcome_resolved']}",
         f"- 待观察：{metrics['outcome_pending']}/{metrics['outcome_total']}",
-        f"- 可买上涨股召回：{metrics['captured_winners']}/{metrics['buyable_winners']}",
+        (
+            f"- 可买上涨股召回：{metrics['captured_winners']}/{metrics['buyable_winners']}"
+            if metrics["recall_complete"]
+            else "- 可买上涨股召回：不可计算（信号日数据不完整）"
+        ),
         "",
         "## 漏选可买上涨股",
         "",
     ]
     missed = [value for value in winners if not value["captured_tiers"]]
-    if not missed:
+    if not metrics["recall_complete"]:
+        lines.append("信号日数据不完整，不能进行漏选归因。")
+    elif not missed:
         lines.append("无。")
     else:
         lines.extend(

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
+from decimal import Decimal
 
 from sqlalchemy import create_engine, text
 
@@ -8,11 +9,13 @@ from scripts.analysis.review_buy_point_case import (
     CaseReviewInputs,
     DefaultRuntime,
     _load_holdings_by_date,
+    _merge_missing_index_bars,
     main,
 )
-from stock_ai.buy_point_selection.models import MarketSnapshot
+from stock_ai.buy_point_selection.models import BuyPointBar, MarketSnapshot
 from stock_ai.buy_point_selection.reference_data import ReferenceCoverage
 from stock_ai.buy_point_selection.case_review import CaseReview, CaseSignalReplay
+from stock_ai.buy_point_selection.reference_sources import IndexBar
 
 
 class FakeRuntime:
@@ -121,9 +124,30 @@ def test_default_runtime_builds_review_from_bounded_injected_inputs() -> None:
 def test_missing_historical_holdings_marks_signal_date_incomplete() -> None:
     """Catches unknown historical positions being treated as a known empty portfolio."""
     signal = date(2026, 8, 3)
+    history = tuple(
+        BuyPointBar(
+            signal - timedelta(days=4 - index),
+            Decimal("10"),
+            Decimal("10.1"),
+            Decimal("9.9"),
+            Decimal("10"),
+            Decimal("0"),
+            Decimal("200000"),
+        )
+        for index in range(5)
+    )
+    outcome = BuyPointBar(
+        signal + timedelta(days=1),
+        Decimal("10.2"),
+        Decimal("10.6"),
+        Decimal("10.1"),
+        Decimal("10.5"),
+        Decimal("5"),
+        Decimal("200000"),
+    )
     inputs = CaseReviewInputs(
         trading_dates=(signal, date(2026, 8, 4), date(2026, 8, 5)),
-        bars_by_code={},
+        bars_by_code={"600001": history + (outcome,)},
         memberships=(),
         risk_flags=(),
         coverage_by_date={signal: ReferenceCoverage(signal, True, True, True)},
@@ -136,6 +160,7 @@ def test_missing_historical_holdings_marks_signal_date_incomplete() -> None:
     review = runtime.build_review(signal, signal, date(2026, 8, 5))
 
     assert review.replay.incomplete_dates == (signal,)
+    assert review.winners == ()
 
 
 def test_historical_holdings_use_daily_snapshot_then_append_only_events() -> None:
@@ -208,3 +233,58 @@ def test_runtime_uses_latest_complete_market_date_as_effective_cutoff() -> None:
     review = runtime.build_review(signal, signal, date(2026, 8, 6))
 
     assert review.outcome_cutoff == latest
+
+
+def test_eastmoney_index_rows_only_fill_missing_baostock_series() -> None:
+    """Catches the fallback replacing an authoritative non-empty primary series."""
+    primary_bar = IndexBar(
+        "sh.000001",
+        date(2026, 8, 3),
+        Decimal("3550.12"),
+        Decimal("0.35"),
+    )
+
+    merged = _merge_missing_index_bars(
+        {
+            "sh.000001": (primary_bar,),
+            "sz.399001": (),
+            "sh.000688": (),
+        },
+        {
+            "000001": [
+                ["2026-08-03", "1", "9999", "1", "1", "1", "1", "1", "9.99"]
+            ],
+            "399001": [
+                [
+                    "2026-08-03",
+                    "1",
+                    "11100.50",
+                    "1",
+                    "1",
+                    "1",
+                    "1",
+                    "1",
+                    "0.42",
+                ]
+            ],
+            "000688": [
+                ["2026-08-03", "1", "1025.33", "1", "1", "1", "1", "1", "-0.18"],
+                ["malformed"],
+            ],
+        },
+        start=date(2026, 8, 1),
+        end=date(2026, 8, 7),
+    )
+
+    assert merged["sh.000001"] == (primary_bar,)
+    assert merged["sz.399001"] == (
+        IndexBar(
+            "sz.399001",
+            date(2026, 8, 3),
+            Decimal("11100.50"),
+            Decimal("0.42"),
+        ),
+    )
+    assert merged["sh.000688"] == (
+        IndexBar("sh.000688", date(2026, 8, 3), Decimal("1025.33"), Decimal("-0.18")),
+    )
