@@ -50,6 +50,14 @@ class HistoricalReplayRuntimeError(RuntimeError):
 
 
 @dataclass(frozen=True)
+class MarketDailyAggregate:
+    trade_date: date
+    valid_count: int
+    advancing_count: int
+    total_amount: Decimal
+
+
+@dataclass(frozen=True)
 class DiscoveryResult:
     plans: tuple[HistoricalPlan, ...]
     rejection_counts: Mapping[str, int]
@@ -137,6 +145,8 @@ def build_historical_market_snapshots(
     trading_dates: Sequence[date],
     bars_by_code: Mapping[str, Sequence[BuyPointBar]],
     index_bars_by_code: Mapping[str, Sequence[IndexBar]],
+    *,
+    market_aggregates_by_date: Mapping[date, MarketDailyAggregate] | None = None,
 ) -> dict[date, MarketSnapshot]:
     ordered_dates = tuple(trading_dates)
     requested_dates = frozenset(ordered_dates)
@@ -154,11 +164,25 @@ def build_historical_market_snapshots(
         previous_date = ordered_dates[index - 1] if index else None
         current_equities = equity_by_date.get(current_date, ())
         previous_equities = equity_by_date.get(previous_date, ()) if previous_date else ()
-        current_amount = sum(
-            (bar.amount_qian for bar in current_equities), Decimal("0")
+        current_aggregate = (
+            market_aggregates_by_date.get(current_date)
+            if market_aggregates_by_date is not None
+            else None
         )
-        previous_amount = sum(
-            (bar.amount_qian for bar in previous_equities), Decimal("0")
+        previous_aggregate = (
+            market_aggregates_by_date.get(previous_date)
+            if market_aggregates_by_date is not None and previous_date is not None
+            else None
+        )
+        current_amount = (
+            current_aggregate.total_amount
+            if current_aggregate is not None
+            else sum((bar.amount_qian for bar in current_equities), Decimal("0"))
+        )
+        previous_amount = (
+            previous_aggregate.total_amount
+            if previous_aggregate is not None
+            else sum((bar.amount_qian for bar in previous_equities), Decimal("0"))
         )
         valid_indexes = True
         above = 0
@@ -171,20 +195,37 @@ def build_historical_market_snapshots(
             above += history[-1] > _average(history[-20:])
         complete = bool(
             valid_indexes
-            and current_equities
-            and previous_equities
+            and (
+                current_aggregate is not None
+                and current_aggregate.valid_count > 0
+                if market_aggregates_by_date is not None
+                else current_equities
+            )
+            and (
+                previous_aggregate is not None
+                and previous_aggregate.valid_count > 0
+                if market_aggregates_by_date is not None
+                else previous_equities
+            )
             and current_amount > 0
             and previous_amount > 0
         )
-        snapshots[current_date] = MarketSnapshot(
-            indexes_above_ma20=above,
-            breadth_pct=(
+        breadth_pct = (
+            100.0
+            * current_aggregate.advancing_count
+            / current_aggregate.valid_count
+            if current_aggregate is not None and current_aggregate.valid_count > 0
+            else (
                 100.0
                 * sum(bar.pct_chg > 0 for bar in current_equities)
                 / len(current_equities)
                 if current_equities
                 else 0.0
-            ),
+            )
+        )
+        snapshots[current_date] = MarketSnapshot(
+            indexes_above_ma20=above,
+            breadth_pct=breadth_pct,
             amount_ratio=(
                 float(current_amount / previous_amount)
                 if previous_amount > 0
@@ -364,6 +405,31 @@ def _future_dates(engine, end: date, count: int = 7) -> tuple[date, ...]:
         )
 
 
+def _load_market_aggregates(
+    engine, start: date, end: date
+) -> dict[date, MarketDailyAggregate]:
+    with engine.connect() as connection:
+        rows = connection.execute(
+            text(
+                "SELECT trade_date, COUNT(pct_chg) AS valid_count, "
+                "SUM(CASE WHEN pct_chg > 0 THEN 1 ELSE 0 END) AS advancing_count, "
+                "SUM(amount) AS total_amount FROM stock_daily "
+                "WHERE trade_date BETWEEN :start AND :end GROUP BY trade_date "
+                "ORDER BY trade_date"
+            ),
+            {"start": start, "end": end},
+        ).mappings()
+        return {
+            row["trade_date"]: MarketDailyAggregate(
+                trade_date=row["trade_date"],
+                valid_count=int(row["valid_count"] or 0),
+                advancing_count=int(row["advancing_count"] or 0),
+                total_amount=Decimal(str(row["total_amount"] or 0)),
+            )
+            for row in rows
+        }
+
+
 def generate_mysql_replay_bundle(start: date, end: date) -> ReplayBundle:
     from dotenv import load_dotenv
 
@@ -396,10 +462,12 @@ def generate_mysql_replay_bundle(start: date, end: date) -> ReplayBundle:
             for code in BENCHMARK_INDEX_CODES
         }
     market_dates = _trade_dates(engine, history_start, end)
+    market_aggregates = _load_market_aggregates(engine, history_start, end)
     market_snapshots = build_historical_market_snapshots(
         market_dates,
         bars_by_code,
         index_bars,
+        market_aggregates_by_date=market_aggregates,
     )
     discovery = discover_historical_plans(
         signal_dates=signal_dates,

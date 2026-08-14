@@ -5,6 +5,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 from stock_ai.buy_point_selection.historical_replay_runtime import (
+    MarketDailyAggregate,
     build_historical_market_snapshots,
     discover_historical_plans,
 )
@@ -96,6 +97,39 @@ def test_market_snapshot_fails_closed_when_one_benchmark_is_missing() -> None:
     current = build_historical_market_snapshots(dates, {}, index_bars)[dates[-1]]
 
     assert not current.complete
+
+
+def test_market_snapshot_uses_full_market_aggregate_not_candidate_panel() -> None:
+    """Catches main-board-only breadth drifting from the production market regime."""
+    start = date(2024, 1, 2)
+    dates = tuple(start + timedelta(days=index) for index in range(20))
+    index_bars = {
+        code: tuple(
+            IndexBar(code, day, Decimal("3000") + index, Decimal("0.1"))
+            for index, day in enumerate(dates)
+        )
+        for code in ("sh.000001", "sz.399001", "sh.000688")
+    }
+    aggregates = {
+        day: MarketDailyAggregate(
+            trade_date=day,
+            valid_count=100,
+            advancing_count=60,
+            total_amount=Decimal("200") if index == 19 else Decimal("100"),
+        )
+        for index, day in enumerate(dates)
+    }
+
+    current = build_historical_market_snapshots(
+        dates,
+        {},
+        index_bars,
+        market_aggregates_by_date=aggregates,
+    )[dates[-1]]
+
+    assert current.complete
+    assert current.breadth_pct == 60.0
+    assert current.amount_ratio == 2.0
 
 
 def _first_launch_bars(code_offset: int = 0) -> tuple[BuyPointBar, ...]:
