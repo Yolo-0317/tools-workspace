@@ -38,7 +38,7 @@ PYTHONPATH=a-share-short-term-trading stock-ai/.venv/bin/python \
 
 ### 手动买点优先选股
 
-正式手动入口使用规则 `buy-point-selection-3.0.0`。它一次有界读取完整沪深主板日线面板，不从旧四轨候选池反推全市场；旧 `combined / ma5 / five_factor / bottom_breakout` 即使运行失败也不能阻塞新引擎，已有结果只进入影子研究。
+正式手动入口使用规则 `buy-point-selection-3.1.0`。它一次有界读取完整沪深主板日线面板，不从旧四轨候选池反推全市场；旧 `combined / ma5 / five_factor / bottom_breakout` 即使运行失败也不能阻塞新引擎，已有结果只进入影子研究。
 
 新引擎只允许三类入场前结构：平台临界突破、强趋势缩量回踩、首次启动后的浅回踩。普通三连阳、连续加速、旧策略高分和事件利好不能独立取得交易资格。报告固定分为：
 
@@ -80,12 +80,16 @@ PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
 
 收盘计划不代表已经成交。后两个交易日真实价格触及触发价才把条件状态记为 `TRIGGERED`；高开超过 3%、触发时相对信号收盘超过 5%、市场冻结、风险否决或结构跌破会取消。模拟触发不会开启持仓决策周期，只有券商事实确认持仓从 0 变为正数，且能匹配同代码的 V1.3 `TRIGGERED` 计划时，才把 `selection_plan_id` 和冻结触发计划写入新的 3—5 日周期。
 
+3.1.0 的主要成功路径是：计划真实触发后最多跟踪五个交易日，在结构失效价之前先达到冻结的 2R 目标。系统同时保留未触发、先止损、到期盈利、到期亏损、到期持平、同日目标/止损歧义、MFE、MAE 和扣费后净收益。只有日线无法判断同日先后时，固定按先止损处理。
+
+历史校准按“形态 × 市场状态 × 板块共振、形态 × 市场状态、形态”逐级回退，选择第一个不少于 30 笔已触发交易的样本组。候选先按扣费后净期望，再按 2R 成功率、先止损率和 63 日滚动稳定性排序。报告中的概率为该历史样本组的 95% Wilson 区间，只描述同类历史频率，不是对单只股票的精确预测或上涨保证。
+
 历史研究采用按时间顺序的 60%/20%/20% 训练、验证和一次性冻结测试，至少需要 252/126/126 个交易日。研究数据准备后依次运行：
 
 ```bash
 PYTHONPATH=stock-ai stock-ai/.venv/bin/python \
   stock-ai/scripts/analysis/backtest_buy_point_selection.py \
-  --research-train-validation --trading-dates <dates.json> --observations <net-observations.json>
+  --research-train-validation --trading-dates <dates.json> --observations <outcome-observations.json>
 
 PYTHONPATH=stock-ai stock-ai/.venv/bin/python \
   stock-ai/scripts/analysis/backtest_buy_point_selection.py \
@@ -94,8 +98,10 @@ PYTHONPATH=stock-ai stock-ai/.venv/bin/python \
 PYTHONPATH=stock-ai stock-ai/.venv/bin/python \
   stock-ai/scripts/analysis/backtest_buy_point_selection.py \
   --run-test --write-artifact --trading-dates <dates.json> \
-  --observations <net-observations.json>
+  --observations <outcome-observations.json>
 ```
+
+`outcome-observations.json` 每行必须包含 `exit_date`、`setup_type`、`sector_code`、`net_return`、`net_pnl`、`outcome`、`market_status`、`sector_resonating`、`mfe` 和 `mae`。验证产物 schema 为 `buy-point-selection-validation-v2`。旧 v1 产物、缺少任一结果字段、空校准、规则版本或哈希不一致时统一失败关闭。
 
 历史通过仍不足以切到 `LIVE`：还必须有至少 20 个不同手动前向日期、20 个已触发/取消/失效/过期的完整计划，并且完整性违规为 0。验证产物缺失、规则哈希不一致、样本不足或任何门槛失败时保持 `SHADOW`；旧负期望策略不作正式兜底。回测和输出都不构成盈利承诺。
 

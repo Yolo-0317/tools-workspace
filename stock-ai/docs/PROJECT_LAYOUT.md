@@ -30,13 +30,15 @@ stock-ai/
 | Tushare 日线同步 | `uv run python scripts/sync/sync_tushare_daily_to_mysql.py` |
 | 五因子选股 | `uv run python core_v3/stock_selection_five_factor_mysql.py` |
 | 综合选股 (v2) | `uv run python core_v2/stock_selection_combined.py` |
-| 买点优先手动选股 V1.3 | `PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python a-share-short-term-trading/scripts/select_short_term_candidates.py --output text` |
+| 买点优先手动选股 V1.3 / 规则 3.1.0 | `PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python a-share-short-term-trading/scripts/select_short_term_candidates.py --output text` |
 | 点时参考数据显式刷新 | 默认巨潮资讯 + BaoStock：`PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python stock-ai/scripts/sync/sync_buy_point_reference_data.py --start 2024-01-02 --end latest`；Tushare 回退追加 `--provider tushare` |
 | 定时同步 | `./run_sync_daily.sh` 或 `docker/scheduler`（工作日 17:00，见 [SCHEDULING.md](SCHEDULING.md)） |
 
 旧路径 `scripts/sync_tushare_daily_to_mysql.py` 仍保留兼容包装，会转发到 `scripts/sync/`。
 
 普通选股不刷新参考数据，点时同步命令也不会安装定时任务。买点优先入口没有定时安装项。旧四轨仍可由现有调度产出研究记录，但在 V1.3 中只作为影子漏选对照，不能提供正式买入资格。
+
+规则 3.1.0 以触发后五个交易日内先达到 2R 为主要路径标签，使用同类样本的扣费后净期望和 95% Wilson 概率区间排序。验证只接受 `buy-point-selection-validation-v2`；旧产物或校准缺失时保持失败关闭。
 
 ## 共享库
 

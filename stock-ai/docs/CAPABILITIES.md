@@ -349,7 +349,7 @@ MCP 工具：`tushare_mcp.py` — `deepseek_trade_signal` 等。详见 [DEEPSEEK
 
 筛选条件详解见 [SELECTION_STRATEGIES.md](SELECTION_STRATEGIES.md)。
 
-买点优先规则版本为 `buy-point-selection-3.0.0`。它一次读取完整沪深主板面板，只识别平台临界突破、强趋势缩量回踩和首次启动后浅回踩；普通三连阳、旧四轨、涨停基因和事件池只能进入影子研究，不能升级正式资格。正式候选每天为 0—3 只，市场或点时数据不完整时允许为 0。入口仅手动运行，不安装定时任务：
+买点优先规则版本为 `buy-point-selection-3.1.0`。它一次读取完整沪深主板面板，只识别平台临界突破、强趋势缩量回踩和首次启动后浅回踩；普通三连阳、旧四轨、涨停基因和事件池只能进入影子研究，不能升级正式资格。正式候选每天为 0—3 只，市场或点时数据不完整时允许为 0。入口仅手动运行，不安装定时任务：
 
 ```bash
 PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
@@ -371,6 +371,10 @@ PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
   stock-ai/scripts/sync/sync_buy_point_reference_data.py \
   --start 2024-01-02 --end latest --provider tushare
 ```
+
+3.1.0 为每个历史计划保留 `NOT_TRIGGERED / TARGET_2R_FIRST / STOP_FIRST / EXPIRY_GAIN / EXPIRY_LOSS / EXPIRY_FLAT` 路径结果，以及五日 MFE、MAE 和扣费后净收益。运行时按形态、市场状态和板块共振逐级选择至少 30 笔已触发样本的校准组，先按净期望，再按 2R 成功率、止损率和滚动稳定性排序。报告中的 2R/止损概率是历史同类样本的 95% Wilson 区间，不是个股上涨保证。
+
+验证产物必须使用 `buy-point-selection-validation-v2`。旧 v1 产物、净收益字段不完整的观察数据、空校准或规则哈希不一致都会失败关闭，不能取得正式资格。
 
 `LIVE` 不由 AI 或单次回测决定。必须先通过冻结历史门槛，再完成至少 20 个不同交易日的手动前向运行和至少 20 个已解决计划，且完整性违规为 0；否则统一输出 `SHADOW`。只有正式层显示最大股数，观察和影子层固定显示无交易资格。
 
