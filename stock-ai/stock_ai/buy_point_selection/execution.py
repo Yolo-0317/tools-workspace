@@ -75,7 +75,11 @@ def _empty_trade(plan: PricePlan, sector_code: str, status: str) -> SimulatedTra
         exit_legs=(),
         net_pnl=Decimal("0"),
         net_return=None,
-        outcome=OutcomeLabel.NOT_TRIGGERED,
+        outcome=(
+            OutcomeLabel.PENDING
+            if status == "PENDING"
+            else OutcomeLabel.NOT_TRIGGERED
+        ),
         mfe=None,
         mae=None,
         intraday_order_ambiguous=False,

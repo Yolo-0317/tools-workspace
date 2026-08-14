@@ -178,6 +178,18 @@ def test_untriggered_plan_expires_and_open_trade_exits_on_session_five() -> None
     assert timed.exit_legs[-1].reason == "TIME_EXIT"
 
 
+def test_untriggered_plan_with_incomplete_trigger_window_remains_pending() -> None:
+    """Catches a one-session partial future path being mislabeled as a resolved miss."""
+    bars = (
+        _bar(11, open_="10.00", high="10.05", low="9.95", close="10.00"),
+    )
+
+    trade = simulate_plan(_plan(), bars, COSTS, sector_code="S1")
+
+    assert trade.status == "PENDING"
+    assert trade.outcome is buy_point_models.OutcomeLabel.PENDING
+
+
 def test_five_session_time_exit_classifies_gain_loss_and_flat() -> None:
     """Catches time exits being treated as one undifferentiated non-2R outcome."""
     gain = simulate_plan(
