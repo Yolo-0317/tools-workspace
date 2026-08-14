@@ -105,6 +105,24 @@ def _row_value(row: object, name: str):
     return getattr(row, name)
 
 
+def _latest_observation_by_date(
+    observed_dates: tuple[date, ...] | list[date],
+    trade_dates: tuple[date, ...],
+) -> dict[date, date | None]:
+    """Resolve the latest non-future observation with one monotonic scan."""
+
+    ordered = tuple(sorted(set(observed_dates)))
+    pointer = 0
+    latest = None
+    resolved: dict[date, date | None] = {}
+    for day in trade_dates:
+        while pointer < len(ordered) and ordered[pointer] <= day:
+            latest = ordered[pointer]
+            pointer += 1
+        resolved[day] = latest
+    return resolved
+
+
 def _universe_by_date(
     engine, trade_dates: tuple[date, ...], *, lookback_calendar_days: int = 180
 ) -> dict[date, frozenset[str]]:
@@ -137,14 +155,13 @@ def _universe_by_date(
             else date.fromisoformat(str(raw_date)[:10])
         )
         observed.setdefault(code, []).append(trade_date)
-    return {
-        day: frozenset(
-            code
-            for code, dates in observed.items()
-            if any(day - timedelta(days=lookback_calendar_days) <= value <= day for value in dates)
-        )
-        for day in trade_dates
-    }
+    universe: dict[date, set[str]] = {day: set() for day in trade_dates}
+    for code, dates in observed.items():
+        latest_by_date = _latest_observation_by_date(dates, trade_dates)
+        for day, latest in latest_by_date.items():
+            if latest is not None and latest >= day - timedelta(days=lookback_calendar_days):
+                universe[day].add(code)
+    return {day: frozenset(codes) for day, codes in universe.items()}
 
 
 def _safe_cli_error(exc: Exception) -> str:

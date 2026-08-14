@@ -254,6 +254,27 @@ def test_universe_by_date_uses_one_query_and_keeps_recently_suspended_main_board
     }
 
 
+def test_latest_observation_by_date_advances_monotonically() -> None:
+    """Catches the historical universe rebuilding every code's full date list per day."""
+    module = _load_script()
+    trade_dates = (
+        date(2025, 8, 4),
+        date(2025, 8, 5),
+        date(2025, 8, 6),
+    )
+
+    resolved = module._latest_observation_by_date(
+        (date(2025, 8, 1), date(2025, 8, 5), date(2025, 8, 8)),
+        trade_dates,
+    )
+
+    assert resolved == {
+        date(2025, 8, 4): date(2025, 8, 1),
+        date(2025, 8, 5): date(2025, 8, 5),
+        date(2025, 8, 6): date(2025, 8, 5),
+    }
+
+
 def test_provider_failure_prints_only_safe_error_code(monkeypatch, capsys) -> None:
     module = _load_script()
     engine = object()
