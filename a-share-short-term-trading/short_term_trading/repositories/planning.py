@@ -219,22 +219,36 @@ class PlanningRepository:
         )
 
     def save_buy_point_bundle(self, bundle: BuyPointBundle) -> None:
+        self.save_buy_point_run(
+            ((bundle.candidate, bundle.plan, bundle.initial_event),),
+            bundle.forward_run,
+        )
+
+    def save_buy_point_run(
+        self,
+        rows: tuple[
+            tuple[CandidateV3, TradePlanV3 | None, PlanEventV1 | None], ...
+        ],
+        forward_run: ForwardSelectionRunV1,
+    ) -> None:
         with write_connection(self._connection) as connection:
-            self._insert_ignore(
-                connection, "stt_candidates", self._candidate_v3_values(bundle.candidate)
-            )
-            self._insert_ignore(
-                connection, "stt_trade_plans", self._plan_v3_values(bundle.plan)
-            )
-            self._insert_ignore(
-                connection,
-                "stt_buy_point_plan_events",
-                self._event_values(bundle.initial_event),
-            )
+            for candidate, plan, initial_event in rows:
+                self._insert_ignore(
+                    connection, "stt_candidates", self._candidate_v3_values(candidate)
+                )
+                if plan is not None and initial_event is not None:
+                    self._insert_ignore(
+                        connection, "stt_trade_plans", self._plan_v3_values(plan)
+                    )
+                    self._insert_ignore(
+                        connection,
+                        "stt_buy_point_plan_events",
+                        self._event_values(initial_event),
+                    )
             self._insert_ignore(
                 connection,
                 "stt_buy_point_forward_runs",
-                self._forward_run_values(bundle.forward_run),
+                self._forward_run_values(forward_run),
             )
 
     def get_candidate_v3(self, candidate_id: str) -> CandidateV3 | None:

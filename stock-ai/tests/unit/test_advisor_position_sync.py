@@ -2,11 +2,15 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from decimal import Decimal
+from types import SimpleNamespace
+
+import json
 
 from scripts.tools.jywg_portfolio_sync import BrokerPosition
 from stock_ai.advisor_memory.position_sync import (
     PositionProjection,
     diff_position_facts,
+    sync_broker_facts_with_memory,
 )
 
 
@@ -120,3 +124,106 @@ def test_missing_incoming_row_closes_previous_active_position() -> None:
 
     assert events[0].event_type == "CLOSED"
     assert events[0].shares_after == 0
+
+
+class _Result:
+    def __init__(self, *, rows=None, row=None, rowcount=1, lastrowid=42):
+        self._rows = rows or []
+        self._row = row
+        self.rowcount = rowcount
+        self.lastrowid = lastrowid
+
+    def mappings(self):
+        return self
+
+    def all(self):
+        return self._rows
+
+    def first(self):
+        return self._row
+
+    def scalar(self):
+        return None
+
+
+class _Connection:
+    def __init__(self, triggered_plan):
+        self.triggered_plan = triggered_plan
+        self.calls = []
+
+    def execute(self, statement, parameters=None):
+        sql = str(statement)
+        values = parameters or {}
+        self.calls.append((sql, values))
+        if "FROM portfolio_positions" in sql:
+            return _Result(rows=[])
+        if "FROM advisor_decision_cycles" in sql:
+            return _Result(row=None)
+        if "FROM stt_trade_plans" in sql:
+            return _Result(row=self.triggered_plan)
+        return _Result()
+
+
+def _triggered_plan_row():
+    return {
+        "plan_id": "70000000-0000-4000-8000-000000000001",
+        "code": "600000",
+        "structure_id": "0123456789abcdef0123456789abcdef",
+        "trigger_price": Decimal("10.01"),
+        "invalidation_price": Decimal("9.71"),
+        "target_2r": Decimal("10.61"),
+        "risk_distance": Decimal("0.30"),
+        "maximum_shares": 300,
+        "valid_through_trade_date": CAPTURED.date(),
+        "rule_version": "buy-point-selection-3.0.0",
+    }
+
+
+def test_broker_open_links_triggered_plan_to_new_decision_cycle(monkeypatch) -> None:
+    """Catches a simulated trigger opening memory before a broker-confirmed position exists."""
+    connection = _Connection(_triggered_plan_row())
+    trading_days = tuple(CAPTURED.date().fromordinal(CAPTURED.date().toordinal() + index) for index in range(5))
+    monkeypatch.setattr(
+        "stock_ai.advisor_memory.position_sync._confirmed_cycle_dates",
+        lambda start: trading_days,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "scripts.tools.portfolio_db.sync_broker_positions_and_account",
+        lambda *args, **kwargs: {},
+    )
+    account = SimpleNamespace(broker_captured_at=CAPTURED)
+
+    stats = sync_broker_facts_with_memory(
+        [broker_position(shares=500)],
+        account,
+        connection=connection,
+    )
+
+    cycle_calls = [call for call in connection.calls if "INSERT INTO advisor_decision_cycles" in call[0]]
+    assert len(cycle_calls) == 1
+    cycle_values = cycle_calls[0][1]
+    assert cycle_values["selection_source"] == "buy_point_v3"
+    assert cycle_values["selection_plan_id"] == _triggered_plan_row()["plan_id"]
+    assert json.loads(cycle_values["trigger_plan"])["trigger_price"] == "10.01"
+    position_calls = [call for call in connection.calls if "INSERT IGNORE INTO portfolio_position_events" in call[0]]
+    assert position_calls[0][1]["cycle_id"] == 42
+    assert stats["position_events"] == 1
+
+
+def test_open_without_confirmed_triggered_plan_keeps_position_event_unlinked(monkeypatch) -> None:
+    """Catches an unmatched broker position inventing a selection plan or decision cycle."""
+    connection = _Connection(None)
+    monkeypatch.setattr(
+        "scripts.tools.portfolio_db.sync_broker_positions_and_account",
+        lambda *args, **kwargs: {},
+    )
+    account = SimpleNamespace(broker_captured_at=CAPTURED)
+    sync_broker_facts_with_memory(
+        [broker_position(shares=500)],
+        account,
+        connection=connection,
+    )
+    assert not any("INSERT INTO advisor_decision_cycles" in call[0] for call in connection.calls)
+    position_calls = [call for call in connection.calls if "INSERT IGNORE INTO portfolio_position_events" in call[0]]
+    assert position_calls[0][1]["cycle_id"] is None

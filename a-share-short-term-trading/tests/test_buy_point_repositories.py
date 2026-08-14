@@ -171,6 +171,21 @@ def test_bundle_failure_rolls_back_candidate_plan_and_event() -> None:
     assert engine.rolled_back and not engine.committed
 
 
+def test_full_runtime_run_persists_all_symbols_and_one_forward_row_atomically() -> None:
+    """Catches one-symbol transactions exposing a partially materialized daily run."""
+    engine = TransactionEngine()
+    bundle = _bundle()
+    PlanningRepository(engine).save_buy_point_run(
+        ((bundle.candidate, bundle.plan, bundle.initial_event),) * 2,
+        bundle.forward_run,
+    )
+    statements = [value[0] for value in engine.connection.calls]
+    assert engine.committed and not engine.rolled_back
+    assert len(statements) == 7
+    assert sum("stt_buy_point_forward_runs" in value for value in statements) == 1
+    assert "stt_buy_point_forward_runs" in statements[-1]
+
+
 def test_state_change_appends_event_before_updating_projection() -> None:
     """Catches mutable state being changed without an immutable audit event."""
     engine = TransactionEngine()

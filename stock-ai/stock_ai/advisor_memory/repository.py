@@ -131,6 +131,8 @@ class AdvisorLedgerRepository:
         initial_action: str,
         current_action: str,
         trigger_plan: Mapping[str, Any] | None = None,
+        selection_source: str | None = None,
+        selection_plan_id: str | None = None,
     ) -> DecisionCycle:
         result = self.connection.execute(
             text(
@@ -138,10 +140,12 @@ class AdvisorLedgerRepository:
                 INSERT INTO advisor_decision_cycles
                   (ts_code, name, started_trade_date, review_trade_date,
                    expiry_trade_date, initial_action, current_action,
-                   trigger_plan_json, status, source)
+                   trigger_plan_json, selection_source, selection_plan_id,
+                   status, source)
                 VALUES
                   (:code, :name, :started, :review, :expiry,
-                   :initial_action, :current_action, :trigger_plan, 'ACTIVE', 'advisor')
+                   :initial_action, :current_action, :trigger_plan,
+                   :selection_source, :selection_plan_id, 'ACTIVE', 'advisor')
                 """
             ),
             {
@@ -153,6 +157,8 @@ class AdvisorLedgerRepository:
                 "initial_action": initial_action,
                 "current_action": current_action,
                 "trigger_plan": json.dumps(trigger_plan or {}, ensure_ascii=False, default=_json_default),
+                "selection_source": selection_source,
+                "selection_plan_id": selection_plan_id,
             },
         )
         cycle_id = int(result.lastrowid)
@@ -179,6 +185,24 @@ class AdvisorLedgerRepository:
             status=CycleStatus.ACTIVE,
             trigger_plan=dict(trigger_plan or {}),
         )
+
+    def load_latest_triggered_buy_point_plan(self, code: str):
+        return self.connection.execute(
+            text(
+                """
+                SELECT plan_id, code, structure_id, trigger_price,
+                       invalidation_price, target_2r, risk_distance,
+                       maximum_shares, valid_through_trade_date, rule_version
+                FROM stt_trade_plans
+                WHERE code = :code
+                  AND schema_version = '1.3'
+                  AND plan_state = 'TRIGGERED'
+                  AND data_status = 'VALID'
+                ORDER BY analysis_date DESC, as_of DESC LIMIT 1
+                """
+            ),
+            {"code": str(code).zfill(6)},
+        ).mappings().first()
 
     def attach_trigger_plan(
         self,

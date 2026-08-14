@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any, Mapping, Sequence
 
 from sqlalchemy import text
 
 from .repository import AdvisorLedgerRepository
+from .state_machine import resolve_cycle_dates
 
 
 @dataclass(frozen=True)
@@ -122,6 +123,63 @@ def _load_active_projections(connection) -> dict[str, PositionProjection]:
     }
 
 
+def _confirmed_cycle_dates(start: date) -> tuple[date, ...] | None:
+    from stock_ai.trading_calendar import next_confirmed_a_share_trade_date
+
+    dates: list[date] = []
+    cursor = start
+    for _ in range(5):
+        confirmed = next_confirmed_a_share_trade_date(cursor)
+        if confirmed is None:
+            return None
+        dates.append(confirmed)
+        cursor = confirmed + timedelta(days=1)
+    return tuple(dates)
+
+
+def _open_confirmed_buy_point_cycle(
+    repository: AdvisorLedgerRepository,
+    draft: PositionEventDraft,
+    captured_at: datetime,
+) -> int | None:
+    plan = repository.load_latest_triggered_buy_point_plan(draft.code)
+    if plan is None:
+        return None
+    trading_days = _confirmed_cycle_dates(captured_at.date())
+    if trading_days is None:
+        return None
+    started = trading_days[0]
+    review, expiry = resolve_cycle_dates(started, trading_days)
+    trigger_plan = {
+        key: plan[key]
+        for key in (
+            "plan_id",
+            "structure_id",
+            "trigger_price",
+            "invalidation_price",
+            "target_2r",
+            "risk_distance",
+            "maximum_shares",
+            "valid_through_trade_date",
+            "rule_version",
+        )
+        if key in plan
+    }
+    cycle = repository.open_cycle(
+        code=draft.code,
+        name=draft.name,
+        started_trade_date=started,
+        review_trade_date=review,
+        expiry_trade_date=expiry,
+        initial_action="持有观察",
+        current_action="持有观察",
+        trigger_plan=trigger_plan,
+        selection_source="buy_point_v3",
+        selection_plan_id=str(plan["plan_id"]),
+    )
+    return int(cycle.cycle_id)
+
+
 def _sync_with_connection(positions, account, *, source: str, connection) -> dict[str, int]:
     from scripts.tools.portfolio_db import sync_broker_positions_and_account
 
@@ -140,6 +198,12 @@ def _sync_with_connection(positions, account, *, source: str, connection) -> dic
     for draft in drafts:
         active_cycle = repository.load_active_cycle(draft.code)
         cycle_id = int(active_cycle["cycle_id"]) if active_cycle else None
+        if draft.event_type == "OPENED" and cycle_id is None:
+            cycle_id = _open_confirmed_buy_point_cycle(
+                repository,
+                draft,
+                captured_at,
+            )
         if draft.event_type == "CLOSED" and cycle_id is None:
             cycle_id = repository.open_legacy_closed_cycle(
                 code=draft.code,
