@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 from decimal import Decimal
+import re
 from typing import Any, Literal
 from uuid import UUID
 
@@ -115,6 +116,124 @@ class TradePlanV2(ContractModel):
         elif self.portfolio_status == "APPROVED" and self.maximum_shares is None:
             raise ValueError("approved portfolio requires maximum_shares")
         return self
+
+
+_STRUCTURE_ID_PATTERN = re.compile(r"^[0-9a-f]{32}$")
+_FINGERPRINT_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _structure_id(value: str) -> str:
+    if _STRUCTURE_ID_PATTERN.fullmatch(value) is None:
+        raise ValueError("structure_id must be 32 lowercase hexadecimal characters")
+    return value
+
+
+class TradePlanV3(ContractModel):
+    schema_version: Literal["1.3"] = "1.3"
+    plan_id: str
+    candidate_id: str
+    analysis_date: date
+    trading_date: date
+    code: str
+    structure_id: str
+    selection_tier: Literal["FORMAL", "OBSERVE", "SHADOW"]
+    plan_state: Literal["PREPARED", "TRIGGERED", "EXPIRED", "INVALIDATED"]
+    signal_close: Decimal = Field(gt=0)
+    trigger_price: Decimal = Field(gt=0)
+    invalidation_price: Decimal = Field(gt=0)
+    target_2r: Decimal = Field(gt=0)
+    risk_distance: Decimal = Field(gt=0)
+    risk_reward_ratio: Decimal = Field(gt=0)
+    maximum_shares: int | None = Field(default=None, ge=0)
+    market_status: MarketStatus
+    valid_through_trade_date: date
+    valid_session_count: Literal[2] = 2
+    rule_version: str = Field(min_length=1)
+    evidence_refs: tuple[str, ...] = Field(min_length=1)
+
+    _validate_plan_id = field_validator("plan_id")(_uuid_string)
+    _validate_candidate_id = field_validator("candidate_id")(_uuid_string)
+    _validate_code = field_validator("code")(validate_code)
+    _validate_structure_id = field_validator("structure_id")(_structure_id)
+    _validate_evidence_refs = field_validator("evidence_refs")(
+        lambda values: tuple(_uuid_string(value) for value in values)
+    )
+
+    @model_validator(mode="after")
+    def validate_buy_point_plan(self) -> "TradePlanV3":
+        if not self.invalidation_price < self.trigger_price < self.target_2r:
+            raise ValueError("price order must be invalidation < trigger < target_2r")
+        if self.risk_distance != self.trigger_price - self.invalidation_price:
+            raise ValueError("risk_distance must equal trigger minus invalidation")
+        if self.target_2r != self.trigger_price + Decimal("2") * self.risk_distance:
+            raise ValueError("target_2r must equal trigger plus two risk distances")
+        if self.risk_reward_ratio != Decimal("2"):
+            raise ValueError("risk_reward_ratio must equal 2")
+        if self.selection_tier != "FORMAL" and self.maximum_shares not in {None, 0}:
+            raise ValueError("non-formal plans require zero or unknown maximum_shares")
+        if self.selection_tier == "FORMAL" and (
+            self.maximum_shares is None or self.maximum_shares < 100
+        ):
+            raise ValueError("formal plans require at least 100 maximum_shares")
+        if self.selection_tier == "FORMAL" and self.market_status is MarketStatus.FREEZE:
+            raise ValueError("FREEZE market cannot persist a formal plan")
+        if self.valid_through_trade_date <= self.trading_date:
+            raise ValueError("valid_through_trade_date must follow the first trading date")
+        return self
+
+
+class PlanEventV1(ContractModel):
+    schema_version: Literal["1.3"] = "1.3"
+    event_id: str
+    plan_id: str
+    structure_id: str
+    previous_state: Literal["PREPARED", "TRIGGERED", "EXPIRED", "INVALIDATED"] | None
+    new_state: Literal["PREPARED", "TRIGGERED", "EXPIRED", "INVALIDATED"]
+    reason_code: str = Field(min_length=1)
+    evidence_refs: tuple[str, ...]
+    observed_at: AwareDatetime
+    event_fingerprint: str
+
+    _validate_event_id = field_validator("event_id")(_uuid_string)
+    _validate_plan_id = field_validator("plan_id")(_uuid_string)
+    _validate_structure_id = field_validator("structure_id")(_structure_id)
+    _validate_evidence_refs = field_validator("evidence_refs")(
+        lambda values: tuple(_uuid_string(value) for value in values)
+    )
+    _normalize_observed_at = field_validator("observed_at")(_utc)
+
+    @field_validator("event_fingerprint")
+    @classmethod
+    def validate_event_fingerprint(cls, value: str) -> str:
+        if _FINGERPRINT_PATTERN.fullmatch(value) is None:
+            raise ValueError("event_fingerprint must be 64 lowercase hexadecimal characters")
+        return value
+
+    @model_validator(mode="after")
+    def validate_transition(self) -> "PlanEventV1":
+        allowed = {
+            None: {"PREPARED"},
+            "PREPARED": {"TRIGGERED", "EXPIRED", "INVALIDATED"},
+        }
+        if self.new_state not in allowed.get(self.previous_state, set()):
+            raise ValueError("invalid append-only plan state transition")
+        return self
+
+
+class ForwardSelectionRunV1(ContractModel):
+    schema_version: Literal["1.3"] = "1.3"
+    run_id: str
+    analysis_date: date
+    rule_version: str = Field(min_length=1)
+    formal_count: int = Field(ge=0)
+    observe_count: int = Field(ge=0)
+    shadow_count: int = Field(ge=0)
+    resolved_count: int = Field(ge=0)
+    duplicate_count: int = Field(ge=0)
+    integrity_violations: tuple[str, ...]
+    release_mode: ReleaseMode
+
+    _validate_run_id = field_validator("run_id")(_uuid_string)
 
 
 class RiskDecisionV1(ContractModel):

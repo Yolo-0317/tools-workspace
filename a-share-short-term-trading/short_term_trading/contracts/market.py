@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 from decimal import Decimal
+import re
 from typing import Any, Literal
 from uuid import UUID
 
@@ -84,6 +85,52 @@ class CandidateV2(ContractModel):
     _validate_evidence_refs = field_validator("evidence_refs")(
         lambda values: tuple(_uuid_string(value) for value in values)
     )
+
+
+_STRUCTURE_ID_PATTERN = re.compile(r"^[0-9a-f]{32}$")
+
+
+class CandidateV3(ContractModel):
+    schema_version: Literal["1.3"] = "1.3"
+    candidate_id: str
+    analysis_date: date
+    trading_date: date
+    code: str
+    name: str = Field(min_length=1)
+    candidate_type: Literal[
+        "PRE_BREAKOUT", "TREND_PULLBACK", "FIRST_LAUNCH_PULLBACK"
+    ]
+    selection_tier: Literal["FORMAL", "OBSERVE", "SHADOW"]
+    executable_status: Literal["OBSERVE", "EXECUTABLE", "REJECTED"]
+    structure_id: str
+    pattern_quality: Decimal = Field(ge=0, le=1)
+    sector: str | None
+    sector_metrics: dict[str, Any]
+    missing_fields: tuple[str, ...]
+    rejected_reasons: tuple[str, ...]
+    rule_version: str = Field(min_length=1)
+    evidence_refs: tuple[str, ...] = Field(min_length=1)
+
+    _validate_candidate_id = field_validator("candidate_id")(_uuid_string)
+    _validate_code = field_validator("code")(validate_code)
+    _validate_evidence_refs = field_validator("evidence_refs")(
+        lambda values: tuple(_uuid_string(value) for value in values)
+    )
+
+    @field_validator("structure_id")
+    @classmethod
+    def validate_structure_id(cls, value: str) -> str:
+        if _STRUCTURE_ID_PATTERN.fullmatch(value) is None:
+            raise ValueError("structure_id must be 32 lowercase hexadecimal characters")
+        return value
+
+    @model_validator(mode="after")
+    def validate_tier_permissions(self) -> "CandidateV3":
+        if self.selection_tier != "FORMAL" and self.executable_status == "EXECUTABLE":
+            raise ValueError("observe and shadow candidates cannot be executable")
+        if self.selection_tier == "FORMAL" and self.missing_fields:
+            raise ValueError("formal candidates cannot have missing fields")
+        return self
 
 
 class EvidenceSnapshotV1(ContractModel):

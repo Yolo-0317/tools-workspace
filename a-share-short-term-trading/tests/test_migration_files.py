@@ -22,6 +22,8 @@ EXPECTED_TABLES = {
     "stt_outcome_observations",
     "stt_trade_journal",
     "stt_plan_evaluations",
+    "stt_buy_point_plan_events",
+    "stt_buy_point_forward_runs",
 }
 
 
@@ -61,6 +63,8 @@ def test_append_only_business_tables_have_uuid_primary_keys() -> None:
         "stt_outcome_observations": "observation_id",
         "stt_trade_journal": "journal_id",
         "stt_plan_evaluations": "evaluation_id",
+        "stt_buy_point_plan_events": "event_id",
+        "stt_buy_point_forward_runs": "run_id",
     }
 
     for table, key in expected_keys.items():
@@ -115,6 +119,30 @@ def test_short_term_selection_migration_is_additive_and_idempotent() -> None:
     assert "values ('1.2'" in sql
 
 
+def test_buy_point_v13_migration_is_additive_append_only_and_idempotent() -> None:
+    sql = (SQL_DIR / "006_buy_point_selection_v13.sql").read_text(encoding="utf-8").lower()
+    for column in (
+        "structure_id",
+        "selection_tier",
+        "plan_state",
+        "missing_fields_json",
+        "pattern_quality",
+        "sector_metrics_json",
+        "target_2r",
+        "signal_close",
+        "valid_through_trade_date",
+    ):
+        assert column in sql
+    assert "create table if not exists stt_buy_point_plan_events" in sql
+    assert "unique key uk_buy_point_event_fingerprint" in sql
+    assert "create table if not exists stt_buy_point_forward_runs" in sql
+    assert "unique key uk_buy_point_forward_date_rule" in sql
+    assert "information_schema.columns" in sql
+    assert "drop table" not in sql
+    assert "delete from" not in sql
+    assert "values ('1.3'" in sql
+
+
 def test_migrations_do_not_embed_credentials() -> None:
     sql = migration_text().lower()
 
@@ -139,6 +167,7 @@ def test_migration_cli_dry_run_lists_files_without_connecting() -> None:
         "003_stt_core_schema.sql DRY-RUN",
         "004_portfolio_broker_facts.sql DRY-RUN",
         "005_short_term_automatic_selection.sql DRY-RUN",
+        "006_buy_point_selection_v13.sql DRY-RUN",
     ]
     assert result.stderr == ""
 
@@ -163,4 +192,5 @@ def test_migration_cli_defaults_to_dry_run_and_requires_explicit_apply() -> None
         "003_stt_core_schema.sql DRY-RUN",
         "004_portfolio_broker_facts.sql DRY-RUN",
         "005_short_term_automatic_selection.sql DRY-RUN",
+        "006_buy_point_selection_v13.sql DRY-RUN",
     ]

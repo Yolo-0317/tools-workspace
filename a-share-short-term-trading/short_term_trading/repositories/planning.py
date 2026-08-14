@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from dataclasses import dataclass
+from datetime import date, datetime, time, timezone
+from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import text
@@ -10,15 +12,43 @@ from sqlalchemy import text
 from ..contracts import (
     CandidateV1,
     CandidateV2,
+    CandidateV3,
     DecisionSnapshotV1,
+    ForwardSelectionRunV1,
     IntradayDecisionV1,
     MarketStateV1,
+    PlanEventV1,
     RiskDecisionV1,
     TradePlanV1,
     TradePlanV2,
+    TradePlanV3,
     validate_code,
 )
-from .connection import DatabaseHandle, contract_values, read_connection, restore_contract, utc_naive, write_connection
+from .connection import (
+    DatabaseHandle,
+    contract_values,
+    json_dumps,
+    read_connection,
+    restore_contract,
+    utc_naive,
+    write_connection,
+)
+
+
+@dataclass(frozen=True)
+class BuyPointBundle:
+    candidate: CandidateV3
+    plan: TradePlanV3
+    initial_event: PlanEventV1
+    forward_run: ForwardSelectionRunV1
+
+
+@dataclass(frozen=True)
+class ForwardGateSummary:
+    distinct_dates: int
+    resolved_plans: int
+    integrity_violations: int
+    eligible: bool
 
 
 class PlanningRepository:
@@ -120,6 +150,107 @@ class PlanningRepository:
             },
         )
 
+    @staticmethod
+    def _candidate_v3_values(candidate: CandidateV3) -> dict[str, Any]:
+        values = contract_values(
+            candidate,
+            {
+                "sector_metrics": "sector_metrics_json",
+                "missing_fields": "missing_fields_json",
+                "rejected_reasons": "rejected_reasons_json",
+                "evidence_refs": "evidence_refs_json",
+            },
+        )
+        values.update(
+            {
+                "setup_score": candidate.pattern_quality * Decimal("100"),
+                "liquidity_score": Decimal("0"),
+                "trend_score": Decimal("0"),
+                "catalyst_score": Decimal("0"),
+                "sector": candidate.sector or "UNKNOWN",
+                "source_strategies_json": json_dumps(("buy-point-selection",)),
+            }
+        )
+        return values
+
+    @staticmethod
+    def _plan_v3_values(plan: TradePlanV3) -> dict[str, Any]:
+        values = contract_values(plan, {"evidence_refs": "evidence_refs_json"})
+        values.pop("valid_session_count")
+        valid_until = datetime.combine(
+            plan.valid_through_trade_date,
+            time(23, 59, 59),
+            tzinfo=timezone.utc,
+        )
+        values.update(
+            {
+                "status": "WAIT_ENTRY" if plan.plan_state == "PREPARED" else "NO_TRADE",
+                "entry_ceiling": plan.trigger_price,
+                "pullback_low": plan.invalidation_price,
+                "pullback_high": plan.trigger_price,
+                "first_reduce_price": plan.target_2r,
+                "atr": plan.risk_distance,
+                "chip_trade_date": plan.analysis_date,
+                "portfolio_status": (
+                    "APPROVED" if plan.selection_tier == "FORMAL" else "NOT_APPROVED"
+                ),
+                "valid_until": utc_naive(valid_until),
+            }
+        )
+        return values
+
+    @staticmethod
+    def _event_values(event: PlanEventV1) -> dict[str, Any]:
+        return contract_values(event, {"evidence_refs": "evidence_refs_json"})
+
+    @staticmethod
+    def _forward_run_values(run: ForwardSelectionRunV1) -> dict[str, Any]:
+        return contract_values(
+            run, {"integrity_violations": "integrity_violations_json"}
+        )
+
+    @staticmethod
+    def _insert_ignore(connection: Any, table: str, values: dict[str, Any]) -> None:
+        columns = ", ".join(values)
+        parameters = ", ".join(f":{name}" for name in values)
+        connection.execute(
+            text(f"INSERT IGNORE INTO {table} ({columns}) VALUES ({parameters})"),
+            values,
+        )
+
+    def save_buy_point_bundle(self, bundle: BuyPointBundle) -> None:
+        with write_connection(self._connection) as connection:
+            self._insert_ignore(
+                connection, "stt_candidates", self._candidate_v3_values(bundle.candidate)
+            )
+            self._insert_ignore(
+                connection, "stt_trade_plans", self._plan_v3_values(bundle.plan)
+            )
+            self._insert_ignore(
+                connection,
+                "stt_buy_point_plan_events",
+                self._event_values(bundle.initial_event),
+            )
+            self._insert_ignore(
+                connection,
+                "stt_buy_point_forward_runs",
+                self._forward_run_values(bundle.forward_run),
+            )
+
+    def get_candidate_v3(self, candidate_id: str) -> CandidateV3 | None:
+        return self._get(
+            "stt_candidates",
+            "candidate_id",
+            candidate_id,
+            CandidateV3,
+            {
+                "sector_metrics": "sector_metrics_json",
+                "missing_fields": "missing_fields_json",
+                "rejected_reasons": "rejected_reasons_json",
+                "evidence_refs": "evidence_refs_json",
+            },
+        )
+
     def save_plan(self, plan: TradePlanV1) -> None:
         self._save("stt_trade_plans", plan, {"evidence_refs": "evidence_refs_json"})
 
@@ -170,6 +301,65 @@ class PlanningRepository:
             plan_id,
             TradePlanV2,
             {"evidence_refs": "evidence_refs_json"},
+        )
+
+    def get_plan_v3(self, plan_id: str) -> TradePlanV3 | None:
+        return self._get(
+            "stt_trade_plans",
+            "plan_id",
+            plan_id,
+            TradePlanV3,
+            {"evidence_refs": "evidence_refs_json"},
+        )
+
+    def append_plan_event(self, event: PlanEventV1) -> None:
+        status = "WAIT_ENTRY" if event.new_state == "PREPARED" else "NO_TRADE"
+        with write_connection(self._connection) as connection:
+            self._insert_ignore(
+                connection,
+                "stt_buy_point_plan_events",
+                self._event_values(event),
+            )
+            connection.execute(
+                text(
+                    "UPDATE stt_trade_plans SET plan_state = :new_state, "
+                    "status = :status, as_of = :as_of "
+                    "WHERE plan_id = :plan_id AND structure_id = :structure_id"
+                ),
+                {
+                    "new_state": event.new_state,
+                    "status": status,
+                    "as_of": utc_naive(event.observed_at),
+                    "plan_id": event.plan_id,
+                    "structure_id": event.structure_id,
+                },
+            )
+
+    def forward_gate_summary(self, rule_version: str) -> ForwardGateSummary:
+        statement = text(
+            "SELECT COUNT(DISTINCT analysis_date) AS distinct_dates, "
+            "COALESCE(SUM(resolved_count), 0) AS resolved_plans, "
+            "COALESCE(SUM(JSON_LENGTH(integrity_violations_json)), 0) "
+            "AS integrity_violations "
+            "FROM stt_buy_point_forward_runs WHERE rule_version = :rule_version "
+            "AND data_status = 'VALID'"
+        )
+        with read_connection(self._connection) as connection:
+            row = connection.execute(
+                statement, {"rule_version": rule_version}
+            ).mappings().first()
+        distinct_dates = int(row["distinct_dates"] if row else 0)
+        resolved_plans = int(row["resolved_plans"] if row else 0)
+        integrity_violations = int(row["integrity_violations"] if row else 0)
+        return ForwardGateSummary(
+            distinct_dates=distinct_dates,
+            resolved_plans=resolved_plans,
+            integrity_violations=integrity_violations,
+            eligible=(
+                distinct_dates >= 20
+                and resolved_plans >= 20
+                and integrity_violations == 0
+            ),
         )
 
     def get_latest_valid_plan(self, code: str, at: datetime) -> TradePlanV2 | None:
