@@ -147,3 +147,24 @@ def test_baostock_rejects_duplicate_codes() -> None:
         BaoStockReferenceProvider(sdk=sdk).fetch_security_statuses(date(2025, 8, 6))
 
     assert caught.value.error_code == "PROVIDER_SCHEMA_CHANGED"
+
+
+def test_baostock_ignores_index_rows_before_six_digit_duplicate_check() -> None:
+    """Catches sh.000001 index colliding with the sz.000001 listed company."""
+    sdk = FakeBaoStock(
+        rows=[
+            ("sh.000001", "1", "上证综合指数"),
+            ("sz.000001", "1", "平安银行"),
+            ("sh.600001", "1", "普通股份"),
+            ("sz.399001", "1", "深证成份指数"),
+        ]
+    )
+
+    rows = BaoStockReferenceProvider(sdk=sdk).fetch_security_statuses(
+        date(2025, 8, 6)
+    )
+
+    assert [(row.code, row.name) for row in rows] == [
+        ("000001", "平安银行"),
+        ("600001", "普通股份"),
+    ]

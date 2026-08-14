@@ -155,6 +155,7 @@ def _sync_sector(
     start, end = request.trade_dates[0], request.trade_dates[-1]
     codes = tuple(sorted(set().union(*(request.universe_by_date[d] for d in request.trade_dates))))
     existing = repository.memberships_between(start, end)
+    existing_codes = {row.code for row in existing}
     checkpoints = repository.load_checkpoints("CNINFO", "sector", codes)
     pending = tuple(
         code
@@ -162,6 +163,7 @@ def _sync_sector(
         if not (
             (checkpoint := checkpoints.get(code))
             and checkpoint.status == "COMPLETE"
+            and code in existing_codes
         )
     )
     new_rows: list[SectorMembership] = []

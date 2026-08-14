@@ -249,6 +249,35 @@ def test_sector_checkpoint_lookup_is_batched_for_the_full_universe() -> None:
     assert repository.bulk_checkpoint_writes == 2
 
 
+def test_complete_sector_checkpoint_without_fact_is_refetched() -> None:
+    day = date(2025, 8, 6)
+    repository = MemoryRepository()
+    repository.save_checkpoint(
+        ReferenceCheckpoint(
+            "CNINFO",
+            "sector",
+            "600001",
+            None,
+            "COMPLETE",
+            None,
+            {"membership_count": 1},
+            NOW - timedelta(days=1),
+        )
+    )
+    cninfo = FakeCninfoProvider()
+
+    runs = sync_alternative_reference_data(
+        _request(day, size=1),
+        cninfo=cninfo,
+        baostock=FakeBaoStockProvider(),
+        repository=repository,
+        sleep=lambda _: None,
+    )
+
+    assert cninfo.industry_calls == ["600001"]
+    assert next(run for run in runs if run.dataset == "sector").status == "COMPLETE"
+
+
 def test_missing_announcement_page_fails_only_announcement_dataset() -> None:
     day = date(2025, 8, 6)
     cninfo = FakeCninfoProvider()

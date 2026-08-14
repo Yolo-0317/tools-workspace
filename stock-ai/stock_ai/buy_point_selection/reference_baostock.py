@@ -15,6 +15,17 @@ def _code6(value: object) -> str:
     return raw.zfill(6)
 
 
+def _is_sh_sz_equity(value: object) -> bool:
+    raw = str(value or "").strip().lower()
+    parts = raw.split(".")
+    if len(parts) != 2 or not parts[1].isdigit():
+        return False
+    market, code = parts
+    return (market == "sh" and code.startswith("6")) or (
+        market == "sz" and code.startswith(("0", "300", "301"))
+    )
+
+
 class BaoStockReferenceProvider:
     provider_name = "BAOSTOCK"
 
@@ -63,7 +74,10 @@ class BaoStockReferenceProvider:
                             "query_all_stock",
                             "PROVIDER_SCHEMA_CHANGED",
                         )
-                    code = _code6(raw[positions["code"]])
+                    raw_code = raw[positions["code"]]
+                    if not _is_sh_sz_equity(raw_code):
+                        continue
+                    code = _code6(raw_code)
                     if code in seen:
                         raise ProviderFailure(
                             self.provider_name,
