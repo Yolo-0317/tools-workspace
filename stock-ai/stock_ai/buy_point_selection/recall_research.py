@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from decimal import Decimal
 from typing import Mapping, Sequence
 
 from stock_ai.market_codes import is_sh_sz_main_board_code, normalize_code6
 
+from .case_review import CaseSignalReplay
+from .gates import base_gate
 from .models import BuyPointBar, SelectionPolicy
+from .patterns import detect_setups
 from .reference_data import RiskFlag, risk_flags_on
 
 
@@ -33,6 +36,106 @@ class DailyRecallCohort:
     outcome_dates: tuple[date, ...]
     complete: bool
     winners: tuple[DailyRecallWinner, ...]
+
+
+@dataclass(frozen=True)
+class MarketFreezeDiagnostic:
+    code: str
+    signal_date: date
+    market_reason: str
+    base_passed: bool
+    base_reasons: tuple[str, ...]
+    setup_types: tuple[str, ...]
+    setup_qualities: tuple[Decimal, ...]
+    executable_shares: int = 0
+
+
+MARKET_FREEZE_REASONS = frozenset(
+    {"INDEX_AND_BREADTH_WEAK", "AMOUNT_AND_BREADTH_WEAK"}
+)
+
+
+def attribute_daily_recall_winners(
+    winners: Sequence[DailyRecallWinner],
+    replay: CaseSignalReplay,
+) -> tuple[DailyRecallWinner, ...]:
+    candidates = (*replay.strict_shadow, *replay.near_misses)
+    tiers_by_identity: dict[tuple[date, str], set[str]] = {}
+    for candidate in candidates:
+        identity = (
+            candidate.signal_date,
+            normalize_code6(candidate.code),
+        )
+        tiers_by_identity.setdefault(identity, set()).add(candidate.tier)
+    attributed = []
+    for winner in winners:
+        identity = (winner.signal_date, normalize_code6(winner.code))
+        tiers = tuple(sorted(tiers_by_identity.get(identity, set())))
+        trace = replay.traces.get(identity)
+        attributed.append(
+            replace(
+                winner,
+                captured_tiers=tiers,
+                first_rejection=(
+                    None if tiers or trace is None else trace.first_rejection
+                ),
+            )
+        )
+    return tuple(
+        sorted(attributed, key=lambda value: (value.signal_date, value.code))
+    )
+
+
+def diagnose_market_freeze_winners(
+    winners: Sequence[DailyRecallWinner],
+    *,
+    bars_by_code: Mapping[str, Sequence[BuyPointBar]],
+    risk_flags: Sequence[RiskFlag],
+    holding_codes_by_date: Mapping[date, frozenset[str]],
+    policy: SelectionPolicy | None = None,
+) -> tuple[MarketFreezeDiagnostic, ...]:
+    resolved = policy or SelectionPolicy()
+    normalized_bars = {
+        normalize_code6(code): tuple(values)
+        for code, values in bars_by_code.items()
+    }
+    rows = []
+    for winner in winners:
+        if (
+            winner.captured_tiers
+            or winner.first_rejection not in MARKET_FREEZE_REASONS
+        ):
+            continue
+        bars = tuple(
+            sorted(
+                (
+                    value
+                    for value in normalized_bars.get(winner.code, ())
+                    if value.trade_date <= winner.signal_date
+                ),
+                key=lambda value: value.trade_date,
+            )[-120:]
+        )
+        base = base_gate(
+            winner.code,
+            bars,
+            set(holding_codes_by_date.get(winner.signal_date, frozenset())),
+            risk_flags_on(risk_flags, winner.signal_date),
+            resolved,
+        )
+        setups = detect_setups(winner.code, bars, resolved) if base.passed else ()
+        rows.append(
+            MarketFreezeDiagnostic(
+                winner.code,
+                winner.signal_date,
+                winner.first_rejection,
+                base.passed,
+                base.reasons,
+                tuple(value.setup_type.value for value in setups),
+                tuple(value.quality for value in setups),
+            )
+        )
+    return tuple(sorted(rows, key=lambda value: (value.signal_date, value.code)))
 
 
 def next_five_trading_dates(
