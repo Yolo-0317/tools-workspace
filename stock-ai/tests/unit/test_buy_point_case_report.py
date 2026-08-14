@@ -123,23 +123,23 @@ def test_case_payload_is_deterministic_and_explicitly_non_trading() -> None:
     )
 
 
-def test_v3_schema_participates_in_immutable_case_identity() -> None:
-    """Catches a v3 report colliding with an existing immutable revision."""
+def test_v4_schema_participates_in_immutable_case_identity() -> None:
+    """Catches a v4 report colliding with an existing immutable revision."""
     review = _review(outcomes=())
 
     payload = case_payload(review)
 
-    assert payload["schema"] == "buy-point-case-review-v3"
+    assert payload["schema"] == "buy-point-case-review-v4"
     assert case_identity(
         review,
-        schema="buy-point-case-review-v2",
+        schema="buy-point-case-review-v3",
     ) != case_identity(
         review,
-        schema="buy-point-case-review-v3",
+        schema="buy-point-case-review-v4",
     )
 
 
-def test_v3_payload_serializes_resistance_profiles() -> None:
+def test_v4_payload_serializes_resistance_evidence() -> None:
     candidate = _candidate(SIGNAL_START, "structure-first")
     review = replace(
         _review(outcomes=()),
@@ -196,7 +196,20 @@ def test_v3_payload_serializes_resistance_profiles() -> None:
         "effective_resistance_r": "0.20",
         "passes_two_r": False,
         "touch_count": 1,
+        "evidence_basis": "LEVEL_BELOW_2R",
     }
+    assert payload["resistance_profiles"][0]["variants"][2][
+        "evidence_basis"
+    ] == "NO_LEVEL"
+    assert {
+        "candidates",
+        "outcomes",
+        "opportunity_episodes",
+        "conditional_two_r_shadow",
+        "resistance_profiles",
+        "resistance_comparison",
+        "metrics",
+    } <= payload.keys()
 
 
 def test_resistance_comparison_uses_only_passing_exact_representatives() -> None:
@@ -334,6 +347,146 @@ def test_resistance_comparison_uses_only_passing_exact_representatives() -> None
     markdown = render_case_markdown(review)
     assert "## 显著阻力影子对照" in markdown
     assert "假设通过仅用于研究，不能生成正式计划" in markdown
+    assert "CASE_ANALYSIS_ONLY" in markdown
+    assert "NO-TRADE" in markdown
+
+
+def test_resistance_evidence_comparison_does_not_mix_no_level_passes() -> None:
+    """Catches absent resistance being reported as observed 2R resistance."""
+    level_candidate = _candidate(
+        SIGNAL_START,
+        "structure-level",
+        code="600001",
+        setup_type=SetupType.FIRST_LAUNCH_PULLBACK,
+    )
+    absent_candidate = _candidate(
+        SIGNAL_START,
+        "structure-absent",
+        code="600002",
+        setup_type=SetupType.FIRST_LAUNCH_PULLBACK,
+    )
+    episodes = (
+        OpportunityEpisode(
+            "episode-level",
+            level_candidate,
+            (SIGNAL_START,),
+            (level_candidate.tier,),
+        ),
+        OpportunityEpisode(
+            "episode-absent",
+            absent_candidate,
+            (SIGNAL_START,),
+            (absent_candidate.tier,),
+        ),
+    )
+
+    def profile(
+        episode_id: str,
+        candidate: CaseCandidate,
+        repeated_level: Decimal | None,
+    ) -> SignificantResistanceProfile:
+        repeated = (
+            ResistanceVariantProfile(
+                REPEATED_PIVOT_CLUSTER,
+                None,
+                None,
+                True,
+                0,
+            )
+            if repeated_level is None
+            else ResistanceVariantProfile(
+                REPEATED_PIVOT_CLUSTER,
+                repeated_level,
+                Decimal("2.20"),
+                True,
+                2,
+            )
+        )
+        return SignificantResistanceProfile(
+            episode_id,
+            candidate.code,
+            candidate.signal_date,
+            candidate.plan.structure_id,
+            candidate.setup.setup_type.value,
+            Decimal("0.20"),
+            Decimal("0.10"),
+            True,
+            (
+                ResistanceVariantProfile(
+                    LEGACY_ANY_HIGH, Decimal("10.20"), Decimal("0.20"), False, 1
+                ),
+                ResistanceVariantProfile(
+                    LOCAL_PIVOT_HIGH, Decimal("10.40"), Decimal("0.40"), False, 1
+                ),
+                repeated,
+            ),
+        )
+
+    review = replace(
+        _review(
+            outcomes=(
+                CaseOutcome(
+                    level_candidate.code,
+                    level_candidate.signal_date,
+                    level_candidate.tier,
+                    "CLOSED",
+                    Decimal("0.09"),
+                    Decimal("0.02"),
+                    trigger_date=date(2026, 8, 4),
+                    net_return=Decimal("0.06"),
+                    structure_id=level_candidate.plan.structure_id,
+                ),
+                CaseOutcome(
+                    absent_candidate.code,
+                    absent_candidate.signal_date,
+                    absent_candidate.tier,
+                    "EXPIRED",
+                    None,
+                    None,
+                    structure_id=absent_candidate.plan.structure_id,
+                ),
+            )
+        ),
+        episodes=episodes,
+        resistance_profiles=(
+            profile("episode-level", level_candidate, Decimal("12.20")),
+            profile("episode-absent", absent_candidate, None),
+        ),
+    )
+
+    payload = case_payload(review)
+    rows = {
+        (value["setup_type"], value["variant"], value["evidence_basis"]): value
+        for value in payload["resistance_evidence_comparison"]
+    }
+    level_row = rows[
+        (
+            "FIRST_LAUNCH_PULLBACK",
+            REPEATED_PIVOT_CLUSTER,
+            "LEVEL_AT_OR_ABOVE_2R",
+        )
+    ]
+    no_level_row = rows[
+        ("FIRST_LAUNCH_PULLBACK", REPEATED_PIVOT_CLUSTER, "NO_LEVEL")
+    ]
+
+    assert level_row["complete_profiles"] == 2
+    assert level_row["cohort_opportunities"] == 1
+    assert level_row["triggered"] == 1
+    assert level_row["resolved"] == 1
+    assert level_row["successes"] == 1
+    assert level_row["mean_net_return"] == "0.06"
+    assert level_row["codes"] == ["600001"]
+    assert no_level_row["complete_profiles"] == 2
+    assert no_level_row["cohort_opportunities"] == 1
+    assert no_level_row["triggered"] == 0
+    assert no_level_row["resolved"] == 1
+    assert no_level_row["successes"] == 0
+    assert no_level_row["mean_net_return"] is None
+    assert no_level_row["codes"] == ["600002"]
+    markdown = render_case_markdown(review)
+    assert "## 显著阻力证据拆分" in markdown
+    assert "未发现阻力不等于已证明上涨空间" in markdown
     assert "CASE_ANALYSIS_ONLY" in markdown
     assert "NO-TRADE" in markdown
 

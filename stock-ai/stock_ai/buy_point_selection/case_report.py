@@ -10,10 +10,16 @@ from pathlib import Path
 from typing import Mapping
 
 from .case_review import CaseCandidate, CaseOutcome, CaseReview, summarize_case_outcomes
-from .resistance_research import SignificantResistanceProfile, VARIANT_ORDER
+from .resistance_research import (
+    LEVEL_AT_OR_ABOVE_2R,
+    NO_LEVEL,
+    SignificantResistanceProfile,
+    VARIANT_ORDER,
+    resistance_evidence_basis,
+)
 
 
-CASE_REPORT_SCHEMA = "buy-point-case-review-v3"
+CASE_REPORT_SCHEMA = "buy-point-case-review-v4"
 
 
 def _decimal(value: Decimal | None) -> str | None:
@@ -105,6 +111,10 @@ def _resistance_profile_payload(
                 "effective_resistance_r": _decimal(item.effective_resistance_r),
                 "passes_two_r": item.passes_two_r,
                 "touch_count": item.touch_count,
+                "evidence_basis": resistance_evidence_basis(
+                    value.complete,
+                    item,
+                ),
             }
             for item in variants
         ],
@@ -196,6 +206,102 @@ def _resistance_comparison(
                     ),
                 }
             )
+    return rows
+
+
+def _resistance_evidence_comparison(
+    review: CaseReview,
+    profiles: tuple[SignificantResistanceProfile, ...],
+    outcome_by_identity: Mapping[tuple[object, ...], CaseOutcome],
+) -> list[dict[str, object]]:
+    episode_by_id = {
+        episode.episode_id: episode
+        for episode in review.episodes
+    }
+    rows = []
+    for setup_type in sorted({value.setup_type for value in profiles}):
+        setup_profiles = tuple(
+            value
+            for value in profiles
+            if value.setup_type == setup_type and value.complete
+        )
+        for variant_name in VARIANT_ORDER:
+            for basis in (LEVEL_AT_OR_ABOVE_2R, NO_LEVEL):
+                cohort = tuple(
+                    profile
+                    for profile in setup_profiles
+                    if resistance_evidence_basis(
+                        profile.complete,
+                        next(
+                            value
+                            for value in profile.variants
+                            if value.variant == variant_name
+                        ),
+                    )
+                    == basis
+                )
+                if not cohort:
+                    continue
+                selected_outcomes = []
+                for profile in cohort:
+                    episode = episode_by_id.get(profile.episode_id)
+                    if episode is None:
+                        continue
+                    representative = episode.representative
+                    outcome = outcome_by_identity.get(
+                        (
+                            representative.code,
+                            representative.signal_date,
+                            representative.tier,
+                            representative.plan.structure_id,
+                        )
+                    )
+                    if outcome is not None:
+                        selected_outcomes.append(outcome)
+                summary = summarize_case_outcomes(tuple(selected_outcomes))
+                rows.append(
+                    {
+                        "setup_type": setup_type,
+                        "variant": variant_name,
+                        "evidence_basis": basis,
+                        "complete_profiles": len(setup_profiles),
+                        "cohort_opportunities": len(cohort),
+                        "triggered": sum(
+                            value.trigger_date is not None
+                            for value in selected_outcomes
+                        ),
+                        "resolved": summary.resolved,
+                        "successes": summary.successes,
+                        "stop_first": sum(
+                            value.stop_first for value in selected_outcomes
+                        ),
+                        "mean_net_return": _mean_decimal(
+                            [
+                                value.net_return
+                                for value in selected_outcomes
+                                if value.net_return is not None
+                            ]
+                        ),
+                        "mean_mfe": _mean_decimal(
+                            [
+                                value.mfe
+                                for value in selected_outcomes
+                                if value.mfe is not None
+                            ]
+                        ),
+                        "mean_mae": _mean_decimal(
+                            [
+                                value.mae
+                                for value in selected_outcomes
+                                if value.mae is not None
+                            ]
+                        ),
+                        "codes": sorted(value.code for value in cohort),
+                        "episode_ids": sorted(
+                            value.episode_id for value in cohort
+                        ),
+                    }
+                )
     return rows
 
 
@@ -293,6 +399,11 @@ def case_payload(review: CaseReview) -> dict[str, object]:
         resistance_profiles,
         outcome_by_identity,
     )
+    resistance_evidence_comparison = _resistance_evidence_comparison(
+        review,
+        resistance_profiles,
+        outcome_by_identity,
+    )
     return {
         "schema": CASE_REPORT_SCHEMA,
         "status": "CASE_ANALYSIS_ONLY",
@@ -315,6 +426,7 @@ def case_payload(review: CaseReview) -> dict[str, object]:
             for value in resistance_profiles
         ],
         "resistance_comparison": resistance_comparison,
+        "resistance_evidence_comparison": resistance_evidence_comparison,
         "winners": [
             {
                 "code": value.code,
@@ -387,6 +499,8 @@ def render_case_markdown(review: CaseReview) -> str:
     assert isinstance(winners, list)
     resistance_comparison = payload["resistance_comparison"]
     assert isinstance(resistance_comparison, list)
+    resistance_evidence_comparison = payload["resistance_evidence_comparison"]
+    assert isinstance(resistance_evidence_comparison, list)
     lines = [
         "# 短窗口买点案例复盘",
         "",
@@ -462,9 +576,32 @@ def render_case_markdown(review: CaseReview) -> str:
         )
     lines.extend(
         (
-        "",
-        "## 漏选可买上涨股",
-        "",
+            "",
+            "## 显著阻力证据拆分",
+            "",
+            "未发现阻力不等于已证明上涨空间；两类通过必须分开观察。",
+        )
+    )
+    if not resistance_evidence_comparison:
+        lines.append("- 无通过证据组。")
+    else:
+        lines.extend(
+            (
+                f"- {value['setup_type']} / {value['variant']} / "
+                f"{value['evidence_basis']}："
+                f"机会 {value['cohort_opportunities']}，"
+                f"触发 {value['triggered']}，"
+                f"成功 {value['successes']}/{value['resolved']}，"
+                f"止损优先 {value['stop_first']}，"
+                f"平均净收益 {value['mean_net_return']}"
+            )
+            for value in resistance_evidence_comparison
+        )
+    lines.extend(
+        (
+            "",
+            "## 漏选可买上涨股",
+            "",
         )
     )
     missed = [value for value in winners if not value["captured_tiers"]]
