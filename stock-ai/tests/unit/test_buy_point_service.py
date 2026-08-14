@@ -13,6 +13,7 @@ from stock_ai.buy_point_selection.service import (
     SelectionInput,
     select_buy_points,
 )
+from stock_ai.buy_point_selection.validation import OutcomeCalibration, calibration_key
 
 
 POLICY = SelectionPolicy()
@@ -35,10 +36,15 @@ def _bars() -> tuple[BuyPointBar, ...]:
     )
 
 
-def _setup(code: str, quality: str = "0.80", start_offset: int = 0) -> DetectedSetup:
+def _setup(
+    code: str,
+    quality: str = "0.80",
+    start_offset: int = 0,
+    setup_type: SetupType = SetupType.PRE_BREAKOUT,
+) -> DetectedSetup:
     return DetectedSetup(
         code=code,
-        setup_type=SetupType.PRE_BREAKOUT,
+        setup_type=setup_type,
         analysis_date=date(2026, 8, 10),
         structure_start=date(2026, 7, 10) + timedelta(days=start_offset),
         structure_high=Decimal("10.00"),
@@ -56,17 +62,55 @@ def _candidate(
     quality: str,
     percentile: str = "0.80",
     missing: tuple[str, ...] = (),
+    setup_type: SetupType = SetupType.PRE_BREAKOUT,
 ) -> CandidateEvidence:
     return CandidateEvidence(
         code=code,
         name=f"虚构{code[-2:]}",
-        setup=_setup(code, quality),
+        setup=_setup(code, quality, setup_type=setup_type),
         bars=_bars(),
         sector_code=sector,
         sector_percentile=Decimal(percentile) if sector is not None else None,
         average_amount5_qian=Decimal("150000"),
         gate_reasons=(),
         missing_fields=missing,
+    )
+
+
+def _calibration(
+    setup_type: SetupType = SetupType.PRE_BREAKOUT,
+    *,
+    net_expectancy: str = "0.01",
+    target_rate: str = "0.50",
+    stop_rate: str = "0.25",
+    rolling_ratio: str = "0.80",
+    promoted: bool = True,
+) -> OutcomeCalibration:
+    key = calibration_key(setup_type, None, None)
+    return OutcomeCalibration(
+        key=key,
+        setup_type=setup_type,
+        market_status=None,
+        sector_resonating=None,
+        data_end=date(2026, 8, 9),
+        total_plans=45,
+        triggered_trades=40,
+        untriggered_plans=5,
+        target_2r_rate=Decimal(target_rate),
+        target_2r_interval=(Decimal("0.35"), Decimal("0.65")),
+        stop_first_rate=Decimal(stop_rate),
+        stop_first_interval=(Decimal("0.14"), Decimal("0.40")),
+        net_expectancy=Decimal(net_expectancy),
+        positive_rolling_window_ratio=Decimal(rolling_ratio),
+        frozen_test_expectancy=Decimal("0.005"),
+        average_profit_loss_ratio=Decimal("1.8"),
+        profit_factor=Decimal("1.5"),
+        mfe_median=Decimal("0.06"),
+        mfe_p25=Decimal("0.03"),
+        mae_median=Decimal("0.02"),
+        mae_p75=Decimal("0.035"),
+        promoted=promoted,
+        reasons=() if promoted else ("NEGATIVE_EXPECTANCY",),
     )
 
 
@@ -79,7 +123,13 @@ def _request(
     risk_coverage_complete: bool = True,
     account_fresh: bool = True,
     budget: RiskBudget = BUDGET,
+    calibrations: dict[str, OutcomeCalibration] | None = None,
 ) -> SelectionInput:
+    resolved_calibrations = (
+        {value.key: value for value in (_calibration(),)}
+        if calibrations is None
+        else calibrations
+    )
     return SelectionInput(
         market_status=market_status,
         candidates=candidates
@@ -90,6 +140,7 @@ def _request(
         risk_coverage_complete=risk_coverage_complete,
         account_fresh=account_fresh,
         policy=POLICY,
+        calibrations=resolved_calibrations,
     )
 
 
@@ -181,8 +232,84 @@ def test_report_prints_share_count_only_for_qualified_rows() -> None:
     formal_text, remainder = report.split("准备中观察", 1)
     observe_text, shadow_text = remainder.split("影子研究", 1)
     assert "最大股数" in formal_text
+    assert "2R概率 35%-65%" in formal_text
+    assert "止损概率 14%-40%" in formal_text
+    assert "样本 40" in formal_text
+    assert "净期望 1.00%" in formal_text
     assert "最大股数" not in observe_text
     assert "最大股数" not in shadow_text
     assert "无交易资格" in observe_text
     assert "无交易资格" in shadow_text
     assert "拒绝统计" in shadow_text
+
+
+def test_missing_or_insufficient_calibration_downgrades_to_observe() -> None:
+    """Catches an uncalibrated setup receiving a formal price plan and shares."""
+    result = select_buy_points(_request(calibrations={}))
+    assert result.qualified == ()
+    assert result.observe[0].reasons == ("CALIBRATION_MISSING",)
+    assert result.observe[0].plan is None
+
+
+def test_negative_calibration_cannot_gain_trade_qualification() -> None:
+    """Catches current technical quality overriding a failed historical cohort."""
+    calibration = _calibration(promoted=False, net_expectancy="-0.002")
+    result = select_buy_points(_request(calibrations={calibration.key: calibration}))
+    assert result.qualified == ()
+    assert result.observe[0].reasons == ("CALIBRATION_NOT_PROMOTED",)
+    assert result.observe[0].calibration is calibration
+
+
+def test_ranking_prefers_expectancy_then_target_rate_then_lower_stop_rate() -> None:
+    """Catches pattern quality replacing the frozen outcome evidence order."""
+    candidates = (
+        _candidate(
+            "600001",
+            sector="S1",
+            quality="0.99",
+            setup_type=SetupType.PRE_BREAKOUT,
+        ),
+        _candidate(
+            "600002",
+            sector="S2",
+            quality="0.90",
+            setup_type=SetupType.TREND_PULLBACK,
+        ),
+        _candidate(
+            "600003",
+            sector="S3",
+            quality="0.80",
+            setup_type=SetupType.FIRST_LAUNCH_PULLBACK,
+        ),
+    )
+    calibrations = (
+        _calibration(
+            SetupType.PRE_BREAKOUT,
+            net_expectancy="0.01",
+            target_rate="0.60",
+            stop_rate="0.20",
+        ),
+        _calibration(
+            SetupType.TREND_PULLBACK,
+            net_expectancy="0.01",
+            target_rate="0.60",
+            stop_rate="0.30",
+        ),
+        _calibration(
+            SetupType.FIRST_LAUNCH_PULLBACK,
+            net_expectancy="0.02",
+            target_rate="0.45",
+            stop_rate="0.35",
+        ),
+    )
+    result = select_buy_points(
+        _request(
+            candidates=candidates,
+            calibrations={value.key: value for value in calibrations},
+        )
+    )
+    assert [item.code for item in result.qualified] == [
+        "600003",
+        "600001",
+        "600002",
+    ]

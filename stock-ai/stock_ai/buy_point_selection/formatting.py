@@ -5,6 +5,11 @@ from __future__ import annotations
 from .service import BuyPointSelectionResult
 
 
+def _probability_range(values) -> str:
+    lower, upper = values
+    return f"{lower:.0%}-{upper:.0%}"
+
+
 def render_buy_point_report(value: BuyPointSelectionResult) -> str:
     lines = ["正式候选"]
     if not value.qualified:
@@ -12,6 +17,8 @@ def render_buy_point_report(value: BuyPointSelectionResult) -> str:
     for item in value.qualified:
         if item.plan is None:
             raise ValueError("qualified row is missing its price plan")
+        if item.calibration is None:
+            raise ValueError("qualified row is missing outcome calibration")
         lines.append(
             " ".join(
                 (
@@ -21,6 +28,10 @@ def render_buy_point_report(value: BuyPointSelectionResult) -> str:
                     f"触发价 {item.plan.trigger_price:.2f}",
                     f"失效价 {item.plan.invalidation_price:.2f}",
                     f"2R目标 {item.plan.target_2r:.2f}",
+                    f"2R概率 {_probability_range(item.calibration.target_2r_interval)}",
+                    f"止损概率 {_probability_range(item.calibration.stop_first_interval)}",
+                    f"样本 {item.calibration.triggered_trades}",
+                    f"净期望 {item.calibration.net_expectancy:.2%}",
                     f"最大股数 {item.plan.maximum_shares}",
                 )
             )

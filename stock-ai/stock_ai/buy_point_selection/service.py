@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from decimal import Decimal, ROUND_FLOOR
 from typing import Mapping, Sequence
 
@@ -11,6 +11,7 @@ from stock_ai.market_codes import normalize_code6
 
 from .models import BuyPointBar, CandidateTier, DetectedSetup, SelectionPolicy
 from .planning import PricePlan, RiskBudget, build_price_plan, structure_id
+from .validation import OutcomeCalibration, resolve_outcome_calibration
 
 
 @dataclass(frozen=True)
@@ -46,6 +47,7 @@ class SelectionItem:
     plan: PricePlan | None
     missing_fields: tuple[str, ...]
     reasons: tuple[str, ...]
+    calibration: OutcomeCalibration | None
 
 
 @dataclass(frozen=True)
@@ -58,6 +60,7 @@ class SelectionInput:
     risk_coverage_complete: bool
     account_fresh: bool
     policy: SelectionPolicy
+    calibrations: Mapping[str, OutcomeCalibration] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -77,6 +80,7 @@ def _observe_item(
     *,
     missing_fields: Sequence[str] = (),
     reasons: Sequence[str] = (),
+    calibration: OutcomeCalibration | None = None,
 ) -> SelectionItem:
     return SelectionItem(
         code=normalize_code6(value.code),
@@ -89,19 +93,22 @@ def _observe_item(
         plan=None,
         missing_fields=_unique(missing_fields),
         reasons=_unique(reasons),
+        calibration=calibration,
     )
 
 
 def _ranking_key(item: SelectionItem) -> tuple[Decimal | str, ...]:
     if item.plan is None:
         raise ValueError("qualified ranking requires a price plan")
+    if item.calibration is None:
+        raise ValueError("qualified ranking requires outcome calibration")
     risk_pct = item.plan.risk_distance / item.plan.trigger_price
     return (
-        -item.setup.quality,
-        -item.plan.risk_reward_ratio,
+        -item.calibration.net_expectancy,
+        -item.calibration.target_2r_rate,
+        item.calibration.stop_first_rate,
+        -item.calibration.positive_rolling_window_ratio,
         risk_pct,
-        -(item.sector_percentile or Decimal("0")),
-        -item.average_amount5_qian,
         item.code,
     )
 
@@ -144,6 +151,26 @@ def select_buy_points(value: SelectionInput) -> BuyPointSelectionResult:
         if decision.plan is None:
             rejection_counts.update(decision.reasons)
             continue
+        calibration = resolve_outcome_calibration(
+            value.calibrations,
+            candidate.setup.setup_type,
+            value.market_status,
+            True,
+        )
+        if calibration is None:
+            observe.append(
+                _observe_item(candidate, reasons=("CALIBRATION_MISSING",))
+            )
+            continue
+        if not calibration.promoted:
+            observe.append(
+                _observe_item(
+                    candidate,
+                    reasons=("CALIBRATION_NOT_PROMOTED",),
+                    calibration=calibration,
+                )
+            )
+            continue
         eligible.append(
             SelectionItem(
                 code=normalize_code6(candidate.code),
@@ -156,6 +183,7 @@ def select_buy_points(value: SelectionInput) -> BuyPointSelectionResult:
                 plan=decision.plan,
                 missing_fields=(),
                 reasons=(),
+                calibration=calibration,
             )
         )
 
