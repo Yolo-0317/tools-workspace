@@ -5,6 +5,7 @@ import importlib.util
 from pathlib import Path
 
 from stock_ai.buy_point_selection.reference_data import sync_reference_data
+from stock_ai.buy_point_selection.reference_sources import ProviderFailure
 
 
 SCRIPT = Path(__file__).parents[2] / "scripts" / "sync" / "sync_buy_point_reference_data.py"
@@ -147,3 +148,124 @@ def test_manual_sync_accepts_latest_as_the_end_boundary() -> None:
     spec.loader.exec_module(module)
     args = module.build_parser().parse_args(["--start", "2024-01-02", "--end", "latest"])
     assert args.end is None
+
+
+def _load_script():
+    spec = importlib.util.spec_from_file_location("sync_buy_point_reference_data_test", SCRIPT)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_reference_cli_defaults_to_cninfo_baostock() -> None:
+    module = _load_script()
+    args = module.build_parser().parse_args(
+        ["--start", "2024-01-02", "--end", "latest"]
+    )
+    assert args.provider == "cninfo-baostock"
+
+
+def test_reference_cli_keeps_tushare_as_explicit_fallback() -> None:
+    module = _load_script()
+    args = module.build_parser().parse_args(
+        [
+            "--start",
+            "2024-01-02",
+            "--end",
+            "latest",
+            "--provider",
+            "tushare",
+        ]
+    )
+    assert args.provider == "tushare"
+
+
+class _Rows:
+    def __init__(self, rows):
+        self.rows = rows
+
+    def mappings(self):
+        return self
+
+    def __iter__(self):
+        return iter(self.rows)
+
+
+class _Connection:
+    def __init__(self, rows):
+        self.rows = rows
+        self.calls = []
+
+    def execute(self, statement, parameters):
+        self.calls.append((str(statement), parameters))
+        return _Rows(self.rows)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return None
+
+
+class _Engine:
+    def __init__(self, rows):
+        self.connection = _Connection(rows)
+
+    def connect(self):
+        return self.connection
+
+
+def test_universe_by_date_uses_one_query_and_keeps_recently_suspended_main_board() -> None:
+    module = _load_script()
+    start = date(2025, 8, 5)
+    end = date(2025, 8, 6)
+    engine = _Engine(
+        [
+            {"ts_code": "600001.SH", "trade_date": date(2025, 2, 8)},
+            {"ts_code": "600002.SH", "trade_date": end},
+            {"ts_code": "300001.SZ", "trade_date": end},
+        ]
+    )
+
+    universe = module._universe_by_date(engine, (start, end))
+
+    assert len(engine.connection.calls) == 1
+    statement, parameters = engine.connection.calls[0]
+    assert "BETWEEN :lookback_start AND :end_date" in statement
+    assert parameters == {
+        "lookback_start": date(2025, 2, 6),
+        "end_date": end,
+    }
+    assert universe == {
+        start: frozenset({"600001"}),
+        end: frozenset({"600001", "600002"}),
+    }
+
+
+def test_provider_failure_prints_only_safe_error_code(monkeypatch, capsys) -> None:
+    module = _load_script()
+    engine = object()
+    monkeypatch.setattr(module, "_engine", lambda: engine)
+    monkeypatch.setattr(module, "_trade_dates", lambda *_: (date(2025, 8, 6),))
+    monkeypatch.setattr(
+        module,
+        "_universe_by_date",
+        lambda *_: {date(2025, 8, 6): frozenset({"600001"})},
+    )
+    monkeypatch.setattr(module, "_cninfo", lambda: object())
+    monkeypatch.setattr(module, "_baostock", lambda: object())
+    monkeypatch.setattr(
+        module,
+        "sync_alternative_reference_data",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            ProviderFailure("CNINFO", "announcements", "PROVIDER_UNAVAILABLE")
+        ),
+    )
+
+    result = module.main(["--start", "2025-08-06", "--end", "2025-08-06"])
+
+    output = capsys.readouterr().out
+    assert result == 2
+    assert output.strip() == "点时参考数据同步失败：PROVIDER_UNAVAILABLE"
+    assert "announcements" not in output
