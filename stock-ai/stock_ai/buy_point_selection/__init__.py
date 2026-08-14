@@ -35,11 +35,16 @@ from .reference_sources import (
     ReferenceProvider,
     SecurityStatus,
 )
+from .reference_sync import (
+    AlternativeReferenceSyncRequest,
+    sync_alternative_reference_data,
+)
 
 __all__ = [
     "BuyPointBar",
     "Announcement",
     "AnnouncementPage",
+    "AlternativeReferenceSyncRequest",
     "BaoStockReferenceSource",
     "CandidateTier",
     "CninfoReferenceSource",
@@ -68,4 +73,5 @@ __all__ = [
     "risk_flags_on",
     "sector_gate",
     "sync_reference_data",
+    "sync_alternative_reference_data",
 ]
