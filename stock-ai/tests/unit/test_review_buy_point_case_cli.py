@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -9,6 +10,7 @@ from scripts.analysis.review_buy_point_case import (
     CaseReviewInputs,
     DefaultRuntime,
     _build_case_research_layers,
+    _build_resistance_profiles,
     _load_holdings_by_date,
     _merge_missing_index_bars,
     main,
@@ -26,6 +28,7 @@ from stock_ai.buy_point_selection.case_review import (
     CaseReview,
     CaseSignalReplay,
     GateTrace,
+    OpportunityEpisode,
 )
 from stock_ai.buy_point_selection.reference_sources import IndexBar
 
@@ -109,6 +112,40 @@ def test_research_layers_keep_raw_candidates_and_build_one_episode() -> None:
     assert len(episodes) == 1
     assert len(conditional) == 1
     assert conditional[0].episode_id == episodes[0].episode_id
+
+
+def test_resistance_profiles_include_only_zero_share_two_r_near_misses() -> None:
+    signal = date(2026, 8, 3)
+    eligible = _research_candidate(signal, date(2026, 8, 5))
+    strict = replace(eligible, tier="STRICT_SHADOW")
+    risk_miss = replace(eligible, soft_reason="RISK_DISTANCE_OUT_OF_RANGE")
+    episodes = (
+        OpportunityEpisode("eligible", eligible, (signal,), (eligible.tier,)),
+        OpportunityEpisode("strict", strict, (signal,), (strict.tier,)),
+        OpportunityEpisode("risk", risk_miss, (signal,), (risk_miss.tier,)),
+    )
+    start = signal - timedelta(days=59)
+    bars = tuple(
+        BuyPointBar(
+            start + timedelta(days=index),
+            Decimal("9.80"),
+            Decimal("9.90"),
+            Decimal("9.70"),
+            Decimal("9.80"),
+            Decimal("0"),
+            Decimal("200000"),
+        )
+        for index in range(60)
+    )
+
+    profiles = _build_resistance_profiles(episodes, {"600001": bars})
+
+    assert [value.episode_id for value in profiles] == ["eligible"]
+    assert profiles[0].complete
+
+    missing = _build_resistance_profiles((episodes[0],), {})
+    assert len(missing) == 1
+    assert not missing[0].complete
 
 
 def test_cli_rejects_outcome_cutoff_before_signal_end(tmp_path, capsys) -> None:
@@ -196,6 +233,7 @@ def test_default_runtime_builds_review_from_bounded_injected_inputs() -> None:
     assert review.winners == ()
     assert review.episodes == ()
     assert review.conditional_two_r_shadow == ()
+    assert review.resistance_profiles == ()
 
 
 def test_missing_historical_holdings_marks_signal_date_incomplete() -> None:

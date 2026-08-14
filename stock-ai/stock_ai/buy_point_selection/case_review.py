@@ -7,7 +7,7 @@ from datetime import date
 from decimal import Decimal, InvalidOperation, ROUND_CEILING, ROUND_FLOOR
 from bisect import bisect_right
 import hashlib
-from typing import Mapping, Sequence
+from typing import TYPE_CHECKING, Mapping, Sequence
 
 from stock_ai.market_codes import is_sh_sz_main_board_code, normalize_code6
 
@@ -31,6 +31,9 @@ from .reference_data import (
     membership_on,
     risk_flags_on,
 )
+
+if TYPE_CHECKING:
+    from .resistance_research import SignificantResistanceProfile
 
 
 ALLOWED_SOFT_REASONS = frozenset(
@@ -287,6 +290,7 @@ class CaseReview:
     risk_coverage_complete: bool
     episodes: tuple[OpportunityEpisode, ...] = ()
     conditional_two_r_shadow: tuple[ConditionalShadowOpportunity, ...] = ()
+    resistance_profiles: tuple[SignificantResistanceProfile, ...] = ()
 
 
 def classify_near_miss(

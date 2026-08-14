@@ -38,6 +38,10 @@ from stock_ai.buy_point_selection.reference_data import (
     RiskFlag,
     SectorMembership,
 )
+from stock_ai.buy_point_selection.resistance_research import (
+    SignificantResistanceProfile,
+    analyze_significant_resistance,
+)
 from stock_ai.buy_point_selection.validation import policy_hash
 from stock_ai.market_codes import normalize_code6
 from stock_ai.buy_point_selection.reference_sources import IndexBar
@@ -70,6 +74,32 @@ def _build_case_research_layers(
     episodes = build_opportunity_episodes(candidates)
     conditional = build_conditional_two_r_shadow(episodes, replay.traces)
     return candidates, episodes, conditional
+
+
+def _build_resistance_profiles(
+    episodes: Sequence[OpportunityEpisode],
+    bars_by_code: Mapping[str, Sequence[BuyPointBar]],
+) -> tuple[SignificantResistanceProfile, ...]:
+    normalized_bars = {
+        normalize_code6(code): tuple(bars)
+        for code, bars in bars_by_code.items()
+    }
+    profiles = []
+    for episode in episodes:
+        candidate = episode.representative
+        if (
+            candidate.tier != "NEAR_MISS"
+            or candidate.soft_reason != "INSUFFICIENT_TWO_R_SPACE"
+            or candidate.executable_shares != 0
+        ):
+            continue
+        profiles.append(
+            analyze_significant_resistance(
+                episode,
+                normalized_bars.get(normalize_code6(candidate.code), ()),
+            )
+        )
+    return tuple(sorted(profiles, key=lambda value: value.episode_id))
 
 
 class DefaultRuntime:
@@ -117,6 +147,10 @@ class DefaultRuntime:
                 ),
             )
         candidates, episodes, conditional = _build_case_research_layers(replay)
+        resistance_profiles = _build_resistance_profiles(
+            episodes,
+            inputs.bars_by_code,
+        )
         outcomes = tuple(
             evaluate_case_plan(
                 candidate,
@@ -161,6 +195,7 @@ class DefaultRuntime:
             risk_coverage_complete=risk_coverage_complete,
             episodes=episodes,
             conditional_two_r_shadow=conditional,
+            resistance_profiles=resistance_profiles,
         )
 
 
