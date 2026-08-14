@@ -272,7 +272,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             if manifest is not None:
                 allowed = frozenset((*split.train, *split.validation))
                 research = tuple(
-                    value for value in observations if value.exit_date in allowed
+                    value
+                    for value in observations
+                    if (value.signal_date or value.exit_date) in allowed
+                    and value.exit_date <= split.validation[-1]
                 )
                 calibrations = build_outcome_calibrations(
                     research,
@@ -304,7 +307,12 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         if args.research_train_validation:
             allowed = frozenset((*split.train, *split.validation))
-            research = tuple(value for value in observations if value.exit_date in allowed)
+            research = tuple(
+                value
+                for value in observations
+                if (value.signal_date or value.exit_date) in allowed
+                and value.exit_date <= split.validation[-1]
+            )
             metrics = compute_metrics(
                 research,
                 test_dates=(),

@@ -128,6 +128,10 @@ def _is_triggered(value: TradeObservation) -> bool:
     return value.outcome not in _NON_TRIGGERED_OUTCOMES
 
 
+def _sample_date(value: TradeObservation) -> date:
+    return value.signal_date or value.exit_date
+
+
 def trade_observation_from_simulation(
     trade: SimulatedTrade,
     *,
@@ -185,7 +189,7 @@ def _rolling_positive_ratio(
         returns = [
             value.net_return
             for value in observations
-            if value.exit_date in window_dates and _is_triggered(value)
+            if _sample_date(value) in window_dates and _is_triggered(value)
         ]
         windows += 1
         if returns and _average(returns) > 0:
@@ -204,7 +208,9 @@ def _setup_metrics(
     losers = [abs(value.net_return) for value in triggered if value.net_return < 0]
     profit = sum((value.net_pnl for value in triggered if value.net_pnl > 0), Decimal("0"))
     loss = abs(sum((value.net_pnl for value in triggered if value.net_pnl < 0), Decimal("0")))
-    test_returns = [value.net_return for value in triggered if value.exit_date in test_dates]
+    test_returns = [
+        value.net_return for value in triggered if _sample_date(value) in test_dates
+    ]
     return SetupMetrics(
         triggered_trades=len(triggered),
         net_expectancy=_average(returns),

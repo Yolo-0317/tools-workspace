@@ -31,6 +31,7 @@ def _trading_dates(count: int) -> tuple[date, ...]:
 def _observation(
     exit_date: date,
     *,
+    signal_date: date | None = None,
     setup_type: SetupType = SetupType.PRE_BREAKOUT,
     sector_code: str = "S1",
     net_return: str = "0.01",
@@ -52,6 +53,7 @@ def _observation(
         sector_resonating=sector_resonating,
         mfe=Decimal(mfe) if mfe is not None else None,
         mae=Decimal(mae) if mae is not None else None,
+        signal_date=signal_date,
     )
 
 
@@ -180,6 +182,22 @@ def test_rolling_stability_uses_trading_sessions_not_only_trade_dates() -> None:
         point_in_time_complete=True,
     )
     assert metrics.aggregate.positive_rolling_window_ratio == Decimal("0.5")
+
+
+def test_frozen_test_membership_uses_signal_date_when_exit_is_later() -> None:
+    """Catches a resolved last-window signal disappearing because it exits after the split."""
+    signal = date(2026, 8, 4)
+    observation = _observation(date(2026, 8, 11), signal_date=signal)
+
+    metrics = compute_metrics(
+        (observation,),
+        test_dates=(signal,),
+        trading_dates=(signal,),
+        point_in_time_complete=True,
+    )
+
+    assert metrics.aggregate.frozen_test_trades == 1
+    assert metrics.aggregate.frozen_test_expectancy == Decimal("0.01")
 
 
 def test_policy_hash_is_stable_and_missing_release_fails_closed(tmp_path) -> None:
