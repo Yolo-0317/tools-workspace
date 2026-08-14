@@ -32,6 +32,8 @@ stock-ai/
 | 综合选股 (v2) | `uv run python core_v2/stock_selection_combined.py` |
 | 买点优先手动选股 V1.3 / 规则 3.1.0 | `PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python a-share-short-term-trading/scripts/select_short_term_candidates.py --output text` |
 | 点时参考数据显式刷新 | 默认巨潮资讯 + BaoStock：`PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python stock-ai/scripts/sync/sync_buy_point_reference_data.py --start 2024-01-02 --end latest`；Tushare 回退追加 `--provider tushare` |
+| 买点历史观察集 | `PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python stock-ai/scripts/analysis/generate_buy_point_observations.py --start 2023-12-26 --end 2026-08-04 --out stock-ai/output/buy-point-replay` |
+| 2R 冻结回测 | `stock-ai/scripts/analysis/backtest_buy_point_selection.py`，必须依次执行研究、冻结 profile、一次性测试 |
 | 定时同步 | `./run_sync_daily.sh` 或 `docker/scheduler`（工作日 17:00，见 [SCHEDULING.md](SCHEDULING.md)） |
 
 旧路径 `scripts/sync_tushare_daily_to_mysql.py` 仍保留兼容包装，会转发到 `scripts/sync/`。
@@ -39,6 +41,8 @@ stock-ai/
 普通选股不刷新参考数据，点时同步命令也不会安装定时任务。买点优先入口没有定时安装项。旧四轨仍可由现有调度产出研究记录，但在 V1.3 中只作为影子漏选对照，不能提供正式买入资格。
 
 规则 3.1.0 以触发后五个交易日内先达到 2R 为主要路径标签，使用同类样本的扣费后净期望和 95% Wilson 概率区间排序。验证只接受 `buy-point-selection-validation-v2`；旧产物或校准缺失时保持失败关闭。
+
+历史观察集生成器从 MySQL 批量读取日线与 PIT 参考事实，并用 BaoStock 三个基准指数重建历史市场状态。`replay-integrity.json` 必须证明至少 630 个信号交易日、行业/ST/公告/市场状态覆盖完整、观察集哈希匹配且没有 `PENDING` 计划，冻结 profile 才会写入训练/验证校准。测试段只使用已冻结校准排序，并且同一 profile 只能写一次测试产物。生成的观察集、profile 和验证产物均为本地忽略文件，不进入 Git。
 
 ## 共享库
 

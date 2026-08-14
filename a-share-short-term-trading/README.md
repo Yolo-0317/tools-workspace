@@ -87,21 +87,34 @@ PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
 历史研究采用按时间顺序的 60%/20%/20% 训练、验证和一次性冻结测试，至少需要 252/126/126 个交易日。研究数据准备后依次运行：
 
 ```bash
-PYTHONPATH=stock-ai stock-ai/.venv/bin/python \
-  stock-ai/scripts/analysis/backtest_buy_point_selection.py \
-  --research-train-validation --trading-dates <dates.json> --observations <outcome-observations.json>
+PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
+  stock-ai/scripts/analysis/generate_buy_point_observations.py \
+  --start 2023-12-26 --end 2026-08-04 \
+  --out stock-ai/output/buy-point-replay
 
-PYTHONPATH=stock-ai stock-ai/.venv/bin/python \
+PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
   stock-ai/scripts/analysis/backtest_buy_point_selection.py \
-  --freeze-profile --trading-dates <dates.json>
+  --research-train-validation --point-in-time-complete \
+  --trading-dates stock-ai/output/buy-point-replay/trading-dates.json \
+  --observations stock-ai/output/buy-point-replay/outcome-observations.json \
+  --manifest stock-ai/output/buy-point-replay/replay-integrity.json
 
-PYTHONPATH=stock-ai stock-ai/.venv/bin/python \
+PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
   stock-ai/scripts/analysis/backtest_buy_point_selection.py \
-  --run-test --write-artifact --trading-dates <dates.json> \
-  --observations <outcome-observations.json>
+  --freeze-profile --point-in-time-complete \
+  --trading-dates stock-ai/output/buy-point-replay/trading-dates.json \
+  --observations stock-ai/output/buy-point-replay/outcome-observations.json \
+  --manifest stock-ai/output/buy-point-replay/replay-integrity.json
+
+PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
+  stock-ai/scripts/analysis/backtest_buy_point_selection.py \
+  --run-test --write-artifact --point-in-time-complete \
+  --trading-dates stock-ai/output/buy-point-replay/trading-dates.json \
+  --observations stock-ai/output/buy-point-replay/outcome-observations.json \
+  --manifest stock-ai/output/buy-point-replay/replay-integrity.json
 ```
 
-`outcome-observations.json` 每行必须包含 `exit_date`、`setup_type`、`sector_code`、`net_return`、`net_pnl`、`outcome`、`market_status`、`sector_resonating`、`mfe` 和 `mae`。验证产物 schema 为 `buy-point-selection-validation-v2`。旧 v1 产物、缺少任一结果字段、空校准、规则版本或哈希不一致时统一失败关闭。
+`outcome-observations.json` 每行必须包含 `signal_date`、`entry_date`、`exit_date`、`code`、`structure_id`、`setup_type`、`sector_code`、`risk_fraction`、`net_return`、`net_pnl`、`outcome`、`market_status`、`sector_resonating`、`mfe` 和 `mae`。`replay-integrity.json` 必须证明至少 630 个信号交易日、PIT 行业/ST/公告与历史市场状态完整、文件哈希匹配且没有待结算计划。冻结 profile 只包含训练/验证数据；测试段使用该 profile 排名并执行每日名额、同板块和最多三笔并发持仓限制，同一 profile 不能二次覆盖测试产物。验证产物 schema 为 `buy-point-selection-validation-v2`。旧 v1 产物、缺少任一结果字段、空校准、规则版本或哈希不一致时统一失败关闭。
 
 历史通过仍不足以切到 `LIVE`：还必须有至少 20 个不同手动前向日期、20 个已触发/取消/失效/过期的完整计划，并且完整性违规为 0。验证产物缺失、规则哈希不一致、样本不足或任何门槛失败时保持 `SHADOW`；旧负期望策略不作正式兜底。回测和输出都不构成盈利承诺。
 

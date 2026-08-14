@@ -376,6 +376,38 @@ PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
 
 验证产物必须使用 `buy-point-selection-validation-v2`。旧 v1 产物、净收益字段不完整的观察数据、空校准或规则哈希不一致都会失败关闭，不能取得正式资格。
 
+完整历史流程先生成观察集和完整性清单，再冻结训练/验证校准，最后运行一次测试段。示例区间为 630 个已结算信号日，信号截止 2026-08-04，后续行情保留到 2026-08-13：
+
+```bash
+PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
+  stock-ai/scripts/analysis/generate_buy_point_observations.py \
+  --start 2023-12-26 --end 2026-08-04 \
+  --out stock-ai/output/buy-point-replay
+
+PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
+  stock-ai/scripts/analysis/backtest_buy_point_selection.py \
+  --research-train-validation --point-in-time-complete \
+  --trading-dates stock-ai/output/buy-point-replay/trading-dates.json \
+  --observations stock-ai/output/buy-point-replay/outcome-observations.json \
+  --manifest stock-ai/output/buy-point-replay/replay-integrity.json
+
+PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
+  stock-ai/scripts/analysis/backtest_buy_point_selection.py \
+  --freeze-profile --point-in-time-complete \
+  --trading-dates stock-ai/output/buy-point-replay/trading-dates.json \
+  --observations stock-ai/output/buy-point-replay/outcome-observations.json \
+  --manifest stock-ai/output/buy-point-replay/replay-integrity.json
+
+PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
+  stock-ai/scripts/analysis/backtest_buy_point_selection.py \
+  --run-test --write-artifact --point-in-time-complete \
+  --trading-dates stock-ai/output/buy-point-replay/trading-dates.json \
+  --observations stock-ai/output/buy-point-replay/outcome-observations.json \
+  --manifest stock-ai/output/buy-point-replay/replay-integrity.json
+```
+
+观察集同时保存信号日、代码、结构 ID、实际入场日和风险距离，测试段排名不能读取候选结果。训练/验证共 80% 日期形成冻结校准；剩余 20% 日期只做一次组合级测试，并执行每日候选数、同板块和最多三笔并发持仓限制。完整性清单、观察集、冻结 profile 和验证产物均为本地运行文件，不提交 Git。
+
 `LIVE` 不由 AI 或单次回测决定。必须先通过冻结历史门槛，再完成至少 20 个不同交易日的手动前向运行和至少 20 个已解决计划，且完整性违规为 0；否则统一输出 `SHADOW`。只有正式层显示最大股数，观察和影子层固定显示无交易资格。
 
 盘后 DeepSeek 审查（非 17:30 自动化路径）：见 [pipelines/daily_stock_deepseek_pipeline.md](pipelines/daily_stock_deepseek_pipeline.md)。

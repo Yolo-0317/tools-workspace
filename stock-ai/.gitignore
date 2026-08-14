@@ -22,6 +22,8 @@ scripts/logs/
 
 output/*
 scripts/output/
+config/buy_point_selection_profile.json
+config/buy_point_selection_validation.json
 
 # Local / cache
 .playwright-cli/
