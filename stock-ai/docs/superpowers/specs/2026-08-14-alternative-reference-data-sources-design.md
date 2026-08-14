@@ -42,13 +42,13 @@
 | --- | --- | --- | --- | --- |
 | 申万行业分类字典 | 巨潮资讯 | 隔离的 AKShare 巨潮接口适配器 | 分类代码及终止日期 | 无自动备用 |
 | 个股行业历史变更 | 巨潮资讯 | 隔离的 AKShare 巨潮接口适配器 | 变更日期及分类标准 | Tushare 仅可显式启用 |
-| 全市场公告 | 巨潮资讯 | 隔离的 AKShare 巨潮接口适配器 | 公告发布时间、ID、官方链接 | 无自动备用 |
+| 全市场公告 | 巨潮资讯 | 巨潮官方分页 HTTP 适配器 | 公告发布时间、ID、官方链接、总数与总页数 | 无自动备用 |
 | 每日简称与交易状态 | BaoStock | 官方 Python SDK | 指定交易日快照 | 无自动备用 |
 | 日线行情 | 现有 Tushare `daily` | 现有同步器 | 完整交易日日线 | 不变 |
 
-AKShare 仅作为巨潮公开接口的传输封装，适配器只允许调用巨潮相关函数，不允许调用任何东财、同花顺或其他混合来源函数。标准化事实的 `source` 必须写 `CNINFO` 或 `BAOSTOCK`，不能写成 AI 结果，也不能伪装成交易所原始接口。
+AKShare 仅作为巨潮行业公开接口的传输封装，适配器只允许调用巨潮相关函数，不允许调用任何东财、同花顺或其他混合来源函数。公告适配器直接读取巨潮官方分页接口，以保留 `totalAnnouncement`、当前页和总页数供完整性核对。标准化事实的 `source` 必须写 `CNINFO` 或 `BAOSTOCK`，不能写成 AI 结果，也不能伪装成交易所原始接口。
 
-允许的 AKShare 函数固定为 `stock_industry_category_cninfo`、`stock_industry_change_cninfo` 和 `stock_zh_a_disclosure_report_cninfo`。BaoStock 固定使用带 `day` 参数的 `query_all_stock`。适配器不得根据函数缺失自动切换到同名的东财或同花顺数据。
+允许的 AKShare 函数固定为 `stock_industry_category_cninfo` 和 `stock_industry_change_cninfo`。BaoStock 固定使用带 `day` 参数的 `query_all_stock`。适配器不得根据函数缺失自动切换到同名的东财或同花顺数据。
 
 ## 4. 架构
 
