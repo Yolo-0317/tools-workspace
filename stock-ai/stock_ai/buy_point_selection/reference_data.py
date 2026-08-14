@@ -10,7 +10,7 @@ import json
 from typing import Callable, Iterable, Literal, Mapping, Protocol, Sequence
 from uuid import NAMESPACE_URL, uuid5
 
-from sqlalchemy import text
+from sqlalchemy import bindparam, text
 from sqlalchemy.engine import Connection, Engine
 
 
@@ -92,6 +92,10 @@ class ReferenceRepository(Protocol):
     def load_checkpoint(
         self, provider: str, dataset: str, partition_key: str
     ) -> ReferenceCheckpoint | None: ...
+
+    def load_checkpoints(
+        self, provider: str, dataset: str, partition_keys: Sequence[str]
+    ) -> Mapping[str, ReferenceCheckpoint]: ...
 
     def memberships_between(
         self, start: date, end: date
@@ -230,7 +234,29 @@ class SQLReferenceRepository:
         )
         if not rows:
             return None
-        row = rows[0]
+        return self._checkpoint_from_row(rows[0])
+
+    def load_checkpoints(
+        self, provider: str, dataset: str, partition_keys: Sequence[str]
+    ) -> Mapping[str, ReferenceCheckpoint]:
+        keys = tuple(dict.fromkeys(partition_keys))
+        if not keys:
+            return {}
+        statement = text(
+            "SELECT provider, dataset, partition_key, cursor_value, status, error_code, "
+            "details_json, updated_at FROM buy_point_reference_checkpoints "
+            "WHERE provider=:provider AND dataset=:dataset "
+            "AND partition_key IN :partition_keys"
+        ).bindparams(bindparam("partition_keys", expanding=True))
+        rows = self._read(
+            statement,
+            {"provider": provider, "dataset": dataset, "partition_keys": keys},
+        )
+        checkpoints = tuple(self._checkpoint_from_row(row) for row in rows)
+        return {row.partition_key: row for row in checkpoints}
+
+    @staticmethod
+    def _checkpoint_from_row(row: Mapping[str, object]) -> ReferenceCheckpoint:
         raw_details = row["details_json"]
         details = (
             json.loads(raw_details)

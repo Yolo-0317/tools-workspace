@@ -33,6 +33,7 @@ class MemoryRepository:
         self.runs: list[ReferenceSyncRun] = []
         self.checkpoints: dict[tuple[str, str, str], ReferenceCheckpoint] = {}
         self.membership_queries = 0
+        self.bulk_checkpoint_queries = 0
 
     def upsert_sector_memberships(self, rows, captured_at):
         for row in rows:
@@ -54,6 +55,16 @@ class MemoryRepository:
 
     def load_checkpoint(self, provider, dataset, partition_key):
         return self.checkpoints.get((provider, dataset, partition_key))
+
+    def load_checkpoints(self, provider, dataset, partition_keys):
+        self.bulk_checkpoint_queries += 1
+        return {
+            key: checkpoint
+            for key in partition_keys
+            if (
+                checkpoint := self.checkpoints.get((provider, dataset, key))
+            ) is not None
+        }
 
     def memberships_between(self, start, end):
         self.membership_queries += 1
@@ -198,6 +209,20 @@ def test_complete_checkpoint_skips_old_partition_but_refreshes_last_two() -> Non
     )
 
     assert baostock.calls == list(days[-2:])
+
+
+def test_sector_checkpoint_lookup_is_batched_for_the_full_universe() -> None:
+    repository = MemoryRepository()
+
+    sync_alternative_reference_data(
+        _request(date(2025, 8, 6), size=100),
+        cninfo=FakeCninfoProvider(),
+        baostock=FakeBaoStockProvider(),
+        repository=repository,
+        sleep=lambda _: None,
+    )
+
+    assert repository.bulk_checkpoint_queries == 1
 
 
 def test_missing_announcement_page_fails_only_announcement_dataset() -> None:

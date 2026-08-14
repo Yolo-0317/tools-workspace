@@ -82,3 +82,16 @@ def test_memberships_between_uses_one_bounded_query() -> None:
     assert len(selects) == 1
     assert "valid_from <=" in selects[0]
     assert "valid_to IS NULL OR valid_to >=" in selects[0]
+
+
+def test_repository_loads_many_checkpoints_with_one_query() -> None:
+    connection = CheckpointConnection()
+    repository = SQLReferenceRepository(connection)
+
+    assert repository.load_checkpoints(
+        "CNINFO", "sector", ("600001", "600002", "600003")
+    ) == {}
+
+    selects = [value for value in connection.statements if value.startswith("SELECT")]
+    assert len(selects) == 1
+    assert "partition_key IN" in selects[0]
