@@ -125,6 +125,26 @@ def test_cninfo_adapter_treats_pandas_nat_as_missing_termination_date() -> None:
     assert provider.fetch_industry_categories()[0].terminated_on is None
 
 
+def test_cninfo_transient_empty_industry_frame_is_retryable() -> None:
+    """Catches AKShare's empty-response KeyError being mislabeled as a schema change."""
+
+    def transient_empty(**kwargs):
+        raise KeyError("变更日期")
+
+    provider = CninfoReferenceProvider(
+        category_fetcher=_category_fetcher,
+        change_fetcher=transient_empty,
+        session=FakeSession(FakeResponse(200, _announcement_payload())),
+    )
+
+    with pytest.raises(ProviderFailure) as caught:
+        provider.fetch_industry_changes(
+            "000017", date(1990, 1, 1), date(2025, 8, 6)
+        )
+
+    assert caught.value.error_code == "PROVIDER_UNAVAILABLE"
+
+
 def test_cninfo_announcement_page_preserves_declared_totals_and_timezone() -> None:
     """Catches a transport that hides missing pages or treats UTC as Shanghai time."""
     session = FakeSession(FakeResponse(200, _announcement_payload(total=31)))

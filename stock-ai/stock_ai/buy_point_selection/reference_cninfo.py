@@ -140,8 +140,14 @@ class CninfoReferenceProvider:
         except ProviderFailure:
             raise
         except Exception as exc:
+            error_code = (
+                "PROVIDER_UNAVAILABLE"
+                if isinstance(exc, requests.RequestException)
+                or (isinstance(exc, KeyError) and exc.args == ("变更日期",))
+                else "PROVIDER_SCHEMA_CHANGED"
+            )
             raise ProviderFailure(
-                self.provider_name, "industry_changes", "PROVIDER_SCHEMA_CHANGED"
+                self.provider_name, "industry_changes", error_code
             ) from exc
 
     def fetch_announcement_page(self, day: date, page_no: int) -> AnnouncementPage:
