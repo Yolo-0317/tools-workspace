@@ -48,6 +48,13 @@ class SignificantResistanceProfile:
     variants: tuple[ResistanceVariantProfile, ...]
 
 
+@dataclass(frozen=True)
+class RepeatedResistanceEvidence:
+    complete: bool
+    level: Decimal | None
+    touch_count: int
+
+
 def resistance_evidence_basis(
     complete: bool,
     variant: ResistanceVariantProfile,
@@ -186,6 +193,47 @@ def _repeated_pivot_cluster(
     return level, len(selected)
 
 
+def repeated_pivot_resistance(
+    reference_price: Decimal,
+    signal_date: date,
+    bars: Sequence[BuyPointBar],
+) -> RepeatedResistanceEvidence:
+    bounded = tuple(
+        sorted(
+            (value for value in bars if value.trade_date <= signal_date),
+            key=lambda value: value.trade_date,
+        )[-60:]
+    )
+    prices = tuple(
+        price
+        for value in bounded
+        for price in (value.open, value.high, value.low, value.close)
+    )
+    if (
+        len(bounded) != 60
+        or bounded[-1].trade_date != signal_date
+        or len({value.trade_date for value in bounded}) != 60
+        or any(not value.is_finite() or value <= 0 for value in prices)
+        or not reference_price.is_finite()
+        or reference_price <= 0
+    ):
+        return RepeatedResistanceEvidence(False, None, 0)
+    volatility = atr14(bounded)
+    if not volatility.is_finite() or volatility <= 0:
+        return RepeatedResistanceEvidence(False, None, 0)
+    tolerance = max(
+        Decimal("0.5") * volatility,
+        Decimal("0.005") * reference_price,
+    )
+    pivots = tuple(
+        value
+        for value in _local_pivots(bounded)
+        if value[2] > reference_price
+    )
+    level, touches = _repeated_pivot_cluster(pivots, tolerance)
+    return RepeatedResistanceEvidence(True, level, touches)
+
+
 def analyze_significant_resistance(
     episode: OpportunityEpisode,
     bars: Sequence[BuyPointBar],
@@ -215,7 +263,11 @@ def analyze_significant_resistance(
     )
     pivot_level = min((value[2] for value in pivots), default=None)
     pivot_touches = sum(value[2] == pivot_level for value in pivots)
-    cluster_level, cluster_touches = _repeated_pivot_cluster(pivots, tolerance)
+    repeated = repeated_pivot_resistance(
+        candidate.plan.trigger_price,
+        candidate.signal_date,
+        bounded,
+    )
     return SignificantResistanceProfile(
         episode.episode_id,
         candidate.code,
@@ -230,9 +282,9 @@ def analyze_significant_resistance(
             _variant(LOCAL_PIVOT_HIGH, pivot_level, candidate, pivot_touches),
             _variant(
                 REPEATED_PIVOT_CLUSTER,
-                cluster_level,
+                repeated.level,
                 candidate,
-                cluster_touches,
+                repeated.touch_count,
             ),
         ),
     )

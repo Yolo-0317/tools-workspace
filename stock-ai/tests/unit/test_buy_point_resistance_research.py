@@ -19,6 +19,7 @@ from stock_ai.buy_point_selection.resistance_research import (
     REPEATED_PIVOT_CLUSTER,
     ResistanceVariantProfile,
     analyze_significant_resistance,
+    repeated_pivot_resistance,
     resistance_evidence_basis,
 )
 
@@ -102,6 +103,88 @@ def _flat_bars() -> tuple[BuyPointBar, ...]:
         )
         for index in range(60)
     )
+
+
+def test_repeated_pivot_primitive_ignores_future_bars() -> None:
+    bars = list(_flat_bars())
+    bars[10] = replace(bars[10], high=Decimal("12.10"))
+    bars[20] = replace(bars[20], high=Decimal("12.20"))
+    future = replace(
+        bars[-1],
+        trade_date=SIGNAL + timedelta(days=1),
+        high=Decimal("10.01"),
+    )
+
+    baseline = repeated_pivot_resistance(Decimal("10"), SIGNAL, tuple(bars))
+    with_future = repeated_pivot_resistance(
+        Decimal("10"), SIGNAL, (*bars, future)
+    )
+
+    assert with_future == baseline
+    assert baseline.complete
+    assert baseline.level == Decimal("12.15")
+    assert baseline.touch_count == 2
+
+
+def test_repeated_pivot_primitive_fails_closed_on_incomplete_history() -> None:
+    bars = list(_flat_bars())
+    duplicate = tuple(
+        replace(value, trade_date=bars[8].trade_date) if index == 9 else value
+        for index, value in enumerate(bars)
+    )
+
+    too_short = repeated_pivot_resistance(
+        Decimal("10"), SIGNAL, tuple(bars[1:])
+    )
+    duplicated = repeated_pivot_resistance(Decimal("10"), SIGNAL, duplicate)
+
+    assert not too_short.complete
+    assert too_short.level is None
+    assert too_short.touch_count == 0
+    assert not duplicated.complete
+
+
+def test_repeated_pivot_primitive_rejects_nearby_touches() -> None:
+    bars = list(_flat_bars())
+    bars[10] = replace(bars[10], high=Decimal("12.10"))
+    bars[12] = replace(bars[12], high=Decimal("12.10"))
+
+    evidence = repeated_pivot_resistance(Decimal("10"), SIGNAL, tuple(bars))
+
+    assert evidence.complete
+    assert evidence.level is None
+    assert evidence.touch_count == 0
+
+
+def test_repeated_pivot_primitive_uses_price_tolerance_when_larger() -> None:
+    bars = [
+        replace(
+            value,
+            open=Decimal("99.80"),
+            high=Decimal("99.90"),
+            low=Decimal("99.70"),
+            close=Decimal("99.80"),
+        )
+        for value in _flat_bars()
+    ]
+    bars[10] = replace(bars[10], high=Decimal("100.10"))
+    bars[20] = replace(bars[20], high=Decimal("100.50"))
+
+    evidence = repeated_pivot_resistance(Decimal("100"), SIGNAL, tuple(bars))
+
+    assert evidence.complete
+    assert evidence.level == Decimal("100.30")
+    assert evidence.touch_count == 2
+
+
+def test_repeated_pivot_primitive_reports_complete_without_a_cluster() -> None:
+    evidence = repeated_pivot_resistance(
+        Decimal("10"), SIGNAL, _flat_bars()
+    )
+
+    assert evidence.complete
+    assert evidence.level is None
+    assert evidence.touch_count == 0
 
 
 def test_profile_separates_any_high_from_a_two_sided_local_pivot() -> None:
