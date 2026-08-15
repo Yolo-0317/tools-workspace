@@ -25,6 +25,8 @@ from .five_day_return_profiles import (
     five_day_profile_hash,
 )
 from .five_day_return_runtime import (
+    FiveDayForwardScreen,
+    FiveDayForwardSettlement,
     FiveDayResearchReview,
     FiveDaySignalCandidate,
     FiveDaySignalPlan,
@@ -445,8 +447,8 @@ def _setup_from_payload(value: Mapping[str, object]) -> DetectedSetup:
     )
 
 
-def _observation_from_payload(value: Mapping[str, object]) -> FiveDayObservation:
-    plan_raw = dict(value["plan"])
+def _plan_from_payload(value: Mapping[str, object]) -> FiveDaySignalPlan:
+    plan_raw = dict(value)
     candidate_raw = dict(plan_raw["candidate"])
     profile = _profile_from_payload(dict(plan_raw["profile"]))
     candidate = FiveDaySignalCandidate(
@@ -481,6 +483,21 @@ def _observation_from_payload(value: Mapping[str, object]) -> FiveDayObservation
         trade_permission=str(plan_raw["trade_permission"]),
         executable_shares=int(plan_raw["executable_shares"]),
     )
+    if (
+        candidate.executable_shares != 0
+        or plan.executable_shares != 0
+        or plan.status != "CASE_ANALYSIS_ONLY"
+        or plan.trade_permission != "NO-TRADE"
+        or candidate.code != candidate.setup.code
+        or candidate.signal_date != candidate.setup.analysis_date
+    ):
+        raise ValueError
+    return plan
+
+
+def _observation_from_payload(value: Mapping[str, object]) -> FiveDayObservation:
+    plan = _plan_from_payload(dict(value["plan"]))
+    candidate = plan.candidate
     trade_raw = dict(value["trade"])
     exit_raw = trade_raw["exit"]
     exit_value = None
@@ -525,12 +542,8 @@ def _observation_from_payload(value: Mapping[str, object]) -> FiveDayObservation
     )
     if (
         int(value["executable_shares"]) != 0
-        or candidate.executable_shares != 0
-        or plan.executable_shares != 0
         or trade.executable_shares != 0
-        or plan.status != "CASE_ANALYSIS_ONLY"
-        or plan.trade_permission != "NO-TRADE"
-        or trade.profile_id != profile.profile_id
+        or trade.profile_id != plan.profile.profile_id
         or trade.structure_id != plan.structure_id
         or trade.code != candidate.code
         or trade.signal_date != candidate.signal_date
@@ -985,3 +998,365 @@ def load_five_day_test(
         return review
     except (KeyError, TypeError, ValueError, json.JSONDecodeError):
         raise ValueError("five-day test artifact is invalid") from None
+
+
+def _forward_screen_content(
+    screen: FiveDayForwardScreen,
+) -> dict[str, object]:
+    return {
+        "candidates": [_plan_payload(value) for value in screen.candidates],
+        "risk_coverage_complete": screen.risk_coverage_complete,
+        "executable_shares": 0,
+    }
+
+
+def five_day_forward_screen_payload(
+    screen: FiveDayForwardScreen,
+) -> dict[str, object]:
+    memberships = tuple(
+        (
+            normalize_code6(value.candidate.code),
+            value.structure_id,
+            value.profile.profile_id,
+        )
+        for value in screen.candidates
+    )
+    code_structures = tuple(
+        (normalize_code6(value.candidate.code), value.structure_id)
+        for value in screen.candidates
+    )
+    if (
+        len(screen.freeze_hash) != 64
+        or len(screen.test_identity) != 64
+        or not screen.risk_coverage_complete
+        or len(screen.candidates) > 3
+        or len(memberships) != len(frozenset(memberships))
+        or len(code_structures) != len(frozenset(code_structures))
+        or any(
+            value.candidate.signal_date != screen.signal_date
+            or value.candidate.executable_shares != 0
+            or value.executable_shares != 0
+            or value.status != "CASE_ANALYSIS_ONLY"
+            or value.trade_permission != "NO-TRADE"
+            for value in screen.candidates
+        )
+    ):
+        raise ValueError("five-day forward screen safety mismatch")
+    content = _forward_screen_content(screen)
+    content_revision = _sha256(content)
+    lineage = {
+        "schema": FIVE_DAY_ARTIFACT_SCHEMA,
+        "stage": "forward-screen",
+        "parent_freeze_hash": screen.freeze_hash,
+        "parent_test_identity": screen.test_identity,
+        "signal_date": screen.signal_date.isoformat(),
+        "input_fingerprint": screen.input_fingerprint,
+        "sizing_version": SIZING_VERSION,
+        "evaluator_version": EVALUATOR_VERSION,
+        "cost_version": COST_VERSION,
+        "candidate_membership": memberships,
+        "content_revision": content_revision,
+    }
+    return {
+        "schema": FIVE_DAY_ARTIFACT_SCHEMA,
+        "stage": "forward-screen",
+        "status": "CASE_ANALYSIS_ONLY",
+        "trade_permission": "NO-TRADE",
+        "retrospective": False,
+        "promotion_eligible": False,
+        "artifact_identity": _sha256(lineage),
+        "content_revision": content_revision,
+        "parent_freeze_hash": screen.freeze_hash,
+        "parent_test_identity": screen.test_identity,
+        "signal_date": screen.signal_date.isoformat(),
+        "input_fingerprint": screen.input_fingerprint,
+        "sizing_version": SIZING_VERSION,
+        "evaluator_version": EVALUATOR_VERSION,
+        "cost_version": COST_VERSION,
+        **content,
+    }
+
+
+def write_five_day_forward_screen(
+    screen: FiveDayForwardScreen,
+    output_dir: str | Path,
+) -> Path:
+    payload = five_day_forward_screen_payload(screen)
+    target = Path(output_dir)
+    target.mkdir(parents=True, exist_ok=True)
+    path = target / (
+        f"forward-screen-{screen.signal_date.isoformat()}-"
+        f"{payload['artifact_identity']}.json"
+    )
+    content = json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, indent=2
+    ) + "\n"
+    _write_exclusive_or_verify(path, content)
+    return path
+
+
+def load_five_day_forward_screen(
+    path: str | Path,
+    freeze_path: str | Path,
+    test_path: str | Path,
+    research_path: str | Path,
+) -> FiveDayForwardScreen:
+    from .five_day_return_validation import rank_five_day_plans
+
+    try:
+        freeze = load_five_day_freeze(freeze_path, research_path)
+        test = load_five_day_test(test_path, freeze_path, research_path)
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        if (
+            payload["schema"] != FIVE_DAY_ARTIFACT_SCHEMA
+            or payload["stage"] != "forward-screen"
+            or payload["status"] != "CASE_ANALYSIS_ONLY"
+            or payload["trade_permission"] != "NO-TRADE"
+            or payload["retrospective"] is not False
+            or payload["promotion_eligible"] is not False
+            or payload["executable_shares"] != 0
+            or payload["sizing_version"] != SIZING_VERSION
+            or payload["evaluator_version"] != EVALUATOR_VERSION
+            or payload["cost_version"] != COST_VERSION
+        ):
+            raise ValueError
+        candidates = tuple(
+            _plan_from_payload(dict(item))
+            for item in payload["candidates"]
+        )
+        screen = FiveDayForwardScreen(
+            signal_date=date.fromisoformat(str(payload["signal_date"])),
+            freeze_hash=str(payload["parent_freeze_hash"]),
+            test_identity=str(payload["parent_test_identity"]),
+            input_fingerprint=str(payload["input_fingerprint"]),
+            candidates=candidates,
+            risk_coverage_complete=bool(
+                payload["risk_coverage_complete"]
+            ),
+        )
+        test_identity = str(five_day_test_payload(test)["artifact_identity"])
+        eligible_ids = frozenset(test.assessment.eligible_profile_ids)
+        ranked = rank_five_day_plans(
+            candidates,
+            freeze.calibrations,
+            daily_limit=3,
+        ).plans
+        if (
+            screen.signal_date <= test.signal_dates[-1]
+            or screen.freeze_hash != freeze.freeze_hash
+            or screen.test_identity != test_identity
+            or not screen.input_fingerprint.startswith(
+                f"{test.input_fingerprint}:"
+            )
+            or any(
+                value.profile.profile_id not in eligible_ids
+                for value in candidates
+            )
+            or candidates != ranked
+            or payload != five_day_forward_screen_payload(screen)
+        ):
+            raise ValueError
+        return screen
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+        raise ValueError(
+            "five-day forward screen artifact is invalid"
+        ) from None
+
+
+def _forward_settlement_content(
+    settlement: FiveDayForwardSettlement,
+) -> dict[str, object]:
+    return {
+        "candidates": [
+            _plan_payload(value) for value in settlement.candidates
+        ],
+        "outcomes": [
+            _observation_payload(value) for value in settlement.outcomes
+        ],
+        "risk_coverage_complete": settlement.risk_coverage_complete,
+        "executable_shares": 0,
+    }
+
+
+def five_day_forward_settlement_payload(
+    settlement: FiveDayForwardSettlement,
+) -> dict[str, object]:
+    terminal_statuses = frozenset(
+        {
+            "NOT_TRIGGERED",
+            "CANCELLED",
+            "STOPPED",
+            "TIME_EXIT_GAIN",
+            "TIME_EXIT_FLAT",
+            "TIME_EXIT_LOSS",
+        }
+    )
+    memberships = tuple(
+        (
+            normalize_code6(value.candidate.code),
+            value.structure_id,
+            value.profile.profile_id,
+        )
+        for value in settlement.candidates
+    )
+    if (
+        len(settlement.parent_screen_identity) != 64
+        or len(settlement.freeze_hash) != 64
+        or len(settlement.test_identity) != 64
+        or not settlement.risk_coverage_complete
+        or settlement.outcome_cutoff < settlement.signal_date
+        or len(settlement.candidates) > 3
+        or len(settlement.candidates) != len(settlement.outcomes)
+        or len(memberships) != len(frozenset(memberships))
+        or any(
+            outcome.plan != candidate
+            or outcome.plan.candidate.signal_date != settlement.signal_date
+            or outcome.trade.status not in terminal_statuses
+            or outcome.trade.profile_id != candidate.profile.profile_id
+            or outcome.trade.structure_id != candidate.structure_id
+            or normalize_code6(outcome.trade.code)
+            != normalize_code6(candidate.candidate.code)
+            or outcome.trade.signal_date != candidate.candidate.signal_date
+            or outcome.resolution_date > settlement.outcome_cutoff
+            or outcome.plan.candidate.executable_shares != 0
+            or outcome.plan.executable_shares != 0
+            or outcome.trade.executable_shares != 0
+            for candidate, outcome in zip(
+                settlement.candidates,
+                settlement.outcomes,
+            )
+        )
+    ):
+        raise ValueError("five-day forward settlement safety mismatch")
+    content = _forward_settlement_content(settlement)
+    content_revision = _sha256(content)
+    lineage = {
+        "schema": FIVE_DAY_ARTIFACT_SCHEMA,
+        "stage": "forward-settlement",
+        "parent_screen_identity": settlement.parent_screen_identity,
+        "parent_freeze_hash": settlement.freeze_hash,
+        "parent_test_identity": settlement.test_identity,
+        "signal_date": settlement.signal_date.isoformat(),
+        "outcome_cutoff": settlement.outcome_cutoff.isoformat(),
+        "input_fingerprint": settlement.input_fingerprint,
+        "sizing_version": SIZING_VERSION,
+        "evaluator_version": EVALUATOR_VERSION,
+        "cost_version": COST_VERSION,
+        "content_revision": content_revision,
+    }
+    return {
+        "schema": FIVE_DAY_ARTIFACT_SCHEMA,
+        "stage": "forward-settlement",
+        "status": "CASE_ANALYSIS_ONLY",
+        "trade_permission": "NO-TRADE",
+        "retrospective": False,
+        "promotion_eligible": False,
+        "artifact_identity": _sha256(lineage),
+        "content_revision": content_revision,
+        "parent_screen_identity": settlement.parent_screen_identity,
+        "parent_freeze_hash": settlement.freeze_hash,
+        "parent_test_identity": settlement.test_identity,
+        "signal_date": settlement.signal_date.isoformat(),
+        "outcome_cutoff": settlement.outcome_cutoff.isoformat(),
+        "input_fingerprint": settlement.input_fingerprint,
+        "sizing_version": SIZING_VERSION,
+        "evaluator_version": EVALUATOR_VERSION,
+        "cost_version": COST_VERSION,
+        **content,
+    }
+
+
+def write_five_day_forward_settlement(
+    settlement: FiveDayForwardSettlement,
+    output_dir: str | Path,
+) -> Path:
+    payload = five_day_forward_settlement_payload(settlement)
+    target = Path(output_dir)
+    target.mkdir(parents=True, exist_ok=True)
+    path = target / (
+        f"forward-settlement-{settlement.parent_screen_identity}.json"
+    )
+    content = json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, indent=2
+    ) + "\n"
+    _write_exclusive_or_verify(path, content)
+    return path
+
+
+def load_five_day_forward_settlement(
+    path: str | Path,
+    screen_path: str | Path,
+    freeze_path: str | Path,
+    test_path: str | Path,
+    research_path: str | Path,
+) -> FiveDayForwardSettlement:
+    try:
+        screen = load_five_day_forward_screen(
+            screen_path,
+            freeze_path,
+            test_path,
+            research_path,
+        )
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        if (
+            payload["schema"] != FIVE_DAY_ARTIFACT_SCHEMA
+            or payload["stage"] != "forward-settlement"
+            or payload["status"] != "CASE_ANALYSIS_ONLY"
+            or payload["trade_permission"] != "NO-TRADE"
+            or payload["retrospective"] is not False
+            or payload["promotion_eligible"] is not False
+            or payload["executable_shares"] != 0
+            or payload["sizing_version"] != SIZING_VERSION
+            or payload["evaluator_version"] != EVALUATOR_VERSION
+            or payload["cost_version"] != COST_VERSION
+        ):
+            raise ValueError
+        candidates = tuple(
+            _plan_from_payload(dict(item))
+            for item in payload["candidates"]
+        )
+        outcomes = tuple(
+            _observation_from_payload(dict(item))
+            for item in payload["outcomes"]
+        )
+        settlement = FiveDayForwardSettlement(
+            parent_screen_identity=str(
+                payload["parent_screen_identity"]
+            ),
+            signal_date=date.fromisoformat(str(payload["signal_date"])),
+            outcome_cutoff=date.fromisoformat(
+                str(payload["outcome_cutoff"])
+            ),
+            freeze_hash=str(payload["parent_freeze_hash"]),
+            test_identity=str(payload["parent_test_identity"]),
+            input_fingerprint=str(payload["input_fingerprint"]),
+            candidates=candidates,
+            outcomes=outcomes,
+            risk_coverage_complete=bool(
+                payload["risk_coverage_complete"]
+            ),
+        )
+        screen_identity = str(
+            five_day_forward_screen_payload(screen)["artifact_identity"]
+        )
+        if (
+            settlement.parent_screen_identity != screen_identity
+            or settlement.signal_date != screen.signal_date
+            or settlement.freeze_hash != screen.freeze_hash
+            or settlement.test_identity != screen.test_identity
+            or not settlement.input_fingerprint.startswith(
+                f"{screen.input_fingerprint}:"
+            )
+            or settlement.candidates != screen.candidates
+            or any(
+                outcome.plan != candidate
+                for candidate, outcome in zip(candidates, outcomes)
+            )
+            or payload != five_day_forward_settlement_payload(settlement)
+        ):
+            raise ValueError
+        return settlement
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+        raise ValueError(
+            "five-day forward settlement artifact is invalid"
+        ) from None

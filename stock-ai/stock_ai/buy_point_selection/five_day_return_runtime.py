@@ -158,6 +158,29 @@ class FiveDayTestReview:
     cost_version: str
 
 
+@dataclass(frozen=True)
+class FiveDayForwardScreen:
+    signal_date: date
+    freeze_hash: str
+    test_identity: str
+    input_fingerprint: str
+    candidates: tuple[FiveDaySignalPlan, ...]
+    risk_coverage_complete: bool
+
+
+@dataclass(frozen=True)
+class FiveDayForwardSettlement:
+    parent_screen_identity: str
+    signal_date: date
+    outcome_cutoff: date
+    freeze_hash: str
+    test_identity: str
+    input_fingerprint: str
+    candidates: tuple[FiveDaySignalPlan, ...]
+    outcomes: tuple[FiveDayObservation, ...]
+    risk_coverage_complete: bool
+
+
 def _signal_bars(
     bars: Sequence[BuyPointBar], signal_date: date
 ) -> tuple[BuyPointBar, ...]:
@@ -806,6 +829,207 @@ def build_five_day_test_review(
         sizing_version=freeze.sizing_version,
         evaluator_version=freeze.evaluator_version,
         cost_version=freeze.cost_version,
+    )
+
+
+def build_five_day_forward_screen(
+    freeze: FiveDayFreeze,
+    test: FiveDayTestReview,
+    signal_date: date,
+    inputs: FiveDayRuntimeInputs,
+    *,
+    discovery_builder: FiveDayDiscoveryBuilder = discover_five_day_signal_plans,
+) -> FiveDayForwardScreen:
+    """Build one completed-date, zero-share screen from frozen evidence."""
+    from .five_day_return_report import five_day_test_payload
+    from .five_day_return_validation import (
+        evaluate_frozen_test,
+        rank_five_day_plans,
+    )
+
+    error = "five-day forward screen lineage or inputs are invalid"
+    try:
+        expected_assessment = evaluate_frozen_test(
+            freeze,
+            test.observations,
+            test_dates=test.signal_dates,
+        )
+        test_identity = str(
+            five_day_test_payload(test)["artifact_identity"]
+        )
+        frozen_ids = frozenset(value.profile_id for value in freeze.profiles)
+        eligible_ids = frozenset(test.assessment.eligible_profile_ids)
+        coverage = inputs.coverage_by_date.get(signal_date)
+        market = inputs.market_snapshots.get(signal_date)
+        if (
+            signal_date <= test.signal_dates[-1]
+            or tuple(inputs.signal_dates) != (signal_date,)
+            or signal_date not in frozenset(inputs.trading_dates)
+            or not inputs.input_fingerprint.startswith(
+                f"{test.input_fingerprint}:"
+            )
+            or freeze.research_identity != test.research_identity
+            or freeze.freeze_hash != test.freeze_hash
+            or freeze.sizing_version != test.sizing_version
+            or freeze.evaluator_version != test.evaluator_version
+            or freeze.cost_version != test.cost_version
+            or test.assessment != expected_assessment
+            or not eligible_ids.issubset(frozen_ids)
+            or coverage is None
+            or not coverage.complete
+            or market is None
+            or not market.complete
+        ):
+            raise ValueError(error)
+    except (IndexError, KeyError, TypeError, ValueError) as exc:
+        if isinstance(exc, ValueError) and str(exc) == error:
+            raise
+        raise ValueError(error) from exc
+
+    profiles = build_five_day_return_profiles()
+    discovery = discovery_builder(
+        signal_dates=(signal_date,),
+        trading_dates=inputs.trading_dates,
+        bars_by_code=inputs.bars_by_code,
+        memberships=inputs.memberships,
+        risk_flags=inputs.risk_flags,
+        coverage_by_date=inputs.coverage_by_date,
+        market_snapshots=inputs.market_snapshots,
+        profiles=profiles,
+        formal_policy=SelectionPolicy(),
+    )
+    if (
+        tuple(discovery.signal_dates) != (signal_date,)
+        or discovery.incomplete_dates
+        or any(
+            value.candidate.signal_date != signal_date
+            for value in discovery.plans
+        )
+    ):
+        raise ValueError("five-day forward screen discovery is incomplete")
+    eligible_plans = tuple(
+        value
+        for value in discovery.plans
+        if value.profile.profile_id in eligible_ids
+    )
+    candidates = rank_five_day_plans(
+        eligible_plans,
+        freeze.calibrations,
+        daily_limit=3,
+    ).plans
+    if len(candidates) > 3:
+        raise ValueError("five-day forward screen exceeds candidate limit")
+    return FiveDayForwardScreen(
+        signal_date=signal_date,
+        freeze_hash=freeze.freeze_hash,
+        test_identity=test_identity,
+        input_fingerprint=inputs.input_fingerprint,
+        candidates=candidates,
+        risk_coverage_complete=True,
+    )
+
+
+def build_five_day_forward_settlement(
+    screen: FiveDayForwardScreen,
+    inputs: FiveDayRuntimeInputs,
+    outcome_cutoff: date,
+    *,
+    plan_simulator: FiveDayPlanSimulator | None = None,
+) -> FiveDayForwardSettlement:
+    """Settle only immutable screen members through a bounded cutoff."""
+    from .five_day_return_execution import FiveDayTrade, simulate_five_day_plan
+    from .five_day_return_report import five_day_forward_screen_payload
+    from .five_day_return_validation import FiveDayObservation
+
+    error = "five-day forward settlement inputs are invalid"
+    trading_dates = tuple(inputs.trading_dates)
+    relevant_dates = tuple(
+        value
+        for value in trading_dates
+        if screen.signal_date <= value <= outcome_cutoff
+    )
+    try:
+        screen_identity = str(
+            five_day_forward_screen_payload(screen)["artifact_identity"]
+        )
+        if (
+            not screen.risk_coverage_complete
+            or tuple(inputs.signal_dates) != (screen.signal_date,)
+            or not trading_dates
+            or trading_dates[-1] != outcome_cutoff
+            or screen.signal_date not in frozenset(trading_dates)
+            or outcome_cutoff < screen.signal_date
+            or not inputs.input_fingerprint.startswith(
+                f"{screen.input_fingerprint}:"
+            )
+            or any(
+                inputs.coverage_by_date.get(value) is None
+                or not inputs.coverage_by_date[value].complete
+                or inputs.market_snapshots.get(value) is None
+                or not inputs.market_snapshots[value].complete
+                for value in relevant_dates
+            )
+        ):
+            raise ValueError(error)
+    except (IndexError, KeyError, TypeError, ValueError) as exc:
+        if isinstance(exc, ValueError) and str(exc) == error:
+            raise
+        raise ValueError(error) from exc
+
+    simulate = plan_simulator or simulate_five_day_plan
+    outcomes: list[FiveDayObservation] = []
+    for plan in screen.candidates:
+        entry_dates = tuple(
+            value
+            for value in trading_dates
+            if plan.candidate.signal_date < value
+            <= plan.candidate.valid_through_trade_date
+        )
+        blockers = entry_blockers_by_date(
+            plan.candidate.code,
+            entry_dates,
+            coverage_by_date=inputs.coverage_by_date,
+            risk_flags=inputs.risk_flags,
+            market_snapshots=inputs.market_snapshots,
+        )
+        trade = simulate(
+            plan,
+            inputs.bars_by_code.get(normalize_code6(plan.candidate.code), ()),
+            trading_dates,
+            entry_blockers=blockers,
+        )
+        if not isinstance(trade, FiveDayTrade):
+            raise TypeError("plan simulator must return FiveDayTrade")
+        if (
+            trade.profile_id != plan.profile.profile_id
+            or trade.structure_id != plan.structure_id
+            or normalize_code6(trade.code)
+            != normalize_code6(plan.candidate.code)
+            or trade.signal_date != plan.candidate.signal_date
+        ):
+            raise ValueError(
+                "five-day forward settlement membership changed"
+            )
+        if trade.status == "PENDING":
+            raise ValueError("five-day forward settlement is incomplete")
+        resolution_date = (
+            trade.exit.actual_exit_date
+            if trade.exit is not None
+            else plan.candidate.valid_through_trade_date
+        )
+        if resolution_date > outcome_cutoff:
+            raise ValueError("five-day forward settlement is incomplete")
+        outcomes.append(FiveDayObservation(plan, trade, resolution_date))
+    return FiveDayForwardSettlement(
+        parent_screen_identity=screen_identity,
+        signal_date=screen.signal_date,
+        outcome_cutoff=outcome_cutoff,
+        freeze_hash=screen.freeze_hash,
+        test_identity=screen.test_identity,
+        input_fingerprint=inputs.input_fingerprint,
+        candidates=screen.candidates,
+        outcomes=tuple(outcomes),
+        risk_coverage_complete=True,
     )
 
 

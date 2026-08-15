@@ -11,7 +11,10 @@ import pytest
 from stock_ai.buy_point_selection import five_day_return_validation
 from stock_ai.buy_point_selection.five_day_return_runtime import (
     FiveDayDiscovery,
+    FiveDayForwardScreen,
     FiveDayRuntimeInputs,
+    build_five_day_forward_settlement,
+    build_five_day_forward_screen,
     build_five_day_research_review,
     build_five_day_test_review,
     discover_five_day_signal_plans,
@@ -20,6 +23,7 @@ from stock_ai.buy_point_selection.five_day_return_runtime import (
 )
 from stock_ai.buy_point_selection.five_day_return_report import (
     five_day_research_payload,
+    five_day_test_payload,
 )
 from stock_ai.buy_point_selection.five_day_return_validation import (
     evaluate_validation_freeze,
@@ -28,6 +32,7 @@ from stock_ai.buy_point_selection.validation import ChronologicalSplit
 from stock_ai.buy_point_selection.five_day_return_execution import (
     FiveDayExit,
     FiveDayTrade,
+    simulate_five_day_plan,
 )
 from stock_ai.buy_point_selection.models import (
     BuyPointBar,
@@ -789,4 +794,268 @@ def test_test_builder_rejects_lineage_or_date_membership_changes(
             selected_research,
             selected_inputs,
             discovery_builder=discover,
+        )
+
+
+def _forward_inputs(
+    test_review,
+    signal_date: date,
+    *,
+    complete: bool = True,
+) -> FiveDayRuntimeInputs:
+    return FiveDayRuntimeInputs(
+        signal_dates=(signal_date,),
+        trading_dates=tuple(
+            signal_date + timedelta(days=index) for index in range(8)
+        ),
+        bars_by_code={},
+        memberships=(),
+        risk_flags=(),
+        coverage_by_date={
+            signal_date: ReferenceCoverage(
+                signal_date,
+                complete,
+                complete,
+                complete,
+            )
+        },
+        market_snapshots={
+            signal_date: MarketSnapshot(3, 60.0, 1.0, complete)
+        },
+        input_fingerprint=f"{test_review.input_fingerprint}:forward-fixture",
+    )
+
+
+def test_forward_screen_allows_an_empty_eligible_profile_set() -> None:
+    research, freeze, inputs, discover_test = _empty_test_lineage()
+    test_review = build_five_day_test_review(
+        freeze,
+        research,
+        inputs,
+        discovery_builder=discover_test,
+    )
+    signal_date = research.split.test[-1] + timedelta(days=1)
+
+    def discover_forward(**kwargs):
+        return FiveDayDiscovery(
+            signal_dates=tuple(kwargs["signal_dates"]),
+            plans=(),
+            rejection_counts={},
+            incomplete_dates=(),
+        )
+
+    screen = build_five_day_forward_screen(
+        freeze,
+        test_review,
+        signal_date,
+        _forward_inputs(test_review, signal_date),
+        discovery_builder=discover_forward,
+    )
+
+    assert screen.signal_date == signal_date
+    assert screen.freeze_hash == freeze.freeze_hash
+    assert screen.test_identity == five_day_test_payload(test_review)[
+        "artifact_identity"
+    ]
+    assert screen.candidates == ()
+    assert screen.risk_coverage_complete
+
+
+def test_forward_screen_uses_only_eligible_profiles_and_keeps_top_three(
+    tmp_path,
+) -> None:
+    from tests.unit.test_five_day_return_report import (
+        _observation as report_observation,
+        _test_lineage as report_test_lineage,
+    )
+
+    research, freeze, test_review, _, _ = report_test_lineage(tmp_path)
+    signal_date = research.split.test[-1] + timedelta(days=1)
+    plans = []
+    for index in range(4):
+        template = report_observation(
+            signal_date,
+            400 + index,
+            net_return=Decimal("0.01"),
+        ).plan
+        plans.append(template)
+
+    def discover_forward(**kwargs):
+        return FiveDayDiscovery(
+            signal_dates=tuple(kwargs["signal_dates"]),
+            plans=tuple(reversed(plans)),
+            rejection_counts={},
+            incomplete_dates=(),
+        )
+
+    screen = build_five_day_forward_screen(
+        freeze,
+        test_review,
+        signal_date,
+        _forward_inputs(test_review, signal_date),
+        discovery_builder=discover_forward,
+    )
+
+    assert len(screen.candidates) == 3
+    assert tuple(value.candidate.code for value in screen.candidates) == (
+        "600400",
+        "600401",
+        "600402",
+    )
+    assert {
+        value.profile.profile_id for value in screen.candidates
+    } == set(test_review.assessment.eligible_profile_ids)
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ("test_date", "extra_date", "missing_date", "coverage", "fingerprint"),
+)
+def test_forward_screen_rejects_invalid_date_or_point_in_time_inputs(
+    mutation: str,
+) -> None:
+    research, freeze, inputs, discover_test = _empty_test_lineage()
+    test_review = build_five_day_test_review(
+        freeze,
+        research,
+        inputs,
+        discovery_builder=discover_test,
+    )
+    signal_date = research.split.test[-1] + timedelta(days=1)
+    selected_date = (
+        research.split.test[-1] if mutation == "test_date" else signal_date
+    )
+    forward_inputs = _forward_inputs(
+        test_review,
+        selected_date,
+        complete=mutation != "coverage",
+    )
+    if mutation == "extra_date":
+        forward_inputs = replace(
+            forward_inputs,
+            signal_dates=(selected_date, selected_date + timedelta(days=1)),
+        )
+    elif mutation == "missing_date":
+        forward_inputs = replace(forward_inputs, signal_dates=())
+    elif mutation == "fingerprint":
+        forward_inputs = replace(
+            forward_inputs,
+            input_fingerprint="conflict",
+        )
+
+    with pytest.raises(ValueError, match="five-day forward screen"):
+        build_five_day_forward_screen(
+            freeze,
+            test_review,
+            selected_date,
+            forward_inputs,
+            discovery_builder=lambda **kwargs: FiveDayDiscovery(
+                tuple(kwargs["signal_dates"]), (), {}, ()
+            ),
+        )
+
+
+def _settlement_inputs(
+    screen: FiveDayForwardScreen,
+    outcome_cutoff: date,
+) -> FiveDayRuntimeInputs:
+    trading_dates = tuple(
+        screen.signal_date + timedelta(days=index)
+        for index in range((outcome_cutoff - screen.signal_date).days + 1)
+    )
+    bars_by_code = {}
+    for plan in screen.candidates:
+        bars_by_code[plan.candidate.code] = tuple(
+            BuyPointBar(
+                trade_date=trade_date,
+                open=Decimal("10.00"),
+                high=(
+                    Decimal("10.00")
+                    if trade_date == screen.signal_date + timedelta(days=1)
+                    else Decimal("10.30")
+                ),
+                low=Decimal("9.90"),
+                close=Decimal("10.20"),
+                pct_chg=Decimal("0"),
+                amount_qian=Decimal("200000"),
+            )
+            for trade_date in trading_dates
+            if trade_date > screen.signal_date
+        )
+    return FiveDayRuntimeInputs(
+        signal_dates=(screen.signal_date,),
+        trading_dates=trading_dates,
+        bars_by_code=bars_by_code,
+        memberships=(),
+        risk_flags=(),
+        coverage_by_date={
+            value: ReferenceCoverage(value, True, True, True)
+            for value in trading_dates
+        },
+        market_snapshots={
+            value: MarketSnapshot(3, 60.0, 1.0, True)
+            for value in trading_dates
+        },
+        input_fingerprint=f"{screen.input_fingerprint}:settlement-fixture",
+    )
+
+
+def test_forward_settlement_requires_second_day_entry_plus_four_sessions(
+    tmp_path,
+) -> None:
+    from tests.unit.test_five_day_return_report import (
+        _forward_screen_lineage,
+    )
+
+    original = _forward_screen_lineage(tmp_path)[0]
+    screen = replace(original, candidates=original.candidates[:1])
+    complete_cutoff = screen.signal_date + timedelta(days=6)
+    short_cutoff = complete_cutoff - timedelta(days=1)
+
+    with pytest.raises(ValueError, match="five-day forward settlement"):
+        build_five_day_forward_settlement(
+            screen,
+            _settlement_inputs(screen, short_cutoff),
+            short_cutoff,
+        )
+
+    settlement = build_five_day_forward_settlement(
+        screen,
+        _settlement_inputs(screen, complete_cutoff),
+        complete_cutoff,
+    )
+
+    assert settlement.outcome_cutoff == complete_cutoff
+    assert settlement.outcomes[0].trade.entry_date == (
+        screen.signal_date + timedelta(days=2)
+    )
+    assert settlement.outcomes[0].trade.exit.actual_exit_date == complete_cutoff
+    assert settlement.candidates == screen.candidates
+
+
+def test_forward_settlement_rejects_simulator_membership_changes(
+    tmp_path,
+) -> None:
+    from tests.unit.test_five_day_return_report import (
+        _forward_screen_lineage,
+    )
+
+    original = _forward_screen_lineage(tmp_path)[0]
+    screen = replace(original, candidates=original.candidates[:1])
+    cutoff = screen.signal_date + timedelta(days=6)
+
+    def simulate_wrong_member(plan, bars, calendar, *, entry_blockers=None):
+        return simulate_five_day_plan(
+            replace(plan, structure_id="forged-structure"),
+            bars,
+            calendar,
+            entry_blockers=entry_blockers,
+        )
+
+    with pytest.raises(ValueError, match="membership"):
+        build_five_day_forward_settlement(
+            screen,
+            _settlement_inputs(screen, cutoff),
+            cutoff,
+            plan_simulator=simulate_wrong_member,
         )
