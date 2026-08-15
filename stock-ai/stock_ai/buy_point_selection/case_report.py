@@ -53,6 +53,18 @@ def case_identity(
     return hashlib.sha256(encoded).hexdigest()[:16]
 
 
+def revision_identity(payload: Mapping[str, object]) -> str:
+    normalized = dict(payload)
+    normalized.pop("revision_identity", None)
+    encoded = json.dumps(
+        normalized,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()[:16]
+
+
 def _candidate_payload(value: CaseCandidate) -> dict[str, object]:
     return {
         "signal_date": value.signal_date.isoformat(),
@@ -512,7 +524,7 @@ def case_payload(review: CaseReview) -> dict[str, object]:
         for value in setup_diagnostics
         for failure in value.failures
     )
-    return {
+    payload: dict[str, object] = {
         "schema": CASE_REPORT_SCHEMA,
         "status": "CASE_ANALYSIS_ONLY",
         "trade_permission": "NO-TRADE",
@@ -665,6 +677,8 @@ def case_payload(review: CaseReview) -> dict[str, object]:
         },
         "rejection_counts": dict(sorted(rejection_counts.items())),
     }
+    payload["revision_identity"] = revision_identity(payload)
+    return payload
 
 
 def render_case_markdown(review: CaseReview) -> str:
@@ -883,14 +897,16 @@ def write_case_revision(
     target = Path(output_dir)
     target.mkdir(parents=True, exist_ok=True)
     signal_dates = tuple(sorted(review.signal_dates))
+    payload = case_payload(review)
+    revision = str(payload["revision_identity"])
     stem = (
         f"{signal_dates[0]:%Y%m%d}_{signal_dates[-1]:%Y%m%d}_"
-        f"cutoff-{review.outcome_cutoff:%Y%m%d}_{case_identity(review)}"
+        f"cutoff-{review.outcome_cutoff:%Y%m%d}_{revision}"
     )
     json_path = target / f"{stem}.json"
     markdown_path = target / f"{stem}.md"
     json_content = json.dumps(
-        case_payload(review),
+        payload,
         ensure_ascii=False,
         sort_keys=True,
         indent=2,

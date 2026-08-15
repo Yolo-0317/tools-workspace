@@ -3,6 +3,10 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import date
 from decimal import Decimal
+import hashlib
+import json
+
+import stock_ai.buy_point_selection.case_report as case_report_module
 
 from stock_ai.buy_point_selection.case_report import (
     case_identity,
@@ -143,6 +147,61 @@ def test_v5_schema_participates_in_immutable_case_identity() -> None:
         review,
         schema="buy-point-case-review-v5",
     )
+
+
+def test_v5_revision_identity_is_deterministic_and_content_sensitive() -> None:
+    """Catches repaired evidence colliding with an earlier report revision."""
+    review = _review(outcomes=())
+
+    first = case_payload(review)
+    repeated = case_payload(review)
+    repaired = case_payload(replace(review, risk_coverage_complete=True))
+    unsigned = dict(first)
+    unsigned.pop("revision_identity", None)
+    expected = hashlib.sha256(
+        json.dumps(
+            unsigned,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()[:16]
+
+    assert first == repeated
+    assert first["case_identity"] == repaired["case_identity"]
+    assert first["revision_identity"] == expected
+    assert first["revision_identity"] == repeated["revision_identity"]
+    assert first["revision_identity"] != repaired["revision_identity"]
+    assert case_report_module.revision_identity(first) == expected
+
+
+def test_same_window_repaired_evidence_writes_a_distinct_immutable_revision(
+    tmp_path,
+) -> None:
+    """Catches a corrected same-window report overwriting the old artifact."""
+    original_review = _review(outcomes=())
+    repaired_review = replace(original_review, risk_coverage_complete=True)
+
+    original_paths = write_case_revision(original_review, tmp_path)
+    original_bytes = tuple(path.read_bytes() for path in original_paths)
+    repaired_paths = write_case_revision(repaired_review, tmp_path)
+
+    original_payload = case_payload(original_review)
+    repaired_payload = case_payload(repaired_review)
+    assert original_paths != repaired_paths
+    assert all(
+        original_payload["revision_identity"] in path.name
+        for path in original_paths
+    )
+    assert all(
+        repaired_payload["revision_identity"] in path.name
+        for path in repaired_paths
+    )
+    assert all(path.exists() for path in (*original_paths, *repaired_paths))
+    assert tuple(path.read_bytes() for path in original_paths) == original_bytes
+
+    assert write_case_revision(original_review, tmp_path) == original_paths
+    assert tuple(path.read_bytes() for path in original_paths) == original_bytes
 
 
 def test_v4_payload_serializes_resistance_evidence() -> None:
