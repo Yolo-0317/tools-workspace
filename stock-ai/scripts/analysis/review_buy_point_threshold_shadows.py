@@ -23,6 +23,7 @@ from scripts.analysis.review_buy_point_case import (
     CaseReviewInputs,
     load_mysql_case_inputs,
 )
+from stock_ai.buy_point_selection.case_report import revision_identity
 from stock_ai.buy_point_selection.case_review import (
     CaseOutcome,
     evaluate_case_plan,
@@ -176,6 +177,18 @@ def load_v5_recall_lineage(
     dates = [value.isoformat() for value in sorted(set(expected_dates))]
     if payload.get("signal_dates") != dates or payload.get("outcome_cutoff") != cutoff.isoformat():
         raise ValueError("v5 case window mismatch")
+    artifact_revision = payload.get("revision_identity")
+    lineage_identity = str(payload["case_identity"])
+    if artifact_revision is not None:
+        if (
+            not isinstance(artifact_revision, str)
+            or len(artifact_revision) != 16
+            or any(value not in "0123456789abcdef" for value in artifact_revision)
+        ):
+            raise ValueError("v5 revision identity malformed")
+        if revision_identity(payload) != artifact_revision:
+            raise ValueError("v5 revision identity mismatch")
+        lineage_identity = artifact_revision
     winners = payload.get("daily_recall_winners")
     metrics = payload.get("daily_recall_metrics")
     if not isinstance(winners, list) or not isinstance(metrics, dict):
@@ -197,7 +210,7 @@ def load_v5_recall_lineage(
         for value in winners
     )
     return V5RecallLineage(
-        str(payload["case_identity"]),
+        lineage_identity,
         keys,
         bool(payload.get("risk_coverage_complete", False)),
     )

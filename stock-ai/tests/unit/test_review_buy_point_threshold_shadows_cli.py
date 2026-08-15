@@ -17,6 +17,7 @@ from scripts.analysis.review_buy_point_threshold_shadows import (
     load_v5_recall_lineage,
     main,
 )
+from stock_ai.buy_point_selection.case_report import revision_identity
 from stock_ai.buy_point_selection.threshold_shadow_evaluation import (
     ExactRecallComparison,
 )
@@ -165,6 +166,38 @@ def test_v5_lineage_requires_exact_reconciled_zero_share_rows(tmp_path: Path) ->
     payload["daily_recall_winners"][0]["executable_shares"] = 100
     path.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(ValueError, match="zero-share"):
+        load_v5_recall_lineage(path, SIGNAL_DATES, CUTOFF)
+
+
+def test_v5_lineage_prefers_a_valid_revision_identity(tmp_path: Path) -> None:
+    """Catches downstream research grouping repaired revisions together."""
+    payload = _v5_payload()
+    payload["revision_identity"] = revision_identity(payload)
+    path = _write_payload(tmp_path / "case.json", payload)
+
+    lineage = load_v5_recall_lineage(path, SIGNAL_DATES, CUTOFF)
+
+    assert lineage.case_identity == payload["revision_identity"]
+
+
+def test_v5_lineage_rejects_tampered_revision_content(tmp_path: Path) -> None:
+    """Catches content changes being accepted under a sealed revision ID."""
+    payload = _v5_payload()
+    payload["revision_identity"] = revision_identity(payload)
+    payload["risk_coverage_complete"] = True
+    path = _write_payload(tmp_path / "case.json", payload)
+
+    with pytest.raises(ValueError, match="revision identity mismatch"):
+        load_v5_recall_lineage(path, SIGNAL_DATES, CUTOFF)
+
+
+def test_v5_lineage_rejects_malformed_revision_identity(tmp_path: Path) -> None:
+    """Catches invalid revision IDs entering downstream lineage."""
+    payload = _v5_payload()
+    payload["revision_identity"] = "ABC123"
+    path = _write_payload(tmp_path / "case.json", payload)
+
+    with pytest.raises(ValueError, match="revision identity malformed"):
         load_v5_recall_lineage(path, SIGNAL_DATES, CUTOFF)
 
 
