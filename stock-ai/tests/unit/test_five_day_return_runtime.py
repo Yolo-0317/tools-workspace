@@ -8,8 +8,16 @@ from typing import Mapping, Sequence
 import pytest
 
 from stock_ai.buy_point_selection.five_day_return_runtime import (
+    FiveDayDiscovery,
+    FiveDayRuntimeInputs,
+    build_five_day_research_review,
     discover_five_day_signal_plans,
     entry_blockers_by_date,
+    load_mysql_five_day_inputs,
+)
+from stock_ai.buy_point_selection.five_day_return_execution import (
+    FiveDayExit,
+    FiveDayTrade,
 )
 from stock_ai.buy_point_selection.models import (
     BuyPointBar,
@@ -383,3 +391,234 @@ def test_entry_blockers_treat_missing_market_snapshot_as_freeze() -> None:
     )
 
     assert result[entry_date] == ("MARKET_FREEZE",)
+
+
+def test_research_runtime_reads_only_through_validation_resolution_cutoff() -> None:
+    signal_dates = tuple(
+        date(2024, 1, 1) + timedelta(days=index) for index in range(630)
+    )
+    requested: list[tuple[date, date, date]] = []
+
+    def load(
+        requested_signal_dates: Sequence[date],
+        history_start: date,
+        signal_end: date,
+        outcome_cutoff: date,
+    ) -> FiveDayRuntimeInputs:
+        assert tuple(requested_signal_dates) == signal_dates
+        requested.append((history_start, signal_end, outcome_cutoff))
+        return FiveDayRuntimeInputs(
+            signal_dates=signal_dates,
+            trading_dates=tuple(
+                value for value in signal_dates if value <= outcome_cutoff
+            ),
+            bars_by_code={},
+            memberships=(),
+            risk_flags=(),
+            coverage_by_date={},
+            market_snapshots={},
+            input_fingerprint="fixture-input-fingerprint",
+        )
+
+    review = build_five_day_research_review(
+        signal_dates,
+        input_loader=load,
+    )
+
+    assert requested == [
+        (
+            signal_dates[0] - timedelta(days=180),
+            review.split.validation[-1],
+            review.split.test[9],
+        )
+    ]
+    assert review.split.train[-1] < review.split.validation[0]
+    assert review.split.validation[-1] < review.split.test[0]
+    assert review.test_outcomes_read is False
+    assert all(
+        value.plan.candidate.signal_date not in frozenset(review.split.test)
+        for value in review.observations
+    )
+
+
+def test_research_runtime_discovers_simulates_and_calibrates_train_validation() -> None:
+    signal_dates = tuple(
+        date(2024, 1, 1) + timedelta(days=index) for index in range(630)
+    )
+    template = discover_five_day_signal_plans(**_fixture_inputs()).plans[0]
+    train_signal = signal_dates[10]
+    validation_signal = signal_dates[400]
+    requested_discovery_dates: list[tuple[date, ...]] = []
+
+    def load(
+        requested_signal_dates: Sequence[date],
+        history_start: date,
+        signal_end: date,
+        outcome_cutoff: date,
+    ) -> FiveDayRuntimeInputs:
+        del history_start, signal_end
+        return FiveDayRuntimeInputs(
+            signal_dates=tuple(requested_signal_dates),
+            trading_dates=tuple(
+                value for value in signal_dates if value <= outcome_cutoff
+            ),
+            bars_by_code={CODE: ()},
+            memberships=(),
+            risk_flags=(),
+            coverage_by_date={},
+            market_snapshots={},
+            input_fingerprint="fixture-input-fingerprint",
+        )
+
+    def plan_on(signal_date: date, suffix: str):
+        setup = replace(
+            template.candidate.setup,
+            analysis_date=signal_date,
+            structure_start=signal_date - timedelta(days=10),
+        )
+        candidate = replace(
+            template.candidate,
+            signal_date=signal_date,
+            setup=setup,
+            valid_through_trade_date=signal_date + timedelta(days=2),
+        )
+        return replace(
+            template,
+            candidate=candidate,
+            structure_id=f"structure-{suffix}",
+        )
+
+    plans = (plan_on(train_signal, "train"), plan_on(validation_signal, "val"))
+
+    def discover(**kwargs):
+        requested_discovery_dates.append(tuple(kwargs["signal_dates"]))
+        return FiveDayDiscovery(
+            signal_dates=tuple(kwargs["signal_dates"]),
+            plans=plans,
+            rejection_counts={},
+            incomplete_dates=(),
+        )
+
+    def simulate(plan, bars, calendar, *, entry_blockers=None):
+        del bars, calendar, entry_blockers
+        exit_value = FiveDayExit(
+            planned_exit_date=plan.candidate.signal_date + timedelta(days=5),
+            actual_exit_date=plan.candidate.signal_date + timedelta(days=5),
+            price=Decimal("10.20"),
+            reason="TIME_EXIT_GAIN",
+            fees=Decimal("0"),
+            delayed=False,
+        )
+        return FiveDayTrade(
+            profile_id=plan.profile.profile_id,
+            structure_id=plan.structure_id,
+            code=plan.candidate.code,
+            signal_date=plan.candidate.signal_date,
+            status="TIME_EXIT_GAIN",
+            entry_date=plan.candidate.signal_date + timedelta(days=1),
+            entry_price=Decimal("10"),
+            stop_price=Decimal("9.70"),
+            evaluation_target_notional=Decimal("10000"),
+            evaluation_shares=1000,
+            evaluation_notional=Decimal("10000"),
+            entry_fees=Decimal("0"),
+            exit=exit_value,
+            net_pnl=Decimal("200"),
+            net_return=Decimal("0.02"),
+            mfe=Decimal("0.03"),
+            mae=Decimal("0.01"),
+            intraday_order_ambiguous=False,
+            reasons=(),
+        )
+
+    review = build_five_day_research_review(
+        signal_dates,
+        input_loader=load,
+        discovery_builder=discover,
+        plan_simulator=simulate,
+    )
+
+    assert requested_discovery_dates == [
+        (*review.split.train, *review.split.validation)
+    ]
+    assert tuple(
+        value.plan.candidate.signal_date for value in review.observations
+    ) == (train_signal, validation_signal)
+    broad_key = (
+        f"{template.profile.profile_id}|"
+        f"{template.candidate.setup.setup_type.value}|*|*"
+    )
+    assert review.train_calibrations[broad_key].triggered_resolved == 1
+    assert len(review.validation_metrics) == 4
+    assert review.point_in_time_complete
+
+
+def test_mysql_loader_normalizes_host_and_uses_only_bounded_read_adapters() -> None:
+    signal_dates = tuple(
+        date(2024, 1, 1) + timedelta(days=index) for index in range(630)
+    )
+    history_start = signal_dates[0] - timedelta(days=180)
+    signal_end = signal_dates[503]
+    outcome_cutoff = signal_dates[513]
+    calls: list[tuple[object, ...]] = []
+    engine = object()
+
+    def engine_factory(url: str, **kwargs):
+        calls.append(("engine", url, kwargs))
+        return engine
+
+    def trade_dates_loader(actual_engine, start: date, end: date):
+        calls.append(("dates", actual_engine, start, end))
+        return tuple(value for value in signal_dates if value <= end)
+
+    def bars_loader(actual_engine, start: date, end: date):
+        calls.append(("bars", actual_engine, start, end))
+        return {}
+
+    class Repository:
+        def coverage_between(self, dates):
+            calls.append(("coverage", tuple(dates)))
+            return {}
+
+        def memberships_between(self, start: date, end: date):
+            calls.append(("memberships", start, end))
+            return ()
+
+        def risk_flags_between(self, start: date, end: date):
+            calls.append(("risk", start, end))
+            return ()
+
+    def aggregate_loader(actual_engine, start: date, end: date):
+        calls.append(("aggregates", actual_engine, start, end))
+        return {}
+
+    def benchmark_loader(start: date, end: date):
+        calls.append(("benchmarks", start, end))
+        return {}
+
+    def market_builder(dates, bars, benchmarks, *, market_aggregates_by_date):
+        calls.append(("markets", tuple(dates)))
+        assert bars == benchmarks == market_aggregates_by_date == {}
+        return {}
+
+    inputs = load_mysql_five_day_inputs(
+        signal_dates,
+        history_start,
+        signal_end,
+        outcome_cutoff,
+        mysql_url="mysql+pymysql://u:p@host.docker.internal:3306/stock",
+        engine_factory=engine_factory,
+        trade_dates_loader=trade_dates_loader,
+        bars_loader=bars_loader,
+        repository_factory=lambda actual_engine: Repository(),
+        aggregate_loader=aggregate_loader,
+        benchmark_loader=benchmark_loader,
+        market_snapshot_builder=market_builder,
+    )
+
+    assert calls[0][1] == "mysql+pymysql://u:p@127.0.0.1:3306/stock"
+    assert ("bars", engine, history_start, outcome_cutoff) in calls
+    assert ("memberships", history_start, signal_end) in calls
+    assert ("risk", signal_dates[0], outcome_cutoff) in calls
+    assert inputs.signal_dates == signal_dates
+    assert inputs.input_fingerprint
