@@ -28,6 +28,7 @@ from .five_day_return_runtime import (
     FiveDayResearchReview,
     FiveDaySignalCandidate,
     FiveDaySignalPlan,
+    FiveDayTestReview,
 )
 from .five_day_return_validation import (
     FIVE_DAY_FREEZE_SCHEMA,
@@ -36,11 +37,13 @@ from .five_day_return_validation import (
     FiveDayObservation,
     FiveDayPortfolioMetrics,
     FiveDaySegmentMetrics,
+    FiveDayTestAssessment,
     FrozenFiveDayProfile,
     _resolved_count,
     _segment_metrics_from_observations,
     build_five_day_calibrations,
     build_five_day_portfolio_metrics,
+    evaluate_frozen_test,
     evaluate_validation_freeze,
 )
 from .models import DetectedSetup, SetupType
@@ -765,3 +768,220 @@ def load_five_day_freeze(
         return expected
     except (KeyError, TypeError, ValueError, json.JSONDecodeError):
         raise ValueError("five-day freeze artifact is invalid") from None
+
+
+def _test_content(review: FiveDayTestReview) -> dict[str, object]:
+    return {
+        "test_consumed": True,
+        "observations": [
+            _observation_payload(value)
+            for value in sorted(
+                review.observations,
+                key=lambda item: (
+                    item.plan.candidate.signal_date,
+                    normalize_code6(item.plan.candidate.code),
+                    item.plan.profile.profile_id,
+                ),
+            )
+        ],
+        "profile_metrics": [
+            _segment_payload(value)
+            for value in review.assessment.profile_metrics
+        ],
+        "portfolio_metrics": _portfolio_payload(
+            review.assessment.portfolio_metrics
+        ),
+        "forward_eligible_profile_ids": list(
+            review.assessment.eligible_profile_ids
+        ),
+        "reasons": list(review.assessment.reasons),
+        "executable_shares": 0,
+    }
+
+
+def five_day_test_payload(review: FiveDayTestReview) -> dict[str, object]:
+    signal_dates = tuple(review.signal_dates)
+    signal_set = frozenset(signal_dates)
+    metric_ids = tuple(
+        value.profile_id for value in review.assessment.profile_metrics
+    )
+    eligible_ids = tuple(review.assessment.eligible_profile_ids)
+    if (
+        not signal_dates
+        or any(
+            current <= previous
+            for previous, current in zip(signal_dates, signal_dates[1:])
+        )
+        or review.sizing_version != SIZING_VERSION
+        or review.evaluator_version != EVALUATOR_VERSION
+        or review.cost_version != COST_VERSION
+        or len(review.research_identity) != 64
+        or len(review.freeze_hash) != 64
+        or len(metric_ids) != len(frozenset(metric_ids))
+        or any(
+            value.segment != "test"
+            for value in review.assessment.profile_metrics
+        )
+        or len(eligible_ids) != len(frozenset(eligible_ids))
+        or not frozenset(eligible_ids).issubset(metric_ids)
+        or (eligible_ids and not review.assessment.portfolio_metrics.qualifies)
+        or not frozenset(
+            value.plan.profile.profile_id for value in review.observations
+        ).issubset(metric_ids)
+        or any(
+            value.plan.candidate.signal_date not in signal_set
+            or value.trade.status == "PENDING"
+            or value.plan.executable_shares != 0
+            or value.plan.candidate.executable_shares != 0
+            or value.trade.executable_shares != 0
+            for value in review.observations
+        )
+    ):
+        raise ValueError("five-day test safety or lineage mismatch")
+    content = _test_content(review)
+    content_revision = _sha256(content)
+    lineage = {
+        "schema": FIVE_DAY_ARTIFACT_SCHEMA,
+        "stage": "test",
+        "parent_research_identity": review.research_identity,
+        "parent_freeze_hash": review.freeze_hash,
+        "signal_dates": _split_section(signal_dates),
+        "input_fingerprint": review.input_fingerprint,
+        "sizing_version": review.sizing_version,
+        "evaluator_version": review.evaluator_version,
+        "cost_version": review.cost_version,
+        "content_revision": content_revision,
+    }
+    return {
+        "schema": FIVE_DAY_ARTIFACT_SCHEMA,
+        "stage": "test",
+        "status": "CASE_ANALYSIS_ONLY",
+        "trade_permission": "NO-TRADE",
+        "retrospective": True,
+        "promotion_eligible": False,
+        "artifact_identity": _sha256(lineage),
+        "content_revision": content_revision,
+        "parent_research_identity": review.research_identity,
+        "parent_freeze_hash": review.freeze_hash,
+        "signal_dates": _split_section(signal_dates),
+        "input_fingerprint": review.input_fingerprint,
+        "sizing_version": review.sizing_version,
+        "evaluator_version": review.evaluator_version,
+        "cost_version": review.cost_version,
+        **content,
+    }
+
+
+def write_five_day_test_once(
+    review: FiveDayTestReview, output_dir: str | Path
+) -> Path:
+    payload = five_day_test_payload(review)
+    target = Path(output_dir)
+    target.mkdir(parents=True, exist_ok=True)
+    path = target / f"test-{review.freeze_hash}.json"
+    content = json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, indent=2
+    ) + "\n"
+    try:
+        with path.open("x", encoding="utf-8") as handle:
+            handle.write(content)
+    except FileExistsError:
+        raise ValueError(
+            "five-day test already exists for freeze hash"
+        ) from None
+    return path
+
+
+def _test_dates_from_payload(value: Mapping[str, object]) -> tuple[date, ...]:
+    dates = tuple(date.fromisoformat(str(item)) for item in value["dates"])
+    if (
+        not dates
+        or value["start"] != dates[0].isoformat()
+        or value["end"] != dates[-1].isoformat()
+        or int(value["count"]) != len(dates)
+        or any(
+            current <= previous
+            for previous, current in zip(dates, dates[1:])
+        )
+    ):
+        raise ValueError
+    return dates
+
+
+def load_five_day_test(
+    path: str | Path,
+    freeze_path: str | Path,
+    research_path: str | Path,
+) -> FiveDayTestReview:
+    try:
+        research = load_five_day_research(research_path)
+        freeze = load_five_day_freeze(freeze_path, research_path)
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        if (
+            payload["schema"] != FIVE_DAY_ARTIFACT_SCHEMA
+            or payload["stage"] != "test"
+            or payload["status"] != "CASE_ANALYSIS_ONLY"
+            or payload["trade_permission"] != "NO-TRADE"
+            or payload["retrospective"] is not True
+            or payload["promotion_eligible"] is not False
+            or payload["test_consumed"] is not True
+            or payload["executable_shares"] != 0
+        ):
+            raise ValueError
+        signal_dates = _test_dates_from_payload(dict(payload["signal_dates"]))
+        observations = tuple(
+            _observation_from_payload(dict(item))
+            for item in payload["observations"]
+        )
+        assessment = FiveDayTestAssessment(
+            profile_metrics=tuple(
+                _segment_from_payload(dict(item))
+                for item in payload["profile_metrics"]
+            ),
+            portfolio_metrics=_portfolio_from_payload(
+                dict(payload["portfolio_metrics"])
+            ),
+            eligible_profile_ids=tuple(
+                str(item) for item in payload["forward_eligible_profile_ids"]
+            ),
+            reasons=tuple(str(item) for item in payload["reasons"]),
+        )
+        review = FiveDayTestReview(
+            signal_dates=signal_dates,
+            research_identity=str(payload["parent_research_identity"]),
+            freeze_hash=str(payload["parent_freeze_hash"]),
+            input_fingerprint=str(payload["input_fingerprint"]),
+            observations=observations,
+            assessment=assessment,
+            sizing_version=str(payload["sizing_version"]),
+            evaluator_version=str(payload["evaluator_version"]),
+            cost_version=str(payload["cost_version"]),
+        )
+        research_identity = str(
+            five_day_research_payload(research)["artifact_identity"]
+        )
+        frozen_ids = frozenset(value.profile_id for value in freeze.profiles)
+        expected_assessment = evaluate_frozen_test(
+            freeze,
+            observations,
+            test_dates=research.split.test,
+        )
+        if (
+            signal_dates != research.split.test
+            or review.research_identity != research_identity
+            or review.freeze_hash != freeze.freeze_hash
+            or not review.input_fingerprint.startswith(
+                f"{research.input_fingerprint}:"
+            )
+            or any(
+                value.plan.candidate.signal_date not in frozenset(signal_dates)
+                or value.plan.profile.profile_id not in frozen_ids
+                for value in observations
+            )
+            or assessment != expected_assessment
+            or payload != five_day_test_payload(review)
+        ):
+            raise ValueError
+        return review
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+        raise ValueError("five-day test artifact is invalid") from None

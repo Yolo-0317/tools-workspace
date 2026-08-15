@@ -45,9 +45,11 @@ from .resistance_research import repeated_pivot_resistance
 if TYPE_CHECKING:
     from .five_day_return_validation import (
         FiveDayCalibration,
+        FiveDayFreeze,
         FiveDayObservation,
         FiveDayPortfolioMetrics,
         FiveDaySegmentMetrics,
+        FiveDayTestAssessment,
     )
     from .validation import ChronologicalSplit
 
@@ -141,6 +143,19 @@ class FiveDayResearchReview:
     validation_portfolio: FiveDayPortfolioMetrics
     point_in_time_complete: bool
     test_outcomes_read: bool = False
+
+
+@dataclass(frozen=True)
+class FiveDayTestReview:
+    signal_dates: tuple[date, ...]
+    research_identity: str
+    freeze_hash: str
+    input_fingerprint: str
+    observations: tuple[FiveDayObservation, ...]
+    assessment: FiveDayTestAssessment
+    sizing_version: str
+    evaluator_version: str
+    cost_version: str
 
 
 def _signal_bars(
@@ -634,6 +649,163 @@ def build_five_day_research_review(
             and all(value.trade.status != "PENDING" for value in ordered_observations)
         ),
         test_outcomes_read=False,
+    )
+
+
+def build_five_day_test_review(
+    freeze: FiveDayFreeze | None,
+    research: FiveDayResearchReview,
+    inputs: FiveDayRuntimeInputs,
+    *,
+    discovery_builder: FiveDayDiscoveryBuilder = discover_five_day_signal_plans,
+    plan_simulator: FiveDayPlanSimulator | None = None,
+) -> FiveDayTestReview:
+    """Evaluate the exact held-out dates without changing frozen evidence."""
+    from .five_day_return_execution import FiveDayTrade, simulate_five_day_plan
+    from .five_day_return_profiles import (
+        build_five_day_return_profiles,
+        five_day_profile_hash,
+    )
+    from .five_day_return_report import five_day_research_payload
+    from .five_day_return_validation import (
+        FiveDayObservation,
+        evaluate_frozen_test,
+        evaluate_validation_freeze,
+        rank_five_day_plans,
+    )
+    from .validation import policy_hash
+
+    lineage_error = "frozen five-day test lineage is invalid"
+    try:
+        if freeze is None:
+            raise ValueError(lineage_error)
+        test_dates = tuple(research.split.test)
+        if (
+            not research.point_in_time_complete
+            or research.test_outcomes_read
+            or tuple(inputs.signal_dates) != test_dates
+            or not inputs.trading_dates
+            or test_dates[-1] not in frozenset(inputs.trading_dates)
+            or not inputs.input_fingerprint.startswith(
+                f"{research.input_fingerprint}:"
+            )
+        ):
+            raise ValueError(lineage_error)
+        policy = SelectionPolicy()
+        profiles = build_five_day_return_profiles()
+        if (
+            research.formal_rule_version != policy.rule_version
+            or research.formal_policy_hash != policy_hash(policy)
+            or research.profile_matrix_hash != five_day_profile_hash(profiles)
+        ):
+            raise ValueError(lineage_error)
+        research_identity = str(
+            five_day_research_payload(research)["artifact_identity"]
+        )
+        expected_freeze = evaluate_validation_freeze(
+            research.observations,
+            train_dates=research.split.train,
+            validation_dates=research.split.validation,
+            profile_matrix_hash=research.profile_matrix_hash,
+            research_identity=research_identity,
+        )
+        if freeze != expected_freeze:
+            raise ValueError(lineage_error)
+        frozen_ids = frozenset(value.profile_id for value in freeze.profiles)
+        if not frozen_ids.issubset(value.profile_id for value in profiles):
+            raise ValueError(lineage_error)
+    except (KeyError, TypeError, ValueError) as exc:
+        if isinstance(exc, ValueError) and str(exc) == lineage_error:
+            raise
+        raise ValueError(lineage_error) from exc
+
+    discovery = discovery_builder(
+        signal_dates=test_dates,
+        trading_dates=inputs.trading_dates,
+        bars_by_code=inputs.bars_by_code,
+        memberships=inputs.memberships,
+        risk_flags=inputs.risk_flags,
+        coverage_by_date=inputs.coverage_by_date,
+        market_snapshots=inputs.market_snapshots,
+        profiles=profiles,
+        formal_policy=policy,
+    )
+    if tuple(discovery.signal_dates) != test_dates or discovery.incomplete_dates:
+        raise ValueError("frozen five-day test inputs are incomplete")
+    simulate = plan_simulator or simulate_five_day_plan
+    test_set = frozenset(test_dates)
+    outcome_cutoff = inputs.trading_dates[-1]
+    observations: list[FiveDayObservation] = []
+    frozen_plans = tuple(
+        plan
+        for plan in discovery.plans
+        if plan.profile.profile_id in frozen_ids
+    )
+    ranked_plans = rank_five_day_plans(
+        frozen_plans,
+        freeze.calibrations,
+    ).plans
+    for plan in ranked_plans:
+        if plan.candidate.signal_date not in test_set:
+            raise ValueError("frozen five-day test discovery is out of window")
+        entry_dates = tuple(
+            value
+            for value in inputs.trading_dates
+            if plan.candidate.signal_date < value
+            <= plan.candidate.valid_through_trade_date
+        )
+        blockers = entry_blockers_by_date(
+            plan.candidate.code,
+            entry_dates,
+            coverage_by_date=inputs.coverage_by_date,
+            risk_flags=inputs.risk_flags,
+            market_snapshots=inputs.market_snapshots,
+        )
+        trade = simulate(
+            plan,
+            inputs.bars_by_code.get(normalize_code6(plan.candidate.code), ()),
+            inputs.trading_dates,
+            entry_blockers=blockers,
+        )
+        if not isinstance(trade, FiveDayTrade):
+            raise TypeError("plan simulator must return FiveDayTrade")
+        resolution_date = (
+            trade.exit.actual_exit_date
+            if trade.exit is not None
+            else (
+                plan.candidate.valid_through_trade_date
+                if trade.status in {"NOT_TRIGGERED", "CANCELLED"}
+                else outcome_cutoff
+            )
+        )
+        observations.append(FiveDayObservation(plan, trade, resolution_date))
+    ordered_observations = tuple(
+        sorted(
+            observations,
+            key=lambda value: (
+                value.plan.candidate.signal_date,
+                normalize_code6(value.plan.candidate.code),
+                value.plan.profile.profile_id,
+            ),
+        )
+    )
+    if any(value.trade.status == "PENDING" for value in ordered_observations):
+        raise ValueError("frozen five-day test inputs are incomplete")
+    assessment = evaluate_frozen_test(
+        freeze,
+        ordered_observations,
+        test_dates=test_dates,
+    )
+    return FiveDayTestReview(
+        signal_dates=test_dates,
+        research_identity=research_identity,
+        freeze_hash=freeze.freeze_hash,
+        input_fingerprint=inputs.input_fingerprint,
+        observations=ordered_observations,
+        assessment=assessment,
+        sizing_version=freeze.sizing_version,
+        evaluator_version=freeze.evaluator_version,
+        cost_version=freeze.cost_version,
     )
 
 

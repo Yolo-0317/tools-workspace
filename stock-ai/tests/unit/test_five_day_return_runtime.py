@@ -3,18 +3,28 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import date, timedelta
 from decimal import Decimal
+from inspect import stack
 from typing import Mapping, Sequence
 
 import pytest
 
+from stock_ai.buy_point_selection import five_day_return_validation
 from stock_ai.buy_point_selection.five_day_return_runtime import (
     FiveDayDiscovery,
     FiveDayRuntimeInputs,
     build_five_day_research_review,
+    build_five_day_test_review,
     discover_five_day_signal_plans,
     entry_blockers_by_date,
     load_mysql_five_day_inputs,
 )
+from stock_ai.buy_point_selection.five_day_return_report import (
+    five_day_research_payload,
+)
+from stock_ai.buy_point_selection.five_day_return_validation import (
+    evaluate_validation_freeze,
+)
+from stock_ai.buy_point_selection.validation import ChronologicalSplit
 from stock_ai.buy_point_selection.five_day_return_execution import (
     FiveDayExit,
     FiveDayTrade,
@@ -622,3 +632,161 @@ def test_mysql_loader_normalizes_host_and_uses_only_bounded_read_adapters() -> N
     assert ("risk", signal_dates[0], outcome_cutoff) in calls
     assert inputs.signal_dates == signal_dates
     assert inputs.input_fingerprint
+
+
+def _empty_test_lineage():
+    signal_dates = tuple(
+        date(2024, 1, 1) + timedelta(days=index) for index in range(630)
+    )
+
+    def load(
+        requested_signal_dates: Sequence[date],
+        history_start: date,
+        signal_end: date,
+        outcome_cutoff: date,
+    ) -> FiveDayRuntimeInputs:
+        del history_start, signal_end
+        return FiveDayRuntimeInputs(
+            signal_dates=tuple(requested_signal_dates),
+            trading_dates=tuple(
+                value for value in signal_dates if value <= outcome_cutoff
+            ),
+            bars_by_code={},
+            memberships=(),
+            risk_flags=(),
+            coverage_by_date={},
+            market_snapshots={},
+            input_fingerprint="a" * 64,
+        )
+
+    def discover(**kwargs):
+        return FiveDayDiscovery(
+            signal_dates=tuple(kwargs["signal_dates"]),
+            plans=(),
+            rejection_counts={},
+            incomplete_dates=(),
+        )
+
+    research = build_five_day_research_review(
+        signal_dates,
+        input_loader=load,
+        discovery_builder=discover,
+    )
+    research_identity = five_day_research_payload(research)[
+        "artifact_identity"
+    ]
+    freeze = evaluate_validation_freeze(
+        research.observations,
+        train_dates=research.split.train,
+        validation_dates=research.split.validation,
+        profile_matrix_hash=research.profile_matrix_hash,
+        research_identity=research_identity,
+    )
+    test_inputs = FiveDayRuntimeInputs(
+        signal_dates=research.split.test,
+        trading_dates=research.split.test,
+        bars_by_code={},
+        memberships=(),
+        risk_flags=(),
+        coverage_by_date={},
+        market_snapshots={},
+        input_fingerprint=f"{research.input_fingerprint}:test-fixture",
+    )
+    return research, freeze, test_inputs, discover
+
+
+def test_test_builder_requires_exact_frozen_test_dates() -> None:
+    research, freeze, inputs, discover = _empty_test_lineage()
+
+    review = build_five_day_test_review(
+        freeze,
+        research,
+        inputs,
+        discovery_builder=discover,
+    )
+
+    assert review.signal_dates == research.split.test
+    assert review.freeze_hash == freeze.freeze_hash
+    assert review.research_identity == freeze.research_identity
+    assert review.observations == ()
+    assert review.assessment.eligible_profile_ids == ()
+
+
+def test_test_builder_ranks_with_serialized_frozen_calibrations(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    research, freeze, inputs, discover = _empty_test_lineage()
+    captured: list[object] = []
+
+    def rank(plans, calibrations, **kwargs):
+        captured.append((stack()[1].function, tuple(plans), calibrations, kwargs))
+        return five_day_return_validation.FiveDayRanking((), {})
+
+    monkeypatch.setattr(
+        five_day_return_validation,
+        "rank_five_day_plans",
+        rank,
+    )
+
+    build_five_day_test_review(
+        freeze,
+        research,
+        inputs,
+        discovery_builder=discover,
+    )
+
+    assert (
+        "build_five_day_test_review",
+        (),
+        freeze.calibrations,
+        {},
+    ) in captured
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ("missing_freeze", "parent", "split", "extra", "missing", "fingerprint"),
+)
+def test_test_builder_rejects_lineage_or_date_membership_changes(
+    mutation: str,
+) -> None:
+    research, freeze, inputs, discover = _empty_test_lineage()
+    selected_freeze = freeze
+    selected_research = research
+    selected_inputs = inputs
+    if mutation == "missing_freeze":
+        selected_freeze = None
+    elif mutation == "parent":
+        selected_freeze = replace(freeze, research_identity="0" * 64)
+    elif mutation == "split":
+        selected_research = replace(
+            research,
+            split=ChronologicalSplit(
+                research.split.train,
+                research.split.validation,
+                (
+                    *research.split.test[:-1],
+                    research.split.test[-1] + timedelta(days=1),
+                ),
+            ),
+        )
+    elif mutation == "extra":
+        selected_inputs = replace(
+            inputs,
+            signal_dates=(
+                *inputs.signal_dates,
+                inputs.signal_dates[-1] + timedelta(days=1),
+            ),
+        )
+    elif mutation == "missing":
+        selected_inputs = replace(inputs, signal_dates=inputs.signal_dates[:-1])
+    else:
+        selected_inputs = replace(inputs, input_fingerprint="conflict")
+
+    with pytest.raises(ValueError, match="frozen five-day test lineage"):
+        build_five_day_test_review(
+            selected_freeze,
+            selected_research,
+            selected_inputs,
+            discovery_builder=discover,
+        )

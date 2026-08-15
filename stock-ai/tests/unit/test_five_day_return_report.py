@@ -22,15 +22,19 @@ from stock_ai.buy_point_selection.five_day_return_profiles import (
 from stock_ai.buy_point_selection.five_day_return_report import (
     five_day_freeze_payload,
     five_day_research_payload,
+    five_day_test_payload,
     load_five_day_freeze,
     load_five_day_research,
+    load_five_day_test,
     write_five_day_freeze,
     write_five_day_research,
+    write_five_day_test_once,
 )
 from stock_ai.buy_point_selection.five_day_return_runtime import (
     FiveDayResearchReview,
     FiveDaySignalCandidate,
     FiveDaySignalPlan,
+    FiveDayTestReview,
 )
 from stock_ai.buy_point_selection.five_day_return_validation import (
     FiveDayObservation,
@@ -38,6 +42,7 @@ from stock_ai.buy_point_selection.five_day_return_validation import (
     _segment_metrics_from_observations,
     build_five_day_calibrations,
     build_five_day_portfolio_metrics,
+    evaluate_frozen_test,
     evaluate_validation_freeze,
 )
 from stock_ai.buy_point_selection.models import (
@@ -418,3 +423,126 @@ def test_freeze_loader_rejects_tampering(
 
     with pytest.raises(ValueError, match="five-day freeze artifact"):
         load_five_day_freeze(path, research_path)
+
+
+def _test_lineage(tmp_path: Path):
+    review = _review()
+    research_path = write_five_day_research(review, tmp_path)
+    research_identity = str(
+        five_day_research_payload(review)["artifact_identity"]
+    )
+    freeze = evaluate_validation_freeze(
+        review.observations,
+        train_dates=review.split.train,
+        validation_dates=review.split.validation,
+        profile_matrix_hash=review.profile_matrix_hash,
+        research_identity=research_identity,
+    )
+    freeze_path = write_five_day_freeze(freeze, tmp_path)
+    observations = _segment_observations(review.split.test, 30, 200)
+    assessment = evaluate_frozen_test(
+        freeze,
+        observations,
+        test_dates=review.split.test,
+    )
+    test_review = FiveDayTestReview(
+        signal_dates=review.split.test,
+        research_identity=research_identity,
+        freeze_hash=freeze.freeze_hash,
+        input_fingerprint=f"{review.input_fingerprint}:test-fixture",
+        observations=observations,
+        assessment=assessment,
+        sizing_version=freeze.sizing_version,
+        evaluator_version=freeze.evaluator_version,
+        cost_version=freeze.cost_version,
+    )
+    return review, freeze, test_review, research_path, freeze_path
+
+
+def test_test_payload_is_canonical_safe_and_records_final_eligibility(
+    tmp_path: Path,
+) -> None:
+    _, _, review, _, _ = _test_lineage(tmp_path)
+
+    payload = five_day_test_payload(review)
+
+    assert payload["schema"] == "buy-point-five-day-return-shadow-v1"
+    assert payload["stage"] == "test"
+    assert payload["status"] == "CASE_ANALYSIS_ONLY"
+    assert payload["trade_permission"] == "NO-TRADE"
+    assert payload["retrospective"] is True
+    assert payload["promotion_eligible"] is False
+    assert payload["test_consumed"] is True
+    assert payload["parent_research_identity"] == review.research_identity
+    assert payload["parent_freeze_hash"] == review.freeze_hash
+    assert payload["signal_dates"]["count"] == 126
+    assert len(payload["observations"]) == 30
+    assert payload["forward_eligible_profile_ids"] == [PROFILE]
+    assert payload["profile_metrics"][0]["segment"] == "test"
+    assert payload["portfolio_metrics"]["qualifies"] is True
+    assert _executable_share_values(payload)
+    assert set(_executable_share_values(payload)) == {0}
+    assert len(payload["artifact_identity"]) == 64
+    assert len(payload["content_revision"]) == 64
+
+
+def test_test_writer_consumes_each_freeze_identity_only_once(
+    tmp_path: Path,
+) -> None:
+    _, _, review, _, _ = _test_lineage(tmp_path)
+
+    path = write_five_day_test_once(review, tmp_path)
+
+    assert path.exists()
+    with pytest.raises(ValueError, match="test already exists"):
+        write_five_day_test_once(review, tmp_path)
+
+
+def test_test_loader_recomputes_frozen_metrics_and_parent_lineage(
+    tmp_path: Path,
+) -> None:
+    _, _, review, research_path, freeze_path = _test_lineage(tmp_path)
+    test_path = write_five_day_test_once(review, tmp_path)
+
+    assert load_five_day_test(test_path, freeze_path, research_path) == review
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    (
+        "freeze",
+        "outcome",
+        "summary",
+        "eligibility",
+        "version",
+        "shares",
+        "research",
+    ),
+)
+def test_test_loader_rejects_tampering(
+    tmp_path: Path, mutation: str
+) -> None:
+    _, _, review, research_path, freeze_path = _test_lineage(tmp_path)
+    payload = five_day_test_payload(review)
+    if mutation == "freeze":
+        payload["parent_freeze_hash"] = "0" * 64
+    elif mutation == "outcome":
+        payload["observations"][0]["trade"]["net_return"] = "0.99"
+    elif mutation == "summary":
+        payload["profile_metrics"][0]["net_expectancy"] = "9"
+    elif mutation == "eligibility":
+        payload["forward_eligible_profile_ids"] = []
+    elif mutation == "version":
+        payload["cost_version"] = "forged"
+    elif mutation == "shares":
+        payload["observations"][0]["plan"]["executable_shares"] = 100
+    else:
+        payload["parent_research_identity"] = "0" * 64
+    path = tmp_path / f"test-tampered-{mutation}.json"
+    path.write_text(
+        json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="five-day test artifact"):
+        load_five_day_test(path, freeze_path, research_path)
