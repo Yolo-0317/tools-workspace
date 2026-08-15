@@ -137,9 +137,13 @@ The pipeline is:
 9. wrap the result as a zero-share gate-shadow candidate.
 
 For a market diagnostic profile, the market gate is the single counterfactual
-step; the sector gate must pass normally. For a sector research profile, the
-market gate and anti-chase gate must pass normally, and only the one matching
-sector reason is counterfactually admitted.
+step; the sector gate must pass normally. Because the production planner rejects
+the `FREEZE` status before constructing a plan, this diagnostic-only branch
+passes the conservative `LIMITED` status to the unchanged planner. It never
+uses `ALLOW`, and the resulting wrapper still has zero executable shares and
+cannot freeze or screen. For a sector research profile, the market gate and
+anti-chase gate must pass normally, and only the one matching sector reason is
+counterfactually admitted.
 
 Every shadow object is labeled `CASE_ANALYSIS_ONLY`, `NO-TRADE`, and
 `executable_shares=0`.
