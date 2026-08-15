@@ -473,6 +473,44 @@ PYTHONPATH=. .venv/bin/python scripts/analysis/review_buy_point_gate_shadows.py 
 
 所有阶段固定为 `CASE_ANALYSIS_ONLY / NO-TRADE`，可执行股数为 0。筛选最多 5 只，空冻结和空筛选都是有效结果，不补位。筛选仅读取信号日及以前价格；结算产物另写新文件，不能改写原筛选。流程不包含定时任务、通知、持仓写入、个人/决策记忆写入或自动下单。至少积累 20 个不同前向信号日且 20 个计划完成结算后，才允许讨论扩大验证，仍不得自动晋级正式策略。
 
+### 买点结构止损影子研究
+
+该流程只研究一种单变量问题：正式形态和全部正式门禁已经通过、生产价格计划唯一失败原因为 `RISK_DISTANCE_OUT_OF_RANGE` 时，替换止损锚点能否在不降低 2R 目标和其他正式约束的前提下形成有效计划。固定比较 `RECENT_SETUP_LOW`、`DYNAMIC_SUPPORT` 和 `ATR_1_5` 三种画像。市场或板块门禁同时失败的样本只进入 `DIAGNOSTIC_ONLY_COMBINED_FAILURE` 诊断队列，永久排除于指标、冻结、排名和前向筛选。
+
+研究日历由本地 MySQL 中截至 2026-08-14 的 80 个已确认交易日派生为八个连续区块；每个区块包含五个信号交易日和紧随其后的五个结果交易日。八个区块均已发生，因此只属于回顾性案例研究，不是独立样本外测试。对每个派生区块手动运行一次：
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/analysis/review_buy_point_structure_stops.py research \
+  --signal-start YYYY-MM-DD --signal-end YYYY-MM-DD \
+  --outcome-cutoff YYYY-MM-DD --v5-case <对应窗口的 v5 JSON>
+```
+
+八份不可变研究 JSON 全部验证后才能冻结；参数必须恰好出现八次：
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/analysis/review_buy_point_structure_stops.py freeze \
+  --research-artifact <窗口1研究JSON> \
+  --research-artifact <窗口2研究JSON> \
+  --research-artifact <窗口3研究JSON> \
+  --research-artifact <窗口4研究JSON> \
+  --research-artifact <窗口5研究JSON> \
+  --research-artifact <窗口6研究JSON> \
+  --research-artifact <窗口7研究JSON> \
+  --research-artifact <窗口8研究JSON>
+```
+
+冻结后可手动生成零仓位前向筛选。筛选只读取信号日及以前的价格，未来两个已确认交易日仅用于计划有效期，输出最多 5 只且不包含任何结果字段。恰好五个已完成交易日后，使用原筛选文件单独结算：
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/analysis/review_buy_point_structure_stops.py screen \
+  --signal-date YYYY-MM-DD --freeze-artifact <冻结JSON>
+
+PYTHONPATH=. .venv/bin/python scripts/analysis/review_buy_point_structure_stops.py settle \
+  --screen-artifact <前向筛选JSON> --outcome-cutoff YYYY-MM-DD
+```
+
+研究、冻结、筛选和结算均固定为 `CASE_ANALYSIS_ONLY / NO-TRADE`，所有可执行股数为 0。空研究候选、空冻结和空前向筛选都是合法结果，不补位、不放宽门槛。结算另写新文件且不能改写原筛选。该流程不安装调度、不发送通知、不写持仓、个人记忆、决策账本或订单，也不会自动修改正式规则 `buy-point-selection-3.1.0`。
+
 `LIVE` 不由 AI 或单次回测决定。必须先通过冻结历史门槛，再完成至少 20 个不同交易日的手动前向运行和至少 20 个已解决计划，且完整性违规为 0；否则统一输出 `SHADOW`。只有正式层显示最大股数，观察和影子层固定显示无交易资格。
 
 盘后 DeepSeek 审查（非 17:30 自动化路径）：见 [pipelines/daily_stock_deepseek_pipeline.md](pipelines/daily_stock_deepseek_pipeline.md)。

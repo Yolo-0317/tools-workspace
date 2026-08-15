@@ -20,10 +20,13 @@ if str(ROOT) not in sys.path:
 
 DEFAULT_OUTPUT_DIR = "output/research/buy_point_structure_stops"
 RESEARCH_TERMINAL_CUTOFF = date(2026, 8, 14)
+RESEARCH_TERMINAL_SIGNAL_END = date(2026, 8, 7)
 
 
 from scripts.analysis.review_buy_point_case import (  # noqa: E402
     CaseReviewInputs,
+    _load_benchmark_index_bars,
+    _load_holdings_by_date,
     load_mysql_case_inputs,
 )
 from scripts.analysis.review_buy_point_threshold_shadows import (  # noqa: E402
@@ -34,21 +37,39 @@ from stock_ai.buy_point_selection.case_review import (  # noqa: E402
     CaseOutcome,
     replay_case_signals,
 )
-from stock_ai.buy_point_selection.models import SelectionPolicy  # noqa: E402
+from stock_ai.buy_point_selection.models import (  # noqa: E402
+    DetectedSetup,
+    SelectionPolicy,
+    SetupType,
+)
+from stock_ai.buy_point_selection.planning import PricePlan  # noqa: E402
 from stock_ai.buy_point_selection.structure_stop_evaluation import (  # noqa: E402
     StructureStopMetrics,
     StructureStopOutcome,
     aggregate_structure_stop_metrics,
     evaluate_structure_stop_outcomes,
     freeze_structure_stop_profiles,
+    select_frozen_structure_stop_candidates,
+    validate_structure_stop_freeze,
 )
 from stock_ai.buy_point_selection.structure_stop_report import (  # noqa: E402
+    StructureStopForwardScreen,
+    StructureStopForwardSettlement,
     StructureStopResearchReview,
+    StructureStopScreenCandidate,
+    load_structure_stop_forward_screen,
+    load_structure_stop_freeze,
+    structure_stop_settlement_payload,
+    write_structure_stop_forward_screen,
+    write_structure_stop_forward_settlement,
     write_structure_stop_freeze,
     write_structure_stop_research_revision,
 )
 from stock_ai.buy_point_selection.structure_stop_shadow import (  # noqa: E402
+    StructureStopAnchor,
+    StructureStopBaselineHit,
     StructureStopCandidate,
+    StructureStopProfile,
     build_structure_stop_profiles,
     replay_structure_stop_shadows,
     structure_stop_profile_hash,
@@ -58,6 +79,7 @@ from stock_ai.buy_point_selection.threshold_shadow_evaluation import (  # noqa: 
 )
 from stock_ai.buy_point_selection.validation import policy_hash  # noqa: E402
 from stock_ai.market_codes import normalize_code6  # noqa: E402
+from stock_ai.trading_calendar import trading_day_status  # noqa: E402
 
 
 def derive_structure_stop_windows(
@@ -498,6 +520,293 @@ def build_structure_stop_freeze_from_artifacts(
     )
 
 
+def _confirmed_plan_dates(
+    signal_date: date,
+    calendar_status: Callable[[date], bool | None],
+) -> tuple[date, date]:
+    if calendar_status(signal_date) is not True:
+        raise ValueError("signal date is not confirmed locally")
+    result = []
+    current = signal_date
+    for _ in range(15):
+        current += timedelta(days=1)
+        status = calendar_status(current)
+        if status is None:
+            raise ValueError("future trading date is not confirmed locally")
+        if status:
+            result.append(current)
+            if len(result) == 2:
+                return result[0], result[1]
+    raise ValueError("two future trading dates are not confirmed locally")
+
+
+def load_mysql_structure_stop_screen_inputs(
+    signal_date: date,
+    confirmed_plan_dates: tuple[date, date],
+) -> CaseReviewInputs:
+    """Load signal-time facts and append only calendar plan dates in memory."""
+    import os
+
+    from dotenv import load_dotenv
+    from sqlalchemy import create_engine
+
+    from stock_ai.buy_point_selection.historical_replay_runtime import (
+        _load_daily_bars,
+        _load_market_aggregates,
+        _trade_dates,
+        build_historical_market_snapshots,
+    )
+    from stock_ai.buy_point_selection.reference_data import (
+        SQLReferenceRepository,
+    )
+
+    load_dotenv(ROOT / ".env", override=False)
+    mysql_url = os.environ.get("MYSQL_URL", "")
+    if not mysql_url:
+        raise RuntimeError("未配置 MYSQL_URL")
+    engine = create_engine(mysql_url, pool_pre_ping=True)
+    history_start = signal_date - timedelta(days=180)
+    actual_dates = _trade_dates(engine, history_start, signal_date)
+    if signal_date not in actual_dates:
+        raise RuntimeError("信号日没有完整日线")
+    bars_by_code = _load_daily_bars(engine, history_start, signal_date)
+    repository = SQLReferenceRepository(engine)
+    coverage = repository.coverage_between((signal_date,))
+    memberships = repository.memberships_between(history_start, signal_date)
+    risk_flags = repository.risk_flags_between(signal_date, signal_date)
+    aggregates = _load_market_aggregates(engine, history_start, signal_date)
+    indexes = _load_benchmark_index_bars(history_start, signal_date)
+    snapshots = build_historical_market_snapshots(
+        actual_dates,
+        bars_by_code,
+        indexes,
+        market_aggregates_by_date=aggregates,
+    )
+    holdings, holdings_complete = _load_holdings_by_date(
+        engine, (signal_date,)
+    )
+    return CaseReviewInputs(
+        (*actual_dates, *confirmed_plan_dates),
+        bars_by_code,
+        memberships,
+        risk_flags,
+        coverage,
+        snapshots,
+        holdings,
+        holdings_complete,
+    )
+
+
+def build_structure_stop_forward_screen(
+    signal_date: date,
+    freeze,
+    *,
+    input_loader: Callable[
+        [date, tuple[date, date]], CaseReviewInputs
+    ] = load_mysql_structure_stop_screen_inputs,
+    calendar_status: Callable[
+        [date], bool | None
+    ] = lambda value: trading_day_status(value, refresh=False),
+) -> StructureStopForwardScreen:
+    if signal_date <= RESEARCH_TERMINAL_SIGNAL_END:
+        raise ValueError(
+            "forward screen signal date must be after retrospective windows"
+        )
+    validate_structure_stop_freeze(freeze)
+    policy = SelectionPolicy()
+    profiles = build_structure_stop_profiles()
+    if (
+        freeze.formal_rule_version != policy.rule_version
+        or freeze.formal_policy_hash != policy_hash(policy)
+        or freeze.profile_matrix_hash != structure_stop_profile_hash(profiles)
+    ):
+        raise ValueError("freeze does not match the formal structure stop matrix")
+    plan_dates = _confirmed_plan_dates(signal_date, calendar_status)
+    inputs = input_loader(signal_date, plan_dates)
+    if signal_date not in inputs.trading_dates:
+        raise ValueError("screen input is missing the signal session")
+    if any(
+        bar.trade_date > signal_date
+        for bars in inputs.bars_by_code.values()
+        for bar in bars
+    ):
+        raise ValueError("screen input contains future price bars")
+    if not inputs.holdings_complete_by_date.get(signal_date, False):
+        raise ValueError("screen holdings are incomplete")
+    replay = replay_structure_stop_shadows(
+        signal_dates=(signal_date,),
+        trading_dates=inputs.trading_dates,
+        bars_by_code=inputs.bars_by_code,
+        memberships=inputs.memberships,
+        risk_flags=inputs.risk_flags,
+        coverage_by_date=inputs.coverage_by_date,
+        market_snapshots=inputs.market_snapshots,
+        holding_codes_by_date=inputs.holding_codes_by_date,
+        profiles=profiles,
+        formal_policy=policy,
+    )
+    if replay.incomplete_dates:
+        raise ValueError("screen reference or market facts are incomplete")
+    selected = select_frozen_structure_stop_candidates(
+        replay.candidates,
+        freeze,
+        maximum_per_date=5,
+    )
+    rank_by_profile = {
+        value.profile_id: value.rank for value in freeze.profiles
+    }
+    candidates = tuple(
+        StructureStopScreenCandidate(
+            value,
+            rank_by_profile[value.profile.profile_id],
+        )
+        for value in selected
+    )
+    coverage = inputs.coverage_by_date.get(signal_date)
+    return StructureStopForwardScreen(
+        signal_date=signal_date,
+        input_fingerprint=case_input_fingerprint(inputs),
+        formal_rule_version=policy.rule_version,
+        formal_policy_hash=policy_hash(policy),
+        profile_matrix_hash=structure_stop_profile_hash(profiles),
+        freeze_hash=freeze.freeze_hash,
+        candidates=candidates,
+        risk_coverage_complete=bool(
+            coverage and coverage.announcement_complete
+        ),
+    )
+
+
+def load_mysql_structure_stop_settlement_inputs(
+    signal_date: date,
+    outcome_cutoff: date,
+) -> CaseReviewInputs:
+    return load_mysql_case_inputs(signal_date, signal_date, outcome_cutoff)
+
+
+def _candidate_from_screen_payload(
+    value: dict[str, object],
+    profiles: dict[str, StructureStopProfile],
+) -> StructureStopScreenCandidate:
+    profile_id = str(value["profile_id"])
+    if profile_id not in profiles:
+        raise ValueError("screen contains unsupported structure stop profile")
+    profile = profiles[profile_id]
+    if value["anchor_kind"] != profile.anchor_kind:
+        raise ValueError("screen structure stop anchor kind mismatch")
+    signal_date = date.fromisoformat(str(value["signal_date"]))
+    code = normalize_code6(str(value["code"]))
+    setup = DetectedSetup(
+        code,
+        SetupType(str(value["setup_type"])),
+        signal_date,
+        date.fromisoformat(str(value["structure_start"])),
+        Decimal(str(value["structure_high"])),
+        Decimal(str(value["structure_low"])),
+        Decimal(str(value["setup_quality"])),
+        tuple(str(item) for item in value["setup_reasons"]),
+        {
+            key: Decimal(str(item))
+            for key, item in value["setup_metrics"].items()
+        },
+    )
+    hit = StructureStopBaselineHit(
+        code,
+        signal_date,
+        setup,
+        str(value["market_status"]),
+        str(value["sector_code"]),
+        ("RISK_DISTANCE_OUT_OF_RANGE",),
+    )
+    anchor = StructureStopAnchor(
+        profile,
+        code,
+        signal_date,
+        _optional_decimal(value.get("anchor_price")),
+        _optional_decimal(value.get("invalidation_price")),
+        tuple(str(item) for item in value["anchor_reasons"]),
+    )
+    plan = PricePlan(
+        str(value["structure_id"]),
+        code,
+        setup.setup_type,
+        signal_date,
+        Decimal(str(value["signal_close"])),
+        Decimal(str(value["trigger_price"])),
+        Decimal(str(value["invalidation_price"])),
+        Decimal(str(value["target_2r"])),
+        Decimal(str(value["risk_distance"])),
+        Decimal(str(value["risk_reward_ratio"])),
+        0,
+        date.fromisoformat(str(value["plan_expiry"])),
+    )
+    candidate = StructureStopCandidate(
+        hit,
+        profile,
+        anchor,
+        plan,
+        Decimal(str(value["average_amount5_qian"])),
+        Decimal(str(value["two_r_space_buffer"])),
+    )
+    return StructureStopScreenCandidate(
+        candidate,
+        int(value["profile_rank"]),
+    )
+
+
+def build_structure_stop_forward_settlement(
+    screen_artifact: str | Path,
+    outcome_cutoff: date,
+    *,
+    input_loader: Callable[
+        [date, date], CaseReviewInputs
+    ] = load_mysql_structure_stop_settlement_inputs,
+) -> StructureStopForwardSettlement:
+    payload = load_structure_stop_forward_screen(screen_artifact)
+    signal_date = date.fromisoformat(str(payload["signal_date"]))
+    inputs = input_loader(signal_date, outcome_cutoff)
+    outcome_dates = tuple(
+        value
+        for value in sorted(set(inputs.trading_dates))
+        if signal_date < value <= outcome_cutoff
+    )
+    if len(outcome_dates) != 5 or outcome_dates[-1] != outcome_cutoff:
+        raise ValueError(
+            "settlement requires exactly five completed outcome sessions"
+        )
+    if any(
+        bar.trade_date > outcome_cutoff
+        for bars in inputs.bars_by_code.values()
+        for bar in bars
+    ):
+        raise ValueError("settlement input contains price bars after cutoff")
+    profiles = {
+        value.profile_id: value for value in build_structure_stop_profiles()
+    }
+    candidates = tuple(
+        _candidate_from_screen_payload(value, profiles)
+        for value in payload["candidates"]
+    )
+    outcomes = evaluate_structure_stop_outcomes(
+        tuple(value.candidate for value in candidates),
+        inputs.bars_by_code,
+        outcome_cutoff=outcome_cutoff,
+    )
+    settlement = StructureStopForwardSettlement(
+        parent_screen_identity=str(payload["artifact_identity"]),
+        signal_date=signal_date,
+        outcome_cutoff=outcome_cutoff,
+        outcome_dates=outcome_dates,
+        freeze_hash=str(payload["freeze_hash"]),
+        input_fingerprint=case_input_fingerprint(inputs),
+        candidates=candidates,
+        outcomes=outcomes,
+        risk_coverage_complete=bool(payload["risk_coverage_complete"]),
+    )
+    structure_stop_settlement_payload(settlement)
+    return settlement
+
+
 def _add_output(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR)
 
@@ -570,6 +879,15 @@ def main(
     confirmed_dates_loader: Callable[[], Sequence[date]] | None = None,
     research_writer: Callable[..., tuple[Path, Path]] | None = None,
     freeze_writer: Callable[..., tuple[Path, Path]] | None = None,
+    screen_input_loader: Callable[
+        [date, tuple[date, date]], CaseReviewInputs
+    ] = load_mysql_structure_stop_screen_inputs,
+    settlement_input_loader: Callable[
+        [date, date], CaseReviewInputs
+    ] = load_mysql_structure_stop_settlement_inputs,
+    calendar_status: Callable[[date], bool | None] | None = None,
+    screen_writer: Callable[..., tuple[Path, Path]] | None = None,
+    settlement_writer: Callable[..., tuple[Path, Path]] | None = None,
 ) -> int:
     args = build_parser().parse_args(argv)
     calendar_loader = (
@@ -577,6 +895,10 @@ def main(
     )
     research_output = research_writer or write_structure_stop_research_revision
     freeze_output = freeze_writer or write_structure_stop_freeze
+    screen_output = screen_writer or write_structure_stop_forward_screen
+    settlement_output = (
+        settlement_writer or write_structure_stop_forward_settlement
+    )
     try:
         if args.stage == "research":
             confirmed_dates = tuple(calendar_loader())
@@ -596,8 +918,29 @@ def main(
                 confirmed_dates=confirmed_dates,
             )
             paths = freeze_output(value, args.output_dir)
+        elif args.stage == "screen":
+            freeze = load_structure_stop_freeze(args.freeze_artifact)
+            value = build_structure_stop_forward_screen(
+                args.signal_date,
+                freeze,
+                input_loader=screen_input_loader,
+                calendar_status=(
+                    calendar_status
+                    or (
+                        lambda day: trading_day_status(
+                            day, refresh=False
+                        )
+                    )
+                ),
+            )
+            paths = screen_output(value, args.output_dir)
         else:
-            raise ValueError("screen/settle 将在 Task 6 实现")
+            value = build_structure_stop_forward_settlement(
+                args.screen_artifact,
+                args.outcome_cutoff,
+                input_loader=settlement_input_loader,
+            )
+            paths = settlement_output(value, args.output_dir)
     except Exception as exc:
         print(f"结构止损影子研究失败：{exc}", file=sys.stderr)
         return 2

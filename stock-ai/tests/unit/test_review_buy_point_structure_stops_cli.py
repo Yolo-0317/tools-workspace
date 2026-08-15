@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date, timedelta
+from decimal import Decimal
 import json
 from pathlib import Path
 
 import pytest
 
 from scripts.analysis.review_buy_point_structure_stops import (
+    build_structure_stop_forward_settlement,
+    build_structure_stop_forward_screen,
     build_structure_stop_freeze_from_artifacts,
     build_structure_stop_research_review,
     build_parser,
@@ -14,16 +18,39 @@ from scripts.analysis.review_buy_point_structure_stops import (
     main,
 )
 from scripts.analysis.review_buy_point_case import CaseReviewInputs
-from stock_ai.buy_point_selection.models import MarketSnapshot, SelectionPolicy
+from stock_ai.buy_point_selection.models import (
+    BuyPointBar,
+    DetectedSetup,
+    MarketSnapshot,
+    SelectionPolicy,
+    SetupType,
+)
+from stock_ai.buy_point_selection.planning import PricePlan
 from stock_ai.buy_point_selection.reference_data import ReferenceCoverage
 from stock_ai.buy_point_selection.structure_stop_shadow import (
+    StructureStopAnchor,
+    StructureStopBaselineHit,
+    StructureStopCandidate,
+    StructureStopDiagnostic,
     StructureStopReplay,
     build_structure_stop_profiles,
     structure_stop_profile_hash,
 )
 from stock_ai.buy_point_selection.structure_stop_report import (
+    StructureStopForwardScreen,
     StructureStopResearchReview,
+    StructureStopScreenCandidate,
+    structure_stop_screen_identity,
+    structure_stop_screen_payload,
+    structure_stop_settlement_payload,
+    write_structure_stop_forward_screen,
+    write_structure_stop_forward_settlement,
+    write_structure_stop_freeze,
     write_structure_stop_research_revision,
+)
+from stock_ai.buy_point_selection.structure_stop_evaluation import (
+    StructureStopMetrics,
+    freeze_structure_stop_profiles,
 )
 from stock_ai.buy_point_selection.threshold_shadow_evaluation import (
     ExactRecallComparison,
@@ -513,20 +540,492 @@ def test_main_fails_closed_with_concise_chinese_error(
     assert captured.err.startswith("结构止损影子研究失败：")
 
 
-def test_main_keeps_forward_stages_disabled_until_task_six(
+def test_main_runs_bounded_screen_and_separate_settlement(
+    tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """Catches Task 5 accidentally exposing an unbounded forward runtime."""
-    code = main(
+    """Catches CLI stages bypassing bounded builders or overwriting screens."""
+    signal_date = date(2026, 8, 17)
+    plan_dates = (date(2026, 8, 18), date(2026, 8, 19))
+    screen_inputs = CaseReviewInputs(
+        (signal_date, *plan_dates),
+        {},
+        (),
+        (),
+        {signal_date: ReferenceCoverage(signal_date, True, True, False)},
+        {signal_date: MarketSnapshot(3, 60.0, 1.0, True)},
+        {signal_date: frozenset()},
+        {signal_date: True},
+    )
+    freeze_path = write_structure_stop_freeze(
+        _empty_freeze(), tmp_path / "freeze"
+    )[0]
+    screen_dir = tmp_path / "screen"
+
+    screen_code = main(
         [
             "screen",
-            "--signal-date",
-            "2026-08-17",
+            "--signal-date", signal_date.isoformat(),
             "--freeze-artifact",
-            "freeze.json",
+            str(freeze_path),
+            "--output-dir",
+            str(screen_dir),
         ],
-        confirmed_dates_loader=lambda: _confirmed_sessions(),
+        screen_input_loader=lambda *_: screen_inputs,
+        calendar_status=lambda day: day in (signal_date, *plan_dates),
     )
 
-    assert code == 2
-    assert "Task 6" in capsys.readouterr().err
+    assert screen_code == 0
+    assert "CASE_ANALYSIS_ONLY / NO-TRADE" in capsys.readouterr().out
+    screen_path = tuple(screen_dir.glob("screen_*.json"))[0]
+    before = screen_path.read_bytes()
+    outcome_dates = tuple(
+        date(2026, 8, day) for day in (18, 19, 20, 21, 24)
+    )
+    settlement_dir = tmp_path / "settlement"
+    settlement_code = main(
+        [
+            "settle",
+            "--screen-artifact",
+            str(screen_path),
+            "--outcome-cutoff",
+            outcome_dates[-1].isoformat(),
+            "--output-dir",
+            str(settlement_dir),
+        ],
+        settlement_input_loader=lambda *_: _settlement_inputs(
+            signal_date, outcome_dates
+        ),
+    )
+
+    assert settlement_code == 0
+    assert "CASE_ANALYSIS_ONLY / NO-TRADE" in capsys.readouterr().out
+    assert len(tuple(settlement_dir.glob("settlement_*.json"))) == 1
+    assert screen_path.read_bytes() == before
+
+
+def _empty_freeze():
+    policy = SelectionPolicy()
+    profiles = build_structure_stop_profiles()
+    return freeze_structure_stop_profiles(
+        profiles=profiles,
+        training_identities=tuple(
+            f"research-{index:02d}" for index in range(8)
+        ),
+        metrics=(),
+        formal_rule_version=policy.rule_version,
+        formal_policy_hash=policy_hash(policy),
+        profile_matrix_hash=structure_stop_profile_hash(profiles),
+        risk_coverage_complete=False,
+    )
+
+
+def test_forward_screen_uses_two_confirmed_plan_dates_without_outcomes() -> None:
+    """Catches weekday inference or outcome evaluation during screening."""
+    signal_date = date(2026, 8, 17)
+    observed_plan_dates = []
+
+    def loader(day: date, plan_dates: tuple[date, date]) -> CaseReviewInputs:
+        observed_plan_dates.append(plan_dates)
+        return CaseReviewInputs(
+            (day, *plan_dates),
+            {},
+            (),
+            (),
+            {day: ReferenceCoverage(day, True, True, False)},
+            {day: MarketSnapshot(3, 60.0, 1.0, True)},
+            {day: frozenset()},
+            {day: True},
+        )
+
+    statuses = {
+        signal_date: True,
+        date(2026, 8, 18): True,
+        date(2026, 8, 19): True,
+    }
+    screen = build_structure_stop_forward_screen(
+        signal_date,
+        _empty_freeze(),
+        input_loader=loader,
+        calendar_status=lambda day: statuses.get(day, False),
+    )
+
+    assert observed_plan_dates == [(date(2026, 8, 18), date(2026, 8, 19))]
+    assert screen.candidates == ()
+    payload = structure_stop_screen_payload(screen)
+    assert payload["retrospective"] is False
+    assert payload["metrics"] == {"selected": 0}
+    assert "outcomes" not in payload
+
+    with pytest.raises(ValueError, match="not confirmed locally"):
+        build_structure_stop_forward_screen(
+            signal_date,
+            _empty_freeze(),
+            input_loader=loader,
+            calendar_status=lambda _day: None,
+        )
+
+
+def test_forward_screen_rejects_future_price_bars() -> None:
+    """Catches settlement data leaking into signal-time ranking."""
+    signal_date = date(2026, 8, 17)
+    future = BuyPointBar(
+        date(2026, 8, 18),
+        Decimal("10"),
+        Decimal("11"),
+        Decimal("9"),
+        Decimal("10"),
+        Decimal("0"),
+        Decimal("100000"),
+    )
+    inputs = CaseReviewInputs(
+        (signal_date, date(2026, 8, 18), date(2026, 8, 19)),
+        {"600001": (future,)},
+        (),
+        (),
+        {signal_date: ReferenceCoverage(signal_date, True, True, False)},
+        {signal_date: MarketSnapshot(3, 60.0, 1.0, True)},
+        {signal_date: frozenset()},
+        {signal_date: True},
+    )
+
+    with pytest.raises(ValueError, match="screen input contains future price bars"):
+        build_structure_stop_forward_screen(
+            signal_date,
+            _empty_freeze(),
+            input_loader=lambda *_: inputs,
+            calendar_status=lambda _day: True,
+        )
+
+
+def _qualified_freeze():
+    policy = SelectionPolicy()
+    profiles = build_structure_stop_profiles()
+    metric = StructureStopMetrics(
+        profiles[0].profile_id,
+        "ALL",
+        12,
+        10,
+        10,
+        6,
+        3,
+        Decimal("0.01"),
+        Decimal("0.01"),
+        Decimal("0.60"),
+        Decimal("0.30"),
+        Decimal("0.06"),
+        Decimal("0.02"),
+        True,
+        (),
+    )
+    return freeze_structure_stop_profiles(
+        profiles=profiles,
+        training_identities=tuple(
+            f"research-{index:02d}" for index in range(8)
+        ),
+        metrics=(metric,),
+        formal_rule_version=policy.rule_version,
+        formal_policy_hash=policy_hash(policy),
+        profile_matrix_hash=structure_stop_profile_hash(profiles),
+        risk_coverage_complete=False,
+    )
+
+
+def _screen_candidate(
+    code: str,
+    signal_date: date,
+    profile_index: int = 0,
+) -> StructureStopCandidate:
+    profile = build_structure_stop_profiles()[profile_index]
+    setup = DetectedSetup(
+        code,
+        SetupType.PRE_BREAKOUT,
+        signal_date,
+        signal_date - timedelta(days=20),
+        Decimal("10.00"),
+        Decimal("9.93"),
+        Decimal("0.80"),
+        ("FORMAL_FIXTURE",),
+        {},
+    )
+    hit = StructureStopBaselineHit(
+        code,
+        signal_date,
+        setup,
+        "ALLOW",
+        "S1",
+        ("RISK_DISTANCE_OUT_OF_RANGE",),
+    )
+    anchor = StructureStopAnchor(
+        profile,
+        code,
+        signal_date,
+        Decimal("9.80"),
+        Decimal("9.76"),
+        (),
+    )
+    plan = PricePlan(
+        f"structure-{code}-{profile.profile_id}",
+        code,
+        setup.setup_type,
+        signal_date,
+        Decimal("10.00"),
+        Decimal("10.01"),
+        Decimal("9.76"),
+        Decimal("10.51"),
+        Decimal("0.25"),
+        Decimal("2"),
+        100,
+        signal_date + timedelta(days=2),
+    )
+    return StructureStopCandidate(
+        hit,
+        profile,
+        anchor,
+        plan,
+        Decimal("200000"),
+        Decimal("1.00"),
+    )
+
+
+def test_forward_screen_selects_only_frozen_primary_top_five(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Catches diagnostic/profile leakage or nondeterministic Top-5 padding."""
+    signal_date = date(2026, 8, 17)
+    primary = tuple(
+        _screen_candidate(f"60000{index}", signal_date)
+        for index in range(1, 7)
+    )
+    not_frozen = _screen_candidate("600007", signal_date, profile_index=1)
+    replay = StructureStopReplay(
+        (signal_date,),
+        (),
+        tuple(value.hit for value in (*primary, not_frozen)),
+        (*primary, not_frozen),
+        (
+            StructureStopDiagnostic(
+                "600008",
+                signal_date,
+                "MARKET",
+                "INDEX_AND_BREADTH_WEAK",
+                "RISK_DISTANCE_OUT_OF_RANGE",
+            ),
+        ),
+        (),
+    )
+    monkeypatch.setattr(
+        "scripts.analysis.review_buy_point_structure_stops."
+        "replay_structure_stop_shadows",
+        lambda **_kwargs: replay,
+    )
+    inputs = CaseReviewInputs(
+        (signal_date, date(2026, 8, 18), date(2026, 8, 19)),
+        {},
+        (),
+        (),
+        {signal_date: ReferenceCoverage(signal_date, True, True, True)},
+        {signal_date: MarketSnapshot(3, 60.0, 1.0, True)},
+        {signal_date: frozenset()},
+        {signal_date: True},
+    )
+
+    screen = build_structure_stop_forward_screen(
+        signal_date,
+        _qualified_freeze(),
+        input_loader=lambda *_: inputs,
+        calendar_status=lambda _day: True,
+    )
+    payload = structure_stop_screen_payload(screen)
+
+    assert [value["code"] for value in payload["candidates"]] == [
+        "600001",
+        "600002",
+        "600003",
+        "600004",
+        "600005",
+    ]
+    assert {value["profile_rank"] for value in payload["candidates"]} == {1}
+    assert payload["freeze_hash"] == _qualified_freeze().freeze_hash
+    assert payload["formal_rule_version"] == SelectionPolicy().rule_version
+    assert payload["risk_coverage_complete"] is True
+    assert all(
+        value["executable_shares"] == 0
+        and value["maximum_shares"] == 0
+        for value in payload["candidates"]
+    )
+    assert "outcomes" not in payload
+
+
+def test_forward_screen_rejects_retrospective_date_or_forged_freeze() -> None:
+    """Catches reuse of observed dates or an edited frozen profile matrix."""
+    freeze = _qualified_freeze()
+    inputs = _empty_inputs(
+        _confirmed_sessions(),
+        _confirmed_sessions()[-10:-5],
+    )
+    with pytest.raises(ValueError, match="after retrospective windows"):
+        build_structure_stop_forward_screen(
+            date(2026, 8, 7),
+            freeze,
+            input_loader=lambda *_: inputs,
+            calendar_status=lambda _day: True,
+        )
+
+    forged_profile = replace(
+        freeze.profiles[0], profile_id="STRUCTURE_STOP:FORGED"
+    )
+    forged = replace(freeze, profiles=(forged_profile,))
+    with pytest.raises(ValueError, match="structure stop freeze"):
+        build_structure_stop_forward_screen(
+            date(2026, 8, 17),
+            forged,
+            input_loader=lambda *_: inputs,
+            calendar_status=lambda _day: True,
+        )
+
+
+def _nonempty_screen(signal_date: date) -> StructureStopForwardScreen:
+    policy = SelectionPolicy()
+    profiles = build_structure_stop_profiles()
+    freeze = _qualified_freeze()
+    return StructureStopForwardScreen(
+        signal_date=signal_date,
+        input_fingerprint="screen-input-fingerprint",
+        formal_rule_version=policy.rule_version,
+        formal_policy_hash=policy_hash(policy),
+        profile_matrix_hash=structure_stop_profile_hash(profiles),
+        freeze_hash=freeze.freeze_hash,
+        candidates=(
+            StructureStopScreenCandidate(
+                _screen_candidate("600001", signal_date),
+                1,
+            ),
+        ),
+        risk_coverage_complete=False,
+    )
+
+
+def _settlement_inputs(
+    signal_date: date,
+    outcome_dates: tuple[date, ...],
+) -> CaseReviewInputs:
+    return CaseReviewInputs(
+        (signal_date, *outcome_dates),
+        {"600001": (), "600999": ()},
+        (),
+        (),
+        {},
+        {},
+        {},
+        {},
+    )
+
+
+def test_forward_settlement_preserves_screen_membership_and_bytes(
+    tmp_path: Path,
+) -> None:
+    """Catches evaluating the universe or rewriting the parent screen."""
+    signal_date = date(2026, 8, 17)
+    outcome_dates = tuple(
+        date(2026, 8, day) for day in (18, 19, 20, 21, 24)
+    )
+    screen = _nonempty_screen(signal_date)
+    screen_path = write_structure_stop_forward_screen(screen, tmp_path)[0]
+    before = screen_path.read_bytes()
+    observed = []
+
+    def loader(day: date, cutoff: date) -> CaseReviewInputs:
+        observed.append((day, cutoff))
+        return _settlement_inputs(signal_date, outcome_dates)
+
+    settlement = build_structure_stop_forward_settlement(
+        screen_path,
+        outcome_dates[-1],
+        input_loader=loader,
+    )
+    payload = structure_stop_settlement_payload(settlement)
+
+    assert observed == [(signal_date, outcome_dates[-1])]
+    assert settlement.parent_screen_identity == structure_stop_screen_identity(
+        screen
+    )
+    assert settlement.outcome_dates == outcome_dates
+    assert [value["code"] for value in payload["candidates"]] == ["600001"]
+    assert [value["profile_rank"] for value in payload["candidates"]] == [1]
+    assert [value["code"] for value in payload["outcomes"]] == ["600001"]
+    assert screen_path.read_bytes() == before
+
+    settlement_paths = write_structure_stop_forward_settlement(
+        settlement, tmp_path
+    )
+    assert settlement_paths[0] != screen_path
+    assert screen_path.read_bytes() == before
+
+
+@pytest.mark.parametrize("session_count", (4, 6))
+def test_forward_settlement_requires_exactly_five_sessions(
+    tmp_path: Path,
+    session_count: int,
+) -> None:
+    """Catches early or overlong outcome windows."""
+    signal_date = date(2026, 8, 17)
+    all_dates = tuple(
+        date(2026, 8, day) for day in (18, 19, 20, 21, 24, 25)
+    )
+    outcome_dates = all_dates[:session_count]
+    screen_path = write_structure_stop_forward_screen(
+        _nonempty_screen(signal_date), tmp_path
+    )[0]
+
+    with pytest.raises(ValueError, match="exactly five completed outcome sessions"):
+        build_structure_stop_forward_settlement(
+            screen_path,
+            outcome_dates[-1],
+            input_loader=lambda *_: _settlement_inputs(
+                signal_date, outcome_dates
+            ),
+        )
+
+
+def test_forward_settlement_rejects_missing_outcome_or_changed_freeze(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Catches result loss or settlement against edited freeze lineage."""
+    signal_date = date(2026, 8, 17)
+    outcome_dates = tuple(
+        date(2026, 8, day) for day in (18, 19, 20, 21, 24)
+    )
+    screen_path = write_structure_stop_forward_screen(
+        _nonempty_screen(signal_date), tmp_path
+    )[0]
+    monkeypatch.setattr(
+        "scripts.analysis.review_buy_point_structure_stops."
+        "evaluate_structure_stop_outcomes",
+        lambda *_args, **_kwargs: (),
+    )
+    with pytest.raises(ValueError, match="candidate and outcome membership"):
+        build_structure_stop_forward_settlement(
+            screen_path,
+            outcome_dates[-1],
+            input_loader=lambda *_: _settlement_inputs(
+                signal_date, outcome_dates
+            ),
+        )
+
+    payload = json.loads(screen_path.read_text(encoding="utf-8"))
+    payload["freeze_hash"] = "0" * 64
+    screen_path.write_text(
+        json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=2)
+        + "\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="screen artifact is invalid"):
+        build_structure_stop_forward_settlement(
+            screen_path,
+            outcome_dates[-1],
+            input_loader=lambda *_: _settlement_inputs(
+                signal_date, outcome_dates
+            ),
+        )
