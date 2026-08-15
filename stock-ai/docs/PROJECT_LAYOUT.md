@@ -34,6 +34,7 @@ stock-ai/
 | 点时参考数据显式刷新 | 默认巨潮资讯 + BaoStock：`PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python stock-ai/scripts/sync/sync_buy_point_reference_data.py --start 2024-01-02 --end latest`；Tushare 回退追加 `--provider tushare` |
 | 买点历史观察集 | `PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python stock-ai/scripts/analysis/generate_buy_point_observations.py --start 2023-12-26 --end 2026-08-04 --out stock-ai/output/buy-point-replay` |
 | 2R 冻结回测 | `stock-ai/scripts/analysis/backtest_buy_point_selection.py`，必须依次执行研究、冻结 profile、一次性测试 |
+| 五日净收益四画像影子研究 | `PYTHONPATH=. .venv/bin/python scripts/analysis/research_five_day_return_shadow.py <research|freeze|test|forward-screen|forward-settlement>`；仅手动、零股、一次性测试 |
 | 定时同步 | `./run_sync_daily.sh` 或 `docker/scheduler`（工作日 17:00，见 [SCHEDULING.md](SCHEDULING.md)） |
 
 旧路径 `scripts/sync_tushare_daily_to_mysql.py` 仍保留兼容包装，会转发到 `scripts/sync/`。
@@ -43,6 +44,8 @@ stock-ai/
 规则 3.1.0 以触发后五个交易日内先达到 2R 为主要路径标签，使用同类样本的扣费后净期望和 95% Wilson 概率区间排序。验证只接受 `buy-point-selection-validation-v2`；旧产物或校准缺失时保持失败关闭。
 
 历史观察集生成器从 MySQL 批量读取日线与 PIT 参考事实，并用 BaoStock 三个基准指数重建历史市场状态。`replay-integrity.json` 必须证明至少 630 个信号交易日、行业/ST/公告/市场状态覆盖完整、观察集哈希匹配且没有 `PENDING` 计划，冻结 profile 才会写入训练/验证校准。测试段只使用已冻结校准排序，并且同一 profile 只能写一次测试产物。生成的观察集、profile 和验证产物均为本地忽略文件，不进入 Git。
+
+五日净收益四画像使用独立 `buy-point-five-day-return-shadow-v1` 产物链，按研究、冻结、一次性测试、前向筛选和独立结算五阶段手动执行。它不安装调度、不发送通知、不写持仓、订单或投顾记忆，也不改变旧 `TWO_R` 生产链路。
 
 ## 共享库
 

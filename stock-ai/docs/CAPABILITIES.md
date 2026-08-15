@@ -408,6 +408,47 @@ PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
 
 观察集同时保存信号日、代码、结构 ID、实际入场日和风险距离，测试段排名不能读取候选结果。训练/验证共 80% 日期形成冻结校准；剩余 20% 日期只做一次组合级测试，并执行每日候选数、同板块和最多三笔并发持仓限制。完整性清单、观察集、冻结 profile 和验证产物均为本地运行文件，不提交 Git。
 
+### 五日净收益四画像影子研究
+
+该流程与旧 `TWO_R` 生产/验证链路完全隔离，只比较四个固定画像：
+
+- `BREAKOUT_TRIGGER__FIXED_3_PERCENT`
+- `BREAKOUT_TRIGGER__STRUCTURE_ATR`
+- `PULLBACK_RECLAIM__FIXED_3_PERCENT`
+- `PULLBACK_RECLAIM__STRUCTURE_ATR`
+
+所有研究成交使用 1 万元目标名义金额和整手评估股数，但交易权限始终为 `CASE_ANALYSIS_ONLY / NO-TRADE`，`executable_shares` 固定为 0。至少 630 个完整信号交易日按 `378 / 126 / 126` 切成训练、验证和一次性测试段；测试结果不能参与校准。空研究、空冻结、空测试资格和空前向筛选均为合法结果，不补位。
+
+五个阶段仅可手动执行，默认产物目录为 `output/research/buy_point_five_day_returns`：
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/analysis/research_five_day_return_shadow.py research \
+  --signal-start YYYY-MM-DD --signal-end YYYY-MM-DD
+
+PYTHONPATH=. .venv/bin/python scripts/analysis/research_five_day_return_shadow.py freeze \
+  --research-artifact <research JSON>
+```
+
+同一 freeze identity 的 test 只能执行一次。代码验收不得顺手运行真实测试段；只有用户明确确认开始冻结测试时才执行。
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/analysis/research_five_day_return_shadow.py test \
+  --freeze-artifact <freeze JSON> --research-artifact <research JSON>
+```
+
+通过测试的画像只获得前向影子观察资格，不会进入正式选股。每个已完成信号日最多保留 3 个冻结排名候选；筛选文件不包含入场、退出或收益字段。后续结算另写新文件，不能改写原筛选：
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/analysis/research_five_day_return_shadow.py forward-screen \
+  --signal-date YYYY-MM-DD --freeze-artifact <freeze JSON> \
+  --test-artifact <test JSON>
+
+PYTHONPATH=. .venv/bin/python scripts/analysis/research_five_day_return_shadow.py forward-settlement \
+  --screen-artifact <forward-screen JSON> --outcome-cutoff YYYY-MM-DD
+```
+
+该入口不提供调度、通知、可执行股数、持仓、订单、决策账本、个人投顾记忆或跳过门禁的参数，也不会修改旧 `TWO_R` 规则、校准和产物。
+
 ### 买点阈值影子研究
 
 该流程只研究 48 组单一形态阈值放宽，不修改正式规则。所有候选固定为 `CASE_ANALYSIS_ONLY / NO-TRADE`、可执行股数为 0；仅手动运行，不安装调度、不发送通知、不写持仓、决策账本或订单。必须先生成两段研究产物，再冻结合格 profile，最后只运行一次独立测试窗：
