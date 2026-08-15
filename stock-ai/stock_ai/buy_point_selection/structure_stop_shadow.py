@@ -7,11 +7,27 @@ from datetime import date
 from decimal import Decimal
 import hashlib
 import json
-from typing import Sequence
+from typing import Callable, Mapping, Sequence
 
 from stock_ai.market_codes import normalize_code6
 
-from .models import BuyPointBar, DetectedSetup, SelectionPolicy, SetupType
+from .case_review import CASE_RISK_BUDGET, _diagnostic_price_plan
+from .gate_shadow_research import (
+    build_gate_shadow_profiles,
+    matching_gate_profile,
+)
+from .gates import anti_chase_gate, base_gate, classify_market, sector_gate
+from .historical_replay import second_trading_date_after
+from .historical_replay_runtime import _sector_snapshots
+from .models import (
+    BuyPointBar,
+    DetectedSetup,
+    MarketSnapshot,
+    SectorSnapshot,
+    SelectionPolicy,
+    SetupType,
+)
+from .patterns import detect_setups
 from .planning import (
     PlanDecision,
     PricePlan,
@@ -23,6 +39,13 @@ from .planning import (
     atr14,
     nearest_resistance_above,
     structure_id,
+)
+from .reference_data import (
+    ReferenceCoverage,
+    RiskFlag,
+    SectorMembership,
+    membership_on,
+    risk_flags_on,
 )
 
 
@@ -42,6 +65,60 @@ class StructureStopAnchor:
     invalidation_price: Decimal | None
     reasons: tuple[str, ...]
     executable_shares: int = 0
+
+
+@dataclass(frozen=True)
+class StructureStopBaselineHit:
+    code: str
+    signal_date: date
+    setup: DetectedSetup
+    market_status: str
+    sector_code: str
+    baseline_reasons: tuple[str, ...]
+    executable_shares: int = 0
+
+
+@dataclass(frozen=True)
+class StructureStopCandidate:
+    hit: StructureStopBaselineHit
+    profile: StructureStopProfile
+    anchor: StructureStopAnchor
+    plan: PricePlan
+    average_amount5_qian: Decimal
+    two_r_space_buffer: Decimal
+    executable_shares: int = 0
+    status: str = "CASE_ANALYSIS_ONLY"
+    trade_permission: str = "NO-TRADE"
+
+
+@dataclass(frozen=True)
+class StructureStopDiagnostic:
+    code: str
+    signal_date: date
+    gate: str
+    gate_reason: str
+    baseline_reason: str
+    label: str = "DIAGNOSTIC_ONLY_COMBINED_FAILURE"
+    executable_shares: int = 0
+
+
+@dataclass(frozen=True)
+class StructureStopRejection:
+    code: str
+    signal_date: date
+    profile_id: str | None
+    stage: str
+    reasons: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class StructureStopReplay:
+    signal_dates: tuple[date, ...]
+    incomplete_dates: tuple[date, ...]
+    baseline_hits: tuple[StructureStopBaselineHit, ...]
+    candidates: tuple[StructureStopCandidate, ...]
+    diagnostics: tuple[StructureStopDiagnostic, ...]
+    rejections: tuple[StructureStopRejection, ...]
 
 
 _PROFILE_SPECS = (
@@ -311,4 +388,339 @@ def build_structure_stop_plan(
             ),
         ),
         (),
+    )
+
+
+def _signal_bars(
+    bars: Sequence[BuyPointBar], signal_date: date
+) -> tuple[BuyPointBar, ...]:
+    return tuple(
+        sorted(
+            (value for value in bars if value.trade_date <= signal_date),
+            key=lambda value: value.trade_date,
+        )[-120:]
+    )
+
+
+def _average(values: Sequence[Decimal]) -> Decimal:
+    return sum(values, Decimal("0")) / Decimal(len(values))
+
+
+def _cumulative_return_pct(
+    bars: Sequence[BuyPointBar], sessions: int
+) -> Decimal:
+    return (
+        bars[-1].close / bars[-sessions - 1].close - Decimal("1")
+    ) * Decimal("100")
+
+
+def replay_structure_stop_shadows(
+    *,
+    signal_dates: Sequence[date],
+    trading_dates: Sequence[date],
+    bars_by_code: Mapping[str, Sequence[BuyPointBar]],
+    memberships: Sequence[SectorMembership],
+    risk_flags: Sequence[RiskFlag],
+    coverage_by_date: Mapping[date, ReferenceCoverage],
+    market_snapshots: Mapping[date, MarketSnapshot],
+    holding_codes_by_date: Mapping[date, frozenset[str]],
+    profiles: Sequence[StructureStopProfile],
+    formal_policy: SelectionPolicy | None = None,
+    setup_detector: Callable[
+        [str, Sequence[BuyPointBar], SelectionPolicy],
+        Sequence[DetectedSetup],
+    ] = detect_setups,
+    sector_snapshot_builder: Callable[
+        [
+            Mapping[str, Sequence[BuyPointBar]],
+            Mapping[str, SectorMembership],
+            SelectionPolicy,
+        ],
+        Mapping[str, SectorSnapshot],
+    ] = _sector_snapshots,
+) -> StructureStopReplay:
+    validate_structure_stop_profiles(profiles)
+    policy = formal_policy or SelectionPolicy()
+    profile_rank = {
+        value.profile_id: index for index, value in enumerate(profiles)
+    }
+    gate_profiles = build_gate_shadow_profiles()
+    dated_signal_dates = tuple(sorted(set(signal_dates)))
+    baseline_hits: list[StructureStopBaselineHit] = []
+    candidates: list[StructureStopCandidate] = []
+    diagnostics: list[StructureStopDiagnostic] = []
+    rejections: list[StructureStopRejection] = []
+    incomplete_dates: list[date] = []
+    for signal_date in dated_signal_dates:
+        coverage = coverage_by_date.get(signal_date)
+        market_snapshot = market_snapshots.get(signal_date)
+        if (
+            coverage is None
+            or not coverage.sector_complete
+            or not coverage.st_complete
+            or market_snapshot is None
+            or not market_snapshot.complete
+            or signal_date not in holding_codes_by_date
+        ):
+            incomplete_dates.append(signal_date)
+            continue
+        panel = {
+            normalize_code6(code): _signal_bars(values, signal_date)
+            for code, values in bars_by_code.items()
+        }
+        dated_memberships = membership_on(memberships, signal_date)
+        dated_flags = risk_flags_on(risk_flags, signal_date)
+        sectors = sector_snapshot_builder(panel, dated_memberships, policy)
+        market = classify_market(market_snapshot)
+        holdings = set(holding_codes_by_date[signal_date])
+        valid_through = second_trading_date_after(trading_dates, signal_date)
+        for code, bars in sorted(panel.items()):
+            if not bars or bars[-1].trade_date != signal_date:
+                rejections.append(
+                    StructureStopRejection(
+                        code,
+                        signal_date,
+                        None,
+                        "LATEST_BAR",
+                        ("LATEST_BAR_MISSING",),
+                    )
+                )
+                continue
+            market_profile = None
+            if not market.passed:
+                market_profile = matching_gate_profile(
+                    "MARKET", market.reasons, gate_profiles
+                )
+                if market_profile is None:
+                    rejections.append(
+                        StructureStopRejection(
+                            code,
+                            signal_date,
+                            None,
+                            "MARKET",
+                            market.reasons,
+                        )
+                    )
+                    continue
+            base = base_gate(code, bars, holdings, dated_flags, policy)
+            if not base.passed:
+                rejections.append(
+                    StructureStopRejection(
+                        code, signal_date, None, "BASE", base.reasons
+                    )
+                )
+                continue
+            setups = tuple(setup_detector(code, bars, policy))
+            if not setups:
+                rejections.append(
+                    StructureStopRejection(
+                        code,
+                        signal_date,
+                        None,
+                        "SETUP",
+                        ("NO_BUY_POINT_SETUP",),
+                    )
+                )
+                continue
+            setup = max(
+                setups,
+                key=lambda value: (value.quality, value.setup_type.value),
+            )
+            ma5 = _average([value.close for value in bars[-5:]])
+            ma20 = _average([value.close for value in bars[-20:]])
+            anti = anti_chase_gate(
+                bars[-1].pct_chg,
+                _cumulative_return_pct(bars, 3),
+                _cumulative_return_pct(bars, 5),
+                (bars[-1].close / ma5 - Decimal("1")) * Decimal("100"),
+                (bars[-1].close / ma20 - Decimal("1")) * Decimal("100"),
+                policy,
+            )
+            if not anti.passed:
+                rejections.append(
+                    StructureStopRejection(
+                        code,
+                        signal_date,
+                        None,
+                        "ANTI_CHASE",
+                        anti.reasons,
+                    )
+                )
+                continue
+            membership = dated_memberships.get(code)
+            if membership is None or membership.sector_code not in sectors:
+                rejections.append(
+                    StructureStopRejection(
+                        code,
+                        signal_date,
+                        None,
+                        "SECTOR",
+                        ("SECTOR_MISSING",),
+                    )
+                )
+                continue
+            sector = sector_gate(sectors[membership.sector_code], policy)
+            diagnostic_gate: tuple[str, str] | None = None
+            planner_market_status = market.status
+            if market_profile is not None:
+                if not sector.passed:
+                    rejections.append(
+                        StructureStopRejection(
+                            code,
+                            signal_date,
+                            None,
+                            "SECTOR",
+                            sector.reasons,
+                        )
+                    )
+                    continue
+                diagnostic_gate = ("MARKET", market_profile.failure_reason)
+                planner_market_status = "LIMITED"
+            elif not sector.passed:
+                sector_profile = matching_gate_profile(
+                    "SECTOR", sector.reasons, gate_profiles
+                )
+                if sector_profile is None:
+                    rejections.append(
+                        StructureStopRejection(
+                            code,
+                            signal_date,
+                            None,
+                            "SECTOR",
+                            sector.reasons,
+                        )
+                    )
+                    continue
+                diagnostic_gate = ("SECTOR", sector_profile.failure_reason)
+            _, baseline_reasons, _ = _diagnostic_price_plan(
+                setup,
+                bars,
+                CASE_RISK_BUDGET,
+                planner_market_status,
+                policy,
+                valid_through,
+            )
+            if diagnostic_gate is not None:
+                if baseline_reasons == ("RISK_DISTANCE_OUT_OF_RANGE",):
+                    diagnostics.append(
+                        StructureStopDiagnostic(
+                            code,
+                            signal_date,
+                            diagnostic_gate[0],
+                            diagnostic_gate[1],
+                            baseline_reasons[0],
+                        )
+                    )
+                else:
+                    rejections.append(
+                        StructureStopRejection(
+                            code,
+                            signal_date,
+                            None,
+                            "PRICE_PLAN",
+                            baseline_reasons
+                            or ("BASELINE_NOT_RISK_ONLY",),
+                        )
+                    )
+                continue
+            if baseline_reasons != ("RISK_DISTANCE_OUT_OF_RANGE",):
+                rejections.append(
+                    StructureStopRejection(
+                        code,
+                        signal_date,
+                        None,
+                        "PRICE_PLAN",
+                        baseline_reasons or ("BASELINE_NOT_RISK_ONLY",),
+                    )
+                )
+                continue
+            hit = StructureStopBaselineHit(
+                code,
+                signal_date,
+                setup,
+                market.status,
+                membership.sector_code,
+                baseline_reasons,
+            )
+            baseline_hits.append(hit)
+            average_amount5 = _average(
+                [value.amount_qian for value in bars[-5:]]
+            )
+            for profile in profiles:
+                anchor = build_structure_stop_anchor(setup, bars, profile)
+                decision = build_structure_stop_plan(
+                    setup,
+                    bars,
+                    CASE_RISK_BUDGET,
+                    market.status,
+                    profile,
+                    policy,
+                    valid_through_trade_date=valid_through,
+                )
+                if decision.plan is None:
+                    rejections.append(
+                        StructureStopRejection(
+                            code,
+                            signal_date,
+                            profile.profile_id,
+                            "PRICE_PLAN",
+                            decision.reasons,
+                        )
+                    )
+                    continue
+                resistance = nearest_resistance_above(
+                    decision.plan.trigger_price, bars
+                )
+                candidates.append(
+                    StructureStopCandidate(
+                        hit,
+                        profile,
+                        anchor,
+                        decision.plan,
+                        average_amount5,
+                        resistance - decision.plan.target_2r,
+                    )
+                )
+    return StructureStopReplay(
+        dated_signal_dates,
+        tuple(sorted(set(incomplete_dates))),
+        tuple(
+            sorted(
+                baseline_hits,
+                key=lambda value: (value.signal_date, value.code),
+            )
+        ),
+        tuple(
+            sorted(
+                candidates,
+                key=lambda value: (
+                    value.hit.signal_date,
+                    value.hit.code,
+                    profile_rank[value.profile.profile_id],
+                ),
+            )
+        ),
+        tuple(
+            sorted(
+                diagnostics,
+                key=lambda value: (
+                    value.signal_date,
+                    value.code,
+                    value.gate,
+                    value.gate_reason,
+                ),
+            )
+        ),
+        tuple(
+            sorted(
+                rejections,
+                key=lambda value: (
+                    value.signal_date,
+                    value.code,
+                    value.profile_id or "",
+                    value.stage,
+                    value.reasons,
+                ),
+            )
+        ),
     )
