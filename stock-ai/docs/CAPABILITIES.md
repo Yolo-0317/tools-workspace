@@ -436,6 +436,43 @@ PYTHONPATH=. .venv/bin/python scripts/analysis/review_buy_point_threshold_shadow
 
 短窗口通过只允许进入扩大历史验证，不能晋级正式规则；空冻结集是有效研究结果，禁止为了凑候选而补位。
 
+### 买点门禁影子研究与前向观察
+
+该流程只隔离研究正式形态通过后被市场或板块门禁挡住的样本，不修改 `models.py`、`patterns.py`、`gates.py` 或 `planning.py`。六类 profile 中，两类市场弱势只做诊断；四类单一板块失败允许参加冻结。三段历史窗口都已经观察过，因此只是回顾性案例研究，不是独立样本外测试。
+
+先手动生成三段研究产物，再聚合冻结：
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/analysis/review_buy_point_gate_shadows.py research \
+  --signal-start 2026-07-20 --signal-end 2026-07-24 \
+  --outcome-cutoff 2026-07-31 --v5-case <对应窗口的 v5 JSON>
+
+PYTHONPATH=. .venv/bin/python scripts/analysis/review_buy_point_gate_shadows.py research \
+  --signal-start 2026-07-27 --signal-end 2026-07-31 \
+  --outcome-cutoff 2026-08-07 --v5-case <对应窗口的 v5 JSON>
+
+PYTHONPATH=. .venv/bin/python scripts/analysis/review_buy_point_gate_shadows.py research \
+  --signal-start 2026-08-03 --signal-end 2026-08-07 \
+  --outcome-cutoff 2026-08-14 --v5-case <对应窗口的 v5 JSON>
+
+PYTHONPATH=. .venv/bin/python scripts/analysis/review_buy_point_gate_shadows.py freeze \
+  --research-artifact <第一段研究 JSON> \
+  --research-artifact <第二段研究 JSON> \
+  --research-artifact <第三段研究 JSON>
+```
+
+冻结后，盘后手动生成零仓位前向筛选；恰好五个已完成交易日后再单独结算：
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/analysis/review_buy_point_gate_shadows.py screen \
+  --signal-date YYYY-MM-DD --freeze-artifact <冻结 JSON>
+
+PYTHONPATH=. .venv/bin/python scripts/analysis/review_buy_point_gate_shadows.py settle \
+  --screen-artifact <前向筛选 JSON> --outcome-cutoff YYYY-MM-DD
+```
+
+所有阶段固定为 `CASE_ANALYSIS_ONLY / NO-TRADE`，可执行股数为 0。筛选最多 5 只，空冻结和空筛选都是有效结果，不补位。筛选仅读取信号日及以前价格；结算产物另写新文件，不能改写原筛选。流程不包含定时任务、通知、持仓写入、个人/决策记忆写入或自动下单。至少积累 20 个不同前向信号日且 20 个计划完成结算后，才允许讨论扩大验证，仍不得自动晋级正式策略。
+
 `LIVE` 不由 AI 或单次回测决定。必须先通过冻结历史门槛，再完成至少 20 个不同交易日的手动前向运行和至少 20 个已解决计划，且完整性违规为 0；否则统一输出 `SHADOW`。只有正式层显示最大股数，观察和影子层固定显示无交易资格。
 
 盘后 DeepSeek 审查（非 17:30 自动化路径）：见 [pipelines/daily_stock_deepseek_pipeline.md](pipelines/daily_stock_deepseek_pipeline.md)。

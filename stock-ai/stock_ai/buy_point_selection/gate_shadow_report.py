@@ -102,12 +102,23 @@ def _candidate_payload(value: GateShadowCandidate) -> dict[str, object]:
         "failure_reason": value.hit.profile.failure_reason,
         "setup_type": value.hit.setup.setup_type.value,
         "setup_quality": str(value.hit.setup.quality),
+        "structure_start": value.hit.setup.structure_start.isoformat(),
+        "structure_high": str(value.hit.setup.structure_high),
+        "structure_low": str(value.hit.setup.structure_low),
+        "setup_reasons": list(value.hit.setup.reasons),
+        "setup_metrics": {
+            key: str(item) for key, item in sorted(value.hit.setup.metrics.items())
+        },
         "market_status": value.hit.market_status,
         "sector_code": value.hit.sector_code,
         "structure_id": value.plan.structure_id,
         "trigger_price": str(value.plan.trigger_price),
         "invalidation_price": str(value.plan.invalidation_price),
         "target_2r": str(value.plan.target_2r),
+        "signal_close": str(value.plan.signal_close),
+        "risk_distance": str(value.plan.risk_distance),
+        "risk_reward_ratio": str(value.plan.risk_reward_ratio),
+        "maximum_shares": 0,
         "plan_expiry": value.plan.valid_through_trade_date.isoformat(),
         "average_amount5_qian": str(value.average_amount5_qian),
         "two_r_space_buffer": str(value.two_r_space_buffer),
@@ -360,6 +371,7 @@ def gate_screen_identity(screen: GateForwardScreen) -> str:
             "formal_policy_hash": screen.formal_policy_hash,
             "profile_matrix_hash": screen.profile_matrix_hash,
             "freeze_hash": screen.freeze_hash,
+            "planner_version": "price-plan-v1",
         }
     )
 
@@ -404,6 +416,7 @@ def gate_screen_payload(screen: GateForwardScreen) -> dict[str, object]:
         "formal_policy_hash": screen.formal_policy_hash,
         "profile_matrix_hash": screen.profile_matrix_hash,
         "freeze_hash": screen.freeze_hash,
+        "planner_version": "price-plan-v1",
         "risk_coverage_complete": screen.risk_coverage_complete,
         "promotion_eligible": False,
         "candidates": [
@@ -659,4 +672,18 @@ def load_gate_forward_screen(path: str | Path) -> dict[str, object]:
             stack.extend(item)
     if forbidden & encoded_keys:
         raise ValueError("screen artifact contains outcome data")
+    return payload
+
+
+def load_gate_research_artifact(path: str | Path) -> dict[str, object]:
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    if (
+        payload.get("schema") != GATE_SHADOW_SCHEMA
+        or payload.get("stage") != "research"
+        or payload.get("status") != "CASE_ANALYSIS_ONLY"
+        or payload.get("trade_permission") != "NO-TRADE"
+        or payload.get("retrospective") is not True
+        or payload.get("promotion_eligible") is not False
+    ):
+        raise ValueError("expected safely labeled gate research artifact")
     return payload
