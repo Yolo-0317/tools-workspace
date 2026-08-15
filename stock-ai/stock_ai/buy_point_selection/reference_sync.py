@@ -437,7 +437,7 @@ def _sync_announcement_day(
     request: AlternativeReferenceSyncRequest,
     day: date,
     previous: date | None,
-    cninfo: CninfoReferenceSource,
+    announcement_source: CninfoReferenceSource,
     repository: ReferenceRepository,
     sleep: Callable[[float], None],
     refresh_days: frozenset[date],
@@ -450,13 +450,14 @@ def _sync_announcement_day(
 
     for natural_day in partitions:
         key = natural_day.isoformat()
-        checkpoint = repository.load_checkpoint("CNINFO", "announcement", key)
+        provider_name = announcement_source.provider_name
+        checkpoint = repository.load_checkpoint(provider_name, "announcement", key)
         if checkpoint and checkpoint.status == "COMPLETE" and not force_refresh:
             completed += 1
             continue
         try:
             first = _retry(
-                lambda natural_day=natural_day: cninfo.fetch_announcement_page(
+                lambda natural_day=natural_day: announcement_source.fetch_announcement_page(
                     natural_day, 1
                 ),
                 sleep,
@@ -465,7 +466,7 @@ def _sync_announcement_day(
             for page_no in range(2, first.page_count + 1):
                 pages.append(
                     _retry(
-                        lambda natural_day=natural_day, page_no=page_no: cninfo.fetch_announcement_page(
+                        lambda natural_day=natural_day, page_no=page_no: announcement_source.fetch_announcement_page(
                             natural_day, page_no
                         ),
                         sleep,
@@ -476,7 +477,7 @@ def _sync_announcement_day(
             completed += 1
             repository.save_checkpoint(
                 _checkpoint(
-                    provider="CNINFO",
+                    provider=provider_name,
                     dataset="announcement",
                     partition_key=key,
                     status="COMPLETE",
@@ -493,7 +494,7 @@ def _sync_announcement_day(
             failures.append((key, error_code))
             repository.save_checkpoint(
                 _checkpoint(
-                    provider="CNINFO",
+                    provider=provider_name,
                     dataset="announcement",
                     partition_key=key,
                     status="FAILED",
@@ -513,6 +514,7 @@ def _sync_announcement_day(
             is_trade_date=lambda value: value in trade_dates,
             next_trade_date=next_trade_date,
             fallback_date=day,
+            source=announcement_source.provider_name,
         )
         row_count = repository.upsert_risk_flags(flags, request.captured_at)
     except Exception as exc:  # noqa: BLE001
@@ -526,7 +528,7 @@ def _sync_announcement_day(
         error_code = "COVERAGE_BELOW_THRESHOLD"
     return _run(
         dataset="announcement",
-        provider="CNINFO",
+        provider=announcement_source.provider_name,
         start=day,
         end=day,
         status="FAILED" if error_code else "COMPLETE",
@@ -547,6 +549,7 @@ def sync_alternative_reference_data(
     request: AlternativeReferenceSyncRequest,
     *,
     cninfo: CninfoReferenceSource,
+    announcement_source: CninfoReferenceSource | None = None,
     baostock: BaoStockReferenceSource,
     repository: ReferenceRepository,
     sleep: Callable[[float], None] = default_sleep,
@@ -567,13 +570,14 @@ def sync_alternative_reference_data(
             repository.save_sync_run(st)
             runs.append(st)
 
+    resolved_announcement_source = announcement_source or cninfo
     previous = None
     for day in request.trade_dates:
         announcement = _sync_announcement_day(
             request,
             day,
             previous,
-            cninfo,
+            resolved_announcement_source,
             repository,
             sleep,
             refresh_days,

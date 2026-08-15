@@ -181,6 +181,21 @@ def test_reference_cli_keeps_tushare_as_explicit_fallback() -> None:
     assert args.provider == "tushare"
 
 
+def test_reference_cli_accepts_raw_eastmoney_announcement_fallback() -> None:
+    module = _load_script()
+    args = module.build_parser().parse_args(
+        [
+            "--start",
+            "2024-01-02",
+            "--end",
+            "latest",
+            "--announcement-provider",
+            "eastmoney",
+        ]
+    )
+    assert args.announcement_provider == "eastmoney"
+
+
 def test_reference_cli_help_lists_both_provider_modes(capsys) -> None:
     module = _load_script()
     try:

@@ -53,6 +53,12 @@ def build_parser() -> argparse.ArgumentParser:
         default="cninfo-baostock",
         help="参考数据提供器，默认使用巨潮资讯与 BaoStock",
     )
+    parser.add_argument(
+        "--announcement-provider",
+        choices=("cninfo", "eastmoney"),
+        default="cninfo",
+        help="公告原始数据源；巨潮受限时可显式使用 eastmoney，不涉及东财诊断框架",
+    )
     return parser
 
 
@@ -83,6 +89,14 @@ def _baostock():
     from stock_ai.buy_point_selection.reference_baostock import BaoStockReferenceProvider
 
     return BaoStockReferenceProvider()
+
+
+def _eastmoney():
+    from stock_ai.buy_point_selection.reference_eastmoney import (
+        EastmoneyAnnouncementProvider,
+    )
+
+    return EastmoneyAnnouncementProvider()
 
 
 def _trade_dates(engine, start: date, end: date) -> tuple[date, ...]:
@@ -187,6 +201,9 @@ def main(argv: list[str] | None = None) -> int:
                     captured_at=captured_at,
                 ),
                 cninfo=_cninfo(),
+                announcement_source=(
+                    _eastmoney() if args.announcement_provider == "eastmoney" else None
+                ),
                 baostock=_baostock(),
                 repository=repository,
             )

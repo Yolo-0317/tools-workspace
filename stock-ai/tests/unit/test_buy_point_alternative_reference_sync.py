@@ -188,6 +188,10 @@ class FakeBaoStockProvider:
         )
 
 
+class FakeEastmoneyAnnouncementProvider(FakeCninfoProvider):
+    provider_name = "EASTMONEY"
+
+
 def _request(*days: date, size: int = 2, refresh: int = 2):
     universe = frozenset(f"{600001 + index:06d}" for index in range(size))
     return AlternativeReferenceSyncRequest(
@@ -219,6 +223,27 @@ def test_sync_marks_daily_st_and_announcement_coverage_complete() -> None:
     }
     assert repository.membership_queries == 1
     assert baostock.session_entries == 1 and baostock.session_exits == 1
+
+
+def test_sync_can_audit_announcements_from_an_independent_raw_provider() -> None:
+    request = _request(date(2025, 8, 5))
+    repository = MemoryRepository()
+    eastmoney = FakeEastmoneyAnnouncementProvider()
+    eastmoney.risky_announcement = True
+
+    runs = sync_alternative_reference_data(
+        request,
+        cninfo=FakeCninfoProvider(),
+        announcement_source=eastmoney,
+        baostock=FakeBaoStockProvider(),
+        repository=repository,
+        sleep=lambda _: None,
+    )
+
+    announcement_run = next(run for run in runs if run.dataset == "announcement")
+    assert announcement_run.provider == "EASTMONEY"
+    assert ("EASTMONEY", "announcement", "2025-08-05") in repository.checkpoints
+    assert {flag.source for flag in repository.flags.values()} == {"EASTMONEY"}
 
 
 def test_complete_checkpoint_skips_old_partition_but_refreshes_last_two() -> None:

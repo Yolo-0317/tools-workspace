@@ -147,6 +147,7 @@ def normalize_cninfo_announcement_flags(
     is_trade_date: Callable[[date], bool],
     next_trade_date: Callable[[date], date],
     fallback_date: date | None = None,
+    source: str = "CNINFO",
 ) -> tuple[RiskFlag, ...]:
     normalized: list[RiskFlag] = []
     for row in rows:
@@ -154,7 +155,7 @@ def normalize_cninfo_announcement_flags(
         if classified is None:
             continue
         if not row.official_url:
-            raise ValueError(f"CNInfo announcement has no official URL: {row.announcement_id}")
+            raise ValueError(f"announcement has no evidence URL: {row.announcement_id}")
         if row.published_at is None:
             if fallback_date is None:
                 raise ValueError("fallback_date is required for missing publication time")
@@ -178,7 +179,7 @@ def normalize_cninfo_announcement_flags(
                 severity=severity,
                 effective_from=effective_from,
                 effective_to=None,
-                source="CNINFO",
+                source=source,
                 evidence_ref=row.official_url,
             )
         )
