@@ -800,6 +800,66 @@ def test_load_attribution_for_drama_requires_exact_plan_and_apps(
         short_drama.load_attribution_for_drama(mismatched, path=path)
 
 
+def test_ensure_attribution_reuses_valid_cache_without_fetch(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = tmp_path / "attribution.json"
+    row = drama("123", plan_id="plan-123")
+    short_drama._save_attributions([attribution()], path=path)
+    monkeypatch.setattr(
+        short_drama,
+        "fetch_short_drama_attribution",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("fetch")),
+    )
+
+    result = short_drama.ensure_attribution_for_drama(row, path=path, now=NOW)
+
+    assert result.wx_ticket == "ticket-test"
+
+
+def test_ensure_attribution_fetches_and_saves_missing_candidate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = tmp_path / "attribution.json"
+    row = drama("456", plan_id="plan-456")
+    fetched = attribution("456", wx_ticket="ticket-fetched")
+    monkeypatch.setattr(
+        short_drama,
+        "fetch_short_drama_attribution",
+        lambda selected, **_: fetched if selected.drama_id == "456" else None,
+    )
+
+    result = short_drama.ensure_attribution_for_drama(row, path=path, now=NOW)
+
+    assert result.wx_ticket == "ticket-fetched"
+    assert short_drama.load_attribution_for_drama(row, path=path) == fetched
+
+
+def test_ensure_attribution_failure_does_not_change_cache(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = tmp_path / "attribution.json"
+    short_drama._save_attributions([attribution("123")], path=path)
+    before = path.read_bytes()
+    monkeypatch.setattr(
+        short_drama,
+        "fetch_short_drama_attribution",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("expired")),
+    )
+
+    with pytest.raises(RuntimeError, match="expired"):
+        short_drama.ensure_attribution_for_drama(
+            drama("456", plan_id="plan-456"),
+            path=path,
+            now=NOW,
+        )
+
+    assert path.read_bytes() == before
+
+
 def test_build_short_drama_html_round_trips_validated_identity() -> None:
     row = drama(
         "123",
@@ -967,6 +1027,55 @@ def test_capture_cli_never_prints_ticket(
     assert "ticket-test" not in output
 
 
+def test_fetch_attribution_cli_never_prints_ticket_or_path(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    row = drama("123", plan_id="plan-123")
+    monkeypatch.setattr(short_drama, "load_or_refresh_drama_pool", lambda **_: [row])
+    monkeypatch.setattr(
+        short_drama,
+        "ensure_attribution_for_drama",
+        lambda *_args, **_kwargs: attribution(),
+    )
+
+    exit_code = short_drama.main(
+        ["--fetch-attribution", "--drama-id", "123"]
+    )
+
+    output = capsys.readouterr().out
+    assert exit_code == 0
+    assert "drama_id=123" in output
+    assert "plan_id=plan-123" in output
+    assert "含票据=是" in output
+    assert "ticket-test" not in output
+    assert "plugin-private" not in output
+
+
+def test_fetch_attribution_cli_reports_safe_session_error(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    row = drama("123")
+    monkeypatch.setattr(short_drama, "load_or_refresh_drama_pool", lambda **_: [row])
+    monkeypatch.setattr(
+        short_drama,
+        "ensure_attribution_for_drama",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            RuntimeError("缺少 WECHAT_MP_DRAMA_WEB_SESSION_FILE")
+        ),
+    )
+
+    exit_code = short_drama.main(
+        ["--fetch-attribution", "--drama-id", "123"]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "缺少 WECHAT_MP_DRAMA_WEB_SESSION_FILE" in captured.err
+    assert "Traceback" not in captured.err
+
+
 def test_refresh_cli_prints_filtered_pool_summary(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -1018,13 +1127,8 @@ def test_attach_short_drama_once_at_body_ratio(
     )
     monkeypatch.setattr(
         short_drama,
-        "load_attribution_for_drama",
-        lambda _: attribution(),
-    )
-    monkeypatch.setattr(
-        short_drama,
-        "has_attribution_for_drama",
-        lambda _: True,
+        "ensure_attribution_for_drama",
+        lambda *_args, **_kwargs: attribution(),
     )
 
     out = short_drama.attach_short_drama(article, kind="workspace", now=NOW)
@@ -1036,6 +1140,54 @@ def test_attach_short_drama_once_at_body_ratio(
     assert short_play < out["content"].index("#fff5f5")
     assert out["short_drama"]["drama_id"] == "123"
     assert "product_info" not in out
+
+
+def test_attach_short_drama_fetches_attribution_for_revenue_winner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    low = drama(
+        "low",
+        "职场故事",
+        rate_bp=5000,
+        hot_degree=100,
+        offline_timestamp=int((NOW + timedelta(days=30)).timestamp()),
+    )
+    winner = drama(
+        "winner",
+        "千金反击",
+        theme="都市、家庭",
+        description="豪门千金身份反转",
+        rate_bp=7000,
+        hot_degree=10_000,
+        offline_timestamp=int((NOW + timedelta(days=30)).timestamp()),
+    )
+    selected: list[str] = []
+    monkeypatch.setenv("WECHAT_MP_SHORT_DRAMA", "1")
+    monkeypatch.setattr(
+        short_drama,
+        "load_or_refresh_drama_pool",
+        lambda **_: [low, winner],
+    )
+
+    def fake_ensure(row: short_drama.ShortDrama, **_: object):
+        selected.append(row.drama_id)
+        return attribution(
+            row.drama_id,
+            plan_id=row.plan_id,
+            src_appid=row.src_appid,
+            play_appid=row.play_appid,
+        )
+
+    monkeypatch.setattr(short_drama, "ensure_attribution_for_drama", fake_ensure)
+
+    out = short_drama.attach_short_drama(
+        {"title": "公司观察", "content": "<p>正文一</p><p>正文二</p>"},
+        kind="workspace",
+        now=NOW,
+    )
+
+    assert selected == ["winner"]
+    assert out["short_drama"]["drama_id"] == "winner"
 
 
 def test_attach_short_drama_rejects_existing_card_for_another_drama(
@@ -1050,8 +1202,11 @@ def test_attach_short_drama_rejects_existing_card_for_another_drama(
     existing = short_drama.build_short_drama_html(another, attribution("999"))
     monkeypatch.setenv("WECHAT_MP_SHORT_DRAMA", "1")
     monkeypatch.setattr(short_drama, "load_or_refresh_drama_pool", lambda **_: [expected])
-    monkeypatch.setattr(short_drama, "has_attribution_for_drama", lambda _: True)
-    monkeypatch.setattr(short_drama, "load_attribution_for_drama", lambda _: attribution())
+    monkeypatch.setattr(
+        short_drama,
+        "ensure_attribution_for_drama",
+        lambda *_args, **_kwargs: attribution(),
+    )
 
     with pytest.raises(RuntimeError, match="短剧归因与候选不匹配"):
         short_drama.attach_short_drama(

@@ -150,11 +150,28 @@ PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --capture-s
 PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --probe-component --drama-id 660409
 ```
 
+- 自动归因使用公众号编辑器的 `minidrama?action=link` 建链接口。先创建本地忽略文件并收紧权限：
+
+```bash
+cd stock-ai
+install -m 600 /dev/null data/wechat_mp_drama_web_session.json
+chmod 600 data/wechat_mp_drama_web_session.json
+```
+
+文件是 JSON 对象，只填写从当前 Network 请求读取的 `cookie`、`token`、`fingerprint` 和可选 `lang`；不得把真实值写进命令、文档、测试或 Git。`.env` 仅保存文件路径：
+
+```text
+WECHAT_MP_DRAMA_WEB_SESSION_FILE=data/wechat_mp_drama_web_session.json
+```
+
+- 收益模型选出短剧后，程序优先复用仍匹配的本地归因；缺失或计划变更时自动请求该剧专属路径并原子更新归因缓存。
+- 单独验证某部短剧的自动归因：`PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --fetch-attribution --drama-id 1724744`。输出只能包含短剧 ID、计划 ID 和是否含票据。
+- 会话过期、权限不是 `0600`、响应 ID/AppID 不匹配或缺少票据时必须停止推稿。重新登录后台并更新本地会话文件后再试。
 - 若草稿 API 看不到后台编辑器草稿：在 DevTools Elements 搜索 `data-adtype="short-play"`，复制该标签 outerHTML 到忽略目录 `data/wechat_mp_short_drama_sample.html`，再运行 `PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --capture-sample-file data/wechat_mp_short_drama_sample.html`。
 - 后台预览探针草稿，确认卡片剧目、点击跳转和结算归因都正确。
 - 人工确认前保持 `WECHAT_MP_SHORT_DRAMA=0`；确认后才在本地 `.env` 开启。
 - 归因、候选、缓存或草稿回读任一失败都停止推稿，不得改回 `WECHAT_MP_FOOTER_PRODUCT=1`。
-- 不得调用读者点击跟踪 URL 生成票据；缺少归因时，重新在后台插入对应短剧并捕获建卡数据。
+- 不得用候选池的 `exp_url` 或 `click_url` 冒充归因路径，也不得跨短剧复用票据。
 - 正式长文必须恰有一个 `data-adtype="short-play"`，且不得含普通 `data-pid` 商品卡或 footer product key。
 
 ---

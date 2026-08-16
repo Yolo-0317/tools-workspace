@@ -10,6 +10,7 @@ import random
 import re
 import html
 import stat
+import sys
 import uuid
 import argparse
 from dataclasses import asdict, dataclass
@@ -649,21 +650,20 @@ def attach_short_drama(
             min_valid_days=drama_min_valid_days(),
         )
     )
-    attributed_rows = [row for row in rows if has_attribution_for_drama(row)]
-    if not attributed_rows:
-        raise RuntimeError("没有同时满足内容和归因门禁的短剧")
+    if not rows:
+        raise RuntimeError("没有满足有效性门禁的短剧")
     excluded_reasons = [
         f"{row.drama_name}: {reason}"
-        for row in attributed_rows
+        for row in rows
         if (reason := incompatibility_reason(out, row)) is not None
     ]
     drama, score = pick_short_drama(
         out,
-        attributed_rows,
+        rows,
         kind=normalized,
         now=current,
     )
-    attribution = load_attribution_for_drama(drama)
+    attribution = ensure_attribution_for_drama(drama, now=current)
     component = build_short_drama_html(drama, attribution)
     content = str(out.get("content") or "")
     if not SHORT_PLAY_RE.search(content):
@@ -940,6 +940,23 @@ def load_attribution_for_drama(
     return item
 
 
+def ensure_attribution_for_drama(
+    drama: ShortDrama,
+    *,
+    path: Path = ATTRIBUTION_PATH,
+    now: datetime | None = None,
+) -> ShortDramaAttribution:
+    try:
+        return load_attribution_for_drama(drama, path=path)
+    except RuntimeError:
+        pass
+    fetched = fetch_short_drama_attribution(drama, now=now)
+    if not _attribution_matches(drama, fetched):
+        raise RuntimeError("短剧自动归因与候选不匹配")
+    _save_attributions([fetched], path=path)
+    return fetched
+
+
 def build_short_drama_html(
     drama: ShortDrama,
     attribution: ShortDramaAttribution,
@@ -1112,6 +1129,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--limit", type=int)
     parser.add_argument("--capture-sample-title")
     parser.add_argument("--capture-sample-file", type=Path)
+    parser.add_argument("--fetch-attribution", action="store_true")
     parser.add_argument("--probe-component", action="store_true")
     parser.add_argument("--drama-id")
     args = parser.parse_args(argv)
@@ -1156,6 +1174,23 @@ def main(argv: Sequence[str] | None = None) -> int:
                 f"含票据={'是' if item.wx_ticket else '否'} captured_at={item.captured_at}"
             )
         return 0
+    if args.fetch_attribution:
+        if not args.drama_id:
+            parser.error("--fetch-attribution 需要 --drama-id")
+        rows = load_or_refresh_drama_pool()
+        drama = next((row for row in rows if row.drama_id == args.drama_id), None)
+        if drama is None:
+            raise RuntimeError(f"短剧池未找到 drama_id={args.drama_id}")
+        try:
+            captured = ensure_attribution_for_drama(drama)
+        except RuntimeError as exc:
+            print(f"短剧自动归因失败: {exc}", file=sys.stderr)
+            return 1
+        print(
+            f"drama_id={captured.drama_id} plan_id={captured.plan_id} "
+            f"含票据={'是' if captured.wx_ticket else '否'}"
+        )
+        return 0
     if args.probe_component:
         if not args.drama_id:
             parser.error("--probe-component 需要 --drama-id")
@@ -1163,7 +1198,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"探针草稿 media_id={media_id}，请在后台预览并确认跳转和归因")
         return 0
     parser.error(
-        "需要 --refresh、--capture-sample-title、--capture-sample-file 或 --probe-component"
+        "需要 --refresh、--capture-sample-title、--capture-sample-file、"
+        "--fetch-attribution 或 --probe-component"
     )
     return 2
 
