@@ -758,39 +758,19 @@ def build_five_day_portfolio_metrics(
     return _portfolio_metrics_from_accepted(selection.admitted)
 
 
-def evaluate_selected_five_day_segment(
+def evaluate_five_day_selection_segment(
     *,
     profile_id: str,
     segment: str,
-    observations: Sequence[FiveDayObservation],
+    selection: FiveDaySelection,
     trading_dates: Sequence[date],
-    ranking_calibrations: Mapping[str, FiveDayCalibration],
-    daily_limit: int,
-    capacity: int,
     cumulative_samples: int,
     required_samples: int,
     required_cumulative_samples: int,
 ) -> FiveDaySelectedSegment:
-    """Evaluate one profile from only its capacity-admitted completed trades."""
-    profile_values = tuple(
-        value
-        for value in observations
-        if value.plan.profile.profile_id == profile_id
-    )
+    """Evaluate one completed selection without reranking or readmission."""
     sessions = tuple(trading_dates)
     data_end = sessions[-1]
-    cutoff = tuple(
-        value
-        for value in profile_values
-        if not _is_resolved(value) or value.resolution_date <= data_end
-    )
-    selection = select_five_day_portfolio(
-        tuple(value.plan for value in cutoff),
-        cutoff,
-        ranking_calibrations,
-        daily_limit=daily_limit,
-        capacity=capacity,
-    )
     admitted = selection.admitted
     positive_returns = tuple(
         value
@@ -853,6 +833,50 @@ def evaluate_selected_five_day_segment(
         metrics=metrics,
         portfolio=portfolio,
         selection=selection,
+    )
+
+
+def evaluate_selected_five_day_segment(
+    *,
+    profile_id: str,
+    segment: str,
+    observations: Sequence[FiveDayObservation],
+    trading_dates: Sequence[date],
+    ranking_calibrations: Mapping[str, FiveDayCalibration],
+    daily_limit: int,
+    capacity: int,
+    cumulative_samples: int,
+    required_samples: int,
+    required_cumulative_samples: int,
+) -> FiveDaySelectedSegment:
+    """Evaluate one profile from only its capacity-admitted completed trades."""
+    profile_values = tuple(
+        value
+        for value in observations
+        if value.plan.profile.profile_id == profile_id
+    )
+    sessions = tuple(trading_dates)
+    data_end = sessions[-1]
+    cutoff = tuple(
+        value
+        for value in profile_values
+        if not _is_resolved(value) or value.resolution_date <= data_end
+    )
+    selection = select_five_day_portfolio(
+        tuple(value.plan for value in cutoff),
+        cutoff,
+        ranking_calibrations,
+        daily_limit=daily_limit,
+        capacity=capacity,
+    )
+    return evaluate_five_day_selection_segment(
+        profile_id=profile_id,
+        segment=segment,
+        selection=selection,
+        trading_dates=sessions,
+        cumulative_samples=cumulative_samples,
+        required_samples=required_samples,
+        required_cumulative_samples=required_cumulative_samples,
     )
 
 
