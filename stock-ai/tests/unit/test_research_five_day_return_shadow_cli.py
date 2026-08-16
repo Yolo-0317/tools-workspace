@@ -169,6 +169,59 @@ def test_parser_rejects_missing_required_inputs(
     assert exc.value.code == 2
 
 
+@pytest.mark.parametrize(
+    "loader_name",
+    ("_load_mysql_research_inputs", "_load_mysql_range_inputs"),
+)
+def test_mysql_input_loaders_share_benchmark_fallback(
+    monkeypatch,
+    loader_name: str,
+) -> None:
+    """Catches either runtime path silently reverting to BaoStock-only input."""
+    module = _load_module()
+    signal_dates = tuple(
+        date(2024, 1, 1) + timedelta(days=index)
+        for index in range(630)
+    )
+    expected_benchmarks = {"sh.000688": ("fallback-bar",)}
+
+    monkeypatch.setattr(
+        module,
+        "_mysql_signal_dates",
+        lambda start, end: signal_dates,
+    )
+
+    def benchmark_loader(start: date, end: date):
+        del start, end
+        return expected_benchmarks
+
+    monkeypatch.setattr(
+        module,
+        "_load_benchmark_index_bars",
+        benchmark_loader,
+        raising=False,
+    )
+
+    def fake_mysql_loader(*args, benchmark_loader=None):
+        if benchmark_loader is None:
+            return None
+        return benchmark_loader(args[1], args[3])
+
+    monkeypatch.setattr(
+        module,
+        "load_mysql_five_day_inputs",
+        fake_mysql_loader,
+    )
+
+    loaded = getattr(module, loader_name)(
+        signal_dates[0],
+        signal_dates[-1],
+        signal_dates[-1] + timedelta(days=10),
+    )
+
+    assert loaded == expected_benchmarks
+
+
 def _runtime_inputs(
     signal_dates: tuple[date, ...],
     trading_dates: tuple[date, ...],

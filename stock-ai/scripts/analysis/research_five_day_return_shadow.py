@@ -12,6 +12,7 @@ from pathlib import Path
 import sys
 from typing import Callable, Sequence
 
+from scripts.analysis.review_buy_point_case import _load_benchmark_index_bars
 from stock_ai.buy_point_selection.five_day_return_report import (
     five_day_research_payload,
     load_five_day_forward_screen,
@@ -128,6 +129,7 @@ def _load_mysql_research_inputs(
         split.train[0] - timedelta(days=180),
         split.validation[-1],
         split.test[9],
+        benchmark_loader=_load_benchmark_index_bars,
     )
 
 
@@ -142,6 +144,7 @@ def _load_mysql_range_inputs(
         signal_start - timedelta(days=180),
         signal_end,
         outcome_cutoff,
+        benchmark_loader=_load_benchmark_index_bars,
     )
 
 
