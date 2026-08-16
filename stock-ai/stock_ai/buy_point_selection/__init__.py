@@ -38,7 +38,9 @@ from .reference_sources import (
 )
 from .reference_sync import (
     AlternativeReferenceSyncRequest,
+    AnnouncementSyncProgress,
     sync_alternative_reference_data,
+    sync_announcement_reference_data,
 )
 
 __all__ = [
@@ -46,6 +48,7 @@ __all__ = [
     "Announcement",
     "AnnouncementPage",
     "AlternativeReferenceSyncRequest",
+    "AnnouncementSyncProgress",
     "BaoStockReferenceSource",
     "CandidateTier",
     "CninfoReferenceSource",
@@ -78,4 +81,5 @@ __all__ = [
     "sector_gate",
     "sync_reference_data",
     "sync_alternative_reference_data",
+    "sync_announcement_reference_data",
 ]

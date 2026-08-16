@@ -4,6 +4,8 @@ from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
+import pytest
+
 from stock_ai.buy_point_selection.reference_data import (
     ReferenceCheckpoint,
     ReferenceSyncRun,
@@ -20,7 +22,9 @@ from stock_ai.buy_point_selection.reference_sources import (
 )
 from stock_ai.buy_point_selection.reference_sync import (
     AlternativeReferenceSyncRequest,
+    AnnouncementSyncProgress,
     sync_alternative_reference_data,
+    sync_announcement_reference_data,
 )
 
 
@@ -192,6 +196,30 @@ class FakeEastmoneyAnnouncementProvider(FakeCninfoProvider):
     provider_name = "EASTMONEY"
 
 
+class EmptyAnnouncementProvider:
+    provider_name = "EASTMONEY"
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[date, int]] = []
+
+    def fetch_announcement_page(self, day: date, page_no: int) -> AnnouncementPage:
+        self.calls.append((day, page_no))
+        return AnnouncementPage((), 0, page_no, 100, 0)
+
+
+class AlwaysRateLimitedAnnouncementProvider:
+    provider_name = "EASTMONEY"
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[date, int]] = []
+
+    def fetch_announcement_page(self, day: date, page_no: int) -> AnnouncementPage:
+        self.calls.append((day, page_no))
+        raise ProviderFailure(
+            "EASTMONEY", "announcements", "PROVIDER_RATE_LIMITED"
+        )
+
+
 def _request(*days: date, size: int = 2, refresh: int = 2):
     universe = frozenset(f"{600001 + index:06d}" for index in range(size))
     return AlternativeReferenceSyncRequest(
@@ -201,6 +229,78 @@ def _request(*days: date, size: int = 2, refresh: int = 2):
         minimum_coverage=Decimal("0.98"),
         refresh_recent_trade_dates=refresh,
     )
+
+
+def test_announcement_only_sync_skips_complete_partition_and_reports_progress() -> None:
+    first = date(2025, 8, 4)
+    days = tuple(first + timedelta(days=index) for index in range(12))
+    repository = MemoryRepository()
+    repository.save_checkpoint(
+        ReferenceCheckpoint(
+            "EASTMONEY",
+            "announcement",
+            first.isoformat(),
+            "0",
+            "COMPLETE",
+            None,
+            {"page_count": 0, "record_count": 0},
+            NOW - timedelta(days=1),
+        )
+    )
+    provider = EmptyAnnouncementProvider()
+    progress: list[AnnouncementSyncProgress] = []
+
+    runs = sync_announcement_reference_data(
+        days,
+        captured_at=NOW,
+        announcement_source=provider,
+        repository=repository,
+        sleep=lambda _: None,
+        progress=progress.append,
+    )
+
+    assert provider.calls[0] == (date(2025, 8, 5), 1)
+    assert len(provider.calls) == 11
+    assert progress == [
+        AnnouncementSyncProgress(10, 9, 1, 0, 12, False),
+        AnnouncementSyncProgress(12, 11, 1, 0, 12, True),
+    ]
+    assert all(run.dataset == "announcement" for run in runs)
+
+
+def test_announcement_only_rate_limit_cools_down_then_stops_before_later_days() -> None:
+    first = date(2025, 8, 8)
+    monday = date(2025, 8, 11)
+    repository = MemoryRepository()
+    provider = AlwaysRateLimitedAnnouncementProvider()
+    sleeps: list[float] = []
+    progress: list[AnnouncementSyncProgress] = []
+
+    with pytest.raises(ProviderFailure) as caught:
+        sync_announcement_reference_data(
+            (first, monday),
+            captured_at=NOW,
+            announcement_source=provider,
+            repository=repository,
+            sleep=sleeps.append,
+            progress=progress.append,
+        )
+
+    assert caught.value.error_code == "PROVIDER_RATE_LIMITED"
+    assert provider.calls == [(first, 1)] * 4
+    assert sleeps == [300.0, 300.0, 300.0]
+    assert (
+        "EASTMONEY",
+        "announcement",
+        first.isoformat(),
+    ) in repository.checkpoints
+    assert (
+        "EASTMONEY",
+        "announcement",
+        "2025-08-09",
+    ) not in repository.checkpoints
+    assert len(repository.runs) == 1
+    assert progress[-1] == AnnouncementSyncProgress(1, 0, 0, 1, 4, True)
 
 
 def test_sync_marks_daily_st_and_announcement_coverage_complete() -> None:

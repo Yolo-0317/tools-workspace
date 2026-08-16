@@ -36,6 +36,7 @@ RETRYABLE_PROVIDER_ERRORS = frozenset(
     {"PROVIDER_RATE_LIMITED", "PROVIDER_UNAVAILABLE"}
 )
 RETRY_DELAYS = (1, 2, 4)
+ANNOUNCEMENT_RATE_LIMIT_DELAYS = (300.0, 300.0, 300.0)
 CHECKPOINT_WRITE_BATCH_SIZE = 50
 T = TypeVar("T")
 
@@ -62,6 +63,19 @@ class AlternativeReferenceSyncRequest:
             raise ValueError("refresh_recent_trade_dates must not be negative")
 
 
+@dataclass(frozen=True)
+class AnnouncementSyncProgress:
+    processed: int
+    complete: int
+    skipped: int
+    failed: int
+    total: int
+    terminal: bool
+
+
+AnnouncementProgressCallback = Callable[[AnnouncementSyncProgress], None]
+
+
 def _retry(operation: Callable[[], T], sleep: Callable[[float], None]) -> T:
     for attempt in range(len(RETRY_DELAYS) + 1):
         try:
@@ -74,6 +88,32 @@ def _retry(operation: Callable[[], T], sleep: Callable[[float], None]) -> T:
                 raise
             sleep(RETRY_DELAYS[attempt])
     raise AssertionError("unreachable")
+
+
+def _retry_announcement_page(
+    operation: Callable[[], T],
+    sleep: Callable[[float], None],
+    rate_limit_delays: Sequence[float],
+) -> T:
+    unavailable_attempt = 0
+    rate_limit_attempt = 0
+    while True:
+        try:
+            return operation()
+        except ProviderFailure as exc:
+            if exc.error_code == "PROVIDER_RATE_LIMITED":
+                if rate_limit_attempt == len(rate_limit_delays):
+                    raise
+                sleep(float(rate_limit_delays[rate_limit_attempt]))
+                rate_limit_attempt += 1
+                continue
+            if exc.error_code == "PROVIDER_UNAVAILABLE":
+                if unavailable_attempt == len(RETRY_DELAYS):
+                    raise
+                sleep(RETRY_DELAYS[unavailable_attempt])
+                unavailable_attempt += 1
+                continue
+            raise
 
 
 def _safe_error(exc: Exception) -> str:
@@ -441,12 +481,23 @@ def _sync_announcement_day(
     repository: ReferenceRepository,
     sleep: Callable[[float], None],
     refresh_days: frozenset[date],
+    rate_limit_delays: Sequence[float] | None = None,
+    stop_on_rate_limit: bool = False,
 ) -> ReferenceSyncRun:
     partitions = _calendar_days(previous, day)
     all_records: list[Announcement] = []
     failures: list[tuple[str, str]] = []
+    skipped_partitions: list[str] = []
+    fetched_partitions: list[str] = []
+    failed_partitions: list[str] = []
     completed = 0
     force_refresh = day in refresh_days
+    rate_limit_exhausted = False
+
+    def fetch_page(operation: Callable[[], AnnouncementPage]) -> AnnouncementPage:
+        if rate_limit_delays is None:
+            return _retry(operation, sleep)
+        return _retry_announcement_page(operation, sleep, rate_limit_delays)
 
     for natural_day in partitions:
         key = natural_day.isoformat()
@@ -454,27 +505,27 @@ def _sync_announcement_day(
         checkpoint = repository.load_checkpoint(provider_name, "announcement", key)
         if checkpoint and checkpoint.status == "COMPLETE" and not force_refresh:
             completed += 1
+            skipped_partitions.append(key)
             continue
         try:
-            first = _retry(
+            first = fetch_page(
                 lambda natural_day=natural_day: announcement_source.fetch_announcement_page(
                     natural_day, 1
-                ),
-                sleep,
+                )
             )
             pages = [first]
             for page_no in range(2, first.page_count + 1):
                 pages.append(
-                    _retry(
+                    fetch_page(
                         lambda natural_day=natural_day, page_no=page_no: announcement_source.fetch_announcement_page(
                             natural_day, page_no
-                        ),
-                        sleep,
+                        )
                     )
                 )
             records = _validate_announcement_pages(pages)
             all_records.extend(records)
             completed += 1
+            fetched_partitions.append(key)
             repository.save_checkpoint(
                 _checkpoint(
                     provider=provider_name,
@@ -492,6 +543,7 @@ def _sync_announcement_day(
         except Exception as exc:  # noqa: BLE001
             error_code = _safe_error(exc)
             failures.append((key, error_code))
+            failed_partitions.append(key)
             repository.save_checkpoint(
                 _checkpoint(
                     provider=provider_name,
@@ -502,6 +554,13 @@ def _sync_announcement_day(
                     error_code=error_code,
                 )
             )
+            if (
+                stop_on_rate_limit
+                and isinstance(exc, ProviderFailure)
+                and exc.error_code == "PROVIDER_RATE_LIMITED"
+            ):
+                rate_limit_exhausted = True
+                break
 
     trade_dates = frozenset(request.trade_dates)
 
@@ -539,10 +598,104 @@ def _sync_announcement_day(
         coverage_ratio=coverage,
         details={
             "partition_keys": [value.isoformat() for value in partitions],
-            "failed_partitions": [key for key, _ in failures],
+            "failed_partitions": failed_partitions,
             "completed_partitions": completed,
+            "skipped_partitions": skipped_partitions,
+            "fetched_partitions": fetched_partitions,
+            "rate_limit_exhausted": rate_limit_exhausted,
         },
     )
+
+
+def sync_announcement_reference_data(
+    trade_dates: Sequence[date],
+    *,
+    captured_at: datetime,
+    announcement_source: CninfoReferenceSource,
+    repository: ReferenceRepository,
+    sleep: Callable[[float], None] = default_sleep,
+    rate_limit_delays: Sequence[float] = ANNOUNCEMENT_RATE_LIMIT_DELAYS,
+    progress_every: int = 10,
+    progress: AnnouncementProgressCallback | None = None,
+) -> tuple[ReferenceSyncRun, ...]:
+    """Resume announcement partitions and stop the run after rate-limit exhaustion."""
+
+    ordered = tuple(trade_dates)
+    if not ordered or any(
+        current <= previous for previous, current in zip(ordered, ordered[1:])
+    ):
+        raise ValueError("trade_dates must be non-empty and strictly increasing")
+    if progress_every <= 0:
+        raise ValueError("progress_every must be positive")
+    delays = tuple(float(value) for value in rate_limit_delays)
+    if len(delays) != 3 or any(value < 0 for value in delays):
+        raise ValueError("rate_limit_delays must contain three non-negative values")
+
+    request = AlternativeReferenceSyncRequest(
+        trade_dates=ordered,
+        universe_by_date={day: frozenset() for day in ordered},
+        captured_at=captured_at,
+        refresh_recent_trade_dates=0,
+    )
+    total = (ordered[-1] - ordered[0]).days + 1
+    runs: list[ReferenceSyncRun] = []
+    processed = complete = skipped = failed = 0
+    next_report = progress_every
+    previous: date | None = None
+
+    for day in ordered:
+        announcement = _sync_announcement_day(
+            request,
+            day,
+            previous,
+            announcement_source,
+            repository,
+            sleep,
+            frozenset(),
+            rate_limit_delays=delays,
+            stop_on_rate_limit=True,
+        )
+        repository.save_sync_run(announcement)
+        runs.append(announcement)
+
+        details = announcement.details
+        fetched_count = len(details.get("fetched_partitions", ()))
+        skipped_count = len(details.get("skipped_partitions", ()))
+        failed_count = len(details.get("failed_partitions", ()))
+        complete += fetched_count
+        skipped += skipped_count
+        failed += failed_count
+        processed += fetched_count + skipped_count + failed_count
+
+        if progress is not None and processed >= next_report:
+            progress(
+                AnnouncementSyncProgress(
+                    processed, complete, skipped, failed, total, False
+                )
+            )
+            next_report = ((processed // progress_every) + 1) * progress_every
+
+        if details.get("rate_limit_exhausted"):
+            if progress is not None:
+                progress(
+                    AnnouncementSyncProgress(
+                        processed, complete, skipped, failed, total, True
+                    )
+                )
+            raise ProviderFailure(
+                announcement_source.provider_name,
+                "announcements",
+                "PROVIDER_RATE_LIMITED",
+            )
+        previous = day
+
+    if progress is not None:
+        progress(
+            AnnouncementSyncProgress(
+                processed, complete, skipped, failed, total, True
+            )
+        )
+    return tuple(runs)
 
 
 def sync_alternative_reference_data(
