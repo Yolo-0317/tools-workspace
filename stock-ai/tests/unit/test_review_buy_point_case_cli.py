@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import nullcontext
 from dataclasses import replace
 from datetime import date, timedelta
 from decimal import Decimal
@@ -12,10 +13,13 @@ from scripts.analysis.review_buy_point_case import (
     _build_case_research_layers,
     _build_daily_recall,
     _build_resistance_profiles,
+    _load_benchmark_index_bars,
     _load_holdings_by_date,
     _merge_missing_index_bars,
     main,
 )
+from scripts.tools import fetch_eastmoney_quotes
+from stock_ai.buy_point_selection import reference_baostock
 from stock_ai.buy_point_selection.models import (
     BuyPointBar,
     DetectedSetup,
@@ -543,3 +547,49 @@ def test_eastmoney_index_rows_only_fill_missing_baostock_series() -> None:
     assert merged["sh.000688"] == (
         IndexBar("sh.000688", date(2026, 8, 3), Decimal("1025.33"), Decimal("-0.18")),
     )
+
+
+def test_benchmark_loader_leaves_missing_series_empty_when_fallback_fails(
+    monkeypatch,
+) -> None:
+    """Catches provider failure being converted into fabricated complete data."""
+    primary_bar = IndexBar(
+        "sh.000001",
+        date(2026, 8, 3),
+        Decimal("3550.12"),
+        Decimal("0.35"),
+    )
+
+    class FakeProvider:
+        def session(self):
+            return nullcontext()
+
+        def fetch_index_bars(self, code: str, start: date, end: date):
+            del start, end
+            return (primary_bar,) if code == "sh.000001" else ()
+
+    def fail_fallback(codes, *, limit):
+        del codes, limit
+        raise RuntimeError("fallback unavailable")
+
+    monkeypatch.setattr(
+        reference_baostock,
+        "BaoStockReferenceProvider",
+        FakeProvider,
+    )
+    monkeypatch.setattr(
+        fetch_eastmoney_quotes,
+        "fetch_index_kline_rows_opencli",
+        fail_fallback,
+    )
+
+    loaded = _load_benchmark_index_bars(
+        date(2026, 8, 1),
+        date(2026, 8, 7),
+    )
+
+    assert loaded == {
+        "sh.000001": (primary_bar,),
+        "sz.399001": (),
+        "sh.000688": (),
+    }
