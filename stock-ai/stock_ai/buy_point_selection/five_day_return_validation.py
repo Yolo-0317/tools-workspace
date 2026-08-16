@@ -607,24 +607,15 @@ def _plan_key(value: FiveDaySignalPlan) -> tuple[date, str, str, str]:
     )
 
 
-def select_five_day_portfolio(
-    plans: Sequence[FiveDaySignalPlan],
+def admit_five_day_ranking(
+    ranking: FiveDayRanking,
     observations: Sequence[FiveDayObservation],
-    calibrations: Mapping[str, FiveDayCalibration],
     *,
-    active_structure_ids: frozenset[str] = frozenset(),
-    daily_limit: int = 3,
     capacity: int = 3,
 ) -> FiveDaySelection:
-    """Select and admit plans once while preserving every funnel outcome."""
+    """Admit a precomputed ranking while preserving every funnel outcome."""
     if capacity < 0:
         raise ValueError("capacity must not be negative")
-    ranking = rank_five_day_plans(
-        plans,
-        calibrations,
-        active_structure_ids=active_structure_ids,
-        daily_limit=daily_limit,
-    )
     by_plan = {_observation_key(value): value for value in observations}
     counts: Counter[str] = Counter(ranking.rejection_counts)
     selected: list[FiveDayObservation] = []
@@ -665,6 +656,31 @@ def select_five_day_portfolio(
         admitted=tuple(admitted),
         funnel_counts=dict(sorted(counts.items())),
         incomplete=incomplete,
+    )
+
+
+def select_five_day_portfolio(
+    plans: Sequence[FiveDaySignalPlan],
+    observations: Sequence[FiveDayObservation],
+    calibrations: Mapping[str, FiveDayCalibration],
+    *,
+    active_structure_ids: frozenset[str] = frozenset(),
+    daily_limit: int = 3,
+    capacity: int = 3,
+) -> FiveDaySelection:
+    """Select and admit plans once while preserving every funnel outcome."""
+    if capacity < 0:
+        raise ValueError("capacity must not be negative")
+    ranking = rank_five_day_plans(
+        plans,
+        calibrations,
+        active_structure_ids=active_structure_ids,
+        daily_limit=daily_limit,
+    )
+    return admit_five_day_ranking(
+        ranking,
+        observations,
+        capacity=capacity,
     )
 
 

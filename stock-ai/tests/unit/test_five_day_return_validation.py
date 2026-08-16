@@ -6,6 +6,9 @@ from decimal import Decimal
 
 import pytest
 
+from stock_ai.buy_point_selection import (
+    five_day_return_validation as validation,
+)
 from stock_ai.buy_point_selection.five_day_return_execution import (
     FiveDayExit,
     FiveDayTrade,
@@ -434,6 +437,39 @@ def test_selection_trace_does_not_backfill_daily_overflow() -> None:
         "SELECTED_PLANS": 3,
     }
     assert overflow not in result.admitted
+
+
+def test_admit_precomputed_ranking_matches_v1_selection() -> None:
+    plans = tuple(
+        _plan(START, code=f"60000{index}") for index in range(1, 5)
+    )
+    calibrations = {
+        _calibration(plan).key: _calibration(plan) for plan in plans
+    }
+    observations = (
+        _observation_for_plan(plans[0], net_return="0.02"),
+        _not_triggered_for_plan(plans[1]),
+        _observation_for_plan(plans[2], net_return="-0.01"),
+        _observation_for_plan(plans[3], net_return="0.50"),
+    )
+    ranking = rank_five_day_plans(plans, calibrations, daily_limit=3)
+
+    extracted = validation.admit_five_day_ranking(
+        ranking,
+        observations,
+        capacity=3,
+    )
+    existing = select_five_day_portfolio(
+        plans,
+        observations,
+        calibrations,
+        daily_limit=3,
+        capacity=3,
+    )
+
+    assert extracted == existing
+    assert extracted.funnel_counts["ADMITTED_TRADES"] == 2
+    assert plans[3] not in extracted.ranking.plans
 
 
 def _selected_fixture_segment(
