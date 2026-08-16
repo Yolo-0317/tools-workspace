@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from datetime import date, datetime
 import math
-from typing import Any, Mapping
+from time import sleep as default_sleep
+from typing import Any, Callable, Mapping
 from zoneinfo import ZoneInfo
 
 import requests
@@ -15,6 +16,7 @@ from .reference_sources import Announcement, AnnouncementPage, ProviderFailure
 EASTMONEY_ANNOUNCEMENT_URL = "https://np-anotice-stock.eastmoney.com/api/security/ann"
 EASTMONEY_NOTICE_ROOT = "https://data.eastmoney.com/notices/detail/"
 SHANGHAI = ZoneInfo("Asia/Shanghai")
+Sleep = Callable[[float], None]
 
 
 class EastmoneyAnnouncementProvider:
@@ -28,12 +30,19 @@ class EastmoneyAnnouncementProvider:
         session: Any | None = None,
         page_size: int = 100,
         timeout_seconds: float = 20.0,
+        request_interval_seconds: float = 0.5,
+        sleep: Sleep = default_sleep,
     ) -> None:
         if page_size <= 0 or page_size > 100:
             raise ValueError("page_size must be in [1, 100]")
+        if request_interval_seconds < 0:
+            raise ValueError("request_interval_seconds must not be negative")
         self._session = session or requests.Session()
         self._page_size = page_size
         self._timeout_seconds = timeout_seconds
+        self._request_interval_seconds = request_interval_seconds
+        self._sleep = sleep
+        self._request_started = False
 
     def fetch_announcement_page(self, day: date, page_no: int) -> AnnouncementPage:
         if page_no <= 0:
@@ -55,6 +64,9 @@ class EastmoneyAnnouncementProvider:
             "User-Agent": "stock-ai-reference-sync/1.0",
         }
         try:
+            if self._request_started and self._request_interval_seconds:
+                self._sleep(self._request_interval_seconds)
+            self._request_started = True
             response = self._session.get(
                 EASTMONEY_ANNOUNCEMENT_URL,
                 params=params,
@@ -65,7 +77,7 @@ class EastmoneyAnnouncementProvider:
             raise ProviderFailure(
                 self.provider_name, "announcements", "PROVIDER_UNAVAILABLE"
             ) from exc
-        if response.status_code in {403, 429}:
+        if response.status_code in {403, 429, 567}:
             raise ProviderFailure(
                 self.provider_name, "announcements", "PROVIDER_RATE_LIMITED"
             )

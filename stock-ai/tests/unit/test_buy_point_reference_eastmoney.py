@@ -73,11 +73,33 @@ def test_eastmoney_announcement_page_preserves_pit_time_and_paging() -> None:
     assert session.requests[0][1]["ann_type"] == "SHA,SZA"
 
 
+def test_eastmoney_spaces_subsequent_requests_without_delaying_first() -> None:
+    sleeps: list[float] = []
+    session = FakeSession(FakeResponse(200, _payload(total=1)))
+    provider = EastmoneyAnnouncementProvider(
+        session=session,
+        request_interval_seconds=0.5,
+        sleep=sleeps.append,
+    )
+
+    provider.fetch_announcement_page(date(2024, 6, 12), 1)
+    provider.fetch_announcement_page(date(2024, 6, 13), 1)
+
+    assert sleeps == [0.5]
+    assert len(session.requests) == 2
+
+
+def test_eastmoney_rejects_negative_request_interval() -> None:
+    with pytest.raises(ValueError, match="request_interval_seconds"):
+        EastmoneyAnnouncementProvider(request_interval_seconds=-0.1)
+
+
 @pytest.mark.parametrize(
     ("response", "error_code"),
     [
         (FakeResponse(403, {}), "PROVIDER_RATE_LIMITED"),
         (FakeResponse(429, {}), "PROVIDER_RATE_LIMITED"),
+        (FakeResponse(567, {}), "PROVIDER_RATE_LIMITED"),
         (FakeResponse(503, {}), "PROVIDER_UNAVAILABLE"),
         (FakeResponse(200, {"success": 1}), "PROVIDER_SCHEMA_CHANGED"),
     ],
