@@ -6,6 +6,7 @@ from __future__ import annotations
 import os
 import json
 import math
+import random
 import re
 import html
 import stat
@@ -822,6 +823,67 @@ def parse_minidrama_link_response(
         wx_ticket=wx_ticket,
         captured_at=current.isoformat(timespec="seconds"),
     )
+
+
+def fetch_short_drama_attribution(
+    drama: ShortDrama,
+    *,
+    web_session: WeChatDramaWebSession | None = None,
+    session: requests.Session | None = None,
+    now: datetime | None = None,
+    random_value: float | None = None,
+) -> ShortDramaAttribution:
+    current = now or datetime.now(TZ)
+    credentials = web_session or load_drama_web_session()
+    request_id = str(int(current.timestamp() * 1000))
+    cps_detail = json.dumps(
+        {
+            "request_id": request_id,
+            "biz_type": 0,
+            "appid": drama.play_appid,
+            "plan_id": drama.plan_id,
+            "promoter_id": drama_kol_id(),
+            "ext_info": "",
+        },
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    client = session or requests.Session()
+    client.trust_env = False
+    headers = {
+        "accept": "application/json, text/javascript, */*; q=0.01",
+        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "X-Requested-With": "XMLHttpRequest",
+        "Cookie": credentials.cookie,
+        "Referer": (
+            "https://mp.weixin.qq.com/cgi-bin/appmsg"
+            f"?t=media/appmsg_edit&action=edit&token={quote(credentials.token)}"
+            f"&lang={quote(credentials.lang)}"
+        ),
+    }
+    form = {
+        "token": credentials.token,
+        "lang": credentials.lang,
+        "f": "json",
+        "ajax": "1",
+        "fingerprint": credentials.fingerprint,
+        "random": str(random.random() if random_value is None else random_value),
+        "cps_detail": cps_detail,
+    }
+    try:
+        response = client.post(
+            MINIDRAMA_LINK_URL,
+            headers=headers,
+            data=form,
+            timeout=30,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except (requests.RequestException, ValueError) as exc:
+        raise RuntimeError("短剧归因接口请求失败，请更新本地网页会话") from exc
+    if not isinstance(payload, Mapping):
+        raise RuntimeError("短剧归因接口响应格式无效")
+    return parse_minidrama_link_response(payload, drama, now=current)
 
 
 def load_attribution_map(

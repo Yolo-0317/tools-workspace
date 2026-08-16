@@ -44,11 +44,15 @@ class FakeSession:
         self.trust_env = True
         self.last_url = ""
         self.last_json: dict = {}
+        self.last_data: dict = {}
+        self.last_headers: dict = {}
         self.last_timeout = 0
 
     def post(self, url: str, **kwargs: object) -> FakeResponse:
         self.last_url = url
-        self.last_json = dict(kwargs["json"])
+        self.last_json = dict(kwargs.get("json") or {})
+        self.last_data = dict(kwargs.get("data") or {})
+        self.last_headers = dict(kwargs.get("headers") or {})
         self.last_timeout = int(kwargs["timeout"])
         return FakeResponse(self.payload)
 
@@ -287,6 +291,64 @@ def test_parse_minidrama_link_response_fails_closed_without_secrets(
     error = str(caught.value)
     assert "ticket-fixture" not in error
     assert "plugin-private" not in error
+
+
+def test_fetch_short_drama_attribution_posts_exact_contract(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("WECHAT_MP_DRAMA_KOL_ID", "kol-fixture")
+    row = drama("123", plan_id="plan-123")
+    web_session = short_drama.WeChatDramaWebSession(
+        cookie="cookie-fixture",
+        token="token-fixture",
+        fingerprint="fingerprint-fixture",
+    )
+    http = FakeSession(
+        {
+            "base_resp": {"ret": 0, "err_msg": "ok"},
+            "data": json.dumps(
+                {
+                    "errcode": 0,
+                    "errmsg": "ok",
+                    "path": (
+                        "plugin-private://player/pages/playlet/playlet"
+                        "?dramaId=123&srcAppid=wx-source"
+                        "&wxTicket=ticket-fixture"
+                    ),
+                }
+            ),
+        }
+    )
+
+    parsed = short_drama.fetch_short_drama_attribution(
+        row,
+        web_session=web_session,
+        session=http,
+        now=NOW,
+        random_value=0.125,
+    )
+
+    assert parsed.drama_id == "123"
+    assert http.last_url == short_drama.MINIDRAMA_LINK_URL
+    assert http.last_timeout == 30
+    assert http.last_data["token"] == "token-fixture"
+    assert http.last_data["lang"] == "zh_CN"
+    assert http.last_data["f"] == "json"
+    assert http.last_data["ajax"] == "1"
+    assert http.last_data["fingerprint"] == "fingerprint-fixture"
+    assert http.last_data["random"] == "0.125"
+    assert json.loads(http.last_data["cps_detail"]) == {
+        "request_id": "1786852800000",
+        "biz_type": 0,
+        "appid": "wx-play",
+        "plan_id": "plan-123",
+        "promoter_id": "kol-fixture",
+        "ext_info": "",
+    }
+    assert http.last_headers["Cookie"] == "cookie-fixture"
+    assert http.last_headers["X-Requested-With"] == "XMLHttpRequest"
+    assert "token-fixture" in http.last_headers["Referer"]
+    assert not any(key.lower().startswith("sec-ch-") for key in http.last_headers)
 
 
 def test_refresh_drama_pool_paginates_until_total(
