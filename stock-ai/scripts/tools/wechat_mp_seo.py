@@ -495,7 +495,7 @@ def sync_article_content_from_body(
     """body_text 变更后重建 content（与 _article_shell 同一套 HTML 规则）。"""
     from scripts.tools.wechat_mp_client import mp_configured
     from scripts.tools.wechat_mp_content import render_article_content_html
-    from scripts.tools.wechat_mp_product import attach_footer_product
+    from scripts.tools.wechat_mp_short_drama import attach_short_drama
 
     body = str(article.get("body_text") or "")
     can_upload = mp_configured()
@@ -509,7 +509,7 @@ def sync_article_content_from_body(
     out = dict(article)
     out["body_text"] = merged_body
     out["content"] = content
-    return attach_footer_product(out, kind=kind)
+    return attach_short_drama(out, kind=kind)
 
 
 def format_publish_reminder(*, kind: str | None = None) -> str:

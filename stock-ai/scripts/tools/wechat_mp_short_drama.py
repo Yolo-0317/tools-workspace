@@ -33,6 +33,30 @@ ATTRIBUTION_PATH = ROOT / "data" / "wechat_mp_short_drama_attribution.json"
 WORKPLACE_KINDS = frozenset(
     {"sector", "market", "news", "top5", "dragons", "workspace", "temp"}
 )
+LONGFORM_KINDS = frozenset(
+    {
+        "hotspot",
+        "tv_review",
+        "tv",
+        "film",
+        "movie",
+        "sector",
+        "market",
+        "news",
+        "top5",
+        "dragons",
+        "workspace",
+        "temp",
+    }
+)
+PLAIN_CPS_RE = re.compile(
+    r'<mp-common-cpsad\b(?![^>]*\bdata-adtype=["\']short-play["\'])',
+    re.IGNORECASE,
+)
+SHORT_PLAY_RE = re.compile(
+    r'<mp-common-cpsad\b[^>]*\bdata-adtype=["\']short-play["\']',
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -341,6 +365,14 @@ def drama_repeat_days() -> int:
     return max(0, value)
 
 
+def drama_min_valid_days() -> int:
+    try:
+        value = int(os.getenv("WECHAT_MP_DRAMA_MIN_VALID_DAYS", "7"))
+    except ValueError:
+        value = 7
+    return max(0, value)
+
+
 def _load_usage(path: Path) -> list[dict[str, Any]]:
     if not path.is_file():
         return []
@@ -421,6 +453,74 @@ def record_drama_usage(
         }
     )
     _atomic_write_json(usage_path, retained)
+
+
+def assert_longform_promotion_safe(
+    article: Mapping[str, Any],
+    *,
+    kind: str | None,
+) -> None:
+    normalized = (kind or "").strip().lower()
+    if normalized not in LONGFORM_KINDS:
+        return
+    content = str(article.get("content") or "")
+    footer = ((article.get("product_info") or {}).get("footer_product_info"))
+    if PLAIN_CPS_RE.search(content) or footer:
+        raise RuntimeError("长文仍含普通返佣商品")
+    count = len(SHORT_PLAY_RE.findall(content))
+    if short_drama_enabled() and count == 0:
+        raise RuntimeError("长文缺少短剧组件")
+    if count > 1:
+        raise RuntimeError(f"长文短剧组件数量异常: {count}")
+
+
+def attach_short_drama(
+    article: Mapping[str, Any],
+    *,
+    kind: str | None,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    normalized = (kind or "").strip().lower()
+    out = dict(article)
+    if normalized not in LONGFORM_KINDS or not short_drama_enabled():
+        return out
+    current = now or datetime.now(TZ)
+    rows = dedupe_dramas(
+        eligible_dramas(
+            load_or_refresh_drama_pool(now=current),
+            now=current,
+            min_valid_days=drama_min_valid_days(),
+        )
+    )
+    attributed_rows = [row for row in rows if has_attribution_for_drama(row)]
+    if not attributed_rows:
+        raise RuntimeError("没有同时满足内容和归因门禁的短剧")
+    drama = pick_short_drama(
+        out,
+        attributed_rows,
+        kind=normalized,
+        now=current,
+    )
+    attribution = load_attribution_for_drama(drama)
+    component = build_short_drama_html(drama, attribution)
+    content = str(out.get("content") or "")
+    if not SHORT_PLAY_RE.search(content):
+        from scripts.tools.wechat_mp_product import cps_injection_index
+
+        position = cps_injection_index(content)
+        out["content"] = content[:position] + component + content[position:]
+    else:
+        validate_short_drama_component(content, drama)
+    out["short_drama"] = {
+        "drama_id": drama.drama_id,
+        "drama_name": drama.drama_name,
+        "theme": drama.theme,
+        "media_count": drama.media_count,
+        "rate_bp": drama.rate_bp,
+        "plan_id": drama.plan_id,
+    }
+    assert_longform_promotion_safe(out, kind=normalized)
+    return out
 
 
 def _attribution_from_attrs(

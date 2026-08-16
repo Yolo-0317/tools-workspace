@@ -37,7 +37,38 @@ def test_footer_product_disabled_by_default(monkeypatch: pytest.MonkeyPatch) -> 
     assert attach_footer_product(article, kind="market") == article
 
 
-def test_attach_footer_product_injects_cpsad(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize(
+    "kind",
+    [
+        "hotspot",
+        "tv_review",
+        "tv",
+        "film",
+        "movie",
+        "sector",
+        "market",
+        "news",
+        "top5",
+        "dragons",
+        "workspace",
+        "temp",
+    ],
+)
+def test_longform_never_attaches_footer_product(
+    kind: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("WECHAT_MP_FOOTER_PRODUCT", "1")
+    monkeypatch.setenv("WECHAT_MP_FOOTER_PRODUCT_AUTO_PICK", "0")
+    monkeypatch.setenv("WECHAT_MP_FOOTER_PRODUCT_ID", "999")
+
+    out = attach_footer_product({"content": "<p>正文</p>"}, kind=kind)
+
+    assert "mp-common-cpsad" not in out["content"]
+    assert "product_info" not in out
+
+
+def test_commerce_vertical_attaches_footer_product(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("WECHAT_MP_FOOTER_PRODUCT", "1")
     monkeypatch.setenv("WECHAT_MP_FOOTER_PRODUCT_AUTO_PICK", "0")
     monkeypatch.setenv("WECHAT_MP_FOOTER_PRODUCT_ID", "10195600087007")
@@ -48,7 +79,11 @@ def test_attach_footer_product_injects_cpsad(monkeypatch: pytest.MonkeyPatch) ->
             "<p>本文为作者个人复盘笔记与信息整理。</p>"
         ),
     }
-    out = attach_footer_product(article, kind="market")
+    monkeypatch.setattr(
+        "scripts.tools.wechat_mp_product.resolve_footer_product_key",
+        lambda *args, **kwargs: ("product-key", None),
+    )
+    out = attach_footer_product(article, kind="tech")
     assert "mp-common-cpsad" in out["content"]
     assert 'data-pid="101_10195600087007"' in out["content"]
     assert out["content"].index("mp-common-cpsad") < out["content"].index("本文为作者")
@@ -58,9 +93,13 @@ def test_attach_footer_product_respects_kind_filter(monkeypatch: pytest.MonkeyPa
     monkeypatch.setenv("WECHAT_MP_FOOTER_PRODUCT", "1")
     monkeypatch.setenv("WECHAT_MP_FOOTER_PRODUCT_AUTO_PICK", "0")
     monkeypatch.setenv("WECHAT_MP_FOOTER_PRODUCT_ID", "10195600087007")
-    monkeypatch.setenv("WECHAT_MP_FOOTER_PRODUCT_KINDS", "market")
+    monkeypatch.setenv("WECHAT_MP_FOOTER_PRODUCT_KINDS", "tech")
+    monkeypatch.setattr(
+        "scripts.tools.wechat_mp_product.resolve_footer_product_key",
+        lambda *args, **kwargs: ("product-key", None),
+    )
     assert "mp-common-cpsad" not in attach_footer_product({"title": "t", "content": "<p>x</p>"}, kind="news")["content"]
-    assert "mp-common-cpsad" in attach_footer_product({"title": "t", "content": "<p>x</p>"}, kind="market")["content"]
+    assert "mp-common-cpsad" in attach_footer_product({"title": "t", "content": "<p>x</p>"}, kind="tech")["content"]
 
 
 def test_resolve_footer_product_key_uses_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -105,8 +144,16 @@ def test_search_daihuo_requires_uin(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_draft_article_payload_strips_body_text() -> None:
-    payload = draft_article_payload({"title": "t", "content": "c", "body_text": "plain"})
+    payload = draft_article_payload(
+        {
+            "title": "t",
+            "content": "c",
+            "body_text": "plain",
+            "short_drama": {"drama_id": "123"},
+        }
+    )
     assert "body_text" not in payload
+    assert "short_drama" not in payload
     assert payload["title"] == "t"
 
 
@@ -225,6 +272,10 @@ def test_attach_footer_product_runs_auto_pick(monkeypatch: pytest.MonkeyPatch) -
         lambda *, kind: calls.append(kind) or {"product_id": "10195600087007"},
     )
     monkeypatch.setenv("WECHAT_MP_FOOTER_PRODUCT_ID", "10195600087007")
+    monkeypatch.setattr(
+        "scripts.tools.wechat_mp_product.resolve_footer_product_key",
+        lambda *args, **kwargs: ("product-key", None),
+    )
     article = {"title": "t", "content": "<p>本文为作者个人投资日记</p>"}
-    attach_footer_product(article, kind="market")
-    assert calls == ["market"]
+    attach_footer_product(article, kind="tech")
+    assert calls == ["tech"]

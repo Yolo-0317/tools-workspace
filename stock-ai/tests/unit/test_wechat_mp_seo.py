@@ -120,6 +120,15 @@ def test_sync_article_content_keeps_banner_img(monkeypatch, tmp_path) -> None:
         "scripts.tools.wechat_mp_product.footer_product_enabled",
         lambda: False,
     )
+    def fake_short_drama(article, *, kind):
+        out = dict(article)
+        out["content"] += '<mp-common-cpsad data-adtype="short-play"></mp-common-cpsad>'
+        return out
+
+    monkeypatch.setattr(
+        "scripts.tools.wechat_mp_short_drama.attach_short_drama",
+        fake_short_drama,
+    )
     article = {
         "body_text": "> 盘面速览\n\n指数震荡。\n\n本文为作者个人投资日记。",
         "content": "<p>old</p>",
@@ -127,6 +136,7 @@ def test_sync_article_content_keeps_banner_img(monkeypatch, tmp_path) -> None:
     out = sync_article_content_from_body(article, kind="market")
     assert "https://mmbiz.qpic.cn/test/banner" in out["content"]
     assert "<img " in out["content"]
+    assert out["content"].endswith("</mp-common-cpsad>")
 
 
 def test_commerce_digest_and_hashtags() -> None:

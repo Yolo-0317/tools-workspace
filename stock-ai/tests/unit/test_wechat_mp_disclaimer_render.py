@@ -69,6 +69,17 @@ def test_hotspot_render_commentary_notice_and_disclaimer() -> None:
     assert COMMENTARY_INFORMATION_NOTICE in html or "公开报道" in html
 
 
+def test_tv_review_keeps_spoiler_warning_before_commentary_notice() -> None:
+    from scripts.tools.wechat_mp_public import COMMENTARY_INFORMATION_NOTICE
+
+    body = "剧透预警：下文涉及《奥德赛》完整剧情与结局。\n\n正文第一段。"
+    html, merged = render_article_content_html(body, kind="tv_review", upload_figures=False)
+
+    assert merged.startswith("剧透预警：下文涉及《奥德赛》完整剧情与结局。")
+    assert merged.index("剧透预警") < merged.index(COMMENTARY_INFORMATION_NOTICE)
+    assert html.index("剧透预警") < html.index("公开报道")
+
+
 def test_information_notice_not_duplicated_on_re_render() -> None:
     from scripts.tools.wechat_mp_public import INFORMATION_NOTICE
 
@@ -94,3 +105,40 @@ def test_cps_at_two_thirds_not_opening() -> None:
     cps = out.index("mp-common-cpsad")
     assert out.index("p3") < cps < out.index("p4")
     assert cps < out.index("#fff5f5")
+
+
+def test_article_shell_attaches_short_drama_after_cta_rerender(monkeypatch) -> None:
+    from scripts.tools.wechat_mp_content import _article_shell
+
+    def fake_cta(article, *, kind):
+        out = dict(article)
+        out["body_text"] = out["body_text"].replace(
+            DISCLAIMER,
+            f"CTA最终段\n\n{DISCLAIMER}",
+        )
+        return out
+
+    def fake_short_drama(article, *, kind):
+        assert "CTA最终段" in article["content"]
+        out = dict(article)
+        out["content"] += '<mp-common-cpsad data-adtype="short-play"></mp-common-cpsad>'
+        return out
+
+    monkeypatch.setattr(
+        "scripts.tools.wechat_mp_stock_ai_cta.attach_stock_ai_cta",
+        fake_cta,
+    )
+    monkeypatch.setattr(
+        "scripts.tools.wechat_mp_short_drama.attach_short_drama",
+        fake_short_drama,
+    )
+
+    article = _article_shell(
+        title="测试",
+        digest="测试摘要",
+        body_text="正文第一段。",
+        upload_figures=False,
+        kind="market",
+    )
+
+    assert article["content"].endswith("</mp-common-cpsad>")

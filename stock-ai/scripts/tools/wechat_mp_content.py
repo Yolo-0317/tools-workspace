@@ -759,7 +759,18 @@ def render_article_content_html(
         core = finalize_discussion_body(core)
     notice = information_notice_for_kind(kind)
     if notice:
-        core = f"{notice}\n\n{core}" if core else notice
+        normalized_kind = (kind or "").strip().lower()
+        if normalized_kind in {"tv_review", "tv", "film", "movie"} and core.startswith(
+            "剧透预警"
+        ):
+            warning, separator, remainder = core.partition("\n\n")
+            core = (
+                f"{warning}\n\n{notice}\n\n{remainder}"
+                if separator
+                else f"{warning}\n\n{notice}"
+            )
+        else:
+            core = f"{notice}\n\n{core}" if core else notice
     disc_text = disclaimer_for_kind(kind)
     merged_body = f"{core}\n\n{disc_text}" if disc_text else core
 
@@ -797,8 +808,6 @@ def _article_shell(
         masthead_kind=masthead_kind,
         upload_figures=upload_figures,
     )
-    from scripts.tools.wechat_mp_product import attach_footer_product
-
     safe_title = title[:32]
     try:
         from scripts.tools.wechat_mp_public import sanitize_public_title
@@ -828,9 +837,6 @@ def _article_shell(
             hub = ""
     if hub:
         article["content_source_url"] = hub
-    from scripts.tools.wechat_mp_product import attach_footer_product
-
-    article = attach_footer_product(article, kind=kind)
     try:
         from scripts.tools.wechat_mp_stock_ai_cta import attach_stock_ai_cta
 
@@ -847,6 +853,9 @@ def _article_shell(
             article["body_text"] = merged
     except Exception:
         pass
+    from scripts.tools.wechat_mp_short_drama import attach_short_drama
+
+    article = attach_short_drama(article, kind=kind)
     return article
 
 

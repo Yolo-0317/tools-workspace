@@ -447,6 +447,8 @@ def auto_pick_footer_product(*, kind: str | None = None) -> dict[str, Any] | Non
 def attach_footer_product(article: dict[str, Any], *, kind: str | None = None) -> dict[str, Any]:
     """文末返佣商品：优先 CPS `<mp-common-cpsad data-pid>`，其次 footer product_key。"""
     k = (kind or "").strip().lower()
+    if k != "commerce" and k not in PICK_KEYWORDS_BY_VERTICAL:
+        return article
     if k in {"guba", "hotspot", "tv_review", "tv", "film", "movie"}:
         return article
     if (article.get("engagement_kind") or "").strip().lower() == "english_buddy":
@@ -488,6 +490,7 @@ def draft_article_payload(article: dict[str, Any]) -> dict[str, Any]:
 
     item = dict(article)
     item.pop("body_text", None)
+    item.pop("short_drama", None)
     if not content_source_url_enabled():
         item.pop("content_source_url", None)
     return item

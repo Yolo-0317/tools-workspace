@@ -604,3 +604,71 @@ def test_capture_cli_never_prints_ticket(
     assert "plan_id=plan-123" in output
     assert "含票据=是" in output
     assert "ticket-test" not in output
+
+
+def test_attach_short_drama_once_at_body_ratio(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    row = drama(
+        "123",
+        "报销风波",
+        plan_id="plan-123",
+        offline_timestamp=int((NOW + timedelta(days=30)).timestamp()),
+    )
+    body = "".join(f'<p id="p{i}">段{i}</p>' for i in range(6))
+    content = body + '<p style="background-color:#fff5f5">免责声明</p>'
+    article = {
+        "title": "公司报销观察",
+        "digest": "职场",
+        "body_text": "正文",
+        "content": content,
+    }
+    monkeypatch.setenv("WECHAT_MP_SHORT_DRAMA", "1")
+    monkeypatch.setattr(
+        short_drama,
+        "load_or_refresh_drama_pool",
+        lambda **_: [row],
+    )
+    monkeypatch.setattr(
+        short_drama,
+        "load_attribution_for_drama",
+        lambda _: attribution(),
+    )
+    monkeypatch.setattr(
+        short_drama,
+        "has_attribution_for_drama",
+        lambda _: True,
+    )
+
+    out = short_drama.attach_short_drama(article, kind="workspace", now=NOW)
+
+    assert out["content"].count('data-adtype="short-play"') == 1
+    short_play = out["content"].index('data-adtype="short-play"')
+    assert out["content"].index('id="p3"') < short_play
+    assert short_play < out["content"].index('id="p5"')
+    assert short_play < out["content"].index("#fff5f5")
+    assert out["short_drama"]["drama_id"] == "123"
+    assert "product_info" not in out
+
+
+def test_attach_short_drama_rejects_existing_card_for_another_drama(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    expected = drama(
+        "123",
+        plan_id="plan-123",
+        offline_timestamp=int((NOW + timedelta(days=30)).timestamp()),
+    )
+    another = drama("999", plan_id="plan-999")
+    existing = short_drama.build_short_drama_html(another, attribution("999"))
+    monkeypatch.setenv("WECHAT_MP_SHORT_DRAMA", "1")
+    monkeypatch.setattr(short_drama, "load_or_refresh_drama_pool", lambda **_: [expected])
+    monkeypatch.setattr(short_drama, "has_attribution_for_drama", lambda _: True)
+    monkeypatch.setattr(short_drama, "load_attribution_for_drama", lambda _: attribution())
+
+    with pytest.raises(RuntimeError, match="短剧归因与候选不匹配"):
+        short_drama.attach_short_drama(
+            {"title": "测试", "body_text": "测试", "content": existing},
+            kind="market",
+            now=NOW,
+        )
