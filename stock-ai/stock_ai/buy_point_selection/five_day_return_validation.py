@@ -117,9 +117,26 @@ class FiveDayTestAssessment:
 
 
 @dataclass(frozen=True)
+class FiveDayRankedPlan:
+    plan: FiveDaySignalPlan
+    rank: int
+    selected: bool
+
+
+@dataclass(frozen=True)
 class FiveDayRanking:
     plans: tuple[FiveDaySignalPlan, ...]
     rejection_counts: Mapping[str, int]
+    ranked: tuple[FiveDayRankedPlan, ...] = ()
+
+
+@dataclass(frozen=True)
+class FiveDaySelection:
+    ranking: FiveDayRanking
+    selected_observations: tuple[FiveDayObservation, ...]
+    admitted: tuple[FiveDayObservation, ...]
+    funnel_counts: Mapping[str, int]
+    incomplete: bool
 
 
 def _is_resolved(value: FiveDayObservation) -> bool:
@@ -430,6 +447,7 @@ def rank_five_day_plans(
         )
 
     selected: list[FiveDaySignalPlan] = []
+    ranking_trace: list[FiveDayRankedPlan] = []
     for signal_date in sorted(eligible_by_date):
         ranked = sorted(
             eligible_by_date[signal_date],
@@ -444,13 +462,24 @@ def rank_five_day_plans(
                 continue
             seen_structures.add(identity)
             unique.append(plan)
-        selected.extend(unique[:daily_limit])
+        for position, plan in enumerate(unique, start=1):
+            is_selected = position <= daily_limit
+            ranking_trace.append(
+                FiveDayRankedPlan(
+                    plan=plan,
+                    rank=position,
+                    selected=is_selected,
+                )
+            )
+            if is_selected:
+                selected.append(plan)
         overflow = max(0, len(unique) - daily_limit)
         if overflow:
             rejection_counts["DAILY_CANDIDATE_LIMIT"] += overflow
     return FiveDayRanking(
         plans=tuple(selected),
         rejection_counts=dict(sorted(rejection_counts.items())),
+        ranked=tuple(ranking_trace),
     )
 
 
@@ -569,20 +598,43 @@ def _plan_key(value: FiveDaySignalPlan) -> tuple[date, str, str, str]:
     )
 
 
-def _admit_research_trades(
-    ranked_plans: Sequence[FiveDaySignalPlan],
+def select_five_day_portfolio(
+    plans: Sequence[FiveDaySignalPlan],
     observations: Sequence[FiveDayObservation],
-) -> tuple[FiveDayObservation, ...]:
+    calibrations: Mapping[str, FiveDayCalibration],
+    *,
+    active_structure_ids: frozenset[str] = frozenset(),
+    daily_limit: int = 3,
+    capacity: int = 3,
+) -> FiveDaySelection:
+    """Select and admit plans once while preserving every funnel outcome."""
+    if capacity < 0:
+        raise ValueError("capacity must not be negative")
+    ranking = rank_five_day_plans(
+        plans,
+        calibrations,
+        active_structure_ids=active_structure_ids,
+        daily_limit=daily_limit,
+    )
     by_plan = {_observation_key(value): value for value in observations}
-    accepted: list[FiveDayObservation] = []
-    for plan in ranked_plans:
+    counts: Counter[str] = Counter(ranking.rejection_counts)
+    selected: list[FiveDayObservation] = []
+    admitted: list[FiveDayObservation] = []
+    incomplete = False
+    for plan in ranking.plans:
         value = by_plan.get(_plan_key(plan))
-        if (
-            value is None
-            or not _is_resolved(value)
-            or value.trade.entry_date is None
-            or value.trade.exit is None
-        ):
+        if value is None:
+            counts["MISSING_OBSERVATION"] += 1
+            incomplete = True
+            continue
+        selected.append(value)
+        if not _is_resolved(value):
+            counts[value.trade.status] += 1
+            incomplete = incomplete or value.trade.status == "PENDING"
+            continue
+        if value.trade.entry_date is None or value.trade.exit is None:
+            counts["INCOMPLETE_RESOLVED_TRADE"] += 1
+            incomplete = True
             continue
         entry_date = value.trade.entry_date
         active = sum(
@@ -590,11 +642,21 @@ def _admit_research_trades(
             and existing.trade.entry_date <= entry_date
             and existing.trade.exit is not None
             and existing.trade.exit.actual_exit_date >= entry_date
-            for existing in accepted
+            for existing in admitted
         )
-        if active < 3:
-            accepted.append(value)
-    return tuple(accepted)
+        if active >= capacity:
+            counts["PORTFOLIO_CAPACITY"] += 1
+            continue
+        admitted.append(value)
+    counts["SELECTED_PLANS"] = len(ranking.plans)
+    counts["ADMITTED_TRADES"] = len(admitted)
+    return FiveDaySelection(
+        ranking=ranking,
+        selected_observations=tuple(selected),
+        admitted=tuple(admitted),
+        funnel_counts=dict(sorted(counts.items())),
+        incomplete=incomplete,
+    )
 
 
 def _maximum_drawdown(
@@ -634,8 +696,8 @@ def build_five_day_portfolio_metrics(
     calibrations: Mapping[str, FiveDayCalibration],
 ) -> FiveDayPortfolioMetrics:
     """Rank plans, enforce three active research positions, and score results."""
-    ranked = rank_five_day_plans(plans, calibrations).plans
-    accepted = _admit_research_trades(ranked, observations)
+    selection = select_five_day_portfolio(plans, observations, calibrations)
+    accepted = selection.admitted
     trade_count = len(accepted)
     stock_trades: Counter[str] = Counter(
         normalize_code6(value.trade.code) for value in accepted

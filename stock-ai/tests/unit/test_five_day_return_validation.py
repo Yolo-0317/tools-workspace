@@ -29,6 +29,7 @@ from stock_ai.buy_point_selection.five_day_return_validation import (
     evaluate_validation_freeze,
     rank_five_day_plans,
     resolve_five_day_calibration,
+    select_five_day_portfolio,
 )
 from stock_ai.buy_point_selection.models import DetectedSetup, SetupType
 from stock_ai.buy_point_selection.validation import chronological_split
@@ -129,6 +130,46 @@ def _observation(
         reasons=(),
     )
     return FiveDayObservation(plan, trade, exit_value.actual_exit_date)
+
+
+def _observation_for_plan(
+    plan: FiveDaySignalPlan,
+    *,
+    net_return: str,
+) -> FiveDayObservation:
+    template = _observation(plan.candidate.signal_date, net_return=net_return)
+    return replace(
+        template,
+        plan=plan,
+        trade=replace(
+            template.trade,
+            profile_id=plan.profile.profile_id,
+            structure_id=plan.structure_id,
+            code=plan.candidate.code,
+            signal_date=plan.candidate.signal_date,
+        ),
+    )
+
+
+def _not_triggered_for_plan(plan: FiveDaySignalPlan) -> FiveDayObservation:
+    value = _observation_for_plan(plan, net_return="0")
+    return replace(
+        value,
+        trade=replace(
+            value.trade,
+            status="NOT_TRIGGERED",
+            entry_date=None,
+            entry_price=None,
+            stop_price=None,
+            evaluation_shares=0,
+            evaluation_notional=Decimal("0"),
+            exit=None,
+            net_pnl=Decimal("0"),
+            net_return=None,
+            mfe=None,
+            mae=None,
+        ),
+    )
 
 
 def test_split_is_existing_sixty_twenty_twenty_contract() -> None:
@@ -352,6 +393,41 @@ def test_ranking_rejects_a_calibration_not_frozen_before_the_signal() -> None:
     assert result.rejection_counts == {
         "CALIBRATION_NOT_POINT_IN_TIME": 1,
     }
+
+
+def test_selection_trace_does_not_backfill_daily_overflow() -> None:
+    plans = tuple(_plan(START, code=f"60000{index}") for index in range(1, 5))
+    calibrations = {_calibration(plan).key: _calibration(plan) for plan in plans}
+    first = _observation_for_plan(plans[0], net_return="0.02")
+    not_triggered = _not_triggered_for_plan(plans[1])
+    third = _observation_for_plan(plans[2], net_return="0.01")
+    overflow = _observation_for_plan(plans[3], net_return="0.99")
+
+    result = select_five_day_portfolio(
+        plans,
+        (first, not_triggered, third, overflow),
+        calibrations,
+        daily_limit=3,
+        capacity=3,
+    )
+
+    assert tuple((row.rank, row.selected) for row in result.ranking.ranked) == (
+        (1, True),
+        (2, True),
+        (3, True),
+        (4, False),
+    )
+    assert tuple(row.plan.candidate.code for row in result.admitted) == (
+        "600001",
+        "600003",
+    )
+    assert result.funnel_counts == {
+        "ADMITTED_TRADES": 2,
+        "DAILY_CANDIDATE_LIMIT": 1,
+        "NOT_TRIGGERED": 1,
+        "SELECTED_PLANS": 3,
+    }
+    assert overflow not in result.admitted
 
 
 @pytest.mark.parametrize(
