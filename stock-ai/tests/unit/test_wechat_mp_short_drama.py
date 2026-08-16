@@ -525,9 +525,18 @@ def test_build_short_drama_html_round_trips_validated_identity() -> None:
     )
 
     assert component.count("<mp-common-cpsad") == 1
+    assert 'contenteditable="false"' in component
+    assert (
+        'class="js_uneditable custom_select_card new_cps_iframe mp_common_widget"'
+        in component
+    )
     assert 'data-adtype="short-play"' in component
+    assert 'data-templateid="card"' in component
+    assert 'data-cpsversion="v122"' in component
+    assert 'data-goodssouce="1"' in component
+    assert 'data-showchangebtn="1"' in component
     assert 'data-traceid="trace-new"' in component
-    assert "&quot;dramaName&quot;:&quot;报销风波&quot;" in component
+    assert "data-videocarddata" not in component
     parsed = short_drama.validate_short_drama_component(component, row)
     assert parsed.drama_id == "123"
     assert parsed.wx_ticket == "ticket-test"

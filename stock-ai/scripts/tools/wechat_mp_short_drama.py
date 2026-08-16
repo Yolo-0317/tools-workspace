@@ -669,22 +669,15 @@ def build_short_drama_html(
 ) -> str:
     if not _attribution_matches(drama, attribution):
         raise RuntimeError("短剧归因与候选不匹配")
-    video_card_data = json.dumps(
-        {
-            "dramaName": drama.drama_name,
-            "categoryName": "/".join(
-                value for value in (drama.era, drama.theme) if value
-            ),
-            "videoCoverUrl": drama.cover_url,
-            "dramaNum": drama.media_count,
-        },
-        ensure_ascii=False,
-        separators=(",", ":"),
-    )
     attrs = {
+        "contenteditable": "false",
+        "class": "js_uneditable custom_select_card new_cps_iframe mp_common_widget",
         "data-pluginname": "mpcps",
         "data-adtype": "short-play",
-        "data-videocarddata": video_card_data,
+        "data-templateid": "card",
+        "data-cpsversion": "v122",
+        "data-goodssouce": "1",
+        "data-showchangebtn": "1",
         "data-dramaid": drama.drama_id,
         "data-srcappid": drama.src_appid,
         "data-playappid": drama.play_appid,
