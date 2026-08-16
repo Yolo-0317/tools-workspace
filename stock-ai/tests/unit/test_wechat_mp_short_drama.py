@@ -211,6 +211,30 @@ def test_refresh_drama_pool_paginates_until_total(
     assert [item["drama_id"] for item in payload["items"]] == ["1", "2", "3"]
 
 
+def test_refresh_drama_pool_stops_at_explicit_item_limit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[int] = []
+
+    def fake_fetch(*, page_no: int, page_size: int, **_: object):
+        calls.append(page_no)
+        start = (page_no - 1) * page_size
+        return ([drama(str(start + 1)), drama(str(start + 2))], 100)
+
+    monkeypatch.setattr(short_drama, "fetch_drama_page", fake_fetch)
+
+    rows = short_drama.refresh_drama_pool(
+        cache_path=tmp_path / "pool.json",
+        page_size=2,
+        max_items=3,
+        now=NOW,
+    )
+
+    assert calls == [1, 2]
+    assert [row.drama_id for row in rows] == ["1", "2", "3"]
+
+
 def test_load_drama_pool_uses_fresh_cache_without_refresh(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -604,6 +628,32 @@ def test_capture_cli_never_prints_ticket(
     assert "plan_id=plan-123" in output
     assert "含票据=是" in output
     assert "ticket-test" not in output
+
+
+def test_refresh_cli_prints_filtered_pool_summary(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    rows = [
+        drama(
+            "1",
+            "职场风云",
+            offline_timestamp=int((NOW + timedelta(days=30)).timestamp()),
+        ),
+        drama(
+            "2",
+            "城市故事",
+            offline_timestamp=int((NOW + timedelta(days=30)).timestamp()),
+        ),
+    ]
+    monkeypatch.setattr(short_drama, "refresh_drama_pool", lambda **_: rows)
+
+    exit_code = short_drama.main(["--refresh", "--limit", "1"])
+
+    output = capsys.readouterr().out
+    assert exit_code == 0
+    assert "total=2 eligible=2 deduped=2" in output
+    assert output.count("drama_id=") == 1
 
 
 def test_attach_short_drama_once_at_body_ratio(

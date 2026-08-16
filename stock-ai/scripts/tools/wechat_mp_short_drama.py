@@ -192,6 +192,7 @@ def refresh_drama_pool(
     cache_path: Path = CACHE_PATH,
     page_size: int = 30,
     max_pages: int | None = None,
+    max_items: int | None = None,
     now: datetime | None = None,
 ) -> list[ShortDrama]:
     current = now or datetime.now(TZ)
@@ -207,6 +208,9 @@ def refresh_drama_pool(
         if not page_rows:
             break
         rows.extend(page_rows)
+        if max_items is not None and len(rows) >= max_items:
+            rows = rows[: max(0, max_items)]
+            break
         if total and len(rows) >= total:
             break
         page_no += 1
@@ -807,11 +811,37 @@ def verify_saved_short_drama(
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="公众号短剧池与归因诊断")
+    parser.add_argument("--refresh", action="store_true")
+    parser.add_argument("--limit", type=int)
     parser.add_argument("--capture-sample-title")
     parser.add_argument("--probe-component", action="store_true")
     parser.add_argument("--drama-id")
     args = parser.parse_args(argv)
 
+    if args.refresh:
+        rows = (
+            refresh_drama_pool(max_items=max(0, args.limit))
+            if args.limit is not None
+            else refresh_drama_pool()
+        )
+        eligible = eligible_dramas(
+            rows,
+            now=datetime.now(TZ),
+            min_valid_days=drama_min_valid_days(),
+        )
+        deduped = dedupe_dramas(eligible)
+        print(
+            f"短剧池: ret=0 total={len(rows)} eligible={len(eligible)} "
+            f"deduped={len(deduped)}"
+        )
+        display_limit = max(0, args.limit) if args.limit is not None else 10
+        for item in deduped[:display_limit]:
+            print(
+                f"drama_id={item.drama_id} name={item.drama_name} "
+                f"theme={item.era}/{item.theme} episodes={item.media_count} "
+                f"rate={item.rate_bp / 100:.2f}%"
+            )
+        return 0
     if args.capture_sample_title:
         captured = capture_sample_attributions(args.capture_sample_title)
         for item in captured:
@@ -826,12 +856,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         media_id = probe_short_drama_component(args.drama_id)
         print(f"探针草稿 media_id={media_id}，请在后台预览并确认跳转和归因")
         return 0
-    parser.error("需要 --capture-sample-title 或 --probe-component")
+    parser.error("需要 --refresh、--capture-sample-title 或 --probe-component")
     return 2
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
 
 
 def parse_drama_response(
@@ -875,3 +901,7 @@ def parse_drama_response(
             )
         )
     return rows, _as_int(payload.get("total"))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

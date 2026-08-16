@@ -55,9 +55,13 @@
 | `scripts/tools/wechat_mp_sop_fast.py` | 东财快采（公众号隔离） |
 | `scripts/tools/wechat_mp_check_whitelist.py` | 公众平台 IP 白名单检查 |
 | `scripts/tools/wechat_mp_eval.py` | 五维评分 + 合规 + AI 味 0–100 |
-| `scripts/tools/wechat_mp_product.py` | 返佣：Select 选品、`inject_cpsad_at_body_ratio`（正文约 2/3）、`attach_footer_product` |
+| `scripts/tools/wechat_mp_short_drama.py` | 长文短剧：`DramaSelect`、缓存、过滤排序、归因票据、`short-play` 组件与回读门禁 |
+| `scripts/tools/wechat_mp_product.py` | 独立 `commerce` 普通返佣商品；长文禁止调用 |
 | `data/wechat_mp_draft_slots.json` | 槽位状态（勿手删除非重建） |
 | `data/wechat_mp_footer_product.json` | 返佣选品缓存（`daihuo` / `footer.product_key`） |
+| `data/wechat_mp_short_drama_pool.json` | 短剧列表缓存，默认六小时，生成文件不提交 |
+| `data/wechat_mp_short_drama_attribution.json` | 已验证短剧归因数据，含票据，生成文件不提交 |
+| `data/wechat_mp_short_drama_usage.json` | 七天轮换使用记录，生成文件不提交 |
 
 ## 环境变量（摘自 `.env.example`）
 
@@ -101,26 +105,44 @@ WECHAT_MP_SECTION_STYLE=compact    # compact=居中节标题；card=旧深色引
 WECHAT_MP_LAYOUT=pulse             # pulse|brief|chapter|report
 WECHAT_MP_RICH_HTML=1
 
-# 文末返佣商品（需开通「返佣商品和内容推广」）
-WECHAT_MP_FOOTER_PRODUCT=0              # 1=草稿文末插入 mp-common-cpsad
+# 长文短剧推广；探针预览和归因确认前必须保持 0
+WECHAT_MP_SHORT_DRAMA=0
+WECHAT_MP_DRAMA_KOL_ID=                 # 仅写本地 .env，不提交
+WECHAT_MP_DRAMA_CACHE_TTL_HOURS=6
+WECHAT_MP_DRAMA_MIN_VALID_DAYS=7
+WECHAT_MP_DRAMA_REPEAT_DAYS=7
+
+# 普通返佣商品仅供独立 commerce 稿
+WECHAT_MP_FOOTER_PRODUCT=0
 WECHAT_MP_DAIHUO_UIN=                   # Select 请求 uin（mp 编辑器 Network 复制）
-WECHAT_MP_FOOTER_PRODUCT_AUTO_PICK=1    # 1=每篇推稿前 Select 最高佣金（FOOTER=1 时默认开）
+WECHAT_MP_FOOTER_PRODUCT_AUTO_PICK=1
 WECHAT_MP_FOOTER_PRODUCT_ID=            # 固定商品 id；auto-pick 开启时会被覆盖
 WECHAT_MP_FOOTER_PICK_KEYWORD=          # 覆盖全部槽位搜索词（空格多词）
 WECHAT_MP_FOOTER_PICK_KEYWORD_DEFAULT=充电宝
 WECHAT_MP_FOOTER_PRODUCT_CARD_TYPE=1    # getcardinfo 探测用；CPS 正文不依赖 product_key
-WECHAT_MP_FOOTER_PRODUCT_KINDS=         # 空=全部槽位；例 market,top5,dragons
+WECHAT_MP_FOOTER_PRODUCT_KINDS=         # commerce 垂直过滤；不得填长文 kind
 ```
 
-### 槽位选品关键词（`PICK_KEYWORDS_BY_KIND`）
+### 短剧池与归因诊断
 
-| kind | Select 搜索词（空格分隔，合并去重后取最高佣金率） |
+```bash
+cd stock-ai
+PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --refresh --limit 40
+PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --capture-sample-title "短剧组件测试-勿发"
+PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --probe-component --drama-id 660409
+```
+
+`DramaSelect` 只提供剧目和计划列表，不等于可直接投放。只有 `drama_id`、`plan_id`、来源应用、播放应用和 `wxTicket` 与人工插卡样本完全匹配的候选才可生成组件。不得把其他剧目的票据复用到新剧，也不得访问点击跟踪 URL 伪造票据。
+
+### Commerce 选品关键词（`PICK_KEYWORDS_BY_VERTICAL`）
+
+| vertical | Select 搜索词（空格分隔，合并去重后按策略选择） |
 |------|------|
-| `market` | 理财 基金 记账本 财经 |
-| `news` | 财经 商务 办公 充电宝 |
-| `top5` | 键盘 鼠标 显示器 支架 |
-| `dragons` | 护眼灯 台灯 咖啡 |
-| `workspace` | 机械键盘 硬盘 路由器 显示器 |
+| `tech` | 机械键盘 显示器 充电宝 路由器 |
+| `home` | 收纳 置物架 厨房收纳 沥水篮 挂钩 |
+| `mother` | 母婴 绘本 儿童 奶粉 |
+| `outdoor` | 露营 防晒 户外 登山 |
+| `office` | 工学椅 台灯 支架 鼠标垫 |
 
 CLI：
 
@@ -141,13 +163,19 @@ pick_thumb_for_draft_kind(kind)
   → batchget_material / 缓存 thumb
 
 build_article(kind) → dict(title, author, digest, content HTML)
-  → attach_footer_product (若 WECHAT_MP_FOOTER_PRODUCT=1)
-      → auto_pick_footer_product (若 AUTO_PICK 开：daihuo Select 多词 → 最高佣金)
-      → inject_cpsad_before_disclaimer (mp-common-cpsad data-pid)
+  → CTA 与 SEO 重建完成
+  → attach_short_drama（若 WECHAT_MP_SHORT_DRAMA=1）
+      → DramaSelect 缓存 → 有效候选 → 同名去重 → 50/30/20 排序 → 七天轮换
+      → 精确加载已验证 attribution → 正文约 2/3 插入 short-play
+  → assert_longform_promotion_safe（写封面前）
 
 upsert_draft_article:
   有 slots[kind].media_id → draft_update
   否则 → draft_add → 写入 slots json
+
+verify_saved_short_drama(media_id)
+  → 回读草稿 → 校验 short-play 数量与 drama_id
+  → 通过后才记录轮换并允许后续发表
 
 attach_cover_crop_fields(article, thumb_media_id)
   → 按素材宽高算 crop 字段（竖图→公众号头图比例）
@@ -195,8 +223,9 @@ strip_markdown_for_wechat → normalize_wechat_spacing → sanitize_public_mp_te
 15. **market/news 标题撞车**：`_titles_too_similar` + 钩子来源分离（盘面 vs 快讯）。
 16. **原创/话题标签**：`draft/add` 无 `is_original` / `#话题` 字段；脚本只写正文，**发布须在后台勾原创、发布后加 `#`**（见 writing-guide 发布前总检）。
 17. **流量主广告位**：正文 `· · ·` 标记已取消；**微信自动插广告**，脚本保留完读 prompt + 文末问句 + 开留言。
-18. **返佣 CPS 商品**：`getcardinfo` + `footer product_key` **对 JD 返佣无效**（10170001）；真机制是正文 `<mp-common-cpsad data-pid="{warehouse}_{product_id}">`。Select 的 `product_id` ≠ `product_key`。
-19. **auto-pick**：`attach_footer_product` 内每篇按槽位关键词 Select，取佣金率最高；失败 fallback `FOOTER_PRODUCT_ID`/缓存。`cps_data_pid` 仅在缓存 `product_id` 匹配时用 `sku_id`。
+18. **普通返佣 CPS 仅限 commerce**：`getcardinfo` + `footer product_key` 对部分 JD 返佣无效；正文商品卡使用 `<mp-common-cpsad data-pid="{warehouse}_{product_id}">`。该机制不得进入长文。
+19. **commerce auto-pick**：`attach_footer_product` 仅接受 commerce 垂直，按 Select 结果选品；`cps_data_pid` 仅在缓存 `product_id` 匹配时用 `sku_id`。
+20. **短剧列表不等于归因卡**：`DramaSelect` 没有可复用的 `wxTicket`；未捕获对应建卡归因时必须失败关闭，不得借用其他短剧票据或回退普通商品。
 
 详见 [rules-implemented.md](rules-implemented.md)。
 

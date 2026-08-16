@@ -139,6 +139,23 @@ bash scripts/wechat_mp_hotspot_draft_scheduled.sh hotspot_evening --dry-run
 - [ ] 回复高价值留言  
 - [ ] 记阅读来源（**推荐 / 搜一搜**）、完读、阅读后关注  
 
+### 长文短剧推广门禁
+
+长文推广统一使用 `short-play` 短剧组件；普通返佣商品只保留给独立 `commerce` 稿。首次启用或更换短剧时按以下顺序执行：
+
+```bash
+cd stock-ai
+PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --refresh --limit 40
+PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --capture-sample-title "短剧组件测试-勿发"
+PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --probe-component --drama-id 660409
+```
+
+- 后台预览探针草稿，确认卡片剧目、点击跳转和结算归因都正确。
+- 人工确认前保持 `WECHAT_MP_SHORT_DRAMA=0`；确认后才在本地 `.env` 开启。
+- 归因、候选、缓存或草稿回读任一失败都停止推稿，不得改回 `WECHAT_MP_FOOTER_PRODUCT=1`。
+- 不得调用读者点击跟踪 URL 生成票据；缺少归因时，重新在后台插入对应短剧并捕获建卡数据。
+- 正式长文必须恰有一个 `data-adtype="short-play"`，且不得含普通 `data-pid` 商品卡或 footer product key。
+
 ---
 
 ## 四、每周维护（运营者）
@@ -151,7 +168,7 @@ bash scripts/wechat_mp_hotspot_draft_scheduled.sh hotspot_evening --dry-run
 | 质量抽检 | 热点稿 `wechat_mp_eval --kind hotspot --traffic`；讨论稿对照 tv-morning §九 |
 | 11:00 链路 | 抽查：合格缓存是否存在、配图、禁词 grep（勿假设定时任务用手改稿） |
 | 选题 | 手动篇是否补缺；**勿**恢复 evening 三篇定时 |
-| 变现 | 流量主看推荐占比与完读；CPS 仅 `WECHAT_MP_FOOTER_PRODUCT=1` 且与正文一致 |
+| 变现 | 长文只用已验证短剧组件；普通 CPS 仅限独立 `commerce`，不得作为短剧失败回退 |
 
 ---
 
@@ -165,6 +182,7 @@ bash scripts/wechat_mp_hotspot_draft_scheduled.sh hotspot_evening --dry-run
 
 | 日期 | 说明 |
 |------|------|
+| 2026-08-16 | 长文推广改为短剧池；增加归因探针、写入前门禁和草稿回读，普通 CPS 仅限 commerce |
 | 2026-08-03 | **定时改为 11/15/18 各 1 篇热点深评**（`hotspot_morning` / `afternoon` / `evening`）；`tv_trial` 移出手动 |
 | 2026-08-03 | §二点六 关注引流三层分工 + 自检/衡量 |
 | 2026-08-03 | **转型热点评论**：主轴 11:00 讨论 + 15:00 hotspot；停用 evening 三篇；发布分类与 SEO 口径 |
