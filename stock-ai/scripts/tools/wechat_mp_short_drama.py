@@ -6,13 +6,20 @@ from __future__ import annotations
 import os
 import json
 import re
+import html
+import uuid
+import argparse
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, Mapping, Sequence
+from urllib.parse import parse_qs, quote, unquote, urlparse
 from zoneinfo import ZoneInfo
 
 import requests
+
+from scripts.tools.wechat_mp_client import draft_add, draft_batchget
 
 
 DRAMA_SELECT_URL = (
@@ -22,6 +29,7 @@ TZ = ZoneInfo("Asia/Shanghai")
 ROOT = Path(__file__).resolve().parents[2]
 CACHE_PATH = ROOT / "data" / "wechat_mp_short_drama_pool.json"
 USAGE_PATH = ROOT / "data" / "wechat_mp_short_drama_usage.json"
+ATTRIBUTION_PATH = ROOT / "data" / "wechat_mp_short_drama_attribution.json"
 WORKPLACE_KINDS = frozenset(
     {"sector", "market", "news", "top5", "dragons", "workspace", "temp"}
 )
@@ -49,6 +57,32 @@ class ShortDrama:
     click_url: str
     trace_id: str
     fetched_at: str
+
+
+@dataclass(frozen=True)
+class ShortDramaAttribution:
+    drama_id: str
+    plan_id: str
+    src_appid: str
+    play_appid: str
+    default_path: str
+    wx_ticket: str
+    captured_at: str
+
+
+class _ShortPlayParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.matches: list[dict[str, str]] = []
+
+    def handle_starttag(
+        self,
+        tag: str,
+        attrs: list[tuple[str, str | None]],
+    ) -> None:
+        values = {key: value or "" for key, value in attrs}
+        if tag == "mp-common-cpsad" and values.get("data-adtype") == "short-play":
+            self.matches.append(values)
 
 
 def _as_int(value: Any, default: int = 0) -> int:
@@ -387,6 +421,266 @@ def record_drama_usage(
         }
     )
     _atomic_write_json(usage_path, retained)
+
+
+def _attribution_from_attrs(
+    attrs: Mapping[str, str],
+    *,
+    captured_at: datetime,
+) -> ShortDramaAttribution:
+    default_path = unquote(html.unescape(attrs.get("data-defaultpath", "")))
+    wx_ticket = parse_qs(urlparse(default_path).query).get("wxTicket", [""])[0]
+    values = {
+        "drama_id": attrs.get("data-dramaid", ""),
+        "plan_id": attrs.get("data-planid", ""),
+        "src_appid": attrs.get("data-srcappid", ""),
+        "play_appid": attrs.get("data-playappid", ""),
+        "default_path": default_path,
+        "wx_ticket": wx_ticket,
+    }
+    missing = [key for key, value in values.items() if not value]
+    if missing:
+        raise RuntimeError(f"短剧归因字段缺失: {','.join(missing)}")
+    return ShortDramaAttribution(
+        **values,
+        captured_at=captured_at.isoformat(timespec="seconds"),
+    )
+
+
+def parse_short_drama_components(
+    html_text: str,
+    *,
+    now: datetime | None = None,
+) -> list[ShortDramaAttribution]:
+    parser = _ShortPlayParser()
+    parser.feed(html_text)
+    captured_at = now or datetime.now(TZ)
+    return [
+        _attribution_from_attrs(attrs, captured_at=captured_at)
+        for attrs in parser.matches
+    ]
+
+
+def parse_short_drama_component(
+    html_text: str,
+    *,
+    now: datetime | None = None,
+) -> ShortDramaAttribution:
+    matches = parse_short_drama_components(html_text, now=now)
+    if not matches:
+        raise RuntimeError("未发现 short-play 组件")
+    if len(matches) != 1:
+        raise RuntimeError(f"short-play 组件数量异常: {len(matches)}")
+    return matches[0]
+
+
+def load_attribution_map(
+    path: Path = ATTRIBUTION_PATH,
+) -> dict[str, ShortDramaAttribution]:
+    if not path.is_file():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            raise TypeError("attribution root must be an object")
+        return {
+            str(drama_id): ShortDramaAttribution(**item)
+            for drama_id, item in payload.items()
+            if isinstance(item, dict)
+        }
+    except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"短剧归因缓存无效: {exc}") from exc
+
+
+def _attribution_matches(
+    drama: ShortDrama,
+    attribution: ShortDramaAttribution,
+) -> bool:
+    default_query = parse_qs(urlparse(attribution.default_path).query)
+    path_drama_id = default_query.get("dramaId", [""])[0]
+    return (
+        attribution.drama_id == drama.drama_id
+        and path_drama_id == drama.drama_id
+        and attribution.plan_id == drama.plan_id
+        and attribution.src_appid == drama.src_appid
+        and attribution.play_appid == drama.play_appid
+        and bool(attribution.wx_ticket)
+    )
+
+
+def has_attribution_for_drama(
+    drama: ShortDrama,
+    path: Path = ATTRIBUTION_PATH,
+) -> bool:
+    item = load_attribution_map(path).get(drama.drama_id)
+    return item is not None and _attribution_matches(drama, item)
+
+
+def load_attribution_for_drama(
+    drama: ShortDrama,
+    path: Path = ATTRIBUTION_PATH,
+) -> ShortDramaAttribution:
+    item = load_attribution_map(path).get(drama.drama_id)
+    if item is None:
+        raise RuntimeError(f"缺少短剧归因: {drama.drama_id}")
+    if not _attribution_matches(drama, item):
+        raise RuntimeError("短剧归因与候选不匹配")
+    return item
+
+
+def build_short_drama_html(
+    drama: ShortDrama,
+    attribution: ShortDramaAttribution,
+    *,
+    trace_id: str | None = None,
+) -> str:
+    if not _attribution_matches(drama, attribution):
+        raise RuntimeError("短剧归因与候选不匹配")
+    video_card_data = json.dumps(
+        {
+            "dramaName": drama.drama_name,
+            "categoryName": "/".join(
+                value for value in (drama.era, drama.theme) if value
+            ),
+            "videoCoverUrl": drama.cover_url,
+            "dramaNum": drama.media_count,
+        },
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    attrs = {
+        "data-pluginname": "mpcps",
+        "data-adtype": "short-play",
+        "data-videocarddata": video_card_data,
+        "data-dramaid": drama.drama_id,
+        "data-srcappid": drama.src_appid,
+        "data-playappid": drama.play_appid,
+        "data-planid": drama.plan_id,
+        "data-traceid": trace_id or str(uuid.uuid4()),
+        "data-defaultpath": quote(attribution.default_path, safe=""),
+    }
+    rendered = " ".join(
+        f'{key}="{html.escape(value, quote=True)}"' for key, value in attrs.items()
+    )
+    component = f"<mp-common-cpsad {rendered}></mp-common-cpsad>"
+    validate_short_drama_component(component, drama)
+    return component
+
+
+def validate_short_drama_component(
+    component: str,
+    drama: ShortDrama,
+) -> ShortDramaAttribution:
+    parsed = parse_short_drama_component(component)
+    if not _attribution_matches(drama, parsed):
+        raise RuntimeError("短剧归因与候选不匹配")
+    return parsed
+
+
+def capture_sample_attributions(
+    title: str,
+    *,
+    path: Path = ATTRIBUTION_PATH,
+    now: datetime | None = None,
+    max_items: int = 100,
+) -> list[ShortDramaAttribution]:
+    target = title.strip()
+    matches: list[dict[str, Any]] = []
+    offset = 0
+    while offset < max_items:
+        items, err = draft_batchget(offset=offset, count=20, no_content=False)
+        if err:
+            raise RuntimeError(f"短剧样本草稿读取失败: {err.get('errmsg') or err}")
+        if not items:
+            break
+        for item in items:
+            news_items = ((item.get("content") or {}).get("news_item") or [])
+            for news in news_items:
+                if str(news.get("title") or "").strip() == target:
+                    matches.append(news)
+        offset += len(items)
+        if len(items) < 20:
+            break
+    if len(matches) != 1:
+        raise RuntimeError(f"短剧样本草稿匹配数量异常: {len(matches)}")
+
+    captured = parse_short_drama_components(
+        str(matches[0].get("content") or ""),
+        now=now,
+    )
+    if not captured:
+        raise RuntimeError("样本草稿未发现 short-play 组件")
+    merged = load_attribution_map(path)
+    for item in captured:
+        merged[item.drama_id] = item
+    _atomic_write_json(
+        path,
+        {drama_id: asdict(item) for drama_id, item in merged.items()},
+    )
+    return captured
+
+
+def probe_short_drama_component(
+    drama_id: str,
+    *,
+    now: datetime | None = None,
+) -> str:
+    target = drama_id.strip()
+    rows = load_or_refresh_drama_pool(now=now)
+    drama = next((row for row in rows if row.drama_id == target), None)
+    if drama is None:
+        raise RuntimeError(f"短剧池未找到 drama_id={target}")
+    try:
+        attribution = load_attribution_for_drama(drama)
+    except RuntimeError as exc:
+        raise RuntimeError(
+            "缺少该短剧的归因建卡数据，请抓取选择短剧时的建卡请求"
+        ) from exc
+    component = build_short_drama_html(drama, attribution)
+    current = now or datetime.now(TZ)
+    article = {
+        "article_type": "news",
+        "title": f"短剧组件探针-勿发-{current.strftime('%m%d%H%M')}",
+        "author": os.getenv("WECHAT_MP_AUTHOR", "R2D2").strip(),
+        "digest": "短剧组件归因探针，仅供后台预览，请勿发表。",
+        "content": f"<p>短剧组件归因探针，请勿发表。</p>{component}",
+        "show_cover_pic": 0,
+        "need_open_comment": 0,
+        "only_fans_can_comment": 0,
+    }
+    media_id, err = draft_add(articles=[article])
+    if err or not media_id:
+        raise RuntimeError(f"短剧组件探针写入失败: {(err or {}).get('errmsg') or err}")
+    return media_id
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="公众号短剧池与归因诊断")
+    parser.add_argument("--capture-sample-title")
+    parser.add_argument("--probe-component", action="store_true")
+    parser.add_argument("--drama-id")
+    args = parser.parse_args(argv)
+
+    if args.capture_sample_title:
+        captured = capture_sample_attributions(args.capture_sample_title)
+        for item in captured:
+            print(
+                f"drama_id={item.drama_id} plan_id={item.plan_id} "
+                f"含票据={'是' if item.wx_ticket else '否'} captured_at={item.captured_at}"
+            )
+        return 0
+    if args.probe_component:
+        if not args.drama_id:
+            parser.error("--probe-component 需要 --drama-id")
+        media_id = probe_short_drama_component(args.drama_id)
+        print(f"探针草稿 media_id={media_id}，请在后台预览并确认跳转和归因")
+        return 0
+    parser.error("需要 --capture-sample-title 或 --probe-component")
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
 
 
 def parse_drama_response(

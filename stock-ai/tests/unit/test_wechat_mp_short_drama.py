@@ -19,6 +19,11 @@ from scripts.tools import wechat_mp_short_drama as short_drama
 
 TZ = ZoneInfo("Asia/Shanghai")
 NOW = datetime(2026, 8, 16, 12, 0, tzinfo=TZ)
+SAMPLE_SHORT_PLAY = '''<mp-common-cpsad data-pluginname="mpcps" data-adtype="short-play"
+ data-videocarddata="{&quot;dramaName&quot;:&quot;测试短剧&quot;,&quot;categoryName&quot;:&quot;现代/职场&quot;,&quot;videoCoverUrl&quot;:&quot;https://example.test/c.jpg&quot;,&quot;dramaNum&quot;:60}"
+ data-dramaid="123" data-srcappid="wx-source" data-playappid="wx-play"
+ data-planid="plan-123" data-traceid="trace-old"
+ data-defaultpath="plugin-private%3A%2F%2Fplayer%2Fpages%2Fplaylet%3FdramaId%3D123%26wxTicket%3Dticket-test"></mp-common-cpsad>'''
 
 
 class FakeResponse:
@@ -75,6 +80,22 @@ def drama(
         fetched_at=NOW.isoformat(timespec="seconds"),
     )
     return replace(row, **overrides)
+
+
+def attribution(
+    drama_id: str = "123",
+    **overrides: object,
+) -> short_drama.ShortDramaAttribution:
+    item = short_drama.ShortDramaAttribution(
+        drama_id=drama_id,
+        plan_id=f"plan-{drama_id}",
+        src_appid="wx-source",
+        play_appid="wx-play",
+        default_path=f"plugin-private://player/pages/playlet?dramaId={drama_id}&wxTicket=ticket-test",
+        wx_ticket="ticket-test",
+        captured_at=NOW.isoformat(timespec="seconds"),
+    )
+    return replace(item, **overrides)
 
 
 def test_parse_drama_response_uses_recommend_list() -> None:
@@ -411,3 +432,175 @@ def test_pick_short_drama_restores_pool_when_every_candidate_is_recent(
     )
 
     assert picked.drama_id == "best"
+
+
+def test_parse_short_drama_component_extracts_attribution() -> None:
+    parsed = short_drama.parse_short_drama_component(SAMPLE_SHORT_PLAY, now=NOW)
+
+    assert parsed.drama_id == "123"
+    assert parsed.plan_id == "plan-123"
+    assert parsed.src_appid == "wx-source"
+    assert parsed.play_appid == "wx-play"
+    assert parsed.wx_ticket == "ticket-test"
+    assert parsed.captured_at == "2026-08-16T12:00:00+08:00"
+
+
+def test_parse_short_drama_components_ignores_plain_product_card() -> None:
+    html = '<mp-common-cpsad data-pid="101_1"></mp-common-cpsad>' + SAMPLE_SHORT_PLAY
+
+    parsed = short_drama.parse_short_drama_components(html, now=NOW)
+
+    assert [item.drama_id for item in parsed] == ["123"]
+
+
+def test_load_attribution_for_drama_requires_exact_plan_and_apps(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "attribution.json"
+    path.write_text(
+        json.dumps(
+            {
+                "123": {
+                    "drama_id": "123",
+                    "plan_id": "plan-123",
+                    "src_appid": "wx-source",
+                    "play_appid": "wx-play",
+                    "default_path": "plugin-private://player/pages/playlet?dramaId=123&wxTicket=ticket-test",
+                    "wx_ticket": "ticket-test",
+                    "captured_at": "2026-08-16T12:00:00+08:00",
+                }
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    matching = drama("123", plan_id="plan-123")
+    mismatched = drama("123", plan_id="another-plan")
+
+    assert short_drama.has_attribution_for_drama(matching, path=path) is True
+    assert short_drama.load_attribution_for_drama(matching, path=path).wx_ticket == "ticket-test"
+    assert short_drama.has_attribution_for_drama(mismatched, path=path) is False
+    with pytest.raises(RuntimeError, match="短剧归因与候选不匹配"):
+        short_drama.load_attribution_for_drama(mismatched, path=path)
+
+
+def test_build_short_drama_html_round_trips_validated_identity() -> None:
+    row = drama(
+        "123",
+        "报销风波",
+        plan_id="plan-123",
+        era="现代",
+        theme="都市、职场",
+        media_count=60,
+    )
+
+    component = short_drama.build_short_drama_html(
+        row,
+        attribution(),
+        trace_id="trace-new",
+    )
+
+    assert component.count("<mp-common-cpsad") == 1
+    assert 'data-adtype="short-play"' in component
+    assert 'data-traceid="trace-new"' in component
+    assert "&quot;dramaName&quot;:&quot;报销风波&quot;" in component
+    parsed = short_drama.validate_short_drama_component(component, row)
+    assert parsed.drama_id == "123"
+    assert parsed.wx_ticket == "ticket-test"
+
+
+def test_build_short_drama_html_rejects_another_drama_ticket() -> None:
+    with pytest.raises(RuntimeError, match="短剧归因与候选不匹配"):
+        short_drama.build_short_drama_html(
+            drama("123", plan_id="plan-123"),
+            attribution("999"),
+        )
+
+
+def test_capture_sample_attributions_requires_one_exact_title(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_batchget(*, offset: int, count: int, no_content: bool):
+        assert offset == 0
+        assert count == 20
+        assert no_content is False
+        return (
+            [
+                {
+                    "media_id": "sample-media",
+                    "content": {
+                        "news_item": [
+                            {"title": "短剧组件测试-勿发", "content": SAMPLE_SHORT_PLAY}
+                        ]
+                    },
+                }
+            ],
+            None,
+        )
+
+    monkeypatch.setattr(short_drama, "draft_batchget", fake_batchget)
+    path = tmp_path / "attribution.json"
+
+    captured = short_drama.capture_sample_attributions(
+        "短剧组件测试-勿发",
+        path=path,
+        now=NOW,
+    )
+
+    assert [item.drama_id for item in captured] == ["123"]
+    saved = json.loads(path.read_text(encoding="utf-8"))
+    assert saved["123"]["plan_id"] == "plan-123"
+    assert saved["123"]["wx_ticket"] == "ticket-test"
+
+
+def test_probe_short_drama_component_creates_non_publishable_draft(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    row = drama("123", "报销风波", plan_id="plan-123")
+    monkeypatch.setattr(
+        short_drama,
+        "load_or_refresh_drama_pool",
+        lambda **_: [row],
+    )
+    monkeypatch.setattr(
+        short_drama,
+        "load_attribution_for_drama",
+        lambda _: attribution(),
+    )
+    uploaded: list[dict] = []
+
+    def fake_draft_add(*, articles: list[dict]):
+        uploaded.extend(articles)
+        return "probe-media", None
+
+    monkeypatch.setattr(short_drama, "draft_add", fake_draft_add, raising=False)
+
+    media_id = short_drama.probe_short_drama_component("123", now=NOW)
+
+    assert media_id == "probe-media"
+    assert uploaded[0]["title"] == "短剧组件探针-勿发-08161200"
+    assert uploaded[0]["content"].count('data-adtype="short-play"') == 1
+    assert uploaded[0]["need_open_comment"] == 0
+
+
+def test_capture_cli_never_prints_ticket(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        short_drama,
+        "capture_sample_attributions",
+        lambda _: [attribution()],
+    )
+
+    exit_code = short_drama.main(
+        ["--capture-sample-title", "短剧组件测试-勿发"]
+    )
+
+    output = capsys.readouterr().out
+    assert exit_code == 0
+    assert "drama_id=123" in output
+    assert "plan_id=plan-123" in output
+    assert "含票据=是" in output
+    assert "ticket-test" not in output
