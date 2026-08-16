@@ -25,6 +25,7 @@ from stock_ai.buy_point_selection.five_day_return_validation import (
     assess_five_day_segment,
     build_five_day_calibrations,
     build_five_day_portfolio_metrics,
+    evaluate_selected_five_day_segment,
     evaluate_frozen_test,
     evaluate_validation_freeze,
     rank_five_day_plans,
@@ -170,6 +171,11 @@ def _not_triggered_for_plan(plan: FiveDaySignalPlan) -> FiveDayObservation:
             mae=None,
         ),
     )
+
+
+def _pending_for_plan(plan: FiveDaySignalPlan) -> FiveDayObservation:
+    value = _not_triggered_for_plan(plan)
+    return replace(value, trade=replace(value.trade, status="PENDING"))
 
 
 def test_split_is_existing_sixty_twenty_twenty_contract() -> None:
@@ -428,6 +434,126 @@ def test_selection_trace_does_not_backfill_daily_overflow() -> None:
         "SELECTED_PLANS": 3,
     }
     assert overflow not in result.admitted
+
+
+def _selected_fixture_segment(
+    observations: tuple[FiveDayObservation, ...],
+    calibrations: dict[str, FiveDayCalibration],
+):
+    return evaluate_selected_five_day_segment(
+        profile_id=PROFILE,
+        segment="train-diagnostic",
+        observations=observations,
+        trading_dates=_trading_dates(63),
+        ranking_calibrations=calibrations,
+        daily_limit=3,
+        capacity=3,
+        cumulative_samples=len(observations),
+        required_samples=1,
+        required_cumulative_samples=1,
+    )
+
+
+def test_selected_metrics_ignore_daily_overflow_losses() -> None:
+    plans = tuple(_plan(START, code=f"60000{index}") for index in range(1, 5))
+    calibrations = {_calibration(plan).key: _calibration(plan) for plan in plans}
+    observations = tuple(
+        _observation_for_plan(
+            plan,
+            net_return="0.01" if index < 3 else "-0.99",
+        )
+        for index, plan in enumerate(plans)
+    )
+
+    value = _selected_fixture_segment(observations, calibrations)
+
+    assert value.metrics.triggered_resolved == 3
+    assert value.metrics.net_expectancy == Decimal("0.01")
+    assert value.selection.funnel_counts["DAILY_CANDIDATE_LIMIT"] == 1
+
+
+def test_selected_metrics_include_an_admitted_loss() -> None:
+    plans = tuple(_plan(START, code=f"60000{index}") for index in range(1, 4))
+    calibrations = {_calibration(plan).key: _calibration(plan) for plan in plans}
+    winning = tuple(
+        _observation_for_plan(plan, net_return="0.01") for plan in plans
+    )
+    losing = (
+        *winning[:2],
+        _observation_for_plan(plans[2], net_return="-0.03"),
+    )
+
+    before = _selected_fixture_segment(winning, calibrations).metrics
+    after = _selected_fixture_segment(losing, calibrations).metrics
+
+    assert before.net_expectancy == Decimal("0.01")
+    assert after.net_expectancy == Decimal(
+        "-0.003333333333333333333333333333"
+    )
+    assert after.profit_factor == Decimal(
+        "0.6666666666666666666666666667"
+    )
+
+
+def test_selected_metrics_exclude_nontrades_and_capacity_rejections() -> None:
+    plans = tuple(_plan(START, code=f"60000{index}") for index in range(1, 5))
+    calibrations = {_calibration(plan).key: _calibration(plan) for plan in plans}
+    observations = (
+        _observation_for_plan(plans[0], net_return="0.01"),
+        _not_triggered_for_plan(plans[1]),
+        _pending_for_plan(plans[2]),
+        _observation_for_plan(plans[3], net_return="0.99"),
+    )
+
+    value = evaluate_selected_five_day_segment(
+        profile_id=PROFILE,
+        segment="train-diagnostic",
+        observations=observations,
+        trading_dates=_trading_dates(63),
+        ranking_calibrations=calibrations,
+        daily_limit=4,
+        capacity=1,
+        cumulative_samples=1,
+        required_samples=1,
+        required_cumulative_samples=1,
+    )
+
+    assert value.metrics.triggered_resolved == 1
+    assert value.selection.funnel_counts["NOT_TRIGGERED"] == 1
+    assert value.selection.funnel_counts["PENDING"] == 1
+    assert value.selection.funnel_counts["PORTFOLIO_CAPACITY"] == 1
+    assert value.selection.incomplete
+
+
+def test_pending_selection_prevents_numeric_qualification() -> None:
+    plans = tuple(_plan(START, code=f"6000{index:02d}") for index in range(1, 10))
+    calibrations = {_calibration(plan).key: _calibration(plan) for plan in plans}
+    completed = tuple(
+        _observation_for_plan(
+            plan,
+            net_return="0.01" if index < 7 else "-0.01",
+        )
+        for index, plan in enumerate(plans[:8])
+    )
+    observations = (*completed, _pending_for_plan(plans[8]))
+
+    value = evaluate_selected_five_day_segment(
+        profile_id=PROFILE,
+        segment="train-diagnostic",
+        observations=observations,
+        trading_dates=_trading_dates(63),
+        ranking_calibrations=calibrations,
+        daily_limit=9,
+        capacity=8,
+        cumulative_samples=8,
+        required_samples=1,
+        required_cumulative_samples=1,
+    )
+
+    assert value.metrics.net_expectancy == Decimal("0.0075")
+    assert value.metrics.profit_factor == Decimal("7")
+    assert not value.metrics.qualifies
+    assert value.metrics.reasons == ("SELECTION_INCOMPLETE",)
 
 
 @pytest.mark.parametrize(

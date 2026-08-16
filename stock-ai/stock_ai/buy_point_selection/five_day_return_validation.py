@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import date
 from decimal import Decimal
 import hashlib
@@ -25,6 +25,7 @@ from .models import SetupType
 
 FIVE_DAY_FREEZE_SCHEMA = "five-day-return-freeze-v1"
 RESEARCH_IDENTITY = "CASE_ANALYSIS_ONLY|NO-TRADE"
+SELECTED_PORTFOLIO_METRIC_VERSION = "selected-portfolio-v2"
 WILSON_Z = Decimal("1.959963984540054")
 _RESOLVED_STATUSES = frozenset(
     ("STOPPED", "TIME_EXIT_GAIN", "TIME_EXIT_FLAT", "TIME_EXIT_LOSS")
@@ -137,6 +138,14 @@ class FiveDaySelection:
     admitted: tuple[FiveDayObservation, ...]
     funnel_counts: Mapping[str, int]
     incomplete: bool
+
+
+@dataclass(frozen=True)
+class FiveDaySelectedSegment:
+    metric_version: str
+    metrics: FiveDaySegmentMetrics
+    portfolio: FiveDayPortfolioMetrics
+    selection: FiveDaySelection
 
 
 def _is_resolved(value: FiveDayObservation) -> bool:
@@ -690,14 +699,9 @@ def _largest_share(
     return max(values.values()) / denominator
 
 
-def build_five_day_portfolio_metrics(
-    plans: Sequence[FiveDaySignalPlan],
-    observations: Sequence[FiveDayObservation],
-    calibrations: Mapping[str, FiveDayCalibration],
+def _portfolio_metrics_from_accepted(
+    accepted: Sequence[FiveDayObservation],
 ) -> FiveDayPortfolioMetrics:
-    """Rank plans, enforce three active research positions, and score results."""
-    selection = select_five_day_portfolio(plans, observations, calibrations)
-    accepted = selection.admitted
     trade_count = len(accepted)
     stock_trades: Counter[str] = Counter(
         normalize_code6(value.trade.code) for value in accepted
@@ -741,6 +745,114 @@ def build_five_day_portfolio_metrics(
             else Decimal("0")
         ),
         gross_profit_available=gross_profit > 0,
+    )
+
+
+def build_five_day_portfolio_metrics(
+    plans: Sequence[FiveDaySignalPlan],
+    observations: Sequence[FiveDayObservation],
+    calibrations: Mapping[str, FiveDayCalibration],
+) -> FiveDayPortfolioMetrics:
+    """Rank plans, enforce three active research positions, and score results."""
+    selection = select_five_day_portfolio(plans, observations, calibrations)
+    return _portfolio_metrics_from_accepted(selection.admitted)
+
+
+def evaluate_selected_five_day_segment(
+    *,
+    profile_id: str,
+    segment: str,
+    observations: Sequence[FiveDayObservation],
+    trading_dates: Sequence[date],
+    ranking_calibrations: Mapping[str, FiveDayCalibration],
+    daily_limit: int,
+    capacity: int,
+    cumulative_samples: int,
+    required_samples: int,
+    required_cumulative_samples: int,
+) -> FiveDaySelectedSegment:
+    """Evaluate one profile from only its capacity-admitted completed trades."""
+    profile_values = tuple(
+        value
+        for value in observations
+        if value.plan.profile.profile_id == profile_id
+    )
+    sessions = tuple(trading_dates)
+    data_end = sessions[-1]
+    cutoff = tuple(
+        value
+        for value in profile_values
+        if not _is_resolved(value) or value.resolution_date <= data_end
+    )
+    selection = select_five_day_portfolio(
+        tuple(value.plan for value in cutoff),
+        cutoff,
+        ranking_calibrations,
+        daily_limit=daily_limit,
+        capacity=capacity,
+    )
+    admitted = selection.admitted
+    positive_returns = tuple(
+        value
+        for value in admitted
+        if value.trade.net_return is not None and value.trade.net_return > 0
+    )
+    gross_profit = sum(
+        (value.trade.net_pnl for value in admitted if value.trade.net_pnl > 0),
+        Decimal("0"),
+    )
+    gross_loss = abs(
+        sum(
+            (
+                value.trade.net_pnl
+                for value in admitted
+                if value.trade.net_pnl < 0
+            ),
+            Decimal("0"),
+        )
+    )
+    portfolio = _portfolio_metrics_from_accepted(admitted)
+    wilson = _wilson_interval(len(positive_returns), len(admitted))
+    metrics = assess_five_day_segment(
+        profile_id=profile_id,
+        segment=segment,
+        triggered_resolved=len(admitted),
+        net_expectancy=_average(
+            tuple(
+                value.trade.net_return
+                for value in admitted
+                if value.trade.net_return is not None
+            )
+        ),
+        profit_factor=(gross_profit / gross_loss if gross_loss > 0 else None),
+        profitable_wilson_lower=wilson[0],
+        stop_rate=(
+            Decimal(sum(value.trade.status == "STOPPED" for value in admitted))
+            / Decimal(len(admitted))
+            if admitted
+            else Decimal("0")
+        ),
+        positive_window_ratio=_positive_window_ratio(
+            admitted,
+            sessions,
+            data_end=data_end,
+        ),
+        maximum_drawdown=portfolio.maximum_drawdown,
+        required_samples=required_samples,
+        cumulative_samples=cumulative_samples,
+        required_cumulative_samples=required_cumulative_samples,
+    )
+    if selection.incomplete:
+        metrics = replace(
+            metrics,
+            qualifies=False,
+            reasons=(*metrics.reasons, "SELECTION_INCOMPLETE"),
+        )
+    return FiveDaySelectedSegment(
+        metric_version=SELECTED_PORTFOLIO_METRIC_VERSION,
+        metrics=metrics,
+        portfolio=portfolio,
+        selection=selection,
     )
 
 
