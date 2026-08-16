@@ -7,6 +7,10 @@ from importlib import import_module
 
 import pytest
 
+from stock_ai.buy_point_selection.five_day_ranking_v2_report import (
+    load_five_day_ranking_v2_train,
+    write_five_day_ranking_v2_train,
+)
 from stock_ai.buy_point_selection.five_day_return_execution import (
     COST_VERSION,
     EVALUATOR_VERSION,
@@ -411,6 +415,39 @@ def _qualifying_train_review() -> FiveDayResearchReview:
                 for rank in range(1, 7)
             )
     return _complete_review_fixture((*calibration, *evaluation))
+
+
+def _train_artifact(
+    research: FiveDayResearchReview,
+    tmp_path,
+):
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+    review = ranking_v2.build_five_day_ranking_v2_train_review(
+        research,
+        parent_research_identity=PARENT_IDENTITY,
+    )
+    return load_five_day_ranking_v2_train(
+        write_five_day_ranking_v2_train(review, tmp_path),
+        expected_parent_research_identity=PARENT_IDENTITY,
+    )
+
+
+def _validation_research_fixture() -> FiveDayResearchReview:
+    research = _qualifying_train_review()
+    validation = _settled_observation(
+        _plan(
+            code="800001",
+            profile_index=0,
+            signal_date=research.split.validation[0],
+        ),
+        net_return="0.01",
+    )
+    return replace(
+        research,
+        observations=(*research.observations, validation),
+    )
 
 
 def _bands(
@@ -914,6 +951,72 @@ def test_v2_train_marks_a_qualified_winner_validation_only() -> None:
     assert result.winner_train_samples == 48
     assert result.status == "TRAIN_CANDIDATE_SELECTED"
     assert result.validation_eligible is True
+    assert result.promotion_eligible is False
+    assert result.trade_permission == "NO-TRADE"
+
+
+def test_v2_validation_requires_exactly_one_frozen_train_winner(
+    tmp_path,
+) -> None:
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+    research = _complete_review_fixture()
+    train = _train_artifact(research, tmp_path)
+
+    with pytest.raises(ValueError, match="unique train winner"):
+        ranking_v2.build_five_day_ranking_v2_validation_review(
+            research,
+            train,
+            parent_research_identity=PARENT_IDENTITY,
+        )
+
+
+def test_v2_validation_rejects_changed_winner_policy_before_outcomes(
+    tmp_path,
+) -> None:
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+    research = _qualifying_train_review()
+    train = _train_artifact(research, tmp_path)
+    changed = replace(
+        train,
+        winner_policy_id="DOWNSIDE-K60-STABLE_NEGATIVE",
+    )
+
+    with pytest.raises(ValueError, match="winner policy or lineage"):
+        ranking_v2.build_five_day_ranking_v2_validation_review(
+            research,
+            changed,
+            parent_research_identity=PARENT_IDENTITY,
+        )
+
+
+def test_v2_validation_evaluates_only_the_locked_winner_validation_only(
+    tmp_path,
+) -> None:
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+    research = _validation_research_fixture()
+    train = _train_artifact(research, tmp_path)
+
+    result = ranking_v2.build_five_day_ranking_v2_validation_review(
+        research,
+        train,
+        parent_research_identity=PARENT_IDENTITY,
+    )
+
+    assert result.winner_policy_id == "EDGE-K30-BASE"
+    assert result.validation_dates == research.split.validation
+    assert len(result.segment.selection.ranking.plans) == 1
+    assert result.segment.selection.ranking.plans[0].candidate.code == "800001"
+    assert result.qualifies_for_test_design is False
+    assert "SEGMENT_SAMPLES_TOO_LOW" in result.reasons
+    assert "TRAIN_VALIDATION_SAMPLES_TOO_LOW" in result.reasons
+    assert result.validation_outcomes_read is True
+    assert result.test_outcomes_read is False
     assert result.promotion_eligible is False
     assert result.trade_permission == "NO-TRADE"
 

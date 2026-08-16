@@ -19,9 +19,11 @@ from .five_day_ranking_v2 import (
     V2_RANKING_VERSION,
     V2_TRAIN_SCHEMA,
     FiveDayRankingV2TrainReview,
+    FiveDayRankingV2ValidationReview,
     build_five_day_v2_policies,
     five_day_v2_policy_hash,
     five_day_v2_policy_set_hash,
+    v2_validation_trial_identity,
 )
 
 
@@ -433,3 +435,126 @@ def load_five_day_ranking_v2_train(
         validation_eligible=bool(payload["validation_eligible"]),
         payload=payload,
     )
+
+
+def _v2_validation_content(
+    review: FiveDayRankingV2ValidationReview,
+) -> dict[str, object]:
+    return {
+        "schema": review.schema,
+        "trial_identity": review.trial_identity,
+        "parent_train_identity": review.parent_train_identity,
+        "parent_research_identity": review.parent_research_identity,
+        "parent_input_fingerprint": review.parent_input_fingerprint,
+        "winner_policy_id": review.winner_policy_id,
+        "winner_policy_hash": review.winner_policy_hash,
+        "validation_dates": [
+            value.isoformat() for value in review.validation_dates
+        ],
+        "segment": _segment_content(review.segment),
+        "qualifies_for_test_design": review.qualifies_for_test_design,
+        "reasons": list(review.reasons),
+        "validation_outcomes_read": review.validation_outcomes_read,
+        "test_outcomes_read": review.test_outcomes_read,
+        "promotion_eligible": review.promotion_eligible,
+        "trade_permission": review.trade_permission,
+    }
+
+
+def _validation_content_is_safe(content: Mapping[str, object]) -> bool:
+    policy = next(
+        (
+            value
+            for value in build_five_day_v2_policies()
+            if value.policy_id == content["winner_policy_id"]
+        ),
+        None,
+    )
+    return (
+        content["schema"] == "five-day-ranking-v2-validation-v1"
+        and policy is not None
+        and content["winner_policy_hash"] == five_day_v2_policy_hash(policy)
+        and content["trial_identity"]
+        == v2_validation_trial_identity(
+            str(content["parent_train_identity"]),
+            str(content["winner_policy_hash"]),
+        )
+        and content["qualifies_for_test_design"]
+        is (not content["reasons"])
+        and content["validation_outcomes_read"] is True
+        and content["test_outcomes_read"] is False
+        and content["promotion_eligible"] is False
+        and content["trade_permission"] == "NO-TRADE"
+        and not {"observations", "selected_observations"}.intersection(
+            _nested_keys(content)
+        )
+    )
+
+
+def write_five_day_ranking_v2_validation(
+    review: FiveDayRankingV2ValidationReview,
+    output_dir: str | Path,
+) -> Path:
+    """Write the unique validation trial without permitting replacement."""
+    content = _v2_validation_content(review)
+    if not _validation_content_is_safe(content):
+        raise ValueError("ranking v2 validation artifact safety mismatch")
+    payload = {**content, "artifact_identity": _sha256(content)}
+    target = Path(output_dir)
+    target.mkdir(parents=True, exist_ok=True)
+    path = target / (
+        f"ranking-v2-validation-{review.trial_identity}.json"
+    )
+    serialized = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ) + "\n"
+    _write_exclusive_or_verify(path, serialized)
+    return path
+
+
+def load_five_day_ranking_v2_validation(
+    path: str | Path,
+    *,
+    expected_train_identity: str,
+    expected_policy_hash: str,
+) -> Mapping[str, object]:
+    """Load one validation trial only under its frozen train identity."""
+    target = Path(path)
+    try:
+        payload = json.loads(target.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError
+        artifact_identity = str(payload["artifact_identity"])
+        content = {
+            key: value
+            for key, value in payload.items()
+            if key != "artifact_identity"
+        }
+        expected_trial = v2_validation_trial_identity(
+            expected_train_identity,
+            expected_policy_hash,
+        )
+        if (
+            artifact_identity != _sha256(content)
+            or payload["trial_identity"] != expected_trial
+            or target.name
+            != f"ranking-v2-validation-{expected_trial}.json"
+            or payload["parent_train_identity"]
+            != expected_train_identity
+            or payload["winner_policy_hash"] != expected_policy_hash
+            or not _validation_content_is_safe(content)
+        ):
+            raise ValueError
+    except (
+        KeyError,
+        TypeError,
+        ValueError,
+        json.JSONDecodeError,
+    ):
+        raise ValueError(
+            "five-day ranking v2 validation artifact is invalid"
+        ) from None
+    return payload

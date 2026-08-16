@@ -8,7 +8,7 @@ from datetime import date
 from decimal import Decimal
 import hashlib
 import json
-from typing import Mapping, Sequence
+from typing import TYPE_CHECKING, Mapping, Sequence
 
 from stock_ai.market_codes import normalize_code6
 
@@ -29,6 +29,9 @@ from .five_day_return_validation import (
 )
 from .models import SetupType
 from .validation import ChronologicalSplit
+
+if TYPE_CHECKING:
+    from .five_day_ranking_v2_report import FiveDayRankingV2TrainArtifact
 
 
 V2_RANKING_VERSION = "five-day-ranking-key-v2"
@@ -186,6 +189,25 @@ class FiveDayRankingV2TrainReview:
     winner_train_samples: int
     status: str
     validation_eligible: bool
+    validation_outcomes_read: bool
+    test_outcomes_read: bool
+    promotion_eligible: bool
+    trade_permission: str
+
+
+@dataclass(frozen=True)
+class FiveDayRankingV2ValidationReview:
+    schema: str
+    trial_identity: str
+    parent_train_identity: str
+    parent_research_identity: str
+    parent_input_fingerprint: str
+    winner_policy_id: str
+    winner_policy_hash: str
+    validation_dates: tuple[date, ...]
+    segment: FiveDaySelectedSegment
+    qualifies_for_test_design: bool
+    reasons: tuple[str, ...]
     validation_outcomes_read: bool
     test_outcomes_read: bool
     promotion_eligible: bool
@@ -923,4 +945,138 @@ def build_five_day_ranking_v2_train_review(
         test_outcomes_read=False,
         promotion_eligible=False,
         trade_permission="NO-TRADE",
+    )
+
+
+def build_five_day_ranking_v2_validation_review(
+    research: FiveDayResearchReview,
+    train: "FiveDayRankingV2TrainArtifact",
+    *,
+    parent_research_identity: str,
+) -> FiveDayRankingV2ValidationReview:
+    """Reject an unlocked or lineage-mismatched validation attempt."""
+    if (
+        not train.validation_eligible
+        or train.winner_policy_id is None
+        or train.winner_policy_hash is None
+    ):
+        raise ValueError(
+            "ranking v2 validation requires a unique train winner"
+        )
+    policy = next(
+        (
+            value
+            for value in build_five_day_v2_policies()
+            if value.policy_id == train.winner_policy_id
+        ),
+        None,
+    )
+    split_payload = {
+        "train": [value.isoformat() for value in research.split.train],
+        "validation": [
+            value.isoformat() for value in research.split.validation
+        ],
+        "test": [value.isoformat() for value in research.split.test],
+    }
+    if (
+        policy is None
+        or five_day_v2_policy_hash(policy) != train.winner_policy_hash
+        or train.payload["winner_policy_id"] != train.winner_policy_id
+        or train.payload["winner_policy_hash"] != train.winner_policy_hash
+        or train.payload["validation_eligible"] is not True
+        or train.parent_research_identity != parent_research_identity
+        or train.payload["parent_research_identity"]
+        != parent_research_identity
+        or train.parent_input_fingerprint != research.input_fingerprint
+        or train.payload["parent_input_fingerprint"]
+        != research.input_fingerprint
+        or train.payload["split"] != split_payload
+        or not research.point_in_time_complete
+        or research.test_outcomes_read
+    ):
+        raise ValueError("ranking v2 winner policy or lineage mismatch")
+
+    validation_start = research.split.validation[0]
+    validation_end = research.split.validation[-1]
+    train_dates = frozenset(research.split.train)
+    validation_dates = frozenset(research.split.validation)
+    calibration_rows = tuple(
+        value
+        for value in research.observations
+        if value.plan.candidate.signal_date in train_dates
+        and _is_resolved(value)
+        and value.resolution_date < validation_start
+    )
+    calibrations = build_five_day_calibrations(
+        calibration_rows,
+        trading_dates=research.split.train,
+    )
+    observations = tuple(
+        value
+        for value in research.observations
+        if value.plan.candidate.signal_date in validation_dates
+        and (
+            not _is_resolved(value)
+            or value.resolution_date <= validation_end
+        )
+    )
+    assert policy is not None
+    ranked = rank_five_day_plans_v2(
+        tuple(value.plan for value in observations),
+        calibrations,
+        policy=policy,
+        daily_limit=3,
+    )
+    selection = admit_five_day_ranking(
+        ranked.ranking,
+        observations,
+        capacity=3,
+    )
+    segment = evaluate_five_day_selection_segment(
+        profile_id="GLOBAL",
+        segment="validation",
+        selection=selection,
+        trading_dates=research.split.validation,
+        cumulative_samples=(
+            train.winner_train_samples + len(selection.admitted)
+        ),
+        required_samples=30,
+        required_cumulative_samples=70,
+    )
+    reasons = tuple(
+        dict.fromkeys((*segment.metrics.reasons, *segment.portfolio.reasons))
+    )
+    return FiveDayRankingV2ValidationReview(
+        schema="five-day-ranking-v2-validation-v1",
+        trial_identity=v2_validation_trial_identity(
+            train.artifact_identity,
+            train.winner_policy_hash,
+        ),
+        parent_train_identity=train.artifact_identity,
+        parent_research_identity=parent_research_identity,
+        parent_input_fingerprint=research.input_fingerprint,
+        winner_policy_id=policy.policy_id,
+        winner_policy_hash=train.winner_policy_hash,
+        validation_dates=tuple(research.split.validation),
+        segment=segment,
+        qualifies_for_test_design=not reasons,
+        reasons=reasons,
+        validation_outcomes_read=True,
+        test_outcomes_read=False,
+        promotion_eligible=False,
+        trade_permission="NO-TRADE",
+    )
+
+
+def v2_validation_trial_identity(
+    train_identity: str,
+    winner_policy_hash: str,
+) -> str:
+    """Derive the one validation-trial identity before reading outcomes."""
+    return _sha256(
+        {
+            "schema": "five-day-ranking-v2-validation-v1",
+            "parent_train_identity": train_identity,
+            "winner_policy_hash": winner_policy_hash,
+        }
     )
