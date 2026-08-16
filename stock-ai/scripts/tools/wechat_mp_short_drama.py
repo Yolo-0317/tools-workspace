@@ -608,6 +608,11 @@ def attach_short_drama(
     attributed_rows = [row for row in rows if has_attribution_for_drama(row)]
     if not attributed_rows:
         raise RuntimeError("没有同时满足内容和归因门禁的短剧")
+    excluded_reasons = [
+        f"{row.drama_name}: {reason}"
+        for row in attributed_rows
+        if (reason := incompatibility_reason(out, row)) is not None
+    ]
     drama, score = pick_short_drama(
         out,
         attributed_rows,
@@ -631,8 +636,16 @@ def attach_short_drama(
         "theme": drama.theme,
         "media_count": drama.media_count,
         "rate_bp": drama.rate_bp,
+        "hot_degree": drama.hot_degree,
         "plan_id": drama.plan_id,
-        "score": score,
+        "score": {
+            "commission": round(score.commission_score, 1),
+            "heat": round(score.heat_score, 1),
+            "appeal": round(score.appeal_score, 1),
+            "penalty": round(score.usage_penalty, 1),
+            "final": round(score.final_score, 1),
+        },
+        "excluded_reasons": excluded_reasons,
     }
     assert_longform_promotion_safe(out, kind=normalized)
     return out
@@ -648,10 +661,26 @@ def promotion_summary(article: Mapping[str, Any]) -> str:
     )
     media_count = _as_int(item.get("media_count"))
     rate_percent = _as_int(item.get("rate_bp")) / 100
-    return (
+    summary = (
         f"短剧推广: {item.get('drama_name')} · {category or '未分类'} · "
-        f"{media_count}集 · 分佣{rate_percent:.2f}%"
+        f"{media_count}集 · 分佣{rate_percent:.2f}% · "
+        f"热度{_as_int(item.get('hot_degree'))}"
     )
+    score = item.get("score") or {}
+    if isinstance(score, Mapping):
+        summary += (
+            f" · 返佣分{float(score.get('commission') or 0):.1f}"
+            f"/热度分{float(score.get('heat') or 0):.1f}"
+            f"/吸引力分{float(score.get('appeal') or 0):.1f}"
+            f"/轮换-{float(score.get('penalty') or 0):.1f}"
+            f"/最终分{float(score.get('final') or 0):.1f}"
+        )
+    excluded = item.get("excluded_reasons") or []
+    if isinstance(excluded, Sequence) and not isinstance(excluded, (str, bytes)):
+        safe_reasons = [str(reason) for reason in excluded[:3] if str(reason)]
+        if safe_reasons:
+            summary += " · 门禁排除" + "；".join(safe_reasons)
+    return summary
 
 
 def _attribution_from_attrs(

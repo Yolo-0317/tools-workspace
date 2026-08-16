@@ -925,7 +925,7 @@ def test_verify_saved_short_drama_rejects_stripped_component(
         )
 
 
-def test_promotion_summary_uses_only_public_business_fields() -> None:
+def test_promotion_summary_reports_score_without_attribution_secrets() -> None:
     article = {
         "short_drama": {
             "drama_id": "123",
@@ -934,12 +934,30 @@ def test_promotion_summary_uses_only_public_business_fields() -> None:
             "theme": "都市、职场",
             "media_count": 60,
             "rate_bp": 6000,
+            "hot_degree": 10_000,
             "plan_id": "plan-123",
+            "score": {
+                "commission": 45.0,
+                "heat": 35.0,
+                "appeal": 20.0,
+                "penalty": 3.0,
+                "final": 97.0,
+            },
+            "excluded_reasons": ["豪门甜宠: 严肃事件不匹配娱乐钩子"],
         }
     }
 
     summary = short_drama.promotion_summary(article)
 
-    assert summary == "短剧推广: 报销风波 · 现代/都市、职场 · 60集 · 分佣60.00%"
+    assert "短剧推广: 报销风波" in summary
+    assert "分佣60.00%" in summary
+    assert "热度10000" in summary
+    assert "返佣分45.0" in summary
+    assert "热度分35.0" in summary
+    assert "吸引力分20.0" in summary
+    assert "轮换-3.0" in summary
+    assert "最终分97.0" in summary
+    assert "门禁排除豪门甜宠: 严肃事件不匹配娱乐钩子" in summary
     assert "123" not in summary
     assert "plan-123" not in summary
+    assert "wxTicket" not in summary
