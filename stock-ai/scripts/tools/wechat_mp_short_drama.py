@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import json
+import math
 import re
 import html
 import uuid
@@ -96,6 +97,53 @@ class ShortDramaAttribution:
     default_path: str
     wx_ticket: str
     captured_at: str
+
+
+@dataclass(frozen=True)
+class DramaScore:
+    commission_score: float
+    heat_score: float
+    appeal_score: float
+    usage_penalty: float
+    final_score: float
+
+
+STRONG_APPEAL_TERMS = (
+    "反击",
+    "逆袭",
+    "复仇",
+    "身份反转",
+    "豪门",
+    "千金",
+    "职场冲突",
+    "家庭冲突",
+    "离婚",
+    "追妻",
+    "重生",
+)
+MEDIUM_APPEAL_TERMS = ("都市", "爱情", "家庭", "职场", "励志")
+SERIOUS_EVENT_TERMS = (
+    "伤亡",
+    "遇难",
+    "死亡",
+    "火灾",
+    "地震",
+    "洪水",
+    "坠机",
+    "事故",
+    "灾害",
+    "救援",
+)
+ESCAPIST_DRAMA_TERMS = (
+    "甜宠",
+    "霸总",
+    "豪门",
+    "追妻",
+    "闪婚",
+    "宠妻",
+    "复仇",
+    "重生",
+)
 
 
 class _ShortPlayParser(HTMLParser):
@@ -339,30 +387,43 @@ def _bigrams(value: str) -> set[str]:
     return {compact[index : index + 2] for index in range(max(0, len(compact) - 1))}
 
 
-def _minmax(value: int, values: Sequence[int]) -> float:
+def _minmax(value: float, values: Sequence[float]) -> float:
     low, high = min(values), max(values)
-    return 0.5 if low == high else (value - low) / (high - low)
+    return 1.0 if low == high else (value - low) / (high - low)
+
+
+def drama_appeal_points(drama: ShortDrama) -> int:
+    text = " ".join(
+        (drama.drama_name, drama.era, drama.theme, drama.description)
+    )
+    strong = min(15, sum(5 for term in STRONG_APPEAL_TERMS if term in text))
+    medium = min(5, sum(2 for term in MEDIUM_APPEAL_TERMS if term in text))
+    return strong + medium
 
 
 def score_drama(
     drama: ShortDrama,
     *,
-    match_text: str,
-    kind: str,
     population: Sequence[ShortDrama],
-) -> float:
-    article_terms = _bigrams(match_text)
-    drama_terms = _bigrams(
-        " ".join((drama.drama_name, drama.era, drama.theme, drama.description))
+    usage_count: int = 0,
+) -> DramaScore:
+    commission = _minmax(
+        drama.rate_bp,
+        [row.rate_bp for row in population],
+    ) * 45
+    heat = _minmax(
+        math.log1p(max(0, drama.hot_degree)),
+        [math.log1p(max(0, row.hot_degree)) for row in population],
+    ) * 35
+    appeal = float(drama_appeal_points(drama))
+    penalty = float(min(max(0, usage_count) * 3, 9))
+    return DramaScore(
+        commission_score=commission,
+        heat_score=heat,
+        appeal_score=appeal,
+        usage_penalty=penalty,
+        final_score=commission + heat + appeal - penalty,
     )
-    relevance = len(article_terms & drama_terms) / max(1, min(20, len(drama_terms)))
-    if kind in WORKPLACE_KINDS and any(
-        term in drama.theme for term in ("职场", "都市", "励志")
-    ):
-        relevance = min(1.0, relevance + 0.15)
-    heat = _minmax(drama.hot_degree, [row.hot_degree for row in population])
-    rate = _minmax(drama.rate_bp, [row.rate_bp for row in population])
-    return relevance * 0.50 + heat * 0.30 + rate * 0.20
 
 
 def drama_repeat_days() -> int:
@@ -379,6 +440,21 @@ def drama_min_valid_days() -> int:
     except ValueError:
         value = 7
     return max(0, value)
+
+
+def incompatibility_reason(
+    article: Mapping[str, Any],
+    drama: ShortDrama,
+) -> str | None:
+    article_text = article_match_text(article)
+    drama_text = " ".join(
+        (drama.drama_name, drama.era, drama.theme, drama.description)
+    )
+    serious = next((term for term in SERIOUS_EVENT_TERMS if term in article_text), None)
+    escapist = next((term for term in ESCAPIST_DRAMA_TERMS if term in drama_text), None)
+    if serious and escapist:
+        return f"严肃事件“{serious}”不匹配娱乐钩子“{escapist}”"
+    return None
 
 
 def _load_usage(path: Path) -> list[dict[str, Any]]:
@@ -398,12 +474,12 @@ def pick_short_drama(
     kind: str,
     usage_path: Path = USAGE_PATH,
     now: datetime | None = None,
-) -> ShortDrama:
+) -> tuple[ShortDrama, DramaScore]:
     if not rows:
         raise RuntimeError("没有可用短剧候选")
     current = now or datetime.now(TZ)
     cutoff = current - timedelta(days=drama_repeat_days())
-    recent_ids: set[str] = set()
+    recent_counts: dict[str, int] = {}
     for item in _load_usage(usage_path):
         try:
             used_at = datetime.fromisoformat(str(item.get("used_at") or ""))
@@ -412,25 +488,46 @@ def pick_short_drama(
         if used_at.tzinfo is None:
             used_at = used_at.replace(tzinfo=TZ)
         if used_at >= cutoff:
-            recent_ids.add(str(item.get("drama_id") or ""))
-    candidates = [row for row in rows if row.drama_id not in recent_ids]
+            drama_id = str(item.get("drama_id") or "")
+            if drama_id:
+                recent_counts[drama_id] = recent_counts.get(drama_id, 0) + 1
+    candidates = [row for row in rows if incompatibility_reason(article, row) is None]
     if not candidates:
-        candidates = list(rows)
-    match_text = article_match_text(article)
-    return min(
+        raise RuntimeError("没有通过题材安全门禁的短剧")
+    base_scores = {
+        row.drama_id: score_drama(row, population=candidates)
+        for row in candidates
+    }
+    ranked = sorted(
         candidates,
         key=lambda row: (
-            -score_drama(
-                row,
-                match_text=match_text,
-                kind=kind,
-                population=candidates,
-            ),
+            -base_scores[row.drama_id].final_score,
+            -row.rate_bp,
             -row.hot_degree,
             -row.offline_timestamp,
             row.drama_id,
         ),
     )
+    shortlist = ranked[:3]
+    final_scores = {
+        row.drama_id: score_drama(
+            row,
+            population=candidates,
+            usage_count=recent_counts.get(row.drama_id, 0),
+        )
+        for row in shortlist
+    }
+    picked = min(
+        shortlist,
+        key=lambda row: (
+            -final_scores[row.drama_id].final_score,
+            -base_scores[row.drama_id].final_score,
+            -row.rate_bp,
+            -row.hot_degree,
+            row.drama_id,
+        ),
+    )
+    return picked, final_scores[picked.drama_id]
 
 
 def record_drama_usage(
@@ -511,7 +608,7 @@ def attach_short_drama(
     attributed_rows = [row for row in rows if has_attribution_for_drama(row)]
     if not attributed_rows:
         raise RuntimeError("没有同时满足内容和归因门禁的短剧")
-    drama = pick_short_drama(
+    drama, score = pick_short_drama(
         out,
         attributed_rows,
         kind=normalized,
@@ -535,6 +632,7 @@ def attach_short_drama(
         "media_count": drama.media_count,
         "rate_bp": drama.rate_bp,
         "plan_id": drama.plan_id,
+        "score": score,
     }
     assert_longform_promotion_safe(out, kind=normalized)
     return out

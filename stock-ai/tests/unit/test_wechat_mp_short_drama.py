@@ -351,21 +351,77 @@ def test_eligible_and_dedupe_dramas_keep_best_live_plan() -> None:
     assert [row.drama_id for row in deduped] == ["2"]
 
 
-def test_pick_short_drama_prefers_relevant_workplace_story(tmp_path: Path) -> None:
+def test_score_drama_uses_revenue_weights_and_log_heat() -> None:
     rows = [
         drama(
-            "romance",
-            "总裁甜宠",
-            theme="爱情",
-            description="豪门爱情",
-            hot_degree=1000,
+            "high-rate",
+            "城市故事",
+            theme="都市",
+            rate_bp=7000,
+            hot_degree=100,
         ),
         drama(
-            "expense",
-            "报销风波后整个公司都慌了",
-            theme="都市、职场",
-            description="员工提交报销单，公司报销制度突然收紧。",
-            hot_degree=500,
+            "high-heat",
+            "城市故事",
+            theme="都市",
+            rate_bp=6000,
+            hot_degree=10_000,
+        ),
+    ]
+
+    high_rate = short_drama.score_drama(rows[0], population=rows)
+    high_heat = short_drama.score_drama(rows[1], population=rows)
+
+    assert high_rate.commission_score == 45.0
+    assert high_rate.heat_score == 0.0
+    assert high_rate.appeal_score == 2.0
+    assert high_rate.final_score == 47.0
+    assert high_heat.commission_score == 0.0
+    assert high_heat.heat_score == 35.0
+    assert high_heat.final_score == 37.0
+
+
+def test_score_drama_gives_equal_population_metrics_full_credit() -> None:
+    rows = [
+        drama("one", "城市故事", theme="都市", rate_bp=6000, hot_degree=100),
+        drama("two", "家庭故事", theme="家庭", rate_bp=6000, hot_degree=100),
+    ]
+
+    score = short_drama.score_drama(rows[0], population=rows)
+
+    assert score.commission_score == 45.0
+    assert score.heat_score == 35.0
+
+
+def test_drama_appeal_points_caps_strong_and_medium_hooks_at_twenty() -> None:
+    row = drama(
+        "hook",
+        "豪门千金重生后反击",
+        theme="都市、爱情、家庭",
+    )
+
+    assert short_drama.drama_appeal_points(row) == 20
+
+
+def test_pick_short_drama_allows_weak_relevance_for_higher_revenue(
+    tmp_path: Path,
+) -> None:
+    rows = [
+        drama(
+            "commercial",
+            "千金反击",
+            theme="都市、家庭",
+            description="豪门千金身份反转",
+            rate_bp=7000,
+            hot_degree=10_000,
+        ),
+        drama(
+            "relevant",
+            "报销制度",
+            theme="职场",
+            description="公司报销观察",
+            rate_bp=5000,
+            hot_degree=100,
         ),
     ]
     article = {
@@ -374,7 +430,7 @@ def test_pick_short_drama_prefers_relevant_workplace_story(tmp_path: Path) -> No
         "body_text": "员工提交报销单之后，财务开始逐项核查。",
     }
 
-    picked = short_drama.pick_short_drama(
+    picked, score = short_drama.pick_short_drama(
         article,
         rows,
         kind="workspace",
@@ -382,21 +438,22 @@ def test_pick_short_drama_prefers_relevant_workplace_story(tmp_path: Path) -> No
         now=NOW,
     )
 
-    assert picked.drama_id == "expense"
+    assert picked.drama_id == "commercial"
+    assert score.commission_score == 45.0
 
 
 def test_pick_short_drama_avoids_recently_recorded_drama(tmp_path: Path) -> None:
     usage_path = tmp_path / "usage.json"
     rows = [
         drama("hot", "职场风云", theme="职场", hot_degree=1000),
-        drama("other", "城市故事", theme="都市", hot_degree=500),
+        drama("other", "城市故事", theme="都市", hot_degree=1000),
     ]
     article = {
         "title": "职场风云",
         "digest": "职场观察",
         "body_text": "公司里的选择",
     }
-    first = short_drama.pick_short_drama(
+    first, _ = short_drama.pick_short_drama(
         article,
         rows,
         kind="workspace",
@@ -410,7 +467,7 @@ def test_pick_short_drama_avoids_recently_recorded_drama(tmp_path: Path) -> None
         used_at=NOW,
     )
 
-    second = short_drama.pick_short_drama(
+    second, second_score = short_drama.pick_short_drama(
         article,
         rows,
         kind="workspace",
@@ -420,6 +477,7 @@ def test_pick_short_drama_avoids_recently_recorded_drama(tmp_path: Path) -> None
 
     assert first.drama_id == "hot"
     assert second.drama_id == "other"
+    assert second_score.usage_penalty == 0.0
     saved = json.loads(usage_path.read_text(encoding="utf-8"))
     assert saved == [
         {
@@ -447,7 +505,7 @@ def test_pick_short_drama_restores_pool_when_every_candidate_is_recent(
             used_at=NOW,
         )
 
-    picked = short_drama.pick_short_drama(
+    picked, score = short_drama.pick_short_drama(
         {"title": "职场风云", "digest": "职场", "body_text": "公司"},
         rows,
         kind="workspace",
@@ -456,6 +514,69 @@ def test_pick_short_drama_restores_pool_when_every_candidate_is_recent(
     )
 
     assert picked.drama_id == "best"
+    assert score.usage_penalty == 3.0
+
+
+def test_pick_short_drama_blocks_escapist_drama_for_casualty_news(
+    tmp_path: Path,
+) -> None:
+    rows = [
+        drama(
+            "romance",
+            "豪门甜宠",
+            theme="爱情",
+            rate_bp=7000,
+            hot_degree=10_000,
+        ),
+        drama(
+            "workplace",
+            "职场故事",
+            theme="职场",
+            rate_bp=5000,
+            hot_degree=100,
+        ),
+    ]
+
+    picked, _ = short_drama.pick_short_drama(
+        {"title": "某地火灾造成伤亡", "digest": "官方通报救援进展"},
+        rows,
+        kind="hotspot",
+        usage_path=tmp_path / "usage.json",
+        now=NOW,
+    )
+
+    assert picked.drama_id == "workplace"
+
+
+def test_rotation_never_promotes_candidate_outside_commercial_top_three(
+    tmp_path: Path,
+) -> None:
+    usage_path = tmp_path / "usage.json"
+    rows = [
+        drama("top1", "豪门千金重生", theme="都市、爱情、家庭"),
+        drama("top2", "豪门千金重生", theme="都市"),
+        drama("top3", "豪门千金", theme="都市、爱情、家庭"),
+        drama("fourth", "豪门千金", theme="都市、爱情"),
+    ]
+    for row in rows[:3]:
+        for offset in range(3):
+            short_drama.record_drama_usage(
+                row,
+                article_title=f"历史稿-{offset}",
+                usage_path=usage_path,
+                used_at=NOW - timedelta(days=offset),
+            )
+
+    picked, score = short_drama.pick_short_drama(
+        {"title": "普通热点观察"},
+        rows,
+        kind="hotspot",
+        usage_path=usage_path,
+        now=NOW,
+    )
+
+    assert picked.drama_id == "top1"
+    assert score.usage_penalty == 9.0
 
 
 def test_parse_short_drama_component_extracts_attribution() -> None:
