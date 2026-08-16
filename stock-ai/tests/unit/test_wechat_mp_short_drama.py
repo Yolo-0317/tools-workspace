@@ -672,3 +672,58 @@ def test_attach_short_drama_rejects_existing_card_for_another_drama(
             kind="market",
             now=NOW,
         )
+
+
+def test_longform_preflight_blocks_plain_product_card() -> None:
+    article = {"content": '<mp-common-cpsad data-pid="101_1"></mp-common-cpsad>'}
+    with pytest.raises(RuntimeError, match="普通返佣商品"):
+        short_drama.assert_longform_promotion_safe(article, kind="market")
+
+
+def test_longform_preflight_requires_short_play_when_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("WECHAT_MP_SHORT_DRAMA", "1")
+    with pytest.raises(RuntimeError, match="缺少短剧组件"):
+        short_drama.assert_longform_promotion_safe(
+            {"content": "<p>正文</p>"},
+            kind="hotspot",
+        )
+
+
+def test_verify_saved_short_drama_rejects_stripped_component(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        short_drama,
+        "fetch_draft_news_item",
+        lambda **_: ({"content": "<p>正文</p>"}, None),
+        raising=False,
+    )
+
+    with pytest.raises(RuntimeError, match="回读未发现"):
+        short_drama.verify_saved_short_drama(
+            media_id="m1",
+            expected_drama_id="123",
+            kind="market",
+        )
+
+
+def test_promotion_summary_uses_only_public_business_fields() -> None:
+    article = {
+        "short_drama": {
+            "drama_id": "123",
+            "drama_name": "报销风波",
+            "era": "现代",
+            "theme": "都市、职场",
+            "media_count": 60,
+            "rate_bp": 6000,
+            "plan_id": "plan-123",
+        }
+    }
+
+    summary = short_drama.promotion_summary(article)
+
+    assert summary == "短剧推广: 报销风波 · 现代/都市、职场 · 60集 · 分佣60.00%"
+    assert "123" not in summary
+    assert "plan-123" not in summary

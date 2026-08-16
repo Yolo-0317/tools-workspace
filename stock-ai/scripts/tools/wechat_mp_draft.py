@@ -21,8 +21,15 @@ from scripts.tools.wechat_mp_content import DRAFT_KINDS, build_article
 from scripts.tools.wechat_mp_codex_hotspot import (
     CodexHotspotDraft,
     load_codex_hotspot_draft,
+    validate_codex_hotspot_originality,
 )
 from scripts.tools.wechat_mp_draft_slots import upsert_draft_article
+from scripts.tools.wechat_mp_short_drama import (
+    assert_longform_promotion_safe,
+    promotion_summary,
+    record_drama_usage,
+    verify_saved_short_drama,
+)
 
 
 def _resolve_cover_kind(content_kind: str) -> str:
@@ -225,6 +232,20 @@ def main() -> int:
                     variant=args.variant,
                     codex_draft=codex_draft,
                 )
+                if codex_draft is not None and kind == "hotspot":
+                    from scripts.tools.wechat_mp_originality import (
+                        format_originality_report,
+                    )
+                    from scripts.tools.wechat_mp_virtual_ledger import (
+                        load_virtual_history,
+                    )
+
+                    report = validate_codex_hotspot_originality(
+                        codex_draft,
+                        history_posts=load_virtual_history().get("posts", []),
+                    )
+                    print(format_originality_report(report))
+                assert_longform_promotion_safe(article, kind=kind)
             except Exception as exc:
                 if codex_draft is not None:
                     print(f"错误 [{kind}]: {exc}", file=sys.stderr)
@@ -241,6 +262,8 @@ def main() -> int:
                 print(f"edition: {args.edition}")
             print(f"标题: {article['title']}")
             print(f"摘要: {article['digest']}")
+            if article.get("short_drama"):
+                print(promotion_summary(article))
             from scripts.tools.wechat_mp_seo import print_publish_hints
 
             print_publish_hints(
@@ -288,6 +311,18 @@ def main() -> int:
                 variant=args.variant,
                 codex_draft=codex_draft,
             )
+            if codex_draft is not None and kind == "hotspot":
+                from scripts.tools.wechat_mp_originality import (
+                    format_originality_report,
+                )
+                from scripts.tools.wechat_mp_virtual_ledger import load_virtual_history
+
+                report = validate_codex_hotspot_originality(
+                    codex_draft,
+                    history_posts=load_virtual_history().get("posts", []),
+                )
+                print(format_originality_report(report))
+            assert_longform_promotion_safe(article, kind=kind)
         except Exception as exc:
             if codex_draft is not None:
                 print(f"错误 [{kind}]: {exc}", file=sys.stderr)
@@ -360,6 +395,25 @@ def main() -> int:
         if err:
             print(f"❌ [{kind}] 失败: {err}", file=sys.stderr)
             continue
+        short_meta = article.get("short_drama") or {}
+        if short_meta:
+            expected_drama_id = str(short_meta.get("drama_id") or "")
+            try:
+                verify_saved_short_drama(
+                    media_id=media_id or "",
+                    expected_drama_id=expected_drama_id,
+                    kind=kind,
+                )
+                record_drama_usage(
+                    short_meta,
+                    article_title=str(article.get("title") or ""),
+                )
+            except Exception as exc:
+                print(
+                    f"错误 [{kind}] 短剧草稿回读未通过: {exc}；草稿已保留，请勿发表",
+                    file=sys.stderr,
+                )
+                continue
         ok_count += 1
         verb = "已更新" if action == "updated" else "已新建"
         cover_hint = meta.get("name") if meta else ""

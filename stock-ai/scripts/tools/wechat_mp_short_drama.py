@@ -19,7 +19,11 @@ from zoneinfo import ZoneInfo
 
 import requests
 
-from scripts.tools.wechat_mp_client import draft_add, draft_batchget
+from scripts.tools.wechat_mp_client import (
+    draft_add,
+    draft_batchget,
+    fetch_draft_news_item,
+)
 
 
 DRAMA_SELECT_URL = (
@@ -426,13 +430,21 @@ def pick_short_drama(
 
 
 def record_drama_usage(
-    drama: ShortDrama,
+    drama: ShortDrama | Mapping[str, Any],
     *,
     article_title: str,
     usage_path: Path = USAGE_PATH,
     used_at: datetime | None = None,
 ) -> None:
     current = used_at or datetime.now(TZ)
+    if isinstance(drama, Mapping):
+        drama_id = str(drama.get("drama_id") or "")
+        drama_name = str(drama.get("drama_name") or "")
+    else:
+        drama_id = drama.drama_id
+        drama_name = drama.drama_name
+    if not drama_id or not drama_name:
+        raise RuntimeError("短剧使用记录缺少剧目身份")
     keep_after = current - timedelta(days=30)
     retained: list[dict[str, Any]] = []
     for item in _load_usage(usage_path):
@@ -446,8 +458,8 @@ def record_drama_usage(
             retained.append(item)
     retained.append(
         {
-            "drama_id": drama.drama_id,
-            "drama_name": drama.drama_name,
+            "drama_id": drama_id,
+            "drama_name": drama_name,
             "article_title": article_title,
             "used_at": current.isoformat(timespec="seconds"),
         }
@@ -514,6 +526,7 @@ def attach_short_drama(
     out["short_drama"] = {
         "drama_id": drama.drama_id,
         "drama_name": drama.drama_name,
+        "era": drama.era,
         "theme": drama.theme,
         "media_count": drama.media_count,
         "rate_bp": drama.rate_bp,
@@ -521,6 +534,22 @@ def attach_short_drama(
     }
     assert_longform_promotion_safe(out, kind=normalized)
     return out
+
+
+def promotion_summary(article: Mapping[str, Any]) -> str:
+    item = article.get("short_drama") or {}
+    if not isinstance(item, Mapping) or not item.get("drama_name"):
+        return "短剧推广: 未启用"
+    category = "/".join(
+        str(item.get(key) or "").strip() for key in ("era", "theme")
+        if str(item.get(key) or "").strip()
+    )
+    media_count = _as_int(item.get("media_count"))
+    rate_percent = _as_int(item.get("rate_bp")) / 100
+    return (
+        f"短剧推广: {item.get('drama_name')} · {category or '未分类'} · "
+        f"{media_count}集 · 分佣{rate_percent:.2f}%"
+    )
 
 
 def _attribution_from_attrs(
@@ -752,6 +781,28 @@ def probe_short_drama_component(
     if err or not media_id:
         raise RuntimeError(f"短剧组件探针写入失败: {(err or {}).get('errmsg') or err}")
     return media_id
+
+
+def verify_saved_short_drama(
+    *,
+    media_id: str,
+    expected_drama_id: str,
+    kind: str,
+) -> ShortDramaAttribution:
+    news, err = fetch_draft_news_item(media_id=media_id)
+    if err:
+        raise RuntimeError(f"短剧草稿回读失败: {err.get('errmsg') or err}")
+    content = str((news or {}).get("content") or "")
+    assert_longform_promotion_safe(news or {}, kind=kind)
+    if not SHORT_PLAY_RE.search(content):
+        raise RuntimeError("短剧草稿回读未发现 short-play 组件")
+    parsed = parse_short_drama_component(content)
+    if parsed.drama_id != expected_drama_id:
+        raise RuntimeError(
+            "短剧草稿回读不一致: "
+            f"expected={expected_drama_id} actual={parsed.drama_id}"
+        )
+    return parsed
 
 
 def main(argv: Sequence[str] | None = None) -> int:
