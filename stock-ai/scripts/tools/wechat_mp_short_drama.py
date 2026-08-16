@@ -8,6 +8,7 @@ import json
 import math
 import re
 import html
+import stat
 import uuid
 import argparse
 from dataclasses import asdict, dataclass
@@ -30,6 +31,7 @@ from scripts.tools.wechat_mp_client import (
 DRAMA_SELECT_URL = (
     "https://daihuo.qq.com/trpc.cps.weixin_select.WeiXinSelect/DramaSelect"
 )
+MINIDRAMA_LINK_URL = "https://mp.weixin.qq.com/cgi-bin/minidrama?action=link"
 TZ = ZoneInfo("Asia/Shanghai")
 ROOT = Path(__file__).resolve().parents[2]
 CACHE_PATH = ROOT / "data" / "wechat_mp_short_drama_pool.json"
@@ -97,6 +99,14 @@ class ShortDramaAttribution:
     default_path: str
     wx_ticket: str
     captured_at: str
+
+
+@dataclass(frozen=True)
+class WeChatDramaWebSession:
+    cookie: str
+    token: str
+    fingerprint: str
+    lang: str = "zh_CN"
 
 
 @dataclass(frozen=True)
@@ -173,6 +183,39 @@ def drama_kol_id() -> str:
     if not value:
         raise RuntimeError("缺少 WECHAT_MP_DRAMA_KOL_ID")
     return value
+
+
+def load_drama_web_session(
+    path: Path | None = None,
+) -> WeChatDramaWebSession:
+    target = path
+    if target is None:
+        raw = os.getenv("WECHAT_MP_DRAMA_WEB_SESSION_FILE", "").strip()
+        if not raw:
+            raise RuntimeError("缺少 WECHAT_MP_DRAMA_WEB_SESSION_FILE")
+        target = Path(raw).expanduser()
+    try:
+        mode = stat.S_IMODE(target.stat().st_mode)
+    except OSError as exc:
+        raise RuntimeError("短剧网页会话文件不可用") from exc
+    if mode & 0o077:
+        raise RuntimeError("短剧网页会话文件权限必须为 0600 或更严格")
+    try:
+        payload = json.loads(target.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError("短剧网页会话文件格式无效") from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError("短剧网页会话文件格式无效")
+    values = {
+        "cookie": str(payload.get("cookie") or "").strip(),
+        "token": str(payload.get("token") or "").strip(),
+        "fingerprint": str(payload.get("fingerprint") or "").strip(),
+        "lang": str(payload.get("lang") or "zh_CN").strip(),
+    }
+    missing = [key for key in ("cookie", "token", "fingerprint") if not values[key]]
+    if missing:
+        raise RuntimeError("短剧网页会话字段缺失: " + ",".join(missing))
+    return WeChatDramaWebSession(**values)
 
 
 def short_drama_enabled() -> bool:
@@ -732,6 +775,53 @@ def parse_short_drama_component(
     if len(matches) != 1:
         raise RuntimeError(f"short-play 组件数量异常: {len(matches)}")
     return matches[0]
+
+
+def parse_minidrama_link_response(
+    payload: Mapping[str, Any],
+    drama: ShortDrama,
+    *,
+    now: datetime | None = None,
+) -> ShortDramaAttribution:
+    base_resp = payload.get("base_resp") or {}
+    outer_ret = _as_int(
+        base_resp.get("ret") if isinstance(base_resp, Mapping) else None,
+        -1,
+    )
+    if outer_ret != 0:
+        raise RuntimeError(f"短剧归因接口失败: outer_ret={outer_ret}")
+    raw_data = payload.get("data")
+    try:
+        inner = json.loads(raw_data) if isinstance(raw_data, str) else raw_data
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("短剧归因接口响应格式无效") from exc
+    if not isinstance(inner, Mapping):
+        raise RuntimeError("短剧归因接口响应格式无效")
+    inner_code = _as_int(inner.get("errcode"), -1)
+    if inner_code != 0:
+        raise RuntimeError(f"短剧归因接口失败: inner_errcode={inner_code}")
+    default_path = str(inner.get("path") or "").strip()
+    parsed_path = urlparse(default_path)
+    if parsed_path.scheme != "plugin-private":
+        raise RuntimeError("短剧归因接口缺少有效归因路径")
+    query = parse_qs(parsed_path.query)
+    path_drama_id = query.get("dramaId", [""])[0]
+    path_src_appid = query.get("srcAppid", [""])[0]
+    wx_ticket = query.get("wxTicket", [""])[0]
+    if path_drama_id != drama.drama_id or path_src_appid != drama.src_appid:
+        raise RuntimeError("短剧身份不匹配")
+    if not wx_ticket:
+        raise RuntimeError("短剧归因接口缺少归因票据")
+    current = now or datetime.now(TZ)
+    return ShortDramaAttribution(
+        drama_id=drama.drama_id,
+        plan_id=drama.plan_id,
+        src_appid=drama.src_appid,
+        play_appid=drama.play_appid,
+        default_path=default_path,
+        wx_ticket=wx_ticket,
+        captured_at=current.isoformat(timespec="seconds"),
+    )
 
 
 def load_attribution_map(

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 import json
+import os
 from dataclasses import replace
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -178,6 +179,114 @@ def test_fetch_drama_page_posts_exact_contract(monkeypatch: pytest.MonkeyPatch) 
     }
     assert session.last_timeout == 30
     assert session.trust_env is False
+
+
+def test_load_drama_web_session_requires_private_file(tmp_path: Path) -> None:
+    path = tmp_path / "web-session.json"
+    path.write_text(
+        json.dumps(
+            {
+                "cookie": "cookie-fixture",
+                "token": "token-fixture",
+                "fingerprint": "fingerprint-fixture",
+            }
+        ),
+        encoding="utf-8",
+    )
+    os.chmod(path, 0o600)
+
+    loaded = short_drama.load_drama_web_session(path)
+
+    assert loaded.cookie == "cookie-fixture"
+    assert loaded.token == "token-fixture"
+    assert loaded.fingerprint == "fingerprint-fixture"
+    assert loaded.lang == "zh_CN"
+
+    os.chmod(path, 0o644)
+    with pytest.raises(RuntimeError, match="权限"):
+        short_drama.load_drama_web_session(path)
+
+
+def test_parse_minidrama_link_response_extracts_validated_attribution() -> None:
+    row = drama("123", plan_id="plan-123")
+    payload = {
+        "base_resp": {"err_msg": "ok", "ret": 0},
+        "data": json.dumps(
+            {
+                "errcode": 0,
+                "errmsg": "ok",
+                "path": (
+                    "plugin-private://player/pages/playlet/playlet"
+                    "?dramaId=123&srcAppid=wx-source&wxTicket=ticket-fixture"
+                ),
+            }
+        ),
+    }
+
+    parsed = short_drama.parse_minidrama_link_response(payload, row, now=NOW)
+
+    assert parsed.drama_id == "123"
+    assert parsed.plan_id == "plan-123"
+    assert parsed.src_appid == "wx-source"
+    assert parsed.play_appid == "wx-play"
+    assert parsed.wx_ticket == "ticket-fixture"
+    assert parsed.captured_at == "2026-08-16T12:00:00+08:00"
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        ({"base_resp": {"ret": 200003}}, "outer_ret=200003"),
+        (
+            {
+                "base_resp": {"ret": 0},
+                "data": json.dumps({"errcode": 41001, "errmsg": "expired"}),
+            },
+            "inner_errcode=41001",
+        ),
+        (
+            {
+                "base_resp": {"ret": 0},
+                "data": json.dumps(
+                    {
+                        "errcode": 0,
+                        "path": (
+                            "plugin-private://player/pages/playlet/playlet"
+                            "?dramaId=999&srcAppid=wx-source"
+                            "&wxTicket=ticket-fixture"
+                        ),
+                    }
+                ),
+            },
+            "短剧身份不匹配",
+        ),
+        (
+            {
+                "base_resp": {"ret": 0},
+                "data": json.dumps(
+                    {
+                        "errcode": 0,
+                        "path": (
+                            "plugin-private://player/pages/playlet/playlet"
+                            "?dramaId=123&srcAppid=wx-source"
+                        ),
+                    }
+                ),
+            },
+            "缺少归因票据",
+        ),
+    ],
+)
+def test_parse_minidrama_link_response_fails_closed_without_secrets(
+    payload: dict,
+    message: str,
+) -> None:
+    with pytest.raises(RuntimeError, match=message) as caught:
+        short_drama.parse_minidrama_link_response(payload, drama("123"), now=NOW)
+
+    error = str(caught.value)
+    assert "ticket-fixture" not in error
+    assert "plugin-private" not in error
 
 
 def test_refresh_drama_pool_paginates_until_total(
