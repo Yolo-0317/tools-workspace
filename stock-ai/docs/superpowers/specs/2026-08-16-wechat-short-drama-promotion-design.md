@@ -114,6 +114,35 @@ POST https://daihuo.qq.com/trpc.cps.weixin_select.WeiXinSelect/DramaSelect
 
 每次组件生成使用新的随机 `data-traceid`；不得复用人工样本的追踪 ID。
 
+### 自动归因建卡（2026-08-17 已验证）
+
+公众号编辑器选择短剧时调用：
+
+```text
+POST https://mp.weixin.qq.com/cgi-bin/minidrama?action=link
+```
+
+表单中的 `cps_detail` 为 JSON 字符串，字段与候选池映射如下：
+
+- `request_id`：调用时生成的毫秒时间戳字符串；
+- `biz_type`：固定为 `0`；
+- `appid`：候选短剧的 `play_appid`；
+- `plan_id`：候选短剧的 `plan_id`；
+- `promoter_id`：`WECHAT_MP_DRAMA_KOL_ID`；
+- `ext_info`：固定为空字符串。
+
+接口成功响应包含外层 `base_resp.ret=0`，外层 `data` 是一个 JSON 字符串。解析后的内层对象必须满足 `errcode=0`，其 `path` 是 `plugin-private://.../pages/playlet/playlet` 跳转路径，并包含该候选对应的 `dramaId`、`srcAppid` 和非空 `wxTicket`。
+
+自动获取必须逐项验证：响应 `dramaId == drama.drama_id`、响应 `srcAppid == drama.src_appid`，请求 `appid == drama.play_appid`、请求 `plan_id == drama.plan_id`。任一不一致都拒绝建卡，不缓存响应，不尝试替换 ID 或复用其他短剧票据。
+
+该接口依赖公众号后台网页登录态，不是公众号开放 API。认证信息只允许从本地忽略的 JSON 文件读取，文件权限必须为 `0600`。文件只包含非空 `cookie`、后台 `token`、`fingerprint` 和可选 `lang`（默认 `zh_CN`）；Referer 由代码使用 token 构造，不保存完整编辑页 URL。代码、测试夹具、Git、命令行参数和日志不得出现真实认证值。
+
+请求只发送业务必需字段。表单外层包含 `token`、`lang`、`f=json`、`ajax=1`、`fingerprint`、每次新生成的 `random` 和 `cps_detail`；请求头只设置 JSON 接受类型、表单内容类型、`X-Requested-With: XMLHttpRequest`、Cookie 和同源 Referer，不复制 `sec-ch-*`、浏览器版本或其他无关请求头。
+
+登录态过期、外层或内层返回失败、响应结构变化、路径校验失败时保持失败关闭。错误信息只允许包含错误码和可操作提示，不得包含 Cookie、token、`wxTicket`、完整 `path` 或原始响应正文。
+
+成功后把验证过的路径转换为现有 `ShortDramaAttribution`，保存到本地忽略的归因缓存，再沿用组件生成、草稿写入和回读验证链路。正式记录轮换使用仍只能发生在草稿回读成功之后。
+
 ## 与现有返佣商品链路的关系
 
 普通返佣商品能力继续保留给已经搁置的独立 `commerce` 工具，但从公众号长文主流水线移除：
@@ -131,6 +160,7 @@ POST https://daihuo.qq.com/trpc.cps.weixin_select.WeiXinSelect/DramaSelect
 - `WECHAT_MP_DRAMA_CACHE_TTL_HOURS=6`：列表缓存时长；
 - `WECHAT_MP_DRAMA_MIN_VALID_DAYS=7`：最短剩余有效期；
 - `WECHAT_MP_DRAMA_REPEAT_DAYS=7`：重复回避窗口。
+- `WECHAT_MP_DRAMA_WEB_SESSION_FILE`：权限为 `0600` 的公众号后台网页会话文件；未配置时不调用自动归因接口。
 
 默认值必须安全：短剧开关未开启时不插任何内容推广组件；开关已开启但配置或归因不完整时阻止写入草稿。
 
