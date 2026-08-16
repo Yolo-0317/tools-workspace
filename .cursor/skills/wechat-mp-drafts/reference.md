@@ -129,10 +129,11 @@ WECHAT_MP_FOOTER_PRODUCT_KINDS=         # commerce 垂直过滤；不得填长�
 cd stock-ai
 PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --refresh --limit 40
 PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --capture-sample-title "短剧组件测试-勿发"
+PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --capture-sample-file data/wechat_mp_short_drama_sample.html
 PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --probe-component --drama-id 660409
 ```
 
-`DramaSelect` 只提供剧目和计划列表，不等于可直接投放。只有 `drama_id`、`plan_id`、来源应用、播放应用和 `wxTicket` 与人工插卡样本完全匹配的候选才可生成组件。不得把其他剧目的票据复用到新剧，也不得访问点击跟踪 URL 伪造票据。
+草稿 API 返回空列表时，从后台编辑器 Elements 复制 `data-adtype="short-play"` 标签的 outerHTML 到上述 `data/` 文件；该目录被 Git 忽略，避免票据进入提交。`DramaSelect` 只提供剧目和计划列表，不等于可直接投放。只有 `drama_id`、`plan_id`、来源应用、播放应用和 `wxTicket` 与人工插卡样本完全匹配的候选才可生成组件。不得把其他剧目的票据复用到新剧，也不得访问点击跟踪 URL 伪造票据。
 
 ### Commerce 选品关键词（`PICK_KEYWORDS_BY_VERTICAL`）
 

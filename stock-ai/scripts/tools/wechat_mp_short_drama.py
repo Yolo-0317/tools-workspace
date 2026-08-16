@@ -743,6 +743,15 @@ def capture_sample_attributions(
     )
     if not captured:
         raise RuntimeError("样本草稿未发现 short-play 组件")
+    _save_attributions(captured, path=path)
+    return captured
+
+
+def _save_attributions(
+    captured: Sequence[ShortDramaAttribution],
+    *,
+    path: Path,
+) -> None:
     merged = load_attribution_map(path)
     for item in captured:
         merged[item.drama_id] = item
@@ -750,6 +759,22 @@ def capture_sample_attributions(
         path,
         {drama_id: asdict(item) for drama_id, item in merged.items()},
     )
+
+
+def capture_sample_file(
+    sample_path: Path,
+    *,
+    attribution_path: Path = ATTRIBUTION_PATH,
+    now: datetime | None = None,
+) -> list[ShortDramaAttribution]:
+    try:
+        html_text = sample_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(f"无法读取短剧样本文件: {exc}") from exc
+    captured = parse_short_drama_components(html_text, now=now)
+    if not captured:
+        raise RuntimeError("样本文件未发现 short-play 组件")
+    _save_attributions(captured, path=attribution_path)
     return captured
 
 
@@ -814,6 +839,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--refresh", action="store_true")
     parser.add_argument("--limit", type=int)
     parser.add_argument("--capture-sample-title")
+    parser.add_argument("--capture-sample-file", type=Path)
     parser.add_argument("--probe-component", action="store_true")
     parser.add_argument("--drama-id")
     args = parser.parse_args(argv)
@@ -850,13 +876,23 @@ def main(argv: Sequence[str] | None = None) -> int:
                 f"含票据={'是' if item.wx_ticket else '否'} captured_at={item.captured_at}"
             )
         return 0
+    if args.capture_sample_file:
+        captured = capture_sample_file(args.capture_sample_file)
+        for item in captured:
+            print(
+                f"drama_id={item.drama_id} plan_id={item.plan_id} "
+                f"含票据={'是' if item.wx_ticket else '否'} captured_at={item.captured_at}"
+            )
+        return 0
     if args.probe_component:
         if not args.drama_id:
             parser.error("--probe-component 需要 --drama-id")
         media_id = probe_short_drama_component(args.drama_id)
         print(f"探针草稿 media_id={media_id}，请在后台预览并确认跳转和归因")
         return 0
-    parser.error("需要 --refresh、--capture-sample-title 或 --probe-component")
+    parser.error(
+        "需要 --refresh、--capture-sample-title、--capture-sample-file 或 --probe-component"
+    )
     return 2
 
 

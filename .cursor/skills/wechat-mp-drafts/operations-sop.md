@@ -150,6 +150,7 @@ PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --capture-s
 PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --probe-component --drama-id 660409
 ```
 
+- 若草稿 API 看不到后台编辑器草稿：在 DevTools Elements 搜索 `data-adtype="short-play"`，复制该标签 outerHTML 到忽略目录 `data/wechat_mp_short_drama_sample.html`，再运行 `PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --capture-sample-file data/wechat_mp_short_drama_sample.html`。
 - 后台预览探针草稿，确认卡片剧目、点击跳转和结算归因都正确。
 - 人工确认前保持 `WECHAT_MP_SHORT_DRAMA=0`；确认后才在本地 `.env` 开启。
 - 归因、候选、缓存或草稿回读任一失败都停止推稿，不得改回 `WECHAT_MP_FOOTER_PRODUCT=1`。

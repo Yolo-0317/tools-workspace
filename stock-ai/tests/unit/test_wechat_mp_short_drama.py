@@ -578,6 +578,42 @@ def test_capture_sample_attributions_requires_one_exact_title(
     assert saved["123"]["wx_ticket"] == "ticket-test"
 
 
+def test_capture_sample_file_writes_attribution_cache(tmp_path: Path) -> None:
+    sample_path = tmp_path / "sample.html"
+    sample_path.write_text(SAMPLE_SHORT_PLAY, encoding="utf-8")
+    attribution_path = tmp_path / "attribution.json"
+
+    captured = short_drama.capture_sample_file(
+        sample_path,
+        attribution_path=attribution_path,
+        now=NOW,
+    )
+
+    assert [item.drama_id for item in captured] == ["123"]
+    saved = json.loads(attribution_path.read_text(encoding="utf-8"))
+    assert saved["123"]["plan_id"] == "plan-123"
+    assert saved["123"]["wx_ticket"] == "ticket-test"
+
+
+def test_capture_sample_file_cli_never_prints_ticket(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        short_drama,
+        "capture_sample_file",
+        lambda _: [attribution()],
+    )
+
+    exit_code = short_drama.main(["--capture-sample-file", "data/sample.html"])
+
+    output = capsys.readouterr().out
+    assert exit_code == 0
+    assert "drama_id=123" in output
+    assert "含票据=是" in output
+    assert "ticket-test" not in output
+
+
 def test_probe_short_drama_component_creates_non_publishable_draft(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
