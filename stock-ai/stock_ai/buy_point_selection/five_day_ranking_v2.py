@@ -12,18 +12,23 @@ from typing import Mapping, Sequence
 
 from stock_ai.market_codes import normalize_code6
 
-from .five_day_return_runtime import FiveDaySignalPlan
+from .five_day_return_runtime import FiveDayResearchReview, FiveDaySignalPlan
 from .five_day_return_validation import (
     FiveDayCalibration,
     FiveDayObservation,
     FiveDayRankedPlan,
     FiveDayRanking,
     FiveDaySelectedSegment,
+    FiveDaySelection,
     _active_structure_key,
     _is_resolved,
+    admit_five_day_ranking,
+    build_five_day_calibrations,
+    evaluate_five_day_selection_segment,
     resolve_five_day_calibration,
 )
 from .models import SetupType
+from .validation import ChronologicalSplit
 
 
 V2_RANKING_VERSION = "five-day-ranking-key-v2"
@@ -138,6 +143,53 @@ class FiveDayV2PolicyAssessment:
     worst_fold_expectancy: Decimal
     qualifies: bool
     reasons: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class FiveDayV2Fold:
+    fold_id: str
+    calibration_dates: tuple[date, ...]
+    evaluation_dates: tuple[date, ...]
+    calibration_data_end: date
+    excluded_unresolved_calibration_rows: int
+
+
+@dataclass(frozen=True)
+class FiveDayV2VariantReview:
+    fold_id: str
+    policy_id: str
+    daily_limit: int
+    scored: tuple[FiveDayV2ScoredPlan, ...]
+    segment: FiveDaySelectedSegment
+
+
+@dataclass(frozen=True)
+class FiveDayRankingV2TrainReview:
+    schema: str
+    ranking_version: str
+    parent_research_identity: str
+    parent_input_fingerprint: str
+    split: ChronologicalSplit
+    formal_rule_version: str
+    formal_policy_hash: str
+    profile_matrix_hash: str
+    sizing_version: str
+    evaluator_version: str
+    cost_version: str
+    policy_set_hash: str
+    policies: tuple[FiveDayV2Policy, ...]
+    folds: tuple[FiveDayV2Fold, ...]
+    variants: tuple[FiveDayV2VariantReview, ...]
+    assessments: tuple[FiveDayV2PolicyAssessment, ...]
+    winner_policy_id: str | None
+    winner_policy_hash: str | None
+    winner_train_samples: int
+    status: str
+    validation_eligible: bool
+    validation_outcomes_read: bool
+    test_outcomes_read: bool
+    promotion_eligible: bool
+    trade_permission: str
 
 
 def build_five_day_v2_policies() -> tuple[FiveDayV2Policy, ...]:
@@ -604,4 +656,271 @@ def select_five_day_v2_winner(
             value.combined.metrics.maximum_drawdown,
             V2_POLICY_IDS.index(value.policy.policy_id),
         ),
+    )
+
+
+def v2_fold_specs(
+    train_dates: Sequence[date],
+) -> tuple[FiveDayV2Fold, ...]:
+    """Build the two frozen expanding train folds."""
+    dates = tuple(train_dates)
+    if len(dates) != 378:
+        raise ValueError("ranking v2 requires exactly 378 train sessions")
+    return (
+        FiveDayV2Fold(
+            fold_id="train-fold-1",
+            calibration_dates=dates[:252],
+            evaluation_dates=dates[252:315],
+            calibration_data_end=dates[251],
+            excluded_unresolved_calibration_rows=0,
+        ),
+        FiveDayV2Fold(
+            fold_id="train-fold-2",
+            calibration_dates=dates[:315],
+            evaluation_dates=dates[315:378],
+            calibration_data_end=dates[314],
+            excluded_unresolved_calibration_rows=0,
+        ),
+    )
+
+
+def combine_v2_selections(
+    selections: Sequence[FiveDaySelection],
+) -> FiveDaySelection:
+    """Combine non-overlapping fold selections without reranking them."""
+    ranking_counts: Counter[str] = Counter()
+    funnel_counts: Counter[str] = Counter()
+    for selection in selections:
+        ranking_counts.update(selection.ranking.rejection_counts)
+        funnel_counts.update(selection.funnel_counts)
+    return FiveDaySelection(
+        ranking=FiveDayRanking(
+            plans=tuple(
+                plan
+                for selection in selections
+                for plan in selection.ranking.plans
+            ),
+            rejection_counts=dict(sorted(ranking_counts.items())),
+            ranked=tuple(
+                row
+                for selection in selections
+                for row in selection.ranking.ranked
+            ),
+        ),
+        selected_observations=tuple(
+            row
+            for selection in selections
+            for row in selection.selected_observations
+        ),
+        admitted=tuple(
+            row for selection in selections for row in selection.admitted
+        ),
+        funnel_counts=dict(sorted(funnel_counts.items())),
+        incomplete=any(selection.incomplete for selection in selections),
+    )
+
+
+def build_five_day_ranking_v2_train_review(
+    research: FiveDayResearchReview,
+    *,
+    parent_research_identity: str,
+) -> FiveDayRankingV2TrainReview:
+    """Evaluate every frozen V2 policy using train outcomes only."""
+    if len(parent_research_identity) != 64 or any(
+        value not in "0123456789abcdef"
+        for value in parent_research_identity
+    ):
+        raise ValueError("parent research identity must be a sha256 digest")
+    if not research.point_in_time_complete or research.test_outcomes_read:
+        raise ValueError("base research review is incomplete or test-tainted")
+    if tuple(
+        len(values)
+        for values in (
+            research.split.train,
+            research.split.validation,
+            research.split.test,
+        )
+    ) != (378, 126, 126):
+        raise ValueError("ranking v2 requires the 378/126/126 split")
+
+    train_dates = tuple(research.split.train)
+    train_set = frozenset(train_dates)
+    train_observations = tuple(
+        value
+        for value in research.observations
+        if value.plan.candidate.signal_date in train_set
+    )
+    folds: list[FiveDayV2Fold] = []
+    for base_fold in v2_fold_specs(train_dates):
+        calibration_set = frozenset(base_fold.calibration_dates)
+        calibration_candidates = tuple(
+            value
+            for value in train_observations
+            if value.plan.candidate.signal_date in calibration_set
+        )
+        boundary = base_fold.evaluation_dates[0]
+        folds.append(
+            replace(
+                base_fold,
+                excluded_unresolved_calibration_rows=sum(
+                    not _is_resolved(value)
+                    or value.resolution_date >= boundary
+                    for value in calibration_candidates
+                ),
+            )
+        )
+
+    policies = build_five_day_v2_policies()
+    variants: list[FiveDayV2VariantReview] = []
+    for fold in folds:
+        calibration_set = frozenset(fold.calibration_dates)
+        evaluation_set = frozenset(fold.evaluation_dates)
+        boundary = fold.evaluation_dates[0]
+        calibration_observations = tuple(
+            value
+            for value in train_observations
+            if value.plan.candidate.signal_date in calibration_set
+            and _is_resolved(value)
+            and value.resolution_date < boundary
+        )
+        calibrations = build_five_day_calibrations(
+            calibration_observations,
+            trading_dates=fold.calibration_dates,
+        )
+        evaluation_observations = tuple(
+            value
+            for value in train_observations
+            if value.plan.candidate.signal_date in evaluation_set
+        )
+        plans = tuple(value.plan for value in evaluation_observations)
+        for policy in policies:
+            for daily_limit in (1, 3, 5):
+                ranked = rank_five_day_plans_v2(
+                    plans,
+                    calibrations,
+                    policy=policy,
+                    daily_limit=daily_limit,
+                )
+                selection = admit_five_day_ranking(
+                    ranked.ranking,
+                    evaluation_observations,
+                    capacity=3,
+                )
+                variants.append(
+                    FiveDayV2VariantReview(
+                        fold_id=fold.fold_id,
+                        policy_id=policy.policy_id,
+                        daily_limit=daily_limit,
+                        scored=ranked.scored,
+                        segment=evaluate_five_day_selection_segment(
+                            profile_id="GLOBAL",
+                            segment=fold.fold_id,
+                            selection=selection,
+                            trading_dates=fold.evaluation_dates,
+                            cumulative_samples=len(selection.admitted),
+                            required_samples=0,
+                            required_cumulative_samples=0,
+                        ),
+                    )
+                )
+
+    combined_dates = tuple(
+        day for fold in folds for day in fold.evaluation_dates
+    )
+    for policy in policies:
+        for daily_limit in (1, 3, 5):
+            fold_values = tuple(
+                value
+                for value in variants
+                if value.policy_id == policy.policy_id
+                and value.daily_limit == daily_limit
+                and value.fold_id in ("train-fold-1", "train-fold-2")
+            )
+            combined_selection = combine_v2_selections(
+                tuple(value.segment.selection for value in fold_values)
+            )
+            variants.append(
+                FiveDayV2VariantReview(
+                    fold_id="train-combined",
+                    policy_id=policy.policy_id,
+                    daily_limit=daily_limit,
+                    scored=tuple(
+                        row for value in fold_values for row in value.scored
+                    ),
+                    segment=evaluate_five_day_selection_segment(
+                        profile_id="GLOBAL",
+                        segment="train-combined",
+                        selection=combined_selection,
+                        trading_dates=combined_dates,
+                        cumulative_samples=len(combined_selection.admitted),
+                        required_samples=0,
+                        required_cumulative_samples=0,
+                    ),
+                )
+            )
+
+    assessments: list[FiveDayV2PolicyAssessment] = []
+    for policy in policies:
+        top3 = {
+            value.fold_id: value
+            for value in variants
+            if value.policy_id == policy.policy_id
+            and value.daily_limit == 3
+        }
+        band_rows = tuple(
+            row
+            for fold_id in ("train-fold-1", "train-fold-2")
+            for row in top3[fold_id].scored
+        )
+        bands = build_v2_rank_bands(band_rows, train_observations)
+        monotonicity = assess_v2_rank_monotonicity(
+            bands,
+            admitted_top3_expectancy=(
+                top3["train-combined"].segment.metrics.net_expectancy
+            ),
+        )
+        assessments.append(
+            assess_five_day_v2_policy(
+                policy=policy,
+                fold1=top3["train-fold-1"].segment,
+                fold2=top3["train-fold-2"].segment,
+                combined=top3["train-combined"].segment,
+                monotonicity=monotonicity,
+            )
+        )
+    winner = select_five_day_v2_winner(assessments)
+    return FiveDayRankingV2TrainReview(
+        schema=V2_TRAIN_SCHEMA,
+        ranking_version=V2_RANKING_VERSION,
+        parent_research_identity=parent_research_identity,
+        parent_input_fingerprint=research.input_fingerprint,
+        split=research.split,
+        formal_rule_version=research.formal_rule_version,
+        formal_policy_hash=research.formal_policy_hash,
+        profile_matrix_hash=research.profile_matrix_hash,
+        sizing_version=research.sizing_version,
+        evaluator_version=research.evaluator_version,
+        cost_version=research.cost_version,
+        policy_set_hash=five_day_v2_policy_set_hash(),
+        policies=policies,
+        folds=tuple(folds),
+        variants=tuple(variants),
+        assessments=tuple(assessments),
+        winner_policy_id=(winner.policy.policy_id if winner else None),
+        winner_policy_hash=(
+            five_day_v2_policy_hash(winner.policy) if winner else None
+        ),
+        winner_train_samples=(
+            winner.combined.metrics.triggered_resolved if winner else 0
+        ),
+        status=(
+            "TRAIN_CANDIDATE_SELECTED"
+            if winner
+            else "NO_TRAIN_CANDIDATE"
+        ),
+        validation_eligible=winner is not None,
+        validation_outcomes_read=False,
+        test_outcomes_read=False,
+        promotion_eligible=False,
+        trade_permission="NO-TRADE",
     )

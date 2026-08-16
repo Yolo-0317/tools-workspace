@@ -8,13 +8,18 @@ from importlib import import_module
 import pytest
 
 from stock_ai.buy_point_selection.five_day_return_execution import (
+    COST_VERSION,
+    EVALUATOR_VERSION,
     FiveDayExit,
     FiveDayTrade,
 )
 from stock_ai.buy_point_selection.five_day_return_profiles import (
+    SIZING_VERSION,
     build_five_day_return_profiles,
+    five_day_profile_hash,
 )
 from stock_ai.buy_point_selection.five_day_return_runtime import (
+    FiveDayResearchReview,
     FiveDaySignalCandidate,
     FiveDaySignalPlan,
 )
@@ -28,9 +33,61 @@ from stock_ai.buy_point_selection.five_day_return_validation import (
     FiveDaySelection,
 )
 from stock_ai.buy_point_selection.models import DetectedSetup, SetupType
+from stock_ai.buy_point_selection.validation import ChronologicalSplit
 
 
 START = date(2023, 1, 2)
+PARENT_IDENTITY = "a" * 64
+
+
+def _sessions(count: int) -> tuple[date, ...]:
+    return tuple(START + timedelta(days=index) for index in range(count))
+
+
+def _split() -> ChronologicalSplit:
+    sessions = _sessions(630)
+    return ChronologicalSplit(
+        train=sessions[:378],
+        validation=sessions[378:504],
+        test=sessions[504:630],
+    )
+
+
+def _empty_portfolio() -> FiveDayPortfolioMetrics:
+    return FiveDayPortfolioMetrics(
+        accepted_trades=0,
+        maximum_drawdown=Decimal("0"),
+        maximum_stock_trade_share=Decimal("0"),
+        maximum_stock_profit_share=Decimal("0"),
+        maximum_sector_trade_share=Decimal("0"),
+        maximum_sector_profit_share=Decimal("0"),
+        top5_profit_share=Decimal("0"),
+        qualifies=False,
+        reasons=("NO_ACCEPTED_TRADES",),
+    )
+
+
+def _complete_review_fixture(
+    observations: tuple[FiveDayObservation, ...] = (),
+) -> FiveDayResearchReview:
+    return FiveDayResearchReview(
+        split=_split(),
+        input_fingerprint="f" * 64,
+        formal_rule_version="five-day-ranking-fixture-v1",
+        formal_policy_hash="b" * 64,
+        profile_matrix_hash=five_day_profile_hash(
+            build_five_day_return_profiles()
+        ),
+        sizing_version=SIZING_VERSION,
+        evaluator_version=EVALUATOR_VERSION,
+        cost_version=COST_VERSION,
+        observations=observations,
+        train_calibrations={},
+        validation_metrics=(),
+        validation_portfolio=_empty_portfolio(),
+        point_in_time_complete=True,
+        test_outcomes_read=False,
+    )
 
 
 def _plan(
@@ -223,6 +280,137 @@ def _not_triggered_for_plan(plan: FiveDaySignalPlan) -> FiveDayObservation:
             mae=None,
         ),
     )
+
+
+def _pending_for_plan(plan: FiveDaySignalPlan) -> FiveDayObservation:
+    value = _not_triggered_for_plan(plan)
+    return replace(value, trade=replace(value.trade, status="PENDING"))
+
+
+def _review_with_boundary_resolution() -> FiveDayResearchReview:
+    split = _split()
+    plan = _plan(
+        code="600099",
+        profile_index=0,
+        signal_date=split.train[251],
+    )
+    value = _observation_for_plan(plan, net_return="0.01")
+    boundary = split.train[252]
+    boundary_exit = replace(
+        value.trade.exit,
+        planned_exit_date=boundary,
+        actual_exit_date=boundary,
+    )
+    return _complete_review_fixture(
+        (
+            replace(
+                value,
+                trade=replace(value.trade, exit=boundary_exit),
+                resolution_date=boundary,
+            ),
+        )
+    )
+
+
+def _review_with_incomplete_train_selection() -> FiveDayResearchReview:
+    split = _split()
+    calibration = tuple(
+        _observation_for_plan(
+            _plan(
+                code=f"61{index:04d}",
+                profile_index=0,
+                signal_date=split.train[index],
+            ),
+            net_return="0.02" if index < 20 else "-0.01",
+        )
+        for index in range(30)
+    )
+    pending = _pending_for_plan(
+        _plan(
+            code="620001",
+            profile_index=0,
+            signal_date=split.train[252],
+        )
+    )
+    later = (
+        _observation_for_plan(
+            _plan(
+                code="630001",
+                profile_index=0,
+                signal_date=split.validation[0],
+            ),
+            net_return="0.05",
+        ),
+        _observation_for_plan(
+            _plan(
+                code="630002",
+                profile_index=0,
+                signal_date=split.test[0],
+            ),
+            net_return="0.05",
+        ),
+    )
+    return _complete_review_fixture((*calibration, pending, *later))
+
+
+def _settled_observation(
+    plan: FiveDaySignalPlan,
+    *,
+    net_return: str,
+) -> FiveDayObservation:
+    value = _observation_for_plan(plan, net_return=net_return)
+    settlement = plan.candidate.signal_date + timedelta(days=1)
+    return replace(
+        value,
+        trade=replace(
+            value.trade,
+            exit=replace(
+                value.trade.exit,
+                planned_exit_date=settlement,
+                actual_exit_date=settlement,
+            ),
+        ),
+        resolution_date=settlement,
+    )
+
+
+def _qualifying_train_review() -> FiveDayResearchReview:
+    split = _split()
+    calibration = tuple(
+        _settled_observation(
+            _plan(
+                code=f"70{index:04d}",
+                profile_index=0,
+                signal_date=split.train[index],
+            ),
+            net_return="0.02" if index < 20 else "-0.01",
+        )
+        for index in range(30)
+    )
+    rank_returns = (
+        "0.012",
+        "0.008",
+        "-0.002",
+        "0.003",
+        "0.001",
+        "0.0005",
+    )
+    evaluation: list[FiveDayObservation] = []
+    for fold_index, start_index in ((1, 252), (2, 315)):
+        for day_index in range(8):
+            signal_date = split.train[start_index + day_index]
+            evaluation.extend(
+                _settled_observation(
+                    _plan(
+                        code=f"7{fold_index}{day_index:02d}{rank:02d}",
+                        profile_index=0,
+                        signal_date=signal_date,
+                    ),
+                    net_return=rank_returns[rank - 1],
+                )
+                for rank in range(1, 7)
+            )
+    return _complete_review_fixture((*calibration, *evaluation))
 
 
 def _bands(
@@ -625,6 +813,109 @@ def test_winner_returns_none_instead_of_unqualified_fallback() -> None:
 
     assert unqualified.qualifies is False
     assert winner is None
+
+
+def test_v2_train_review_uses_exact_folds_and_all_twelve_policies() -> None:
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+
+    result = ranking_v2.build_five_day_ranking_v2_train_review(
+        _complete_review_fixture(),
+        parent_research_identity=PARENT_IDENTITY,
+    )
+
+    assert tuple(len(value.calibration_dates) for value in result.folds) == (
+        252,
+        315,
+    )
+    assert tuple(len(value.evaluation_dates) for value in result.folds) == (
+        63,
+        63,
+    )
+    assert len(result.assessments) == 12
+    assert len(result.variants) == 12 * 3 * 3
+    assert result.policy_set_hash == ranking_v2.five_day_v2_policy_set_hash()
+    assert result.validation_outcomes_read is False
+    assert result.test_outcomes_read is False
+
+
+def test_v2_train_excludes_calibration_outcome_at_fold_start() -> None:
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+
+    result = ranking_v2.build_five_day_ranking_v2_train_review(
+        _review_with_boundary_resolution(),
+        parent_research_identity=PARENT_IDENTITY,
+    )
+
+    assert result.folds[0].excluded_unresolved_calibration_rows == 1
+    assert (
+        result.folds[0].calibration_data_end
+        < result.folds[0].evaluation_dates[0]
+    )
+
+
+def test_v2_train_records_no_candidate_without_validation_eligibility() -> None:
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+
+    result = ranking_v2.build_five_day_ranking_v2_train_review(
+        _complete_review_fixture(),
+        parent_research_identity=PARENT_IDENTITY,
+    )
+
+    assert result.winner_policy_id is None
+    assert result.status == "NO_TRAIN_CANDIDATE"
+    assert result.validation_eligible is False
+    assert all(not value.qualifies for value in result.assessments)
+
+
+def test_v2_train_propagates_incomplete_and_never_reads_later_splits() -> None:
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+    research = _review_with_incomplete_train_selection()
+
+    result = ranking_v2.build_five_day_ranking_v2_train_review(
+        research,
+        parent_research_identity=PARENT_IDENTITY,
+    )
+
+    affected = next(
+        value
+        for value in result.assessments
+        if value.policy.policy_id == "EDGE-K30-BASE"
+    )
+    later_dates = frozenset((*research.split.validation, *research.split.test))
+    assert affected.qualifies is False
+    assert "FOLD_1_INCOMPLETE" in affected.reasons
+    assert "COMBINED_INCOMPLETE" in affected.reasons
+    assert all(
+        row.plan.candidate.signal_date not in later_dates
+        for variant in result.variants
+        for row in variant.scored
+    )
+
+
+def test_v2_train_marks_a_qualified_winner_validation_only() -> None:
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+
+    result = ranking_v2.build_five_day_ranking_v2_train_review(
+        _qualifying_train_review(),
+        parent_research_identity=PARENT_IDENTITY,
+    )
+
+    assert result.winner_policy_id == "EDGE-K30-BASE"
+    assert result.winner_train_samples == 48
+    assert result.status == "TRAIN_CANDIDATE_SELECTED"
+    assert result.validation_eligible is True
+    assert result.promotion_eligible is False
+    assert result.trade_permission == "NO-TRADE"
 
 
 def test_v2_registry_contains_exactly_the_preregistered_twelve() -> None:
