@@ -15,9 +15,12 @@ from stock_ai.market_codes import normalize_code6
 from .five_day_return_runtime import FiveDaySignalPlan
 from .five_day_return_validation import (
     FiveDayCalibration,
+    FiveDayObservation,
     FiveDayRankedPlan,
     FiveDayRanking,
+    FiveDaySelectedSegment,
     _active_structure_key,
+    _is_resolved,
     resolve_five_day_calibration,
 )
 from .models import SetupType
@@ -109,6 +112,32 @@ class FiveDayV2RankingResult:
     policy: FiveDayV2Policy
     ranking: FiveDayRanking
     scored: tuple[FiveDayV2ScoredPlan, ...]
+
+
+@dataclass(frozen=True)
+class V2RankBandMetrics:
+    band: str
+    triggered_completed: int
+    net_expectancy: Decimal
+
+
+@dataclass(frozen=True)
+class V2MonotonicityAssessment:
+    bands: tuple[V2RankBandMetrics, ...]
+    qualifies: bool
+    reasons: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class FiveDayV2PolicyAssessment:
+    policy: FiveDayV2Policy
+    fold1: FiveDaySelectedSegment
+    fold2: FiveDaySelectedSegment
+    combined: FiveDaySelectedSegment
+    monotonicity: V2MonotonicityAssessment
+    worst_fold_expectancy: Decimal
+    qualifies: bool
+    reasons: tuple[str, ...]
 
 
 def build_five_day_v2_policies() -> tuple[FiveDayV2Policy, ...]:
@@ -429,4 +458,150 @@ def rank_five_day_plans_v2(
             ranked=tuple(traces),
         ),
         scored=tuple(scored),
+    )
+
+
+def _v2_plan_key(plan: FiveDaySignalPlan) -> tuple[date, str, str, str]:
+    return (
+        plan.candidate.signal_date,
+        normalize_code6(plan.candidate.code),
+        plan.structure_id,
+        plan.profile.profile_id,
+    )
+
+
+def build_v2_rank_bands(
+    scored: Sequence[FiveDayV2ScoredPlan],
+    observations: Sequence[FiveDayObservation],
+) -> tuple[V2RankBandMetrics, ...]:
+    """Summarize resolved triggered observations by diagnostic rank band."""
+    by_plan = {
+        _v2_plan_key(value.plan): value
+        for value in observations
+    }
+    returns: dict[str, list[Decimal]] = {
+        "RANK_1": [],
+        "RANK_2_3": [],
+        "RANK_4_5": [],
+        "RANK_6_PLUS": [],
+    }
+    for row in scored:
+        observation = by_plan.get(_v2_plan_key(row.plan))
+        if observation is None or not _is_resolved(observation):
+            continue
+        assert observation.trade.net_return is not None
+        band = (
+            "RANK_1"
+            if row.rank == 1
+            else "RANK_2_3"
+            if row.rank <= 3
+            else "RANK_4_5"
+            if row.rank <= 5
+            else "RANK_6_PLUS"
+        )
+        returns[band].append(observation.trade.net_return)
+    return tuple(
+        V2RankBandMetrics(
+            band=band,
+            triggered_completed=len(values),
+            net_expectancy=(
+                sum(values, Decimal("0")) / Decimal(len(values))
+                if values
+                else Decimal("0")
+            ),
+        )
+        for band, values in returns.items()
+    )
+
+
+def assess_v2_rank_monotonicity(
+    bands: Sequence[V2RankBandMetrics],
+    *,
+    admitted_top3_expectancy: Decimal,
+) -> V2MonotonicityAssessment:
+    """Require supported rank bands with no material order inversion."""
+    by_band = {value.band: value for value in bands}
+    reasons: list[str] = []
+    if any(value.triggered_completed < 15 for value in bands):
+        reasons.append("RANK_BAND_SAMPLES_TOO_LOW")
+    tolerance = Decimal("0.002")
+    if (
+        by_band["RANK_1"].net_expectancy + tolerance
+        < by_band["RANK_2_3"].net_expectancy
+    ):
+        reasons.append("RANK_1_BELOW_RANK_2_3")
+    if (
+        by_band["RANK_2_3"].net_expectancy + tolerance
+        < by_band["RANK_4_5"].net_expectancy
+    ):
+        reasons.append("RANK_2_3_BELOW_RANK_4_5")
+    if admitted_top3_expectancy <= by_band["RANK_6_PLUS"].net_expectancy:
+        reasons.append("TOP3_NOT_ABOVE_RANK6_PLUS")
+    return V2MonotonicityAssessment(
+        bands=tuple(bands),
+        qualifies=not reasons,
+        reasons=tuple(reasons),
+    )
+
+
+def assess_five_day_v2_policy(
+    *,
+    policy: FiveDayV2Policy,
+    fold1: FiveDaySelectedSegment,
+    fold2: FiveDaySelectedSegment,
+    combined: FiveDaySelectedSegment,
+    monotonicity: V2MonotonicityAssessment,
+) -> FiveDayV2PolicyAssessment:
+    """Apply the frozen fold, combined, and rank-evidence thresholds."""
+    reasons: list[str] = []
+    for label, value in (("FOLD_1", fold1), ("FOLD_2", fold2)):
+        if value.selection.incomplete:
+            reasons.append(f"{label}_INCOMPLETE")
+        if value.metrics.triggered_resolved < 15:
+            reasons.append(f"{label}_SAMPLES_TOO_LOW")
+        if value.metrics.net_expectancy <= 0:
+            reasons.append(f"{label}_NON_POSITIVE_EXPECTANCY")
+    if combined.selection.incomplete:
+        reasons.append("COMBINED_INCOMPLETE")
+    if combined.metrics.triggered_resolved < 40:
+        reasons.append("COMBINED_SAMPLES_TOO_LOW")
+    if combined.metrics.net_expectancy < Decimal("0.003"):
+        reasons.append("COMBINED_EDGE_TOO_LOW")
+    if (
+        combined.metrics.profit_factor is None
+        or combined.metrics.profit_factor <= Decimal("1.10")
+    ):
+        reasons.append("PROFIT_FACTOR_NOT_ABOVE_1_10")
+    reasons.extend(monotonicity.reasons)
+    return FiveDayV2PolicyAssessment(
+        policy=policy,
+        fold1=fold1,
+        fold2=fold2,
+        combined=combined,
+        monotonicity=monotonicity,
+        worst_fold_expectancy=min(
+            fold1.metrics.net_expectancy,
+            fold2.metrics.net_expectancy,
+        ),
+        qualifies=not reasons,
+        reasons=tuple(reasons),
+    )
+
+
+def select_five_day_v2_winner(
+    assessments: Sequence[FiveDayV2PolicyAssessment],
+) -> FiveDayV2PolicyAssessment | None:
+    """Select one qualified policy without an unqualified fallback."""
+    qualified = tuple(value for value in assessments if value.qualifies)
+    if not qualified:
+        return None
+    return min(
+        qualified,
+        key=lambda value: (
+            -value.worst_fold_expectancy,
+            -value.combined.metrics.net_expectancy,
+            -value.combined.metrics.triggered_resolved,
+            value.combined.metrics.maximum_drawdown,
+            V2_POLICY_IDS.index(value.policy.policy_id),
+        ),
     )

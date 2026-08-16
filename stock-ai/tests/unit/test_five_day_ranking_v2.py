@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date, timedelta
 from decimal import Decimal
 from importlib import import_module
 
 import pytest
 
+from stock_ai.buy_point_selection.five_day_return_execution import (
+    FiveDayExit,
+    FiveDayTrade,
+)
 from stock_ai.buy_point_selection.five_day_return_profiles import (
     build_five_day_return_profiles,
 )
@@ -15,6 +20,12 @@ from stock_ai.buy_point_selection.five_day_return_runtime import (
 )
 from stock_ai.buy_point_selection.five_day_return_validation import (
     FiveDayCalibration,
+    FiveDayObservation,
+    FiveDayPortfolioMetrics,
+    FiveDayRanking,
+    FiveDaySegmentMetrics,
+    FiveDaySelectedSegment,
+    FiveDaySelection,
 )
 from stock_ai.buy_point_selection.models import DetectedSetup, SetupType
 
@@ -122,6 +133,498 @@ def _policy(policy_id: str):
         for value in ranking_v2.build_five_day_v2_policies()
         if value.policy_id == policy_id
     )
+
+
+def _scored(
+    plan: FiveDaySignalPlan,
+    *,
+    rank: int,
+):
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+    return ranking_v2.FiveDayV2ScoredPlan(
+        plan=plan,
+        calibration=_calibration(plan),
+        shrunk_edge=Decimal("0.01"),
+        components=ranking_v2.V2ScoreComponents(
+            edge=Decimal("0.5"),
+            wilson=Decimal("0.5"),
+            positive_windows=Decimal("0.5"),
+            low_mae=Decimal("0.5"),
+            low_stop_rate=Decimal("0.5"),
+            context=Decimal("0.5"),
+            setup_quality=Decimal("0.5"),
+        ),
+        score=Decimal("50"),
+        rank=rank,
+        selected=rank <= 3,
+    )
+
+
+def _observation_for_plan(
+    plan: FiveDaySignalPlan,
+    *,
+    net_return: str,
+) -> FiveDayObservation:
+    resolution_date = plan.candidate.signal_date + timedelta(days=6)
+    exit_value = FiveDayExit(
+        planned_exit_date=resolution_date,
+        actual_exit_date=resolution_date,
+        price=Decimal("10.20"),
+        reason=(
+            "TIME_EXIT_GAIN"
+            if Decimal(net_return) > 0
+            else "TIME_EXIT_LOSS"
+        ),
+        fees=Decimal("0"),
+        delayed=False,
+    )
+    trade = FiveDayTrade(
+        profile_id=plan.profile.profile_id,
+        structure_id=plan.structure_id,
+        code=plan.candidate.code,
+        signal_date=plan.candidate.signal_date,
+        status=exit_value.reason,
+        entry_date=plan.candidate.signal_date + timedelta(days=1),
+        entry_price=Decimal("10.00"),
+        stop_price=Decimal("9.70"),
+        evaluation_target_notional=Decimal("10000"),
+        evaluation_shares=1000,
+        evaluation_notional=Decimal("10000"),
+        entry_fees=Decimal("0"),
+        exit=exit_value,
+        net_pnl=Decimal(net_return) * Decimal("10000"),
+        net_return=Decimal(net_return),
+        mfe=Decimal("0.03"),
+        mae=Decimal("0.01"),
+        intraday_order_ambiguous=False,
+        reasons=(),
+    )
+    return FiveDayObservation(plan, trade, resolution_date)
+
+
+def _not_triggered_for_plan(plan: FiveDaySignalPlan) -> FiveDayObservation:
+    value = _observation_for_plan(plan, net_return="0")
+    return replace(
+        value,
+        trade=replace(
+            value.trade,
+            status="NOT_TRIGGERED",
+            entry_date=None,
+            entry_price=None,
+            stop_price=None,
+            evaluation_shares=0,
+            evaluation_notional=Decimal("0"),
+            exit=None,
+            net_pnl=Decimal("0"),
+            net_return=None,
+            mfe=None,
+            mae=None,
+        ),
+    )
+
+
+def _bands(
+    *,
+    rank1: str,
+    rank2_3: str,
+    rank4_5: str,
+    rank6: str,
+    rank1_n: int = 15,
+):
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+    return (
+        ranking_v2.V2RankBandMetrics(
+            "RANK_1", rank1_n, Decimal(rank1)
+        ),
+        ranking_v2.V2RankBandMetrics(
+            "RANK_2_3", 15, Decimal(rank2_3)
+        ),
+        ranking_v2.V2RankBandMetrics(
+            "RANK_4_5", 15, Decimal(rank4_5)
+        ),
+        ranking_v2.V2RankBandMetrics(
+            "RANK_6_PLUS", 15, Decimal(rank6)
+        ),
+    )
+
+
+def _segment(
+    *,
+    samples: int,
+    expectancy: str,
+    profit_factor: str | None = "1.11",
+    incomplete: bool = False,
+    maximum_drawdown: str = "0.05",
+) -> FiveDaySelectedSegment:
+    metrics = FiveDaySegmentMetrics(
+        profile_id="V2",
+        segment="TRAIN",
+        triggered_resolved=samples,
+        net_expectancy=Decimal(expectancy),
+        profit_factor=(
+            Decimal(profit_factor) if profit_factor is not None else None
+        ),
+        profitable_wilson_lower=Decimal("0.50"),
+        stop_rate=Decimal("0.20"),
+        positive_window_ratio=Decimal("0.60"),
+        maximum_drawdown=Decimal(maximum_drawdown),
+        qualifies=True,
+        reasons=(),
+    )
+    return FiveDaySelectedSegment(
+        metric_version="selected-portfolio-v2",
+        metrics=metrics,
+        portfolio=FiveDayPortfolioMetrics(
+            accepted_trades=samples,
+            maximum_drawdown=Decimal(maximum_drawdown),
+            maximum_stock_trade_share=Decimal("0.10"),
+            maximum_stock_profit_share=Decimal("0.10"),
+            maximum_sector_trade_share=Decimal("0.20"),
+            maximum_sector_profit_share=Decimal("0.20"),
+            top5_profit_share=Decimal("0.30"),
+            qualifies=True,
+            reasons=(),
+        ),
+        selection=FiveDaySelection(
+            ranking=FiveDayRanking(plans=(), rejection_counts={}),
+            selected_observations=(),
+            admitted=(),
+            funnel_counts={},
+            incomplete=incomplete,
+        ),
+    )
+
+
+def _passing_monotonicity():
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+    return ranking_v2.assess_v2_rank_monotonicity(
+        _bands(
+            rank1="0.006",
+            rank2_3="0.005",
+            rank4_5="0.004",
+            rank6="0.002",
+        ),
+        admitted_top3_expectancy=Decimal("0.003"),
+    )
+
+
+def _qualifying_assessment_inputs(
+    *,
+    fold1_samples: int = 15,
+    fold2_samples: int = 15,
+    combined_samples: int = 40,
+    fold1_expectancy: str = "0.001",
+    fold2_expectancy: str = "0.002",
+    combined_expectancy: str = "0.003",
+    combined_profit_factor: str | None = "1.11",
+    fold1_incomplete: bool = False,
+    fold2_incomplete: bool = False,
+    combined_incomplete: bool = False,
+) -> dict[str, object]:
+    return {
+        "policy": _policy("EDGE-K30-BASE"),
+        "fold1": _segment(
+            samples=fold1_samples,
+            expectancy=fold1_expectancy,
+            incomplete=fold1_incomplete,
+        ),
+        "fold2": _segment(
+            samples=fold2_samples,
+            expectancy=fold2_expectancy,
+            incomplete=fold2_incomplete,
+        ),
+        "combined": _segment(
+            samples=combined_samples,
+            expectancy=combined_expectancy,
+            profit_factor=combined_profit_factor,
+            incomplete=combined_incomplete,
+        ),
+        "monotonicity": _passing_monotonicity(),
+    }
+
+
+def _assessment(
+    *,
+    policy_id: str,
+    fold1_expectancy: str,
+    fold2_expectancy: str,
+    combined_expectancy: str,
+    combined_samples: int = 40,
+    maximum_drawdown: str = "0.05",
+):
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+    return ranking_v2.assess_five_day_v2_policy(
+        policy=_policy(policy_id),
+        fold1=_segment(samples=20, expectancy=fold1_expectancy),
+        fold2=_segment(samples=20, expectancy=fold2_expectancy),
+        combined=_segment(
+            samples=combined_samples,
+            expectancy=combined_expectancy,
+            maximum_drawdown=maximum_drawdown,
+        ),
+        monotonicity=_passing_monotonicity(),
+    )
+
+
+def test_monotonicity_accepts_the_exact_two_bps_tolerance() -> None:
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+
+    result = ranking_v2.assess_v2_rank_monotonicity(
+        _bands(
+            rank1="0.004",
+            rank2_3="0.006",
+            rank4_5="0.008",
+            rank6="0",
+        ),
+        admitted_top3_expectancy=Decimal("0.003"),
+    )
+
+    assert result.qualifies is True
+    assert result.reasons == ()
+
+
+def test_monotonicity_fails_small_bands_and_top3_below_rank6() -> None:
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+
+    result = ranking_v2.assess_v2_rank_monotonicity(
+        _bands(
+            rank1="0.01",
+            rank2_3="0",
+            rank4_5="-0.01",
+            rank6="0.004",
+            rank1_n=14,
+        ),
+        admitted_top3_expectancy=Decimal("0.003"),
+    )
+
+    assert result.qualifies is False
+    assert result.reasons == (
+        "RANK_BAND_SAMPLES_TOO_LOW",
+        "TOP3_NOT_ABOVE_RANK6_PLUS",
+    )
+
+
+def test_rank_bands_use_triggered_completed_trace_not_admission() -> None:
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+    plan_rank1 = _plan(code="600001", profile_index=0)
+    plan_rank4 = _plan(code="600002", profile_index=1)
+    plan_rank6 = _plan(code="600003", profile_index=2)
+
+    bands = ranking_v2.build_v2_rank_bands(
+        (
+            _scored(plan_rank1, rank=1),
+            _scored(plan_rank4, rank=4),
+            _scored(plan_rank6, rank=6),
+        ),
+        (
+            _observation_for_plan(plan_rank1, net_return="0.01"),
+            _not_triggered_for_plan(plan_rank4),
+            _observation_for_plan(plan_rank6, net_return="-0.01"),
+        ),
+    )
+
+    assert tuple(value.triggered_completed for value in bands) == (1, 0, 0, 1)
+    assert bands[0].net_expectancy == Decimal("0.01")
+    assert bands[3].net_expectancy == Decimal("-0.01")
+
+
+def test_policy_requires_both_positive_folds_and_combined_edge() -> None:
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+
+    result = ranking_v2.assess_five_day_v2_policy(
+        policy=_policy("EDGE-K30-BASE"),
+        fold1=_segment(samples=15, expectancy="0.001"),
+        fold2=_segment(samples=25, expectancy="0"),
+        combined=_segment(
+            samples=40,
+            expectancy="0.003",
+            profit_factor="1.11",
+        ),
+        monotonicity=_passing_monotonicity(),
+    )
+
+    assert result.qualifies is False
+    assert "FOLD_2_NON_POSITIVE_EXPECTANCY" in result.reasons
+
+
+@pytest.mark.parametrize(
+    ("overrides", "reason"),
+    (
+        ({"fold1_incomplete": True}, "FOLD_1_INCOMPLETE"),
+        ({"fold2_incomplete": True}, "FOLD_2_INCOMPLETE"),
+        ({"combined_incomplete": True}, "COMBINED_INCOMPLETE"),
+        ({"fold1_samples": 14}, "FOLD_1_SAMPLES_TOO_LOW"),
+        ({"fold2_samples": 14}, "FOLD_2_SAMPLES_TOO_LOW"),
+        ({"combined_samples": 39}, "COMBINED_SAMPLES_TOO_LOW"),
+        ({"combined_expectancy": "0.0029"}, "COMBINED_EDGE_TOO_LOW"),
+        (
+            {"combined_profit_factor": "1.10"},
+            "PROFIT_FACTOR_NOT_ABOVE_1_10",
+        ),
+        (
+            {"combined_profit_factor": None},
+            "PROFIT_FACTOR_NOT_ABOVE_1_10",
+        ),
+    ),
+)
+def test_v2_policy_qualification_boundaries(
+    overrides: dict[str, object],
+    reason: str,
+) -> None:
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+
+    result = ranking_v2.assess_five_day_v2_policy(
+        **_qualifying_assessment_inputs(**overrides)
+    )
+
+    assert result.qualifies is False
+    assert reason in result.reasons
+
+
+def test_v2_policy_accepts_inclusive_and_exclusive_boundaries() -> None:
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+
+    result = ranking_v2.assess_five_day_v2_policy(
+        **_qualifying_assessment_inputs(
+            fold1_samples=15,
+            fold2_samples=15,
+            combined_samples=40,
+            combined_expectancy="0.0030",
+            combined_profit_factor="1.1001",
+        )
+    )
+
+    assert result.qualifies is True
+    assert result.reasons == ()
+
+
+def test_winner_maximizes_worst_fold_before_combined_expectancy() -> None:
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+    high_combined = _assessment(
+        policy_id="EDGE-K30-BASE",
+        fold1_expectancy="0.001",
+        fold2_expectancy="0.004",
+        combined_expectancy="0.005",
+    )
+    high_worst_fold = _assessment(
+        policy_id="BALANCED-K30-BASE",
+        fold1_expectancy="0.002",
+        fold2_expectancy="0.003",
+        combined_expectancy="0.004",
+    )
+
+    winner = ranking_v2.select_five_day_v2_winner(
+        (high_combined, high_worst_fold)
+    )
+
+    assert winner is not None
+    assert winner.policy.policy_id == "BALANCED-K30-BASE"
+
+
+def test_winner_uses_combined_expectancy_after_equal_worst_fold() -> None:
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+    lower_combined = _assessment(
+        policy_id="EDGE-K30-BASE",
+        fold1_expectancy="0.002",
+        fold2_expectancy="0.003",
+        combined_expectancy="0.004",
+    )
+    higher_combined = _assessment(
+        policy_id="EDGE-K60-BASE",
+        fold1_expectancy="0.002",
+        fold2_expectancy="0.003",
+        combined_expectancy="0.005",
+    )
+
+    winner = ranking_v2.select_five_day_v2_winner(
+        (lower_combined, higher_combined)
+    )
+
+    assert winner is not None
+    assert winner.policy.policy_id == "EDGE-K60-BASE"
+
+
+def test_winner_uses_samples_drawdown_then_registered_policy_order() -> None:
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+    fewer_samples = _assessment(
+        policy_id="EDGE-K30-BASE",
+        fold1_expectancy="0.002",
+        fold2_expectancy="0.003",
+        combined_expectancy="0.004",
+        combined_samples=40,
+        maximum_drawdown="0.07",
+    )
+    more_samples = _assessment(
+        policy_id="EDGE-K60-BASE",
+        fold1_expectancy="0.002",
+        fold2_expectancy="0.003",
+        combined_expectancy="0.004",
+        combined_samples=41,
+        maximum_drawdown="0.09",
+    )
+    lower_drawdown = _assessment(
+        policy_id="BALANCED-K60-BASE",
+        fold1_expectancy="0.002",
+        fold2_expectancy="0.003",
+        combined_expectancy="0.004",
+        combined_samples=41,
+        maximum_drawdown="0.08",
+    )
+    later_policy = _assessment(
+        policy_id="DOWNSIDE-K60-BASE",
+        fold1_expectancy="0.002",
+        fold2_expectancy="0.003",
+        combined_expectancy="0.004",
+        combined_samples=41,
+        maximum_drawdown="0.08",
+    )
+
+    winner = ranking_v2.select_five_day_v2_winner(
+        (fewer_samples, later_policy, lower_drawdown, more_samples)
+    )
+
+    assert winner is not None
+    assert winner.policy.policy_id == "BALANCED-K60-BASE"
+
+
+def test_winner_returns_none_instead_of_unqualified_fallback() -> None:
+    ranking_v2 = import_module(
+        "stock_ai.buy_point_selection.five_day_ranking_v2"
+    )
+    unqualified = ranking_v2.assess_five_day_v2_policy(
+        **_qualifying_assessment_inputs(fold1_expectancy="0")
+    )
+
+    winner = ranking_v2.select_five_day_v2_winner((unqualified,))
+
+    assert unqualified.qualifies is False
+    assert winner is None
 
 
 def test_v2_registry_contains_exactly_the_preregistered_twelve() -> None:
