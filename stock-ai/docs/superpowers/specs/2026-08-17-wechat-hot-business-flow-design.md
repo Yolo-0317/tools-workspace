@@ -152,14 +152,19 @@ uv run python -m scripts.tools.wechat_mp_draft \
   ],
   "original_thesis": "可被反驳和检验的原创核心判断。",
   "business_question": "本文解释的单一商业问题。",
-  "facts": ["来源直接支持的事实"],
+  "facts": [
+    {
+      "claim": "来源直接支持的事实",
+      "source_url": "https://example.com/source-a"
+    }
+  ],
   "inferences": ["由事实推导且正文标明边界的判断"],
   "rejected_claims": ["未采用的未证实说法"],
   "slot_key": "hot_business"
 }
 ```
 
-`business_question`、`facts`、`inferences` 和 `rejected_claims` 是 `hot_business` 必填字段；普通 `hotspot` 的 JSON 契约保持不变。未知字段继续忽略，以保留向后兼容。
+`business_question`、`facts`、`inferences` 和 `rejected_claims` 是 `hot_business` 必填字段。`facts` 中每条事实必须同时给出 `claim` 与位于 `research_urls` 内的 `source_url`，从数据契约上保证关键事实和数字可以回溯；普通 `hotspot` 的 JSON 契约保持不变。未知字段继续忽略，以保留向后兼容。
 
 ## 流水线与代码边界
 
