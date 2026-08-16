@@ -5,10 +5,11 @@ from __future__ import annotations
 
 import os
 import json
+import re
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 from zoneinfo import ZoneInfo
 
 import requests
@@ -20,6 +21,10 @@ DRAMA_SELECT_URL = (
 TZ = ZoneInfo("Asia/Shanghai")
 ROOT = Path(__file__).resolve().parents[2]
 CACHE_PATH = ROOT / "data" / "wechat_mp_short_drama_pool.json"
+USAGE_PATH = ROOT / "data" / "wechat_mp_short_drama_usage.json"
+WORKPLACE_KINDS = frozenset(
+    {"sector", "market", "news", "top5", "dragons", "workspace", "temp"}
+)
 
 
 @dataclass(frozen=True)
@@ -110,7 +115,7 @@ def fetch_drama_page(
     )
 
 
-def _atomic_write_json(path: Path, payload: Mapping[str, Any]) -> None:
+def _atomic_write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.tmp-{os.getpid()}")
     temporary.write_text(
@@ -196,6 +201,192 @@ def load_or_refresh_drama_pool(
         if current < hard_expiry:
             return rows
         raise RuntimeError("短剧列表刷新失败且缓存已过期") from exc
+
+
+def normalize_drama_name(value: str) -> str:
+    return re.sub(r"[^0-9A-Za-z\u4e00-\u9fff]+", "", value).lower()
+
+
+def eligible_dramas(
+    rows: Sequence[ShortDrama],
+    *,
+    now: datetime,
+    min_valid_days: int,
+) -> list[ShortDrama]:
+    cutoff = int((now + timedelta(days=min_valid_days)).timestamp())
+    eligible: list[ShortDrama] = []
+    for row in rows:
+        required = (
+            row.drama_id,
+            row.drama_name,
+            row.src_appid,
+            row.play_appid,
+            row.cover_url,
+            row.plan_id,
+            row.preview_path,
+        )
+        if (
+            row.status == 1
+            and all(required)
+            and row.offline_timestamp >= cutoff
+            and row.media_count > 0
+            and row.rate_bp > 0
+        ):
+            eligible.append(row)
+    return eligible
+
+
+def dedupe_dramas(rows: Sequence[ShortDrama]) -> list[ShortDrama]:
+    winners: dict[str, ShortDrama] = {}
+    for row in rows:
+        key = normalize_drama_name(row.drama_name)
+        current = winners.get(key)
+        row_key = (
+            -row.rate_bp,
+            -row.offline_timestamp,
+            -row.hot_degree,
+            row.drama_id,
+        )
+        if current is None:
+            winners[key] = row
+            continue
+        current_key = (
+            -current.rate_bp,
+            -current.offline_timestamp,
+            -current.hot_degree,
+            current.drama_id,
+        )
+        if row_key < current_key:
+            winners[key] = row
+    return sorted(winners.values(), key=lambda row: (-row.hot_degree, row.drama_id))
+
+
+def article_match_text(article: Mapping[str, Any]) -> str:
+    raw = " ".join(
+        str(article.get(key) or "") for key in ("title", "digest", "body_text")
+    )
+    return raw[:1200]
+
+
+def _bigrams(value: str) -> set[str]:
+    compact = re.sub(r"[^0-9A-Za-z\u4e00-\u9fff]+", "", value).lower()
+    return {compact[index : index + 2] for index in range(max(0, len(compact) - 1))}
+
+
+def _minmax(value: int, values: Sequence[int]) -> float:
+    low, high = min(values), max(values)
+    return 0.5 if low == high else (value - low) / (high - low)
+
+
+def score_drama(
+    drama: ShortDrama,
+    *,
+    match_text: str,
+    kind: str,
+    population: Sequence[ShortDrama],
+) -> float:
+    article_terms = _bigrams(match_text)
+    drama_terms = _bigrams(
+        " ".join((drama.drama_name, drama.era, drama.theme, drama.description))
+    )
+    relevance = len(article_terms & drama_terms) / max(1, min(20, len(drama_terms)))
+    if kind in WORKPLACE_KINDS and any(
+        term in drama.theme for term in ("职场", "都市", "励志")
+    ):
+        relevance = min(1.0, relevance + 0.15)
+    heat = _minmax(drama.hot_degree, [row.hot_degree for row in population])
+    rate = _minmax(drama.rate_bp, [row.rate_bp for row in population])
+    return relevance * 0.50 + heat * 0.30 + rate * 0.20
+
+
+def drama_repeat_days() -> int:
+    try:
+        value = int(os.getenv("WECHAT_MP_DRAMA_REPEAT_DAYS", "7"))
+    except ValueError:
+        value = 7
+    return max(0, value)
+
+
+def _load_usage(path: Path) -> list[dict[str, Any]]:
+    if not path.is_file():
+        return []
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    return [item for item in payload if isinstance(item, dict)] if isinstance(payload, list) else []
+
+
+def pick_short_drama(
+    article: Mapping[str, Any],
+    rows: Sequence[ShortDrama],
+    *,
+    kind: str,
+    usage_path: Path = USAGE_PATH,
+    now: datetime | None = None,
+) -> ShortDrama:
+    if not rows:
+        raise RuntimeError("没有可用短剧候选")
+    current = now or datetime.now(TZ)
+    cutoff = current - timedelta(days=drama_repeat_days())
+    recent_ids: set[str] = set()
+    for item in _load_usage(usage_path):
+        try:
+            used_at = datetime.fromisoformat(str(item.get("used_at") or ""))
+        except ValueError:
+            continue
+        if used_at.tzinfo is None:
+            used_at = used_at.replace(tzinfo=TZ)
+        if used_at >= cutoff:
+            recent_ids.add(str(item.get("drama_id") or ""))
+    candidates = [row for row in rows if row.drama_id not in recent_ids]
+    if not candidates:
+        candidates = list(rows)
+    match_text = article_match_text(article)
+    return min(
+        candidates,
+        key=lambda row: (
+            -score_drama(
+                row,
+                match_text=match_text,
+                kind=kind,
+                population=candidates,
+            ),
+            -row.hot_degree,
+            -row.offline_timestamp,
+            row.drama_id,
+        ),
+    )
+
+
+def record_drama_usage(
+    drama: ShortDrama,
+    *,
+    article_title: str,
+    usage_path: Path = USAGE_PATH,
+    used_at: datetime | None = None,
+) -> None:
+    current = used_at or datetime.now(TZ)
+    keep_after = current - timedelta(days=30)
+    retained: list[dict[str, Any]] = []
+    for item in _load_usage(usage_path):
+        try:
+            item_time = datetime.fromisoformat(str(item.get("used_at") or ""))
+        except ValueError:
+            continue
+        if item_time.tzinfo is None:
+            item_time = item_time.replace(tzinfo=TZ)
+        if item_time >= keep_after:
+            retained.append(item)
+    retained.append(
+        {
+            "drama_id": drama.drama_id,
+            "drama_name": drama.drama_name,
+            "article_title": article_title,
+            "used_at": current.isoformat(timespec="seconds"),
+        }
+    )
+    _atomic_write_json(usage_path, retained)
 
 
 def parse_drama_response(
