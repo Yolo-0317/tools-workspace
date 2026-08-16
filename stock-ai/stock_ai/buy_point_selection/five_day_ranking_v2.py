@@ -2,13 +2,25 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections import Counter
+from dataclasses import dataclass, replace
+from datetime import date
 from decimal import Decimal
 import hashlib
 import json
-from typing import Sequence
+from typing import Mapping, Sequence
+
+from stock_ai.market_codes import normalize_code6
 
 from .five_day_return_runtime import FiveDaySignalPlan
+from .five_day_return_validation import (
+    FiveDayCalibration,
+    FiveDayRankedPlan,
+    FiveDayRanking,
+    _active_structure_key,
+    resolve_five_day_calibration,
+)
+from .models import SetupType
 
 
 V2_RANKING_VERSION = "five-day-ranking-key-v2"
@@ -68,6 +80,35 @@ class FiveDayV2Policy:
             raise ValueError("shrinkage_k must be 30 or 60")
         if self.gate_mode not in ("BASE", "STABLE_NEGATIVE"):
             raise ValueError("unsupported gate mode")
+
+
+@dataclass(frozen=True)
+class V2ScoreComponents:
+    edge: Decimal
+    wilson: Decimal
+    positive_windows: Decimal
+    low_mae: Decimal
+    low_stop_rate: Decimal
+    context: Decimal
+    setup_quality: Decimal
+
+
+@dataclass(frozen=True)
+class FiveDayV2ScoredPlan:
+    plan: FiveDaySignalPlan
+    calibration: FiveDayCalibration
+    shrunk_edge: Decimal
+    components: V2ScoreComponents
+    score: Decimal
+    rank: int
+    selected: bool
+
+
+@dataclass(frozen=True)
+class FiveDayV2RankingResult:
+    policy: FiveDayV2Policy
+    ranking: FiveDayRanking
+    scored: tuple[FiveDayV2ScoredPlan, ...]
 
 
 def build_five_day_v2_policies() -> tuple[FiveDayV2Policy, ...]:
@@ -211,3 +252,181 @@ def five_day_v2_context_score(plan: FiveDaySignalPlan) -> Decimal:
         else Decimal("0")
     )
     return (market + sector + resistance) / Decimal("3")
+
+
+def _passes_v2_gate(
+    plan: FiveDaySignalPlan,
+    calibration: FiveDayCalibration,
+    policy: FiveDayV2Policy,
+) -> tuple[bool, str | None]:
+    edge = shrink_five_day_edge(
+        calibration.net_expectancy,
+        calibration.triggered_resolved,
+        policy.shrinkage_k,
+    )
+    if edge <= 0:
+        return False, "NON_POSITIVE_SHRUNK_EDGE"
+    if (
+        calibration.profit_factor is None
+        or calibration.profit_factor <= Decimal("1")
+    ):
+        return False, "PROFIT_FACTOR_NOT_ABOVE_ONE"
+    if policy.gate_mode == "STABLE_NEGATIVE":
+        if plan.candidate.sector_resonating is False:
+            return False, "STABLE_NEGATIVE_SECTOR"
+        if plan.candidate.setup.setup_type is SetupType.FIRST_LAUNCH_PULLBACK:
+            return False, "STABLE_NEGATIVE_SETUP"
+    return True, None
+
+
+def _v2_sort_key(value: FiveDayV2ScoredPlan) -> tuple[object, ...]:
+    return (
+        -value.score,
+        -value.shrunk_edge,
+        -value.components.setup_quality,
+        normalize_code6(value.plan.candidate.code),
+        value.plan.profile.profile_id,
+    )
+
+
+def _score_signal_date(
+    rows: Sequence[
+        tuple[FiveDaySignalPlan, FiveDayCalibration, Decimal]
+    ],
+    policy: FiveDayV2Policy,
+) -> tuple[FiveDayV2ScoredPlan, ...]:
+    raw = tuple(
+        (
+            edge,
+            calibration.profitable_interval[0],
+            calibration.positive_window_ratio,
+            calibration.mae_p75,
+            calibration.stop_rate,
+            five_day_v2_context_score(plan),
+            Decimal(plan.candidate.setup.quality),
+        )
+        for plan, calibration, edge in rows
+    )
+    percentiles = tuple(
+        relative_percentiles(
+            tuple(value[index] for value in raw),
+            higher_is_better=index not in (3, 4),
+        )
+        for index in range(7)
+    )
+    weights = policy.weights.as_tuple()
+    scored = tuple(
+        FiveDayV2ScoredPlan(
+            plan=plan,
+            calibration=calibration,
+            shrunk_edge=edge,
+            components=V2ScoreComponents(
+                edge=percentiles[0][index],
+                wilson=percentiles[1][index],
+                positive_windows=percentiles[2][index],
+                low_mae=percentiles[3][index],
+                low_stop_rate=percentiles[4][index],
+                context=percentiles[5][index],
+                setup_quality=percentiles[6][index],
+            ),
+            score=sum(
+                (
+                    Decimal(weight) * percentiles[component][index]
+                    for component, weight in enumerate(weights)
+                ),
+                Decimal("0"),
+            ),
+            rank=0,
+            selected=False,
+        )
+        for index, (plan, calibration, edge) in enumerate(rows)
+    )
+    return tuple(sorted(scored, key=_v2_sort_key))
+
+
+def rank_five_day_plans_v2(
+    plans: Sequence[FiveDaySignalPlan],
+    calibrations: Mapping[str, FiveDayCalibration],
+    *,
+    policy: FiveDayV2Policy,
+    active_structure_ids: frozenset[str] = frozenset(),
+    daily_limit: int = 3,
+) -> FiveDayV2RankingResult:
+    """Gate plans and expose a deterministic V2 ranking trace."""
+    if daily_limit < 0:
+        raise ValueError("daily_limit must not be negative")
+    rejections: Counter[str] = Counter()
+    eligible_by_date: dict[
+        date,
+        list[tuple[FiveDaySignalPlan, FiveDayCalibration, Decimal]],
+    ] = {}
+    for plan in plans:
+        if plan.structure_id in active_structure_ids:
+            rejections["EXISTING_ACTIVE_STRUCTURE"] += 1
+            continue
+        calibration = resolve_five_day_calibration(
+            calibrations,
+            profile_id=plan.profile.profile_id,
+            setup_type=plan.candidate.setup.setup_type,
+            market_status=plan.candidate.market_status,
+            sector_resonating=plan.candidate.sector_resonating,
+        )
+        if calibration is None:
+            rejections["INSUFFICIENT_CALIBRATION"] += 1
+            continue
+        if calibration.data_end >= plan.candidate.signal_date:
+            rejections["CALIBRATION_NOT_POINT_IN_TIME"] += 1
+            continue
+        edge = shrink_five_day_edge(
+            calibration.net_expectancy,
+            calibration.triggered_resolved,
+            policy.shrinkage_k,
+        )
+        passed, reason = _passes_v2_gate(plan, calibration, policy)
+        if not passed:
+            assert reason is not None
+            rejections[reason] += 1
+            continue
+        eligible_by_date.setdefault(
+            plan.candidate.signal_date,
+            [],
+        ).append((plan, calibration, edge))
+
+    selected: list[FiveDaySignalPlan] = []
+    traces: list[FiveDayRankedPlan] = []
+    scored: list[FiveDayV2ScoredPlan] = []
+    for signal_date in sorted(eligible_by_date):
+        variants = _score_signal_date(eligible_by_date[signal_date], policy)
+        seen_structures: set[tuple[object, ...]] = set()
+        structures: list[FiveDayV2ScoredPlan] = []
+        for row in variants:
+            identity = _active_structure_key(row.plan)
+            if identity in seen_structures:
+                rejections["DUPLICATE_ACTIVE_STRUCTURE"] += 1
+                continue
+            seen_structures.add(identity)
+            structures.append(row)
+        for position, row in enumerate(structures, start=1):
+            chosen = position <= daily_limit
+            scored.append(replace(row, rank=position, selected=chosen))
+            traces.append(
+                FiveDayRankedPlan(
+                    plan=row.plan,
+                    rank=position,
+                    selected=chosen,
+                )
+            )
+            if chosen:
+                selected.append(row.plan)
+        overflow = max(0, len(structures) - daily_limit)
+        if overflow:
+            rejections["DAILY_CANDIDATE_LIMIT"] += overflow
+    return FiveDayV2RankingResult(
+        policy=policy,
+        ranking=FiveDayRanking(
+            plans=tuple(selected),
+            rejection_counts=dict(sorted(rejections.items())),
+            ranked=tuple(traces),
+        ),
+        scored=tuple(scored),
+    )
