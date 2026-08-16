@@ -364,6 +364,18 @@ PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
   --start 2024-01-02 --end latest
 ```
 
+历史公告缺口可单独断点回补，不会同步行业或 ST 数据：
+
+```bash
+PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python \
+  stock-ai/scripts/sync/sync_buy_point_reference_data.py \
+  --start 2023-12-26 --end 2026-08-04 \
+  --provider cninfo-baostock --announcement-provider eastmoney \
+  --datasets announcement
+```
+
+公告专用模式只写公告检查点、公告同步运行记录和标准化风险标记，已经完成的分区会跳过。Eastmoney 分页请求间隔 0.5 秒；遇到 HTTP 403、429 或 567 时每次冷却五分钟，三次重试耗尽后保存失败记录并停止整次运行。该命令仅手动执行，不安装调度，也不调用东财个股诊断或八维分析。
+
 Tushare 仅作为显式回退；当前 token 缺少对应接口权限时预期返回失败，不会把不完整数据标成成功：
 
 ```bash

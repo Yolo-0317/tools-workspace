@@ -166,6 +166,35 @@ def test_reference_cli_defaults_to_cninfo_baostock() -> None:
     assert args.provider == "cninfo-baostock"
 
 
+def test_reference_cli_defaults_to_all_datasets() -> None:
+    module = _load_script()
+
+    args = module.build_parser().parse_args(
+        ["--start", "2024-01-02", "--end", "latest"]
+    )
+
+    assert args.datasets == "all"
+
+
+def test_reference_cli_accepts_announcement_only_dataset() -> None:
+    module = _load_script()
+
+    args = module.build_parser().parse_args(
+        [
+            "--start",
+            "2023-12-26",
+            "--end",
+            "2026-08-04",
+            "--datasets",
+            "announcement",
+            "--announcement-provider",
+            "eastmoney",
+        ]
+    )
+
+    assert args.datasets == "announcement"
+
+
 def test_reference_cli_keeps_tushare_as_explicit_fallback() -> None:
     module = _load_script()
     args = module.build_parser().parse_args(
@@ -328,3 +357,85 @@ def test_provider_failure_prints_only_safe_error_code(monkeypatch, capsys) -> No
     assert result == 2
     assert output.strip() == "点时参考数据同步失败：PROVIDER_UNAVAILABLE"
     assert "announcements" not in output
+
+
+def test_announcement_only_cli_does_not_build_universe_or_baostock(
+    monkeypatch,
+    capsys,
+) -> None:
+    module = _load_script()
+    day = date(2025, 8, 6)
+    engine = object()
+    repository = object()
+
+    monkeypatch.setattr(module, "_engine", lambda: engine)
+    monkeypatch.setattr(module, "_trade_dates", lambda *_: (day,))
+    monkeypatch.setattr(
+        module,
+        "_universe_by_date",
+        lambda *_: (_ for _ in ()).throw(AssertionError("universe called")),
+    )
+    monkeypatch.setattr(
+        module,
+        "_baostock",
+        lambda: (_ for _ in ()).throw(AssertionError("baostock called")),
+    )
+    monkeypatch.setattr(module, "_eastmoney", lambda: object())
+    monkeypatch.setattr(module, "SQLReferenceRepository", lambda _: repository)
+
+    def run_announcements(*args, progress, **kwargs):
+        progress(module.AnnouncementSyncProgress(1, 1, 0, 0, 1, True))
+        return ()
+
+    monkeypatch.setattr(
+        module,
+        "sync_announcement_reference_data",
+        run_announcements,
+        raising=False,
+    )
+
+    result = module.main(
+        [
+            "--start",
+            day.isoformat(),
+            "--end",
+            day.isoformat(),
+            "--datasets",
+            "announcement",
+            "--announcement-provider",
+            "eastmoney",
+        ]
+    )
+
+    assert result == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "announcement-progress: processed=1 complete=1 skipped=0 failed=0 total=1 terminal=true"
+    ]
+
+
+def test_announcement_only_cli_rejects_tushare_before_provider_setup(
+    monkeypatch,
+    capsys,
+) -> None:
+    module = _load_script()
+    monkeypatch.setattr(
+        module,
+        "_engine",
+        lambda: (_ for _ in ()).throw(AssertionError("engine called")),
+    )
+
+    result = module.main(
+        [
+            "--start",
+            "2025-08-06",
+            "--end",
+            "2025-08-06",
+            "--provider",
+            "tushare",
+            "--datasets",
+            "announcement",
+        ]
+    )
+
+    assert result == 2
+    assert capsys.readouterr().out.strip() == "点时参考数据同步失败：ValueError"

@@ -31,7 +31,7 @@ stock-ai/
 | 五因子选股 | `uv run python core_v3/stock_selection_five_factor_mysql.py` |
 | 综合选股 (v2) | `uv run python core_v2/stock_selection_combined.py` |
 | 买点优先手动选股 V1.3 / 规则 3.1.0 | `PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python a-share-short-term-trading/scripts/select_short_term_candidates.py --output text` |
-| 点时参考数据显式刷新 | 默认巨潮资讯 + BaoStock：`PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python stock-ai/scripts/sync/sync_buy_point_reference_data.py --start 2024-01-02 --end latest`；Tushare 回退追加 `--provider tushare` |
+| 点时参考数据显式刷新 | 默认巨潮资讯 + BaoStock：`PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python stock-ai/scripts/sync/sync_buy_point_reference_data.py --start 2024-01-02 --end latest`；历史公告修复追加 `--announcement-provider eastmoney --datasets announcement`；Tushare 回退追加 `--provider tushare` |
 | 买点历史观察集 | `PYTHONPATH=stock-ai:a-share-short-term-trading stock-ai/.venv/bin/python stock-ai/scripts/analysis/generate_buy_point_observations.py --start 2023-12-26 --end 2026-08-04 --out stock-ai/output/buy-point-replay` |
 | 2R 冻结回测 | `stock-ai/scripts/analysis/backtest_buy_point_selection.py`，必须依次执行研究、冻结 profile、一次性测试 |
 | 五日净收益四画像影子研究 | `PYTHONPATH=. .venv/bin/python scripts/analysis/research_five_day_return_shadow.py <research|freeze|test|forward-screen|forward-settlement>`；仅手动、零股、一次性测试 |

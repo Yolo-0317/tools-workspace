@@ -24,7 +24,9 @@ from stock_ai.buy_point_selection.reference_data import (  # noqa: E402
 from stock_ai.buy_point_selection.reference_sources import ProviderFailure  # noqa: E402
 from stock_ai.buy_point_selection.reference_sync import (  # noqa: E402
     AlternativeReferenceSyncRequest,
+    AnnouncementSyncProgress,
     sync_alternative_reference_data,
+    sync_announcement_reference_data,
 )
 from stock_ai.market_codes import (  # noqa: E402
     is_sh_sz_main_board_code,
@@ -58,6 +60,12 @@ def build_parser() -> argparse.ArgumentParser:
         choices=("cninfo", "eastmoney"),
         default="cninfo",
         help="公告原始数据源；巨潮受限时可显式使用 eastmoney，不涉及东财诊断框架",
+    )
+    parser.add_argument(
+        "--datasets",
+        choices=("all", "announcement"),
+        default="all",
+        help="all 同步行业、ST和公告；announcement 仅断点回补公告",
     )
     return parser
 
@@ -176,17 +184,43 @@ def _safe_cli_error(exc: Exception) -> str:
     return exc.error_code if isinstance(exc, ProviderFailure) else type(exc).__name__
 
 
+def _print_announcement_progress(value: AnnouncementSyncProgress) -> None:
+    terminal = "true" if value.terminal else "false"
+    print(
+        "announcement-progress: "
+        f"processed={value.processed} complete={value.complete} "
+        f"skipped={value.skipped} failed={value.failed} "
+        f"total={value.total} terminal={terminal}"
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     load_dotenv(ROOT / ".env", override=False)
     try:
+        if (
+            args.datasets == "announcement"
+            and args.provider != "cninfo-baostock"
+        ):
+            raise ValueError("公告专用模式仅支持 cninfo-baostock 提供器族")
         engine = _engine()
         trade_dates = _trade_dates(engine, args.start, args.end or date.today())
         if not trade_dates:
             raise RuntimeError("指定区间没有 MySQL 交易日")
         captured_at = datetime.now(timezone.utc)
         repository = SQLReferenceRepository(engine)
-        if args.provider == "tushare":
+        if args.datasets == "announcement":
+            announcement_source = (
+                _eastmoney() if args.announcement_provider == "eastmoney" else _cninfo()
+            )
+            runs = sync_announcement_reference_data(
+                trade_dates,
+                captured_at=captured_at,
+                announcement_source=announcement_source,
+                repository=repository,
+                progress=_print_announcement_progress,
+            )
+        elif args.provider == "tushare":
             runs = sync_reference_data(
                 _pro(),
                 repository,
