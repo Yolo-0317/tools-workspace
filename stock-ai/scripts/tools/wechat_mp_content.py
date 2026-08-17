@@ -888,6 +888,7 @@ def build_hotspot_article(
     *,
     edition: str | None = None,
     codex_draft: CodexHotspotDraft | None = None,
+    upload_figures: bool = True,
 ) -> dict[str, str]:
     from scripts.tools import wechat_mp_hotspot_article as hotspot_mod
     from scripts.tools.wechat_mp_figures import inject_market_figures
@@ -982,9 +983,16 @@ def build_hotspot_article(
     from scripts.tools.wechat_mp_seo import attach_publish_hints
 
     return attach_publish_hints(
-        _article_shell(title=title, digest=digest, body_text=body, kind="hotspot"),
+        _article_shell(
+            title=title,
+            digest=digest,
+            body_text=body,
+            kind="hotspot",
+            upload_figures=upload_figures,
+        ),
         "hotspot",
         theme=primary or None,
+        upload_figures=upload_figures,
     )
 
 
@@ -1036,7 +1044,11 @@ def build_sector_article(*, edition: str | None = None) -> dict[str, str]:
     )
 
 
-def build_market_article(*, edition: str | None = None) -> dict[str, str]:
+def build_market_article(
+    *,
+    edition: str | None = None,
+    upload_figures: bool = True,
+) -> dict[str, str]:
     from scripts.tools.wechat_mp_market_edition import normalize_market_edition
     from scripts.tools.wechat_mp_market_article import generate_researcher_market_body
     from scripts.tools.wechat_mp_market_polish import align_market_title_mood, finalize_market_body
@@ -1076,9 +1088,16 @@ def build_market_article(*, edition: str | None = None) -> dict[str, str]:
     from scripts.tools.wechat_mp_seo import attach_publish_hints
 
     return attach_publish_hints(
-        _article_shell(title=title, digest=digest, body_text=body, kind="market"),
+        _article_shell(
+            title=title,
+            digest=digest,
+            body_text=body,
+            kind="market",
+            upload_figures=upload_figures,
+        ),
         "market",
         edition=ed,
+        upload_figures=upload_figures,
     )
 
 
@@ -1357,17 +1376,22 @@ def build_article(
     edition: str | None = None,
     variant: str | None = None,
     codex_draft: CodexHotspotDraft | None = None,
+    upload_figures: bool = True,
 ) -> dict[str, str]:
     k = kind.strip().lower()
     if k in {"hotspot", "hot_topic", "topic_pulse"}:
         return build_hotspot_article(
             edition=edition or "close",
             codex_draft=codex_draft,
+            upload_figures=upload_figures,
         )
     if k in {"sector", "industry", "theme"}:
         return build_sector_article(edition=edition or "close")
     if k == "market":
-        return build_market_article(edition=edition)
+        return build_market_article(
+            edition=edition,
+            upload_figures=upload_figures,
+        )
     if k in {"news", "kuaixun", "macro_news"}:
         return build_news_article(peer_market_title=peer_market_title)
     if k == "top5":

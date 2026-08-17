@@ -491,6 +491,7 @@ def sync_article_content_from_body(
     *,
     kind: str,
     engagement_kind: str | None = None,
+    upload_figures: bool | None = None,
 ) -> dict[str, Any]:
     """body_text 变更后重建 content（与 _article_shell 同一套 HTML 规则）。"""
     from scripts.tools.wechat_mp_client import mp_configured
@@ -498,7 +499,7 @@ def sync_article_content_from_body(
     from scripts.tools.wechat_mp_short_drama import attach_short_drama
 
     body = str(article.get("body_text") or "")
-    can_upload = mp_configured()
+    can_upload = mp_configured() if upload_figures is None else upload_figures
     ek = engagement_kind or article.get("engagement_kind")
     content, merged_body = render_article_content_html(
         body,
@@ -542,6 +543,7 @@ def attach_publish_hints(
     phase: str | None = None,
     hashtag_override: list[str] | None = None,
     engagement_kind: str | None = None,
+    upload_figures: bool | None = None,
 ) -> dict[str, Any]:
     """写入非 API 字段，供 CLI / 通知展示。"""
     if hashtag_override is not None:
@@ -567,6 +569,7 @@ def attach_publish_hints(
                 article,
                 kind=kind,
                 engagement_kind=engagement_kind or article.get("engagement_kind"),
+                upload_figures=upload_figures,
             )
     return article
 

@@ -23,6 +23,13 @@ from scripts.tools.wechat_mp_codex_hotspot import (
     load_codex_hotspot_draft,
     validate_codex_hotspot_originality,
 )
+from scripts.tools.wechat_mp_codex_client import (
+    CodexGenerationEvent,
+    assert_codex_only_generation,
+    generation_events,
+    generation_scope,
+    record_interactive_codex_draft,
+)
 from scripts.tools.wechat_mp_draft_slots import upsert_draft_article
 from scripts.tools.wechat_mp_short_drama import (
     assert_longform_promotion_safe,
@@ -63,6 +70,7 @@ def _build_for_kind(
     market_title: str | None,
     variant: str | None,
     codex_draft: CodexHotspotDraft | None = None,
+    upload_figures: bool = True,
 ) -> dict[str, str]:
     if kind == "news" and market_title:
         return build_article(kind, peer_market_title=market_title)
@@ -71,6 +79,7 @@ def _build_for_kind(
             kind,
             edition=edition,
             codex_draft=codex_draft if kind == "hotspot" else None,
+            upload_figures=upload_figures,
         )
     if kind == "temp":
         return build_article(kind, variant=variant)
@@ -79,6 +88,42 @@ def _build_for_kind(
     if kind == "guba":
         return build_article(kind, edition=edition or "close")
     return build_article(kind)
+
+
+def _build_with_codex_provenance(
+    kind: str,
+    *,
+    edition: str | None,
+    market_title: str | None,
+    variant: str | None,
+    codex_draft: CodexHotspotDraft | object | None,
+    upload_figures: bool,
+) -> tuple[dict[str, str], tuple[CodexGenerationEvent, ...]]:
+    with generation_scope(kind):
+        if codex_draft is not None:
+            record_interactive_codex_draft(kind)
+        article = _build_for_kind(
+            kind,
+            edition=edition,
+            market_title=market_title,
+            variant=variant,
+            codex_draft=codex_draft,
+            upload_figures=upload_figures,
+        )
+        events = generation_events()
+        assert_codex_only_generation(allow_empty=codex_draft is None)
+        return article, events
+
+
+def _assert_article_provenance(
+    events: tuple[CodexGenerationEvent, ...],
+    *,
+    codex_draft_supplied: bool,
+) -> None:
+    if codex_draft_supplied and not events:
+        raise RuntimeError("Codex 草稿缺少生成来源")
+    if any(event.provider != "codex" for event in events):
+        raise RuntimeError("公众号 AI 写稿只允许 Codex")
 
 
 def _validate_codex_draft_kinds(kinds: list[str], path: Path | None) -> None:
@@ -225,12 +270,13 @@ def main() -> int:
         for kind in kinds:
             try:
                 edition = args.edition if kind in {"market", "sector", "hotspot"} else None
-                article = _build_for_kind(
+                article, provenance_events = _build_with_codex_provenance(
                     kind,
                     edition=edition,
                     market_title=market_title,
                     variant=args.variant,
                     codex_draft=codex_draft,
+                    upload_figures=False,
                 )
                 if codex_draft is not None and kind == "hotspot":
                     from scripts.tools.wechat_mp_originality import (
@@ -246,6 +292,10 @@ def main() -> int:
                     )
                     print(format_originality_report(report))
                 assert_longform_promotion_safe(article, kind=kind)
+                _assert_article_provenance(
+                    provenance_events,
+                    codex_draft_supplied=codex_draft is not None,
+                )
             except Exception as exc:
                 if codex_draft is not None:
                     print(f"错误 [{kind}]: {exc}", file=sys.stderr)
@@ -304,12 +354,13 @@ def main() -> int:
     for kind in kinds:
         try:
             edition = args.edition if kind in {"market", "sector", "hotspot"} else None
-            article = _build_for_kind(
+            article, provenance_events = _build_with_codex_provenance(
                 kind,
                 edition=edition,
                 market_title=market_title,
                 variant=args.variant,
                 codex_draft=codex_draft,
+                upload_figures=True,
             )
             if codex_draft is not None and kind == "hotspot":
                 from scripts.tools.wechat_mp_originality import (
@@ -323,6 +374,10 @@ def main() -> int:
                 )
                 print(format_originality_report(report))
             assert_longform_promotion_safe(article, kind=kind)
+            _assert_article_provenance(
+                provenance_events,
+                codex_draft_supplied=codex_draft is not None,
+            )
         except Exception as exc:
             if codex_draft is not None:
                 print(f"错误 [{kind}]: {exc}", file=sys.stderr)

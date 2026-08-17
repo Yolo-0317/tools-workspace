@@ -105,7 +105,7 @@ uv run python -m scripts.tools.wechat_mp_draft \
 # 人工确认后去掉 --dry-run，写入草稿箱
 ```
 
-`--codex-draft` 只支持单篇 `hotspot`。该路径跳过 Composer、自动选题和模板兜底，但仍执行正文清洗、质量门禁、事件配图、封面、合规检查与草稿槽位更新。`output/` 中的成稿 JSON 不提交。
+`--codex-draft` 只支持单篇 `hotspot`。该路径跳过自动 Codex 调用、自动选题和模板兜底，但仍执行正文清洗、质量门禁、事件配图、封面、合规检查与草稿槽位更新。`output/` 中的成稿 JSON 不提交。
 
 ### Codex 图片续跑协议
 
@@ -114,7 +114,7 @@ uv run python -m scripts.tools.wechat_mp_draft \
 现场图不足时才使用已有原创解释图；若命令提示 `需要 Codex 原创补图`，或抛出包含 `codex-image-request.json` 的错误：
 
 1. 读取请求 JSON 的全部 `slots` 与 `safety_rules`。
-2. 每个 slot 单独调用一次内置 ImageGen，不使用额外 API 或 Composer。
+2. 每个 slot 单独调用一次内置 ImageGen，不使用额外写稿模型。
 3. 从 `$CODEX_HOME/generated_images/` 选取结果，复制到该 slot 的绝对 `output_path`；不得覆盖请求未列出的图片。
 4. 重跑原命令，直到不再返回缺图请求；随后才允许进入草稿上传。
 
@@ -148,7 +148,7 @@ uv run python -m scripts.tools.wechat_mp_newspic_draft \
 |--|------|
 | **19:00 launchd** | 自动**写/更新草稿**；跳过：`echo YYYY-MM-DD > data/wechat_mp_skip_scheduled.date` |
 | **后台定时发表** | **人工**在 mp.weixin.qq.com；**每天仅 1 次通知**（个人号）→ 多篇**同批群发**，排好头条/次条顺序；**禁止**分时段错开发表 |
-| **LLM** | 写稿 `LLM_BACKEND=cursor`；SOP 并发 `SOP_LLM_BACKEND=deepseek` |
+| **LLM** | 公众号写稿固定 Codex；SOP 并发 `SOP_LLM_BACKEND=deepseek` |
 
 详 [operations-sop.md](operations-sop.md) · `stock-ai/docs/WECHAT_MP_SCHEDULING.md`。
 

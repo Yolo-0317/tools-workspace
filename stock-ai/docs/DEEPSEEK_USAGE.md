@@ -2,14 +2,14 @@
 
 > **2026-05 更新**：调用已统一到 `scripts/tools/deepseek_client.py`；能力总览见 **[CAPABILITIES.md](CAPABILITIES.md)**。
 
-## 后端切换（推荐：写稿 Cursor + SOP DeepSeek）
+## 后端分工（公众号 Codex + SOP DeepSeek）
 
 在 `stock-ai/.env` 设置：
 
 ```bash
-# 公众号写稿、战报、单篇 LLM 等（需 agent login）
-LLM_BACKEND=cursor
-CURSOR_AGENT_MODEL=composer-2.5
+# 公众号写稿固定 Codex CLI；不读取 LLM_BACKEND，也不降级
+WECHAT_MP_CODEX_TIMEOUT_SECONDS=420
+WECHAT_MP_CODEX_MAX_RETRIES=1
 
 # 东财 SOP Top5 并发终审（与 LLM_BACKEND 解耦，始终走 API）
 SOP_LLM_BACKEND=deepseek
@@ -18,13 +18,13 @@ DEEPSEEK_API_KEY=sk-...
 
 | 场景 | 环境变量 | 后端 |
 |------|----------|------|
-| `wechat_mp_*_article`、选股 AI 审查等 | `LLM_BACKEND` | 默认 `cursor` → `composer-2.5` |
-| `wechat_mp_news` 10 条 AI 点评 | `WECHAT_MP_NEWS_AI_BACKEND`（默认 `deepseek`） | DeepSeek API，与写稿 LLM 解耦 |
+| `wechat_mp_*_article`、公众号要闻 AI 点评 | 固定入口 `call_wechat_mp_llm` | Codex CLI，无其他模型兜底 |
+| 选股 AI 审查等通用调用 | `LLM_BACKEND` | 按原有配置选择 |
 | `sop_review_top5_concurrent` / `sop_review_single` | `SOP_LLM_BACKEND`（默认 `deepseek`） | DeepSeek API，可 `DEEPSEEK_WORKERS` 并发 |
 
 `call_deepseek(..., backend=…)` 可显式覆盖；SOP 脚本固定 `backend=sop_llm_backend()`。
 
-Cursor 模式：`agent --print --mode ask --trust`，工作区默认 `investment-agent`。无需 `DEEPSEEK_API_KEY`，但单次较慢，**勿**把 SOP 并发改为 `cursor`。
+公众号 Codex 模式使用独立轻量工作区 `agent-workspaces/wechat-writer`。东财 SOP 仍由 `SOP_LLM_BACKEND=deepseek` 控制，不受公众号写稿变更影响。
 
 ## API 封装与模型（LLM_BACKEND=deepseek 时）
 
@@ -295,4 +295,3 @@ A: 修改 `scripts/tools/deepseek_client.py` 中的模型与 endpoint，或设�
 ---
 
 **免责声明**：本工具提供的交易信号仅供参考，不构成投资建议。市场有风险，投资需谨慎。
-

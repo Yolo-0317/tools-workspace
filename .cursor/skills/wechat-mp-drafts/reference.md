@@ -81,7 +81,9 @@ WECHAT_MP_ENGAGEMENT_HOOK=1      # 0=不加文末互动问句
 # 原创声明、话题 #、合集：draft API 不支持 → mp.weixin.qq.com 发布/发布后手动
 WECHAT_MP_AUTO_PUBLISH=0
 
-# 成稿 LLM（与 SOP 解耦）：stock-ai/.env → LLM_BACKEND=cursor + agent login
+# 成稿 LLM（与 SOP 解耦）：公众号固定 Codex CLI，无其他模型兜底
+# WECHAT_MP_CODEX_TIMEOUT_SECONDS=420
+# WECHAT_MP_CODEX_MAX_RETRIES=1
 # 东财 SOP 并发仍用 SOP_LLM_BACKEND=deepseek + DEEPSEEK_API_KEY（见 docs/DEEPSEEK_USAGE.md）
 
 # 晚间封面留档见 stock-ai/assets/wechat_mp/COVER_THUMBS.md

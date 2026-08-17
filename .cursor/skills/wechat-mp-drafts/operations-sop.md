@@ -11,7 +11,7 @@
 |------|------|
 | **主轴是热点评论** | 社会 / 文娱 / 职场 / 公共事件；A 股收盘三篇已停用，仅 **手动** 偶发财经稿 |
 | 成稿质量先于定时 | 热点深评定时推草稿；质量门禁不过则飞书告警，禁止静默兜底 |
-| **成稿 LLM** | `LLM_BACKEND=cursor`（`agent login`）；DeepSeek 作备选，token 失效须告警勿静默兜底 |
+| **成稿 LLM** | 固定 Codex CLI；失败即告警，禁止降级到 DeepSeek、Composer 或模板成稿 |
 | 机器推草稿、人发正文 | API 可 `upsert` 草稿；**原创分类、部分 #** 仍后台人工 |
 | **看稿方式** | **只进 mp 草稿箱**预览；Agent **勿**写 `output/wechat_mp_*_preview.html`（用户明确要求） |
 | 质量 > 篇数 | 每天 **3 篇**热点深评（11/15/18）；个人号发表仍须同批群发，勿错开发通知 |
@@ -54,7 +54,7 @@ bash scripts/wechat_mp_hotspot_draft_scheduled.sh hotspot_evening --dry-run
 
 | 动作 | 谁做 | 说明 |
 |------|------|------|
-| **11:00 / 15:00 / 18:00 scheduler** | host-jobs | 各 1 篇热点深评草稿；`LLM_BACKEND=cursor` |
+| **11:00 / 15:00 / 18:00 scheduler** | host-jobs | 各 1 篇热点深评草稿；固定 Codex 写稿 |
 | **发表** | mp 后台人工 | 个人号每天仅 1 次通知；多篇须同批群发 |
 | **跳过今日写稿** | skip 文件 | 热点三时段共用 `wechat_mp_skip_scheduled.date` |
 

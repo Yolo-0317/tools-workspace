@@ -58,7 +58,7 @@
 1. **[tv-review-template.md](tv-review-template.md)** — **影视稿金标准（优先）**
 2. **`stock-ai/docs/WECHAT_MP_TV_REVIEW.md`**
 3. `stock-ai/data/wechat_mp_tv_review_golden/teach_you_a_lesson.body_core.md`
-4. 改定稿 → `repush`；**禁止**为微调重跑 DeepSeek
+4. 改定稿 → `repush`；**禁止**为微调重跑 Codex
 
 ### 东财股吧转载（sector → 微信引流）
 
@@ -125,9 +125,9 @@
 
 ```bash
 # stock-ai/.env
-LLM_BACKEND=cursor              # 公众号写稿、战报
-CURSOR_AGENT_MODEL=auto
-SOP_LLM_BACKEND=deepseek          # 东财 SOP Top5 并发（勿改 cursor）
+WECHAT_MP_CODEX_TIMEOUT_SECONDS=420 # 公众号写稿固定 Codex
+WECHAT_MP_CODEX_MAX_RETRIES=1
+SOP_LLM_BACKEND=deepseek           # 东财 SOP Top5 并发，保持不变
 DEEPSEEK_API_KEY=sk-...
 ```
 
