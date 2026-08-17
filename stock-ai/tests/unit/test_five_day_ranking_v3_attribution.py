@@ -7,12 +7,15 @@ import pytest
 
 from stock_ai.buy_point_selection.five_day_ranking_v3_attribution import (
     MIN_MARKET_MEDIAN_MEMBERS,
+    AttributedReturn,
     MarketClosePanel,
     MarketCoverageIncomplete,
     attribute_interval,
+    attribution_verdict,
     fifth_subsequent_train_date,
     matched_index_id,
     simple_return,
+    summarize_attributed_returns,
 )
 
 from five_day_ranking_v3_fixtures import weekday_dates
@@ -20,6 +23,24 @@ from five_day_ranking_v3_fixtures import weekday_dates
 
 START = date(2026, 7, 1)
 END = date(2026, 7, 8)
+
+
+def _attributed(
+    raw: str,
+    matched_index: str,
+    market_median: str,
+) -> AttributedReturn:
+    raw_value = Decimal(raw)
+    index_value = Decimal(matched_index)
+    median_value = Decimal(market_median)
+    return AttributedReturn(
+        raw_return=raw_value,
+        matched_index_return=index_value,
+        market_median_return=median_value,
+        index_excess=raw_value - index_value,
+        market_median_excess=raw_value - median_value,
+        market_members=1000,
+    )
 
 
 def _market_panel(
@@ -236,3 +257,161 @@ def test_interval_attribution_requires_one_thousand_market_members() -> None:
         attribute_interval("600001", START, END, panel)
 
     assert raised.value.reason == "MARKET_MEMBERS_BELOW_1000"
+
+
+def test_attribution_summary_reports_hand_derived_aggregate_metrics() -> None:
+    rows = (
+        _attributed("-0.02", "-0.03", "-0.04"),
+        _attributed("0.04", "-0.01", "0.00"),
+        _attributed("0.01", "0.00", "0.01"),
+    )
+
+    value = summarize_attributed_returns(
+        rows,
+        eligible_rows=4,
+        excluded_missing_coverage=1,
+    )
+
+    assert value.eligible_rows == 4
+    assert value.completed_rows == 3
+    assert value.excluded_rows == 1
+    assert value.excluded_missing_coverage == 1
+    assert value.mean_return == Decimal("0.01")
+    assert value.median_return == Decimal("0.01")
+    assert value.positive_ratio == Decimal("2") / Decimal("3")
+    assert value.positive_wilson_interval == (
+        Decimal("0.2076596008020477361408035871"),
+        Decimal("0.9385080552796037749310168249"),
+    )
+    assert value.mean_matched_index_return == (
+        Decimal("-0.04") / Decimal("3")
+    )
+    assert value.median_matched_index_return == Decimal("-0.01")
+    assert value.mean_market_median_return == Decimal("-0.01")
+    assert value.median_market_median_return == Decimal("0")
+    assert value.mean_index_excess == Decimal("0.07") / Decimal("3")
+    assert value.median_index_excess == Decimal("0.01")
+    assert value.mean_market_median_excess == Decimal("0.02")
+    assert value.median_market_median_excess == Decimal("0.02")
+    assert value.mean_gross_return is None
+    assert value.mean_after_cost_drag is None
+    assert value.verdict == "INCONCLUSIVE"
+
+
+def test_attribution_summary_reports_gross_return_and_after_cost_drag() -> None:
+    value = summarize_attributed_returns(
+        (
+            _attributed("0.04", "0.01", "0.02"),
+            _attributed("-0.02", "-0.01", "-0.03"),
+        ),
+        eligible_rows=2,
+        excluded_missing_coverage=0,
+        gross_returns=(Decimal("0.05"), Decimal("-0.01")),
+    )
+
+    assert value.mean_gross_return == Decimal("0.02")
+    assert value.mean_after_cost_drag == Decimal("0.01")
+
+
+def test_empty_attribution_summary_uses_none_instead_of_fabricated_zero() -> None:
+    value = summarize_attributed_returns(
+        (),
+        eligible_rows=2,
+        excluded_missing_coverage=2,
+    )
+
+    assert value.completed_rows == 0
+    assert value.excluded_rows == 2
+    assert value.mean_return is None
+    assert value.median_return is None
+    assert value.positive_ratio is None
+    assert value.positive_wilson_interval is None
+    assert value.mean_index_excess is None
+    assert value.mean_market_median_excess is None
+    assert value.verdict == "INCONCLUSIVE"
+
+
+@pytest.mark.parametrize(
+    ("eligible_rows", "missing_coverage", "gross_returns", "message"),
+    (
+        (0, 0, None, "completed rows cannot exceed eligible rows"),
+        (1, 1, None, "missing coverage cannot exceed excluded rows"),
+        (-1, 0, None, "counts must be non-negative"),
+        (1, 0, (), "gross returns must align with completed rows"),
+    ),
+)
+def test_attribution_summary_rejects_inconsistent_counts_or_gross_rows(
+    eligible_rows: int,
+    missing_coverage: int,
+    gross_returns: tuple[Decimal, ...] | None,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        summarize_attributed_returns(
+            (_attributed("0.01", "0", "0"),),
+            eligible_rows=eligible_rows,
+            excluded_missing_coverage=missing_coverage,
+            gross_returns=gross_returns,
+        )
+
+
+def test_attribution_summary_rejects_non_finite_values() -> None:
+    row = AttributedReturn(
+        raw_return=Decimal("NaN"),
+        matched_index_return=Decimal("0"),
+        market_median_return=Decimal("0"),
+        index_excess=Decimal("0"),
+        market_median_excess=Decimal("0"),
+        market_members=1000,
+    )
+
+    with pytest.raises(ValueError, match="finite attribution values"):
+        summarize_attributed_returns(
+            (row,),
+            eligible_rows=1,
+            excluded_missing_coverage=0,
+        )
+
+
+def test_attribution_summary_rejects_non_finite_gross_return() -> None:
+    with pytest.raises(ValueError, match="finite attribution values"):
+        summarize_attributed_returns(
+            (_attributed("0.01", "0", "0"),),
+            eligible_rows=1,
+            excluded_missing_coverage=0,
+            gross_returns=(Decimal("NaN"),),
+        )
+
+
+@pytest.mark.parametrize(
+    ("raw", "index_excess", "median_excess", "expected"),
+    (
+        ("-0.01", "0.002", "0.001", "MARKET_DRAG"),
+        ("-0.01", "0", "-0.001", "STRATEGY_DRAG"),
+        ("-0.01", "0.001", "0", "MIXED"),
+        ("-0.01", "0", "0", "STRATEGY_DRAG"),
+        ("0", "-0.001", "-0.001", "INCONCLUSIVE"),
+        ("0.01", "0.001", "0.001", "INCONCLUSIVE"),
+    ),
+)
+def test_attribution_verdict_uses_frozen_sign_truth_table(
+    raw: str,
+    index_excess: str,
+    median_excess: str,
+    expected: str,
+) -> None:
+    assert attribution_verdict(
+        completed_rows=30,
+        mean_return=Decimal(raw),
+        mean_index_excess=Decimal(index_excess),
+        mean_market_median_excess=Decimal(median_excess),
+    ) == expected
+
+
+def test_attribution_verdict_requires_thirty_completed_rows() -> None:
+    assert attribution_verdict(
+        completed_rows=29,
+        mean_return=Decimal("-0.01"),
+        mean_index_excess=Decimal("0.002"),
+        mean_market_median_excess=Decimal("0.001"),
+    ) == "INCONCLUSIVE"
