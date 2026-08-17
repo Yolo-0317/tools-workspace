@@ -660,6 +660,26 @@ def test_v3_existing_active_structure_is_rejected_before_scoring() -> None:
     }
 
 
+def test_v3_unresolved_profile_stop_is_rejected_before_scoring() -> None:
+    plan = make_v3_plan(
+        START,
+        profile_id="PULLBACK_RECLAIM__STRUCTURE_ATR",
+        structure_stop=Decimal("1"),
+    )
+
+    result = rank_five_day_plans_v3(
+        (plan,),
+        _evidence_windows_for_scores((plan,), ("0.004",)),
+        _empty_feature_model(),
+        policy=build_five_day_v3_policies()[0],
+    )
+
+    assert result.scored == ()
+    assert result.ranking.rejection_counts == {
+        "RISK_DISTANCE_OUT_OF_RANGE": 1,
+    }
+
+
 def test_v3_later_admission_rejection_never_backfills() -> None:
     selection, fourth_structure_id = (
         _selection_with_cancelled_first_and_ranked_fourth()
@@ -881,6 +901,29 @@ def test_v3_train_never_admits_an_outcome_resolved_in_validation() -> None:
     assert sum(
         value.triggered_completed for value in assessment.monotonicity.bands
     ) == 0
+
+
+def test_v3_train_excludes_signal_time_unresolved_stops_from_calibration() -> None:
+    sessions = weekday_dates(630)
+    valid = make_v3_observation(
+        make_v3_plan(
+            sessions[0],
+            profile_id="PULLBACK_RECLAIM__STRUCTURE_ATR",
+        ),
+        resolution_date=sessions[1],
+    )
+    invalid = replace(
+        valid,
+        plan=replace(valid.plan, structure_stop=Decimal("1")),
+    )
+
+    review = build_five_day_ranking_v3_train_review(
+        make_v3_research_review((invalid,)),
+        parent_research_identity="a" * 64,
+    )
+
+    assert review.validation_evidence_windows.full == {}
+    assert review.validation_feature_model.effects == {}
 
 
 def test_v3_validation_rejects_no_winner_before_outcome_use() -> None:

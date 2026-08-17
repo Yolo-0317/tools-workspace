@@ -454,6 +454,19 @@ def _ranking_key(value: FiveDayV3ScoredPlan) -> tuple[object, ...]:
     )
 
 
+def _profile_stop_rejection_reasons(
+    plan: FiveDaySignalPlan,
+) -> tuple[str, ...]:
+    stop = resolve_profile_stop(
+        plan.profile,
+        plan.reference_entry,
+        plan.structure_stop,
+    )
+    if stop.stop_price is not None and stop.risk_fraction is not None:
+        return ()
+    return stop.reasons or ("PROFILE_STOP_UNRESOLVED",)
+
+
 def rank_five_day_plans_v3(
     plans: Sequence[FiveDaySignalPlan],
     windows: V3EvidenceWindows,
@@ -471,6 +484,10 @@ def rank_five_day_plans_v3(
     for plan in plans:
         if plan.structure_id in active_structure_ids:
             rejection_counts["EXISTING_ACTIVE_STRUCTURE"] += 1
+            continue
+        stop_reasons = _profile_stop_rejection_reasons(plan)
+        if stop_reasons:
+            rejection_counts.update(stop_reasons)
             continue
         try:
             evidence = resolve_v3_candidate_evidence(
@@ -947,6 +964,7 @@ def build_five_day_ranking_v3_train_review(
             if value.plan.candidate.signal_date in calibration_set
             and _is_resolved(value)
             and value.resolution_date < boundary
+            and not _profile_stop_rejection_reasons(value.plan)
         )
         evaluation_observations = tuple(
             value
@@ -1052,6 +1070,7 @@ def build_five_day_ranking_v3_train_review(
         value
         for value in train_observations
         if _is_resolved(value) and value.resolution_date < validation_boundary
+        and not _profile_stop_rejection_reasons(value.plan)
     )
     validation_windows = build_v3_evidence_windows(
         validation_calibration,
