@@ -151,6 +151,10 @@ For a completed trade:
 - the benchmark interval is index close on actual entry date to index close on
   actual exit date;
 - the market interval is the same-universe median return over those endpoints;
+- when actual entry and exit occur on the same training date, both benchmark
+  returns are exactly zero because the close-to-close endpoints are identical;
+  the interval still requires that day's matched-index close and at least 1,000
+  valid same-universe closes, and only an exit before entry is invalid;
 - index excess is `net_return - matched_index_return`;
 - market-median excess is `net_return - market_median_return`;
 - after-cost drag is `gross_trade_return - net_return`.
@@ -328,6 +332,9 @@ that prevents trustworthy coverage accounting produces no artifact.
 
 - board-to-index mapping and unsupported-board rejection;
 - actual entry/exit endpoint selection;
+- same-day actual entry/exit attribution keeps the trade, assigns zero to both
+  close-to-close benchmarks, preserves hard coverage, and rejects reversed
+  endpoints;
 - fifth strictly subsequent train session and no validation spillover;
 - exact `Decimal` raw, gross, benchmark, excess, and after-cost drag returns;
 - same-universe median with odd/even populations;
