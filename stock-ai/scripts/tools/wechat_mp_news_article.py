@@ -13,7 +13,10 @@ from scripts._bootstrap import ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
 
-from scripts.tools.deepseek_client import call_deepseek, is_llm_configured
+from scripts.tools.deepseek_client import (
+    call_wechat_mp_llm,
+    is_wechat_mp_llm_configured,
+)
 from scripts.tools.news_db import pick_top_news_by_attention
 from scripts.tools.news_sentiment import sentiment_label
 from scripts.tools.wechat_mp_prose import NEWS_SECTION_TITLES, mp_section_header
@@ -61,12 +64,12 @@ def news_enriched_llm_enabled() -> bool:
 
 
 def news_ai_llm_backend() -> str:
-    """10 条快讯 AI 点评固定走 DeepSeek API（不受 LLM_BACKEND=cursor 影响）。"""
-    return os.getenv("WECHAT_MP_NEWS_AI_BACKEND", "deepseek").strip().lower()
+    """要闻 AI 点评固定使用公众号 Codex 写稿后端。"""
+    return "codex"
 
 
 def is_news_ai_llm_configured() -> bool:
-    return is_llm_configured(backend=news_ai_llm_backend())
+    return is_wechat_mp_llm_configured()
 
 
 def is_hot_stock_news_mode() -> bool:
@@ -790,7 +793,7 @@ def generate_enriched_news_copy(
 {monetization_prompt_block("news")}"""
 
     try:
-        raw = call_deepseek(
+        raw = call_wechat_mp_llm(
             [
                 {
                     "role": "system",
@@ -804,7 +807,6 @@ def generate_enriched_news_copy(
                 {"role": "user", "content": prompt},
             ],
             max_tokens=6000,
-            backend=news_ai_llm_backend(),
         )
         parsed = _parse_enriched_blocks(raw.strip(), expected=len(items))
         out: list[tuple[str, str, str]] = []

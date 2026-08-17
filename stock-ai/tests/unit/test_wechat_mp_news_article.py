@@ -63,18 +63,18 @@ def test_news_enriched_llm_enabled_by_default(monkeypatch) -> None:
     assert news_enriched_llm_enabled() is True
 
 
-def test_news_ai_backend_defaults_deepseek(monkeypatch) -> None:
-    monkeypatch.delenv("WECHAT_MP_NEWS_AI_BACKEND", raising=False)
-    assert news_ai_llm_backend() == "deepseek"
+def test_news_ai_backend_is_codex_even_when_legacy_env_requests_deepseek(monkeypatch) -> None:
+    monkeypatch.setenv("WECHAT_MP_NEWS_AI_BACKEND", "deepseek")
+    assert news_ai_llm_backend() == "codex"
 
 
 def test_generate_enriched_news_copy_skips_llm_when_disabled(monkeypatch) -> None:
     monkeypatch.setenv("WECHAT_MP_NEWS_AI_LLM", "0")
 
     def boom(*args, **kwargs):
-        raise AssertionError("call_deepseek should not run")
+        raise AssertionError("call_wechat_mp_llm should not run")
 
-    monkeypatch.setattr("scripts.tools.wechat_mp_news_article.call_deepseek", boom)
+    monkeypatch.setattr("scripts.tools.wechat_mp_news_article.call_wechat_mp_llm", boom)
     monkeypatch.setattr(
         "scripts.tools.wechat_mp_news_article.is_news_ai_llm_configured",
         lambda: True,
@@ -91,25 +91,29 @@ def test_generate_enriched_news_copy_skips_llm_when_disabled(monkeypatch) -> Non
         assert phrase not in ai
 
 
-def test_generate_enriched_news_copy_calls_deepseek_backend(monkeypatch) -> None:
+def test_generate_enriched_news_copy_uses_codex_result(monkeypatch) -> None:
     monkeypatch.setenv("WECHAT_MP_NEWS_AI_LLM", "1")
-    seen: list[str] = []
 
-    def fake_call_deepseek(messages, **kwargs):
-        seen.append(str(kwargs.get("backend")))
-        raise RuntimeError("stop-after-backend-check")
+    def fake_wechat_llm(messages, **kwargs):
+        assert kwargs == {"max_tokens": 6000}
+        return (
+            "1. 小标题：国际油价站上新关口\n"
+            "摘要：布伦特原油价格上行，能源运输和化工成本的变化需要结合后续库存数据观察。\n"
+            "AI点评：油价变化先影响成本预期，再影响板块内部利润分配。下一步应核对库存、运价和炼化价差是否同步，而不是只看一天涨幅。"
+        )
 
-    monkeypatch.setattr("scripts.tools.wechat_mp_news_article.call_deepseek", fake_call_deepseek)
+    monkeypatch.setattr(
+        "scripts.tools.wechat_mp_news_article.call_wechat_mp_llm",
+        fake_wechat_llm,
+        raising=False,
+    )
     monkeypatch.setattr(
         "scripts.tools.wechat_mp_news_article.is_news_ai_llm_configured",
         lambda: True,
     )
     items = [{"title": "国际油价大涨", "sentiment": "bullish", "summary": "布伦特突破 90 美元"}]
-    try:
-        generate_enriched_news_copy(items)
-    except RuntimeError as exc:
-        assert "stop-after-backend-check" in str(exc)
-    assert seen == ["deepseek"]
+    out = generate_enriched_news_copy(items)
+    assert out[0][0] == "国际油价站上新关口"
 
 
 def test_hot_stock_fallback_comments_differ_by_code() -> None:
