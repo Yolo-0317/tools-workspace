@@ -19,11 +19,14 @@ from .five_day_ranking_v3 import (
     V3_RANKING_VERSION,
     V3_SELECTION_MODES,
     V3_TRAIN_SCHEMA,
+    V3_VALIDATION_SCHEMA,
     FiveDayRankingV3TrainReview,
+    FiveDayRankingV3ValidationReview,
     build_five_day_v3_policies,
     five_day_v3_policy_hash,
     five_day_v3_policy_set_hash,
     five_day_v3_selection_fingerprint,
+    v3_validation_trial_identity,
 )
 from .five_day_ranking_v3_evidence import (
     V3BucketKey,
@@ -907,3 +910,191 @@ def load_five_day_ranking_v3_train(
         validation_feature_model=feature_model,
         payload=payload,
     )
+
+
+def _v3_validation_content(
+    review: FiveDayRankingV3ValidationReview,
+) -> dict[str, object]:
+    return {
+        "schema": review.schema,
+        "trial_identity": review.trial_identity,
+        "parent_train_identity": review.parent_train_identity,
+        "parent_research_identity": review.parent_research_identity,
+        "parent_input_fingerprint": review.parent_input_fingerprint,
+        "winner_policy_id": review.winner_policy_id,
+        "winner_policy_hash": review.winner_policy_hash,
+        "validation_dates": [
+            value.isoformat() for value in review.validation_dates
+        ],
+        "segment": _segment_content(review.segment),
+        "qualifies_for_test_design": review.qualifies_for_test_design,
+        "reasons": list(review.reasons),
+        "validation_outcomes_read": review.validation_outcomes_read,
+        "test_outcomes_read": review.test_outcomes_read,
+        "promotion_eligible": review.promotion_eligible,
+        "trade_permission": review.trade_permission,
+    }
+
+
+def _is_sha256(value: object) -> bool:
+    text = str(value)
+    return len(text) == 64 and all(
+        character in "0123456789abcdef" for character in text
+    )
+
+
+def _validation_segment_is_consistent(segment: object) -> bool:
+    if not isinstance(segment, dict):
+        return False
+    try:
+        metrics = segment["metrics"]
+        portfolio = segment["portfolio"]
+        admitted = segment["admitted_trade_keys"]
+        selected = segment["selected_plan_keys"]
+        ranked = segment["ranked_plan_keys"]
+        funnel = segment["funnel_counts"]
+        metric_reasons = metrics["reasons"]
+        portfolio_reasons = portfolio["reasons"]
+        return (
+            segment["metric_version"] == "selected-portfolio-v2"
+            and metrics["profile_id"] == "GLOBAL"
+            and metrics["segment"] == "validation"
+            and isinstance(admitted, list)
+            and isinstance(selected, list)
+            and isinstance(ranked, list)
+            and isinstance(funnel, dict)
+            and int(metrics["triggered_resolved"]) == len(admitted)
+            and int(portfolio["accepted_trades"]) == len(admitted)
+            and int(funnel["SELECTED_PLANS"]) == len(selected)
+            and int(funnel["ADMITTED_TRADES"]) == len(admitted)
+            and metrics["qualifies"] is (not metric_reasons)
+            and portfolio["qualifies"] is (not portfolio_reasons)
+            and type(segment["incomplete"]) is bool
+            and segment["incomplete"]
+            is ("SELECTION_INCOMPLETE" in metric_reasons)
+        )
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
+def _validation_content_is_safe(content: Mapping[str, object]) -> bool:
+    try:
+        policy = next(
+            (
+                value
+                for value in build_five_day_v3_policies()
+                if value.policy_id == content["winner_policy_id"]
+            ),
+            None,
+        )
+        segment = content["segment"]
+        dates = [
+            date.fromisoformat(str(value))
+            for value in content["validation_dates"]
+        ]
+        reasons = list(content["reasons"])
+        expected_reasons = list(
+            dict.fromkeys(
+                (
+                    *segment["metrics"]["reasons"],
+                    *segment["portfolio"]["reasons"],
+                )
+            )
+        )
+        return (
+            content["schema"] == V3_VALIDATION_SCHEMA
+            and policy is not None
+            and content["winner_policy_hash"]
+            == five_day_v3_policy_hash(policy)
+            and content["trial_identity"]
+            == v3_validation_trial_identity(
+                str(content["parent_train_identity"]),
+                str(content["winner_policy_hash"]),
+            )
+            and _is_sha256(content["parent_train_identity"])
+            and _is_sha256(content["parent_research_identity"])
+            and _is_sha256(content["parent_input_fingerprint"])
+            and len(dates) == 126
+            and dates == sorted(set(dates))
+            and _validation_segment_is_consistent(segment)
+            and reasons == expected_reasons
+            and content["qualifies_for_test_design"] is (not reasons)
+            and content["validation_outcomes_read"] is True
+            and content["test_outcomes_read"] is False
+            and content["promotion_eligible"] is False
+            and content["trade_permission"] == "NO-TRADE"
+            and not {"observations", "selected_observations"}.intersection(
+                _nested_keys(content)
+            )
+        )
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
+def write_five_day_ranking_v3_validation(
+    review: FiveDayRankingV3ValidationReview,
+    output_dir: str | Path,
+) -> Path:
+    """Write one immutable validation result for the frozen V3 winner."""
+    content = _v3_validation_content(review)
+    if not _validation_content_is_safe(content):
+        raise ValueError("ranking v3 validation artifact safety mismatch")
+    payload = {**content, "artifact_identity": _sha256(content)}
+    target = Path(output_dir)
+    target.mkdir(parents=True, exist_ok=True)
+    path = target / (
+        f"ranking-v3-validation-{review.trial_identity}.json"
+    )
+    serialized = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ) + "\n"
+    _write_exclusive_or_verify(path, serialized)
+    return path
+
+
+def load_five_day_ranking_v3_validation(
+    path: str | Path,
+    *,
+    expected_train_identity: str,
+    expected_policy_hash: str,
+) -> Mapping[str, object]:
+    """Load validation only under its exact frozen train winner."""
+    target = Path(path)
+    try:
+        payload = json.loads(target.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError
+        artifact_identity = str(payload["artifact_identity"])
+        content = {
+            key: value
+            for key, value in payload.items()
+            if key != "artifact_identity"
+        }
+        expected_trial = v3_validation_trial_identity(
+            expected_train_identity,
+            expected_policy_hash,
+        )
+        if (
+            not _is_sha256(artifact_identity)
+            or artifact_identity != _sha256(content)
+            or payload["trial_identity"] != expected_trial
+            or target.name
+            != f"ranking-v3-validation-{expected_trial}.json"
+            or payload["parent_train_identity"]
+            != expected_train_identity
+            or payload["winner_policy_hash"] != expected_policy_hash
+            or not _validation_content_is_safe(content)
+        ):
+            raise ValueError
+    except (
+        KeyError,
+        TypeError,
+        ValueError,
+        OSError,
+        json.JSONDecodeError,
+    ):
+        raise ValueError("invalid ranking v3 validation artifact") from None
+    return payload

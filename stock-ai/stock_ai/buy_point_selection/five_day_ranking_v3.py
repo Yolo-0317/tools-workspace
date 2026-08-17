@@ -8,7 +8,7 @@ from datetime import date
 from decimal import Decimal
 import hashlib
 import json
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence
 
 from stock_ai.market_codes import normalize_code6
 
@@ -50,6 +50,9 @@ from .five_day_return_validation import (
     evaluate_five_day_selection_segment,
 )
 from .validation import ChronologicalSplit
+
+if TYPE_CHECKING:
+    from .five_day_ranking_v3_report import FiveDayRankingV3TrainArtifact
 
 
 V3_RANKING_VERSION = "five-day-ranking-key-v3"
@@ -194,6 +197,25 @@ class FiveDayRankingV3TrainReview:
     winner_train_samples: int
     status: str
     validation_eligible: bool
+    validation_outcomes_read: bool
+    test_outcomes_read: bool
+    promotion_eligible: bool
+    trade_permission: str
+
+
+@dataclass(frozen=True)
+class FiveDayRankingV3ValidationReview:
+    schema: str
+    trial_identity: str
+    parent_train_identity: str
+    parent_research_identity: str
+    parent_input_fingerprint: str
+    winner_policy_id: str
+    winner_policy_hash: str
+    validation_dates: tuple[date, ...]
+    segment: FiveDaySelectedSegment
+    qualifies_for_test_design: bool
+    reasons: tuple[str, ...]
     validation_outcomes_read: bool
     test_outcomes_read: bool
     promotion_eligible: bool
@@ -1077,3 +1099,177 @@ def build_five_day_ranking_v3_train_review(
         trade_permission="NO-TRADE",
     )
     return finalize_five_day_ranking_v3_train(review)
+
+
+def _split_payload(split: ChronologicalSplit) -> dict[str, list[str]]:
+    return {
+        "train": [value.isoformat() for value in split.train],
+        "validation": [value.isoformat() for value in split.validation],
+        "test": [value.isoformat() for value in split.test],
+    }
+
+
+def _validation_train_is_consistent(
+    research: FiveDayResearchReview,
+    train: "FiveDayRankingV3TrainArtifact",
+    *,
+    parent_research_identity: str,
+    policy: FiveDayV3Policy | None,
+) -> bool:
+    try:
+        payload = train.payload
+        content = {
+            key: value
+            for key, value in payload.items()
+            if key != "artifact_identity"
+        }
+        train_dates = tuple(research.split.train)
+        return (
+            policy is not None
+            and train.policy_set_hash == five_day_v3_policy_set_hash()
+            and payload["schema"] == V3_TRAIN_SCHEMA
+            and payload["ranking_version"] == V3_RANKING_VERSION
+            and payload["artifact_identity"] == train.artifact_identity
+            and train.artifact_identity == _sha256(content)
+            and payload["policy_set_hash"] == train.policy_set_hash
+            and payload["winner_policy_id"] == train.winner_policy_id
+            and payload["winner_policy_hash"] == train.winner_policy_hash
+            and payload["winner_train_samples"]
+            == train.winner_train_samples
+            and payload["status"] == "TRAIN_CANDIDATE_SELECTED"
+            and payload["validation_eligible"] is True
+            and payload["validation_outcomes_read"] is False
+            and payload["test_outcomes_read"] is False
+            and payload["promotion_eligible"] is False
+            and payload["trade_permission"] == "NO-TRADE"
+            and five_day_v3_policy_hash(policy)
+            == train.winner_policy_hash
+            and train.parent_research_identity
+            == parent_research_identity
+            and payload["parent_research_identity"]
+            == parent_research_identity
+            and train.parent_input_fingerprint
+            == research.input_fingerprint
+            and payload["parent_input_fingerprint"]
+            == research.input_fingerprint
+            and train.split == research.split
+            and payload["split"] == _split_payload(research.split)
+            and train.validation_evidence_windows.full_dates == train_dates
+            and train.validation_evidence_windows.recent_dates
+            == train_dates[-126:]
+            and train.validation_feature_model.data_end == train_dates[-1]
+            and payload["validation_evidence_windows"]["full_dates"]
+            == [value.isoformat() for value in train_dates]
+            and payload["validation_evidence_windows"]["recent_dates"]
+            == [value.isoformat() for value in train_dates[-126:]]
+            and payload["validation_feature_model"]["data_end"]
+            == train_dates[-1].isoformat()
+            and research.point_in_time_complete
+            and not research.test_outcomes_read
+        )
+    except (KeyError, TypeError, IndexError):
+        return False
+
+
+def build_five_day_ranking_v3_validation_review(
+    research: FiveDayResearchReview,
+    train: "FiveDayRankingV3TrainArtifact",
+    *,
+    parent_research_identity: str,
+) -> FiveDayRankingV3ValidationReview:
+    """Evaluate one locked winner with train-frozen V3 evidence only."""
+    if (
+        not train.validation_eligible
+        or train.winner_policy_id is None
+        or train.winner_policy_hash is None
+    ):
+        raise ValueError(
+            "ranking v3 validation requires a unique train winner"
+        )
+    policy = next(
+        (
+            value
+            for value in build_five_day_v3_policies()
+            if value.policy_id == train.winner_policy_id
+        ),
+        None,
+    )
+    if not _validation_train_is_consistent(
+        research,
+        train,
+        parent_research_identity=parent_research_identity,
+        policy=policy,
+    ):
+        raise ValueError("ranking v3 winner policy or lineage mismatch")
+
+    validation_dates = frozenset(research.split.validation)
+    validation_end = research.split.validation[-1]
+    observations = tuple(
+        value
+        for value in research.observations
+        if value.plan.candidate.signal_date in validation_dates
+        and (
+            not _is_resolved(value)
+            or value.resolution_date <= validation_end
+        )
+    )
+    assert policy is not None
+    ranked = rank_five_day_plans_v3(
+        tuple(value.plan for value in observations),
+        train.validation_evidence_windows,
+        train.validation_feature_model,
+        policy=policy,
+    )
+    selection = admit_five_day_ranking(
+        ranked.ranking,
+        observations,
+        capacity=3,
+    )
+    segment = evaluate_five_day_selection_segment(
+        profile_id="GLOBAL",
+        segment="validation",
+        selection=selection,
+        trading_dates=research.split.validation,
+        cumulative_samples=(
+            train.winner_train_samples + len(selection.admitted)
+        ),
+        required_samples=30,
+        required_cumulative_samples=70,
+    )
+    reasons = tuple(
+        dict.fromkeys((*segment.metrics.reasons, *segment.portfolio.reasons))
+    )
+    return FiveDayRankingV3ValidationReview(
+        schema=V3_VALIDATION_SCHEMA,
+        trial_identity=v3_validation_trial_identity(
+            train.artifact_identity,
+            train.winner_policy_hash,
+        ),
+        parent_train_identity=train.artifact_identity,
+        parent_research_identity=parent_research_identity,
+        parent_input_fingerprint=research.input_fingerprint,
+        winner_policy_id=policy.policy_id,
+        winner_policy_hash=train.winner_policy_hash,
+        validation_dates=tuple(research.split.validation),
+        segment=segment,
+        qualifies_for_test_design=not reasons,
+        reasons=reasons,
+        validation_outcomes_read=True,
+        test_outcomes_read=False,
+        promotion_eligible=False,
+        trade_permission="NO-TRADE",
+    )
+
+
+def v3_validation_trial_identity(
+    train_identity: str,
+    winner_policy_hash: str,
+) -> str:
+    """Derive the one V3 validation identity before reading outcomes."""
+    return _sha256(
+        {
+            "schema": V3_VALIDATION_SCHEMA,
+            "parent_train_identity": train_identity,
+            "winner_policy_hash": winner_policy_hash,
+        }
+    )

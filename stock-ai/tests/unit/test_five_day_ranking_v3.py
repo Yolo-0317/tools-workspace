@@ -6,6 +6,7 @@ from decimal import Decimal
 
 import pytest
 
+import stock_ai.buy_point_selection.five_day_ranking_v3 as v3
 from stock_ai.buy_point_selection.five_day_ranking_v3 import (
     FiveDayV3PolicyFingerprint,
     V3MonotonicityAssessment,
@@ -13,6 +14,7 @@ from stock_ai.buy_point_selection.five_day_ranking_v3 import (
     V3_POLICY_IDS,
     assess_five_day_v3_policy,
     build_five_day_ranking_v3_train_review,
+    build_five_day_ranking_v3_validation_review,
     build_five_day_v3_policies,
     finalize_five_day_ranking_v3_train,
     five_day_v3_policy_hash,
@@ -20,6 +22,11 @@ from stock_ai.buy_point_selection.five_day_ranking_v3 import (
     five_day_v3_selection_fingerprint,
     rank_five_day_plans_v3,
     score_five_day_plan_v3,
+    v3_validation_trial_identity,
+)
+from stock_ai.buy_point_selection.five_day_ranking_v3_report import (
+    FiveDayRankingV3TrainArtifact,
+    five_day_ranking_v3_train_payload,
 )
 from stock_ai.buy_point_selection.five_day_ranking_v3_evidence import (
     V3BucketKey,
@@ -421,6 +428,77 @@ def _train_review_with_fingerprints(
     )
 
 
+def _train_artifact(*, winner: bool) -> FiveDayRankingV3TrainArtifact:
+    observations = ()
+    if winner:
+        sessions = weekday_dates(630)
+        observations = tuple(
+            make_v3_observation(
+                make_v3_plan(
+                    sessions[index],
+                    code=f"{600000 + index:06d}",
+                ),
+                resolution_date=sessions[index + 1],
+            )
+            for index in range(60)
+        )
+    review = build_five_day_ranking_v3_train_review(
+        make_v3_research_review(observations),
+        parent_research_identity="a" * 64,
+    )
+    if winner:
+        segments = {
+            "train-fold-1": _segment(samples=20, edge="0.002"),
+            "train-fold-2": _segment(samples=20, edge="0.003"),
+            "train-combined": _segment(samples=40, edge="0.003"),
+        }
+        fingerprints = ("a", "a", "b", "b", "c", "c", "d", "d")
+        review = finalize_five_day_ranking_v3_train(
+            replace(
+                review,
+                variants=tuple(
+                    replace(value, segment=segments[value.fold_id])
+                    if value.selection_mode == "FORMAL"
+                    else value
+                    for value in review.variants
+                ),
+                assessments=tuple(
+                    _qualifying_assessment(policy)
+                    for policy in review.policies
+                ),
+                policy_fingerprints=tuple(
+                    FiveDayV3PolicyFingerprint(
+                        policy_id=policy.policy_id,
+                        selected_structure_keys=(fingerprint,),
+                        fingerprint=five_day_v3_selection_fingerprint(
+                            (fingerprint,)
+                        ),
+                    )
+                    for policy, fingerprint in zip(
+                        review.policies,
+                        fingerprints,
+                        strict=True,
+                    )
+                ),
+            )
+        )
+    payload = five_day_ranking_v3_train_payload(review)
+    return FiveDayRankingV3TrainArtifact(
+        artifact_identity=str(payload["artifact_identity"]),
+        parent_research_identity=review.parent_research_identity,
+        parent_input_fingerprint=review.parent_input_fingerprint,
+        split=review.split,
+        policy_set_hash=review.policy_set_hash,
+        winner_policy_id=review.winner_policy_id,
+        winner_policy_hash=review.winner_policy_hash,
+        winner_train_samples=review.winner_train_samples,
+        validation_eligible=review.validation_eligible,
+        validation_evidence_windows=review.validation_evidence_windows,
+        validation_feature_model=review.validation_feature_model,
+        payload=payload,
+    )
+
+
 def test_v3_policy_registry_is_exact_and_hashed() -> None:
     policies = build_five_day_v3_policies()
 
@@ -803,3 +881,87 @@ def test_v3_train_never_admits_an_outcome_resolved_in_validation() -> None:
     assert sum(
         value.triggered_completed for value in assessment.monotonicity.bands
     ) == 0
+
+
+def test_v3_validation_rejects_no_winner_before_outcome_use() -> None:
+    with pytest.raises(ValueError, match="unique train winner"):
+        build_five_day_ranking_v3_validation_review(
+            make_v3_research_review(()),
+            _train_artifact(winner=False),
+            parent_research_identity="a" * 64,
+        )
+
+
+def test_v3_validation_uses_frozen_train_evidence_only(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    train = _train_artifact(winner=True)
+    sessions = weekday_dates(630)
+    validation_observation = make_v3_observation(
+        make_v3_plan(sessions[378], code="699999"),
+        resolution_date=sessions[383],
+    )
+    monkeypatch.setattr(
+        v3,
+        "build_v3_evidence_windows",
+        lambda *args, **kwargs: pytest.fail(
+            "validation must not recalibrate hierarchy"
+        ),
+    )
+    monkeypatch.setattr(
+        v3,
+        "build_v3_feature_model",
+        lambda *args, **kwargs: pytest.fail(
+            "validation must not recalibrate features"
+        ),
+    )
+
+    review = build_five_day_ranking_v3_validation_review(
+        make_v3_research_review((validation_observation,)),
+        train,
+        parent_research_identity="a" * 64,
+    )
+
+    assert review.trial_identity == v3_validation_trial_identity(
+        train.artifact_identity,
+        train.winner_policy_hash,
+    )
+    assert review.winner_policy_hash == train.winner_policy_hash
+    assert review.segment.metrics.triggered_resolved == 1
+    assert review.segment.selection.ranking.plans == (
+        validation_observation.plan,
+    )
+    assert "SEGMENT_SAMPLES_TOO_LOW" in review.reasons
+    assert "TRAIN_VALIDATION_SAMPLES_TOO_LOW" in review.reasons
+    assert review.validation_outcomes_read is True
+    assert review.test_outcomes_read is False
+    assert review.promotion_eligible is False
+    assert review.trade_permission == "NO-TRADE"
+
+
+def test_v3_validation_rejects_train_lineage_mismatch() -> None:
+    train = replace(
+        _train_artifact(winner=True),
+        parent_input_fingerprint="e" * 64,
+    )
+
+    with pytest.raises(ValueError, match="lineage mismatch"):
+        build_five_day_ranking_v3_validation_review(
+            make_v3_research_review(()),
+            train,
+            parent_research_identity="a" * 64,
+        )
+
+
+def test_v3_validation_rejects_tampered_train_payload_identity() -> None:
+    train = _train_artifact(winner=True)
+    payload = dict(train.payload)
+    payload["validation_excluded_unresolved_train_rows"] = 999
+    tampered = replace(train, payload=payload)
+
+    with pytest.raises(ValueError, match="lineage mismatch"):
+        build_five_day_ranking_v3_validation_review(
+            make_v3_research_review(()),
+            tampered,
+            parent_research_identity="a" * 64,
+        )
