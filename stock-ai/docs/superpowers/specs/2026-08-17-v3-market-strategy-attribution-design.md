@@ -193,20 +193,51 @@ Every metric set reports:
 - mean and median excess against each benchmark;
 - gross return and after-cost drag where applicable.
 
-For actual-holding aggregates, calculate `mean_gross_return` first and derive
-`mean_after_cost_drag` as exactly `mean_gross_return - mean_return` under the
-same local `Decimal` context. Do not independently average each row's cost
-drag. The two formulations are mathematically equivalent, but independently
-rounded recurring decimals can differ in the final digit and make a canonical
-report fail its exact arithmetic invariant. Per-trade gross return, net return,
-and cost drag remain unchanged; this rule only defines the canonical aggregate
-representation.
+Each metric set also persists one aggregate-only `audit_totals` object with:
 
-The strict report validator must continue to require exact equality among
-these three aggregate fields. It must not introduce a tolerance or globally
-quantize unrelated metrics. A regression test must use recurring-decimal
-returns and prove that the derived aggregate identity survives canonical
-serialization and strict loading.
+- `positive_rows`;
+- `raw_return_sum`;
+- `matched_index_return_sum`;
+- `market_median_return_sum`;
+- `gross_return_sum`, present as a decimal for actual-holding metrics and
+  `null` for fixed-five metrics.
+
+The sums are exact sums of the already-computed finite row-level `Decimal`
+values. Calculate them by aligning decimal coefficients and exponents, not by
+using the ambient decimal precision. Empty actual-holding metrics use zero for
+all four sums; empty fixed-five metrics use zero for the three applicable sums
+and `null` for `gross_return_sum`. No row, key, code, or date is added to the
+artifact.
+
+All serialized means are derived views of these audit totals under one local
+precision of 28:
+
+- mean raw, index, market, and gross returns are their exact sums divided by
+  `completed_rows`;
+- mean index excess is `(raw_return_sum - matched_index_return_sum) /
+  completed_rows`;
+- mean market excess is `(raw_return_sum - market_median_return_sum) /
+  completed_rows`;
+- mean after-cost drag is `(gross_return_sum - raw_return_sum) /
+  completed_rows`;
+- positive ratio and Wilson interval use `positive_rows` and
+  `completed_rows`.
+
+This deliberately does not require a rounded mean excess to equal the
+difference of two independently rounded display means. It requires the
+stronger underlying exact-sum identity instead. Per-row gross, net, benchmark,
+excess, and cost-drag values remain unchanged.
+
+For actual-holding status partitions, validate that the total
+`completed_rows`, `positive_rows`, and every applicable exact sum equal the
+exact sum of the four status children. Do not validate the hierarchy by
+re-weighting rounded child means. Medians remain descriptive finite aggregates
+and are not reconstructed without retaining forbidden rows.
+
+The strict report validator must not introduce a tolerance, an ULP allowance,
+or global quantization. Recurring-decimal regression tests must prove exact
+audit-total addition, canonical mean derivation, status-partition consistency,
+canonical serialization, and strict loading.
 
 Aggregate actual-holding results by:
 
@@ -279,13 +310,15 @@ ranking-v3-train-attribution-<artifact_identity>.json
 
 The payload includes:
 
-- schema and attribution version;
+- schema `five-day-ranking-v3-train-attribution-v2` and attribution version
+  `dual-benchmark-exact-aggregate-v2`;
 - parent V3 train identity and parent research identity;
 - parent input fingerprint and split;
 - market-data fingerprint;
 - benchmark definitions and coverage thresholds;
 - actual-holding aggregates;
 - fixed-five-session aggregates;
+- exact aggregate-only audit totals for every metric set;
 - Rank-1 paired aggregates;
 - attribution and ranker labels;
 - `train_only=true`;
@@ -301,6 +334,10 @@ The strict loader rejects:
   mismatch;
 - non-finite numeric values;
 - invalid sample counts or arithmetic relationships;
+- a displayed mean, positive ratio, or Wilson interval that cannot be derived
+  canonically from its exact audit totals;
+- an actual-holding total whose audit counts or sums do not exactly equal its
+  four status partitions;
 - contradictory coverage and verdict states;
 - unexpected policies, modes, folds, or rank bands;
 - any nested key named `observations`, `selected_observations`, `plans`,
@@ -368,6 +405,11 @@ that prevents trustworthy coverage accounting produces no artifact.
 - forbidden nested-key rejection;
 - incomplete coverage cannot carry a verdict;
 - complete artifact cannot omit required aggregates;
+- recurring-decimal means are derived from exact audit totals;
+- status totals exactly equal their child audit totals without rounded-mean
+  weighting;
+- V1 attribution artifacts are rejected by the V2 loader rather than silently
+  upgraded;
 - idempotent write and immutable conflict handling.
 
 ### CLI tests
