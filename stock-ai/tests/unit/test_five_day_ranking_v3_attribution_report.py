@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from dataclasses import replace
 from datetime import date, timedelta
 from decimal import Decimal
 import hashlib
@@ -18,12 +19,14 @@ from stock_ai.buy_point_selection.five_day_ranking_v3_attribution import (
     ATTRIBUTION_VERSION,
     MIN_MARKET_MEDIAN_MEMBERS,
     UNIVERSE_VERSION,
+    AttributedReturn,
     AttributionMetrics,
     AttributionVariantReview,
     CoverageSummary,
     FiveDayRankingV3AttributionReview,
     RankCorrelationMetrics,
     RankPairMetrics,
+    summarize_attributed_returns,
 )
 from stock_ai.buy_point_selection.five_day_ranking_v3_attribution_report import (
     five_day_ranking_v3_attribution_payload,
@@ -111,6 +114,36 @@ def _one_metrics(*, gross: bool) -> AttributionMetrics:
         mean_gross_return=Decimal("0.05") if gross else None,
         mean_after_cost_drag=Decimal("0.01") if gross else None,
         verdict="INCONCLUSIVE",
+    )
+
+
+def _recurring_cost_drag_metrics() -> AttributionMetrics:
+    raw_returns = (
+        Decimal("0.0135792468135792468135792468"),
+        Decimal("-0.0246801357924680135792468013"),
+        Decimal("0.0379135792468013579246801357"),
+    )
+    gross_returns = (
+        Decimal("0.0148138147037027036025915924"),
+        Decimal("-0.0234455679023445567902344557"),
+        Decimal("0.0391481471369248147136924813"),
+    )
+    rows = tuple(
+        AttributedReturn(
+            raw_return=raw,
+            matched_index_return=Decimal("0"),
+            market_median_return=Decimal("0"),
+            index_excess=raw,
+            market_median_excess=raw,
+            market_members=1000,
+        )
+        for raw in raw_returns
+    )
+    return summarize_attributed_returns(
+        rows,
+        eligible_rows=3,
+        excluded_missing_coverage=0,
+        gross_returns=gross_returns,
     )
 
 
@@ -251,6 +284,54 @@ def test_attribution_artifact_round_trip_is_canonical_and_idempotent(
     assert artifact.artifact_identity == _content_hash(dict(artifact.payload))
     assert len(artifact.payload["variants"]) == 72
     assert artifact.status == "COMPLETE"
+
+
+def test_recurring_decimal_cost_drag_survives_strict_round_trip(
+    tmp_path: Path,
+) -> None:
+    base = _review()
+    metrics = _recurring_cost_drag_metrics()
+    empty = _empty_metrics()
+    variants = tuple(
+        replace(
+            variant,
+            actual=metrics,
+            actual_by_status={
+                "STOPPED": empty,
+                "TIME_EXIT_GAIN": metrics,
+                "TIME_EXIT_FLAT": empty,
+                "TIME_EXIT_LOSS": empty,
+            },
+            funnel_counts={
+                **variant.funnel_counts,
+                "ACTUAL_ATTRIBUTION_ELIGIBLE": 3,
+                "ACTUAL_ATTRIBUTION_COMPLETED": 3,
+            },
+        )
+        for variant in base.variants
+    )
+    review = replace(
+        base,
+        coverage=replace(
+            base.coverage,
+            attempted_intervals=288,
+            completed_intervals=288,
+        ),
+        variants=variants,
+    )
+
+    path = write_five_day_ranking_v3_attribution(review, tmp_path)
+    artifact = load_five_day_ranking_v3_attribution(
+        path,
+        expected_parent_train_identity="a" * 64,
+        expected_parent_research_identity="b" * 64,
+    )
+    actual = artifact.payload["variants"][0]["actual"]
+
+    assert Decimal(actual["mean_after_cost_drag"]) == (
+        Decimal(actual["mean_gross_return"])
+        - Decimal(actual["mean_return"])
+    )
 
 
 def test_payload_freezes_benchmarks_and_safety_flags() -> None:

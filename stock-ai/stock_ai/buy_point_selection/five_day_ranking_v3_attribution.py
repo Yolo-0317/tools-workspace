@@ -414,12 +414,7 @@ def summarize_attributed_returns(
     if gross_returns is not None:
         gross_values = tuple(gross_returns)
         mean_gross_return = _mean(gross_values)
-        mean_after_cost_drag = _mean(
-            tuple(
-                gross_value - raw_value
-                for gross_value, raw_value in zip(gross_values, raw_returns)
-            )
-        )
+        mean_after_cost_drag = mean_gross_return - mean_return
 
     with localcontext() as context:
         context.prec = 28

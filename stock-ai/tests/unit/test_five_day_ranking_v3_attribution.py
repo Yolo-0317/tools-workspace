@@ -515,6 +515,31 @@ def test_attribution_summary_reports_gross_return_and_after_cost_drag() -> None:
     assert value.mean_after_cost_drag == Decimal("0.01")
 
 
+def test_attribution_summary_derives_exact_recurring_decimal_cost_drag() -> None:
+    raw_returns = (
+        Decimal("0.0135792468135792468135792468"),
+        Decimal("-0.0246801357924680135792468013"),
+        Decimal("0.0379135792468013579246801357"),
+    )
+    gross_returns = (
+        Decimal("0.0148138147037027036025915924"),
+        Decimal("-0.0234455679023445567902344557"),
+        Decimal("0.0391481471369248147136924813"),
+    )
+    value = summarize_attributed_returns(
+        tuple(_attributed(str(raw), "0", "0") for raw in raw_returns),
+        eligible_rows=3,
+        excluded_missing_coverage=0,
+        gross_returns=gross_returns,
+    )
+
+    assert value.mean_return is not None
+    assert value.mean_gross_return is not None
+    assert value.mean_after_cost_drag == (
+        value.mean_gross_return - value.mean_return
+    )
+
+
 def test_empty_attribution_summary_uses_none_instead_of_fabricated_zero() -> None:
     value = summarize_attributed_returns(
         (),
