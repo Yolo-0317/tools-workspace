@@ -193,6 +193,21 @@ Every metric set reports:
 - mean and median excess against each benchmark;
 - gross return and after-cost drag where applicable.
 
+For actual-holding aggregates, calculate `mean_gross_return` first and derive
+`mean_after_cost_drag` as exactly `mean_gross_return - mean_return` under the
+same local `Decimal` context. Do not independently average each row's cost
+drag. The two formulations are mathematically equivalent, but independently
+rounded recurring decimals can differ in the final digit and make a canonical
+report fail its exact arithmetic invariant. Per-trade gross return, net return,
+and cost drag remain unchanged; this rule only defines the canonical aggregate
+representation.
+
+The strict report validator must continue to require exact equality among
+these three aggregate fields. It must not introduce a tolerance or globally
+quantize unrelated metrics. A regression test must use recurring-decimal
+returns and prove that the derived aggregate identity survives canonical
+serialization and strict loading.
+
 Aggregate actual-holding results by:
 
 - policy;
