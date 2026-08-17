@@ -2,19 +2,36 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections import Counter
+from dataclasses import dataclass, replace
+from datetime import date
 from decimal import Decimal
 import hashlib
 import json
+from typing import Sequence
 
-from .five_day_ranking_v3_evidence import V3CandidateEvidence
+from stock_ai.market_codes import normalize_code6
+
+from .five_day_ranking_v3_evidence import (
+    V3CandidateEvidence,
+    V3EvidenceRejected,
+    V3EvidenceWindows,
+    resolve_v3_candidate_evidence,
+)
 from .five_day_ranking_v3_features import (
     V3_FEATURE_NAMES,
     V3_FEATURE_VERSION,
     V3FeatureAdjustment,
+    V3FeatureModel,
+    score_v3_feature_adjustment,
 )
 from .five_day_return_profiles import resolve_profile_stop
 from .five_day_return_runtime import FiveDaySignalPlan
+from .five_day_return_validation import (
+    FiveDayRankedPlan,
+    FiveDayRanking,
+    _active_structure_key,
+)
 
 
 V3_RANKING_VERSION = "five-day-ranking-key-v3"
@@ -64,6 +81,13 @@ class FiveDayV3ScoredPlan:
     score: Decimal
     rank: int = 0
     selected: bool = False
+
+
+@dataclass(frozen=True)
+class FiveDayV3RankingResult:
+    policy: FiveDayV3Policy
+    ranking: FiveDayRanking
+    scored: tuple[FiveDayV3ScoredPlan, ...]
 
 
 def build_five_day_v3_policies() -> tuple[FiveDayV3Policy, ...]:
@@ -282,4 +306,124 @@ def score_five_day_plan_v3(
         consistency=consistency,
         downside=downside,
         score=score,
+    )
+
+
+def _ranking_key(value: FiveDayV3ScoredPlan) -> tuple[object, ...]:
+    plan = value.plan
+    return (
+        -value.score,
+        -value.evidence.edge,
+        -min(value.evidence.full_edge, value.evidence.recent_edge),
+        value.downside,
+        -plan.candidate.setup.quality,
+        normalize_code6(plan.candidate.code),
+        plan.profile.profile_id,
+    )
+
+
+def rank_five_day_plans_v3(
+    plans: Sequence[FiveDaySignalPlan],
+    windows: V3EvidenceWindows,
+    feature_model: V3FeatureModel,
+    *,
+    policy: FiveDayV3Policy,
+    active_structure_ids: frozenset[str] = frozenset(),
+) -> FiveDayV3RankingResult:
+    """Rank each signal date with the frozen zero-to-three V3 rule."""
+    if policy not in build_five_day_v3_policies():
+        raise ValueError("policy is not in the registered V3 policy set")
+
+    rejection_counts: Counter[str] = Counter()
+    eligible_by_date: dict[date, list[FiveDayV3ScoredPlan]] = {}
+    for plan in plans:
+        if plan.structure_id in active_structure_ids:
+            rejection_counts["EXISTING_ACTIVE_STRUCTURE"] += 1
+            continue
+        try:
+            evidence = resolve_v3_candidate_evidence(
+                plan,
+                windows,
+                shrinkage_k=policy.shrinkage_k,
+            )
+        except V3EvidenceRejected as error:
+            rejection_counts[error.reason] += 1
+            continue
+        if evidence.stable_negative:
+            rejection_counts["STABLE_NEGATIVE"] += 1
+            continue
+        features = score_v3_feature_adjustment(
+            plan,
+            feature_model,
+            shrinkage_k=policy.shrinkage_k,
+        )
+        scored = score_five_day_plan_v3(
+            plan,
+            evidence=evidence,
+            features=features,
+            policy=policy,
+        )
+        eligible_by_date.setdefault(
+            plan.candidate.signal_date,
+            [],
+        ).append(scored)
+
+    selected_plans: list[FiveDaySignalPlan] = []
+    ranking_trace: list[FiveDayRankedPlan] = []
+    scored_trace: list[FiveDayV3ScoredPlan] = []
+    for signal_date in sorted(eligible_by_date):
+        ranked = sorted(eligible_by_date[signal_date], key=_ranking_key)
+        unique: list[FiveDayV3ScoredPlan] = []
+        seen_structures: set[tuple[object, ...]] = set()
+        for row in ranked:
+            identity = _active_structure_key(row.plan)
+            if identity in seen_structures:
+                rejection_counts["DUPLICATE_ACTIVE_STRUCTURE"] += 1
+                continue
+            seen_structures.add(identity)
+            unique.append(row)
+
+        eligible = [
+            row for row in unique if row.score >= Decimal("0.001")
+        ]
+        rejection_counts["ABSOLUTE_EDGE_TOO_LOW"] += (
+            len(unique) - len(eligible)
+        )
+        count = min(3, len(eligible))
+        provisional_count = count
+        while count > 1 and count < len(eligible):
+            boundary = eligible[count - 1].score - eligible[count].score
+            if boundary >= Decimal("0.001"):
+                break
+            count -= 1
+        rejection_counts["BOUNDARY_MARGIN_TOO_LOW"] += (
+            provisional_count - count
+        )
+
+        for rank, row in enumerate(unique, start=1):
+            is_selected = rank <= count
+            ranked_row = replace(row, rank=rank, selected=is_selected)
+            scored_trace.append(ranked_row)
+            ranking_trace.append(
+                FiveDayRankedPlan(
+                    plan=row.plan,
+                    rank=rank,
+                    selected=is_selected,
+                )
+            )
+            if is_selected:
+                selected_plans.append(row.plan)
+
+    return FiveDayV3RankingResult(
+        policy=policy,
+        ranking=FiveDayRanking(
+            plans=tuple(selected_plans),
+            rejection_counts={
+                key: value
+                for key, value in sorted(rejection_counts.items())
+                if value > 0
+            },
+            ranked=tuple(ranking_trace),
+        ),
+        scored=tuple(scored_trace),
     )
