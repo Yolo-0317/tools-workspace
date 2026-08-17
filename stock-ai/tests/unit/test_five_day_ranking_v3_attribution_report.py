@@ -20,6 +20,7 @@ from stock_ai.buy_point_selection.five_day_ranking_v3_attribution import (
     MIN_MARKET_MEDIAN_MEMBERS,
     UNIVERSE_VERSION,
     AttributedReturn,
+    AttributionAuditTotals,
     AttributionMetrics,
     AttributionVariantReview,
     CoverageSummary,
@@ -66,12 +67,19 @@ def _dates(count: int) -> tuple[date, ...]:
     return tuple(start + timedelta(days=index) for index in range(count))
 
 
-def _empty_metrics() -> AttributionMetrics:
+def _empty_metrics(*, gross: bool) -> AttributionMetrics:
     return AttributionMetrics(
         eligible_rows=0,
         completed_rows=0,
         excluded_rows=0,
         excluded_missing_coverage=0,
+        audit_totals=AttributionAuditTotals(
+            positive_rows=0,
+            raw_return_sum=Decimal("0"),
+            matched_index_return_sum=Decimal("0"),
+            market_median_return_sum=Decimal("0"),
+            gross_return_sum=Decimal("0") if gross else None,
+        ),
         mean_return=None,
         median_return=None,
         positive_ratio=None,
@@ -96,6 +104,13 @@ def _one_metrics(*, gross: bool) -> AttributionMetrics:
         completed_rows=1,
         excluded_rows=0,
         excluded_missing_coverage=0,
+        audit_totals=AttributionAuditTotals(
+            positive_rows=1,
+            raw_return_sum=Decimal("0.04"),
+            matched_index_return_sum=Decimal("0"),
+            market_median_return_sum=Decimal("0"),
+            gross_return_sum=Decimal("0.05") if gross else None,
+        ),
         mean_return=Decimal("0.04"),
         median_return=Decimal("0.04"),
         positive_ratio=Decimal("1"),
@@ -149,7 +164,8 @@ def _recurring_cost_drag_metrics() -> AttributionMetrics:
 
 def _review() -> FiveDayRankingV3AttributionReview:
     dates = _dates(630)
-    empty = _empty_metrics()
+    actual_empty = _empty_metrics(gross=True)
+    fixed_empty = _empty_metrics(gross=False)
     actual = _one_metrics(gross=True)
     fixed = _one_metrics(gross=False)
     variants = tuple(
@@ -159,16 +175,16 @@ def _review() -> FiveDayRankingV3AttributionReview:
             selection_mode=selection_mode,
             actual=actual,
             actual_by_status={
-                "STOPPED": empty,
+                "STOPPED": actual_empty,
                 "TIME_EXIT_GAIN": actual,
-                "TIME_EXIT_FLAT": empty,
-                "TIME_EXIT_LOSS": empty,
+                "TIME_EXIT_FLAT": actual_empty,
+                "TIME_EXIT_LOSS": actual_empty,
             },
             fixed_five_by_rank_band={
                 "RANK_1": fixed,
-                "RANK_2_3": empty,
-                "RANK_4_5": empty,
-                "RANK_6_PLUS": empty,
+                "RANK_2_3": fixed_empty,
+                "RANK_4_5": fixed_empty,
+                "RANK_6_PLUS": fixed_empty,
             },
             rank_pairs=RankPairMetrics(
                 paired_dates=1,
@@ -286,12 +302,12 @@ def test_attribution_artifact_round_trip_is_canonical_and_idempotent(
     assert artifact.status == "COMPLETE"
 
 
-def test_recurring_decimal_cost_drag_survives_strict_round_trip(
+def test_recurring_decimal_audit_totals_survive_strict_round_trip(
     tmp_path: Path,
 ) -> None:
     base = _review()
     metrics = _recurring_cost_drag_metrics()
-    empty = _empty_metrics()
+    empty = _empty_metrics(gross=True)
     variants = tuple(
         replace(
             variant,
@@ -328,15 +344,32 @@ def test_recurring_decimal_cost_drag_survives_strict_round_trip(
     )
     actual = artifact.payload["variants"][0]["actual"]
 
-    assert Decimal(actual["mean_after_cost_drag"]) == (
-        Decimal(actual["mean_gross_return"])
-        - Decimal(actual["mean_return"])
+    assert actual["audit_totals"] == {
+        "positive_rows": 2,
+        "raw_return_sum": "0.0268126902679125911590125812",
+        "matched_index_return_sum": "0",
+        "market_median_return_sum": "0",
+        "gross_return_sum": "0.0305163939382829615260496180",
+    }
+    assert actual["mean_after_cost_drag"] == (
+        "0.0012345678901234567890123456"
     )
 
 
 def test_payload_freezes_benchmarks_and_safety_flags() -> None:
     payload = five_day_ranking_v3_attribution_payload(_review())
 
+    assert payload["schema"] == "five-day-ranking-v3-train-attribution-v2"
+    assert payload["attribution_version"] == (
+        "dual-benchmark-exact-aggregate-v2"
+    )
+    assert payload["variants"][0]["actual"]["audit_totals"] == {
+        "positive_rows": 1,
+        "raw_return_sum": "0.04",
+        "matched_index_return_sum": "0",
+        "market_median_return_sum": "0",
+        "gross_return_sum": "0.05",
+    }
     assert payload["benchmark_definitions"] == {
         "actual_interval_basis": (
             "entry-date-close-to-exit-date-close-attribution-approximation-v1"
@@ -392,6 +425,47 @@ def test_loader_rejects_numeric_tamper_with_old_identity(tmp_path: Path) -> None
 
     with pytest.raises(ValueError, match="invalid ranking v3 attribution artifact"):
         load_five_day_ranking_v3_attribution(path)
+
+
+def test_loader_rejects_mean_not_derived_from_audit_total(
+    tmp_path: Path,
+) -> None:
+    payload = deepcopy(five_day_ranking_v3_attribution_payload(_review()))
+    metric = payload["variants"][0]["fixed_five_by_rank_band"]["RANK_1"]
+    metric["mean_return"] = "0.041"
+    metric["mean_index_excess"] = "0.041"
+    metric["mean_market_median_excess"] = "0.041"
+
+    with pytest.raises(ValueError):
+        load_five_day_ranking_v3_attribution(
+            _write_tampered(tmp_path, payload)
+        )
+
+
+def test_loader_rejects_status_audit_total_mismatch(tmp_path: Path) -> None:
+    payload = deepcopy(five_day_ranking_v3_attribution_payload(_review()))
+    actual = payload["variants"][0]["actual"]
+    actual["audit_totals"]["raw_return_sum"] = "0.05"
+    actual["mean_return"] = "0.05"
+    actual["mean_index_excess"] = "0.05"
+    actual["mean_market_median_excess"] = "0.05"
+    actual["mean_after_cost_drag"] = "0"
+
+    with pytest.raises(ValueError):
+        load_five_day_ranking_v3_attribution(
+            _write_tampered(tmp_path, payload)
+        )
+
+
+def test_v2_loader_rejects_v1_attribution_schema(tmp_path: Path) -> None:
+    payload = deepcopy(five_day_ranking_v3_attribution_payload(_review()))
+    payload["schema"] = "five-day-ranking-v3-train-attribution-v1"
+    payload["attribution_version"] = "dual-benchmark-train-attribution-v1"
+
+    with pytest.raises(ValueError):
+        load_five_day_ranking_v3_attribution(
+            _write_tampered(tmp_path, payload)
+        )
 
 
 def test_loader_rejects_wrong_filename(tmp_path: Path) -> None:

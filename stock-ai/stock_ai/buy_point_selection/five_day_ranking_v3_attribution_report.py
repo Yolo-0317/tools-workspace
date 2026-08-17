@@ -8,7 +8,7 @@ from decimal import Decimal, InvalidOperation
 import hashlib
 import json
 from pathlib import Path
-from typing import Mapping, Sequence
+from typing import Mapping
 
 from .five_day_ranking_v3 import V3_POLICY_IDS, V3_SELECTION_MODES
 from .five_day_ranking_v3_attribution import (
@@ -23,7 +23,10 @@ from .five_day_ranking_v3_attribution import (
     FiveDayRankingV3AttributionReview,
     RankCorrelationMetrics,
     RankPairMetrics,
+    _wilson_interval,
     attribution_verdict,
+    canonical_decimal_mean,
+    exact_decimal_sum,
 )
 
 
@@ -107,9 +110,17 @@ _METRIC_KEYS = {
     "completed_rows",
     "excluded_rows",
     "excluded_missing_coverage",
+    "audit_totals",
     *_METRIC_DECIMAL_FIELDS,
     "positive_wilson_interval",
     "verdict",
+}
+_AUDIT_TOTAL_KEYS = {
+    "positive_rows",
+    "raw_return_sum",
+    "matched_index_return_sum",
+    "market_median_return_sum",
+    "gross_return_sum",
 }
 _PAIR_DECIMAL_FIELDS = (
     "mean_raw_difference",
@@ -172,6 +183,21 @@ def _metrics_content(value: AttributionMetrics) -> dict[str, object]:
         "completed_rows": value.completed_rows,
         "excluded_rows": value.excluded_rows,
         "excluded_missing_coverage": value.excluded_missing_coverage,
+        "audit_totals": {
+            "positive_rows": value.audit_totals.positive_rows,
+            "raw_return_sum": _decimal_content(
+                value.audit_totals.raw_return_sum
+            ),
+            "matched_index_return_sum": _decimal_content(
+                value.audit_totals.matched_index_return_sum
+            ),
+            "market_median_return_sum": _decimal_content(
+                value.audit_totals.market_median_return_sum
+            ),
+            "gross_return_sum": _decimal_content(
+                value.audit_totals.gross_return_sum
+            ),
+        },
         "mean_return": _decimal_content(value.mean_return),
         "median_return": _decimal_content(value.median_return),
         "positive_ratio": _decimal_content(value.positive_ratio),
@@ -398,6 +424,34 @@ def _contains_forbidden_key(value: object) -> bool:
     return False
 
 
+def _audit_totals_values(
+    value: object,
+    *,
+    require_gross: bool,
+) -> dict[str, int | Decimal | None]:
+    totals = _mapping(value)
+    if not _exact_keys(totals, _AUDIT_TOTAL_KEYS):
+        raise ValueError
+    result: dict[str, int | Decimal | None] = {
+        "positive_rows": _nonnegative_int(totals["positive_rows"]),
+        "raw_return_sum": _finite_decimal(totals["raw_return_sum"]),
+        "matched_index_return_sum": _finite_decimal(
+            totals["matched_index_return_sum"]
+        ),
+        "market_median_return_sum": _finite_decimal(
+            totals["market_median_return_sum"]
+        ),
+        "gross_return_sum": _finite_decimal(
+            totals["gross_return_sum"],
+            optional=True,
+        ),
+    }
+    gross = result["gross_return_sum"]
+    if require_gross != (gross is not None):
+        raise ValueError
+    return result
+
+
 def _metric_values(
     value: object,
     *,
@@ -412,6 +466,22 @@ def _metric_values(
     excluded = _nonnegative_int(metric["excluded_rows"])
     missing = _nonnegative_int(metric["excluded_missing_coverage"])
     if eligible != completed + excluded or missing > excluded:
+        raise ValueError
+    totals = _audit_totals_values(
+        metric["audit_totals"],
+        require_gross=require_gross,
+    )
+    positive_rows = totals["positive_rows"]
+    raw_sum = totals["raw_return_sum"]
+    index_sum = totals["matched_index_return_sum"]
+    market_sum = totals["market_median_return_sum"]
+    gross_sum = totals["gross_return_sum"]
+    assert isinstance(positive_rows, int)
+    assert isinstance(raw_sum, Decimal)
+    assert isinstance(index_sum, Decimal)
+    assert isinstance(market_sum, Decimal)
+    assert gross_sum is None or isinstance(gross_sum, Decimal)
+    if positive_rows > completed:
         raise ValueError
     decimals = {
         field: _finite_decimal(metric[field], optional=True)
@@ -434,7 +504,15 @@ def _metric_values(
     if (gross is None) != (drag is None):
         raise ValueError
     if completed == 0:
-        if any(item is not None for item in decimals.values()) or interval is not None:
+        if (
+            positive_rows != 0
+            or raw_sum != 0
+            or index_sum != 0
+            or market_sum != 0
+            or (require_gross and gross_sum != 0)
+            or any(item is not None for item in decimals.values())
+            or interval is not None
+        ):
             raise ValueError
         if verdict != "INCONCLUSIVE":
             raise ValueError
@@ -445,7 +523,9 @@ def _metric_values(
     }
     if any(decimals[field] is None for field in base_fields) or interval is None:
         raise ValueError
-    if require_gross and (gross is None or drag is None):
+    if require_gross and (gross is None or drag is None or gross_sum is None):
+        raise ValueError
+    if not require_gross and (gross is not None or drag is not None):
         raise ValueError
     ratio = decimals["positive_ratio"]
     assert ratio is not None
@@ -468,12 +548,41 @@ def _metric_values(
             mean_market_excess,
         )
     )
-    if mean_index_excess != mean_return - mean_index:
+    expected_mean_return = canonical_decimal_mean(raw_sum, completed)
+    expected_mean_index = canonical_decimal_mean(index_sum, completed)
+    expected_mean_market = canonical_decimal_mean(market_sum, completed)
+    expected_mean_index_excess = canonical_decimal_mean(
+        exact_decimal_sum((raw_sum, index_sum.copy_negate())),
+        completed,
+    )
+    expected_mean_market_excess = canonical_decimal_mean(
+        exact_decimal_sum((raw_sum, market_sum.copy_negate())),
+        completed,
+    )
+    expected_ratio = canonical_decimal_mean(
+        Decimal(positive_rows),
+        completed,
+    )
+    if (
+        mean_return != expected_mean_return
+        or mean_index != expected_mean_index
+        or mean_market != expected_mean_market
+        or mean_index_excess != expected_mean_index_excess
+        or mean_market_excess != expected_mean_market_excess
+        or ratio != expected_ratio
+        or interval != _wilson_interval(positive_rows, completed)
+    ):
         raise ValueError
-    if mean_market_excess != mean_return - mean_market:
-        raise ValueError
-    if gross is not None and drag != gross - mean_return:
-        raise ValueError
+    if gross_sum is not None:
+        if (
+            gross != canonical_decimal_mean(gross_sum, completed)
+            or drag
+            != canonical_decimal_mean(
+                exact_decimal_sum((gross_sum, raw_sum.copy_negate())),
+                completed,
+            )
+        ):
+            raise ValueError
     expected_verdict = attribution_verdict(
         completed_rows=completed,
         mean_return=mean_return,
@@ -485,29 +594,6 @@ def _metric_values(
     if verdict != expected_verdict:
         raise ValueError
     return decimals
-
-
-def _weighted_matches(
-    total: Mapping[str, object],
-    parts: Sequence[Mapping[str, object]],
-    field: str,
-) -> bool:
-    total_value = _finite_decimal(total[field], optional=True)
-    completed = _nonnegative_int(total["completed_rows"])
-    present_parts = tuple(
-        (_nonnegative_int(part["completed_rows"]), _finite_decimal(part[field]))
-        for part in parts
-        if _nonnegative_int(part["completed_rows"]) > 0
-    )
-    if completed == 0:
-        return total_value is None and not present_parts
-    if total_value is None or sum(count for count, _ in present_parts) != completed:
-        return False
-    weighted = sum(
-        (value * count for count, value in present_parts if value is not None),
-        Decimal("0"),
-    ) / Decimal(completed)
-    return total_value == weighted
 
 
 def _status_aggregates_are_valid(
@@ -525,17 +611,34 @@ def _status_aggregates_are_valid(
             _nonnegative_int(part[field]) for part in parts
         ):
             return False
-    weighted_fields = (
-        "mean_return",
-        "positive_ratio",
-        "mean_matched_index_return",
-        "mean_market_median_return",
-        "mean_index_excess",
-        "mean_market_median_excess",
-        "mean_gross_return",
-        "mean_after_cost_drag",
+    total_audit = _audit_totals_values(
+        total["audit_totals"],
+        require_gross=True,
     )
-    return all(_weighted_matches(total, parts, field) for field in weighted_fields)
+    part_audits = tuple(
+        _audit_totals_values(
+            part["audit_totals"],
+            require_gross=True,
+        )
+        for part in parts
+    )
+    if total_audit["positive_rows"] != sum(
+        audit["positive_rows"] for audit in part_audits
+    ):
+        return False
+    for field in (
+        "raw_return_sum",
+        "matched_index_return_sum",
+        "market_median_return_sum",
+        "gross_return_sum",
+    ):
+        total_value = total_audit[field]
+        part_values = tuple(audit[field] for audit in part_audits)
+        assert isinstance(total_value, Decimal)
+        assert all(isinstance(value, Decimal) for value in part_values)
+        if total_value != exact_decimal_sum(part_values):
+            return False
+    return True
 
 
 def _rank_pairs_are_valid(value: object, *, status: str) -> bool:
