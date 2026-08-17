@@ -7,10 +7,17 @@ from decimal import Decimal
 import pytest
 
 from stock_ai.buy_point_selection.five_day_ranking_v3 import (
+    FiveDayV3PolicyFingerprint,
+    V3MonotonicityAssessment,
+    V3RankBandMetrics,
     V3_POLICY_IDS,
+    assess_five_day_v3_policy,
+    build_five_day_ranking_v3_train_review,
     build_five_day_v3_policies,
+    finalize_five_day_ranking_v3_train,
     five_day_v3_policy_hash,
     five_day_v3_policy_set_hash,
+    five_day_v3_selection_fingerprint,
     rank_five_day_plans_v3,
     score_five_day_plan_v3,
 )
@@ -26,13 +33,19 @@ from stock_ai.buy_point_selection.five_day_ranking_v3_features import (
     V3FeatureModel,
 )
 from stock_ai.buy_point_selection.five_day_return_validation import (
+    FiveDayPortfolioMetrics,
+    FiveDayRanking,
+    FiveDaySegmentMetrics,
     FiveDaySelection,
+    FiveDaySelectedSegment,
     admit_five_day_ranking,
 )
 
 from five_day_ranking_v3_fixtures import (
     make_v3_observation,
     make_v3_plan,
+    make_v3_research_review,
+    weekday_dates,
 )
 
 
@@ -272,6 +285,142 @@ def _selection_with_cancelled_first_and_ranked_fourth() -> tuple[
     )
 
 
+def _segment(
+    *,
+    samples: int,
+    edge: str,
+    profit_factor: str | None = "1.1001",
+    incomplete: bool = False,
+    maximum_drawdown: str = "0.05",
+) -> FiveDaySelectedSegment:
+    metrics = FiveDaySegmentMetrics(
+        profile_id="V3",
+        segment="TRAIN",
+        triggered_resolved=samples,
+        net_expectancy=Decimal(edge),
+        profit_factor=(
+            Decimal(profit_factor) if profit_factor is not None else None
+        ),
+        profitable_wilson_lower=Decimal("0.50"),
+        stop_rate=Decimal("0.20"),
+        positive_window_ratio=Decimal("0.60"),
+        maximum_drawdown=Decimal(maximum_drawdown),
+        qualifies=True,
+        reasons=(),
+    )
+    return FiveDaySelectedSegment(
+        metric_version="selected-portfolio-v2",
+        metrics=metrics,
+        portfolio=FiveDayPortfolioMetrics(
+            accepted_trades=samples,
+            maximum_drawdown=Decimal(maximum_drawdown),
+            maximum_stock_trade_share=Decimal("0.10"),
+            maximum_stock_profit_share=Decimal("0.10"),
+            maximum_sector_trade_share=Decimal("0.20"),
+            maximum_sector_profit_share=Decimal("0.20"),
+            top5_profit_share=Decimal("0.30"),
+            qualifies=True,
+            reasons=(),
+        ),
+        selection=FiveDaySelection(
+            ranking=FiveDayRanking(plans=(), rejection_counts={}),
+            selected_observations=(),
+            admitted=(),
+            funnel_counts={},
+            incomplete=incomplete,
+        ),
+    )
+
+
+def _qualifying_monotonicity() -> V3MonotonicityAssessment:
+    return V3MonotonicityAssessment(
+        bands=(
+            V3RankBandMetrics("RANK_1", 15, Decimal("0.006")),
+            V3RankBandMetrics("RANK_2_3", 15, Decimal("0.005")),
+            V3RankBandMetrics("RANK_4_5", 15, Decimal("0.004")),
+            V3RankBandMetrics("RANK_6_PLUS", 15, Decimal("0.002")),
+        ),
+        qualifies=True,
+        reasons=(),
+    )
+
+
+def _qualifying_assessment(policy):
+    return assess_five_day_v3_policy(
+        policy=policy,
+        fold1=_segment(samples=20, edge="0.002"),
+        fold2=_segment(samples=20, edge="0.003"),
+        combined=_segment(samples=40, edge="0.003"),
+        monotonicity=_qualifying_monotonicity(),
+    )
+
+
+def _complete_research_with_boundary_resolution():
+    sessions = weekday_dates(630)
+    fold1_boundary = sessions[252]
+    fold2_boundary = sessions[315]
+    observations = (
+        make_v3_observation(
+            make_v3_plan(sessions[0], code="600001"),
+            resolution_date=fold1_boundary,
+        ),
+        make_v3_observation(
+            make_v3_plan(sessions[253], code="600002"),
+            resolution_date=fold2_boundary,
+        ),
+    )
+    return make_v3_research_review(observations)
+
+
+def _research_with_validation_resolved_train_signal():
+    sessions = weekday_dates(630)
+    calibration = tuple(
+        make_v3_observation(
+            make_v3_plan(sessions[index], code=f"{600000 + index:06d}"),
+            net_return=Decimal("0.01"),
+            resolution_date=sessions[index + 1],
+        )
+        for index in range(60)
+    )
+    late = make_v3_observation(
+        make_v3_plan(sessions[377], code="699999"),
+        net_return=Decimal("0.50"),
+        resolution_date=sessions[378],
+    )
+    return make_v3_research_review((*calibration, late))
+
+
+def _train_review_with_fingerprints(
+    fingerprints: tuple[str, ...],
+):
+    policies = build_five_day_v3_policies()
+    base = build_five_day_ranking_v3_train_review(
+        make_v3_research_review(()),
+        parent_research_identity="a" * 64,
+    )
+    values = tuple(
+        FiveDayV3PolicyFingerprint(
+            policy_id=policy.policy_id,
+            selected_structure_keys=(fingerprint,),
+            fingerprint=five_day_v3_selection_fingerprint((fingerprint,)),
+        )
+        for policy, fingerprint in zip(policies, fingerprints, strict=True)
+    )
+    return replace(
+        base,
+        assessments=tuple(
+            _qualifying_assessment(policy) for policy in policies
+        ),
+        policy_fingerprints=values,
+        fingerprint_groups=(),
+        winner_policy_id=None,
+        winner_policy_hash=None,
+        winner_train_samples=0,
+        status="NO_TRAIN_CANDIDATE",
+        validation_eligible=False,
+    )
+
+
 def test_v3_policy_registry_is_exact_and_hashed() -> None:
     policies = build_five_day_v3_policies()
 
@@ -442,3 +591,215 @@ def test_v3_later_admission_rejection_never_backfills() -> None:
     assert fourth_structure_id not in {
         value.plan.structure_id for value in selection.selected_observations
     }
+
+
+def test_v3_train_excludes_resolution_on_evaluation_boundary() -> None:
+    review = build_five_day_ranking_v3_train_review(
+        _complete_research_with_boundary_resolution(),
+        parent_research_identity="a" * 64,
+    )
+
+    assert [
+        fold.excluded_unresolved_calibration_rows for fold in review.folds
+    ] == [1, 1]
+    assert [len(fold.calibration_dates) for fold in review.folds] == [252, 315]
+    assert [len(fold.evaluation_dates) for fold in review.folds] == [63, 63]
+
+
+def test_v3_degenerate_policy_fingerprints_block_every_winner() -> None:
+    review = _train_review_with_fingerprints(("same",) * 8)
+
+    finalized = finalize_five_day_ranking_v3_train(review)
+
+    assert finalized.status == "POLICY_SET_DEGENERATE"
+    assert finalized.winner_policy_id is None
+    assert finalized.validation_eligible is False
+    assert all(not value.qualifies for value in finalized.assessments)
+
+
+def test_v3_policy_qualification_uses_unchanged_hard_thresholds() -> None:
+    assessment = assess_five_day_v3_policy(
+        policy=build_five_day_v3_policies()[0],
+        fold1=_segment(samples=15, edge="0.0001"),
+        fold2=_segment(samples=15, edge="0.0001"),
+        combined=_segment(
+            samples=40,
+            edge="0.003",
+            profit_factor="1.1001",
+        ),
+        monotonicity=_qualifying_monotonicity(),
+    )
+
+    assert assessment.qualifies is True
+    assert assessment.reasons == ()
+
+
+@pytest.mark.parametrize(
+    ("fold1", "fold2", "combined", "reason"),
+    (
+        (
+            _segment(samples=14, edge="0.001"),
+            _segment(samples=15, edge="0.001"),
+            _segment(samples=40, edge="0.003"),
+            "FOLD_1_SAMPLES_TOO_LOW",
+        ),
+        (
+            _segment(samples=15, edge="0"),
+            _segment(samples=15, edge="0.001"),
+            _segment(samples=40, edge="0.003"),
+            "FOLD_1_NON_POSITIVE_EXPECTANCY",
+        ),
+        (
+            _segment(samples=15, edge="0.001"),
+            _segment(samples=15, edge="0.001"),
+            _segment(samples=39, edge="0.003"),
+            "COMBINED_SAMPLES_TOO_LOW",
+        ),
+        (
+            _segment(samples=15, edge="0.001"),
+            _segment(samples=15, edge="0.001"),
+            _segment(samples=40, edge="0.0029"),
+            "COMBINED_EDGE_TOO_LOW",
+        ),
+        (
+            _segment(samples=15, edge="0.001"),
+            _segment(samples=15, edge="0.001"),
+            _segment(samples=40, edge="0.003", profit_factor="1.10"),
+            "PROFIT_FACTOR_NOT_ABOVE_1_10",
+        ),
+    ),
+)
+def test_v3_policy_qualification_rejects_failed_hard_boundaries(
+    fold1: FiveDaySelectedSegment,
+    fold2: FiveDaySelectedSegment,
+    combined: FiveDaySelectedSegment,
+    reason: str,
+) -> None:
+    assessment = assess_five_day_v3_policy(
+        policy=build_five_day_v3_policies()[0],
+        fold1=fold1,
+        fold2=fold2,
+        combined=combined,
+        monotonicity=_qualifying_monotonicity(),
+    )
+
+    assert assessment.qualifies is False
+    assert reason in assessment.reasons
+
+
+def test_v3_four_distinct_fingerprints_allow_one_registered_winner() -> None:
+    review = _train_review_with_fingerprints(
+        ("a", "a", "b", "b", "c", "c", "d", "d")
+    )
+
+    finalized = finalize_five_day_ranking_v3_train(review)
+
+    assert finalized.status == "TRAIN_CANDIDATE_SELECTED"
+    assert finalized.winner_policy_id == "EDGE-K30"
+    assert finalized.validation_eligible is True
+    assert finalized.validation_outcomes_read is False
+    assert finalized.test_outcomes_read is False
+    assert finalized.promotion_eligible is False
+    assert finalized.trade_permission == "NO-TRADE"
+
+
+def test_v3_distinct_policy_set_has_no_unqualified_winner_fallback() -> None:
+    review = _train_review_with_fingerprints(
+        ("a", "a", "b", "b", "c", "c", "d", "d")
+    )
+    unqualified = tuple(
+        replace(
+            value,
+            qualifies=False,
+            reasons=("FOLD_1_NON_POSITIVE_EXPECTANCY",),
+        )
+        for value in review.assessments
+    )
+
+    finalized = finalize_five_day_ranking_v3_train(
+        replace(review, assessments=unqualified)
+    )
+
+    assert finalized.status == "NO_TRAIN_CANDIDATE"
+    assert finalized.winner_policy_id is None
+    assert finalized.validation_eligible is False
+
+
+def test_v3_winner_prioritizes_worst_fold_before_combined_edge() -> None:
+    review = _train_review_with_fingerprints(
+        ("a", "a", "b", "b", "c", "c", "d", "d")
+    )
+    policies = build_five_day_v3_policies()
+    high_combined = assess_five_day_v3_policy(
+        policy=policies[0],
+        fold1=_segment(samples=20, edge="0.001"),
+        fold2=_segment(samples=20, edge="0.004"),
+        combined=_segment(samples=40, edge="0.005"),
+        monotonicity=_qualifying_monotonicity(),
+    )
+    high_worst_fold = assess_five_day_v3_policy(
+        policy=policies[1],
+        fold1=_segment(samples=20, edge="0.002"),
+        fold2=_segment(samples=20, edge="0.003"),
+        combined=_segment(samples=40, edge="0.004"),
+        monotonicity=_qualifying_monotonicity(),
+    )
+    assessments = (
+        high_combined,
+        high_worst_fold,
+        *(
+            replace(
+                value,
+                qualifies=False,
+                reasons=("NOT_QUALIFIED",),
+            )
+            for value in review.assessments[2:]
+        ),
+    )
+
+    finalized = finalize_five_day_ranking_v3_train(
+        replace(review, assessments=assessments)
+    )
+
+    assert finalized.winner_policy_id == "EDGE-K60"
+
+
+def test_v3_train_keeps_72_variants_and_freezes_validation_inputs() -> None:
+    review = build_five_day_ranking_v3_train_review(
+        make_v3_research_review(()),
+        parent_research_identity="a" * 64,
+    )
+
+    assert len(review.variants) == 8 * 3 * 3
+    assert len(review.validation_evidence_windows.full_dates) == 378
+    assert review.validation_feature_model.data_end == review.split.train[-1]
+    assert review.validation_outcomes_read is False
+    assert review.test_outcomes_read is False
+
+
+def test_v3_train_never_admits_an_outcome_resolved_in_validation() -> None:
+    review = build_five_day_ranking_v3_train_review(
+        _research_with_validation_resolved_train_signal(),
+        parent_research_identity="a" * 64,
+    )
+    formal = next(
+        value
+        for value in review.variants
+        if value.fold_id == "train-fold-2"
+        and value.policy_id == "EDGE-K30"
+        and value.selection_mode == "FORMAL"
+    )
+
+    assert len(formal.segment.selection.ranking.plans) == 1
+    assert formal.segment.selection.admitted == ()
+    assert formal.segment.selection.incomplete is True
+    assert formal.segment.metrics.net_expectancy == Decimal("0")
+    assert review.validation_excluded_unresolved_train_rows == 1
+    assessment = next(
+        value
+        for value in review.assessments
+        if value.policy.policy_id == "EDGE-K30"
+    )
+    assert sum(
+        value.triggered_completed for value in assessment.monotonicity.bands
+    ) == 0
