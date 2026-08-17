@@ -349,6 +349,26 @@ def test_interval_attribution_uses_dual_benchmarks_and_decimal() -> None:
     assert value.market_members == 1000
 
 
+def test_interval_attribution_accepts_same_day_with_zero_benchmarks() -> None:
+    panel = _market_panel()
+
+    value = attribute_interval("600001", START, START, panel)
+
+    assert value.raw_return == Decimal("0")
+    assert value.matched_index_return == Decimal("0")
+    assert value.market_median_return == Decimal("0")
+    assert value.index_excess == Decimal("0")
+    assert value.market_median_excess == Decimal("0")
+    assert value.market_members == 1000
+
+
+def test_interval_attribution_rejects_reversed_dates() -> None:
+    panel = _market_panel()
+
+    with pytest.raises(ValueError, match="interval endpoints must be train dates"):
+        attribute_interval("600001", END, START, panel)
+
+
 def test_interval_attribution_uses_even_cross_sectional_return_median() -> None:
     panel = _market_panel(market_members=1000)
     stock_closes = dict(panel.stock_closes)
@@ -993,6 +1013,58 @@ def test_attribution_builder_creates_all_variants_and_actual_cost_drag() -> None
     assert review.test_outcomes_read is False
     assert review.promotion_eligible is False
     assert review.trade_permission == "NO-TRADE"
+    assert review.status == "COMPLETE"
+
+
+def test_attribution_builder_keeps_same_day_actual_trade() -> None:
+    _, research, evaluation = _completed_training_fixture()
+    entry_date = evaluation.trade.entry_date
+    assert entry_date is not None
+    assert evaluation.trade.exit is not None
+    same_day = replace(
+        evaluation,
+        resolution_date=entry_date,
+        trade=replace(
+            evaluation.trade,
+            exit=replace(
+                evaluation.trade.exit,
+                planned_exit_date=entry_date,
+                actual_exit_date=entry_date,
+            ),
+        ),
+    )
+    same_day_research = replace(
+        research,
+        observations=tuple(
+            same_day if value is evaluation else value
+            for value in research.observations
+        ),
+    )
+    artifact = _artifact_from_research(same_day_research)
+    signal_date = same_day.plan.candidate.signal_date
+    panel = _bounded_market_panel(
+        artifact.split.train,
+        (signal_date, entry_date),
+        target_closes={
+            signal_date: Decimal("10"),
+            entry_date: Decimal("10.5"),
+        },
+    )
+
+    review = build_five_day_ranking_v3_attribution_review(
+        artifact,
+        same_day_research,
+        parent_research_identity=PARENT_RESEARCH_IDENTITY,
+        market_panel=panel,
+    )
+
+    actual = review.variants[0].actual
+    assert actual.completed_rows == 1
+    assert actual.mean_return == Decimal("0.04")
+    assert actual.mean_matched_index_return == Decimal("0")
+    assert actual.mean_market_median_return == Decimal("0")
+    assert actual.mean_index_excess == Decimal("0.04")
+    assert actual.mean_market_median_excess == Decimal("0.04")
     assert review.status == "COMPLETE"
 
 

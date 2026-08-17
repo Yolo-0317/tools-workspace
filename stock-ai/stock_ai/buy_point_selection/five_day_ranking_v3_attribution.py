@@ -672,7 +672,7 @@ def _benchmark_interval(
     panel: MarketClosePanel,
 ) -> _BenchmarkReturn:
     train_dates = _validate_train_dates(panel.train_dates)
-    if start not in train_dates or end not in train_dates or start >= end:
+    if start not in train_dates or end not in train_dates or start > end:
         raise ValueError("interval endpoints must be train dates in order")
     normalized_code = normalize_code6(code)
     index_id = matched_index_id(normalized_code)
@@ -733,7 +733,7 @@ def attribute_interval(
     """Attribute one stock close return to matched and universe benchmarks."""
 
     train_dates = _validate_train_dates(panel.train_dates)
-    if start not in train_dates or end not in train_dates or start >= end:
+    if start not in train_dates or end not in train_dates or start > end:
         raise ValueError("interval endpoints must be train dates in order")
     normalized_code = normalize_code6(code)
     stock_series = panel.stock_closes.get(normalized_code)
