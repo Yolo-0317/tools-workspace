@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""LLM 统一封装：DeepSeek API 或 Cursor CLI（agent --model composer-2.5）。"""
+"""LLM routing: Codex for WeChat writing, DeepSeek/Cursor for other tools."""
 
 from __future__ import annotations
 
@@ -14,6 +14,11 @@ from scripts.tools.cursor_agent_client import (
     call_cursor_agent,
     cursor_agent_available,
     messages_to_prompt,
+)
+from scripts.tools.wechat_mp_codex_client import (
+    call_wechat_mp_codex,
+    codex_available,
+    wechat_mp_codex_model,
 )
 
 DEFAULT_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
@@ -33,20 +38,17 @@ def sop_llm_backend() -> str:
 
 
 def wechat_mp_llm_backend() -> str:
-    """公众号长文成稿：固定 cursor / Composer（已弃用 DeepSeek API 写稿）。"""
-    return "cursor"
+    """公众号 AI 写稿固定使用 Codex。"""
+    return "codex"
 
 
 def wechat_mp_llm_model() -> str | None:
-    """Composer 模型 slug；默认 CURSOR_AGENT_MODEL（composer-2.5）。"""
-    explicit = os.getenv("WECHAT_MP_LLM_MODEL", "").strip()
-    if explicit:
-        return explicit
-    return _cursor_model(None)
+    """公众号专用 Codex 模型；空值表示沿用 Codex 当前配置。"""
+    return wechat_mp_codex_model()
 
 
 def is_wechat_mp_llm_configured() -> bool:
-    return is_llm_configured(backend="cursor")
+    return codex_available()
 
 
 def call_wechat_mp_llm(
@@ -55,18 +57,28 @@ def call_wechat_mp_llm(
     max_retries: int | None = None,
     **kwargs: Any,
 ) -> str:
-    """公众号长文成稿：Composer（cursor CLI），不经 DeepSeek API。"""
-    if max_retries is None:
-        max_retries = _env_int("WECHAT_MP_CURSOR_MAX_RETRIES", 1)
-    timeout_s = _env_float("WECHAT_MP_CURSOR_TIMEOUT_SECONDS", 420)
-    kwargs.setdefault("backend", "cursor")
-    kwargs.setdefault("model", wechat_mp_llm_model())
-    kwargs.setdefault("workspace", _wechat_mp_agent_workspace())
-    return call_deepseek(
+    """公众号 AI 成稿、扩写与改写：只调用 Codex，不设置备用后端。"""
+    backend = kwargs.pop("backend", None)
+    if backend not in (None, "codex"):
+        raise ValueError("公众号写稿后端只允许 codex")
+    model = kwargs.pop("model", None) or wechat_mp_llm_model()
+    timeout = kwargs.pop("timeout", None)
+    kwargs.pop("temperature", None)
+    kwargs.pop("max_tokens", None)
+    kwargs.pop("workspace", None)
+    if kwargs:
+        names = ", ".join(sorted(kwargs))
+        raise TypeError(f"公众号 Codex 写稿不支持参数: {names}")
+    timeout_s: float | None = None
+    if isinstance(timeout, tuple):
+        timeout_s = float(timeout[1])
+    elif timeout is not None:
+        timeout_s = float(timeout)
+    return call_wechat_mp_codex(
         messages,
+        model=model,
         max_retries=max_retries,
-        timeout=(10.0, timeout_s),
-        **kwargs,
+        timeout_seconds=timeout_s,
     )
 
 
