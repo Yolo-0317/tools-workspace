@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, localcontext
 import hashlib
 import json
 
@@ -14,13 +14,16 @@ from stock_ai.buy_point_selection.five_day_ranking_v3 import (
 from stock_ai.buy_point_selection.five_day_ranking_v3_attribution import (
     MIN_MARKET_MEDIAN_MEMBERS,
     AttributedReturn,
+    AttributionAuditTotals,
     MarketClosePanel,
     MarketCoverageIncomplete,
     RankedAttributedReturn,
     attribute_interval,
     attribution_verdict,
     build_five_day_ranking_v3_attribution_review,
+    canonical_decimal_mean,
     diagnose_rank_one,
+    exact_decimal_sum,
     fifth_subsequent_train_date,
     matched_index_id,
     simple_return,
@@ -42,6 +45,44 @@ from five_day_ranking_v3_fixtures import (
 START = date(2026, 7, 1)
 END = date(2026, 7, 8)
 PARENT_RESEARCH_IDENTITY = "a" * 64
+
+
+def test_exact_decimal_sum_ignores_ambient_precision() -> None:
+    with localcontext() as context:
+        context.prec = 6
+        value = exact_decimal_sum(
+            (
+                Decimal("123456789.123456789"),
+                Decimal("-123456788.123456788"),
+            )
+        )
+
+    assert value == Decimal("1.000000001")
+
+
+def test_canonical_decimal_mean_uses_local_precision_28() -> None:
+    with localcontext() as context:
+        context.prec = 4
+        value = canonical_decimal_mean(Decimal("1"), 3)
+
+    assert value == Decimal("0.3333333333333333333333333333")
+
+
+def test_attribution_summary_even_median_ignores_ambient_precision() -> None:
+    with localcontext() as context:
+        context.prec = 4
+        value = summarize_attributed_returns(
+            (
+                _attributed("0.1234567890123456789012345678", "0", "0"),
+                _attributed("0.9876543210987654321098765432", "0", "0"),
+            ),
+            eligible_rows=2,
+            excluded_missing_coverage=0,
+        )
+
+    assert value.median_return == Decimal(
+        "0.5555555550555555555055555555"
+    )
 
 
 def _attributed(
@@ -515,7 +556,7 @@ def test_attribution_summary_reports_gross_return_and_after_cost_drag() -> None:
     assert value.mean_after_cost_drag == Decimal("0.01")
 
 
-def test_attribution_summary_derives_exact_recurring_decimal_cost_drag() -> None:
+def test_attribution_summary_derives_recurring_means_from_exact_audit_totals() -> None:
     raw_returns = (
         Decimal("0.0135792468135792468135792468"),
         Decimal("-0.0246801357924680135792468013"),
@@ -533,10 +574,17 @@ def test_attribution_summary_derives_exact_recurring_decimal_cost_drag() -> None
         gross_returns=gross_returns,
     )
 
-    assert value.mean_return is not None
-    assert value.mean_gross_return is not None
-    assert value.mean_after_cost_drag == (
-        value.mean_gross_return - value.mean_return
+    assert value.audit_totals == AttributionAuditTotals(
+        positive_rows=2,
+        raw_return_sum=Decimal("0.0268126902679125911590125812"),
+        matched_index_return_sum=Decimal("0"),
+        market_median_return_sum=Decimal("0"),
+        gross_return_sum=Decimal("0.0305163939382829615260496180"),
+    )
+    assert value.mean_return == Decimal("0.008937563422637530386337527067")
+    assert value.mean_gross_return == Decimal("0.01017213131276098717534987267")
+    assert value.mean_after_cost_drag == Decimal(
+        "0.0012345678901234567890123456"
     )
 
 
@@ -549,6 +597,13 @@ def test_empty_attribution_summary_uses_none_instead_of_fabricated_zero() -> Non
 
     assert value.completed_rows == 0
     assert value.excluded_rows == 2
+    assert value.audit_totals == AttributionAuditTotals(
+        positive_rows=0,
+        raw_return_sum=Decimal("0"),
+        matched_index_return_sum=Decimal("0"),
+        market_median_return_sum=Decimal("0"),
+        gross_return_sum=None,
+    )
     assert value.mean_return is None
     assert value.median_return is None
     assert value.positive_ratio is None
@@ -556,6 +611,19 @@ def test_empty_attribution_summary_uses_none_instead_of_fabricated_zero() -> Non
     assert value.mean_index_excess is None
     assert value.mean_market_median_excess is None
     assert value.verdict == "INCONCLUSIVE"
+
+
+def test_empty_actual_attribution_summary_keeps_zero_gross_audit_total() -> None:
+    value = summarize_attributed_returns(
+        (),
+        eligible_rows=0,
+        excluded_missing_coverage=0,
+        gross_returns=(),
+    )
+
+    assert value.audit_totals.gross_return_sum == Decimal("0")
+    assert value.mean_gross_return is None
+    assert value.mean_after_cost_drag is None
 
 
 @pytest.mark.parametrize(

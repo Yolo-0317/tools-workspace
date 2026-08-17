@@ -26,8 +26,8 @@ if TYPE_CHECKING:
     from .five_day_ranking_v3_report import FiveDayRankingV3TrainArtifact
 
 
-ATTRIBUTION_SCHEMA = "five-day-ranking-v3-train-attribution-v1"
-ATTRIBUTION_VERSION = "dual-benchmark-train-attribution-v1"
+ATTRIBUTION_SCHEMA = "five-day-ranking-v3-train-attribution-v2"
+ATTRIBUTION_VERSION = "dual-benchmark-exact-aggregate-v2"
 UNIVERSE_VERSION = "sh-sz-main-board-close-median-v1"
 MIN_MARKET_MEDIAN_MEMBERS = 1000
 MIN_ATTRIBUTION_VERDICT_SAMPLES = 30
@@ -72,11 +72,21 @@ class AttributedReturn:
 
 
 @dataclass(frozen=True)
+class AttributionAuditTotals:
+    positive_rows: int
+    raw_return_sum: Decimal
+    matched_index_return_sum: Decimal
+    market_median_return_sum: Decimal
+    gross_return_sum: Decimal | None
+
+
+@dataclass(frozen=True)
 class AttributionMetrics:
     eligible_rows: int
     completed_rows: int
     excluded_rows: int
     excluded_missing_coverage: int
+    audit_totals: AttributionAuditTotals
     mean_return: Decimal | None
     median_return: Decimal | None
     positive_ratio: Decimal | None
@@ -290,6 +300,43 @@ def _median(values: Sequence[Decimal]) -> Decimal:
         return (ordered[midpoint - 1] + ordered[midpoint]) / Decimal("2")
 
 
+def exact_decimal_sum(values: Sequence[Decimal]) -> Decimal:
+    """Add finite decimals exactly without ambient-context rounding."""
+
+    finite = tuple(values)
+    if any(not value.is_finite() for value in finite):
+        raise ValueError("exact decimal values must be finite")
+    if not finite:
+        return Decimal("0")
+    exponent = min(value.as_tuple().exponent for value in finite)
+    coefficient_sum = 0
+    for value in finite:
+        item = value.as_tuple()
+        coefficient = int(
+            "".join(str(digit) for digit in item.digits) or "0"
+        )
+        if item.sign:
+            coefficient = -coefficient
+        coefficient_sum += coefficient * (10 ** (item.exponent - exponent))
+    sign = int(coefficient_sum < 0)
+    digits = tuple(
+        int(character) for character in str(abs(coefficient_sum))
+    )
+    return Decimal((sign, digits, exponent))
+
+
+def canonical_decimal_mean(total: Decimal, count: int) -> Decimal:
+    """Divide an exact total under the frozen aggregate precision."""
+
+    if not total.is_finite() or count <= 0:
+        raise ValueError(
+            "canonical decimal mean requires finite total and positive count"
+        )
+    with localcontext() as context:
+        context.prec = 28
+        return total / Decimal(count)
+
+
 def _mean(values: Sequence[Decimal]) -> Decimal:
     with localcontext() as context:
         context.prec = 28
@@ -382,6 +429,15 @@ def summarize_attributed_returns(
             completed_rows=0,
             excluded_rows=excluded_rows,
             excluded_missing_coverage=excluded_missing_coverage,
+            audit_totals=AttributionAuditTotals(
+                positive_rows=0,
+                raw_return_sum=Decimal("0"),
+                matched_index_return_sum=Decimal("0"),
+                market_median_return_sum=Decimal("0"),
+                gross_return_sum=(
+                    Decimal("0") if gross_returns is not None else None
+                ),
+            ),
             mean_return=None,
             median_return=None,
             positive_ratio=None,
@@ -405,26 +461,50 @@ def summarize_attributed_returns(
     index_excesses = tuple(row.index_excess for row in rows)
     market_median_excesses = tuple(row.market_median_excess for row in rows)
     positive_count = sum(value > 0 for value in raw_returns)
-    mean_return = _mean(raw_returns)
-    mean_index_excess = _mean(index_excesses)
-    mean_market_median_excess = _mean(market_median_excesses)
+    raw_sum = exact_decimal_sum(raw_returns)
+    index_sum = exact_decimal_sum(matched_index_returns)
+    market_sum = exact_decimal_sum(market_median_returns)
+    gross_sum = (
+        exact_decimal_sum(tuple(gross_returns))
+        if gross_returns is not None
+        else None
+    )
+    audit_totals = AttributionAuditTotals(
+        positive_rows=positive_count,
+        raw_return_sum=raw_sum,
+        matched_index_return_sum=index_sum,
+        market_median_return_sum=market_sum,
+        gross_return_sum=gross_sum,
+    )
+    mean_return = canonical_decimal_mean(raw_sum, completed_rows)
+    mean_index_excess = canonical_decimal_mean(
+        exact_decimal_sum((raw_sum, index_sum.copy_negate())),
+        completed_rows,
+    )
+    mean_market_median_excess = canonical_decimal_mean(
+        exact_decimal_sum((raw_sum, market_sum.copy_negate())),
+        completed_rows,
+    )
 
     mean_gross_return: Decimal | None = None
     mean_after_cost_drag: Decimal | None = None
-    if gross_returns is not None:
-        gross_values = tuple(gross_returns)
-        mean_gross_return = _mean(gross_values)
-        mean_after_cost_drag = mean_gross_return - mean_return
-
-    with localcontext() as context:
-        context.prec = 28
-        positive_ratio = Decimal(positive_count) / Decimal(completed_rows)
+    if gross_sum is not None:
+        mean_gross_return = canonical_decimal_mean(gross_sum, completed_rows)
+        mean_after_cost_drag = canonical_decimal_mean(
+            exact_decimal_sum((gross_sum, raw_sum.copy_negate())),
+            completed_rows,
+        )
+    positive_ratio = canonical_decimal_mean(
+        Decimal(positive_count),
+        completed_rows,
+    )
 
     return AttributionMetrics(
         eligible_rows=eligible_rows,
         completed_rows=completed_rows,
         excluded_rows=excluded_rows,
         excluded_missing_coverage=excluded_missing_coverage,
+        audit_totals=audit_totals,
         mean_return=mean_return,
         median_return=_median(raw_returns),
         positive_ratio=positive_ratio,
@@ -432,9 +512,15 @@ def summarize_attributed_returns(
             positive_count,
             completed_rows,
         ),
-        mean_matched_index_return=_mean(matched_index_returns),
+        mean_matched_index_return=canonical_decimal_mean(
+            index_sum,
+            completed_rows,
+        ),
         median_matched_index_return=_median(matched_index_returns),
-        mean_market_median_return=_mean(market_median_returns),
+        mean_market_median_return=canonical_decimal_mean(
+            market_sum,
+            completed_rows,
+        ),
         median_market_median_return=_median(market_median_returns),
         mean_index_excess=mean_index_excess,
         median_index_excess=_median(index_excesses),
