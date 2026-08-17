@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date
 from decimal import Decimal
+import hashlib
+import json
 
 import pytest
 
+from stock_ai.buy_point_selection.five_day_ranking_v3 import (
+    build_five_day_ranking_v3_train_review,
+)
 from stock_ai.buy_point_selection.five_day_ranking_v3_attribution import (
     MIN_MARKET_MEDIAN_MEMBERS,
     AttributedReturn,
@@ -13,18 +19,29 @@ from stock_ai.buy_point_selection.five_day_ranking_v3_attribution import (
     RankedAttributedReturn,
     attribute_interval,
     attribution_verdict,
+    build_five_day_ranking_v3_attribution_review,
     diagnose_rank_one,
     fifth_subsequent_train_date,
     matched_index_id,
     simple_return,
     summarize_attributed_returns,
 )
+from stock_ai.buy_point_selection.five_day_ranking_v3_report import (
+    FiveDayRankingV3TrainArtifact,
+    five_day_ranking_v3_train_payload,
+)
 
-from five_day_ranking_v3_fixtures import weekday_dates
+from five_day_ranking_v3_fixtures import (
+    make_v3_observation,
+    make_v3_plan,
+    make_v3_research_review,
+    weekday_dates,
+)
 
 
 START = date(2026, 7, 1)
 END = date(2026, 7, 8)
+PARENT_RESEARCH_IDENTITY = "a" * 64
 
 
 def _attributed(
@@ -109,6 +126,140 @@ def _market_panel(
             },
         },
     )
+
+
+def _artifact_from_research(research) -> FiveDayRankingV3TrainArtifact:
+    review = build_five_day_ranking_v3_train_review(
+        research,
+        parent_research_identity=PARENT_RESEARCH_IDENTITY,
+    )
+    payload = five_day_ranking_v3_train_payload(review)
+    return FiveDayRankingV3TrainArtifact(
+        artifact_identity=str(payload["artifact_identity"]),
+        parent_research_identity=review.parent_research_identity,
+        parent_input_fingerprint=review.parent_input_fingerprint,
+        split=review.split,
+        policy_set_hash=review.policy_set_hash,
+        winner_policy_id=review.winner_policy_id,
+        winner_policy_hash=review.winner_policy_hash,
+        winner_train_samples=review.winner_train_samples,
+        validation_eligible=review.validation_eligible,
+        validation_evidence_windows=review.validation_evidence_windows,
+        validation_feature_model=review.validation_feature_model,
+        payload=payload,
+    )
+
+
+def _rehash_artifact(
+    artifact: FiveDayRankingV3TrainArtifact,
+    payload: dict[str, object],
+) -> FiveDayRankingV3TrainArtifact:
+    content = {
+        key: value
+        for key, value in payload.items()
+        if key != "artifact_identity"
+    }
+    identity = hashlib.sha256(
+        json.dumps(
+            content,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+    payload["artifact_identity"] = identity
+    return replace(
+        artifact,
+        artifact_identity=identity,
+        payload=payload,
+    )
+
+
+def _completed_training_fixture():
+    sessions = weekday_dates(630)
+    calibration = tuple(
+        make_v3_observation(
+            make_v3_plan(
+                sessions[index],
+                code=f"{600000 + index:06d}",
+            ),
+            net_return=Decimal("0.01"),
+            resolution_date=sessions[index + 1],
+        )
+        for index in range(60)
+    )
+    evaluation = make_v3_observation(
+        make_v3_plan(sessions[252], code="600999"),
+        net_return=Decimal("0.04"),
+        resolution_date=sessions[257],
+    )
+    assert evaluation.trade.entry_price is not None
+    assert evaluation.trade.exit is not None
+    evaluation = replace(
+        evaluation,
+        trade=replace(
+            evaluation.trade,
+            exit=replace(
+                evaluation.trade.exit,
+                price=evaluation.trade.entry_price * Decimal("1.05"),
+            ),
+        ),
+    )
+    research = make_v3_research_review((*calibration, evaluation))
+    return _artifact_from_research(research), research, evaluation
+
+
+def _bounded_market_panel(
+    train_dates: tuple[date, ...],
+    endpoint_dates: tuple[date, ...],
+    *,
+    target_code: str = "600999",
+    target_closes: dict[date, Decimal] | None = None,
+    missing_index_dates: frozenset[date] = frozenset(),
+) -> MarketClosePanel:
+    dates = tuple(sorted(set(endpoint_dates)))
+    stock_closes = {
+        f"600{member:03d}": {
+            endpoint: Decimal("10") for endpoint in dates
+        }
+        for member in range(1000)
+    }
+    if target_closes is not None:
+        stock_closes[target_code] = {
+            **stock_closes.get(target_code, {}),
+            **target_closes,
+        }
+    index_closes = {
+        index_id: {
+            endpoint: Decimal("100")
+            for endpoint in dates
+            if endpoint not in missing_index_dates
+        }
+        for index_id in ("sh.000001", "sz.399001", "sh.000688")
+    }
+    return MarketClosePanel(
+        train_dates=train_dates,
+        stock_closes=stock_closes,
+        index_closes=index_closes,
+    )
+
+
+def _complete_fixture_with_panel():
+    artifact, research, evaluation = _completed_training_fixture()
+    signal_date = evaluation.plan.candidate.signal_date
+    entry_date = evaluation.trade.entry_date
+    assert entry_date is not None
+    assert evaluation.trade.exit is not None
+    exit_date = evaluation.trade.exit.actual_exit_date
+    panel = _bounded_market_panel(
+        artifact.split.train,
+        (signal_date, entry_date, exit_date),
+        target_closes={
+            signal_date: Decimal("10"),
+            exit_date: Decimal("10.50"),
+        },
+    )
+    return artifact, research, evaluation, panel
 
 
 @pytest.mark.parametrize(
@@ -614,3 +765,454 @@ def test_rank_one_diagnosis_rejects_invalid_ordinal_ranks(
 ) -> None:
     with pytest.raises(ValueError, match="positive and unique within date"):
         diagnose_rank_one(rows)
+
+
+def test_attribution_builder_rejects_parent_identity_before_market_access() -> None:
+    artifact, research, _, panel = _complete_fixture_with_panel()
+
+    with pytest.raises(ValueError, match="parent research identity mismatch"):
+        build_five_day_ranking_v3_attribution_review(
+            artifact,
+            research,
+            parent_research_identity="b" * 64,
+            market_panel=panel,
+        )
+
+
+def test_attribution_builder_rejects_parent_input_fingerprint_mismatch() -> None:
+    artifact, research, _, panel = _complete_fixture_with_panel()
+
+    with pytest.raises(ValueError, match="parent input fingerprint mismatch"):
+        build_five_day_ranking_v3_attribution_review(
+            artifact,
+            replace(research, input_fingerprint="0" * 64),
+            parent_research_identity=PARENT_RESEARCH_IDENTITY,
+            market_panel=panel,
+        )
+
+
+@pytest.mark.parametrize(
+    "unsafe_research",
+    (
+        {"point_in_time_complete": False},
+        {"test_outcomes_read": True},
+    ),
+)
+def test_attribution_builder_rejects_unsafe_parent_research(
+    unsafe_research: dict[str, object],
+) -> None:
+    artifact, research, _, panel = _complete_fixture_with_panel()
+
+    with pytest.raises(ValueError, match="parent research safety mismatch"):
+        build_five_day_ranking_v3_attribution_review(
+            artifact,
+            replace(research, **unsafe_research),
+            parent_research_identity=PARENT_RESEARCH_IDENTITY,
+            market_panel=panel,
+        )
+
+
+def test_attribution_builder_requires_exact_train_market_calendar() -> None:
+    artifact, research, _, panel = _complete_fixture_with_panel()
+    wrong_panel = MarketClosePanel(
+        panel.train_dates[:-1],
+        panel.stock_closes,
+        panel.index_closes,
+    )
+
+    with pytest.raises(ValueError, match="market panel train calendar mismatch"):
+        build_five_day_ranking_v3_attribution_review(
+            artifact,
+            research,
+            parent_research_identity=PARENT_RESEARCH_IDENTITY,
+            market_panel=wrong_panel,
+        )
+
+
+@pytest.mark.parametrize(
+    ("flag", "value"),
+    (
+        ("validation_outcomes_read", True),
+        ("test_outcomes_read", True),
+        ("promotion_eligible", True),
+        ("trade_permission", "TRADE"),
+    ),
+)
+def test_attribution_builder_rejects_unsafe_train_artifact_flags(
+    flag: str,
+    value: object,
+) -> None:
+    artifact, research, _, panel = _complete_fixture_with_panel()
+    payload = dict(artifact.payload)
+    payload[flag] = value
+    unsafe = _rehash_artifact(artifact, payload)
+
+    with pytest.raises(ValueError, match="train artifact safety mismatch"):
+        build_five_day_ranking_v3_attribution_review(
+            unsafe,
+            research,
+            parent_research_identity=PARENT_RESEARCH_IDENTITY,
+            market_panel=panel,
+        )
+
+
+def test_attribution_builder_rejects_cross_train_ranked_key() -> None:
+    artifact, research, _, panel = _complete_fixture_with_panel()
+    payload = dict(artifact.payload)
+    variants = [dict(value) for value in payload["variants"]]
+    first = variants[0]
+    segment = dict(first["segment"])
+    ranked = [dict(value) for value in segment["ranked_plan_keys"]]
+    assert ranked
+    ranked[0]["signal_date"] = artifact.split.validation[0].isoformat()
+    segment["ranked_plan_keys"] = ranked
+    first["segment"] = segment
+    variants[0] = first
+    payload["variants"] = variants
+    cross_train = _rehash_artifact(artifact, payload)
+
+    with pytest.raises(ValueError, match="plan key is outside train split"):
+        build_five_day_ranking_v3_attribution_review(
+            cross_train,
+            research,
+            parent_research_identity=PARENT_RESEARCH_IDENTITY,
+            market_panel=panel,
+        )
+
+
+def test_attribution_builder_rejects_missing_or_duplicate_plan_mapping() -> None:
+    artifact, research, evaluation, panel = _complete_fixture_with_panel()
+    missing_research = replace(
+        research,
+        observations=tuple(
+            value
+            for value in research.observations
+            if value is not evaluation
+        ),
+    )
+
+    with pytest.raises(ValueError, match="plan key has no parent observation"):
+        build_five_day_ranking_v3_attribution_review(
+            artifact,
+            missing_research,
+            parent_research_identity=PARENT_RESEARCH_IDENTITY,
+            market_panel=panel,
+        )
+
+    duplicate_research = replace(
+        research,
+        observations=(*research.observations, evaluation),
+    )
+    with pytest.raises(ValueError, match="duplicate parent observation key"):
+        build_five_day_ranking_v3_attribution_review(
+            artifact,
+            duplicate_research,
+            parent_research_identity=PARENT_RESEARCH_IDENTITY,
+            market_panel=panel,
+        )
+
+
+def test_attribution_builder_excludes_last_five_train_sessions() -> None:
+    sessions = weekday_dates(630)
+    calibration = tuple(
+        make_v3_observation(
+            make_v3_plan(
+                sessions[index],
+                code=f"{600000 + index:06d}",
+            ),
+            resolution_date=sessions[index + 1],
+        )
+        for index in range(60)
+    )
+    late = make_v3_observation(
+        make_v3_plan(sessions[377], code="699999"),
+        resolution_date=sessions[378],
+    )
+    research = make_v3_research_review((*calibration, late))
+    artifact = _artifact_from_research(research)
+    panel = MarketClosePanel(artifact.split.train, {}, {})
+
+    review = build_five_day_ranking_v3_attribution_review(
+        artifact,
+        research,
+        parent_research_identity=PARENT_RESEARCH_IDENTITY,
+        market_panel=panel,
+    )
+    variant = next(
+        value
+        for value in review.variants
+        if value.fold_id == "train-fold-2"
+        and value.policy_id == "EDGE-K30"
+        and value.selection_mode == "FORMAL"
+    )
+
+    assert variant.funnel_counts["FIXED_FIVE_WITHOUT_TRAIN_HORIZON"] == 1
+    assert sum(
+        value.eligible_rows
+        for value in variant.fixed_five_by_rank_band.values()
+    ) == 1
+    assert sum(
+        value.completed_rows
+        for value in variant.fixed_five_by_rank_band.values()
+    ) == 0
+    assert review.coverage.attempted_intervals == 0
+    assert review.status == "COMPLETE"
+
+
+def test_attribution_builder_creates_all_variants_and_actual_cost_drag() -> None:
+    artifact, research, _, panel = _complete_fixture_with_panel()
+
+    review = build_five_day_ranking_v3_attribution_review(
+        artifact,
+        research,
+        parent_research_identity=PARENT_RESEARCH_IDENTITY,
+        market_panel=panel,
+    )
+    first = review.variants[0]
+
+    assert len(review.variants) == 72
+    assert first.fold_id == "train-fold-1"
+    assert first.policy_id == "EDGE-K30"
+    assert first.selection_mode == "TOP_1"
+    assert first.actual.completed_rows == 1
+    assert first.actual.mean_return == Decimal("0.04")
+    assert first.actual.mean_gross_return == Decimal("0.05")
+    assert first.actual.mean_after_cost_drag == Decimal("0.01")
+    assert sum(
+        value.eligible_rows for value in first.actual_by_status.values()
+    ) == first.actual.eligible_rows
+    assert sum(
+        value.completed_rows for value in first.actual_by_status.values()
+    ) == first.actual.completed_rows
+    assert sum(
+        value.eligible_rows
+        for value in first.fixed_five_by_rank_band.values()
+    ) == first.funnel_counts["FIXED_FIVE_RANKED_ELIGIBLE"]
+    assert review.train_only is True
+    assert review.validation_outcomes_read is False
+    assert review.test_outcomes_read is False
+    assert review.promotion_eligible is False
+    assert review.trade_permission == "NO-TRADE"
+    assert review.status == "COMPLETE"
+
+
+def test_attribution_builder_fails_closed_on_index_coverage_gap() -> None:
+    artifact, research, evaluation, panel = _complete_fixture_with_panel()
+    assert evaluation.trade.exit is not None
+    missing_date = evaluation.trade.exit.actual_exit_date
+    incomplete_panel = _bounded_market_panel(
+        panel.train_dates,
+        tuple(panel.index_closes["sh.000001"]),
+        target_closes=dict(panel.stock_closes["600999"]),
+        missing_index_dates=frozenset((missing_date,)),
+    )
+
+    review = build_five_day_ranking_v3_attribution_review(
+        artifact,
+        research,
+        parent_research_identity=PARENT_RESEARCH_IDENTITY,
+        market_panel=incomplete_panel,
+    )
+
+    assert review.status == "MARKET_DATA_INCOMPLETE"
+    assert review.coverage.index_endpoint_missing_intervals > 0
+    assert review.coverage.market_members_below_threshold_intervals == 0
+    assert missing_date in review.coverage.missing_endpoint_dates
+    assert review.coverage.attempted_intervals == (
+        review.coverage.completed_intervals
+        + review.coverage.index_endpoint_missing_intervals
+        + review.coverage.market_members_below_threshold_intervals
+    )
+    assert all(
+        variant.actual.verdict == "INCONCLUSIVE"
+        and variant.rank_pairs.verdict == "RANKER_INCONCLUSIVE"
+        and all(
+            value.verdict == "INCONCLUSIVE"
+            for value in variant.fixed_five_by_rank_band.values()
+        )
+        for variant in review.variants
+    )
+
+
+def test_attribution_builder_fails_closed_below_market_member_boundary() -> None:
+    artifact, research, _, panel = _complete_fixture_with_panel()
+    stock_closes = dict(panel.stock_closes)
+    del stock_closes["600000"]
+
+    review = build_five_day_ranking_v3_attribution_review(
+        artifact,
+        research,
+        parent_research_identity=PARENT_RESEARCH_IDENTITY,
+        market_panel=MarketClosePanel(
+            panel.train_dates,
+            stock_closes,
+            panel.index_closes,
+        ),
+    )
+
+    assert review.status == "MARKET_DATA_INCOMPLETE"
+    assert review.coverage.index_endpoint_missing_intervals == 0
+    assert review.coverage.market_members_below_threshold_intervals > 0
+    assert review.coverage.attempted_intervals == (
+        review.coverage.completed_intervals
+        + review.coverage.market_members_below_threshold_intervals
+    )
+
+
+def test_attribution_builder_excludes_missing_fixed_five_stock_endpoint() -> None:
+    artifact, research, evaluation, panel = _complete_fixture_with_panel()
+    assert evaluation.trade.exit is not None
+    end = evaluation.trade.exit.actual_exit_date
+    stock_closes = {
+        code: dict(values) for code, values in panel.stock_closes.items()
+    }
+    del stock_closes["600999"][end]
+    stock_closes["601998"] = dict(stock_closes["600000"])
+
+    review = build_five_day_ranking_v3_attribution_review(
+        artifact,
+        research,
+        parent_research_identity=PARENT_RESEARCH_IDENTITY,
+        market_panel=MarketClosePanel(
+            panel.train_dates,
+            stock_closes,
+            panel.index_closes,
+        ),
+    )
+    first = review.variants[0]
+
+    assert first.actual.completed_rows == 1
+    assert first.funnel_counts["FIXED_FIVE_STOCK_ENDPOINT_MISSING"] == 1
+    assert sum(
+        value.eligible_rows
+        for value in first.fixed_five_by_rank_band.values()
+    ) == 1
+    assert sum(
+        value.completed_rows
+        for value in first.fixed_five_by_rank_band.values()
+    ) == 0
+    assert review.coverage.index_endpoint_missing_intervals == 0
+    assert review.coverage.market_members_below_threshold_intervals == 0
+    assert review.status == "COMPLETE"
+
+
+def test_any_coverage_gap_forces_other_sufficient_verdicts_inconclusive() -> None:
+    artifact, research, _, _ = _complete_fixture_with_panel()
+    sessions = artifact.split.train
+    added = tuple(
+        make_v3_observation(
+            make_v3_plan(
+                sessions[252 + offset],
+                code=f"{601000 + offset:06d}",
+            ),
+            net_return=Decimal("-0.01"),
+            resolution_date=sessions[257 + offset],
+        )
+        for offset in range(31)
+    )
+    research = replace(
+        research,
+        observations=(*research.observations, *added),
+    )
+    payload = dict(artifact.payload)
+    variants = [dict(value) for value in payload["variants"]]
+    first = variants[0]
+    segment = dict(first["segment"])
+    segment["ranked_plan_keys"] = [
+        {
+            "signal_date": value.plan.candidate.signal_date.isoformat(),
+            "code": value.plan.candidate.code,
+            "structure_id": value.plan.structure_id,
+            "profile_id": value.plan.profile.profile_id,
+            "rank": 1,
+            "selected": True,
+        }
+        for value in added
+    ]
+    first["segment"] = segment
+    variants[0] = first
+    payload["variants"] = variants
+    artifact = _rehash_artifact(artifact, payload)
+
+    endpoint_dates = tuple(sessions[index] for index in range(252, 288))
+    base_closes = {
+        endpoint: Decimal(1000 - 10 * offset)
+        for offset, endpoint in enumerate(endpoint_dates)
+    }
+    stock_closes = {
+        f"600{member:03d}": dict(base_closes)
+        for member in range(1000)
+    }
+    for offset, value in enumerate(added):
+        stock_closes[value.plan.candidate.code] = {
+            sessions[252 + offset]: Decimal("10"),
+            sessions[257 + offset]: Decimal("9.90"),
+        }
+    missing_date = sessions[287]
+    index_closes = {
+        "sh.000001": {
+            endpoint: close
+            for endpoint, close in base_closes.items()
+            if endpoint != missing_date
+        },
+    }
+
+    review = build_five_day_ranking_v3_attribution_review(
+        artifact,
+        research,
+        parent_research_identity=PARENT_RESEARCH_IDENTITY,
+        market_panel=MarketClosePanel(
+            sessions,
+            stock_closes,
+            index_closes,
+        ),
+    )
+
+    assert review.status == "MARKET_DATA_INCOMPLETE"
+    assert review.coverage.index_endpoint_missing_intervals == 1
+    assert review.variants[0].fixed_five_by_rank_band[
+        "RANK_1"
+    ].completed_rows == 30
+    assert review.variants[0].fixed_five_by_rank_band[
+        "RANK_1"
+    ].verdict == "INCONCLUSIVE"
+
+
+def test_market_data_fingerprint_is_order_independent_and_content_bound() -> None:
+    artifact, research, _, panel = _complete_fixture_with_panel()
+    first = build_five_day_ranking_v3_attribution_review(
+        artifact,
+        research,
+        parent_research_identity=PARENT_RESEARCH_IDENTITY,
+        market_panel=panel,
+    )
+    reordered = MarketClosePanel(
+        panel.train_dates,
+        dict(reversed(tuple(panel.stock_closes.items()))),
+        dict(reversed(tuple(panel.index_closes.items()))),
+    )
+    second = build_five_day_ranking_v3_attribution_review(
+        artifact,
+        research,
+        parent_research_identity=PARENT_RESEARCH_IDENTITY,
+        market_panel=reordered,
+    )
+    changed_stock_closes = {
+        code: dict(values) for code, values in panel.stock_closes.items()
+    }
+    changed_date = next(iter(changed_stock_closes["600000"]))
+    changed_stock_closes["600000"][changed_date] = Decimal("11")
+    changed = build_five_day_ranking_v3_attribution_review(
+        artifact,
+        research,
+        parent_research_identity=PARENT_RESEARCH_IDENTITY,
+        market_panel=MarketClosePanel(
+            panel.train_dates,
+            changed_stock_closes,
+            panel.index_closes,
+        ),
+    )
+
+    assert len(first.market_data_fingerprint) == 64
+    assert first.market_data_fingerprint == second.market_data_fingerprint
+    assert first.market_data_fingerprint != changed.market_data_fingerprint
