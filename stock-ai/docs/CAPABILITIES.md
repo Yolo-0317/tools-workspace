@@ -337,6 +337,22 @@ MCP 工具：`tushare_mcp.py` — `deepseek_trade_signal` 等。详见 [DEEPSEEK
 
 ## 8. 选股策略（手动 / 研究）
 
+### 强势板块轮动检测（手动）
+
+该模块独立于正式 Top5，扫描东财行业涨幅榜并按显式配置归并行业链，使用 MySQL 日线与历史快照判断“当前最强、正在增强、回踩观察”。默认最多输出 6 个方向；每个方向最多10只观察股，只从龙头、补涨、回踩三类中各提升 1 只，因此正式条件候选最多 3 只。
+
+```bash
+cd /Users/huan.yu/dev/tools-workspace/stock-ai
+.venv/bin/python -m scripts.analysis.detect_sector_rotation \
+  --edition auto --top-sectors 6 --stocks-per-sector 10 --no-db
+```
+
+- 实时客观数据来自东财 OpenCLI；日线、持仓交集和历史轮动快照来自 MySQL。
+- `--no-db` 只生成 `output/sector_rotation_YYYYMMDD_HHMM.md`，不保存历史；移除该参数前须先应用 `stock-mysql/sql/018_sector_rotation.sql`。
+- 行业排名缺失时失败关闭；成分股或价格不完整的方向可以保留为诊断观察，但不生成正式条件价。
+- 仅手动运行，不安装调度、不推送、不修改 `selection_daily_results`、持仓或监控规则，也不创建订单或自动下单。
+- 设计与实施记录：[设计](superpowers/specs/2026-08-18-sector-rotation-detector-design.md)；[实施计划](superpowers/plans/2026-08-18-sector-rotation-detector.md)。
+
 | 策略 | 脚本 | 输出 |
 |------|------|------|
 | 买点优先 V1.3（正式入口，当前按晋级门禁决定 SHADOW/LIVE） | `../a-share-short-term-trading/scripts/select_short_term_candidates.py` | `正式候选 / 准备中观察 / 影子研究 / 拒绝统计` + V1.3 计划账本 |

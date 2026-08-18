@@ -102,6 +102,10 @@ Hard daily rules (merged from `daily-strategy-selection` + **投顾门控**):
 - Do not present raw CSV as final advice; output 投顾五段 + keep/observe/drop interpretation.
 - Stage 0 buckets: **无「候选新开仓」**；仅 持有观察 / 反弹减仓 / 情报观察
 
+### Manual strong-sector rotation
+
+When the user asks for strong industries, sector rotation, early sector starts, or why a sector has not appeared in stock selection, use the independent manual detector documented in `references/strategy-playbook.md`. It is a holdings-aware research view, not a Top5 replacement. A holdings match only adds `held=True`; it never bypasses risk, completeness, or anti-chase gates. Do not create monitoring rules or orders from its output.
+
 ### Strategy comparison
 
 Run two or more strategy scripts and compare:
