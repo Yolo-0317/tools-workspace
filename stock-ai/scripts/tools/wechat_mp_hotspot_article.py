@@ -42,11 +42,20 @@ from scripts.tools.wechat_mp_public import (
     PLATFORM_PROPERTY_RISK_RULE,
     PUBLIC_MP_WRITER_RULE,
 )
+from scripts.tools.wechat_mp_role_card import account_role_prompt_block
 
 TZ = ZoneInfo("Asia/Shanghai")
 
 HOTSPOT_MIN_BODY_CHARS = 2000
 HOTSPOT_TARGET_BODY_CHARS = 2400
+
+
+def _hotspot_prompt_with_role(*, kind_label: str, prompt: str) -> str:
+    return (
+        f"{account_role_prompt_block()}\n\n"
+        f"## 稿型任务：{kind_label}\n"
+        f"{prompt.strip()}"
+    ).strip()
 
 _GEO_OIL_KEYWORDS = frozenset({"油服", "油运", "布伦特", "炼化", "OPEC"})
 
@@ -855,6 +864,10 @@ def _rewrite_trends_hotspot_against_references(
 {body}
 
 只输出重写后的正文。"""
+    prompt = _hotspot_prompt_with_role(
+        kind_label="热点深评参考稿改写",
+        prompt=prompt,
+    )
     try:
         raw = call_wechat_mp_llm(
             [
@@ -898,6 +911,10 @@ def _rewrite_hotspot_against_references(
 {body}
 
 只输出重写后的正文 Markdown，不要解释。"""
+    prompt = _hotspot_prompt_with_role(
+        kind_label="热点深评参考稿改写",
+        prompt=prompt,
+    )
     try:
         raw = call_wechat_mp_llm(
             [
@@ -1271,7 +1288,7 @@ def _generate_trends_hotspot_body(
         topics, trade_label=trade_label, edition=edition
     )
 
-    prompt = f"""为微信公众号「牛马也智能」写一篇**社会热点深评**（单主题纯段落长文）。
+    prompt = f"""为微信公众号「栀夏未完成」写一篇**社会热点深评**（单主题纯段落长文）。
 
 {context}
 
@@ -1287,6 +1304,10 @@ def _generate_trends_hotspot_body(
 {_discussion_voice_prompt_block()}
 
 只输出正文。"""
+    prompt = _hotspot_prompt_with_role(
+        kind_label="社会热点深评",
+        prompt=prompt,
+    )
 
     def _draft_once(extra_user: str = "") -> str:
         user_prompt = prompt + (f"\n\n{extra_user}" if extra_user else "")
@@ -1435,6 +1456,10 @@ def generate_hotspot_body(
 7. 禁止套话：{banned} 等
 8. 只使用上下文与参考报道中的事实，勿编造数字
 {monetization_prompt_block("hotspot")}"""
+    prompt = _hotspot_prompt_with_role(
+        kind_label="财经热点深评",
+        prompt=prompt,
+    )
 
     system_msg = (
         "仿写中国证券报/证券时报类财经快评：首句报事实+数字，中段列公司，末段一句观察。"

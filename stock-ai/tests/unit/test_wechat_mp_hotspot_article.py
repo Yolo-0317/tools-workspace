@@ -316,3 +316,128 @@ def test_hotspot_topic_as_discussion_carries_research_urls() -> None:
     assert d["from_trend"] is True
     assert "https://news.163.com/a/1.html" in d["research_urls"]
     assert d["cover_slug"]
+
+
+def test_hotspot_prompt_with_role_places_role_before_kind_and_facts() -> None:
+    from scripts.tools.wechat_mp_hotspot_article import _hotspot_prompt_with_role
+
+    prompt = _hotspot_prompt_with_role(
+        kind_label="社会热点深评",
+        prompt="【联网事实】某公开事实\n\n## 写作要求\n只写已核验事实",
+    )
+
+    assert prompt.index("## 账号角色卡（最先遵守）") < prompt.index(
+        "## 稿型任务：社会热点深评"
+    )
+    assert prompt.index("## 稿型任务：社会热点深评") < prompt.index("【联网事实】")
+
+
+def test_hotspot_rewrite_prompt_keeps_account_role_card(monkeypatch) -> None:
+    from scripts.tools import wechat_mp_hotspot_article as hotspot
+
+    captured: list[str] = []
+    monkeypatch.setattr(hotspot, "is_wechat_mp_llm_configured", lambda: True)
+    monkeypatch.setattr(
+        hotspot,
+        "call_wechat_mp_llm",
+        lambda messages, **_: captured.append(messages[-1]["content"])
+        or ("正文。" * 900),
+    )
+
+    hotspot._rewrite_trends_hotspot_against_references(
+        "初稿。" * 900,
+        reference_block="参考报道",
+    )
+
+    assert "## 账号角色卡（最先遵守）" in captured[0]
+    assert captured[0].index("## 账号角色卡（最先遵守）") < captured[0].index(
+        "【参考文章】"
+    )
+
+
+def test_finance_hotspot_rewrite_prompt_keeps_account_role_card(monkeypatch) -> None:
+    from scripts.tools import wechat_mp_hotspot_article as hotspot
+
+    captured: list[str] = []
+    monkeypatch.setattr(hotspot, "is_wechat_mp_llm_configured", lambda: True)
+    monkeypatch.setattr(
+        hotspot,
+        "call_wechat_mp_llm",
+        lambda messages, **_: captured.append(messages[-1]["content"])
+        or ("正文。" * 900),
+    )
+
+    hotspot._rewrite_hotspot_against_references(
+        "初稿。" * 900,
+        reference_block="参考报道",
+        trade_label="8月18日收盘",
+    )
+
+    assert "## 账号角色卡（最先遵守）" in captured[0]
+    assert captured[0].index("## 账号角色卡（最先遵守）") < captured[0].index(
+        "【参考文章】"
+    )
+
+
+def test_social_hotspot_generation_prompt_keeps_account_role_card(monkeypatch) -> None:
+    from scripts.tools import wechat_mp_hotspot_article as hotspot
+
+    topic = HotspotTopic(
+        item={"title": "普通人的公共事件", "web_reference_block": ""},
+        bucket="other",
+        score=1.0,
+        section_title="普通人的公共事件",
+    )
+    captured: list[str] = []
+    monkeypatch.setattr(hotspot, "_build_context_blob", lambda *_, **__: "【联网事实】公开事实")
+    monkeypatch.setattr(hotspot, "is_wechat_mp_llm_configured", lambda: True)
+    monkeypatch.setattr(hotspot, "_hotspot_llm_max_attempts", lambda: 1)
+    monkeypatch.setattr(hotspot, "_hotspot_body_usable", lambda *_, **__: True)
+    monkeypatch.setattr(
+        hotspot,
+        "call_wechat_mp_llm",
+        lambda messages, **_: captured.append(messages[-1]["content"])
+        or ("正文。" * 900),
+    )
+
+    hotspot._generate_trends_hotspot_body([topic], trade_label="8月18日", edition="close")
+
+    prompt = captured[0]
+    assert prompt.count("## 账号角色卡（最先遵守）") == 1
+    assert prompt.index("## 账号角色卡（最先遵守）") < prompt.index("【联网事实】")
+
+
+def test_finance_hotspot_generation_prompt_keeps_account_role_card(monkeypatch) -> None:
+    from datetime import date
+
+    from scripts.tools import wechat_mp_hotspot_article as hotspot
+
+    topic = HotspotTopic(
+        item={"title": "某行业出现变化", "web_reference_block": ""},
+        bucket="other",
+        score=1.0,
+        section_title="某行业出现变化",
+    )
+    captured: list[str] = []
+    monkeypatch.setattr(hotspot, "resolve_hotspot_trade_date", lambda: date(2026, 8, 18))
+    monkeypatch.setattr(hotspot, "pick_hotspot_candidates", lambda: [topic])
+    monkeypatch.setattr(hotspot, "pick_hotspot_topics", lambda **_: [topic])
+    monkeypatch.setattr(hotspot, "_attach_hotspot_research", lambda item: item)
+    monkeypatch.setattr(hotspot, "hotspot_source", lambda: "news")
+    monkeypatch.setattr(hotspot, "hotspot_candidate_count", lambda: 1)
+    monkeypatch.setattr(hotspot, "hotspot_merged_llm", lambda: False)
+    monkeypatch.setattr(hotspot, "_build_context_blob", lambda *_, **__: "【联网事实】公开事实")
+    monkeypatch.setattr(hotspot, "is_wechat_mp_llm_configured", lambda: True)
+    monkeypatch.setattr(hotspot, "_hotspot_body_usable", lambda *_, **__: True)
+    monkeypatch.setattr(
+        hotspot,
+        "call_wechat_mp_llm",
+        lambda messages, **_: captured.append(messages[-1]["content"])
+        or ("正文。" * 900),
+    )
+
+    hotspot.generate_hotspot_body()
+
+    prompt = captured[0]
+    assert prompt.count("## 账号角色卡（最先遵守）") == 1
+    assert prompt.index("## 账号角色卡（最先遵守）") < prompt.index("【联网事实】")
