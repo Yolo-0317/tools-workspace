@@ -615,7 +615,7 @@ git commit -m "feat(stock-ai)：冻结公开挑战者评估与胜负结论"
 - Consumes: `PublicChallengerResearchReview`、`PublicChallengerValidationReview`、`PublicChallengerFreezeReview`、`PublicChallengerTestReview` 的聚合内容。
 - Produces: `write_challenger_research(review: PublicChallengerResearchReview, output_dir: Path) -> Path`, `load_challenger_research(path: Path) -> PublicChallengerResearchArtifact`, `write_challenger_validation(review: PublicChallengerValidationReview, output_dir: Path) -> Path`, `write_challenger_freeze(review: PublicChallengerFreezeReview, output_dir: Path) -> Path`, `load_challenger_freeze(path: Path) -> PublicChallengerFreezeArtifact`, `write_challenger_test_once(review: PublicChallengerTestReview, output_dir: Path) -> Path`。
 
-- [ ] **Step 1: 写规范序列化、无代码明细、幂等和冲突测试**
+- [x] **Step 1: 写规范序列化、无代码明细、幂等和冲突测试**
 
 ```python
 def test_research_payload_is_aggregate_only_and_byte_stable(tmp_path):
@@ -634,13 +634,13 @@ def test_same_identity_with_different_content_is_rejected(tmp_path):
         write_challenger_research(research_review(), tmp_path)
 ```
 
-- [ ] **Step 2: 运行测试确认报告模块不存在**
+- [x] **Step 2: 运行测试确认报告模块不存在**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_public_challenger_report.py -k 'aggregate or identity'`
 
 Expected: FAIL with module import error.
 
-- [ ] **Step 3: 实现四类 schema、内容身份和不可覆盖写入**
+- [x] **Step 3: 实现四类 schema、内容身份和不可覆盖写入**
 
 ```python
 RESEARCH_SCHEMA = "public-short-term-challenger-research-v1"
@@ -682,7 +682,7 @@ def _write_exclusive_or_verify(path: Path, serialized: str) -> None:
 
 research 产物保存三轨聚合、时间切分、数据完整性、规则版本、来源偏离说明和 `test_outcomes_read=false`。validation 只保存执行层验证聚合；freeze 保存全部冻结常数、验证资格和父身份；test 文件名由 freeze 身份唯一决定并独占创建。
 
-- [ ] **Step 4: 写严格加载、父血缘、篡改和测试污染测试**
+- [x] **Step 4: 写严格加载、父血缘、篡改和测试污染测试**
 
 ```python
 def test_loader_recomputes_identity_and_rejects_tampering(tmp_path):
@@ -698,11 +698,11 @@ def test_test_writer_rejects_parent_or_input_fingerprint_mismatch(tmp_path):
         write_challenger_test_once(test_review(parent_freeze_identity="wrong"), tmp_path)
 ```
 
-- [ ] **Step 5: 实现严格字段集合和父链校验**
+- [x] **Step 5: 实现严格字段集合和父链校验**
 
 加载器必须验证 schema、文件名、内容哈希、父 identity、输入 fingerprint、切分、三轨版本、成本/评估器版本、`NO-TRADE` 和污染标志。未知字段、缺失字段、股票代码明细键或 `promotion_eligible=true` 均拒绝。
 
-- [ ] **Step 6: 运行报告测试并提交**
+- [x] **Step 6: 运行报告测试并提交**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_public_challenger_report.py`
 
