@@ -477,6 +477,25 @@ PYTHONPATH=. .venv/bin/python scripts/analysis/research_five_day_return_shadow.p
 
 该入口不提供调度、通知、可执行股数、持仓、订单、决策账本、个人投顾记忆或跳过门禁的参数，也不会修改旧 `TWO_R` 规则、校准和产物。
 
+### A 股公开短线策略挑战者
+
+- A 股公开短线策略挑战者：已具备原始五日反转、市场/行业五日残差、T+1/T+2 止跌确认三轨历史研究与不可变冻结接口。当前仅 `NO-TRADE` 历史研究；未执行一次性测试，未获准进入正式选股。公开多空价差与只做多绝对收益分开报告。
+
+研究日历固定为 630 个信号交易日，按 `378 / 126 / 126` 切分训练、验证和测试。训练持仓结果不得跨入验证段，验证持仓结果不得跨入测试段；research 阶段不读取测试结果。三阶段入口仅允许手动运行：
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/analysis/analyze_public_short_term_challenger.py research \
+  --signal-start YYYY-MM-DD --signal-end YYYY-MM-DD
+
+PYTHONPATH=. .venv/bin/python scripts/analysis/analyze_public_short_term_challenger.py freeze \
+  --research-artifact <research JSON>
+
+PYTHONPATH=. .venv/bin/python scripts/analysis/analyze_public_short_term_challenger.py test \
+  --research-artifact <research JSON> --freeze-artifact <freeze JSON>
+```
+
+`freeze` 只接受点时完整且未污染测试段的严格研究产物。`test` 必须先验证 freeze、research、输入指纹和切分父链；无测试资格时不会加载行情。同一 freeze identity 的测试 writer 只能写一次，CLI 再次调用只严格校验既有字节，不重跑测试。缺少合法同段 V3 对照时结论固定为 `INCONCLUSIVE`。该链路不安装调度、不发送通知、不写持仓、订单、投顾记忆或正式选股结果。
+
 ### 买点阈值影子研究
 
 该流程只研究 48 组单一形态阈值放宽，不修改正式规则。所有候选固定为 `CASE_ANALYSIS_ONLY / NO-TRADE`、可执行股数为 0；仅手动运行，不安装调度、不发送通知、不写持仓、决策账本或订单。必须先生成两段研究产物，再冻结合格 profile，最后只运行一次独立测试窗：
