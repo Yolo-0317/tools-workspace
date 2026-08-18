@@ -421,7 +421,7 @@ git commit -m "feat(stock-ai)：统一公开挑战者资格与容量"
 - Consumes: `ChallengerObservation`、交易日、可选 `V3ComparableDay`。
 - Produces: `ChallengerSegmentMetrics`, `ChallengerPortfolioMetrics`, `PairedComparison`, `ChallengerAssessment`, `evaluate_execution_segment(observations: Sequence[ChallengerObservation], trading_dates: Sequence[date], segment: str) -> ChallengerSegmentMetrics`, `compare_with_v3(*, challenger: Sequence[ChallengerObservation], v3_days: Sequence[V3ComparableDay] | None, input_fingerprint: str) -> ChallengerAssessment`。
 
-- [ ] **Step 1: 写独立收益、Wilson、止损、滚动窗口和集中度门槛测试**
+- [x] **Step 1: 写独立收益、Wilson、止损、滚动窗口和集中度门槛测试**
 
 ```python
 def test_execution_segment_requires_every_frozen_threshold():
@@ -440,13 +440,13 @@ def test_positive_long_short_spread_cannot_rescue_negative_long_only_return():
     assert metrics.long_only_eligible is False
 ```
 
-- [ ] **Step 2: 运行测试确认验证模块不存在**
+- [x] **Step 2: 运行测试确认验证模块不存在**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_public_challenger_validation.py -k 'threshold or long_short'`
 
 Expected: FAIL with module import error.
 
-- [ ] **Step 3: 实现观察、段指标、组合集中度和独立资格**
+- [x] **Step 3: 实现观察、段指标、组合集中度和独立资格**
 
 ```python
 @dataclass(frozen=True)
@@ -552,7 +552,7 @@ class PublicChallengerTestReview:
 
 复用现有 Wilson 和最大回撤数学口径，但不把新观察强转成 V3 类型。验证/测试分别要求：净期望 `>0`、PF `>1.10`、Wilson 下界 `>=0.45`、止损率 `<=0.40`、63 日正窗口比例 `>=0.60`、最大回撤 `<=0.10`。实现股票、行业和 Top 5 盈利集中度门槛；不可计算即失败。
 
-- [ ] **Step 4: 写确定性移动区块 bootstrap 和四结论测试**
+- [x] **Step 4: 写确定性移动区块 bootstrap 和四结论测试**
 
 ```python
 def test_bootstrap_is_byte_deterministic_for_same_fingerprint():
@@ -573,7 +573,7 @@ def test_frozen_verdicts(case, verdict):
     assert compare_with_v3(**case).verdict == verdict
 ```
 
-- [ ] **Step 5: 实现配对日期、Jaccard、新增机会和区块 bootstrap**
+- [x] **Step 5: 实现配对日期、Jaccard、新增机会和区块 bootstrap**
 
 ```python
 def moving_block_bootstrap_interval(
@@ -594,7 +594,7 @@ def moving_block_bootstrap_interval(
 
 配对日期中单方无候选记 0；双方都无候选只计覆盖率。无合法同段 V3 身份时直接 `INCONCLUSIVE`。`COMPLEMENTARY` 还必须满足 Jaccard `<=0.50`、至少 30 个测试新增已解决机会、其净期望 `>0` 且 PF `>1.10`。
 
-- [ ] **Step 6: 运行验证测试并提交**
+- [x] **Step 6: 运行验证测试并提交**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_public_challenger_validation.py`
 
