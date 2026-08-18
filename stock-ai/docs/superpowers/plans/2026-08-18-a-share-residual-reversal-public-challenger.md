@@ -723,7 +723,7 @@ git commit -m "feat(stock-ai)：保存公开挑战者不可变研究产物"
 - Consumes: `_load_daily_bars`, `_trade_dates`, `SQLReferenceRepository`, `load_required_benchmark_closes`, `classify_market` 和前三层纯函数。
 - Produces: `PublicChallengerRuntimeInputs`, `load_mysql_public_challenger_inputs(signal_dates: Sequence[date], history_start: date, outcome_cutoff: date, *, benchmark_loader: Callable) -> PublicChallengerRuntimeInputs`, `build_public_challenger_research(inputs: PublicChallengerRuntimeInputs) -> PublicChallengerResearchReview`, `build_public_challenger_test(freeze: PublicChallengerFreezeReview, research: PublicChallengerResearchReview, inputs: PublicChallengerRuntimeInputs, v3: V3ComparableArtifact | None) -> PublicChallengerTestReview`。
 
-- [ ] **Step 1: 写有界数据加载、引擎释放和无凭据指纹测试**
+- [x] **Step 1: 写有界数据加载、引擎释放和无凭据指纹测试**
 
 ```python
 def test_mysql_loader_uses_literal_bounds_and_disposes_engine():
@@ -744,13 +744,13 @@ def test_loader_rejects_missing_index_or_point_in_time_sector_coverage():
         build_public_challenger_research(incomplete_runtime_inputs())
 ```
 
-- [ ] **Step 2: 运行测试确认运行时模块不存在**
+- [x] **Step 2: 运行测试确认运行时模块不存在**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_public_challenger_runtime.py -k 'loader or coverage'`
 
 Expected: FAIL with module import error.
 
-- [ ] **Step 3: 实现独立运行时输入和有界 MySQL 适配器**
+- [x] **Step 3: 实现独立运行时输入和有界 MySQL 适配器**
 
 ```python
 @dataclass(frozen=True)
@@ -769,7 +769,7 @@ class PublicChallengerRuntimeInputs:
 
 加载器读取 `MYSQL_URL` 但指纹只包含规范化数据值、日期、来源版本和规则版本。使用 `try/finally` 释放 engine。基准只允许 `sh.000001`、`sz.399001`、`sh.000688`，按 `matched_index_id` 映射；缺失端点失败关闭。持仓加载器默认只读并可在单元测试注入空集合。
 
-- [ ] **Step 4: 写 630 日切分、边界不泄漏和三轨漏斗测试**
+- [x] **Step 4: 写 630 日切分、边界不泄漏和三轨漏斗测试**
 
 ```python
 def test_research_builds_train_and_validation_without_reading_test_outcomes():
@@ -785,11 +785,11 @@ def test_train_holding_period_cannot_cross_validation_boundary():
     assert review.funnel_counts["OUTCOME_CROSSES_SEGMENT"] == 1
 ```
 
-- [ ] **Step 5: 实现 research 和 test 构建器**
+- [x] **Step 5: 实现 research 和 test 构建器**
 
 research 构建器逐日执行共同股票池、三轨信号、容量和成交，训练/验证结果按段聚合；测试日期只保存身份，不加载其结果。test 构建器必须接收严格 freeze artifact，重新加载同一测试日期输入，验证父 fingerprint 前缀，执行一次三轨评估，并在可选 V3 同段产物缺失时输出 `INCONCLUSIVE`。
 
-- [ ] **Step 6: 运行运行时测试并提交**
+- [x] **Step 6: 运行运行时测试并提交**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_public_challenger_runtime.py`
 
