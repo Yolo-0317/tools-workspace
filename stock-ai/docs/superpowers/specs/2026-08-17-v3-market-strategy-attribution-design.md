@@ -223,6 +223,16 @@ precision of 28:
 - positive ratio and Wilson interval use `positive_rows` and
   `completed_rows`.
 
+The Wilson implementation retains its existing formula and confidence level,
+but its mathematical endpoint identities are exact: when `positive_rows == 0`,
+the serialized lower bound is exactly `Decimal("0")`; when
+`positive_rows == completed_rows`, the serialized upper bound is exactly
+`Decimal("1")`. The opposite bound still comes from the formula. This clamps
+only float-square-root noise at the two theoretical endpoints; it is not a
+tolerance and does not alter non-extreme intervals. The strict loader continues
+to recompute the interval and require it to contain the positive-ratio point
+estimate.
+
 This deliberately does not require a rounded mean excess to equal the
 difference of two independently rounded display means. It requires the
 stronger underlying exact-sum identity instead. Per-row gross, net, benchmark,
@@ -392,6 +402,8 @@ that prevents trustworthy coverage accounting produces no artifact.
 - same-universe median with odd/even populations;
 - 1,000-security coverage boundary;
 - aggregate mean, median, Wilson interval, and status counts;
+- Wilson `0/N` and `N/N` endpoint identities under low ambient Decimal
+  precision, plus a non-extreme unchanged case;
 - verdict truth table, zero boundaries, and minimum samples;
 - same-date Rank-1 pairing and minimum paired dates;
 - rank correlation minimum cross-section.
