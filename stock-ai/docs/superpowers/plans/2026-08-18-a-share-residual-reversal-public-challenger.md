@@ -193,7 +193,7 @@ git commit -m "feat(stock-ai)：实现公开反转与五日残差信号"
 - Consumes: `ChallengerSignal`, `BuyPointBar`, `ExecutionCosts`, `atr14`, `evaluation_position`。
 - Produces: `ChallengerPlan`, `ChallengerTrade`, `simulate_direct_five_day(signal: ChallengerSignal, bars: Sequence[BuyPointBar], costs: ExecutionCosts) -> ChallengerTrade`, `simulate_reclaim_five_day(signal: ChallengerSignal, bars: Sequence[BuyPointBar], costs: ExecutionCosts) -> ChallengerTrade`, `simulate_next_open_after_reclaim(signal: ChallengerSignal, bars: Sequence[BuyPointBar], costs: ExecutionCosts) -> ChallengerTrade`, `PUBLIC_CHALLENGER_EVALUATOR_VERSION`。
 
-- [ ] **Step 1: 写直接开盘、第五日退出和一字板测试**
+- [x] **Step 1: 写直接开盘、第五日退出和一字板测试**
 
 ```python
 def test_direct_track_enters_next_open_and_exits_fifth_holding_close():
@@ -209,13 +209,13 @@ def test_direct_track_does_not_fill_locked_limit_up_or_down():
     assert simulate_direct_five_day(signal(), [locked_limit_down_bar()]).status == "CANCELLED"
 ```
 
-- [ ] **Step 2: 运行测试确认执行模块不存在**
+- [x] **Step 2: 运行测试确认执行模块不存在**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_public_challenger_execution.py -k direct`
 
 Expected: FAIL with module import error.
 
-- [ ] **Step 3: 实现计划、成交结果和直接五日模拟**
+- [x] **Step 3: 实现计划、成交结果和直接五日模拟**
 
 ```python
 PUBLIC_CHALLENGER_EVALUATOR_VERSION = "public-challenger-evaluator-v1"
@@ -247,7 +247,7 @@ class ChallengerTrade:
 
 直接轨下一可交易日开盘加滑点成交，入口一字板或数据无效取消；持有日包含入场日，第 5 个持有日收盘减滑点、佣金和印花税退出。未达到五个持有日返回 `PENDING`，不得提前计算收益。
 
-- [ ] **Step 4: 写 T+1/T+2 收复、3% 取消和 ATR 风险距离测试**
+- [x] **Step 4: 写 T+1/T+2 收复、3% 取消和 ATR 风险距离测试**
 
 ```python
 def test_reclaim_requires_touch_reclaim_and_upper_sixty_percent_close():
@@ -265,13 +265,13 @@ def test_reclaim_rejects_risk_outside_one_point_five_to_five_percent():
     assert simulate_reclaim_five_day(signal(), too_tight_stop_bars()).reasons == ("RISK_DISTANCE_OUT_OF_RANGE",)
 ```
 
-- [ ] **Step 5: 运行测试确认回踩接口缺失**
+- [x] **Step 5: 运行测试确认回踩接口缺失**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_public_challenger_execution.py -k reclaim`
 
 Expected: FAIL with missing `simulate_reclaim_five_day`.
 
-- [ ] **Step 6: 实现止跌确认、止损、跌停延迟与下一开盘敏感性**
+- [x] **Step 6: 实现止跌确认、止损、跌停延迟与下一开盘敏感性**
 
 ```python
 def _reclaim_confirmed(signal_close: Decimal, bar: BuyPointBar) -> tuple[bool, str | None]:
@@ -290,7 +290,7 @@ def _reclaim_confirmed(signal_close: Decimal, bar: BuyPointBar) -> tuple[bool, s
 
 确认窗口严格取 T 后前两个交易日；主结果按确认日收盘加滑点，敏感性结果调用独立 `simulate_next_open_after_reclaim`。失效价向下取分位价，止损遵循开盘穿越和一字跌停延迟；未止损第 5 个持有日退出，不设置 2R 止盈。
 
-- [ ] **Step 7: 运行执行测试并提交**
+- [x] **Step 7: 运行执行测试并提交**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_public_challenger_execution.py`
 
