@@ -5,15 +5,10 @@ from __future__ import annotations
 
 import argparse
 from datetime import date
-from decimal import Decimal, InvalidOperation
-import os
+from decimal import Decimal
 from pathlib import Path
 import sys
 from typing import Callable, Mapping, Sequence
-
-from dotenv import load_dotenv
-from sqlalchemy import create_engine, text
-
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -25,7 +20,11 @@ from scripts.analysis.review_buy_point_case import (  # noqa: E402
 from stock_ai.buy_point_selection.five_day_ranking_v3_attribution import (  # noqa: E402
     MarketClosePanel,
     build_five_day_ranking_v3_attribution_review,
-    matched_index_id,
+)
+from stock_ai.buy_point_selection.five_day_ranking_v3_attribution_market import (  # noqa: E402
+    load_mysql_stock_closes,
+    load_required_benchmark_closes,
+    required_index_ids,
 )
 from stock_ai.buy_point_selection.five_day_ranking_v3_attribution_report import (  # noqa: E402
     write_five_day_ranking_v3_attribution,
@@ -37,13 +36,6 @@ from stock_ai.buy_point_selection.five_day_return_report import (  # noqa: E402
     five_day_research_payload,
     load_five_day_research,
 )
-from stock_ai.market_codes import (  # noqa: E402
-    is_sh_sz_main_board_code,
-    normalize_code6,
-)
-
-
-_INDEX_ORDER = ("sh.000001", "sz.399001", "sh.000688")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -62,136 +54,17 @@ def _require_file(path: Path) -> Path:
     return path
 
 
-def _configured_engine(*, engine_factory: Callable[..., object] = create_engine):
-    load_dotenv(ROOT / ".env", override=False)
-    mysql_url = os.environ.get("MYSQL_URL", "").replace(
-        "host.docker.internal",
-        "127.0.0.1",
-    )
-    if not mysql_url:
-        raise RuntimeError("MYSQL_URL is not configured")
-    return engine_factory(mysql_url, pool_pre_ping=True)
-
-
-def _as_date(value: object) -> date:
-    if isinstance(value, date):
-        return value
-    return date.fromisoformat(str(value)[:10])
-
-
-def _load_stock_closes(
-    engine: object,
-    start: date,
-    end: date,
-) -> dict[str, dict[date, Decimal]]:
-    """Load only bounded main-board close rows from the read-only store."""
-
-    statement = text(
-        "SELECT ts_code, trade_date, close FROM stock_daily "
-        "WHERE trade_date BETWEEN :start AND :end "
-        "ORDER BY ts_code, trade_date"
-    )
-    with engine.connect() as connection:
-        rows = connection.execute(
-            statement,
-            {"start": start, "end": end},
-        ).mappings().all()
-    closes: dict[str, dict[date, Decimal]] = {}
-    for row in rows:
-        raw_code = str(row["ts_code"])
-        if not is_sh_sz_main_board_code(raw_code):
-            continue
-        try:
-            trade_date = _as_date(row["trade_date"])
-            close = Decimal(str(row["close"]))
-        except (InvalidOperation, TypeError, ValueError):
-            continue
-        if not start <= trade_date <= end or not close.is_finite() or close <= 0:
-            continue
-        code = normalize_code6(raw_code)
-        closes.setdefault(code, {})[trade_date] = close
-    return {
-        code: dict(sorted(values.items()))
-        for code, values in sorted(closes.items())
-    }
-
-
-def _load_mysql_stock_closes(
-    start: date,
-    end: date,
-) -> dict[str, dict[date, Decimal]]:
-    engine = _configured_engine()
-    try:
-        return _load_stock_closes(engine, start, end)
-    finally:
-        dispose = getattr(engine, "dispose", None)
-        if callable(dispose):
-            dispose()
-
-
-def _required_index_ids(train_artifact: object) -> tuple[str, ...]:
-    payload = train_artifact.payload
-    if not isinstance(payload, Mapping):
-        raise ValueError("invalid train payload")
-    variants = payload.get("variants")
-    if not isinstance(variants, list):
-        raise ValueError("invalid train payload")
-    required: set[str] = set()
-    for variant in variants:
-        if not isinstance(variant, Mapping):
-            raise ValueError("invalid train payload")
-        segment = variant.get("segment")
-        if not isinstance(segment, Mapping):
-            raise ValueError("invalid train payload")
-        for field in ("admitted_trade_keys", "ranked_plan_keys"):
-            plan_keys = segment.get(field)
-            if not isinstance(plan_keys, list):
-                raise ValueError("invalid train payload")
-            for plan_key in plan_keys:
-                if not isinstance(plan_key, Mapping) or "code" not in plan_key:
-                    raise ValueError("invalid train payload")
-                required.add(matched_index_id(str(plan_key["code"])))
-    return tuple(index_id for index_id in _INDEX_ORDER if index_id in required)
-
-
-def _load_required_benchmark_closes(
-    required_index_ids: Sequence[str],
-    start: date,
-    end: date,
-    *,
-    benchmark_loader: Callable[[date, date], Mapping[str, Sequence[object]]] = (
-        _load_benchmark_index_bars
-    ),
-) -> dict[str, dict[date, Decimal]]:
-    required = tuple(required_index_ids)
-    if len(required) != len(set(required)) or any(
-        index_id not in _INDEX_ORDER for index_id in required
-    ):
-        raise ValueError("invalid benchmark registry")
-    if not required:
-        return {}
-    loaded = benchmark_loader(start, end)
-    result: dict[str, dict[date, Decimal]] = {}
-    for index_id in required:
-        bars: dict[date, Decimal] = {}
-        for bar in loaded.get(index_id, ()):
-            try:
-                trade_date = _as_date(bar.trade_date)
-                close = Decimal(str(bar.close))
-            except (AttributeError, InvalidOperation, TypeError, ValueError):
-                continue
-            if start <= trade_date <= end and close.is_finite() and close > 0:
-                bars[trade_date] = close
-        result[index_id] = dict(sorted(bars.items()))
-    return result
-
-
 def _default_benchmark_loader(
     index_ids: Sequence[str],
     start: date,
     end: date,
 ) -> dict[str, dict[date, Decimal]]:
-    return _load_required_benchmark_closes(index_ids, start, end)
+    return load_required_benchmark_closes(
+        index_ids,
+        start,
+        end,
+        benchmark_loader=_load_benchmark_index_bars,
+    )
 
 
 def dispatch_command(
@@ -232,8 +105,8 @@ def dispatch_command(
     if not train_dates:
         raise ValueError("train calendar is empty")
     start, end = train_dates[0], train_dates[-1]
-    required_indexes = _required_index_ids(train)
-    load_stocks = stock_loader or _load_mysql_stock_closes
+    required_indexes = required_index_ids(train)
+    load_stocks = stock_loader or load_mysql_stock_closes
     load_benchmarks = benchmark_loader or _default_benchmark_loader
     stock_closes = load_stocks(start, end)
     index_closes = (
