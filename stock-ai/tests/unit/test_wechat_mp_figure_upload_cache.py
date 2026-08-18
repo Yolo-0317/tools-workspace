@@ -20,25 +20,25 @@ from scripts.tools.wechat_mp_figures import figure_upload_cache_key, upload_inli
 def test_figure_upload_cache_key_changes_when_file_changes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    img = tmp_path / "01-compact-kitchen.jpg"
+    img = tmp_path / "inline-example.jpg"
     img.write_bytes(b"version-a")
     k1 = figure_upload_cache_key(img)
     img.write_bytes(b"version-b")
     k2 = figure_upload_cache_key(img)
-    assert k1.startswith("01-compact-kitchen.jpg#")
+    assert k1.startswith("inline-example.jpg#")
     assert k1 != k2
 
 
 def test_upload_inline_figure_reuploads_after_replace(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    commerce = tmp_path / "inline-commerce" / "home"
-    commerce.mkdir(parents=True)
-    img = commerce / "01-compact-kitchen.jpg"
+    inline = tmp_path / "inline"
+    inline.mkdir(parents=True)
+    img = inline / "inline-example.jpg"
     img.write_bytes(b"old-bytes")
 
     cache_path = tmp_path / "figure_upload_cache.json"
-    legacy_key = "01-compact-kitchen.jpg"
+    legacy_key = "inline-example.jpg"
     cache_path.write_text(
         json.dumps({"urls": {legacy_key: "http://old.example/a.jpg"}}, ensure_ascii=False),
         encoding="utf-8",
@@ -63,23 +63,16 @@ def test_upload_inline_figure_reuploads_after_replace(
         fake_upload,
     )
 
-    url1, _ = upload_inline_figure("01-compact-kitchen.jpg")
+    url1, _ = upload_inline_figure("inline-example.jpg")
     assert url1 == "http://new.example/1.jpg"
     assert calls == [b"old-bytes"]
 
     img.write_bytes(b"new-bytes")
-    url2, _ = upload_inline_figure("01-compact-kitchen.jpg")
+    url2, _ = upload_inline_figure("inline-example.jpg")
     assert url2 == "http://new.example/2.jpg"
     assert calls == [b"old-bytes", b"new-bytes"]
 
     data = json.loads(cache_path.read_text(encoding="utf-8"))
     urls = data.get("urls") or {}
-    assert any(k.startswith("01-compact-kitchen.jpg#") for k in urls)
+    assert any(k.startswith("inline-example.jpg#") for k in urls)
     assert urls.get(legacy_key) == "http://old.example/a.jpg"  # 旧键保留无害
-
-
-def test_real_commerce_home_images_have_distinct_cache_keys() -> None:
-    root = ROOT / "assets" / "wechat_mp" / "inline-commerce" / "home"
-    names = ("01-compact-kitchen.jpg", "02-small-kitchen.jpg", "03-counter.jpg")
-    keys = [figure_upload_cache_key(root / n) for n in names]
-    assert len(set(keys)) == 3

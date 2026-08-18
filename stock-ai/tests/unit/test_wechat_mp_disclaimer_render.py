@@ -93,6 +93,46 @@ def test_information_notice_not_duplicated_on_re_render() -> None:
     assert merged_twice.count(INFORMATION_NOTICE) == 1
 
 
+def test_silver_information_notice_not_duplicated_on_re_render() -> None:
+    from scripts.tools.wechat_mp_public import SILVER_INFORMATION_NOTICE
+
+    body = "> 家庭先约好一句话\n\n接到陌生办案电话，先挂断，再联系家人。"
+    _, merged_once = render_article_content_html(
+        body,
+        kind="silver",
+        engagement_kind="discussion",
+        upload_figures=False,
+    )
+    _, merged_twice = render_article_content_html(
+        merged_once,
+        kind="silver",
+        engagement_kind="discussion",
+        upload_figures=False,
+    )
+
+    assert merged_twice.count("【说明】") == 1
+    assert merged_twice.count(SILVER_INFORMATION_NOTICE) == 1
+
+
+def test_silver_discussion_render_keeps_scan_friendly_subheadings() -> None:
+    body = (
+        "> 骗子先切断你的求证渠道\n\n"
+        "陌生人要求躲开家人接电话，先不要照做。\n\n"
+        "> 家庭要先恢复联系\n\n"
+        "挂断电话，再拨打自己保存的官方号码核实。"
+    )
+
+    _, merged = render_article_content_html(
+        body,
+        kind="silver",
+        engagement_kind="discussion",
+        upload_figures=False,
+    )
+
+    assert "> 骗子先切断你的求证渠道" in merged
+    assert "> 家庭要先恢复联系" in merged
+
+
 def test_cps_at_two_thirds_not_opening() -> None:
     parts = [f'<p id="p{i}">段{i}</p>' for i in range(6)]
     body = "".join(parts)

@@ -6,7 +6,7 @@ import hashlib
 import json
 import os
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -18,13 +18,10 @@ ensure_repo_root_on_path()
 ROOT = Path(__file__).resolve().parents[2]
 INLINE_ROOT = ROOT / "assets" / "wechat_mp" / "inline"
 MANIFEST_PATH = INLINE_ROOT / "manifest.json"
-INLINE_COMMERCE_HOME_ROOT = ROOT / "assets" / "wechat_mp" / "inline-commerce" / "home"
-COMMERCE_HOME_MANIFEST_PATH = INLINE_COMMERCE_HOME_ROOT / "manifest.json"
 USAGE_PATH = ROOT / "data" / "wechat_mp_figure_usage.json"
-COMMERCE_HOME_USAGE_PATH = ROOT / "data" / "wechat_mp_commerce_home_figure_usage.json"
 TZ = ZoneInfo("Asia/Shanghai")
 
-# 财经五槽 inline 池（勿含 home/kitchen/commerce）
+# 当前财经稿 inline 池（勿含家居、厨房等旧商品垂直素材）
 FIGURE_DOMAIN_TAGS: frozenset[str] = frozenset(
     {
         "market",
@@ -39,14 +36,6 @@ FIGURE_DOMAIN_TAGS: frozenset[str] = frozenset(
         "workspace",
     }
 )
-
-# 带货 home：固定文件名；目录与财经 inline/ 分离
-COMMERCE_HOME_FIGURE_BY_KEY: dict[str, tuple[str, str]] = {
-    "commerce-home-1": ("01-compact-kitchen.jpg", "水槽边日常杂物，先理顺再谈置物架"),
-    "commerce-home-2": ("02-small-kitchen.jpg", "碗盘沥水竖放，比摊台面省地方"),
-    "commerce-home-3": ("03-counter.jpg", "台面待收碗碟，量清占地再下单"),
-}
-
 
 def figure_matches_domain(tags: tuple[str, ...]) -> bool:
     return bool(set(tags) & FIGURE_DOMAIN_TAGS)
@@ -180,28 +169,3 @@ def allocate_figure(*, key: str, tags: tuple[str, ...], caption: str | None = No
 
 def resolve_caption(entry: InlineFigure, override: str | None) -> str:
     return (override or entry.caption).strip()
-
-
-def commerce_home_inline_dir() -> Path:
-    return INLINE_COMMERCE_HOME_ROOT
-
-
-def resolve_commerce_home_inline_path(filename: str) -> Path:
-    """带货 home 插图路径（仅 inline-commerce/home/）。"""
-    name = Path(filename).name
-    path = INLINE_COMMERCE_HOME_ROOT / name
-    if not path.is_file():
-        raise FileNotFoundError(
-            f"带货 home 插图不存在: {path}（见 assets/wechat_mp/inline-commerce/home/）"
-        )
-    return path
-
-
-def allocate_commerce_home_figure(*, key: str) -> tuple[str, str]:
-    """带货 home 专用：按槽位 key 取已验图，不走财经 inline 池。"""
-    row = COMMERCE_HOME_FIGURE_BY_KEY.get(key.strip())
-    if not row:
-        raise FileNotFoundError(f"未知 commerce 插图 key: {key}")
-    fname, cap = row
-    resolve_commerce_home_inline_path(fname)
-    return fname, cap

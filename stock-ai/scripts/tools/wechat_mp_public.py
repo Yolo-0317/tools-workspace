@@ -35,10 +35,10 @@ PLATFORM_PROPERTY_RISK_RULE = """
 - 个股仅作行情对照样本，须写清「观察样本、非推荐名单」；勿写「领衔买入」「值得关注布局」。
 """
 
-_FINANCE_MP_KINDS = frozenset({"market", "sector", "hotspot", "top5", "dragons", "news", "guba"})
+_FINANCE_MP_KINDS = frozenset({"market", "sector", "hotspot", "hot_business", "news", "guba"})
 
 # 社会/文娱热点评论稿（非 A 股复盘）
-COMMENTARY_MP_KINDS = frozenset({"hotspot", "tv_review", "tv", "film", "movie"})
+COMMENTARY_MP_KINDS = frozenset({"hotspot", "hot_business", "tv_review", "tv", "film", "movie"})
 
 INFORMATION_NOTICE = (
     "【说明】本文为公开市场数据整理与个人复盘笔记，非证券投资咨询、非理财推介，"
@@ -49,6 +49,11 @@ COMMENTARY_INFORMATION_NOTICE = (
     "【说明】本文为公开报道与网络讨论整理，呈现多方观点，供阅读与讨论，不代表本号立场。"
 )
 
+SILVER_INFORMATION_NOTICE = (
+    "【说明】本文依据公开资料整理一般生活信息；健康内容不替代医生诊断，"
+    "钱财内容不构成投资或产品建议。"
+)
+
 _INFORMATION_NOTICE_LINE_RE = re.compile(
     r"^【说明】本文为公开市场数据整理与个人复盘笔记，非证券投资咨询、非理财推介，"
     r"不涉及具体.+?，仅供参考。\s*$"
@@ -57,6 +62,11 @@ _INFORMATION_NOTICE_LINE_RE = re.compile(
 _COMMENTARY_NOTICE_LINE_RE = re.compile(
     r"^【说明】本文为公开报道与网络讨论整理，呈现多方观点，供阅读与讨论，"
     r"不代表本号立场。\s*$"
+)
+
+_SILVER_NOTICE_LINE_RE = re.compile(
+    r"^【说明】本文依据公开资料整理一般生活信息；健康内容不替代医生诊断，"
+    r"钱财内容不构成投资或产品建议。\s*$"
 )
 
 _DISCLAIMER_MARK = "不构成投资建议"
@@ -229,7 +239,11 @@ def strip_information_notices(text: str) -> str:
     kept: list[str] = []
     for line in text.splitlines():
         s = line.strip()
-        if _INFORMATION_NOTICE_LINE_RE.match(s) or _COMMENTARY_NOTICE_LINE_RE.match(s):
+        if (
+            _INFORMATION_NOTICE_LINE_RE.match(s)
+            or _COMMENTARY_NOTICE_LINE_RE.match(s)
+            or _SILVER_NOTICE_LINE_RE.match(s)
+        ):
             continue
         kept.append(line)
     out = "\n".join(kept)
@@ -253,15 +267,6 @@ def sanitize_public_title(title: str, *, kind: str | None = None) -> str:
     for pat, repl in _TITLE_RISK_INLINE_REPLACEMENTS:
         out = re.sub(pat, repl, out)
     out = re.sub(r"\s{2,}", "", out).strip()
-    k = (kind or "").strip().lower()
-    if k == "dragons":
-        m = re.match(
-            r"^情绪(.+?)怎么理解(.+?)(\d+)板(?:连板记录|连板观察)?$",
-            out,
-        )
-        if m:
-            phase, lead, n = m.groups()
-            out = f"情绪{phase}梯队｜{lead}{n}板结构"
     return out
 
 
@@ -316,6 +321,8 @@ def sanitize_platform_property_risk(text: str) -> str:
 
 def information_notice_for_kind(kind: str | None) -> str:
     k = (kind or "").strip().lower()
+    if k == "silver":
+        return SILVER_INFORMATION_NOTICE
     if k in COMMENTARY_MP_KINDS:
         return COMMENTARY_INFORMATION_NOTICE
     if k in _FINANCE_MP_KINDS:
@@ -421,7 +428,7 @@ def sanitize_reader_data_gap(text: str, *, kind: str | None = None) -> str:
     out = re.sub(r"\n{3,}", "\n\n", out)
 
     k = (kind or "").strip().lower()
-    if k == "hotspot":
+    if k in {"hotspot", "hot_business"}:
         out = _repair_hotspot_plate_field(out)
     return out.strip()
 

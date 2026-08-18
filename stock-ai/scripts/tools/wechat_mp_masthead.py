@@ -17,12 +17,10 @@ from scripts.tools.wechat_mp_client import _escape_html
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_BANNER_PATH = ROOT / "assets" / "wechat_mp" / "banner.png"
-COMMERCE_BANNER_PATH = ROOT / "assets" / "wechat_mp" / "commerce" / "banner.png"
 UPLOAD_CACHE_PATH = ROOT / "data" / "wechat_mp_figure_upload_cache.json"
 TZ = ZoneInfo("Asia/Shanghai")
 
 DEFAULT_ACCOUNT_NAME = "牛马也智能"
-DEFAULT_COMMERCE_ACCOUNT_NAME = "简选小电"
 
 # 与 banner 一致的 FinTech 配色
 _COLOR_PANEL_BG = "#061528"
@@ -33,23 +31,14 @@ _COLOR_SLOGAN_BG = "#0b2340"
 _COLOR_SLOGAN_BORDER = "#1565a8"
 _COLOR_SLOGAN_TEXT = "#e8f4fc"
 
-# 简选小电（租屋小电）暖色顶栏
-_COLOR_COMMERCE_PANEL_BG = "#f5f0e8"
-_COLOR_COMMERCE_PANEL_BORDER = "#d4c4b0"
-_COLOR_COMMERCE_NAME = "#4a4035"
-_COLOR_COMMERCE_SLOGAN_BG = "#fffaf5"
-_COLOR_COMMERCE_SLOGAN_BORDER = "#e8ddd0"
-_COLOR_COMMERCE_SLOGAN_TEXT = "#5c5348"
-
 KIND_SLOGANS: dict[str, str] = {
     "hotspot": "网下吵什么，盘上怎么走",
+    "hot_business": "热点背后的生意，先把账算清楚",
+    "silver": "退休不是退场，把日子重新安排好",
     "sector": "今天资金盯哪条链？先拆行业再盯票",
     "market": "牛马下班别躺平，先看一眼大盘魂",
     "news": "消息比外卖还快，筛十条够你吹",
-    "top5": "五只备选不喊单，自选自负莫甩锅",
-    "dragons": "龙头一时爽，退潮火葬场——先看情绪",
     "workspace": "代码和 K 线之间，还隔着一个 launchd",
-    "commerce": "合租单间小电器，买前对照少踩坑",
     "temp": "官方 CLI 一条链路，飞书也能脚本化",
     "harryputter": "HarryPutter：哈利波特朗读和文本对到句，播到哪亮哪句",
 }
@@ -63,42 +52,10 @@ def masthead_enabled() -> bool:
 
 
 def account_name(*, kind: str | None = None) -> str:
-    k = (kind or "").strip().lower()
-    if k == "commerce":
-        return (
-            os.environ.get("WECHAT_MP_COMMERCE_ACCOUNT_NAME")
-            or os.environ.get("WECHAT_MP_ACCOUNT_NAME")
-            or DEFAULT_COMMERCE_ACCOUNT_NAME
-        ).strip()[:16]
     return (os.environ.get("WECHAT_MP_ACCOUNT_NAME") or DEFAULT_ACCOUNT_NAME).strip()[:16]
 
 
-def _commerce_banner_candidates() -> list[Path]:
-    paths: list[Path] = []
-    override = os.environ.get("WECHAT_MP_COMMERCE_BANNER_PATH", "").strip()
-    if override:
-        paths.append(Path(override).expanduser())
-    paths.extend(
-        [
-            COMMERCE_BANNER_PATH,
-            Path.home() / "Pictures" / "简选小电banner.png",
-            Path.home() / "picture" / "简选小电banner.png",
-            Path.home() / "picture" / "banner.png",
-        ]
-    )
-    return paths
-
-
 def resolve_banner_path(*, kind: str | None = None) -> Path:
-    k = (kind or "").strip().lower()
-    if k == "commerce":
-        for path in _commerce_banner_candidates():
-            if path.is_file():
-                return path
-        raise FileNotFoundError(
-            "带货 banner 不存在（可设 WECHAT_MP_COMMERCE_BANNER_PATH 或放入 "
-            "assets/wechat_mp/commerce/banner.png）"
-        )
     override = os.environ.get("WECHAT_MP_BANNER_PATH", "").strip()
     if override:
         path = Path(override).expanduser()
@@ -198,27 +155,13 @@ def _banner_img_html(src: str, *, kind: str | None = None) -> str:
 def _slogan_panel_html(*, name: str, slogan: str, kind: str | None = None) -> str:
     name_text = _escape_html(name)
     slogan_text = _escape_html(slogan)
-    k = (kind or "").strip().lower()
-    if k == "commerce":
-        panel_bg, border_top, name_color = (
-            _COLOR_COMMERCE_PANEL_BG,
-            f"2px solid {_COLOR_COMMERCE_PANEL_BORDER}",
-            _COLOR_COMMERCE_NAME,
-        )
-        slogan_bg, slogan_border, slogan_color = (
-            _COLOR_COMMERCE_SLOGAN_BG,
-            _COLOR_COMMERCE_SLOGAN_BORDER,
-            _COLOR_COMMERCE_SLOGAN_TEXT,
-        )
-        name_shadow = ""
-    else:
-        panel_bg, border_top, name_color = _COLOR_PANEL_BG, f"2px solid {_COLOR_CYAN}", _COLOR_NAME
-        slogan_bg, slogan_border, slogan_color = (
-            _COLOR_SLOGAN_BG,
-            _COLOR_SLOGAN_BORDER,
-            _COLOR_SLOGAN_TEXT,
-        )
-        name_shadow = "text-shadow:0 0 8px rgba(0,229,255,0.35);"
+    panel_bg, border_top, name_color = _COLOR_PANEL_BG, f"2px solid {_COLOR_CYAN}", _COLOR_NAME
+    slogan_bg, slogan_border, slogan_color = (
+        _COLOR_SLOGAN_BG,
+        _COLOR_SLOGAN_BORDER,
+        _COLOR_SLOGAN_TEXT,
+    )
+    name_shadow = "text-shadow:0 0 8px rgba(0,229,255,0.35);"
     return (
         f'<div style="margin:0;padding:10px 12px;text-align:center;'
         f"background-color:{panel_bg};"
@@ -246,17 +189,16 @@ def masthead_html(
     if not masthead_enabled():
         return ""
     k = (kind or "").strip().lower()
-    if k in {"guba", "hotspot", "tv_review", "tv", "film", "movie"}:
+    if k in {"guba", "hotspot", "hot_business", "tv_review", "tv", "film", "movie"}:
         return ""
     name = account_name(kind=kind)
     slogan = slogan_for_kind(kind)
     src = _banner_src(kind=kind, upload_images=upload_images, local_preview=local_preview)
     img_part = _banner_img_html(src, kind=kind) if src else ""
     panel = _slogan_panel_html(name=name, slogan=slogan, kind=kind)
-    border = _COLOR_COMMERCE_PANEL_BORDER if k == "commerce" else _COLOR_PANEL_BORDER
     return (
         f'<section style="margin:0 0 14px;padding:0;text-align:center;overflow:hidden;'
-        f"border:1px solid {border};border-radius:10px;"
+        f"border:1px solid {_COLOR_PANEL_BORDER};border-radius:10px;"
         f'line-height:0;font-size:0;">'
         f"{img_part}{panel}"
         "</section>"

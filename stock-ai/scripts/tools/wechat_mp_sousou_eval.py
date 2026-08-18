@@ -84,13 +84,18 @@ def check_title_opening_aligned(
     kind: str,
 ) -> tuple[bool, list[str]]:
     """开篇与标题主题一致（禁止标题写 A、开篇大段写 B）。"""
-    if kind not in {"hotspot", "news", "sector", "dragons", "top5", "market"}:
+    if kind not in {"hotspot", "news", "sector", "market"}:
         return True, []
 
     opening = ""
     for block in re.split(r"\n\s*\n", (body or "").strip()):
         b = block.strip()
-        if not b or b.startswith(">") or re.match(r"^[一二三四五六七八九十]、", b):
+        if (
+            not b
+            or b.startswith(">")
+            or b.startswith("【说明】")
+            or re.match(r"^[一二三四五六七八九十]、", b)
+        ):
             continue
         opening = b[:280]
         break

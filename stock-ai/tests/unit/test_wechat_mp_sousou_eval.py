@@ -98,6 +98,16 @@ def test_title_opening_aligned():
     assert ok
 
 
+def test_title_opening_aligned_skips_commentary_notice():
+    ok, _ = check_title_opening_aligned(
+        "居民存款少了6300亿，钱去哪了？",
+        "【说明】本文为公开报道与网络讨论整理，呈现多方观点，供阅读与讨论，不代表本号立场。\n\n"
+        "7月，居民存款单月约减少6300亿元，钱并没有凭空消失。",
+        kind="hotspot",
+    )
+    assert ok
+
+
 def test_sanitize_reader_data_gap_meta_sentence():
     from scripts.tools.wechat_mp_public import (
         check_reader_data_gap_meta,

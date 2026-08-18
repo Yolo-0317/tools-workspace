@@ -7,7 +7,7 @@ import os
 from typing import Literal
 from urllib.parse import urljoin
 
-DraftKind = Literal["sector", "market", "news", "top5", "dragons", "workspace", "temp", "guba"]
+DraftKind = Literal["sector", "market", "news", "workspace", "temp", "guba"]
 
 _DEFAULT_HUB = "https://hub.yoloworld.site:8883"
 
@@ -26,10 +26,6 @@ _KIND_CTA: dict[str, tuple[str, str]] = {
         "/news",
         "同名快讯与筛选在工具看板可对照（浏览器打开，需登录）：",
     ),
-    "dragons": (
-        "/emotion",
-        "连板梯队与情绪日检卡可在看板对照（需登录）：",
-    ),
     "sector": (
         "/selection",
         "行业样本与选股池可在看板展开（需登录）：",
@@ -47,12 +43,7 @@ def stock_ai_cta_enabled() -> bool:
         return True
     if raw in ("0", "false", "no", "off"):
         return False
-    try:
-        from scripts.tools.wechat_mp_growth import load_growth_focus
-
-        return load_growth_focus().stock_ai_cta_enabled
-    except Exception:
-        return False
+    return False
 
 
 def hub_base_url() -> str:
@@ -90,12 +81,7 @@ def attach_stock_ai_cta(article: dict, *, kind: str | None = None) -> dict:
     if kinds_raw:
         allowed = {x.strip().lower() for x in kinds_raw.split(",") if x.strip()}
     else:
-        try:
-            from scripts.tools.wechat_mp_growth import load_growth_focus
-
-            allowed = set(load_growth_focus().stock_ai_cta_kinds)
-        except Exception:
-            allowed = {"news", "dragons"}
+        allowed = {"news", "hotspot"}
     if k.lower() not in allowed:
         return article
     para = stock_ai_cta_paragraph(kind=k)

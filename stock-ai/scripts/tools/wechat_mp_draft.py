@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -23,6 +24,27 @@ from scripts.tools.wechat_mp_codex_hotspot import (
     load_codex_hotspot_draft,
     validate_codex_hotspot_originality,
 )
+from scripts.tools.wechat_mp_codex_hot_business import (
+    CodexHotBusinessDraft,
+    load_codex_hot_business_draft,
+    validate_codex_hot_business_originality,
+)
+from scripts.tools.wechat_mp_codex_silver import (
+    CodexSilverDraft,
+    load_codex_silver_draft,
+    validate_codex_silver_originality,
+)
+from scripts.tools.wechat_mp_codex_short_drama import (
+    CodexShortDramaDraft,
+    load_codex_short_drama_draft,
+)
+from scripts.tools.wechat_mp_codex_client import (
+    CodexGenerationEvent,
+    assert_codex_only_generation,
+    generation_events,
+    generation_scope,
+    record_interactive_codex_draft,
+)
 from scripts.tools.wechat_mp_draft_slots import upsert_draft_article
 from scripts.tools.wechat_mp_short_drama import (
     assert_longform_promotion_safe,
@@ -32,8 +54,15 @@ from scripts.tools.wechat_mp_short_drama import (
 )
 
 
+SHORT_DRAMA_REQUEST_PATH = Path(__file__).resolve().parents[2] / "output" / "short_drama_feature_request.json"
+
+
 def _resolve_cover_kind(content_kind: str) -> str:
     """内容 kind → 封面资源 kind（evening 批次 news 用牛马 sector 封面）。"""
+    if content_kind == "silver":
+        return "hot_business"
+    if content_kind == "short_drama_feature":
+        return "tv_review"
     from scripts.tools.wechat_mp_draft_batch import (
         cover_kind_for_content,
         resolve_scheduled_batch,
@@ -62,8 +91,11 @@ def _build_for_kind(
     edition: str | None,
     market_title: str | None,
     variant: str | None,
-    codex_draft: CodexHotspotDraft | None = None,
-) -> dict[str, str]:
+    codex_draft: CodexHotspotDraft | CodexHotBusinessDraft | CodexSilverDraft | CodexShortDramaDraft | None = None,
+    topic_hint: str = "",
+    silver_lane: str | None = None,
+    upload_figures: bool = True,
+) -> dict[str, object]:
     if kind == "news" and market_title:
         return build_article(kind, peer_market_title=market_title)
     if kind in {"market", "sector", "hotspot"}:
@@ -71,6 +103,28 @@ def _build_for_kind(
             kind,
             edition=edition,
             codex_draft=codex_draft if kind == "hotspot" else None,
+            upload_figures=upload_figures,
+        )
+    if kind == "hot_business":
+        return build_article(
+            kind,
+            topic_hint=topic_hint,
+            codex_draft=codex_draft,
+            upload_figures=upload_figures,
+        )
+    if kind == "silver":
+        return build_article(
+            kind,
+            topic_hint=topic_hint,
+            silver_lane=silver_lane,
+            codex_draft=codex_draft,
+            upload_figures=upload_figures,
+        )
+    if kind == "short_drama_feature":
+        return build_article(
+            kind,
+            codex_draft=codex_draft,
+            upload_figures=upload_figures,
         )
     if kind == "temp":
         return build_article(kind, variant=variant)
@@ -81,9 +135,67 @@ def _build_for_kind(
     return build_article(kind)
 
 
+def _build_with_codex_provenance(
+    kind: str,
+    *,
+    edition: str | None,
+    market_title: str | None,
+    variant: str | None,
+    codex_draft: CodexHotspotDraft | CodexHotBusinessDraft | CodexSilverDraft | CodexShortDramaDraft | object | None,
+    topic_hint: str,
+    silver_lane: str | None,
+    upload_figures: bool,
+) -> tuple[dict[str, object], tuple[CodexGenerationEvent, ...]]:
+    with generation_scope(kind):
+        if codex_draft is not None:
+            record_interactive_codex_draft(kind)
+        article = _build_for_kind(
+            kind,
+            edition=edition,
+            market_title=market_title,
+            variant=variant,
+            codex_draft=codex_draft,
+            topic_hint=topic_hint,
+            silver_lane=silver_lane,
+            upload_figures=upload_figures,
+        )
+        events = generation_events()
+        assert_codex_only_generation(allow_empty=codex_draft is None)
+        return article, events
+
+
+def _assert_article_provenance(
+    events: tuple[CodexGenerationEvent, ...],
+    *,
+    codex_draft_supplied: bool,
+) -> None:
+    if codex_draft_supplied and not events:
+        raise RuntimeError("Codex 草稿缺少生成来源")
+    if any(event.provider != "codex" for event in events):
+        raise RuntimeError("公众号 AI 写稿只允许 Codex")
+
+
 def _validate_codex_draft_kinds(kinds: list[str], path: Path | None) -> None:
-    if path is not None and kinds != ["hotspot"]:
-        raise ValueError("--codex-draft 仅允许与单篇 hotspot 一起使用")
+    if path is not None and kinds not in (
+        ["hotspot"],
+        ["hot_business"],
+        ["silver"],
+        ["short_drama_feature"],
+    ):
+        raise ValueError(
+            "--codex-draft 仅允许与单篇 hotspot 一起使用，"
+            "或与单篇 hot_business、silver、short_drama_feature 一起使用"
+        )
+
+
+def _validate_topic_kinds(kinds: list[str], topic: str) -> None:
+    if topic.strip() and kinds not in (["hot_business"], ["silver"]):
+        raise ValueError("--topic 仅允许与单篇 hot_business 或 silver 一起使用")
+
+
+def _validate_silver_lane_kinds(kinds: list[str], silver_lane: str | None) -> None:
+    if silver_lane and kinds != ["silver"]:
+        raise ValueError("--silver-lane 仅允许与单篇 silver 一起使用")
 
 
 def _resolve_codex_slot_key(draft: CodexHotspotDraft | None) -> str | None:
@@ -96,12 +208,57 @@ def _resolve_codex_slot_key(draft: CodexHotspotDraft | None) -> str | None:
     )
 
 
+def _resolve_draft_slot_key(
+    kind: str,
+    draft: CodexHotspotDraft | CodexHotBusinessDraft | CodexSilverDraft | CodexShortDramaDraft | None,
+) -> str | None:
+    if kind == "hot_business":
+        return "hot_business"
+    if kind == "silver":
+        return "silver"
+    if kind == "short_drama_feature":
+        return "short_drama_feature"
+    if kind == "hotspot" and isinstance(draft, CodexHotspotDraft):
+        return _resolve_codex_slot_key(draft)
+    return None
+
+
 def _pick_cover_for_kind(
     *,
     kind: str,
     cover_kind: str,
+    article: dict[str, object] | None = None,
 ) -> tuple[str, str | None, dict[str, object] | None]:
-    if kind == "hotspot":
+    if kind == "short_drama_feature":
+        from scripts.tools.wechat_mp_tv_cover import pick_tv_review_thumb
+
+        short_meta = (article or {}).get("short_drama") or {}
+        drama_id = str(short_meta.get("drama_id") or "").strip()
+        drama_name = str(short_meta.get("drama_name") or "").strip()
+        if not drama_id or not drama_name:
+            return "tv_review", None, {
+                "errcode": -1,
+                "errmsg": "单剧推广稿缺少封面所需的剧目身份",
+            }
+        thumb, error = pick_tv_review_thumb(
+            {
+                "title_zh": drama_name,
+                "platform": "短剧推荐",
+                "cover_slug": f"short-drama-{drama_id}",
+            }
+        )
+        return "tv_review", thumb, error
+    if kind == "silver":
+        from scripts.tools.wechat_mp_silver_article import (
+            get_last_built_silver_topic,
+        )
+        from scripts.tools.wechat_mp_tv_cover import pick_discussion_draft_thumb
+
+        topic = get_last_built_silver_topic()
+        if topic:
+            thumb, error = pick_discussion_draft_thumb(topic)
+            return "discussion", thumb, error
+    if kind in {"hotspot", "hot_business"}:
         from scripts.tools.wechat_mp_hotspot_article import (
             get_last_built_hotspot_topic,
             hotspot_social_layout_enabled,
@@ -114,6 +271,21 @@ def _pick_cover_for_kind(
             return "discussion", thumb, error
     thumb, error = pick_thumb_for_draft_kind(cover_kind)
     return cover_kind, thumb, error
+
+
+def _record_silver_topic_from_article(article: dict[str, object]) -> None:
+    topic_id = str(article.get("silver_topic_id") or "").strip()
+    if not topic_id or topic_id == "manual":
+        return
+    from scripts.tools.wechat_mp_silver_topics import (
+        load_silver_topics,
+        record_silver_topic_usage,
+    )
+
+    topic = next((item for item in load_silver_topics() if item.topic_id == topic_id), None)
+    if topic is None:
+        raise RuntimeError(f"银发选题记录失败，选题库中不存在: {topic_id}")
+    record_silver_topic_usage(topic)
 
 
 def main() -> int:
@@ -134,7 +306,22 @@ def main() -> int:
         type=Path,
         default=None,
         metavar="PATH",
-        help="读取 Codex 准备的 hotspot JSON，跳过 Composer 与自动选题",
+        help=(
+            "读取 Codex 准备的 hotspot、hot_business、silver 或 "
+            "short_drama_feature JSON；单剧稿由当前 Codex 浏览并写作"
+        ),
+    )
+    parser.add_argument(
+        "--topic",
+        default="",
+        metavar="TEXT",
+        help="仅 hot_business 或 silver：手动指定题目；仍执行研究与质量门槛",
+    )
+    parser.add_argument(
+        "--silver-lane",
+        choices=("relation", "health", "money"),
+        default=None,
+        help="仅 silver：关系生活、健康习惯或钱财防骗方向",
     )
     parser.add_argument("--dry-run", action="store_true", help="只打印标题与正文预览")
     parser.add_argument(
@@ -147,7 +334,7 @@ def main() -> int:
         choices=("pre", "midday", "close"),
         default=None,
         help="A股评论时段：pre 盘前 / midday 午间 / close 盘后（market、hotspot、sector）；"
-        "午间/盘后配合 dragons 时自动选 intraday/eod 数据槽",
+        "选择稿件适用的盘前、午间或收盘版本",
     )
     parser.add_argument("--list-materials", action="store_true", help="列出素材库图片后退出")
     parser.add_argument(
@@ -172,19 +359,26 @@ def main() -> int:
     try:
         kinds = _resolve_kinds(args.kind)
         _validate_codex_draft_kinds(kinds, args.codex_draft)
-        codex_draft = (
-            load_codex_hotspot_draft(args.codex_draft)
-            if args.codex_draft is not None
-            else None
-        )
+        _validate_topic_kinds(kinds, args.topic)
+        _validate_silver_lane_kinds(kinds, args.silver_lane)
+        if args.codex_draft is None:
+            codex_draft = None
+        elif kinds == ["hot_business"]:
+            codex_draft = load_codex_hot_business_draft(args.codex_draft)
+        elif kinds == ["silver"]:
+            codex_draft = load_codex_silver_draft(args.codex_draft)
+        elif kinds == ["short_drama_feature"]:
+            codex_draft = load_codex_short_drama_draft(args.codex_draft)
+        else:
+            codex_draft = load_codex_hotspot_draft(args.codex_draft)
     except ValueError as exc:
         print(f"错误: {exc}", file=sys.stderr)
         return 1
     except OSError as exc:
-        print(f"错误: 无法读取 Codex 热点草稿: {exc}", file=sys.stderr)
+        print(f"错误: 无法读取 Codex 草稿: {exc}", file=sys.stderr)
         return 1
 
-    codex_slot_key = _resolve_codex_slot_key(codex_draft)
+    codex_slot_key = _resolve_draft_slot_key(kinds[0], codex_draft) if len(kinds) == 1 else None
 
     if args.list_materials:
         from scripts.tools.wechat_mp_list_materials import main as list_main
@@ -215,6 +409,30 @@ def main() -> int:
 
         return prune_obsolete_drafts(dry_run=args.dry_run)
 
+    if kinds == ["short_drama_feature"] and codex_draft is None:
+        from scripts.tools.wechat_mp_short_drama_feature_article import (
+            prepare_short_drama_feature_request,
+        )
+
+        try:
+            request = prepare_short_drama_feature_request()
+            SHORT_DRAMA_REQUEST_PATH.parent.mkdir(parents=True, exist_ok=True)
+            SHORT_DRAMA_REQUEST_PATH.write_text(
+                json.dumps(request, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+        except Exception as exc:
+            print(f"错误 [short_drama_feature]: {exc}", file=sys.stderr)
+            return 1
+        print(f"已生成 Codex 写稿请求: {SHORT_DRAMA_REQUEST_PATH}")
+        for candidate in request.get("candidates") or []:
+            print(
+                f"候选: {candidate.get('drama_name') or candidate.get('drama_id')} "
+                f"(drama_id={candidate.get('drama_id') or ''})"
+            )
+        print("请由当前 Codex 查找公开资料并生成结构化稿件，再通过 --codex-draft 写入草稿。")
+        return 0
+
     if not mp_configured() and not args.dry_run:
         print("错误: 未配置 WECHAT_MP_APPID / WECHAT_MP_SECRET", file=sys.stderr)
         return 1
@@ -225,12 +443,19 @@ def main() -> int:
         for kind in kinds:
             try:
                 edition = args.edition if kind in {"market", "sector", "hotspot"} else None
-                article = _build_for_kind(
+                article, provenance_events = _build_with_codex_provenance(
                     kind,
                     edition=edition,
                     market_title=market_title,
                     variant=args.variant,
                     codex_draft=codex_draft,
+                    topic_hint=args.topic,
+                    silver_lane=args.silver_lane,
+                    upload_figures=False,
+                )
+                _assert_article_provenance(
+                    provenance_events,
+                    codex_draft_supplied=codex_draft is not None,
                 )
                 if codex_draft is not None and kind == "hotspot":
                     from scripts.tools.wechat_mp_originality import (
@@ -241,6 +466,24 @@ def main() -> int:
                     )
 
                     report = validate_codex_hotspot_originality(
+                        codex_draft,
+                        history_posts=load_virtual_history().get("posts", []),
+                    )
+                    print(format_originality_report(report))
+                if codex_draft is not None and kind == "hot_business":
+                    from scripts.tools.wechat_mp_originality import format_originality_report
+                    from scripts.tools.wechat_mp_virtual_ledger import load_virtual_history
+
+                    report = validate_codex_hot_business_originality(
+                        codex_draft,
+                        history_posts=load_virtual_history().get("posts", []),
+                    )
+                    print(format_originality_report(report))
+                if codex_draft is not None and kind == "silver":
+                    from scripts.tools.wechat_mp_originality import format_originality_report
+                    from scripts.tools.wechat_mp_virtual_ledger import load_virtual_history
+
+                    report = validate_codex_silver_originality(
                         codex_draft,
                         history_posts=load_virtual_history().get("posts", []),
                     )
@@ -260,10 +503,49 @@ def main() -> int:
                 print(f"variant: {args.variant}")
             if kind == "market" and args.edition:
                 print(f"edition: {args.edition}")
+            if kind == "hot_business":
+                business_report = article.get("hot_business_report") or {}
+                score = business_report.get("candidate_score")
+                print(f"候选评分: {score if score is not None else '手动指定'}")
+                print(f"来源域: {business_report.get('source_domains', 0)}")
+                print(f"事实条数: {business_report.get('fact_count', 0)}")
+            if kind == "silver":
+                silver_report = article.get("silver_report") or {}
+                print(f"方向: {silver_report.get('lane', '')}")
+                print(f"选题: {silver_report.get('topic', '')}")
+                print(f"来源域: {silver_report.get('source_domains', 0)}")
+                print(f"事实条数: {silver_report.get('fact_count', 0)}")
+                print(f"权威来源: {silver_report.get('authority_source_count', 0)}")
+            if kind == "short_drama_feature":
+                report = article.get("short_drama_feature_report") or {}
+                attempts = report.get("attempts") or []
+                for attempt in attempts:
+                    if attempt.get("status") == "rejected":
+                        print(
+                            f"{attempt.get('drama_name') or attempt.get('drama_id')}: "
+                            f"已拒绝 · {attempt.get('reason') or '未通过门禁'}"
+                        )
+                sources = report.get("sources") or []
+                official_count = sum(1 for source in sources if source.get("official"))
+                print(f"来源: {len(sources)}（官方 {official_count}）")
+                for source in sources:
+                    print(f"来源链接: {source.get('url') or ''}")
+                print(f"剧情事实: {len(report.get('facts') or [])}")
+                print(f"正文去空白字符: {report.get('body_chars', 0)}")
+                print(
+                    f"事实门禁: {report.get('fact_gate', '')} · "
+                    f"审计: {report.get('claim_audit', '')}"
+                )
             print(f"标题: {article['title']}")
             print(f"摘要: {article['digest']}")
             if article.get("short_drama"):
                 print(promotion_summary(article))
+            short_drama_skipped = article.get("short_drama_skipped") or {}
+            if kind in {"hot_business", "silver"} and short_drama_skipped:
+                print(
+                    "短剧推广: 已跳过 · "
+                    f"{short_drama_skipped.get('reason') or '无可用候选'}"
+                )
             from scripts.tools.wechat_mp_seo import print_publish_hints
 
             print_publish_hints(
@@ -285,7 +567,12 @@ def main() -> int:
             fk = (pi.get("footer_product_info") or {}).get("product_key")
             if fk:
                 print(f"文末商品: product_key={fk[:24]}…")
-            print(article["content"][:1200])
+            preview_text = (
+                article.get("body_text")
+                if kind == "short_drama_feature"
+                else article.get("content")
+            )
+            print(str(preview_text or "")[:1200])
             print()
         return 0 if ok else 1
 
@@ -296,20 +583,20 @@ def main() -> int:
             SLOTS_PATH.unlink()
             print("已清空槽位缓存，将全部新建", file=sys.stderr)
 
-    if "dragons" in kinds:
-        os.environ.setdefault("WECHAT_MP_DRAGON_SLOT", "eod")
-
     ok_count = 0
     market_title: str | None = None
     for kind in kinds:
         try:
             edition = args.edition if kind in {"market", "sector", "hotspot"} else None
-            article = _build_for_kind(
+            article, provenance_events = _build_with_codex_provenance(
                 kind,
                 edition=edition,
                 market_title=market_title,
                 variant=args.variant,
                 codex_draft=codex_draft,
+                topic_hint=args.topic,
+                silver_lane=args.silver_lane,
+                upload_figures=True,
             )
             if codex_draft is not None and kind == "hotspot":
                 from scripts.tools.wechat_mp_originality import (
@@ -318,6 +605,24 @@ def main() -> int:
                 from scripts.tools.wechat_mp_virtual_ledger import load_virtual_history
 
                 report = validate_codex_hotspot_originality(
+                    codex_draft,
+                    history_posts=load_virtual_history().get("posts", []),
+                )
+                print(format_originality_report(report))
+            if codex_draft is not None and kind == "hot_business":
+                from scripts.tools.wechat_mp_originality import format_originality_report
+                from scripts.tools.wechat_mp_virtual_ledger import load_virtual_history
+
+                report = validate_codex_hot_business_originality(
+                    codex_draft,
+                    history_posts=load_virtual_history().get("posts", []),
+                )
+                print(format_originality_report(report))
+            if codex_draft is not None and kind == "silver":
+                from scripts.tools.wechat_mp_originality import format_originality_report
+                from scripts.tools.wechat_mp_virtual_ledger import load_virtual_history
+
+                report = validate_codex_silver_originality(
                     codex_draft,
                     history_posts=load_virtual_history().get("posts", []),
                 )
@@ -348,10 +653,16 @@ def main() -> int:
             if strict not in ("0", "false", "no", "off"):
                 continue
 
+        _assert_article_provenance(
+            provenance_events,
+            codex_draft_supplied=codex_draft is not None,
+        )
+
         cover_kind = _resolve_cover_kind(kind)
         cover_kind, thumb, terr = _pick_cover_for_kind(
             kind=kind,
             cover_kind=cover_kind,
+            article=article,
         )
         if kind == "workspace" and (args.variant or "").strip().lower() == "english_buddy":
             from scripts.tools.wechat_mp_english_buddy_article import (
@@ -390,7 +701,11 @@ def main() -> int:
             kind,
             article,
             thumb_media_id=thumb or "",
-            slot_key=codex_slot_key if kind == "hotspot" else None,
+            slot_key=(
+                codex_slot_key
+                if kind == "hotspot"
+                else _resolve_draft_slot_key(kind, codex_draft)
+            ),
         )
         if err:
             print(f"❌ [{kind}] 失败: {err}", file=sys.stderr)
@@ -413,6 +728,12 @@ def main() -> int:
                     f"错误 [{kind}] 短剧草稿回读未通过: {exc}；草稿已保留，请勿发表",
                     file=sys.stderr,
                 )
+                continue
+        if kind == "silver":
+            try:
+                _record_silver_topic_from_article(article)
+            except Exception as exc:
+                print(f"错误 [{kind}] 选题使用记录失败: {exc}；草稿已保留", file=sys.stderr)
                 continue
         ok_count += 1
         verb = "已更新" if action == "updated" else "已新建"
@@ -444,7 +765,7 @@ def main() -> int:
 
     prune_obsolete_drafts(dry_run=False)
     print(
-        "提示: 草稿箱保持 market/news/top5/dragons/workspace/temp 各 1 篇，请在 mp.weixin.qq.com 审阅"
+        "提示: 请在 mp.weixin.qq.com 草稿箱审阅当前稿件"
     )
     print(
         "提示: 推稿前已做合规扫描；可用 wechat_mp_eval --kind all --traffic 查看评分与阅读量清单",

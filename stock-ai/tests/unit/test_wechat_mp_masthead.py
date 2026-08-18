@@ -42,26 +42,17 @@ def test_masthead_kind_slogans() -> None:
 
 
 def test_masthead_slogan_box_style() -> None:
-    html = masthead_html("top5", upload_images=False, local_preview=True)
+    html = masthead_html("sector", upload_images=False, local_preview=True)
     assert "#0b2340" in html
     assert "#e8f4fc" in html
     assert "#7dd3fc" in html
 
 
 def test_all_kinds_have_slogan() -> None:
-    for kind in ("market", "news", "top5", "dragons", "workspace", "commerce", "temp"):
+    for kind in ("market", "news", "sector", "hotspot", "workspace", "temp"):
         assert kind in KIND_SLOGANS
+    for kind in ("market", "news", "sector", "workspace", "temp"):
         assert masthead_html(kind, upload_images=False, local_preview=True)
-
-
-def test_commerce_masthead_uses_commerce_banner() -> None:
-    from scripts.tools.wechat_mp_masthead import COMMERCE_BANNER_PATH
-
-    html = masthead_html("commerce", upload_images=False, local_preview=True)
-    assert COMMERCE_BANNER_PATH.name in html
-    assert "简选小电" in html
-    assert "#f5f0e8" in html
-    assert "#061528" not in html
 
 
 def test_masthead_uses_banner_cache_when_upload_disabled(monkeypatch, tmp_path) -> None:

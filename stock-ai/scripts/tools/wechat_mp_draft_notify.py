@@ -103,45 +103,6 @@ def format_batch_message(
         lines.append("热点深评：选题来自当日微博+百度热搜，审阅后发布。")
     if ok_items and any(r.hashtags for r in ok_items):
         lines.append("发布后：勾选原创 → 文章右侧 # 粘贴各行推荐话题。")
-    try:
-        from scripts.tools.wechat_mp_growth import format_growth_notify_block
-
-        news_r = next((r for r in ok_items if r.kind == "news"), None)
-        tv_r = next((r for r in ok_items if r.kind == "tv_review"), None)
-        news_intro = ""
-        if news_r:
-            try:
-                from scripts.tools.wechat_mp_content import build_news_article
-                from scripts.tools.wechat_mp_news_lede import extract_news_intro_from_body
-
-                art = build_news_article()
-                news_intro = extract_news_intro_from_body(str(art.get("body") or ""))
-            except Exception:
-                news_intro = ""
-        share_title = tv_r.title if tv_r else (news_r.title if news_r else "")
-        share_intro = ""
-        if tv_r:
-            try:
-                from scripts.tools.wechat_mp_content import build_article
-                from scripts.tools.wechat_mp_news_lede import (
-                    extract_news_intro_from_body,
-                    format_group_share_copy,
-                )
-
-                art = build_article("tv_review")
-                body_intro = extract_news_intro_from_body(str(art.get("body") or ""))
-                share_intro = format_group_share_copy(title=share_title, intro=body_intro)
-            except Exception:
-                share_intro = share_title
-        growth = format_growth_notify_block(
-            batch=batch,
-            news_title=share_title,
-            news_intro=share_intro or news_intro,
-        )
-        if growth:
-            lines.append(growth)
-    except Exception:
-        pass
     return "\n".join(lines)
 
 

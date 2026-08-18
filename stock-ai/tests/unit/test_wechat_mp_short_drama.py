@@ -564,6 +564,59 @@ def test_score_drama_gives_equal_population_metrics_full_credit() -> None:
     assert score.heat_score == 35.0
 
 
+def test_score_short_drama_feature_uses_approved_revenue_weights() -> None:
+    rows = [
+        drama("commission", "城市故事", theme="都市", rate_bp=7000, hot_degree=100),
+        drama("heat", "城市故事", theme="都市", rate_bp=6000, hot_degree=10_000),
+    ]
+
+    commission = short_drama.score_short_drama_feature(rows[0], population=rows)
+    heat = short_drama.score_short_drama_feature(rows[1], population=rows)
+
+    assert commission.commission_score == 50.0
+    assert commission.heat_score == 0.0
+    assert commission.appeal_score == 2.0
+    assert commission.final_score == 52.0
+    assert heat.commission_score == 0.0
+    assert heat.heat_score == 30.0
+    assert heat.final_score == 32.0
+
+
+def test_rank_short_drama_candidates_excludes_previously_used_drama(
+    tmp_path: Path,
+) -> None:
+    usage_path = tmp_path / "usage.json"
+    usage_path.write_text(
+        json.dumps(
+            [
+                {
+                    "drama_id": "top",
+                    "drama_name": "高佣逆袭",
+                    "article_title": "历史推广稿",
+                    "used_at": NOW.isoformat(),
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    rows = [
+        drama("top", "高佣逆袭", rate_bp=8000, hot_degree=9000),
+        drama("second", "豪门反击", rate_bp=7000, hot_degree=8000),
+        drama("third", "职场翻身", rate_bp=6000, hot_degree=7000),
+        drama("fourth", "普通爱情", rate_bp=1000, hot_degree=1000),
+    ]
+
+    ranked = short_drama.rank_short_drama_candidates(
+        rows,
+        usage_path=usage_path,
+        now=NOW,
+        limit=3,
+        exclude_previously_used=True,
+    )
+
+    assert [row.drama_id for row, _score in ranked] == ["second", "third", "fourth"]
+
+
 def test_drama_appeal_points_caps_strong_and_medium_hooks_at_twenty() -> None:
     row = drama(
         "hook",
@@ -748,6 +801,27 @@ def test_rotation_never_promotes_candidate_outside_commercial_top_three(
 
     assert picked.drama_id == "top1"
     assert score.usage_penalty == 9.0
+
+
+def test_recorded_usage_matches_drama_and_article_title(tmp_path: Path) -> None:
+    usage_path = tmp_path / "usage.json"
+    short_drama.record_drama_usage(
+        drama("used"),
+        article_title="已经写入的单剧稿",
+        usage_path=usage_path,
+        used_at=NOW,
+    )
+
+    assert short_drama.has_recorded_drama_usage(
+        "used",
+        article_title="已经写入的单剧稿",
+        usage_path=usage_path,
+    ) is True
+    assert short_drama.has_recorded_drama_usage(
+        "used",
+        article_title="另一篇稿",
+        usage_path=usage_path,
+    ) is False
 
 
 def test_parse_short_drama_component_extracts_attribution() -> None:
@@ -1102,118 +1176,54 @@ def test_refresh_cli_prints_filtered_pool_summary(
     assert output.count("drama_id=") == 1
 
 
-def test_attach_short_drama_once_at_body_ratio(
+@pytest.mark.parametrize(
+    "kind",
+    ["hotspot", "hot_business", "silver", "tv_review", "market", "workspace"],
+)
+def test_ordinary_longform_never_auto_attaches_short_drama(
+    kind: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    row = drama(
-        "123",
-        "报销风波",
-        plan_id="plan-123",
-        offline_timestamp=int((NOW + timedelta(days=30)).timestamp()),
-    )
-    body = "".join(f'<p id="p{i}">段{i}</p>' for i in range(6))
-    content = body + '<p style="background-color:#fff5f5">免责声明</p>'
     article = {
-        "title": "公司报销观察",
-        "digest": "职场",
+        "title": "普通长文",
         "body_text": "正文",
-        "content": content,
+        "content": "<p>正文</p>",
     }
     monkeypatch.setenv("WECHAT_MP_SHORT_DRAMA", "1")
     monkeypatch.setattr(
         short_drama,
         "load_or_refresh_drama_pool",
-        lambda **_: [row],
-    )
-    monkeypatch.setattr(
-        short_drama,
-        "ensure_attribution_for_drama",
-        lambda *_args, **_kwargs: attribution(),
+        lambda **_: pytest.fail("普通长文不得读取短剧返佣池"),
     )
 
-    out = short_drama.attach_short_drama(article, kind="workspace", now=NOW)
+    out = short_drama.attach_short_drama(article, kind=kind, now=NOW)
 
-    assert out["content"].count('data-adtype="short-play"') == 1
-    short_play = out["content"].index('data-adtype="short-play"')
-    assert out["content"].index('id="p3"') < short_play
-    assert short_play < out["content"].index('id="p5"')
-    assert short_play < out["content"].index("#fff5f5")
-    assert out["short_drama"]["drama_id"] == "123"
-    assert "product_info" not in out
+    assert out == article
+    assert "short_drama" not in out
+    short_drama.assert_longform_promotion_safe(out, kind=kind)
 
 
-def test_attach_short_drama_fetches_attribution_for_revenue_winner(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    low = drama(
-        "low",
-        "职场故事",
-        rate_bp=5000,
-        hot_degree=100,
+def test_attach_selected_short_drama_uses_exact_researched_drama() -> None:
+    chosen = drama(
+        "researched",
+        "已核验短剧",
+        plan_id="plan-researched",
         offline_timestamp=int((NOW + timedelta(days=30)).timestamp()),
     )
-    winner = drama(
-        "winner",
-        "千金反击",
-        theme="都市、家庭",
-        description="豪门千金身份反转",
-        rate_bp=7000,
-        hot_degree=10_000,
-        offline_timestamp=int((NOW + timedelta(days=30)).timestamp()),
-    )
-    selected: list[str] = []
-    monkeypatch.setenv("WECHAT_MP_SHORT_DRAMA", "1")
-    monkeypatch.setattr(
-        short_drama,
-        "load_or_refresh_drama_pool",
-        lambda **_: [low, winner],
+    body = "".join(f'<p id="p{i}">段{i}</p>' for i in range(6))
+    score = short_drama.DramaScore(50.0, 30.0, 10.0, 0.0, 90.0)
+
+    out = short_drama.attach_selected_short_drama(
+        {"title": "单剧推荐", "digest": "剧情钩子", "content": body},
+        kind="short_drama_feature",
+        drama=chosen,
+        score=score,
+        attribution=attribution("researched"),
     )
 
-    def fake_ensure(row: short_drama.ShortDrama, **_: object):
-        selected.append(row.drama_id)
-        return attribution(
-            row.drama_id,
-            plan_id=row.plan_id,
-            src_appid=row.src_appid,
-            play_appid=row.play_appid,
-        )
-
-    monkeypatch.setattr(short_drama, "ensure_attribution_for_drama", fake_ensure)
-
-    out = short_drama.attach_short_drama(
-        {"title": "公司观察", "content": "<p>正文一</p><p>正文二</p>"},
-        kind="workspace",
-        now=NOW,
-    )
-
-    assert selected == ["winner"]
-    assert out["short_drama"]["drama_id"] == "winner"
-
-
-def test_attach_short_drama_rejects_existing_card_for_another_drama(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    expected = drama(
-        "123",
-        plan_id="plan-123",
-        offline_timestamp=int((NOW + timedelta(days=30)).timestamp()),
-    )
-    another = drama("999", plan_id="plan-999")
-    existing = short_drama.build_short_drama_html(another, attribution("999"))
-    monkeypatch.setenv("WECHAT_MP_SHORT_DRAMA", "1")
-    monkeypatch.setattr(short_drama, "load_or_refresh_drama_pool", lambda **_: [expected])
-    monkeypatch.setattr(
-        short_drama,
-        "ensure_attribution_for_drama",
-        lambda *_args, **_kwargs: attribution(),
-    )
-
-    with pytest.raises(RuntimeError, match="短剧归因与候选不匹配"):
-        short_drama.attach_short_drama(
-            {"title": "测试", "body_text": "测试", "content": existing},
-            kind="market",
-            now=NOW,
-        )
+    components = short_drama.parse_short_drama_components(out["content"], now=NOW)
+    assert [component.drama_id for component in components] == ["researched"]
+    assert out["short_drama"]["drama_id"] == "researched"
 
 
 def test_longform_preflight_blocks_plain_product_card() -> None:
@@ -1222,20 +1232,42 @@ def test_longform_preflight_blocks_plain_product_card() -> None:
         short_drama.assert_longform_promotion_safe(article, kind="market")
 
 
-def test_longform_preflight_requires_short_play_when_enabled(
+def test_short_drama_feature_preflight_requires_short_play_when_enabled(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("WECHAT_MP_SHORT_DRAMA", "1")
     with pytest.raises(RuntimeError, match="缺少短剧组件"):
         short_drama.assert_longform_promotion_safe(
             {"content": "<p>正文</p>"},
-            kind="hotspot",
+            kind="short_drama_feature",
+        )
+
+
+@pytest.mark.parametrize(
+    ("content", "message"),
+    [
+        ('<mp-common-cpsad data-pid="101_1"></mp-common-cpsad>', "普通返佣商品"),
+        (SAMPLE_SHORT_PLAY + SAMPLE_SHORT_PLAY, "短剧组件数量异常"),
+    ],
+)
+def test_hot_business_soft_policy_keeps_component_safety_gates(
+    monkeypatch: pytest.MonkeyPatch,
+    content: str,
+    message: str,
+) -> None:
+    monkeypatch.setenv("WECHAT_MP_SHORT_DRAMA", "1")
+
+    with pytest.raises(RuntimeError, match=message):
+        short_drama.assert_longform_promotion_safe(
+            {"content": content},
+            kind="hot_business",
         )
 
 
 def test_verify_saved_short_drama_rejects_stripped_component(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv("WECHAT_MP_SHORT_DRAMA", "1")
     monkeypatch.setattr(
         short_drama,
         "fetch_draft_news_item",

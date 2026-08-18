@@ -22,7 +22,7 @@ from scripts.tools.wechat_mp_temp_article import (
 def test_draft_kinds_include_temp_not_in_daily() -> None:
     assert "temp" in DRAFT_KINDS
     assert "temp" not in DAILY_DRAFT_KINDS
-    assert len(DAILY_DRAFT_KINDS) == 5
+    assert DAILY_DRAFT_KINDS == ("hotspot", "sector", "news", "workspace")
 
 
 def test_lark_cli_variant_registered() -> None:

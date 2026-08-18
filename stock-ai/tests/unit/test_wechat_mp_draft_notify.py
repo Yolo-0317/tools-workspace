@@ -22,11 +22,12 @@ def test_format_batch_message_ok() -> None:
         "evening",
         [
             DraftPushResult(kind="news", title="A股热股快讯", action="updated", ok=True),
-            DraftPushResult(kind="dragons", title="情绪发酵", action="created", ok=True),
+            DraftPushResult(kind="hotspot", title="热点深评", action="created", ok=True),
         ],
     )
-    assert "news+dragons+sector" in text
+    assert "news+hotspot" in text
     assert "[news]" in text
+    assert "[hotspot]" in text
     assert "同批群发" in text
     assert "牛马品牌" in text
     assert "mp.weixin.qq.com" in text

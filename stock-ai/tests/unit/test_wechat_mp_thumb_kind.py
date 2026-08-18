@@ -21,8 +21,7 @@ from scripts.tools.wechat_mp_client import (
 def test_default_kind_thumb_names() -> None:
     assert "牛马品牌" in _DEFAULT_KIND_THUMB_NAMES["sector"]
     assert "交易所屏" in _DEFAULT_KIND_THUMB_NAMES["market"]
-    assert "财经亮屏" in _DEFAULT_KIND_THUMB_NAMES["top5"]
-    assert "多屏亮行情" in _DEFAULT_KIND_THUMB_NAMES["dragons"]
+    assert "牛马品牌" in _DEFAULT_KIND_THUMB_NAMES["hotspot"]
     assert "显示器走势" in _DEFAULT_KIND_THUMB_NAMES["news"]
 
 
@@ -39,8 +38,7 @@ def test_cover_kind_for_content_evening_fixed_slots() -> None:
     from scripts.tools.wechat_mp_draft_batch import cover_kind_for_content
 
     assert cover_kind_for_content(content_kind="news", batch="evening") == "sector"
-    assert cover_kind_for_content(content_kind="hotspot", batch="evening") == "dragons"
-    assert cover_kind_for_content(content_kind="dragons", batch="evening") == "dragons"
+    assert cover_kind_for_content(content_kind="hotspot", batch="evening") == "hotspot"
     assert cover_kind_for_content(content_kind="sector", batch="evening") == "sector"
     assert cover_kind_for_content(content_kind="news", batch="weekend") == "sector"
     assert cover_kind_for_content(content_kind="market", batch="evening") == "market"
@@ -58,8 +56,7 @@ def test_cover_kind_hotspot_only_uses_brand_main(monkeypatch) -> None:
 
 def test_pick_thumb_for_kind_uses_distinct_env(monkeypatch) -> None:
     monkeypatch.delenv("WECHAT_MP_THUMB_MEDIA_ID", raising=False)
-    monkeypatch.delenv("WECHAT_MP_THUMB_NAME_TOP5", raising=False)
-    monkeypatch.delenv("WECHAT_MP_THUMB_NAME_DRAGONS", raising=False)
+    monkeypatch.delenv("WECHAT_MP_THUMB_NAME_NEWS", raising=False)
     monkeypatch.setenv("WECHAT_MP_KIND_THUMB_FROM_ASSETS", "0")
     calls: list[str] = []
 
@@ -73,10 +70,10 @@ def test_pick_thumb_for_kind_uses_distinct_env(monkeypatch) -> None:
         _fake_pick,
     )
     pick_thumb_for_draft_kind("market")
-    pick_thumb_for_draft_kind("top5")
+    pick_thumb_for_draft_kind("news")
     assert calls[0] != calls[1]
     assert "交易所屏" in calls[0]
-    assert "财经亮屏" in calls[1]
+    assert "显示器走势" in calls[1]
 
 
 def test_pick_sector_falls_back_to_banner_upload(monkeypatch, tmp_path) -> None:
@@ -104,26 +101,3 @@ def test_pick_sector_falls_back_to_banner_upload(monkeypatch, tmp_path) -> None:
     mid, err = pick_thumb_for_draft_kind("sector")
     assert err is None
     assert mid == "media-banner-1"
-
-
-def test_pick_top5_prefers_local_bright_asset(monkeypatch, tmp_path) -> None:
-    cover = ROOT / "assets" / "wechat_mp" / "cover-financial-screen-dual.jpg"
-    if not cover.is_file():
-        return
-    cache = tmp_path / "top5_thumb.json"
-    monkeypatch.setattr(
-        "scripts.tools.wechat_mp_client._KIND_THUMB_ASSET_CACHE",
-        {"top5": cache, "dragons": tmp_path / "dragons_thumb.json"},
-    )
-    monkeypatch.setattr(
-        "scripts.tools.wechat_mp_client.pick_thumb_from_material_library",
-        lambda **kwargs: (None, {"errmsg": "miss"}),
-    )
-    monkeypatch.setattr(
-        "scripts.tools.wechat_mp_client.add_permanent_image",
-        lambda path: ("media-top5-bright", None),
-    )
-
-    mid, err = pick_thumb_for_draft_kind("top5")
-    assert err is None
-    assert mid == "media-top5-bright"

@@ -48,8 +48,6 @@ def test_footer_product_disabled_by_default(monkeypatch: pytest.MonkeyPatch) -> 
         "sector",
         "market",
         "news",
-        "top5",
-        "dragons",
         "workspace",
         "temp",
     ],
@@ -68,7 +66,7 @@ def test_longform_never_attaches_footer_product(
     assert "product_info" not in out
 
 
-def test_commerce_vertical_attaches_footer_product(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_explicit_product_kind_attaches_footer_product(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("WECHAT_MP_FOOTER_PRODUCT", "1")
     monkeypatch.setenv("WECHAT_MP_FOOTER_PRODUCT_AUTO_PICK", "0")
     monkeypatch.setenv("WECHAT_MP_FOOTER_PRODUCT_ID", "10195600087007")

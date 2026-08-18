@@ -7,7 +7,7 @@ import os
 import re
 from typing import Literal
 
-DraftKind = Literal["sector", "hotspot", "market", "news", "top5", "dragons", "workspace", "temp"]
+DraftKind = Literal["sector", "hotspot", "hot_business", "silver", "short_drama_feature", "market", "news", "workspace", "temp"]
 
 _DISCLAIMER_MARKS = (
     "本文为作者个人复盘笔记",
@@ -40,12 +40,13 @@ TRAFFIC_VERTICAL_WORDS = (
 # 按稿型优先检查的垂直词（traffic 清单 ≥ WECHAT_MP_VERTICAL_WORDS_MIN 个命中）
 VERTICAL_HINTS_BY_KIND: dict[str, tuple[str, ...]] = {
     "hotspot": ("报道", "网友", "争议", "公开", "多方", "事件"),
+    "hot_business": ("品牌", "公司", "产品", "成本", "渠道", "竞争"),
+    "silver": ("退休", "生活", "夫妻", "子女", "睡眠", "运动", "养老金", "消费", "防骗"),
+    "short_drama_feature": ("短剧", "主角", "冲突", "反转", "继续看"),
     "tv_review": ("报道", "网友", "争议", "公开", "多方", "事件"),
     "sector": ("产业链", "复盘", "结构", "量价", "行业"),
     "market": ("复盘", "结构", "盯盘", "避坑", "收盘"),
     "news": ("复盘", "盯盘", "避坑", "快讯"),
-    "top5": ("结构", "对照", "避坑", "复盘", "待验证"),
-    "dragons": ("龙头", "梯队", "避坑", "复盘", "情绪"),
     "workspace": ("自动化", "脚本", "量化", "复盘"),
     "temp": ("自动化", "脚本", "CLI", "复盘"),
 }
@@ -75,19 +76,16 @@ _MONETIZATION_PROMPT: dict[str, str] = {
         "禁止导读腔、热榜播报、盘面三线对照套话；单段宜短。"
         "【垂直词】自然出现报道/争议/公开信息等，勿堆砌财经词。"
     ),
-    "top5": (
-        "【阅读】公众号标题由系统生成（观察样本+结构句式），**正文禁止**复述操作指引型标题问句。"
-        "【完读】「筛选名单」开篇须预告阅读路径（逐只拆→组合→待验证）；"
-        "个股之间用简短过渡吊读（成稿会补「·」开头的衔接句，勿写「往下看」）；"
-        "「待验证事项」末句用「若…则…谁先…」式可验证悬念；禁分数与买卖暗示。"
-        "【垂直词】正文声明观察样本、非推荐名单。"
+    "hot_business": (
+        "【阅读】标题前 15 字出现品牌、公司或具体产品，明确热点背后的商业问题。"
+        "【完读】沿事实、收入成本、渠道竞争、普通人影响和待验证指标递进；纯段落长文。"
+        "【垂直词】自然出现品牌/公司/产品/成本/渠道/竞争，事实与推断分开。"
     ),
-    "dragons": (
-        "【阅读】公众号标题由系统生成（情绪阶段+梯队/结构观察），"
-        "**正文禁止**复述「怎么玩/还在榜」类问句；开篇直接从「> 情绪与盘面」写数字事实。"
-        "【完读】开篇数字+阅读路径；龙头拆解间「·」轻过渡；节间桥接；"
-        "「明日计划与纪律」末句退潮/修复若则验证；650～1100 字。"
-        "【垂直词】清单体/梯队表，利于收藏与搜一搜停留。"
+    "silver": (
+        "【阅读】标题直接呈现退休生活中的具体问题，不添加固定栏目名前缀。"
+        "【完读】从生活场景开篇，用 3 至 5 个自然小标题解释原因并给出可执行步骤。"
+        "【垂直词】关系稿自然出现夫妻/子女/边界；健康稿出现睡眠/饮食/运动/体检/习惯；"
+        "钱财稿出现养老金/消费/防骗/旅游/直播购物，避免堆砌。"
     ),
     "workspace": (
         "【完读与流量】首段场景化（收盘一刻钟跑什么）；"
@@ -101,6 +99,14 @@ _MONETIZATION_PROMPT: dict[str, str] = {
 }
 
 _ENGAGEMENT_POOL: dict[str, tuple[str, ...]] = {
+    "short_drama_feature": (
+        "如果是你站在主角的位置，会接下这个几乎没人敢碰的难题吗？",
+        "故事停在这里，你更想先看到真相揭开，还是主角完成反击？",
+    ),
+    "silver": (
+        "退休生活里，你现在最想先理顺关系、健康，还是钱财安排？欢迎留言说说。",
+        "刚退休时你最不适应的是哪件小事？留言聊聊自己的办法。",
+    ),
     "sector": (
         "今日主线行业里，你更看产业链哪一段？留言说说。",
         "热点行业稿，你更信新闻催化还是盘面量价？欢迎交流。",
@@ -112,14 +118,6 @@ _ENGAGEMENT_POOL: dict[str, tuple[str, ...]] = {
     "news": (
         "十条里哪一条最可能影响你的板块？留言聊聊。",
         "地缘和金价两条，你更信哪条传导？说说看法。",
-    ),
-    "top5": (
-        "五只里你更想看哪条结构的后续验证？可以点名。",
-        "综合选股和单策略信号，你平时更信哪路？留言讨论。",
-    ),
-    "dragons": (
-        "退潮日你更关注梯队还是指数？留言交流观察角度。",
-        "空间板断板后，你更看广度还是高度？说说你的读法。",
     ),
     "workspace": (
         "你的收盘自动化是脚本还是定时任务？留言交换踩坑。",
@@ -136,11 +134,6 @@ _ENGAGEMENT_POOL: dict[str, tuple[str, ...]] = {
     "temp": (
         "飞书自动化你更信 OpenAPI 还是官方 CLI？留言说说踩坑。",
         "bot 和用户身份你怎么分工？欢迎交流。",
-    ),
-    "commerce": (
-        "你家厨房台面大概多宽？欢迎留言，方便后来的人对照。",
-        "调料架和插排固定，你更先解决哪一个？",
-        "如果只能留一件小收纳，你会选哪类？",
     ),
 }
 
@@ -161,6 +154,8 @@ _WRITING_REPLY_INDUCMENT_RES = (
 # 阅读 → 关注（与留言问句、推荐 ♡ 分开；推荐流陌生读者主转化点）
 _FOLLOW_HOOK_BY_KIND: dict[str, str] = {
     "hotspot": _FOLLOW_HOOK_DEFAULT,
+    "hot_business": _FOLLOW_HOOK_DEFAULT,
+    "silver": "我们会继续整理退休生活里的关系、健康和钱财问题；星标本号，下一篇不易漏看。",
     "tv_review": _FOLLOW_HOOK_DEFAULT,
     "tv": _FOLLOW_HOOK_DEFAULT,
 }
@@ -224,6 +219,9 @@ def follow_hook_enabled() -> bool:
 _NO_RECOMMEND_HOOK_KINDS = frozenset({
     "guba",
     "hotspot",
+    "hot_business",
+    "silver",
+    "short_drama_feature",
     "tv_review",
     "tv",
     "film",
@@ -326,10 +324,6 @@ def insert_inarticle_ad_checkpoint(body: str, *, kind: str) -> str:
         return _insert_after_section(body, "盘面速览")
     if k == "news":
         return _insert_after_news_item(body, after_item=3)
-    if k == "top5":
-        return _insert_after_section(body, "筛选名单")
-    if k == "dragons":
-        return _insert_after_section(body, "情绪与盘面")
     if k in {"workspace", "temp"}:
         return _insert_after_section(body, "它是什么") if k == "workspace" else body
     return body

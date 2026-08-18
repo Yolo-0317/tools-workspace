@@ -41,26 +41,6 @@ NEWS_FIGURE_SLOTS: list[FigureSlot] = [
     FigureSlot("news-4", "after_item", "10", ("tech", "ai")),
 ]
 
-TOP5_FIGURE_SLOTS: list[FigureSlot] = [
-    FigureSlot("top5-2", "before", "组合特征", ("selection", "trading")),
-]
-
-DRAGON_FIGURE_SLOTS: list[FigureSlot] = [
-    FigureSlot("dragons-2", "before", "明日计划与纪律", ("emotion", "chart")),
-]
-
-# 带货 home：节标题后插图（开篇段落后才插图）
-HOME_COMMERCE_FIGURE_SLOTS: list[FigureSlot] = [
-    FigureSlot("commerce-home-1", "after", "窄台面为什么先谈收纳", ("kitchen", "home")),
-    FigureSlot("commerce-home-2", "before", "两类通常更值的", ("kitchen", "home")),
-    FigureSlot("commerce-home-3", "before", "买之前对照三件事", ("kitchen", "home")),
-]
-
-_COMMERCE_SLOTS_BY_VERTICAL: dict[str, list[FigureSlot]] = {
-    "home": HOME_COMMERCE_FIGURE_SLOTS,
-}
-
-
 def _figure_marker_lines(fname: str, style: str = "", caption: str = "") -> list[str]:
     """插图独占一段，前后留空行，避免与小标题挤进同一个 <p>。"""
     tokens: list[str] = []
@@ -193,34 +173,6 @@ def inject_market_figures(body: str) -> str:
 
 def inject_news_figures(body: str) -> str:
     return _apply_slots(body, NEWS_FIGURE_SLOTS)
-
-
-def inject_top5_figures(body: str) -> str:
-    return _apply_slots(body, TOP5_FIGURE_SLOTS)
-
-
-def inject_dragons_figures(body: str) -> str:
-    return _apply_slots(body, DRAGON_FIGURE_SLOTS)
-
-
-def inject_commerce_figures(body: str, *, vertical: str = "home") -> str:
-    """带货稿按垂直插入插图；节名须与 FigureSlot.section 一致。"""
-    vert = (vertical or "home").strip().lower()
-    slots = _COMMERCE_SLOTS_BY_VERTICAL.get(vert)
-    if not slots:
-        return body
-
-    def _pick(slot: FigureSlot) -> tuple[str, str]:
-        if vert == "home":
-            from scripts.tools.wechat_mp_figure_pool import allocate_commerce_home_figure
-
-            return allocate_commerce_home_figure(key=slot.key)
-        return allocate_figure(key=slot.key, tags=slot.tags, caption=slot.caption)
-
-    try:
-        return _apply_slots(body, slots, allocator=_pick)
-    except FileNotFoundError:
-        return body
 
 
 def resolve_inline_path(filename: str) -> Path:

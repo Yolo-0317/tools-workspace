@@ -1,7 +1,7 @@
 # 牛马也智能 · 微信公众号草稿 — 参考
 
 **导航** [INDEX.md](INDEX.md) · 账号 [brand.md](brand.md) · 运营 [operations-sop.md](operations-sop.md)。  
-写作 [writing-guide.md](writing-guide.md) · 晚间 [evening-trilogy-templates.md](evening-trilogy-templates.md) · 其他槽 [templates.md](templates.md) · 映射 [rules-implemented.md](rules-implemented.md)。
+写作 [writing-guide.md](writing-guide.md) · 模板 [templates.md](templates.md) · 映射 [rules-implemented.md](rules-implemented.md)。
 
 ## 外部参考（非本仓库维护）
 
@@ -16,10 +16,10 @@
 
 | 概念 | kinds | 说明 |
 |------|-------|------|
-| **`--kind all`** | `sector`, `top5`, `dragons`, `workspace` | `DAILY_DRAFT_KINDS` |
+| **`--kind all`** | `hotspot`, `sector`, `news`, `workspace` | `DAILY_DRAFT_KINDS` |
 | **手动槽** | `market`, `news` | 仅 `wechat_mp_draft --kind market\|news` |
 | **临时槽** | `temp` | 变体在 `wechat_mp_temp_article.py`；`all` 不含 |
-| **定时批次** | 见 `WECHAT_MP_SCHEDULING.md` | 交易日 `sector`+`top5`+`dragons`；休市 `news`（周日/节假日）；周六跳过 |
+| **定时批次** | 见 `WECHAT_MP_SCHEDULING.md` | 每日热点深评；旧晚间财经批次已停用 |
 
 持久化：`data/wechat_mp_draft_slots.json`（日更五槽各一条 `media_id`，`temp` 同文件）。
 
@@ -48,14 +48,15 @@
 | `scripts/tools/wechat_mp_market_titles.py` | 盘面标题模板池、按日轮换（CLI 可打印） |
 | `scripts/tools/wechat_mp_market_polish.py` | `finalize_market_body`、标题情绪对齐 |
 | `scripts/tools/wechat_mp_news_article.py` | 要闻 Top10 + 逐条 AI 点评 |
-| `scripts/tools/wechat_mp_top5_article.py` | Top5 交易员体例 + prompt |
-| `scripts/tools/wechat_mp_dragons_article.py` | 龙头四节稿 |
 | `scripts/tools/wechat_mp_workspace_article.py` | 工具工作区静态稿、`PROJECT_NAME` |
 | `scripts/tools/wechat_mp_temp_article.py` | 临时槽变体注册（如 `lark_cli`） |
 | `scripts/tools/wechat_mp_sop_fast.py` | 东财快采（公众号隔离） |
 | `scripts/tools/wechat_mp_check_whitelist.py` | 公众平台 IP 白名单检查 |
 | `scripts/tools/wechat_mp_eval.py` | 五维评分 + 合规 + AI 味 0–100 |
-| `scripts/tools/wechat_mp_short_drama.py` | 长文短剧：`DramaSelect`、缓存、过滤排序、归因票据、`short-play` 组件与回读门禁 |
+| `scripts/tools/wechat_mp_short_drama.py` | 手动单剧推广：`DramaSelect`、缓存、过滤排序、归因票据、`short-play` 组件与回读门禁；普通长文不自动调用 |
+| `scripts/tools/wechat_mp_codex_short_drama.py` | 单剧推广稿：Codex 稿件 JSON、来源和逐段事实绑定格式 |
+| `scripts/tools/wechat_mp_short_drama_research.py` | 单剧推广稿：平台来源注入与双来源剧情事实台账校验 |
+| `scripts/tools/wechat_mp_short_drama_feature_article.py` | 单剧推广稿：安全候选请求、Codex 成稿门禁与指定剧建卡 |
 | `scripts/tools/wechat_mp_product.py` | 独立 `commerce` 普通返佣商品；长文禁止调用 |
 | `data/wechat_mp_draft_slots.json` | 槽位状态（勿手删除非重建） |
 | `data/wechat_mp_footer_product.json` | 返佣选品缓存（`daihuo` / `footer.product_key`） |
@@ -70,6 +71,8 @@ WECHAT_MP_APPID=
 WECHAT_MP_SECRET=
 WECHAT_MP_WHITELIST_IP=          # 公众平台白名单
 WECHAT_MP_PUBLIC_IP=             # 可选，跳过 ipify
+WECHAT_MP_API_RESOLVE_IP=        # 可选，仅固定公众号 API 的目标 IPv4
+WECHAT_MP_REQUIRED_EGRESS_IP=    # 可选，草稿写入前要求的微信侧出口 IPv4
 WECHAT_MP_AUTHOR=R2D2
 # WECHAT_MP_READ_SOURCE_URL=1     # 默认 0：不写「阅读原文」；为 1 时再配下面 URL
 # WECHAT_MP_SOURCE_URL=           # 看板/要闻外链（仅 READ_SOURCE_URL=1 时写入草稿）
@@ -81,16 +84,14 @@ WECHAT_MP_ENGAGEMENT_HOOK=1      # 0=不加文末互动问句
 # 原创声明、话题 #、合集：draft API 不支持 → mp.weixin.qq.com 发布/发布后手动
 WECHAT_MP_AUTO_PUBLISH=0
 
-# 成稿 LLM（与 SOP 解耦）：stock-ai/.env → LLM_BACKEND=cursor + agent login
+# 公众号成稿只用 Codex CLI：可选 WECHAT_MP_CODEX_COMMAND / MODEL / TIMEOUT_SECONDS / MAX_RETRIES
+# Codex 不可用时停止推稿，不回退 DeepSeek、Cursor 或 Composer
 # 东财 SOP 并发仍用 SOP_LLM_BACKEND=deepseek + DEEPSEEK_API_KEY（见 docs/DEEPSEEK_USAGE.md）
 
 # 晚间封面留档见 stock-ai/assets/wechat_mp/COVER_THUMBS.md
-# top5/dragons 默认上传 repo 亮色 *-dual.jpg（WECHAT_MP_KIND_THUMB_FROM_ASSETS=1）
 WECHAT_MP_THUMB_NAME_SECTOR=封面-牛马品牌-双封面
 WECHAT_MP_THUMB_NAME_MARKET=封面-交易所屏-双封面
 WECHAT_MP_THUMB_NAME_NEWS=封面-显示器走势-双封面
-WECHAT_MP_THUMB_NAME_TOP5=封面-财经亮屏-双封面
-WECHAT_MP_THUMB_NAME_DRAGONS=封面-多屏亮行情-双封面
 WECHAT_MP_THUMB_NAME_WORKSPACE=封面-数据大屏-双封面
 
 WECHAT_MP_NEWS_HOURS=36
@@ -105,7 +106,7 @@ WECHAT_MP_SECTION_STYLE=compact    # compact=居中节标题；card=旧深色引
 WECHAT_MP_LAYOUT=pulse             # pulse|brief|chapter|report
 WECHAT_MP_RICH_HTML=1
 
-# 长文短剧推广；探针预览和归因确认前必须保持 0
+# 仅手动 short_drama_feature 使用；普通公众号长文始终不自动插入
 WECHAT_MP_SHORT_DRAMA=0
 WECHAT_MP_DRAMA_KOL_ID=                 # 仅写本地 .env，不提交
 WECHAT_MP_DRAMA_CACHE_TTL_HOURS=6
@@ -131,9 +132,13 @@ PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --refresh -
 PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --capture-sample-title "短剧组件测试-勿发"
 PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --capture-sample-file data/wechat_mp_short_drama_sample.html
 PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_short_drama --probe-component --drama-id 660409
+PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_draft --kind short_drama_feature --dry-run
+PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_draft --kind short_drama_feature --codex-draft output/short_drama_feature_codex.json --dry-run
 ```
 
 草稿 API 返回空列表时，从后台编辑器 Elements 复制 `data-adtype="short-play"` 标签的 outerHTML 到上述 `data/` 文件；该目录被 Git 忽略，避免票据进入提交。`DramaSelect` 只提供剧目和计划列表，不等于可直接投放。只有 `drama_id`、`plan_id`、来源应用、播放应用和 `wxTicket` 与人工插卡样本完全匹配的候选才可生成组件。不得把其他剧目的票据复用到新剧，也不得访问点击跟踪 URL 伪造票据。
+
+`short_drama_feature` 只允许手动触发。第一次运行按 50% 佣金、30% 对数热度、20% 强情节吸引力给出已确认归因的安全候选请求；当前 Codex 负责浏览、研究、选一部并写结构化 JSON，Python 不调用 Cursor 或 DeepSeek。第二次通过 `--codex-draft` 校验剧目仍在收益前三、每条剧情事实有平台与独立来源双重绑定、正文结构与长度合格，再插入同一部剧的组件。任何阶段都不得输出 Cookie、Token、`wxTicket` 或私有跳转路径。
 
 ### Commerce 选品关键词（`PICK_KEYWORDS_BY_VERTICAL`）
 
@@ -184,6 +189,17 @@ attach_cover_crop_fields(article, thumb_media_id)
 
 错误码常见：`40001` token 失效（刷新 token）；`40164` IP；`45009` 接口限额。
 
+SASE 等分流环境下，可先探测微信 API 各目标节点对应的出口：
+
+```bash
+cd stock-ai
+PYTHONPATH=. .venv/bin/python scripts/tools/wechat_mp_probe_api_routes.py
+```
+
+确认映射后再设置 `WECHAT_MP_API_RESOLVE_IP` 与
+`WECHAT_MP_REQUIRED_EGRESS_IP`。删除这两个变量即可恢复系统 DNS 行为；
+不要通过修改 `/etc/hosts` 影响全机应用。
+
 ## 工作区技术稿专用约定
 
 - `PROJECT_NAME = "工具工作区"`，`SERIES_TAG` 仅用于代码标识，**不进**正文。
@@ -196,37 +212,30 @@ strip_markdown_for_wechat → normalize_wechat_spacing → sanitize_public_mp_te
 # 不经过 humanize_mp_text
 ```
 
-## 行情三篇 LLM 提示要点
+## 财经手动稿 LLM 提示要点
 
 - System 注入：公开稿、非持仓、非荐股、非聊天机器人腔。
 - **宏观**：三节 `> 盘面速览` / `> 外围与资金` / `> 结构判断`；标题永远收盘后视角；禁止「研究员札记 |」抬头。
-- **Top5**：每只四行（逻辑归属/量价结构/技术位置/待核实），禁分数与操作建议；`sanitize_top5_analysis_text` 后处理。
-- **龙头**：四节 + 每只四行（地位/量价资金/博弈/待核实）；**禁止** X/7 与内部认可；`checklist_pass` 不进 prompt。
 - **要闻**：每条摘要 + AI 点评；AI 走心 prompt + `_AI_COMMENT_BANNED`；禁 `_AI_PAD` 垫句。
-- 成稿后：`strip_journal_title_lines` 去掉历史抬头行；龙头/Top5/news 经 `sanitize_*_public_text`。
+- 成稿后：`strip_journal_title_lines` 去掉历史抬头行；news 经公开稿清洗。
 
 ## 历史踩坑（对话沉淀）
 
 1. **UTF-8 / HTML**：早期乱码 → 统一 `encoding=utf-8`，HTML 必须 `_escape_html` 再插标签。
 2. **封面**：本地文件上传易尺寸不合 → 改素材库竖图 + 按 kind 匹配 + crop 字段。
 3. **草稿爆炸**：每次 `draft_add` → 槽位 json + update 优先 + `prune_obsolete_drafts`。
-4. **Top5 只读 combined 4 条** → 改多策略 merge + 按总分重选。
-5. **快采拖慢 SOP** → 独立 `wechat_mp_sop_fast` 缓存目录。
-6. **工作区走 humanize** → 语气更「模板」→ 工作区改静态 + 轻清洗。
+4. **工作区走 humanize** → 语气更「模板」→ 工作区改静态 + 轻清洗。
 7. **项目命名**：避免生僻绰号（如「盘后坞」）；统一「工具工作区」。
 8. **标题随机到怪句** → 工作区标题池固定 4 条吸睛句，勿塞目录名。
 9. **分块标题丑** → 引用块统一样式，`一、` 与 `>` 均识别。
 10. **订阅号审阅**：脚本只写草稿箱，发布前人工在 mp.weixin.qq.com 看图文版式。
 11. **market 标题「盘中复盘」**：按推送时刻出盘中/午间 → 已强制收盘/盘后（`_sanitize_market_title`）。
 12. **要闻 AI 模板腔**：190 字垫句 + 情绪定价套话 → 120–220 + `_AI_COMMENT_BANNED` + 主题化 fallback。
-13. **龙头 6/7 外泄**：曾改写为「系统筛选用分」→ 用户要求正文 **完全不出现** `/7`。
 14. **插图**：首节叠图、图题、过高 → 首节不插图、无 caption、max-height 200px、领域 tags。
 15. **market/news 标题撞车**：`_titles_too_similar` + 钩子来源分离（盘面 vs 快讯）。
 16. **原创/话题标签**：`draft/add` 无 `is_original` / `#话题` 字段；脚本只写正文，**发布须在后台勾原创、发布后加 `#`**（见 writing-guide 发布前总检）。
 17. **流量主广告位**：正文 `· · ·` 标记已取消；**微信自动插广告**，脚本保留完读 prompt + 文末问句 + 开留言。
-18. **普通返佣 CPS 仅限 commerce**：`getcardinfo` + `footer product_key` 对部分 JD 返佣无效；正文商品卡使用 `<mp-common-cpsad data-pid="{warehouse}_{product_id}">`。该机制不得进入长文。
-19. **commerce auto-pick**：`attach_footer_product` 仅接受 commerce 垂直，按 Select 结果选品；`cps_data_pid` 仅在缓存 `product_id` 匹配时用 `sku_id`。
-20. **短剧列表不等于归因卡**：`DramaSelect` 没有可复用的 `wxTicket`；未捕获对应建卡归因时必须失败关闭，不得借用其他短剧票据或回退普通商品。
+17. **短剧列表不等于归因卡**：`DramaSelect` 没有可复用的 `wxTicket`；未捕获对应建卡归因时必须失败关闭，不得借用其他短剧票据或回退普通商品。
 
 详见 [rules-implemented.md](rules-implemented.md)。
 

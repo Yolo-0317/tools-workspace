@@ -16,6 +16,28 @@ from scripts.tools.wechat_mp_eval import (
     evaluate_article,
     format_report,
 )
+
+
+def test_opening_block_skips_information_notice() -> None:
+    from scripts.tools.wechat_mp_eval import _opening_block
+
+    body = (
+        "【说明】本文依据公开资料整理一般生活信息。\n\n"
+        "7月底，一名家属报警称亲人接到陌生电话后失联，这个场景值得先记住。"
+    )
+
+    assert _opening_block(body).startswith("7月底")
+
+
+def test_section_count_does_not_double_count_plain_and_html() -> None:
+    from scripts.tools.wechat_mp_eval import _count_section_heads
+
+    body = "> 第一节\n\n正文。\n\n> 第二节\n\n正文。"
+    html = "<blockquote>第一节</blockquote><p>正文。</p><blockquote>第二节</blockquote>"
+
+    assert _count_section_heads(body, html=html) == 2
+
+
 from scripts.tools.wechat_mp_workspace_article import generate_workspace_overview_body
 
 

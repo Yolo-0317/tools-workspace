@@ -6,8 +6,8 @@
 
 | 用户说 | 账号 | Skill |
 |--------|------|-------|
-| **公众号**、牛马也智能、晚间三篇 | `WECHAT_MP_*` | **本目录** |
-| 简选、带货、小电 | commerce | [wechat-mp-commerce-drafts](../wechat-mp-commerce-drafts/SKILL.md)（**已搁置**） |
+| **公众号**、牛马也智能 | `WECHAT_MP_*` | **本目录** |
+| 简选、旧商品垂直稿 | — | **已退役，无生成入口** |
 
 工作目录：`stock-ai/` · CLI：`uv run python -m scripts.tools.wechat_mp_draft`
 
@@ -22,11 +22,11 @@
 3. [reference.md](reference.md) — 环境变量、模块表、踩坑  
 4. `stock-ai/docs/WECHAT_MP_SCHEDULING.md` — launchd / `skip` 文件  
 
-### 改晚间三篇文案（sector + top5 + dragons）
+### 改财经手动稿（market / sector / news）
 
-1. **[evening-trilogy-templates.md](evening-trilogy-templates.md)** — **金标准（唯一优先）**  
+1. [templates.md](templates.md) — 稿型骨架
 2. [researcher-voice.md](researcher-voice.md) — 口吻与论证  
-3. [sector-discovery.md](sector-discovery.md) — 仅 `sector` 选题  
+3. [sector-discovery.md](sector-discovery.md) — `sector` 选题
 4. [rules-implemented.md](rules-implemented.md) — 改代码前查映射  
 
 ### 润色 / 改稿 / eval 质检 / **热点深评**
@@ -35,6 +35,12 @@
 2. **[hotspot-deep-review.md](../wechat-mp-writing/hotspot-deep-review.md)** — 热点深评：参考仿写、去元叙述、事实标题、排版  
 3. **[social-commentary-voice.md](../wechat-mp-writing/social-commentary-voice.md)** — **社会民生热点**：短段、物件立人、通报对照、感情色彩  
 4. [eval-gates.md](../wechat-mp-writing/eval-gates.md) · [revision-workflow.md](../wechat-mp-writing/revision-workflow.md) · [anti-ai-voice.md](../wechat-mp-writing/anti-ai-voice.md) · [depth-and-opinion.md](../wechat-mp-writing/depth-and-opinion.md)
+
+### 热点商业（手动独立流程）
+
+1. 从每日热点自动选题：`uv run python -m scripts.tools.wechat_mp_draft --kind hot_business --dry-run`
+2. 手动指定热点：`uv run python -m scripts.tools.wechat_mp_draft --kind hot_business --topic "具体热点" --dry-run`
+3. 该流程复用热点深评的研究、配图、合规和长图文渲染，但只写入 `hot_business` 槽位，不进入任何定时批次。
 
 ### 贴图 / 图片消息 / 小绿书
 
@@ -57,8 +63,15 @@
 
 1. **[tv-review-template.md](tv-review-template.md)** — **影视稿金标准（优先）**
 2. **`stock-ai/docs/WECHAT_MP_TV_REVIEW.md`**
-3. `stock-ai/data/wechat_mp_tv_review_golden/teach_you_a_lesson.body_core.md`
-4. 改定稿 → `repush`；**禁止**为微调重跑 DeepSeek
+3. `stock-ai/assets/wechat_mp/templates/teach_you_a_lesson.body_core.md`
+4. 改定稿 → `repush`；微调仍由 Codex 完成，禁止切换其他模型
+
+### 单剧强情节推广稿（short_drama_feature · 手动独立槽位）
+
+1. 生成请求：`uv run python -m scripts.tools.wechat_mp_draft --kind short_drama_feature --dry-run`，写出 `output/short_drama_feature_request.json`。
+2. 当前 Codex 从收益前三候选中选一部，浏览公开资料并写 `output/short_drama_feature_codex.json`；每条剧情事实必须绑定平台资料和至少一个独立公开来源。
+3. 校验预览：`uv run python -m scripts.tools.wechat_mp_draft --kind short_drama_feature --codex-draft output/short_drama_feature_codex.json --dry-run`。
+4. 确认后去掉 `--dry-run`，只更新独立槽位，不自动发表。不得调用 Cursor/DeepSeek 自动写稿，也不得根据短剧池单段简介扩写情节。
 
 ### 东财股吧转载（sector → 微信引流）
 
@@ -97,8 +110,7 @@
 | [account-packaging.md](account-packaging.md) | **公众平台包装**：介绍、菜单、自动回复、关键词「写作」→ 夸克笔记 | 命令、env |
 | [SKILL.md](SKILL.md) | Agent 入口、槽位表、流水线摘要 | 长模板正文 |
 | [operations-sop.md](operations-sop.md) | 节奏、人工发布、维护、**关注引流 §二点六** | prompt 细则 |
-| [evening-trilogy-templates.md](evening-trilogy-templates.md) | 晚间三篇结构与好句 | market/news |
-| [templates.md](templates.md) | 五槽模板（**晚间指向 trilogy**） | 工程 API |
+| [templates.md](templates.md) | 当前手动财经稿模板 | 工程 API |
 | [writing-guide.md](writing-guide.md) | 行业写法 + 发布前五步 | 批次 cron |
 | [researcher-voice.md](researcher-voice.md) | `RESEARCHER_VOICE_RULE` | 封面 env |
 | [sector-discovery.md](sector-discovery.md) | 热门行业多源投票 | 龙头逻辑 |
@@ -112,12 +124,11 @@
 
 | 路径 | 用途 |
 |------|------|
-| `stock-ai/assets/wechat_mp/COVER_THUMBS.md` | top5/dragons 封面定稿 |
-| `stock-ai/docs/DEEPSEEK_USAGE.md` | `LLM_BACKEND` / `SOP_LLM_BACKEND` |
+| `stock-ai/docs/DEEPSEEK_USAGE.md` | 公众号 Codex 与东财 DeepSeek 的边界 |
 | `stock-ai/data/wechat_mp_skip_scheduled.date` | 按日跳过 18:20 自动写稿 |
 | `stock-ai/output/wechat_mp_weekly/` | **运营周报**（搜一搜 7 天 + 下周只调一类） |
 | `stock-ai/docs/WECHAT_MP_TV_REVIEW.md` | **影视试跑 tv_review_v2** 定稿模板（《铁拳教育》） |
-| `stock-ai/data/wechat_mp_tv_review_template.json` | tv_review 机器可读真源 |
+| `stock-ai/assets/wechat_mp/templates/tv_review_v2.json` | tv_review 机器可读真源 |
 
 ---
 
@@ -125,9 +136,9 @@
 
 ```bash
 # stock-ai/.env
-LLM_BACKEND=cursor              # 公众号写稿、战报
-CURSOR_AGENT_MODEL=auto
-SOP_LLM_BACKEND=deepseek          # 东财 SOP Top5 并发（勿改 cursor）
+WECHAT_MP_CODEX_TIMEOUT_SECONDS=420 # 公众号写稿只用 Codex，失败不回退
+WECHAT_MP_CODEX_MAX_RETRIES=1
+SOP_LLM_BACKEND=deepseek          # 仅非公众号的东财 SOP
 DEEPSEEK_API_KEY=sk-...
 ```
 

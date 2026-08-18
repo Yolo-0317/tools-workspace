@@ -20,7 +20,25 @@ from scripts.tools.wechat_mp_hotspot_article import (
 from scripts.tools.wechat_mp_prose import strip_hotspot_subheadings
 
 
-def test_template_hotspot_body_long_pure_paragraphs():
+def test_template_hotspot_body_long_pure_paragraphs(monkeypatch):
+    from scripts.tools.wechat_mp_hotspot_research import ResearchHit
+
+    detail = (
+        "公开行情显示存储芯片板块午后回升，成交额同步放大，产业链报价、库存、"
+        "订单与产能信号仍待后续验证，相关公司表现出现分化，2026年公开数据需要继续核对，"
+    ) * 8 + "该报道同时提示短期行情不能代替基本面判断。"
+    monkeypatch.setattr(
+        "scripts.tools.wechat_mp_hotspot_research.fetch_hotspot_research",
+        lambda _title: [
+            ResearchHit(
+                title=f"第{i}份存储芯片公开报道：概念震荡回升",
+                snippet=detail,
+                source=f"公开报道{i}",
+                url=f"https://source{i}.example.com/report",
+            )
+            for i in range(8)
+        ],
+    )
     topic = HotspotTopic(
         item={
             "title": "A股存储芯片概念震荡回升",

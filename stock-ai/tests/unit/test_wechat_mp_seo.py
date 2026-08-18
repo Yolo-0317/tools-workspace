@@ -44,20 +44,8 @@ def test_recommended_hashtags_market_close():
     assert len(tags) <= HASHTAG_MAX
 
 
-def test_recommended_hashtags_dragons_with_theme():
-    tags = recommended_hashtags(
-        "dragons",
-        dragon_slot="eod",
-        theme="电力",
-        phase="发酵",
-    )
-    assert "A股" in tags
-    assert "电力" in tags
-    assert len(tags) <= HASHTAG_MAX
-
-
 def test_recommended_hashtags_banned_excluded():
-    tags = recommended_hashtags("top5", extra="牛股推荐")
+    tags = recommended_hashtags("market", extra="牛股推荐")
     assert "牛股推荐" not in tags
 
 
@@ -68,36 +56,15 @@ def test_format_hashtag_line():
     assert "#收盘复盘" in line
 
 
-def test_enrich_title_for_search_adds_prefix_top5():
-    raw = "胜业电气等5只，结构怎么读？"
-    out = enrich_title_for_search(raw, "top5", max_len=32)
-    assert title_front_has_search_keywords(out, "top5")
-    assert len(out) <= 32
-    assert "领衔" not in out
-    assert "明日盯" not in out
-
-
 def test_enrich_title_for_search_skips_when_front_ok():
-    raw = "A股观察5只｜胜业电气结构对照"
-    out = enrich_title_for_search(raw, "top5", max_len=32)
+    raw = "A股行业｜电力产业链怎么拆"
+    out = enrich_title_for_search(raw, "sector", max_len=32)
     assert "领衔" not in out
-    assert title_front_has_search_keywords(out, "top5")
+    assert title_front_has_search_keywords(out, "sector")
 
 
 def test_title_sousou_hook_score_prefers_search_winners():
-    assert title_sousou_hook_score("情绪退潮梯队｜粤电力4板结构", "dragons") >= 4
-    assert title_sousou_hook_score("A股观察｜胜业电气等5只，结构怎么读？", "top5") >= 4
     assert title_sousou_hook_score("A股电力｜产业链怎么拆？收盘观察", "sector") >= 4
-    assert title_sousou_hook_score("情绪退潮怎么玩？粤电力4板还在榜", "dragons") < 0
-
-
-def test_top5_winner_title_keeps_mingri_dinghua():
-    raw = "A股观察｜胜业电气等5只，结构怎么读？"
-    out = enrich_title_for_search(raw, "top5", max_len=32)
-    assert "胜业电气" in out
-    assert "领衔" not in out
-    assert "明日盯" not in out
-    assert title_front_has_search_keywords(out, "top5")
 
 
 def test_sync_article_content_keeps_banner_img(monkeypatch, tmp_path) -> None:
@@ -137,21 +104,6 @@ def test_sync_article_content_keeps_banner_img(monkeypatch, tmp_path) -> None:
     assert "https://mmbiz.qpic.cn/test/banner" in out["content"]
     assert "<img " in out["content"]
     assert out["content"].endswith("</mp-common-cpsad>")
-
-
-def test_commerce_digest_and_hashtags() -> None:
-    base = "窄台面对照。（文内有合作推广）"
-    out = enrich_digest(base, "commerce", edition="guide")
-    assert "租屋" in out or "小家电" in out
-    tags = recommended_hashtags("commerce", edition="guide")
-    assert "租房好物" in tags
-    assert len(tags) <= HASHTAG_MAX
-
-
-def test_commerce_title_enrich_prefix() -> None:
-    raw = "厨房小电器怎么二选一？"
-    out = enrich_title_for_search(raw, "commerce", edition="guide", max_len=32)
-    assert title_front_has_search_keywords(out, "commerce") or out.startswith("租屋小电")
 
 
 def test_append_hashtag_inline_before_disclaimer():

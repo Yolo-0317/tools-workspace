@@ -40,11 +40,14 @@ CACHE_PATH = ROOT / "data" / "wechat_mp_short_drama_pool.json"
 USAGE_PATH = ROOT / "data" / "wechat_mp_short_drama_usage.json"
 ATTRIBUTION_PATH = ROOT / "data" / "wechat_mp_short_drama_attribution.json"
 WORKPLACE_KINDS = frozenset(
-    {"sector", "market", "news", "top5", "dragons", "workspace", "temp"}
+    {"sector", "market", "news", "workspace", "temp"}
 )
 LONGFORM_KINDS = frozenset(
     {
         "hotspot",
+        "hot_business",
+        "silver",
+        "short_drama_feature",
         "tv_review",
         "tv",
         "film",
@@ -52,8 +55,6 @@ LONGFORM_KINDS = frozenset(
         "sector",
         "market",
         "news",
-        "top5",
-        "dragons",
         "workspace",
         "temp",
     }
@@ -471,6 +472,32 @@ def score_drama(
     )
 
 
+def score_short_drama_feature(
+    drama: ShortDrama,
+    *,
+    population: Sequence[ShortDrama],
+    usage_count: int = 0,
+) -> DramaScore:
+    """单剧推广稿使用已确认的 50/30/20 收益权重。"""
+    commission = _minmax(
+        drama.rate_bp,
+        [row.rate_bp for row in population],
+    ) * 50
+    heat = _minmax(
+        math.log1p(max(0, drama.hot_degree)),
+        [math.log1p(max(0, row.hot_degree)) for row in population],
+    ) * 30
+    appeal = float(drama_appeal_points(drama))
+    penalty = float(min(max(0, usage_count) * 3, 9))
+    return DramaScore(
+        commission_score=commission,
+        heat_score=heat,
+        appeal_score=appeal,
+        usage_penalty=penalty,
+        final_score=commission + heat + appeal - penalty,
+    )
+
+
 def drama_repeat_days() -> int:
     try:
         value = int(os.getenv("WECHAT_MP_DRAMA_REPEAT_DAYS", "7"))
@@ -510,6 +537,92 @@ def _load_usage(path: Path) -> list[dict[str, Any]]:
     except (OSError, json.JSONDecodeError):
         return []
     return [item for item in payload if isinstance(item, dict)] if isinstance(payload, list) else []
+
+
+def has_recorded_drama_usage(
+    drama_id: str,
+    *,
+    article_title: str,
+    usage_path: Path = USAGE_PATH,
+) -> bool:
+    target_id = str(drama_id or "").strip()
+    target_title = str(article_title or "").strip()
+    if not target_id or not target_title:
+        return False
+    return any(
+        str(item.get("drama_id") or "").strip() == target_id
+        and str(item.get("article_title") or "").strip() == target_title
+        for item in _load_usage(usage_path)
+    )
+
+
+def rank_short_drama_candidates(
+    rows: Sequence[ShortDrama],
+    *,
+    usage_path: Path = USAGE_PATH,
+    now: datetime | None = None,
+    limit: int = 3,
+    exclude_previously_used: bool = False,
+) -> list[tuple[ShortDrama, DramaScore]]:
+    """按专题稿收益权重返回商业 Top N，再应用近期轮换惩罚。"""
+    if limit < 1:
+        raise ValueError("短剧候选数量必须大于 0")
+    current = now or datetime.now(TZ)
+    usage = _load_usage(usage_path)
+    used_ids = {str(item.get("drama_id") or "") for item in usage}
+    candidates = [
+        row
+        for row in rows
+        if not exclude_previously_used or row.drama_id not in used_ids
+    ]
+    if not candidates:
+        return []
+    base_scores = {
+        row.drama_id: score_short_drama_feature(row, population=candidates)
+        for row in candidates
+    }
+    commercial_top = sorted(
+        candidates,
+        key=lambda row: (
+            -base_scores[row.drama_id].final_score,
+            -row.rate_bp,
+            -row.hot_degree,
+            row.drama_id,
+        ),
+    )[:limit]
+    cutoff = current - timedelta(days=drama_repeat_days())
+    recent_counts: dict[str, int] = {}
+    for item in usage:
+        try:
+            used_at = datetime.fromisoformat(str(item.get("used_at") or ""))
+        except ValueError:
+            continue
+        if used_at.tzinfo is None:
+            used_at = used_at.replace(tzinfo=TZ)
+        drama_id = str(item.get("drama_id") or "")
+        if drama_id and used_at >= cutoff:
+            recent_counts[drama_id] = recent_counts.get(drama_id, 0) + 1
+    rescored = [
+        (
+            row,
+            score_short_drama_feature(
+                row,
+                population=candidates,
+                usage_count=recent_counts.get(row.drama_id, 0),
+            ),
+        )
+        for row in commercial_top
+    ]
+    return sorted(
+        rescored,
+        key=lambda pair: (
+            -pair[1].final_score,
+            -base_scores[pair[0].drama_id].final_score,
+            -pair[0].rate_bp,
+            -pair[0].hot_degree,
+            pair[0].drama_id,
+        ),
+    )
 
 
 def pick_short_drama(
@@ -626,44 +739,25 @@ def assert_longform_promotion_safe(
     if PLAIN_CPS_RE.search(content) or footer:
         raise RuntimeError("长文仍含普通返佣商品")
     count = len(SHORT_PLAY_RE.findall(content))
-    if short_drama_enabled() and count == 0:
+    if short_drama_enabled() and count == 0 and normalized == "short_drama_feature":
         raise RuntimeError("长文缺少短剧组件")
     if count > 1:
         raise RuntimeError(f"长文短剧组件数量异常: {count}")
 
 
-def attach_short_drama(
+def attach_selected_short_drama(
     article: Mapping[str, Any],
     *,
     kind: str | None,
-    now: datetime | None = None,
+    drama: ShortDrama,
+    score: DramaScore,
+    attribution: ShortDramaAttribution,
 ) -> dict[str, Any]:
+    """插入调用方已经研究并确认的同一部短剧，不再二次选剧。"""
     normalized = (kind or "").strip().lower()
+    if normalized not in LONGFORM_KINDS:
+        raise RuntimeError(f"稿型不支持短剧组件: {normalized or 'empty'}")
     out = dict(article)
-    if normalized not in LONGFORM_KINDS or not short_drama_enabled():
-        return out
-    current = now or datetime.now(TZ)
-    rows = dedupe_dramas(
-        eligible_dramas(
-            load_or_refresh_drama_pool(now=current),
-            now=current,
-            min_valid_days=drama_min_valid_days(),
-        )
-    )
-    if not rows:
-        raise RuntimeError("没有满足有效性门禁的短剧")
-    excluded_reasons = [
-        f"{row.drama_name}: {reason}"
-        for row in rows
-        if (reason := incompatibility_reason(out, row)) is not None
-    ]
-    drama, score = pick_short_drama(
-        out,
-        rows,
-        kind=normalized,
-        now=current,
-    )
-    attribution = ensure_attribution_for_drama(drama, now=current)
     component = build_short_drama_html(drama, attribution)
     content = str(out.get("content") or "")
     if not SHORT_PLAY_RE.search(content):
@@ -689,10 +783,22 @@ def attach_short_drama(
             "penalty": round(score.usage_penalty, 1),
             "final": round(score.final_score, 1),
         },
-        "excluded_reasons": excluded_reasons,
+        "excluded_reasons": [],
     }
     assert_longform_promotion_safe(out, kind=normalized)
     return out
+
+
+def attach_short_drama(
+    article: Mapping[str, Any],
+    *,
+    kind: str | None,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """普通长文兼容入口：保留签名，但不再自动选择或插入返佣短剧。"""
+
+    del kind, now
+    return dict(article)
 
 
 def promotion_summary(article: Mapping[str, Any]) -> str:
@@ -1111,9 +1217,9 @@ def verify_saved_short_drama(
     if err:
         raise RuntimeError(f"短剧草稿回读失败: {err.get('errmsg') or err}")
     content = str((news or {}).get("content") or "")
-    assert_longform_promotion_safe(news or {}, kind=kind)
     if not SHORT_PLAY_RE.search(content):
         raise RuntimeError("短剧草稿回读未发现 short-play 组件")
+    assert_longform_promotion_safe(news or {}, kind=kind)
     parsed = parse_short_drama_component(content)
     if parsed.drama_id != expected_drama_id:
         raise RuntimeError(

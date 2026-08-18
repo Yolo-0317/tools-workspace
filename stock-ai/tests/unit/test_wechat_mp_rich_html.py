@@ -33,33 +33,6 @@ def test_market_opening_lede_before_first_section() -> None:
     assert html.count("font-size:17px;font-weight:700") >= 1
 
 
-def test_top5_opening_lede_under_first_section_only() -> None:
-    body = (
-        "> 筛选名单\n\n"
-        "今日最强信号：科技主线集中，科创50领涨。\n\n"
-        "> 个股拆解\n\n"
-        "1. 测试股（000001）"
-    )
-    html = text_to_html(body, upload_figures=False, article_kind="top5")
-    assert opening_lede_paragraph_style() in html
-    assert "今日最强信号" in html
-    assert html.index("今日最强信号") < html.index("个股拆解")
-    # 第二节正文为常规 16px
-    assert 'font-size:16px;color:#333333' in html
-
-
-def test_dragons_opening_lede_under_emotion_section() -> None:
-    body = (
-        "> 情绪与盘面\n\n"
-        "炸板率32%，涨跌比1927:3270，情绪偏分歧。\n\n"
-        "> 龙头拆解\n\n"
-        "地位：观察。"
-    )
-    html = text_to_html(body, upload_figures=False, article_kind="dragons")
-    assert opening_lede_paragraph_style() in html
-    assert "炸板率" in html
-
-
 def test_no_opening_lede_without_article_kind() -> None:
     body = "开篇一句。\n\n> 盘面速览\n\n正文。"
     html = text_to_html(body, upload_figures=False)
@@ -85,7 +58,7 @@ def test_sentiment_and_pct() -> None:
     assert "#c0392b" in format_line_rich_html("长鑫科技早盘涨近9%")
 
 
-def test_top5_rank_and_metric() -> None:
+def test_rank_and_metric() -> None:
     rank = format_line_rich_html("1. 京东方A（000725）（已持仓）")
     assert "<strong>" in rank
     metric = format_line_rich_html("· 情绪阶段：退潮")

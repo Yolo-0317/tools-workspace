@@ -224,12 +224,12 @@ def blockquote_title_html(title: str, *, tight_top: bool = False, first_section:
 
 
 OPENING_LEDE_KINDS = frozenset(
-    {"sector", "hotspot", "market", "top5", "dragons", "news", "tv_review", "discussion"}
+    {"sector", "hotspot", "market", "news", "tv_review", "discussion"}
 )
 
 
 def opening_lede_paragraph_style() -> str:
-    """开篇结论段：略大于正文、居中、主题色（market 文首 / top5·dragons 首节首段）。"""
+    """开篇结论段：略大于正文、居中、主题色。"""
     from scripts.tools.wechat_mp_layout import active_layout
 
     layout = active_layout()
@@ -303,40 +303,13 @@ def cta_box_html(parts: list[str]) -> str:
     )
 
 
-def commerce_hashtag_html(tags: list[str]) -> str:
-    """简选小电正文内 #话题：居中、浅底，与文末免责区分开。"""
-    names = [str(t).strip().lstrip("#") for t in tags if str(t).strip()]
-    if not names:
-        return ""
-    inner = " ".join(
-        f'<span style="color:#5c5348;font-weight:600;">#{_escape_html(t)}</span>'
-        for t in names
-    )
-    return (
-        '<p style="margin:14px 0 16px;padding:10px 8px;text-align:center;'
-        "font-size:14px;line-height:1.75;"
-        'background-color:#faf6f0;border:1px solid #e8ddd0;border-radius:8px;">'
-        f"{inner}</p>"
-    )
-
-
-def is_commerce_hashtag_line(line: str) -> bool:
-    s = (line or "").strip()
-    if not s or " " not in s and not s.startswith("#"):
-        return False
-    tokens = s.split()
-    return bool(tokens) and all(t.startswith("#") and len(t) > 1 for t in tokens)
-
-
 def disclaimer_html(text: str, *, kind: str | None = None) -> str:
     """文末免责声明：居中、加字号、浅色底（与正文区分）。"""
     t = _escape_html(" ".join((text or "").split()))
     if not t:
         return ""
     k = (kind or "").strip().lower()
-    if k == "commerce":
-        color, bg, border = "#6b5b4f", "#fffaf5", "#e8ddd0"
-    elif k in {"workspace", "temp", "tech", "lab", "dev"}:
+    if k in {"workspace", "temp", "tech", "lab", "dev"}:
         color, bg, border = "#5d6d7e", "#f0f4f8", "#c5d0dc"
     else:
         color, bg, border = "#c0392b", "#fff5f5", "#f5b7b1"

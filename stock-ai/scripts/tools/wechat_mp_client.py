@@ -7,13 +7,15 @@ import os
 import re
 import struct
 import time
-from contextlib import contextmanager
 from datetime import datetime
+from ipaddress import AddressValueError, IPv4Address
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 import requests
+from requests.adapters import HTTPAdapter
 
 from scripts._bootstrap import ensure_repo_root_on_path
 
@@ -45,9 +47,7 @@ TOKEN_CACHE = ROOT / "data" / "wechat_mp_token.json"
 THUMB_CACHE = ROOT / "data" / "wechat_mp_thumb.json"
 SECTOR_BANNER_THUMB_CACHE = ROOT / "data" / "wechat_mp_sector_banner_thumb.json"
 _KIND_THUMB_ASSET_CACHE: dict[str, Path] = {
-    "top5": ROOT / "data" / "wechat_mp_thumb_top5.json",
     "hotspot": ROOT / "data" / "wechat_mp_thumb_hotspot.json",
-    "dragons": ROOT / "data" / "wechat_mp_thumb_dragons.json",
     "tv_review": ROOT / "data" / "wechat_mp_thumb_tv_review.json",
 }
 DEFAULT_COVER_PATH = ROOT / "assets" / "wechat_mp" / "default_cover.jpg"
@@ -57,6 +57,7 @@ TZ = ZoneInfo("Asia/Shanghai")
 
 # 常见 IP 白名单相关 errcode
 IP_WHITELIST_ERRCODES = frozenset({40164, 61004})
+INVALID_IP_RE = re.compile(r"invalid ip\s+(\d{1,3}(?:\.\d{1,3}){3})", re.IGNORECASE)
 
 
 def _env(name: str, default: str = "") -> str:
@@ -80,51 +81,69 @@ def _material_display_name(item: dict[str, Any]) -> str:
     return _normalize_material_name(str(item.get("name") or ""))
 
 
-def mp_configured(*, profile: str = "finance") -> bool:
-    appid, secret = mp_credentials(profile=profile)
+def mp_configured() -> bool:
+    appid, secret = mp_credentials()
     return bool(appid and secret)
 
 
-def mp_credentials(*, profile: str = "finance") -> tuple[str, str]:
-    if profile == "commerce":
-        appid = _env("WECHAT_MP_COMMERCE_APPID") or _env("WECHAT_MP_APPID")
-        secret = _env("WECHAT_MP_COMMERCE_SECRET") or _env("WECHAT_MP_SECRET")
-        return appid, secret
+def mp_credentials() -> tuple[str, str]:
     return _env("WECHAT_MP_APPID"), _env("WECHAT_MP_SECRET")
 
 
-@contextmanager
-def mp_account_profile(profile: str = "finance"):
-    """临时切换 API 凭证（带货独立号 WECHAT_MP_COMMERCE_*）。"""
-    if profile != "commerce":
-        yield
-        return
-    swaps: list[tuple[str, str | None]] = []
-    for dst, src in (
-        ("WECHAT_MP_APPID", "WECHAT_MP_COMMERCE_APPID"),
-        ("WECHAT_MP_SECRET", "WECHAT_MP_COMMERCE_SECRET"),
-        ("WECHAT_MP_AUTHOR", "WECHAT_MP_COMMERCE_AUTHOR"),
-        ("WECHAT_MP_DAIHUO_UIN", "WECHAT_MP_COMMERCE_DAIHUO_UIN"),
-    ):
-        val = _env(src)
-        if not val:
-            continue
-        swaps.append((dst, os.environ.get(dst)))
-        os.environ[dst] = val
+class FixedWeChatAPIAdapter(HTTPAdapter):
+    """连接固定 IPv4，同时保留微信域名的 Host、SNI 与证书校验。"""
+
+    def __init__(self, *, resolve_ip: str) -> None:
+        self.resolve_ip = str(IPv4Address(resolve_ip))
+        super().__init__()
+
+    def get_connection_with_tls_context(
+        self,
+        request: requests.PreparedRequest,
+        verify: bool | str,
+        proxies: dict[str, str] | None = None,
+        cert: Any = None,
+    ) -> Any:
+        parsed = urlsplit(request.url)
+        if parsed.hostname != "api.weixin.qq.com":
+            return super().get_connection_with_tls_context(
+                request,
+                verify,
+                proxies=proxies,
+                cert=cert,
+            )
+        request.headers.setdefault("Host", "api.weixin.qq.com")
+        return self.poolmanager.connection_from_host(
+            host=self.resolve_ip,
+            port=parsed.port or 443,
+            scheme="https",
+            pool_kwargs={
+                "assert_hostname": "api.weixin.qq.com",
+                "server_hostname": "api.weixin.qq.com",
+            },
+        )
+
+
+def _configured_api_resolve_ip() -> str:
+    value = _env("WECHAT_MP_API_RESOLVE_IP")
+    if not value:
+        return ""
     try:
-        yield
-    finally:
-        for key, old in swaps:
-            if old is None:
-                os.environ.pop(key, None)
-            else:
-                os.environ[key] = old
+        return str(IPv4Address(value))
+    except AddressValueError as exc:
+        raise ValueError("WECHAT_MP_API_RESOLVE_IP 须为 IPv4 地址") from exc
 
 
 def _mp_session() -> requests.Session:
-    """微信 API 不走系统/Clash 代理，出口须为家用 WAN（白名单 IP）。"""
+    """微信 API 不走普通代理；可选固定目标 IPv4 以稳定 SASE 出口。"""
     session = requests.Session()
     session.trust_env = False
+    resolve_ip = _configured_api_resolve_ip()
+    if resolve_ip:
+        session.mount(
+            "https://api.weixin.qq.com/",
+            FixedWeChatAPIAdapter(resolve_ip=resolve_ip),
+        )
     return session
 
 
@@ -191,12 +210,15 @@ def get_access_token(*, force_refresh: bool = False) -> tuple[str | None, dict[s
                 return str(cached["access_token"]), None
 
     url = f"{API_BASE}/token"
-    resp = _mp_session().get(
-        url,
-        params={"grant_type": "client_credential", "appid": appid, "secret": secret},
-        timeout=20,
-    )
-    data = resp.json()
+    try:
+        resp = _mp_session().get(
+            url,
+            params={"grant_type": "client_credential", "appid": appid, "secret": secret},
+            timeout=20,
+        )
+        data = _mp_parse_json(resp)
+    except requests.RequestException:
+        return None, {"errcode": -2, "errmsg": "微信公众号 token 网络请求失败"}
     if data.get("errcode"):
         return None, data
     token = str(data.get("access_token") or "")
@@ -220,6 +242,41 @@ def is_ip_whitelist_error(err: dict[str, Any] | None) -> bool:
         return int(code) in IP_WHITELIST_ERRCODES
     except (TypeError, ValueError):
         return False
+
+
+def invalid_ip_from_error(error: dict[str, Any] | None) -> str:
+    """从微信白名单错误中提取微信实际看到的 IPv4。"""
+    if not is_ip_whitelist_error(error):
+        return ""
+    match = INVALID_IP_RE.search(str((error or {}).get("errmsg") or ""))
+    if not match:
+        return ""
+    try:
+        return str(IPv4Address(match.group(1)))
+    except AddressValueError:
+        return ""
+
+
+def verify_required_wechat_egress() -> dict[str, Any]:
+    """强刷 token 验证固定路由；无法证明符合要求时停止写操作。"""
+    required = _env("WECHAT_MP_REQUIRED_EGRESS_IP")
+    if not required:
+        return {"ok": True, "required_ip": None, "observed_ip": None}
+    try:
+        required = str(IPv4Address(required))
+    except AddressValueError as exc:
+        raise RuntimeError("WECHAT_MP_REQUIRED_EGRESS_IP 须为 IPv4 地址") from exc
+
+    token, error = get_access_token(force_refresh=True)
+    if token and not error:
+        return {"ok": True, "required_ip": required, "observed_ip": None}
+
+    observed = invalid_ip_from_error(error)
+    if observed and observed != required:
+        raise RuntimeError(f"微信 API 出口 {observed} 与要求 {required} 不一致")
+    if observed == required:
+        raise RuntimeError(f"微信 API 已走目标出口 {required}，但该 IP 尚未被白名单放行")
+    raise RuntimeError(f"微信 API 出口预检失败: {(error or {}).get('errcode')}")
 
 
 def check_api_reachable() -> dict[str, Any]:
@@ -580,8 +637,6 @@ def _text_prose_to_html(
             return False
         if kind == "market":
             return not seen_section
-        if kind in ("top5", "dragons"):
-            return seen_section
         if kind == "discussion":
             return not seen_section
         return False
@@ -594,21 +649,14 @@ def _text_prose_to_html(
         from scripts.tools.wechat_mp_figures import figure_to_html, parse_figure_line
         from scripts.tools.wechat_mp_rich_html import (
             blockquote_title_html,
-            commerce_hashtag_html,
             cta_box_html,
             discussion_highlight_html,
             is_blockquote_title_line,
-            is_commerce_hashtag_line,
             parse_cta_line,
             parse_hl_line,
         )
 
         if len(lines) == 1:
-            if kind == "commerce" and is_commerce_hashtag_line(lines[0]):
-                tags = [t.lstrip("#") for t in lines[0].strip().split()]
-                parts.append(commerce_hashtag_html(tags))
-                prev_was_figure = False
-                continue
             cta_parts = parse_cta_line(lines[0])
             if cta_parts:
                 parts.append(cta_box_html(cta_parts))
@@ -965,18 +1013,14 @@ _DEFAULT_KIND_THUMB_NAMES: dict[str, str] = {
     "sector": "封面-牛马品牌-双封面",
     "market": "封面-交易所屏-双封面",
     "news": "封面-显示器走势-双封面",
-    "top5": "封面-财经亮屏-双封面",
     "hotspot": "封面-牛马品牌-双封面",
-    "dragons": "封面-多屏亮行情-双封面",
+    "hot_business": "封面-牛马品牌-双封面",
     "workspace": "封面-数据大屏-双封面",
     "temp": "封面-数据大屏-双封面",
     "guba": "封面-牛马品牌-双封面",
 }
 
-# top5 / dragons 默认本地亮色封面（相对 ROOT）；可被 WECHAT_MP_THUMB_PATH_{KIND} 覆盖
 _DEFAULT_KIND_THUMB_ASSETS: dict[str, Path] = {
-    "top5": ROOT / "assets" / "wechat_mp" / "cover-financial-screen-dual.jpg",
-    "dragons": ROOT / "assets" / "wechat_mp" / "cover-multi-screen-dual.jpg",
     "tv_review": ROOT / "assets" / "wechat_mp" / "cover-tv" / "euphoria-hbo-neon.jpg",
 }
 
@@ -985,14 +1029,8 @@ _FINANCE_THUMB_DENY_SUBSTR: tuple[str, ...] = ("avatar", "简选")
 
 _KIND_THUMB_FALLBACKS: dict[str, tuple[str, ...]] = {
     "news": ("封面-多屏行情-双封面", "封面-平板分析-双封面", "多屏行情"),
-    "top5": ("封面-手机看盘-双封面", "财经亮屏", "financial-screen"),
     "hotspot": ("封面-牛马品牌-双封面", "牛马品牌", "banner"),
-    "dragons": (
-        "封面-多屏行情-双封面",
-        "封面-显示器走势-双封面",
-        "多屏亮行情",
-        "multi-screen",
-    ),
+    "hot_business": ("封面-牛马品牌-双封面", "牛马品牌", "banner"),
 }
 
 
@@ -1201,7 +1239,7 @@ def pick_kind_thumb_from_local_asset(
     *,
     force_reupload: bool = False,
 ) -> tuple[str | None, dict[str, Any] | None]:
-    """top5 / dragons：上传 repo 内亮色财经封面（默认优先于素材库暗色图）。"""
+    """上传配置为本地文件的稿型封面。"""
     k = (kind or "").strip().lower()
     if not _kind_thumb_from_assets_enabled(k):
         return None, {
@@ -1273,7 +1311,7 @@ def pick_sector_thumb_from_banner(*, force_reupload: bool = False) -> tuple[str 
 
 def pick_thumb_for_draft_kind(kind: str) -> tuple[str | None, dict[str, Any] | None]:
     """
-    按封面资源 kind 选 thumb（sector / top5 / dragons 等素材或本地图）。
+    按封面资源 kind 选 thumb（sector / hotspot / tv_review 等素材或本地图）。
     环境变量：WECHAT_MP_THUMB_MEDIA_ID_{KIND}、WECHAT_MP_THUMB_NAME_{KIND}
     与带货隔离：排除 avatar/简选 素材，且禁止「最新一张」回退。
     sector：素材库「封面-牛马品牌」→ 否则上传 banner.png。
@@ -1305,7 +1343,7 @@ def pick_thumb_for_draft_kind(kind: str) -> tuple[str | None, dict[str, Any] | N
         if mid:
             return mid, None
         last_err = err
-    if k in {"sector", "guba", "hotspot"}:
+    if k in {"sector", "guba", "hotspot", "hot_business"}:
         mid, err = pick_sector_thumb_from_banner()
         if mid:
             return mid, None

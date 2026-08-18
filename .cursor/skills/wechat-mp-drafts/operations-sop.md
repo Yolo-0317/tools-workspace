@@ -11,7 +11,7 @@
 |------|------|
 | **主轴是热点评论** | 社会 / 文娱 / 职场 / 公共事件；A 股收盘三篇已停用，仅 **手动** 偶发财经稿 |
 | 成稿质量先于定时 | 热点深评定时推草稿；质量门禁不过则飞书告警，禁止静默兜底 |
-| **成稿 LLM** | `LLM_BACKEND=cursor`（`agent login`）；DeepSeek 作备选，token 失效须告警勿静默兜底 |
+| **成稿 LLM** | 公众号只用 Codex CLI；Codex 不可用时停止，禁止回退 DeepSeek、Cursor 或 Composer |
 | 机器推草稿、人发正文 | API 可 `upsert` 草稿；**原创分类、部分 #** 仍后台人工 |
 | **看稿方式** | **只进 mp 草稿箱**预览；Agent **勿**写 `output/wechat_mp_*_preview.html`（用户明确要求） |
 | 质量 > 篇数 | 每天 **3 篇**热点深评（11/15/18）；个人号发表仍须同批群发，勿错开发通知 |
@@ -30,13 +30,13 @@
 
 **手动**（不在定时）：`tv_trial` 话题讨论稿见 [tv-morning-discussion-sop.md](tv-morning-discussion-sop.md)。
 
-**已停用**：18:00 `evening`/`weekend`（sector+top5+dragons）、15:15 股吧 guba。详见 `stock-ai/docs/WECHAT_MP_SCHEDULING.md`。
+**已停用**：旧 18:00 `evening`/`weekend` 财经批次、15:15 股吧 guba。详见 `stock-ai/docs/WECHAT_MP_SCHEDULING.md`。
 
 **不在定时里**（手动 `wechat_mp_draft --kind …`）：
 
 | kind | 建议频率 |
 |------|----------|
-| `market` / `sector` / `top5` / `dragons` / `news` | **仅偶发**财经深评或重大行情日；非主轴 |
+| `market` / `sector` / `news` | **仅偶发**财经深评或重大行情日；非主轴 |
 | `workspace` | 全周最多 1 篇（工具/工程手记） |
 | `temp` | 临时单篇，显式 `--kind temp` |
 
@@ -54,7 +54,7 @@ bash scripts/wechat_mp_hotspot_draft_scheduled.sh hotspot_evening --dry-run
 
 | 动作 | 谁做 | 说明 |
 |------|------|------|
-| **11:00 / 15:00 / 18:00 scheduler** | host-jobs | 各 1 篇热点深评草稿；`LLM_BACKEND=cursor` |
+| **11:00 / 15:00 / 18:00 scheduler** | host-jobs | 各 1 篇热点深评草稿；自动调用 Codex CLI，失败不推草稿 |
 | **发表** | mp 后台人工 | 个人号每天仅 1 次通知；多篇须同批群发 |
 | **跳过今日写稿** | skip 文件 | 热点三时段共用 `wechat_mp_skip_scheduled.date` |
 
@@ -139,9 +139,9 @@ bash scripts/wechat_mp_hotspot_draft_scheduled.sh hotspot_evening --dry-run
 - [ ] 回复高价值留言  
 - [ ] 记阅读来源（**推荐 / 搜一搜**）、完读、阅读后关注  
 
-### 长文短剧推广门禁
+### 短剧推广门禁
 
-长文推广统一使用 `short-play` 短剧组件；普通返佣商品只保留给独立 `commerce` 稿。首次启用或更换短剧时按以下顺序执行：
+普通公众号长文不自动插入 `short-play` 短剧返佣组件。只有用户明确要求制作 `short_drama_feature` 单剧推广稿时，才允许按以下流程手动使用：
 
 ```bash
 cd stock-ai
@@ -172,7 +172,7 @@ WECHAT_MP_DRAMA_WEB_SESSION_FILE=data/wechat_mp_drama_web_session.json
 - 人工确认前保持 `WECHAT_MP_SHORT_DRAMA=0`；确认后才在本地 `.env` 开启。
 - 归因、候选、缓存或草稿回读任一失败都停止推稿，不得改回 `WECHAT_MP_FOOTER_PRODUCT=1`。
 - 不得用候选池的 `exp_url` 或 `click_url` 冒充归因路径，也不得跨短剧复用票据。
-- 正式长文必须恰有一个 `data-adtype="short-play"`，且不得含普通 `data-pid` 商品卡或 footer product key。
+- `short_drama_feature` 必须恰有一个 `data-adtype="short-play"`；其他普通长文必须为零，且不得含普通 `data-pid` 商品卡或 footer product key。
 
 ---
 
@@ -186,7 +186,7 @@ WECHAT_MP_DRAMA_WEB_SESSION_FILE=data/wechat_mp_drama_web_session.json
 | 质量抽检 | 热点稿 `wechat_mp_eval --kind hotspot --traffic`；讨论稿对照 tv-morning §九 |
 | 11:00 链路 | 抽查：合格缓存是否存在、配图、禁词 grep（勿假设定时任务用手改稿） |
 | 选题 | 手动篇是否补缺；**勿**恢复 evening 三篇定时 |
-| 变现 | 长文只用已验证短剧组件；普通 CPS 仅限独立 `commerce`，不得作为短剧失败回退 |
+| 变现 | 普通公众号长文不插短剧返佣；`short_drama_feature` 仅在用户明确要求时手动使用；普通 CPS 仅限独立 `commerce` |
 
 ---
 

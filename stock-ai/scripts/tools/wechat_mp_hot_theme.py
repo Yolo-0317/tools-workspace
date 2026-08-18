@@ -6,7 +6,7 @@
 
 **标题钩子等（`discover_hot_themes`）**：仍可多源含情绪（`WECHAT_MP_HOT_THEME_EMOTION=0` 可关）。
 
-供公众号 sector 稿、top5/dragons 同日主线对齐（`wechat_mp_evening_align` 跟 sector 同源）。
+供公众号 sector 稿选择当日主线。
 """
 
 from __future__ import annotations

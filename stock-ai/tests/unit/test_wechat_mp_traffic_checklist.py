@@ -47,25 +47,6 @@ def test_traffic_checklist_workspace_passes_core_auto_items() -> None:
     assert "后台" in text
 
 
-def test_traffic_checklist_dragons_vertical_and_opening_digit() -> None:
-    body = (
-        "> 情绪与盘面\n\n"
-        "涨停 42 家、跌停 8 家，炸板率 18%，涨跌比 1.2。\n\n"
-        "> 龙头拆解\n\n"
-        "梯队上龙头 A 带队，复盘今日结构；盯盘明日避坑点。\n\n"
-        "若放量不及预期，则情绪确认退潮。"
-    )
-    rep = run_traffic_checklist(
-        title="情绪退潮怎么玩？粤电力4板还在榜",
-        digest="A股、龙头复盘",
-        body=body,
-        kind="dragons",
-    )
-    by_id = {i.id: i for i in rep.items}
-    assert by_id["vertical_words"].passed
-    assert by_id["opening_digit"].passed
-
-
 def test_traffic_checklist_flags_bad_title() -> None:
     rep = run_traffic_checklist(
         title="震惊！重磅内幕",
@@ -75,3 +56,21 @@ def test_traffic_checklist_flags_bad_title() -> None:
     )
     assert not rep.items[0].passed  # title len or hook
     assert not rep.items[3].passed  # banned
+
+
+def test_silver_natural_ending_question_counts_as_engagement() -> None:
+    body = (
+        "7月底，一名家属报警称亲人接到陌生电话后失联，这个场景值得先记住。\n\n"
+        "> 先恢复联系\n\n"
+        "陌生电话要求保密时，先挂断，再联系家人。\n\n"
+        "如果今天约定一个防骗动作，你最想先写下哪一步？"
+    )
+    rep = run_traffic_checklist(
+        title="陌生电话让你躲起来，先别照做",
+        digest="退休生活防骗不靠背话术",
+        body=body,
+        kind="silver",
+    )
+
+    by_id = {item.id: item for item in rep.items}
+    assert by_id["engagement_hook"].passed

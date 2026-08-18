@@ -33,7 +33,6 @@ chmod +x "${ROOT}/scripts/wechat_mp_check_whitelist.sh"
 chmod +x "${ROOT}/scripts/wechat_mp_draft_scheduled.sh"
 chmod +x "${ROOT}/scripts/wechat_mp_tv_draft_scheduled.sh"
 chmod +x "${ROOT}/scripts/wechat_mp_hotspot_draft_scheduled.sh"
-chmod +x "${ROOT}/scripts/wechat_mp_growth_remind.sh"
 chmod +x "${ROOT}/scripts/wechat_mp_guba_scheduled.sh"
 
 install_one "com.user.wechat-mp-whitelist-check" \
@@ -46,12 +45,10 @@ for legacy in \
   com.user.wechat-mp-draft-noon \
   com.user.wechat-mp-draft-evening \
   com.user.wechat-mp-draft-scheduled \
+  com.user.wechat-mp-growth-remind \
   com.user.wechat-mp-guba-scheduled; do
   uninstall_one "${legacy}"
 done
-
-# 增长提醒已停用（2026-06-16）
-uninstall_one "com.user.wechat-mp-growth-remind"
 
 echo ""
 echo "OK com.user.wechat-mp-whitelist-check（每小时）"

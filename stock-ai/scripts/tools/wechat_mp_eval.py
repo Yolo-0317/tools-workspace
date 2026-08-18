@@ -106,7 +106,7 @@ def _paragraphs(body: str) -> list[str]:
 
 
 def _opening_block(body: str) -> str:
-    paras = _paragraphs(body)
+    paras = [p for p in _paragraphs(body) if not p.startswith("【说明】")]
     if not paras:
         return ""
     first = paras[0]
@@ -195,7 +195,7 @@ def _count_section_heads(body: str, *, html: str = "") -> int:
         if p.startswith(">") or re.match(r"^[一二三四五六七八九十]、", p)
     )
     if html:
-        n += len(re.findall(r"<blockquote\b", html, re.I))
+        n = max(n, len(re.findall(r"<blockquote\b", html, re.I)))
     return n
 
 
@@ -238,7 +238,7 @@ def _score_body(body: str, *, kind: str, html: str = "", title: str = "") -> Dim
 
     if kind in {"workspace", "temp"} and "工具工作区" in body:
         score += 3
-    elif kind in {"market", "top5", "dragons", "sector", "news", "hotspot"} and re.search(
+    elif kind in {"market", "sector", "news", "hotspot"} and re.search(
         r"[一二三四五六]、|^\s*>", body, re.M
     ):
         score += 3
@@ -412,8 +412,6 @@ def main() -> int:
             "news",
             "sector",
             "hotspot",
-            "top5",
-            "dragons",
             "workspace",
             "temp",
             "guba",

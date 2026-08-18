@@ -21,13 +21,13 @@ DIGEST_SEO_CORE: dict[str, tuple[str, ...]] = {
     "sector": ("A股", "行业研究"),
     "market": ("A股", "收盘复盘"),
     "news": ("A股", "财经快讯"),
-    "top5": ("A股", "选股观察"),
-    "dragons": ("A股", "龙头复盘"),
     "hotspot": ("热点观察", "话题评论"),
+    "hot_business": ("热点商业", "商业观察"),
+    "silver": ("退休生活", "中年生活"),
+    "short_drama_feature": ("短剧推荐", "热门短剧"),
     "tv_review": ("热点观察", "话题讨论"),
     "workspace": ("工具工作区", "量化自动化"),
     "temp": ("开发者工具", "飞书自动化"),
-    "commerce": ("租屋", "小家电"),
 }
 
 MARKET_DIGEST_PHRASE_BY_EDITION: dict[str, str] = {
@@ -40,49 +40,40 @@ DIGEST_SEO_PHRASE: dict[str, str] = {
     "sector": "热点行业产业链与情绪结构观察",
     "market": "指数外围与结构判断",
     "news": "Top10要闻逐条解读",
-    "top5": "观察样本结构对照与待验证指标",
-    "dragons": "情绪周期与龙头梯队",
     "hotspot": "整理公开信息与多方观点，供阅读与讨论",
+    "hot_business": "从热点看公司、生意与利益关系",
+    "silver": "从关系、健康和钱财细节重新安排退休生活",
+    "short_drama_feature": "一部短剧的核心冲突与追剧看点",
     "tv_review": "社会文娱公共热点，呈现多方说法",
     "workspace": "收盘入库到草稿的一条龙",
     "temp": "单篇技术笔记可独立发布",
-    "commerce": "合租单间买前对照",
-}
-
-COMMERCE_DIGEST_SEO_BY_SLOT: dict[str, tuple[str, ...]] = {
-    "guide": ("租屋", "小家电"),
-    "review": ("小家电", "测评"),
-    "trend": ("租房", "季节好物"),
 }
 
 # 标题搜一搜：前 15 字内尽量出现；勿堆砌（与摘要 SEO 词表对齐）
 TITLE_SEO_KEYWORDS: dict[str, tuple[str, ...]] = {
     "sector": ("A股", "行业", "产业链", "热点", "板块", "情绪", "怎么拆"),
     "market": ("A股", "收盘", "盘前", "午间", "复盘"),
-    "top5": ("A股", "观察", "结构", "待验证"),
-    "dragons": ("A股", "龙头", "情绪", "复盘", "连板", "梯队", "结构"),
     "news": ("A股", "快讯", "要闻", "财经", "人气"),
     "hotspot": ("热点", "社会", "话题", "事件", "公共", "评论", "讨论"),
+    "hot_business": ("品牌", "公司", "生意", "成本", "渠道", "商业"),
+    "silver": ("退休", "退休生活", "中年生活", "夫妻", "健康", "养老金", "防骗"),
+    "short_drama_feature": ("短剧", "逆袭", "反击", "反转", "追妻", "职场", "家庭"),
     "tv_review": ("热点", "社会", "话题", "事件", "公共", "讨论"),
-    "commerce": ("租屋", "合租", "单间", "小家电", "小电", "厨房", "租房"),
 }
 
 TITLE_SEO_FRONT_KEYWORDS: dict[str, tuple[str, ...]] = {
     "sector": ("A股", "行业", "产业链"),
     "market": ("A股", "收盘复盘", "盘前", "午间"),
-    "top5": ("A股", "观察", "结构"),
-    "dragons": ("A股", "龙头", "情绪", "梯队"),
     "news": ("A股", "快讯"),
     "hotspot": ("热点", "社会", "话题", "事件"),
+    "hot_business": ("品牌", "公司", "生意", "成本", "渠道", "商业"),
+    "silver": ("退休", "退休生活", "夫妻", "健康", "养老金", "防骗"),
+    "short_drama_feature": ("短剧",),
     "tv_review": ("热点", "社会", "话题", "事件"),
-    "commerce": ("租屋", "合租", "单间", "小家电", "租房"),
 }
 
 TITLE_SEO_PREFIX: dict[str, str | dict[str, str]] = {
-    "commerce": "租屋小电｜",
     "sector": "A股行业｜",
-    "top5": "A股观察｜",
-    "dragons": "A股龙头｜",
     "news": "A股快讯｜",
     "market": {
         "pre": "A股盘前｜",
@@ -105,14 +96,6 @@ HASHTAG_POOL: dict[str, dict[str, tuple[str, ...]]] = {
     "news": {
         "default": ("A股", "财经快讯", "宏观解读"),
     },
-    "top5": {
-        "default": ("A股", "结构观察", "收盘复盘"),
-    },
-    "dragons": {
-        "default": ("A股", "龙头复盘", "情绪周期"),
-        "intraday": ("A股", "盘中龙头", "情绪周期"),
-        "eod": ("A股", "收盘龙头", "连板梯队"),
-    },
     "workspace": {
         "default": ("开发者工具", "量化自动化", "个人项目"),
     },
@@ -122,29 +105,22 @@ HASHTAG_POOL: dict[str, dict[str, tuple[str, ...]]] = {
     "hotspot": {
         "default": ("热点观察", "社会话题", "公共事件"),
     },
+    "short_drama_feature": {
+        "default": ("短剧", "短剧推荐", "追剧"),
+    },
+    "hot_business": {
+        "default": ("热点商业", "商业观察", "品牌故事"),
+    },
+    "silver": {
+        "default": ("退休生活", "中年生活", "生活方式"),
+        "relation": ("退休生活", "家庭关系", "夫妻相处"),
+        "health": ("退休生活", "健康生活", "生活习惯"),
+        "money": ("退休生活", "养老防骗", "理性消费"),
+    },
     "tv_review": {
         "default": ("热点观察", "话题讨论", "社会观察"),
     },
-    "commerce": {
-        "default": ("租房好物", "小家电", "买前对照"),
-        "guide": ("租房好物", "小家电", "买前对照"),
-        "review": ("小家电测评", "租房", "避坑"),
-        "trend": ("季节好物", "小家电", "租房"),
-    },
 }
-
-PUBLISH_STEPS_COMMERCE = (
-    "1. mp.weixin.qq.com 草稿 → 确认简选小电顶栏 banner",
-    "2. 发布勾选「原创」（分类选 生活/家居，勿选财经）",
-    "3. 发布成功后点 #，粘贴终端推荐话题（最多 5 个）",
-    "4. 可选：朋友圈发预览截图（清单一节）引流",
-)
-
-PUBLISH_STEPS_COMMERCE_AUTO = (
-    "1. 已走 freepublish API 直接发表（无原创/#话题）",
-    "2. 可在 mp.weixin.qq.com 已发表列表核对 CPS 与版式",
-    "3. 要原创时改用 wechat_mp_commerce_draft --no-publish",
-)
 
 HASHTAG_BANNED = frozenset(
     {
@@ -235,21 +211,6 @@ def title_front_has_search_keywords(
 def title_sousou_hook_score(title: str, kind: str) -> int:
     """标题句式加分：优先平台推荐安全表述（2026-06 调整后）。"""
     t = title or ""
-    if kind == "dragons":
-        return (
-            (2 if "梯队" in t or "结构" in t else 0)
-            + (2 if "连板" in t or "观察" in t or re.search(r"\d板", t) else 0)
-            + (1 if "情绪" in t[:18] else 0)
-            - (3 if "怎么玩" in t else 0)
-            - (3 if "还在榜" in t else 0)
-        )
-    if kind == "top5":
-        return (
-            (2 if "结构" in t or "观察" in t else 0)
-            + (2 if "待验证" in t or "怎么读" in t else 0)
-            + (1 if "A股" in t[:15] else 0)
-            - (3 if "领衔" in t or "收盘信号" in t or "明日盯" in t else 0)
-        )
     if kind == "sector":
         return (
             (2 if "产业链" in t else 0)
@@ -265,7 +226,7 @@ def title_sousou_hook_score(title: str, kind: str) -> int:
             - (3 if "必读" in t else 0)
             - (2 if "怎么读" in t else 0)
         )
-    if kind in {"hotspot", "tv_review"}:
+    if kind in {"hotspot", "hot_business", "tv_review"}:
         front = t[:15]
         return (
             (2 if re.search(r"\d", front) else 0)
@@ -336,19 +297,11 @@ def _digest_contains_keyword(digest: str, keyword: str) -> bool:
     return keyword in digest
 
 
-def commerce_digest_core(slot: str | None) -> tuple[str, ...]:
-    s = (slot or "guide").strip().lower()
-    return COMMERCE_DIGEST_SEO_BY_SLOT.get(s, DIGEST_SEO_CORE["commerce"])
-
-
 def enrich_digest(base: str, kind: str, *, edition: str | None = None) -> str:
     """在摘要中自然嵌入稿型 SEO 核心词（已有则跳过）。"""
     if kind == "market" and edition:
         core = market_digest_core(edition)
         phrase = market_digest_phrase(edition)
-    elif kind == "commerce" and edition:
-        core = commerce_digest_core(edition)
-        phrase = DIGEST_SEO_PHRASE["commerce"]
     else:
         core = DIGEST_SEO_CORE.get(kind, ())
         phrase = DIGEST_SEO_PHRASE.get(kind, "")
@@ -378,19 +331,13 @@ def recommended_hashtags(
     kind: str,
     *,
     edition: str | None = None,
-    dragon_slot: str | None = None,
     theme: str | None = None,
-    phase: str | None = None,
     extra: str | None = None,
 ) -> list[str]:
     """返回最多 HASHTAG_MAX 个话题名（不含 # 前缀）。"""
     pools = HASHTAG_POOL.get(kind, {})
     if kind == "market" and edition:
         base = list(pools.get(edition) or pools.get("default") or ())
-    elif kind == "commerce" and edition:
-        base = list(pools.get(edition) or pools.get("default") or ())
-    elif kind == "dragons" and dragon_slot:
-        base = list(pools.get(dragon_slot) or pools.get("default") or ())
     else:
         base = list(pools.get("default") or ())
 
@@ -402,11 +349,6 @@ def recommended_hashtags(
 
     if theme:
         t = _normalize_tag(str(theme)[:8])
-        if t and t not in tags and len(tags) < HASHTAG_MAX:
-            tags.append(t)
-
-    if phase and kind == "dragons":
-        t = _normalize_tag(f"情绪{str(phase)[:4]}")
         if t and t not in tags and len(tags) < HASHTAG_MAX:
             tags.append(t)
 
@@ -491,6 +433,8 @@ def sync_article_content_from_body(
     *,
     kind: str,
     engagement_kind: str | None = None,
+    attach_promotion: bool = True,
+    upload_figures: bool | None = None,
 ) -> dict[str, Any]:
     """body_text 变更后重建 content（与 _article_shell 同一套 HTML 规则）。"""
     from scripts.tools.wechat_mp_client import mp_configured
@@ -498,7 +442,7 @@ def sync_article_content_from_body(
     from scripts.tools.wechat_mp_short_drama import attach_short_drama
 
     body = str(article.get("body_text") or "")
-    can_upload = mp_configured()
+    can_upload = mp_configured() if upload_figures is None else upload_figures
     ek = engagement_kind or article.get("engagement_kind")
     content, merged_body = render_article_content_html(
         body,
@@ -509,25 +453,14 @@ def sync_article_content_from_body(
     out = dict(article)
     out["body_text"] = merged_body
     out["content"] = content
-    return attach_short_drama(out, kind=kind)
+    return attach_short_drama(out, kind=kind) if attach_promotion else out
 
 
 def format_publish_reminder(*, kind: str | None = None) -> str:
     k = (kind or "").strip().lower()
-    if k == "commerce":
-        import os
-
-        auto = os.getenv("WECHAT_MP_COMMERCE_AUTO_PUBLISH", "0").lower() in (
-            "1",
-            "true",
-            "yes",
-            "on",
-        )
-        steps = PUBLISH_STEPS_COMMERCE_AUTO if auto else PUBLISH_STEPS_COMMERCE
-        return "发布提醒: " + " → ".join(steps)
     if k == "tv_review":
         return "发布提醒: " + " → ".join(PUBLISH_STEPS_TV_REVIEW)
-    if k == "hotspot":
+    if k in {"hotspot", "hot_business"}:
         return "发布提醒: " + " → ".join(PUBLISH_STEPS_HOTSPOT)
     return "发布提醒: " + " → ".join(PUBLISH_STEPS_USER)
 
@@ -537,11 +470,11 @@ def attach_publish_hints(
     kind: str,
     *,
     edition: str | None = None,
-    dragon_slot: str | None = None,
     theme: str | None = None,
-    phase: str | None = None,
     hashtag_override: list[str] | None = None,
     engagement_kind: str | None = None,
+    attach_promotion: bool = True,
+    upload_figures: bool | None = None,
 ) -> dict[str, Any]:
     """写入非 API 字段，供 CLI / 通知展示。"""
     if hashtag_override is not None:
@@ -551,9 +484,7 @@ def attach_publish_hints(
         tags = recommended_hashtags(
             kind,
             edition=edition,
-            dragon_slot=dragon_slot,
             theme=theme,
-            phase=phase,
         )
     article["recommended_hashtags"] = tags
     article["publish_reminder"] = format_publish_reminder(kind=kind)
@@ -562,12 +493,13 @@ def attach_publish_hints(
             str(article.get("body_text") or ""),
             tags,
         )
-        if kind != "commerce":
-            article = sync_article_content_from_body(
-                article,
-                kind=kind,
-                engagement_kind=engagement_kind or article.get("engagement_kind"),
-            )
+        article = sync_article_content_from_body(
+            article,
+            kind=kind,
+            engagement_kind=engagement_kind or article.get("engagement_kind"),
+            attach_promotion=attach_promotion,
+            upload_figures=upload_figures,
+        )
     return article
 
 
@@ -579,11 +511,6 @@ def print_publish_hints(
 ) -> None:
     tags = article.get("recommended_hashtags")
     if not tags:
-        slot = None
-        if kind == "dragons":
-            import os
-
-            slot = os.getenv("WECHAT_MP_DRAGON_SLOT", "").strip() or None
-        tags = recommended_hashtags(kind, edition=edition, dragon_slot=slot)
+        tags = recommended_hashtags(kind, edition=edition)
     print(format_hashtag_line(list(tags)))
     print(format_publish_reminder(kind=kind))

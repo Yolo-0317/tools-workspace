@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""公众号完读钩子：段间过渡、节间桥接、末段悬念（sector/dragons/market/news/top5）。"""
+"""公众号完读钩子：段间过渡、节间桥接、末段悬念。"""
 
 from __future__ import annotations
 
@@ -29,9 +29,7 @@ def is_bridge_line(line: str) -> bool:
 def read_hooks_enabled(kind: str) -> bool:
     k = (kind or "").strip().lower()
     env_key = {
-        "top5": "WECHAT_MP_TOP5_READ_HOOKS",
         "sector": "WECHAT_MP_SECTOR_READ_HOOKS",
-        "dragons": "WECHAT_MP_DRAGONS_READ_HOOKS",
         "market": "WECHAT_MP_MARKET_READ_HOOKS",
         "news": "WECHAT_MP_NEWS_READ_HOOKS",
     }.get(k, f"WECHAT_MP_{k.upper()}_READ_HOOKS")

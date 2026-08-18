@@ -56,7 +56,6 @@ def test_sanitize_public_title_strips_old_winners() -> None:
 
     cases = [
         ("A股热股10条：洛阳钼业怎么读？", "news"),
-        ("情绪高潮怎么玩？中化国际4板还在榜", "dragons"),
         ("A股铅锌+诊断｜洛阳钼业领衔：产业链怎么拆？", "sector"),
         ("A股收盘复盘｜其他化学制品+光学元件怎么读？", "market"),
     ]
@@ -65,8 +64,6 @@ def test_sanitize_public_title_strips_old_winners() -> None:
         assert "怎么玩" not in out
         assert "还在榜" not in out
         assert "领衔" not in out
-        if kind == "dragons" and "怎么玩" in raw:
-            assert "梯队" in out and "结构" in out
         assert audit_recommendation_safety(title=out, body="", digest="") == []
 
 

@@ -35,12 +35,12 @@ from scripts.tools.wechat_mp_draft_slots import get_slot_media_id, upsert_draft_
 # launchd 每日 19:00 触发；shell 按交易日/休市日解析 batch（见 resolve_scheduled_batch）
 # evening 群发：内容顺序 news → hotspot；封面槽位 1 牛马 → 2 多屏
 EVENING_PUBLISH_ORDER: tuple[str, ...] = ("news", "hotspot")
-EVENING_COVER_SLOT_KINDS: tuple[str, ...] = ("sector", "dragons")
+EVENING_COVER_SLOT_KINDS: tuple[str, ...] = ("sector", "hotspot")
 
 # (群发位置, 内容 kind, 封面资源 kind, 说明)
 EVENING_PUBLISH_ROWS: tuple[tuple[str, str, str, str], ...] = (
     ("头条", "news", "sector", "牛马品牌"),
-    ("次条", "hotspot", "dragons", "多屏亮行情"),
+    ("次条", "hotspot", "hotspot", "牛马品牌"),
 )
 
 
@@ -69,13 +69,8 @@ def cover_kind_for_content(*, content_kind: str, batch: str) -> str:
 
 
 def resolve_evening_kinds() -> tuple[str, ...]:
-    """growth_focus.evening_mode 覆盖默认两篇（news + hotspot）。"""
-    try:
-        from scripts.tools.wechat_mp_growth import load_growth_focus
-
-        return load_growth_focus().evening_kinds
-    except Exception:
-        return EVENING_PUBLISH_ORDER
+    """返回当前固定的晚间两篇（news + hotspot）。"""
+    return EVENING_PUBLISH_ORDER
 
 
 HOTSPOT_SCHEDULE_BATCHES: frozenset[str] = frozenset(
@@ -203,19 +198,6 @@ def _apply_batch_env(batch: str) -> None:
     if batch == "hotspot_afternoon":
         pass  # 兼容旧名；env 已在 HOTSPOT_SCHEDULE_BATCHES 块设置
     os.environ["WECHAT_MP_NEWS_BATCH"] = batch if batch != "tv_trial" else "tv_trial"
-
-    try:
-        from scripts.tools.wechat_mp_growth import load_growth_focus
-
-        gf = load_growth_focus()
-        if gf.stock_ai_cta_enabled and batch not in HOTSPOT_SCHEDULE_BATCHES:
-            os.environ["WECHAT_MP_STOCK_AI_CTA"] = "1"
-            os.environ["WECHAT_MP_STOCK_AI_HUB_URL"] = gf.stock_ai_hub_base
-            if gf.stock_ai_news_read_source:
-                os.environ["WECHAT_MP_STOCK_AI_NEWS_SOURCE"] = "1"
-    except Exception:
-        pass
-
 
 def _peer_market_title() -> str | None:
     from scripts.tools.wechat_mp_draft_slots import _load_slots

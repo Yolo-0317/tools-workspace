@@ -98,6 +98,8 @@ def _body_plain(body: str, *, content_html: str = "") -> str:
 def _has_engagement_hook(body: str, *, kind: str) -> bool:
     pool = _ENGAGEMENT_POOL.get(kind.strip().lower(), ())
     tail = body[-400:]
+    if kind.strip().lower() == "silver" and "？" in tail:
+        return True
     if "？" in tail and "留言" in tail:
         return True
     return any(p[:10] in body for p in pool)
@@ -165,7 +167,7 @@ def run_traffic_checklist(
             hint="禁：震惊/重磅/100倍 等",
         )
     )
-    if kind in {"market", "news", "sector", "top5", "dragons"}:
+    if kind in {"market", "news", "sector"}:
         items.append(
             TrafficCheckItem(
                 id="title_search_seo",
@@ -175,7 +177,7 @@ def run_traffic_checklist(
                 hint=f"列表截断：{t[:15]!r}；宜含 A股/选股/龙头/快讯 等",
             )
         )
-    elif kind in {"hotspot", "tv_review"}:
+    elif kind in {"hotspot", "hot_business", "short_drama_feature", "tv_review", "silver"}:
         ok_title, _ = check_title_sousou_complete(t)
         front = t[:15].strip()
         items.append(
@@ -196,6 +198,16 @@ def run_traffic_checklist(
             hint=title_sousou_notes[0] if title_sousou_notes else "禁止 返…/暂… 半句话",
         )
     )
+    if kind == "silver":
+        fixed_prefixes = ("银发栏目", "五十岁以后｜", "退休以后｜", "人生下半场｜")
+        items.append(
+            TrafficCheckItem(
+                id="silver_natural_title",
+                label="标题不加固定栏目名",
+                passed=not t.startswith(fixed_prefixes),
+                hint="直接写具体生活问题，不加银发栏目等前缀",
+            )
+        )
 
     ok_align, align_notes = check_title_opening_aligned(t, plain, kind=kind)
     items.append(
@@ -217,7 +229,7 @@ def run_traffic_checklist(
         )
     )
 
-    if kind == "hotspot":
+    if kind in {"hotspot", "hot_business"}:
         ok_theme, theme_notes = check_hotspot_single_theme(plain)
         items.append(
             TrafficCheckItem(
@@ -262,7 +274,7 @@ def run_traffic_checklist(
             passed=_digest_has_seo(d, kind, edition=edition),
             hint=(
                 "脚本 enrich_digest 会补热点观察/话题评论等"
-                if kind in {"hotspot", "tv_review"}
+                if kind in {"hotspot", "hot_business", "short_drama_feature", "tv_review", "silver"}
                 else "脚本 enrich_digest 会补 A股/盘前/收盘复盘 等"
             ),
         )
@@ -270,7 +282,7 @@ def run_traffic_checklist(
 
     opening_pat = (
         r"\d|年|月|日|岁|亿|万|人|通报|报道|称|表示"
-        if kind in {"hotspot", "tv_review"}
+        if kind in {"hotspot", "hot_business", "short_drama_feature", "tv_review", "silver"}
         else r"\d|指数|涨|跌|外围|结构|收盘|盘前|午间"
     )
     items.append(
@@ -282,20 +294,29 @@ def run_traffic_checklist(
             and bool(re.search(opening_pat, opening)),
             hint=(
                 "首段宜含时间/数字/人物或事件关键词，40 字以上"
-                if kind in {"hotspot", "tv_review"}
+                if kind in {"hotspot", "hot_business", "tv_review", "silver"}
                 else "首段宜含数字或盘面关键词，40 字以上"
             ),
         )
     )
 
     sections = _count_section_heads(plain, html=content_html or body)
-    if kind == "hotspot":
+    if kind in {"hotspot", "hot_business"}:
         items.append(
             TrafficCheckItem(
                 id="sections",
                 label="无小标题（纯段落）",
                 passed=sections == 0,
                 hint=f"当前 {sections} 个小标题（热点深评禁止 `> ` 分节）",
+            )
+        )
+    elif kind == "silver":
+        items.append(
+            TrafficCheckItem(
+                id="sections",
+                label="3 至 5 个分节标题",
+                passed=3 <= sections <= 5,
+                hint=f"当前 {sections} 个（> 引用块）",
             )
         )
     else:
@@ -319,13 +340,14 @@ def run_traffic_checklist(
     )
 
     char_len = len(re.sub(r"\s+", "", plain))
-    min_chars = 2000 if kind == "hotspot" else READ_MIN_CHARS
+    min_chars = 1600 if kind == "silver" else 2000 if kind in {"hotspot", "hot_business"} else READ_MIN_CHARS
+    max_chars = 2600 if kind == "silver" else READ_MAX_CHARS
     items.append(
         TrafficCheckItem(
             id="read_length",
             label="正文长度利于完读（约 3 分钟）",
-            passed=min_chars <= char_len <= READ_MAX_CHARS,
-            hint=f"纯文字约 {char_len} 字（建议 {min_chars}–{READ_MAX_CHARS}）",
+            passed=min_chars <= char_len <= max_chars,
+            hint=f"纯文字约 {char_len} 字（建议 {min_chars}–{max_chars}）",
         )
     )
 

@@ -8,11 +8,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from scripts.tools.wechat_mp_dragons_polish import _finalize_dragons_read_hooks
 from scripts.tools.wechat_mp_market_polish import _finalize_market_read_hooks
 from scripts.tools.wechat_mp_news_polish import finalize_news_body
 from scripts.tools.wechat_mp_prose import (
-    DRAGON_SECTION_TITLES,
     MARKET_SECTION_TITLES,
     NEWS_SECTION_TITLES,
     SECTOR_SECTION_TITLES,
@@ -35,29 +33,6 @@ def test_market_read_hooks() -> None:
     assert "·" in out
     assert "往下看" not in out
     assert "验证" in out or "若" in out
-
-
-def test_dragons_read_hooks() -> None:
-    body = "\n".join(
-        [
-            f"> {DRAGON_SECTION_TITLES[0]}",
-            "涨停50。",
-            f"> {DRAGON_SECTION_TITLES[1]}",
-            "1. 甲股（000001）",
-            "   逻辑",
-            "2. 乙股（000002）",
-            "   逻辑",
-            f"> {DRAGON_SECTION_TITLES[2]}",
-            "梯队",
-            f"> {DRAGON_SECTION_TITLES[3]}",
-            "纪律",
-        ]
-    )
-    hdr = {"phase": "发酵", "main_theme": "算力"}
-    out = _finalize_dragons_read_hooks(body, hdr=hdr)
-    assert "·" in out
-    assert "往下看" not in out
-    assert "展开" in out or "·" in out
 
 
 def test_news_item_transitions() -> None:

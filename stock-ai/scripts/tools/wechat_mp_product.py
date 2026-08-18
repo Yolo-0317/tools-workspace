@@ -32,26 +32,11 @@ TZ = ZoneInfo("Asia/Shanghai")
 PICK_KEYWORDS = (
     ("market", "办公 读书 科技 财经"),
     ("news", "财经 商务 办公 充电宝"),
-    ("top5", "键盘 鼠标 显示器 支架"),
-    ("dragons", "护眼灯 台灯 咖啡"),
     ("workspace", "机械键盘 硬盘 路由器 显示器"),
     ("temp", "机械键盘 扩展坞 硬盘 充电器"),
 )
 PICK_KEYWORDS_BY_KIND = dict(PICK_KEYWORDS)
-
-# 带货垂直（wechat_mp_commerce_draft --vertical）
-PICK_KEYWORDS_BY_VERTICAL: dict[str, str] = {
-    "tech": "机械键盘 显示器 充电宝 路由器",
-    "home": "收纳 置物架 厨房收纳 沥水篮 挂钩",
-    "mother": "母婴 绘本 儿童 奶粉",
-    "outdoor": "露营 防晒 户外 登山",
-    "office": "工学椅 台灯 支架 鼠标垫",
-    "beauty": "护肤 洗面奶 防晒 面膜",
-    "guide": "好物 推荐 测评 数码",
-    "review": "测评 体验 好物",
-    "trend": "新品 热门 趋势 数码",
-}
-
+PRODUCT_PROMOTION_KINDS = frozenset({"tech"})
 
 def _env(name: str, default: str = "") -> str:
     return os.getenv(name, default).strip()
@@ -122,7 +107,7 @@ def pick_keywords_for_kind(kind: str | None) -> list[str]:
         return [w for w in override.split() if w.strip()]
     if kind:
         k = kind.strip().lower()
-        mapped = PICK_KEYWORDS_BY_KIND.get(k, "") or PICK_KEYWORDS_BY_VERTICAL.get(k, "")
+        mapped = PICK_KEYWORDS_BY_KIND.get(k, "")
         if mapped:
             return [w for w in mapped.split() if w.strip()]
     fallback = _env("WECHAT_MP_FOOTER_PICK_KEYWORD_DEFAULT", "充电宝")
@@ -447,7 +432,7 @@ def auto_pick_footer_product(*, kind: str | None = None) -> dict[str, Any] | Non
 def attach_footer_product(article: dict[str, Any], *, kind: str | None = None) -> dict[str, Any]:
     """文末返佣商品：优先 CPS `<mp-common-cpsad data-pid>`，其次 footer product_key。"""
     k = (kind or "").strip().lower()
-    if k != "commerce" and k not in PICK_KEYWORDS_BY_VERTICAL:
+    if k not in PRODUCT_PROMOTION_KINDS:
         return article
     if k in {"guba", "hotspot", "tv_review", "tv", "film", "movie"}:
         return article

@@ -1,8 +1,8 @@
 ---
 name: wechat-mp-drafts
 description: >-
-  WeChat Official Account 「牛马也智能」(WECHAT_MP_*): evening drafts sector+top5+dragons,
-  writing/compliance, launchd 19:00. User says 公众号 = this account (not 简选 commerce).
+  WeChat Official Account 「牛马也智能」(WECHAT_MP_*): hotspot, hot business,
+  silver and film long-form drafts, writing/compliance and draft operations.
   Read INDEX.md first, then task-specific child docs.
 paths:
   - .cursor/skills/wechat-mp-drafts/INDEX.md
@@ -16,7 +16,6 @@ paths:
   - stock-ai/docs/WECHAT_MP_SCHEDULING.md
   - .cursor/skills/wechat-mp-drafts/brand.md
   - .cursor/skills/wechat-mp-drafts/operations-sop.md
-  - .cursor/skills/wechat-mp-drafts/evening-trilogy-templates.md
 ---
 
 # 牛马也智能 · 微信公众号
@@ -27,18 +26,18 @@ paths:
 
 | 用户说法 | 指 |
 |----------|-----|
-| 公众号、牛马也智能、晚间三篇 | **本 skill** |
-| 简选、带货、小电 | [commerce](../wechat-mp-commerce-drafts/SKILL.md)（搁置） |
+| 公众号、牛马也智能 | **本 skill** |
+| 简选、旧商品垂直稿 | 已退役，不再提供生成入口 |
 
 ## Agent 决策树
 
 ```
 用户意图？
 ├─ 推草稿 / 定时 / env / 报错     → INDEX「工程」→ operations-sop + reference
-├─ 改 sector|top5|dragons 文案    → evening-trilogy-templates（先读）→ researcher-voice
-├─ 改 market|news|workspace       → templates + writing-guide
+├─ 改 market|news|sector|workspace → templates + writing-guide
 ├─ 栀夏贴图 / 电影分享 / 经典片单  → [wechat-mp-virtual-lifestyle](../wechat-mp-virtual-lifestyle/SKILL.md) + newspic-sop
 ├─ 长图文影视试跑 / tv_review      → [tv-review-template.md](tv-review-template.md)（v2·《铁拳教育》）
+├─ 短剧列表选剧 / 单剧推广稿       → `short_drama_feature`（收益前三 + 双来源剧情核验）
 ├─ 关注引流 / 星标 / 写作笔记 / 关注回复  → follow-growth-copy + account-packaging + operations-sop §二点六
 ├─ 运营增长 / 复盘 / 涨阅读 / 流量主  → [wechat-mp-growth-ops](../wechat-mp-growth-ops/SKILL.md)
 ├─ 阅读量 / 搜一搜 / 标题优化      → traffic-optimization + sousou-analytics-sop
@@ -56,19 +55,26 @@ paths:
 |------|------------|------|
 | `sector` | 交易日 | `wechat_mp_sector_article.py` |
 | `news` | 周日/法定节假日休市（`weekend`） | `wechat_mp_news_article.py` |
-| `top5` | 交易日 | `wechat_mp_top5_article.py` |
-| `dragons` | 交易日（`eod`） | `wechat_mp_dragons_article.py` |
 | `market` `news` `workspace` `temp` | **手动** | 见 [INDEX.md](INDEX.md) |
+| `hot_business` | **手动** | 每日热点商业筛选与深稿，独立槽位 |
+| `silver` | **手动** | 50—65 岁退休生活：关系、健康、钱财，独立槽位 |
+| `short_drama_feature` | **手动** | Python 给收益候选，当前 Codex 研究并写稿，Python 双来源校验后写独立槽位 |
 
-`--kind all` = `sector`·`top5`·`dragons`·`workspace`（**不含** `temp`）。slots：`data/wechat_mp_draft_slots.json`。
+`--kind all` = `hotspot`·`sector`·`news`·`workspace`（**不含** `temp`）。slots：`data/wechat_mp_draft_slots.json`。
 
 ## 常用命令
 
 ```bash
 cd stock-ai
 uv run python -m scripts.tools.wechat_mp_draft --dry-run
-uv run python -m scripts.tools.wechat_mp_draft --kind top5
 uv run python -m scripts.tools.wechat_mp_draft --kind hotspot --codex-draft output/hotspot_codex.json --dry-run
+uv run python -m scripts.tools.wechat_mp_draft --kind hot_business --dry-run
+uv run python -m scripts.tools.wechat_mp_draft --kind hot_business --topic "具体热点" --dry-run
+uv run python -m scripts.tools.wechat_mp_draft --kind silver --dry-run
+uv run python -m scripts.tools.wechat_mp_draft --kind silver --silver-lane relation --dry-run
+uv run python -m scripts.tools.wechat_mp_draft --kind silver --silver-lane health --topic "退休后怎样改善睡眠习惯" --dry-run
+uv run python -m scripts.tools.wechat_mp_draft --kind short_drama_feature --dry-run
+uv run python -m scripts.tools.wechat_mp_draft --kind short_drama_feature --codex-draft output/short_drama_feature_codex.json --dry-run
 uv run python -m scripts.tools.wechat_mp_draft_batch --batch evening --dry-run
 bash scripts/wechat_mp_draft_scheduled.sh
 
@@ -101,7 +107,8 @@ uv run pytest tests/unit/test_wechat_mp_*.py -q
   "digest": "一到两句话说明文章回答的问题。",
   "body": "不少于 2000 字的纯段落正文。",
   "topic": "事件检索词",
-  "research_urls": ["https://example.com/report"],
+  "research_urls": ["https://a.example/report", "https://b.example/report", "https://c.example/report"],
+  "original_thesis": "不少于20字、可被反驳和检验的原创核心判断。",
   "slot_key": "hotspot_afternoon"
 }
 ```
@@ -116,7 +123,13 @@ uv run python -m scripts.tools.wechat_mp_draft \
 # 人工确认后去掉 --dry-run，写入草稿箱
 ```
 
-`--codex-draft` 只支持单篇 `hotspot`。该路径跳过 Composer、自动选题和模板兜底，但仍执行正文清洗、质量门禁、事件配图、封面、合规检查与草稿槽位更新。`output/` 中的成稿 JSON 不提交。
+`--codex-draft` 支持单篇 `hotspot`、`hot_business`、`silver` 或 `short_drama_feature`。该路径跳过自动选题和模板兜底，但仍执行正文清洗、原创增量报告、质量门禁、封面、合规检查与草稿槽位更新。热点稿原创门禁要求正文去空白后不少于 1920 字；银发稿要求 1600—2600 字。前三者均要求至少 3 个不同来源域、`original_thesis` 不少于 20 字，任一失败即在微信 API 前拒绝。`output/` 中的成稿 JSON 不提交。
+
+`hot_business` 只允许手动触发，不进入定时批次。省略 `--topic` 时从每日热点池按热点强度、商业空间、可验证性和读者相关性评分，低于 70 分不成稿；指定 `--topic` 会跳过候选评分，但仍要求至少 3 个不同来源域。`--dry-run` 只预览并打印候选评分、来源域和事实条数；移除后仅更新独立的 `hot_business` 草稿槽位。
+
+`silver` 同样只允许手动触发，不进入 `all` 或任何定时批次。省略 `--topic` 时从关系生活、健康习惯、钱财防骗三个常青题库中按最久未用方向轮换，并排除近 30 天选题；可用 `--silver-lane relation|health|money` 限定方向，或用 `--topic` 指定具体题目。健康稿必须含权威健康来源且禁止诊断、用药和治疗建议；钱财稿必须含政务或监管来源且禁止产品推荐和收益承诺。普通银发稿及其他公众号长文不再自动插入短剧返佣组件；`--dry-run` 不上传图片、不写草稿、不记录选题使用。
+
+自 2026-08-18 起，公众号普通长文统一禁用自动短剧返佣插入。`short_drama_feature` 仅保留为用户明确要求时使用的手动独立稿型，不得作为普通热点、影视、银发或财经稿的默认变现组件。
 
 ### Codex 图片续跑协议
 
@@ -149,9 +162,9 @@ uv run python -m scripts.tools.wechat_mp_newspic_draft \
 
 ## 流水线（摘要）
 
-`build_article` → 各 kind 后处理（`humanize` / `finalize_*` / `sanitize`）→ `text_to_html` → 可选 `attach_footer_product`（CPS 正文约 2/3）→ `upsert_draft_article`。
+`build_article` → 各 kind 后处理（`humanize` / `finalize_*` / `sanitize`）→ `text_to_html` → `upsert_draft_article`。普通长文默认不插返佣商品或短剧卡。
 
-细则：[reference.md](reference.md) · 晚间结构：[evening-trilogy-templates.md](evening-trilogy-templates.md) · 代码映射：[rules-implemented.md](rules-implemented.md)。
+细则：[reference.md](reference.md) · 代码映射：[rules-implemented.md](rules-implemented.md)。
 
 ## 定时 vs 发表
 
@@ -159,7 +172,7 @@ uv run python -m scripts.tools.wechat_mp_newspic_draft \
 |--|------|
 | **19:00 launchd** | 自动**写/更新草稿**；跳过：`echo YYYY-MM-DD > data/wechat_mp_skip_scheduled.date` |
 | **后台定时发表** | **人工**在 mp.weixin.qq.com；**每天仅 1 次通知**（个人号）→ 多篇**同批群发**，排好头条/次条顺序；**禁止**分时段错开发表 |
-| **LLM** | 写稿 `LLM_BACKEND=cursor`；SOP 并发 `SOP_LLM_BACKEND=deepseek` |
+| **LLM** | 公众号写稿只用 Codex CLI，失败不回退；东财 SOP 并发仍用 `SOP_LLM_BACKEND=deepseek` |
 
 详 [operations-sop.md](operations-sop.md) · `stock-ai/docs/WECHAT_MP_SCHEDULING.md`。
 
@@ -171,7 +184,6 @@ uv run python -m scripts.tools.wechat_mp_newspic_draft \
 | [brand.md](brand.md) | 账号定位 |
 | [account-packaging.md](account-packaging.md) | 后台介绍/菜单/自动回复 |
 | [operations-sop.md](operations-sop.md) | 运营与发布清单 |
-| [evening-trilogy-templates.md](evening-trilogy-templates.md) | 晚间三篇金标准 |
 | [writing-guide.md](writing-guide.md) | 写法 + 发布总检 |
 | [templates.md](templates.md) | 五槽模板（非晚间详述） |
 | [researcher-voice.md](researcher-voice.md) | 研究员口吻 |
