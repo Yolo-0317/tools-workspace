@@ -24,6 +24,7 @@ from scripts.tools.wechat_mp_public import (
     audit_recommendation_safety,
     sanitize_public_title,
 )
+from scripts.tools.wechat_mp_role_card import account_role_prompt_block
 from scripts.tools.wechat_mp_tv_topics import (
     load_tv_trial_config,
     pick_tv_topic,
@@ -169,7 +170,10 @@ def _discussion_voice_prompt_block() -> str:
 def _rewrite_discussion_against_references(body: str, *, reference_block: str) -> str:
     if not reference_block or not is_wechat_mp_llm_configured():
         return body
-    prompt = f"""对照【参考文章】的写法，重写下面这篇热搜讨论初稿。
+    prompt = f"""{account_role_prompt_block()}
+
+## 稿型任务：影视话题参考稿改写
+对照【参考文章】的写法，重写下面这篇热搜讨论初稿。
 
 要求：
 - 学参考稿：首句直接写人物+事实，删掉「值得注意的是」「第一/二条线」「写到这儿就够」等 AI 套话
@@ -236,7 +240,10 @@ def generate_tv_discussion_body(topic: dict[str, Any], *, now: datetime | None =
             research_block = "\n\n" + research_block
 
     refs_block = f"- 参考角度：\n{refs}" if refs else ""
-    prompt = f"""为微信公众号「牛马也智能」写一篇**热搜话题讨论稿**（社会观察，非剧评）。
+    prompt = f"""{account_role_prompt_block()}
+
+## 稿型任务：影视话题讨论
+为微信公众号「栀夏未完成」写一篇**热搜话题讨论稿**（社会观察，非剧评）。
 
 ## 热搜话题
 - 主话题：{subject}
@@ -375,7 +382,10 @@ def generate_tv_review_body(topic: dict[str, Any], *, now: datetime | None = Non
         if research_block:
             research_block = "\n\n" + research_block
 
-    prompt = f"""为微信公众号「牛马也智能」写一篇影视安利稿（个人观感，非官方通稿）。
+    prompt = f"""{account_role_prompt_block()}
+
+## 稿型任务：影视长文
+为微信公众号「栀夏未完成」写一篇影视安利稿（个人观感，非官方通稿）。
 排版遵循定稿模板 tv_review_v2，见 data/wechat_mp_tv_review_template.json 与 teach_you_a_lesson 金样。
 
 ## 作品
