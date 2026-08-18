@@ -230,6 +230,7 @@ class FiveDayRankingV3ComponentAttributionReview:
     parent_input_fingerprint: str
     parent_attribution_identity: str
     market_data_fingerprint: str
+    train_split_identity: str
     fold_experiments: tuple[FoldExperimentReview, ...]
     combined_experiments: tuple[FoldExperimentReview, ...]
     fold_component_correlations: tuple[ComponentCorrelationReview, ...]
@@ -829,6 +830,7 @@ def _empty_review(
         parent_input_fingerprint=train_artifact.parent_input_fingerprint,
         parent_attribution_identity=parent_attribution.artifact_identity,
         market_data_fingerprint=parent_attribution.market_data_fingerprint,
+        train_split_identity=_canonical_hash(train_artifact.payload["split"]),
         fold_experiments=(),
         combined_experiments=(),
         fold_component_correlations=(),
@@ -1277,6 +1279,7 @@ def build_five_day_ranking_v3_component_attribution_review(
         parent_input_fingerprint=research.input_fingerprint,
         parent_attribution_identity=parent_attribution.artifact_identity,
         market_data_fingerprint=parent_attribution.market_data_fingerprint,
+        train_split_identity=_canonical_hash(train_artifact.payload["split"]),
         fold_experiments=tuple(fold_experiments),
         combined_experiments=tuple(combined_experiments),
         fold_component_correlations=tuple(fold_correlations),
