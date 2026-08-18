@@ -27,7 +27,9 @@ from stock_ai.buy_point_selection.five_day_ranking_v3_attribution import (
     fifth_subsequent_train_date,
     matched_index_id,
     simple_return,
+    spearman_correlation,
     summarize_attributed_returns,
+    wilson_interval,
 )
 from stock_ai.buy_point_selection.five_day_ranking_v3_report import (
     FiveDayRankingV3TrainArtifact,
@@ -45,6 +47,42 @@ from five_day_ranking_v3_fixtures import (
 START = date(2026, 7, 1)
 END = date(2026, 7, 8)
 PARENT_RESEARCH_IDENTITY = "a" * 64
+
+
+def test_public_wilson_helper_keeps_exact_extreme_endpoints() -> None:
+    assert wilson_interval(0, 2)[0] == Decimal("0")
+    assert wilson_interval(3, 3)[1] == Decimal("1")
+
+
+def test_public_spearman_helper_is_general_and_keeps_tie_semantics() -> None:
+    assert spearman_correlation(
+        (Decimal("1"), Decimal("2"), Decimal("3")),
+        (Decimal("1"), Decimal("2"), Decimal("3")),
+    ) == Decimal("1")
+    assert spearman_correlation(
+        (Decimal("1"), Decimal("2"), Decimal("2")),
+        (Decimal("1"), Decimal("2"), Decimal("3")),
+    ) == Decimal("0.8660254037844386467637231705")
+
+
+@pytest.mark.parametrize(
+    ("successes", "total"),
+    ((-1, 2), (3, 2), (0, 0)),
+)
+def test_public_wilson_helper_rejects_invalid_counts(
+    successes: int,
+    total: int,
+) -> None:
+    with pytest.raises(ValueError, match="Wilson counts"):
+        wilson_interval(successes, total)
+
+
+def test_public_spearman_helper_rejects_misaligned_values() -> None:
+    with pytest.raises(ValueError, match="same non-zero length"):
+        spearman_correlation(
+            (Decimal("1"), Decimal("2")),
+            (Decimal("1"),),
+        )
 
 
 def test_exact_decimal_sum_ignores_ambient_precision() -> None:

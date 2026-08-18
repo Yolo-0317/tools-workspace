@@ -343,7 +343,15 @@ def _mean(values: Sequence[Decimal]) -> Decimal:
         return sum(values, Decimal("0")) / Decimal(len(values))
 
 
-def _wilson_interval(successes: int, total: int) -> tuple[Decimal, Decimal]:
+def wilson_interval(successes: int, total: int) -> tuple[Decimal, Decimal]:
+    if (
+        type(successes) is not int
+        or type(total) is not int
+        or total <= 0
+        or successes < 0
+        or successes > total
+    ):
+        raise ValueError("Wilson counts must satisfy 0 <= successes <= total")
     with localcontext() as context:
         context.prec = 28
         n = Decimal(total)
@@ -511,7 +519,7 @@ def summarize_attributed_returns(
         mean_return=mean_return,
         median_return=_median(raw_returns),
         positive_ratio=positive_ratio,
-        positive_wilson_interval=_wilson_interval(
+        positive_wilson_interval=wilson_interval(
             positive_count,
             completed_rows,
         ),
@@ -611,14 +619,15 @@ def _pearson_correlation(
         return numerator / (left_squared * right_squared).sqrt()
 
 
-def _spearman_correlation(
-    ordinal_ranks: Sequence[int],
-    target: Sequence[Decimal],
+def spearman_correlation(
+    left: Sequence[Decimal],
+    right: Sequence[Decimal],
 ) -> Decimal | None:
-    negative_ordinal = tuple(Decimal(-rank) for rank in ordinal_ranks)
+    if not left or len(left) != len(right):
+        raise ValueError("Spearman inputs must have the same non-zero length")
     return _pearson_correlation(
-        _average_ranks(negative_ordinal),
-        _average_ranks(target),
+        _average_ranks(left),
+        _average_ranks(right),
     )
 
 
@@ -681,16 +690,19 @@ def diagnose_rank_one(
         eligible_correlation_dates += 1
         ordered = tuple(sorted(dated.items()))
         ordinal_ranks = tuple(rank for rank, _ in ordered)
-        raw_correlation = _spearman_correlation(
-            ordinal_ranks,
+        negative_ordinal = tuple(
+            Decimal(-rank) for rank in ordinal_ranks
+        )
+        raw_correlation = spearman_correlation(
+            negative_ordinal,
             tuple(value.raw_return for _, value in ordered),
         )
-        index_correlation = _spearman_correlation(
-            ordinal_ranks,
+        index_correlation = spearman_correlation(
+            negative_ordinal,
             tuple(value.index_excess for _, value in ordered),
         )
-        market_correlation = _spearman_correlation(
-            ordinal_ranks,
+        market_correlation = spearman_correlation(
+            negative_ordinal,
             tuple(value.market_median_excess for _, value in ordered),
         )
         if (

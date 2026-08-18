@@ -23,10 +23,10 @@ from .five_day_ranking_v3_attribution import (
     FiveDayRankingV3AttributionReview,
     RankCorrelationMetrics,
     RankPairMetrics,
-    _wilson_interval,
     attribution_verdict,
     canonical_decimal_mean,
     exact_decimal_sum,
+    wilson_interval,
 )
 
 
@@ -570,7 +570,7 @@ def _metric_values(
         or mean_index_excess != expected_mean_index_excess
         or mean_market_excess != expected_mean_market_excess
         or ratio != expected_ratio
-        or interval != _wilson_interval(positive_rows, completed)
+        or interval != wilson_interval(positive_rows, completed)
     ):
         raise ValueError
     if gross_sum is not None:
