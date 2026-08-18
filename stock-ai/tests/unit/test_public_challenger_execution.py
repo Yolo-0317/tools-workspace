@@ -14,6 +14,7 @@ from stock_ai.buy_point_selection.public_challenger_execution import (
     simulate_reclaim_five_day,
 )
 from stock_ai.buy_point_selection.public_challenger_signals import (
+    CONTRARIAN_TRACK,
     EXECUTION_TRACK,
     RESIDUAL_TRACK,
     ChallengerSignal,
@@ -127,6 +128,18 @@ def test_direct_track_enters_next_open_and_exits_fifth_holding_close() -> None:
     assert trade.net_return == Decimal(
         "0.051020408163265306122448979591836734693877551020408"
     )
+
+
+def test_public_contrarian_reference_uses_the_same_direct_execution() -> None:
+    trade = simulate_direct_five_day(
+        _signal(CONTRARIAN_TRACK),
+        _future_bars(),
+        costs=ZERO_COSTS,
+    )
+
+    assert trade.track_id == CONTRARIAN_TRACK
+    assert trade.entry_date == date(2026, 1, 13)
+    assert trade.exit_date == date(2026, 1, 19)
 
 
 @pytest.mark.parametrize("pct_chg", ["10", "-10"])
