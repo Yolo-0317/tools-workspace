@@ -7,8 +7,8 @@
 | 文件 | 用途 |
 |------|------|
 | [`.cursor/skills/wechat-mp-drafts/tv-review-template.md`](../.cursor/skills/wechat-mp-drafts/tv-review-template.md) | **Skill 金标准** |
-| [`data/wechat_mp_tv_review_template.json`](../data/wechat_mp_tv_review_template.json) | 机器可读真源 |
-| [`data/wechat_mp_tv_review_golden/teach_you_a_lesson.body_core.md`](../data/wechat_mp_tv_review_golden/teach_you_a_lesson.body_core.md) | 正文金样 |
+| [`assets/wechat_mp/templates/tv_review_v2.json`](../assets/wechat_mp/templates/tv_review_v2.json) | 机器可读真源 |
+| [`assets/wechat_mp/templates/teach_you_a_lesson.body_core.md`](../assets/wechat_mp/templates/teach_you_a_lesson.body_core.md) | 正文金样 |
 | [`data/wechat_mp_tv_body_cache/`](../data/wechat_mp_tv_body_cache/) | 按 topic 分文件的定稿缓存 |
 
 ## 五节结构（v2）

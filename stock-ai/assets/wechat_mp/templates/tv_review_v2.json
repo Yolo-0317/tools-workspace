@@ -1,0 +1,56 @@
+{
+  "template_id": "tv_review_v2",
+  "version": 2,
+  "reference": {
+    "golden_body_core": "assets/wechat_mp/templates/teach_you_a_lesson.body_core.md"
+  },
+  "sections": [
+    {
+      "role": "conclusion",
+      "example_heading": "连夜刷完10集，半夜却有点发虚",
+      "content_hint": "场面钩子、主题和第一段观感"
+    },
+    {
+      "role": "about",
+      "example_heading": "看着像揍人爽剧，其实是在写老师失了势",
+      "content_hint": "作品背景和反差立意"
+    },
+    {
+      "role": "episode_guide",
+      "example_heading": "分集速写：10集几乎没废场",
+      "content_hint": "按集写具体桥段"
+    },
+    {
+      "role": "audience",
+      "example_heading": "爱这口的会熬夜，不吃这套的会更烦",
+      "content_hint": "适合与劝退边界"
+    },
+    {
+      "role": "try_it",
+      "example_heading": "拿不准就开前两集",
+      "content_hint": "试看建议和互动问题"
+    }
+  ],
+  "heading_style": {
+    "forbidden_section_titles": [
+      "先说结论",
+      "它是什么",
+      "为什么值得看",
+      "适合谁",
+      "怎么判断"
+    ],
+    "forbidden_heading_patterns": [
+      "简单交代：",
+      "分集速写："
+    ],
+    "discouraged_heading_patterns": [
+      "看着像X，其实是在Y",
+      "爱X会追，Y会更烦"
+    ],
+    "variation_note": "新稿只继承五节任务，不照抄金样小标题。"
+  },
+  "layout": {
+    "figure_count": 10,
+    "ratings_footnote": "评分数据来自公开页面，统计时间以正文标注为准。"
+  }
+}

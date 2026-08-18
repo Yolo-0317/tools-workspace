@@ -6,8 +6,8 @@
 
 | 文件 | 用途 |
 |------|------|
-| [`stock-ai/data/wechat_mp_tv_review_template.json`](../../../stock-ai/data/wechat_mp_tv_review_template.json) | 机器可读：5 节、10 图、`after_anchor` 锚点 |
-| [`stock-ai/data/wechat_mp_tv_review_golden/teach_you_a_lesson.body_core.md`](../../../stock-ai/data/wechat_mp_tv_review_golden/teach_you_a_lesson.body_core.md) | **正文金样**（无评分、无 `[[fig:]]`） |
+| [`stock-ai/assets/wechat_mp/templates/tv_review_v2.json`](../../../stock-ai/assets/wechat_mp/templates/tv_review_v2.json) | 机器可读：5 节、10 图、`after_anchor` 锚点 |
+| [`stock-ai/assets/wechat_mp/templates/teach_you_a_lesson.body_core.md`](../../../stock-ai/assets/wechat_mp/templates/teach_you_a_lesson.body_core.md) | **正文金样**（无评分、无 `[[fig:]]`） |
 | [`stock-ai/docs/WECHAT_MP_TV_REVIEW.md`](../../../stock-ai/docs/WECHAT_MP_TV_REVIEW.md) | 人类可读 SOP |
 | [`wechat-mp-writing/anti-ai-voice.md`](../wechat-mp-writing/anti-ai-voice.md) | 去 AI 味 |
 

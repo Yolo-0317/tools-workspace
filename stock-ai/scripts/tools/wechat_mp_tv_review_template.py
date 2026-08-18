@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""影视试跑定稿模板 tv_review_v1（真源：data/wechat_mp_tv_review_template.json）。"""
+"""影视长文模板加载器（真源：assets/wechat_mp/templates/tv_review_v2.json）。"""
 
 from __future__ import annotations
 
@@ -13,7 +13,8 @@ from scripts._bootstrap import ensure_repo_root_on_path
 ensure_repo_root_on_path()
 
 ROOT = Path(__file__).resolve().parents[2]
-TEMPLATE_PATH = ROOT / "data" / "wechat_mp_tv_review_template.json"
+TEMPLATE_ROOT = ROOT / "assets" / "wechat_mp" / "templates"
+TEMPLATE_PATH = TEMPLATE_ROOT / "tv_review_v2.json"
 DEFAULT_TEMPLATE_ID = "tv_review_v2"
 
 TV_DEPTH_RULE = """
@@ -90,7 +91,7 @@ def template_prompt_block(*, template: dict[str, Any] | None = None) -> str:
             f"  · 无顶栏 banner；评分竖排 bullet，插在**第一节第一段正文之后**",
             f"  · 最多 {int(layout.get('figure_count') or 10)} 张配图，`after_anchor` 插在分集/关键段落后（见 teach-you-a-lesson 配置）",
             "  · 分节标题渲染为横幅底 + 标题（脚本 HTML）",
-            "- 五节意思（参考《铁拳教育》金样 data/wechat_mp_tv_review_golden/teach_you_a_lesson.body_core.md，**勿照抄其小标题句式**）：",
+            "- 五节意思（参考《铁拳教育》金样 assets/wechat_mp/templates/teach_you_a_lesson.body_core.md，**勿照抄其小标题句式**）：",
         ]
     )
     for sec in sections:
