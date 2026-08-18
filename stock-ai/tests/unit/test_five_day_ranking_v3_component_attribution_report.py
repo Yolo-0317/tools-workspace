@@ -24,6 +24,7 @@ from stock_ai.buy_point_selection.five_day_ranking_v3_component_attribution impo
     RobustRankMetrics,
 )
 from stock_ai.buy_point_selection.five_day_ranking_v3_component_attribution_report import (
+    _canonical_decimal_text,
     five_day_ranking_v3_component_attribution_payload,
     load_five_day_ranking_v3_component_attribution,
     write_five_day_ranking_v3_component_attribution,
@@ -38,6 +39,14 @@ EXPERIMENTS = (
     "WITHOUT_DOWNSIDE",
 )
 COMPONENTS = ("EDGE", "CONSISTENCY", "STRUCTURE", "DOWNSIDE")
+
+
+def test_canonical_decimal_text_preserves_precision_beyond_context() -> None:
+    value = Decimal("0.123456789012345678901234567890123400")
+
+    assert _canonical_decimal_text(value) == (
+        "0.1234567890123456789012345678901234"
+    )
 
 
 def _metrics() -> RobustRankMetrics:

@@ -85,7 +85,10 @@ def _sha256(value: object) -> str:
 def _canonical_decimal_text(value: Decimal) -> str:
     if value == 0:
         return "0"
-    return format(value.normalize(), "f")
+    text = format(value, "f")
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return text
 
 
 def _decimal(value: Decimal | None) -> str | None:
