@@ -47,9 +47,9 @@
 
 **Interfaces:**
 - Consumes: `BuyPointBar`, `SectorMembership`, `matched_index_id(code: str) -> str`。
-- Produces: `ChallengerSignal`, `ResidualEstimate`, `build_contrarian_signals(*, signal_date: date, bars_by_code: Mapping[str, Sequence[BuyPointBar]], sector_by_code: Mapping[str, str]) -> tuple[ChallengerSignal, ...]`, `build_residual_signals(*, signal_date: date, bars_by_code: Mapping[str, Sequence[BuyPointBar]], sector_by_code: Mapping[str, str], index_closes: Mapping[str, Mapping[date, Decimal]]) -> tuple[ChallengerSignal, ...]`, `build_execution_signals(core_signals: Sequence[ChallengerSignal]) -> tuple[ChallengerSignal, ...]`, `PUBLIC_CHALLENGER_SIGNAL_VERSION`。
+- Produces: `ChallengerSignal`, `ResidualEstimate`, `build_contrarian_signals(*, signal_date: date, bars_by_code: Mapping[str, Sequence[BuyPointBar]], sector_by_code: Mapping[str, str]) -> tuple[ChallengerSignal, ...]`, `build_residual_signals(*, signal_date: date, bars_by_code: Mapping[str, Sequence[BuyPointBar]], memberships: Sequence[SectorMembership], index_closes: Mapping[str, Mapping[date, Decimal]]) -> tuple[ChallengerSignal, ...]`, `build_execution_signals(core_signals: Sequence[ChallengerSignal]) -> tuple[ChallengerSignal, ...]`, `PUBLIC_CHALLENGER_SIGNAL_VERSION`。
 
-- [ ] **Step 1: 写原始反转和五日边界的失败测试**
+- [x] **Step 1: 写原始反转和五日边界的失败测试**
 
 ```python
 def test_contrarian_uses_t_minus_5_close_and_stable_code_tie_break():
@@ -69,13 +69,13 @@ def test_contrarian_uses_t_minus_5_close_and_stable_code_tie_break():
     assert [row.code for row in signals if row.reference_bucket == "WINNER"] == ["600005"]
 ```
 
-- [ ] **Step 2: 运行定向测试确认因模块不存在而失败**
+- [x] **Step 2: 运行定向测试确认因模块不存在而失败**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_public_challenger_signals.py::test_contrarian_uses_t_minus_5_close_and_stable_code_tie_break`
 
 Expected: FAIL with `ModuleNotFoundError: stock_ai.buy_point_selection.public_challenger_signals`.
 
-- [ ] **Step 3: 实现三轨常量、不可变信号模型和原始反转排序**
+- [x] **Step 3: 实现三轨常量、不可变信号模型和原始反转排序**
 
 ```python
 CONTRARIAN_TRACK = "A_SHARE_CONTRARIAN_REFERENCE"
@@ -107,7 +107,7 @@ def _five_session_return(bars: Sequence[BuyPointBar]) -> Decimal:
 
 `build_contrarian_signals` 必须对完整横截面按 `(formation_return, code)` 排序，以 `ceil(n * 0.20)` 之前的股票标记 `reference_bucket="LOSER"` 和候选，以最后同样数量标记 `reference_bucket="WINNER"`，其余为 `MIDDLE`；不得对不足 5 只的横截面产生候选。赢家行只用于价差诊断，不能进入只做多容量组合。
 
-- [ ] **Step 4: 写回归窗口、行业中位数和失败关闭测试**
+- [x] **Step 4: 写回归窗口、行业中位数和失败关闭测试**
 
 ```python
 def test_residual_estimation_excludes_last_five_sessions():
@@ -127,13 +127,13 @@ def test_residual_rejects_sector_day_with_fewer_than_ten_members():
         build_sector_returns(signal_date, bars_by_code, membership, minimum_members=10)
 ```
 
-- [ ] **Step 5: 运行新增测试确认缺少残差接口而失败**
+- [x] **Step 5: 运行新增测试确认缺少残差接口而失败**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_public_challenger_signals.py -k 'residual or sector'`
 
 Expected: FAIL with missing `estimate_residual_signal` and `build_sector_returns`.
 
-- [ ] **Step 6: 用 Decimal 正规方程实现 60/5 残差和最低 10% 排序**
+- [x] **Step 6: 用 Decimal 正规方程实现 60/5 残差和最低 10% 排序**
 
 ```python
 @dataclass(frozen=True)
@@ -172,7 +172,7 @@ def estimate_residual_signal(
 
 `_solve_decimal_normal_equations` 使用带稳定主元选择的 3×3 Decimal 高斯消元；奇异矩阵抛 `ValueError("RESIDUAL_REGRESSION_SINGULAR")`。`build_residual_signals` 只接纳完整估计，按 `(residual_5d, code)` 排序，以 `ceil(n * 0.10)` 标记候选，并计算全市场及行业内百分位。`build_execution_signals` 只允许接收 `RESIDUAL_REVERSAL_CORE` 行，并用 `dataclasses.replace(row, track_id=EXECUTION_TRACK)` 生成同一信号身份的执行轨，不得重新计算或重新排序残差。
 
-- [ ] **Step 7: 运行信号测试并提交**
+- [x] **Step 7: 运行信号测试并提交**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_public_challenger_signals.py`
 
