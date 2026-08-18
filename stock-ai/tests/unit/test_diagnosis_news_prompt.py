@@ -49,6 +49,7 @@ MEMORY_DECISION = DiagnosisDecision(
     status=CycleStatus.ACTIVE,
     hard_events=(),
     allowed_actions=("持有观察",),
+    trigger_plan={},
 )
 
 
