@@ -128,10 +128,11 @@ def render_rotation_report(
 def write_rotation_report(
     result: RotationRunResult,
     output_path: Path | None = None,
+    previous: RotationRunResult | None = None,
 ) -> Path:
     target = output_path or Path("output") / (
         f"sector_rotation_{result.observed_at.strftime('%Y%m%d_%H%M')}.md"
     )
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(render_rotation_report(result, None), encoding="utf-8")
+    target.write_text(render_rotation_report(result, previous), encoding="utf-8")
     return target.resolve()
