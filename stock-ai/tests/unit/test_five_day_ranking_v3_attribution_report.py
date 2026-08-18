@@ -356,6 +356,50 @@ def test_recurring_decimal_audit_totals_survive_strict_round_trip(
     )
 
 
+def test_zero_positive_actual_status_survives_strict_round_trip(
+    tmp_path: Path,
+) -> None:
+    row = AttributedReturn(
+        raw_return=Decimal("-0.04"),
+        matched_index_return=Decimal("0"),
+        market_median_return=Decimal("0"),
+        index_excess=Decimal("-0.04"),
+        market_median_excess=Decimal("-0.04"),
+        market_members=1000,
+    )
+    metrics = summarize_attributed_returns(
+        (row,),
+        eligible_rows=1,
+        excluded_missing_coverage=0,
+        gross_returns=(Decimal("-0.03"),),
+    )
+    base = _review()
+    empty = _empty_metrics(gross=True)
+    variants = tuple(
+        replace(
+            variant,
+            actual=metrics,
+            actual_by_status={
+                "STOPPED": metrics,
+                "TIME_EXIT_GAIN": empty,
+                "TIME_EXIT_FLAT": empty,
+                "TIME_EXIT_LOSS": empty,
+            },
+        )
+        for variant in base.variants
+    )
+    review = replace(base, variants=variants)
+
+    path = write_five_day_ranking_v3_attribution(review, tmp_path)
+    artifact = load_five_day_ranking_v3_attribution(path)
+
+    assert artifact.status == "COMPLETE"
+    assert artifact.payload["variants"][0]["actual"]["positive_ratio"] == "0"
+    assert artifact.payload["variants"][0]["actual"][
+        "positive_wilson_interval"
+    ][0] == "0"
+
+
 def test_payload_freezes_benchmarks_and_safety_flags() -> None:
     payload = five_day_ranking_v3_attribution_payload(_review())
 

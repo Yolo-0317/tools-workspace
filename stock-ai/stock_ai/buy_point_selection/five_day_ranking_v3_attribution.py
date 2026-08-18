@@ -356,10 +356,13 @@ def _wilson_interval(successes: int, total: int) -> tuple[Decimal, Decimal]:
             + z_squared / (Decimal("4") * n * n)
         )
         margin = _WILSON_Z * Decimal(str(math.sqrt(float(variance))))
-        return (
-            max(Decimal("0"), (centre - margin) / denominator),
-            min(Decimal("1"), (centre + margin) / denominator),
-        )
+        lower = max(Decimal("0"), (centre - margin) / denominator)
+        upper = min(Decimal("1"), (centre + margin) / denominator)
+        if successes == 0:
+            lower = Decimal("0")
+        if successes == total:
+            upper = Decimal("1")
+        return lower, upper
 
 
 def attribution_verdict(

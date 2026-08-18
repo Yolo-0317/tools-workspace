@@ -541,6 +541,39 @@ def test_attribution_summary_reports_hand_derived_aggregate_metrics() -> None:
     assert value.verdict == "INCONCLUSIVE"
 
 
+@pytest.mark.parametrize(
+    ("raw_returns", "expected_ratio", "endpoint", "expected_endpoint"),
+    (
+        (("-0.03", "-0.02"), Decimal("0"), 0, Decimal("0")),
+        (
+            ("0.01", "0.02", "0.03"),
+            Decimal("1"),
+            1,
+            Decimal("1"),
+        ),
+    ),
+)
+def test_wilson_extreme_endpoint_is_exact_under_low_ambient_precision(
+    raw_returns: tuple[str, ...],
+    expected_ratio: Decimal,
+    endpoint: int,
+    expected_endpoint: Decimal,
+) -> None:
+    with localcontext() as context:
+        context.prec = 4
+        value = summarize_attributed_returns(
+            tuple(_attributed(raw, "0", "0") for raw in raw_returns),
+            eligible_rows=len(raw_returns),
+            excluded_missing_coverage=0,
+        )
+
+    assert value.positive_ratio == expected_ratio
+    assert value.positive_wilson_interval is not None
+    assert value.positive_wilson_interval[endpoint] == expected_endpoint
+    assert value.positive_wilson_interval[0] <= expected_ratio
+    assert value.positive_wilson_interval[1] >= expected_ratio
+
+
 def test_attribution_summary_reports_gross_return_and_after_cost_drag() -> None:
     value = summarize_attributed_returns(
         (
