@@ -333,7 +333,7 @@ def test_full_builder_excludes_missing_stock_endpoint_consistently(
 ) -> None:
     train_artifact, research, _, panel = full_builder_fixture
     stock_closes = dict(panel.stock_closes)
-    stock_closes["600000"] = {}
+    stock_closes["600003"] = {}
     stock_closes["601999"] = {
         value: Decimal("10") for value in panel.train_dates
     }

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from decimal import Decimal, localcontext
 import hashlib
@@ -950,6 +950,26 @@ def _population_fingerprint(
     )
 
 
+def _compress_retained_official_ranks(
+    rows: Sequence[ComponentOutcome],
+) -> tuple[ComponentOutcome, ...]:
+    compressed: list[ComponentOutcome] = []
+    ordered = sorted(
+        rows,
+        key=lambda value: (value.signal_date, value.official_rank),
+    )
+    for _, grouped in groupby(ordered, key=lambda value: value.signal_date):
+        daily = tuple(grouped)
+        official_ranks = tuple(value.official_rank for value in daily)
+        if len(official_ranks) != len(set(official_ranks)):
+            raise ValueError("duplicate official rank within date")
+        compressed.extend(
+            replace(value, official_rank=rank)
+            for rank, value in enumerate(daily, start=1)
+        )
+    return tuple(compressed)
+
+
 def _combined_coverage(
     left: CoverageComparison,
     right: CoverageComparison,
@@ -1142,7 +1162,7 @@ def build_five_day_ranking_v3_component_attribution_review(
                         parent_research_identity=parent_research_identity,
                         status="SCORE_RECONSTRUCTION_FAILED",
                     )
-            frozen_rows = tuple(rows)
+            frozen_rows = _compress_retained_official_ranks(rows)
             fingerprint = _population_fingerprint(frozen_rows, endpoints)
             unit = (fold_id, policy_id)
             outcomes[unit] = frozen_rows
