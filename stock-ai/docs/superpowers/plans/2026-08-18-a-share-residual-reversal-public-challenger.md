@@ -311,7 +311,7 @@ git commit -m "feat(stock-ai)：实现残差反转确认与五日成交"
 - Consumes: 三轨 `ChallengerSignal`、`ReferenceCoverage`、`RiskFlag`、市场状态和已有持仓代码。
 - Produces: `ChallengerCandidateDecision`, `ChallengerDailySelection`, `eligible_universe_on(signal_date: date, bars_by_code: Mapping[str, Sequence[BuyPointBar]], memberships: Sequence[SectorMembership], held_codes: frozenset[str]) -> tuple[str, ...]`, `qualify_track_signals(*, signals: Sequence[ChallengerSignal], coverage: ReferenceCoverage, risk_flags: Sequence[RiskFlag], held_codes: frozenset[str]) -> Mapping[str, ChallengerCandidateDecision]`, `select_capacity_matched(decisions: Sequence[ChallengerCandidateDecision], market_status: str) -> ChallengerDailySelection`。
 
-- [ ] **Step 1: 写三轨同股票池和风险缺失隔离测试**
+- [x] **Step 1: 写三轨同股票池和风险缺失隔离测试**
 
 ```python
 def test_missing_announcement_keeps_core_but_blocks_execution():
@@ -337,13 +337,13 @@ def test_veto_flag_blocks_execution_without_deleting_core_observation():
     assert decisions[EXECUTION_TRACK].trade_permission == "NO-TRADE"
 ```
 
-- [ ] **Step 2: 运行测试确认组合模块不存在**
+- [x] **Step 2: 运行测试确认组合模块不存在**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_public_challenger_portfolio.py -k 'missing or veto'`
 
 Expected: FAIL with module import error.
 
-- [ ] **Step 3: 实现资格结果和确定性风险处理**
+- [x] **Step 3: 实现资格结果和确定性风险处理**
 
 ```python
 @dataclass(frozen=True)
@@ -367,7 +367,7 @@ def _active_veto(code: str, signal_date: date, flags: Sequence[RiskFlag]) -> boo
 
 已有持仓、ST、退市整理、停牌、流动性不足和点时证券状态缺失在共同股票池阶段排除；公告缺失仅阻断执行轨。利好公告和 AI 文本不进入函数参数。
 
-- [ ] **Step 4: 写 ALLOW/LIMITED/FREEZE、同业一只和漏斗测试**
+- [x] **Step 4: 写 ALLOW/LIMITED/FREEZE、同业一只和漏斗测试**
 
 ```python
 @pytest.mark.parametrize(("status", "expected"), [("ALLOW", 3), ("LIMITED", 1), ("FREEZE", 0)])
@@ -381,7 +381,7 @@ def test_capacity_keeps_only_one_stock_per_sector_and_counts_rejection():
     assert result.funnel_counts["SECTOR_CAPACITY"] == 1
 ```
 
-- [ ] **Step 5: 实现稳定容量选择与全候选反事实**
+- [x] **Step 5: 实现稳定容量选择与全候选反事实**
 
 ```python
 @dataclass(frozen=True)
@@ -400,7 +400,7 @@ def _ranking_key(row: ChallengerCandidateDecision) -> tuple[Decimal, str]:
 
 容量落选仍保留在 `all_eligible`。`FREEZE` 只令 `selected=()`，不得清空核心研究候选。执行建议股数调用现有风险预算算法，`LIMITED` 减半，不足 100 股归零；历史统一名义仓位另由成交器计算。
 
-- [ ] **Step 6: 运行组合测试并提交**
+- [x] **Step 6: 运行组合测试并提交**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_public_challenger_portfolio.py`
 
