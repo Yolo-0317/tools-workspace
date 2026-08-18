@@ -51,6 +51,19 @@ uv run python -m scripts.tools.wechat_mp_eval --kind dragons --traffic
 
 ## Agent 工作流（简）
 
+### 账号角色卡前置步骤
+
+当前 Codex 手写或改写 `hotspot`、`hot_business`、`silver`、`tv_review` 时：
+
+1. 先完整读取 [account-role-card.md](account-role-card.md)。
+2. 再按本 Skill 决策树读取唯一命中的稿型专题文档。
+3. 角色卡只决定观察者、价值排序和语言边界；结构、长度、来源与专属禁区以稿型文档为准。
+4. 角色卡缺失、为空或关键边界不完整时停止写稿，不沿用旧口吻继续。
+
+`virtual_lifestyle` 继续使用其显性人物母版，不读取本角色卡。
+
+### 质检步骤
+
 1. `draft_batch --dry-run` 或 `push_quality_gate --batch evening` 看报告
 2. 未过 → 先查 [sousou-content-rules.md](sousou-content-rules.md)（标题完整、单主题、开篇一致）→ [traffic-copy-craft.md](traffic-copy-craft.md)（开篇钩子、节奏、可转述颗粒）→ 再按 [revision-workflow.md](revision-workflow.md) 改开篇/合规词（勿大改数据段）
 3. 重跑门禁或 `wechat_mp_draft --kind <k>` 单篇 upsert

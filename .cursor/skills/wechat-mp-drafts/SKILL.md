@@ -82,6 +82,17 @@ uv run pytest tests/unit/test_wechat_mp_*.py -q
 
 ### Codex 长图文交接
 
+#### 账号角色卡前置步骤
+
+当前 Codex 手写或改写 `hotspot`、`hot_business`、`silver`、`tv_review` 时：
+
+1. 先完整读取 [account-role-card.md](../wechat-mp-writing/account-role-card.md)。
+2. 再按本 Skill 决策树读取唯一命中的稿型专题文档。
+3. 角色卡只决定观察者、价值排序和语言边界；结构、长度、来源与专属禁区以稿型文档为准。
+4. 角色卡缺失、为空或关键边界不完整时停止写稿，不沿用旧口吻继续。
+
+`virtual_lifestyle` 继续使用其显性人物母版，不读取本角色卡。
+
 手动热点长图文优先由 Codex 完成取材与成稿，再保存为本地 JSON：
 
 ```json
