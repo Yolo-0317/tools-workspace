@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from scripts.tools.fetch_eastmoney_quotes import index_secid
+from scripts.tools.fetch_eastmoney_quotes import _jsonp_board_constituents_js, index_secid
 
 
 @pytest.mark.parametrize(
@@ -16,3 +16,11 @@ def test_index_secid_uses_the_exchange_specific_market_identifier(code: str, exp
 def test_index_secid_rejects_an_unconfigured_security_code() -> None:
     with pytest.raises(ValueError, match="不支持的大盘指数"):
         index_secid("603011")
+
+
+def test_board_constituent_script_requests_objective_quote_fields() -> None:
+    script = _jsonp_board_constituents_js("BK0475")
+
+    assert "fields=f12,f14,f2,f3,f6,f8" in script
+    assert "price: Number.isFinite(Number(x.f2)) ? Number(x.f2) : null" in script
+    assert "amount: Number.isFinite(Number(x.f6)) ? Number(x.f6) : null" in script

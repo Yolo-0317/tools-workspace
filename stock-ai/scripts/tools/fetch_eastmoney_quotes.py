@@ -1474,7 +1474,10 @@ new Promise((resolve) => {{
       const rows = list.map((x) => ({{
         code: String(x.f12 || "").replace(/\\D/g, "").slice(-6).padStart(6, "0"),
         name: String(x.f14 || "").trim(),
+        price: Number.isFinite(Number(x.f2)) ? Number(x.f2) : null,
         change_pct: Number(x.f3),
+        amount: Number.isFinite(Number(x.f6)) ? Number(x.f6) : null,
+        turnover_rate: Number.isFinite(Number(x.f8)) ? Number(x.f8) : null,
       }})).filter((r) => /^\\d{{6}}$/.test(r.code) && r.name);
       resolve(JSON.stringify({{ rc: data?.rc, rows }}));
     }} catch (e) {{
@@ -1484,7 +1487,7 @@ new Promise((resolve) => {{
   const s = document.createElement("script");
   s.src = "https://push2.eastmoney.com/api/qt/clist/get?cb=" + cb
     + "&fs=" + encodeURIComponent("b:{bk}")
-    + "&fields=f12,f14,f3"
+    + "&fields=f12,f14,f2,f3,f6,f8"
     + "&fid=f3&po=1&pn=1&pz={int(pz)}&np=1"
     + "&fltt=2&invt=2&ut={A_SHARE_CLIST_UT}&_=" + Date.now();
   s.onerror = () => resolve(JSON.stringify({{ rc: -1, rows: [], error: "script" }}));
