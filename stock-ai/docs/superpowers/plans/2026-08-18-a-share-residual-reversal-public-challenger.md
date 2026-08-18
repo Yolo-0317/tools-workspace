@@ -810,7 +810,7 @@ git commit -m "feat(stock-ai)：构建公开挑战者点时研究运行时"
 - Consumes: Task 5 严格 artifact API、Task 6 runtime builder、现有 BaoStock/东财备用基准加载器。
 - Produces: `build_parser() -> argparse.ArgumentParser`, `dispatch_stage(args: argparse.Namespace, research_input_loader: RuntimeInputLoader, test_input_loader: RuntimeInputLoader) -> tuple[Path, ...]`, `main(argv: Sequence[str] | None = None) -> int`，命令 `research`、`freeze`、`test`。
 
-- [ ] **Step 1: 写命令面、research 失败关闭和固定错误输出测试**
+- [x] **Step 1: 写命令面、research 失败关闭和固定错误输出测试**
 
 ```python
 def test_parser_exposes_only_three_manual_stages():
@@ -839,13 +839,13 @@ def test_main_sanitizes_failure(capsys):
     assert capsys.readouterr().err == "公开短线策略挑战者执行失败\n"
 ```
 
-- [ ] **Step 2: 运行测试确认 CLI 不存在**
+- [x] **Step 2: 运行测试确认 CLI 不存在**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_analyze_public_short_term_challenger_cli.py -k 'parser or research or sanitizes'`
 
 Expected: FAIL because script file does not exist.
 
-- [ ] **Step 3: 实现 parser 和 research/freeze 分派**
+- [x] **Step 3: 实现 parser 和 research/freeze 分派**
 
 ```python
 def build_parser() -> argparse.ArgumentParser:
@@ -868,7 +868,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 freeze 必须先严格加载 research，验证点时完整和 `test_outcomes_read=false`；随后从 research 中已冻结的训练/验证聚合构造并写 validation artifact，再以 validation 为父写唯一 freeze。没有验证资格时仍写带完整失败原因的 validation 和空 freeze，不补位，也不加载测试日期。
 
-- [ ] **Step 4: 写 test 先验加载、重复执行和 V3 缺失测试**
+- [x] **Step 4: 写 test 先验加载、重复执行和 V3 缺失测试**
 
 ```python
 def test_test_stage_loads_freeze_before_market_data(tmp_path):
@@ -898,11 +898,11 @@ def test_missing_v3_comparable_artifact_forces_inconclusive(tmp_path):
     assert json.loads(path.read_text())["verdict"] == "INCONCLUSIVE"
 ```
 
-- [ ] **Step 5: 实现 test 一次性身份和可选 V3 严格适配**
+- [x] **Step 5: 实现 test 一次性身份和可选 V3 严格适配**
 
 V3 参数只接受未来批准的 `five-day-ranking-v3-comparable-test-v1` 聚合 schema、相同父观察集、相同切分和相同输入 fingerprint。当前不存在合法 V3 同段测试产物时不得读取 validation 或其他区间替代。测试 writer 使用 freeze identity 命名；已存在内容相同只校验，内容冲突报错。
 
-- [ ] **Step 6: 运行 CLI 测试并提交**
+- [x] **Step 6: 运行 CLI 测试并提交**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_analyze_public_short_term_challenger_cli.py`
 

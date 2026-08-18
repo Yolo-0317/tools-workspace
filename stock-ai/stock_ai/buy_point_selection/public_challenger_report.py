@@ -63,6 +63,17 @@ class PublicChallengerFreezeArtifact:
     payload: Mapping[str, object]
 
 
+@dataclass(frozen=True)
+class PublicChallengerTestArtifact:
+    artifact_identity: str
+    parent_freeze_identity: str
+    parent_research_identity: str
+    input_fingerprint: str
+    split_identity: str
+    review: PublicChallengerTestReview
+    payload: Mapping[str, object]
+
+
 def _require_keys(
     value: Mapping[str, object],
     expected: frozenset[str],
@@ -785,17 +796,10 @@ def load_challenger_freeze(path: Path) -> PublicChallengerFreezeArtifact:
     )
 
 
-def write_challenger_test_once(
+def _test_payload(
     review: PublicChallengerTestReview,
-    output_dir: Path,
-) -> Path:
-    directory = Path(output_dir)
-    freeze_path = directory / (
-        f"public-short-term-challenger-freeze-{review.parent_freeze_identity}.json"
-    )
-    if not freeze_path.exists():
-        raise ValueError("parent lineage mismatch")
-    freeze = load_challenger_freeze(freeze_path)
+    freeze: PublicChallengerFreezeArtifact,
+) -> dict[str, object]:
     if freeze.parent_research_identity != review.parent_research_identity:
         raise ValueError("parent lineage mismatch")
     if freeze.input_fingerprint != review.input_fingerprint:
@@ -820,7 +824,40 @@ def write_challenger_test_once(
     }
     if _contains_detail(content):
         raise ValueError("public challenger aggregate contains stock detail")
-    payload = {**content, "artifact_identity": _artifact_identity(content)}
+    return {**content, "artifact_identity": _artifact_identity(content)}
+
+
+_TEST_CONTENT_KEYS = frozenset(
+    {
+        "schema",
+        "parent_freeze_identity",
+        "parent_research_identity",
+        "input_fingerprint",
+        "split_identity",
+        "signal_version",
+        "evaluator_version",
+        "cost_version",
+        "source_deviation_version",
+        "assessment",
+        "trade_permission",
+        "promotion_eligible",
+    }
+)
+_TEST_KEYS = _TEST_CONTENT_KEYS | {"artifact_identity"}
+
+
+def write_challenger_test_once(
+    review: PublicChallengerTestReview,
+    output_dir: Path,
+) -> Path:
+    directory = Path(output_dir)
+    freeze_path = directory / (
+        f"public-short-term-challenger-freeze-{review.parent_freeze_identity}.json"
+    )
+    if not freeze_path.exists():
+        raise ValueError("parent lineage mismatch")
+    freeze = load_challenger_freeze(freeze_path)
+    payload = _test_payload(review, freeze)
     path = directory / (
         f"public-short-term-challenger-test-{review.parent_freeze_identity}.json"
     )
@@ -831,3 +868,55 @@ def write_challenger_test_once(
     except FileExistsError:
         raise ValueError("public challenger test artifact already exists") from None
     return path
+
+
+def load_challenger_test(path: Path) -> PublicChallengerTestArtifact:
+    target = Path(path)
+    payload = _read_payload(target)
+    _require_keys(payload, _TEST_KEYS, "test artifact")
+    identity = str(payload["artifact_identity"])
+    content = {
+        key: value for key, value in payload.items() if key != "artifact_identity"
+    }
+    if _artifact_identity(content) != identity:
+        raise ValueError("artifact identity mismatch")
+    freeze_identity = str(payload["parent_freeze_identity"])
+    if target.name != f"public-short-term-challenger-test-{freeze_identity}.json":
+        raise ValueError("artifact filename mismatch")
+    if (
+        payload["schema"] != TEST_SCHEMA
+        or payload["signal_version"] != PUBLIC_CHALLENGER_SIGNAL_VERSION
+        or payload["evaluator_version"] != PUBLIC_CHALLENGER_EVALUATOR_VERSION
+        or payload["cost_version"] != COST_VERSION
+        or payload["source_deviation_version"] != SOURCE_DEVIATION_VERSION
+        or payload["trade_permission"] != "NO-TRADE"
+        or payload["promotion_eligible"] is not False
+        or _contains_detail(payload)
+    ):
+        raise ValueError("public challenger test artifact invalid")
+    freeze_path = target.parent / (
+        f"public-short-term-challenger-freeze-{freeze_identity}.json"
+    )
+    if not freeze_path.exists():
+        raise ValueError("parent lineage mismatch")
+    freeze = load_challenger_freeze(freeze_path)
+    review = PublicChallengerTestReview(
+        parent_freeze_identity=freeze_identity,
+        parent_research_identity=str(payload["parent_research_identity"]),
+        input_fingerprint=str(payload["input_fingerprint"]),
+        assessment=_assessment_from_payload(payload["assessment"]),
+        trade_permission=str(payload["trade_permission"]),
+    )
+    if str(payload["split_identity"]) != freeze.split_identity:
+        raise ValueError("split identity mismatch")
+    if _test_payload(review, freeze) != payload:
+        raise ValueError("public challenger test artifact inconsistent")
+    return PublicChallengerTestArtifact(
+        artifact_identity=identity,
+        parent_freeze_identity=freeze_identity,
+        parent_research_identity=review.parent_research_identity,
+        input_fingerprint=review.input_fingerprint,
+        split_identity=freeze.split_identity,
+        review=review,
+        payload=payload,
+    )
