@@ -183,7 +183,7 @@ class RotationRunResult:
     trade_date: date
     edition: str
     policy_version: str
-    chains: tuple[NormalizedChain, ...]
+    chains: tuple[SelectedChain, ...]
     candidates: tuple[RotationCandidate, ...]
     warnings: tuple[str, ...]
     report_path: Path | None
