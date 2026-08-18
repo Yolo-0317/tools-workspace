@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import date, timedelta
 from decimal import Decimal
+import hashlib
+import json
 
 import pytest
 
@@ -19,6 +21,8 @@ from stock_ai.buy_point_selection.five_day_ranking_v3_component_attribution impo
     RankMetricAuditTotals,
     RobustRankMetrics,
     ScoreComponents,
+    FiveDayRankingV3ComponentAttributionReview,
+    build_five_day_ranking_v3_component_attribution_review,
     classify_component_effect,
     compare_ablation,
     experiment_score,
@@ -29,7 +33,322 @@ from stock_ai.buy_point_selection.five_day_ranking_v3_component_attribution impo
 )
 from stock_ai.buy_point_selection.five_day_ranking_v3_attribution import (
     AttributedReturn,
+    MarketClosePanel,
+    build_five_day_ranking_v3_attribution_review,
 )
+from stock_ai.buy_point_selection.five_day_ranking_v3_attribution_report import (
+    FiveDayRankingV3AttributionArtifact,
+    five_day_ranking_v3_attribution_payload,
+)
+from stock_ai.buy_point_selection.five_day_ranking_v3_report import (
+    FiveDayRankingV3TrainArtifact,
+    five_day_ranking_v3_train_payload,
+)
+
+from five_day_ranking_v3_fixtures import (
+    make_v3_observation,
+    make_v3_plan,
+    make_v3_research_review,
+    weekday_dates,
+)
+
+
+PARENT_RESEARCH_IDENTITY = "a" * 64
+
+
+def _artifact_from_research(research) -> FiveDayRankingV3TrainArtifact:
+    from stock_ai.buy_point_selection.five_day_ranking_v3 import (
+        build_five_day_ranking_v3_train_review,
+    )
+
+    review = build_five_day_ranking_v3_train_review(
+        research,
+        parent_research_identity=PARENT_RESEARCH_IDENTITY,
+    )
+    payload = five_day_ranking_v3_train_payload(review)
+    return FiveDayRankingV3TrainArtifact(
+        artifact_identity=str(payload["artifact_identity"]),
+        parent_research_identity=review.parent_research_identity,
+        parent_input_fingerprint=review.parent_input_fingerprint,
+        split=review.split,
+        policy_set_hash=review.policy_set_hash,
+        winner_policy_id=review.winner_policy_id,
+        winner_policy_hash=review.winner_policy_hash,
+        winner_train_samples=review.winner_train_samples,
+        validation_eligible=review.validation_eligible,
+        validation_evidence_windows=review.validation_evidence_windows,
+        validation_feature_model=review.validation_feature_model,
+        payload=payload,
+    )
+
+
+def _parent_attribution_artifact(
+    train_artifact: FiveDayRankingV3TrainArtifact,
+    research,
+    panel: MarketClosePanel,
+) -> FiveDayRankingV3AttributionArtifact:
+    review = build_five_day_ranking_v3_attribution_review(
+        train_artifact,
+        research,
+        parent_research_identity=PARENT_RESEARCH_IDENTITY,
+        market_panel=panel,
+    )
+    payload = five_day_ranking_v3_attribution_payload(review)
+    return FiveDayRankingV3AttributionArtifact(
+        artifact_identity=str(payload["artifact_identity"]),
+        parent_train_identity=review.parent_train_identity,
+        parent_research_identity=review.parent_research_identity,
+        parent_input_fingerprint=review.parent_input_fingerprint,
+        market_data_fingerprint=review.market_data_fingerprint,
+        status=review.status,
+        payload=payload,
+    )
+
+
+@pytest.fixture(scope="module")
+def full_builder_fixture():
+    sessions = weekday_dates(630)
+    calibration = tuple(
+        make_v3_observation(
+            make_v3_plan(sessions[index], code=f"{600800 + index:06d}"),
+            net_return=Decimal("0.01"),
+            resolution_date=sessions[index + 5],
+        )
+        for index in range(60)
+    )
+    evaluation = []
+    for fold_start in (252, 343):
+        for date_offset in range(35):
+            signal_index = fold_start + date_offset
+            for candidate_index in range(5):
+                code = f"{600000 + date_offset * 5 + candidate_index + (0 if fold_start == 252 else 200):06d}"
+                raw_return = Decimal(candidate_index + 1) / Decimal("100")
+                observation = make_v3_observation(
+                    make_v3_plan(
+                        sessions[signal_index],
+                        code=code,
+                        setup_quality=Decimal("0.50")
+                        + Decimal(candidate_index) / Decimal("10"),
+                    ),
+                    net_return=raw_return,
+                    resolution_date=sessions[signal_index + 5],
+                )
+                assert observation.trade.entry_price is not None
+                assert observation.trade.exit is not None
+                observation = replace(
+                    observation,
+                    trade=replace(
+                        observation.trade,
+                        entry_date=sessions[signal_index + 1],
+                        entry_price=Decimal("10"),
+                        exit=replace(
+                            observation.trade.exit,
+                            planned_exit_date=sessions[signal_index + 5],
+                            actual_exit_date=sessions[signal_index + 5],
+                            price=Decimal("10") * (Decimal("1") + raw_return),
+                        ),
+                    ),
+                )
+                evaluation.append(observation)
+    research = make_v3_research_review((*calibration, *evaluation))
+    train_artifact = _artifact_from_research(research)
+    train_dates = train_artifact.split.train
+    stock_closes = {
+        f"{600000 + member:06d}": {
+            trading_date: Decimal("10") for trading_date in train_dates
+        }
+        for member in range(1000)
+    }
+    for observation in evaluation:
+        code = observation.plan.candidate.code
+        signal_date = observation.plan.candidate.signal_date
+        assert observation.trade.exit is not None
+        stock_closes[code][signal_date] = Decimal("10")
+        if observation.trade.exit.actual_exit_date in stock_closes[code]:
+            stock_closes[code][observation.trade.exit.actual_exit_date] = (
+                observation.trade.exit.price
+            )
+    panel = MarketClosePanel(
+        train_dates=train_dates,
+        stock_closes=stock_closes,
+        index_closes={
+            index_id: {value: Decimal("100") for value in train_dates}
+            for index_id in ("sh.000001", "sz.399001", "sh.000688")
+        },
+    )
+    parent = _parent_attribution_artifact(train_artifact, research, panel)
+    return train_artifact, research, parent, panel
+
+
+def _rehash_train_payload(
+    artifact: FiveDayRankingV3TrainArtifact,
+    payload: dict[str, object],
+) -> FiveDayRankingV3TrainArtifact:
+    content = {key: value for key, value in payload.items() if key != "artifact_identity"}
+    identity = hashlib.sha256(
+        json.dumps(
+            content,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+    payload["artifact_identity"] = identity
+    return replace(artifact, artifact_identity=identity, payload=payload)
+
+
+def test_full_builder_deduplicates_modes_and_builds_expected_train_units(
+    full_builder_fixture,
+) -> None:
+    train_artifact, research, parent, panel = full_builder_fixture
+
+    review = build_five_day_ranking_v3_component_attribution_review(
+        train_artifact,
+        research,
+        parent,
+        parent_research_identity=PARENT_RESEARCH_IDENTITY,
+        market_panel=panel,
+    )
+
+    assert isinstance(review, FiveDayRankingV3ComponentAttributionReview)
+    assert review.status == "COMPLETE"
+    assert len(review.fold_experiments) == 64
+    assert len(review.combined_experiments) == 32
+    assert len(review.fold_component_correlations) == 16
+    assert len(review.combined_component_correlations) == 8
+    assert len(review.component_effects) == 24
+    assert {
+        value.coverage.population_fingerprint
+        for value in review.fold_experiments
+    } == {
+        value.population_fingerprint
+        for value in review.fold_component_correlations
+    }
+    assert review.train_only is True
+    assert review.validation_outcomes_read is False
+    assert review.test_outcomes_read is False
+    assert review.promotion_eligible is False
+    assert review.trade_permission == "NO-TRADE"
+    fold2 = tuple(
+        value
+        for value in review.fold_experiments
+        if value.fold_id == "train-fold-2"
+    )
+    assert len(fold2) == 32
+    assert {value.coverage.candidate_rows for value in fold2} == {175}
+    assert {value.coverage.eligible_outcomes for value in fold2} == {150}
+    assert {
+        value.coverage.excluded_without_train_horizon for value in fold2
+    } == {25}
+
+
+def test_full_builder_fails_closed_when_parent_attribution_cannot_replay(
+    full_builder_fixture,
+) -> None:
+    train_artifact, research, parent, panel = full_builder_fixture
+    tampered = replace(parent, market_data_fingerprint="b" * 64)
+
+    review = build_five_day_ranking_v3_component_attribution_review(
+        train_artifact,
+        research,
+        tampered,
+        parent_research_identity=PARENT_RESEARCH_IDENTITY,
+        market_panel=panel,
+    )
+
+    assert review.status == "LINEAGE_INVALID"
+    assert review.component_effects == ()
+
+
+def test_full_builder_rejects_selection_mode_scored_drift(
+    full_builder_fixture,
+) -> None:
+    train_artifact, research, _, panel = full_builder_fixture
+    payload = json.loads(json.dumps(train_artifact.payload))
+    top_one = next(
+        value
+        for value in payload["variants"]
+        if value["fold_id"] == "train-fold-1"
+        and value["policy_id"] == "EDGE-K30"
+        and value["selection_mode"] == "TOP_1"
+    )
+    top_one["scored"][0]["score"] = "9"
+    drifted = _rehash_train_payload(train_artifact, payload)
+    parent = _parent_attribution_artifact(drifted, research, panel)
+
+    review = build_five_day_ranking_v3_component_attribution_review(
+        drifted,
+        research,
+        parent,
+        parent_research_identity=PARENT_RESEARCH_IDENTITY,
+        market_panel=panel,
+    )
+
+    assert review.status == "LINEAGE_INVALID"
+    assert review.fold_experiments == ()
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement", "expected_status"),
+    (
+        ("score", "9", "SCORE_RECONSTRUCTION_FAILED"),
+        ("rank", 99, "BASELINE_REPRODUCTION_FAILED"),
+    ),
+)
+def test_full_builder_fails_closed_on_score_or_rank_drift(
+    full_builder_fixture,
+    field: str,
+    replacement: object,
+    expected_status: str,
+) -> None:
+    train_artifact, research, _, panel = full_builder_fixture
+    payload = json.loads(json.dumps(train_artifact.payload))
+    for variant in payload["variants"]:
+        if (
+            variant["policy_id"] == "EDGE-K30"
+            and variant["fold_id"] in {"train-fold-1", "train-combined"}
+        ):
+            variant["scored"][0][field] = replacement
+    drifted = _rehash_train_payload(train_artifact, payload)
+    parent = _parent_attribution_artifact(drifted, research, panel)
+
+    review = build_five_day_ranking_v3_component_attribution_review(
+        drifted,
+        research,
+        parent,
+        parent_research_identity=PARENT_RESEARCH_IDENTITY,
+        market_panel=panel,
+    )
+
+    assert review.status == expected_status
+    assert review.component_effects == ()
+
+
+def test_full_builder_fails_closed_on_missing_stock_coverage(
+    full_builder_fixture,
+) -> None:
+    train_artifact, research, _, panel = full_builder_fixture
+    stock_closes = dict(panel.stock_closes)
+    stock_closes["600000"] = {}
+    stock_closes["601999"] = {
+        value: Decimal("10") for value in panel.train_dates
+    }
+    incomplete_panel = replace(panel, stock_closes=stock_closes)
+    parent = _parent_attribution_artifact(
+        train_artifact, research, incomplete_panel
+    )
+    assert parent.status == "COMPLETE"
+
+    review = build_five_day_ranking_v3_component_attribution_review(
+        train_artifact,
+        research,
+        parent,
+        parent_research_identity=PARENT_RESEARCH_IDENTITY,
+        market_panel=incomplete_panel,
+    )
+
+    assert review.status == "MARKET_DATA_INCOMPLETE"
+    assert review.component_effects == ()
 
 
 def _policy(policy_id: str) -> FiveDayV3Policy:

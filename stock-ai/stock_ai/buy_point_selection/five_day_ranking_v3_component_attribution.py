@@ -5,21 +5,35 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, localcontext
+import hashlib
 from itertools import groupby
-from typing import Sequence, TypeAlias
+import json
+from typing import TYPE_CHECKING, Mapping, Sequence, TypeAlias
 
 from .five_day_ranking_v3 import (
+    V3_POLICY_IDS,
+    V3_SELECTION_MODES,
     FiveDayV3Policy,
     build_five_day_v3_policies,
 )
 from .five_day_ranking_v3_attribution import (
     AttributedReturn,
+    MarketClosePanel,
+    attribute_interval,
     canonical_decimal_mean,
     exact_decimal_sum,
+    fifth_subsequent_train_date,
     spearman_correlation,
     wilson_interval,
 )
 from stock_ai.market_codes import normalize_code6
+
+if TYPE_CHECKING:
+    from .five_day_ranking_v3_attribution_report import (
+        FiveDayRankingV3AttributionArtifact,
+    )
+    from .five_day_ranking_v3_report import FiveDayRankingV3TrainArtifact
+    from .five_day_return_runtime import FiveDayResearchReview
 
 
 COMPONENT_ATTRIBUTION_SCHEMA = (
@@ -168,6 +182,65 @@ class ComponentEffectReview:
     fold1: AblationDelta
     fold2: AblationDelta
     label: str
+
+
+@dataclass(frozen=True)
+class CoverageComparison:
+    candidate_rows: int
+    eligible_outcomes: int
+    excluded_without_train_horizon: int
+    excluded_missing_coverage: int
+    population_fingerprint: str
+    benchmark_fingerprint: str
+
+
+@dataclass(frozen=True)
+class FoldExperimentReview:
+    fold_id: str
+    policy_id: str
+    experiment_id: str
+    coverage: CoverageComparison
+    metrics: RobustRankMetrics
+    status: str
+
+
+@dataclass(frozen=True)
+class ComponentCorrelationReview:
+    fold_id: str
+    policy_id: str
+    population_fingerprint: str
+    metrics: tuple[ComponentCorrelationMetrics, ...]
+
+
+@dataclass(frozen=True)
+class PolicyComponentEffect:
+    policy_id: str
+    component_id: str
+    fold1: AblationDelta
+    fold2: AblationDelta
+    label: str
+
+
+@dataclass(frozen=True)
+class FiveDayRankingV3ComponentAttributionReview:
+    schema: str
+    component_attribution_version: str
+    parent_train_identity: str
+    parent_research_identity: str
+    parent_input_fingerprint: str
+    parent_attribution_identity: str
+    market_data_fingerprint: str
+    fold_experiments: tuple[FoldExperimentReview, ...]
+    combined_experiments: tuple[FoldExperimentReview, ...]
+    fold_component_correlations: tuple[ComponentCorrelationReview, ...]
+    combined_component_correlations: tuple[ComponentCorrelationReview, ...]
+    component_effects: tuple[PolicyComponentEffect, ...]
+    status: str
+    train_only: bool
+    validation_outcomes_read: bool
+    test_outcomes_read: bool
+    promotion_eligible: bool
+    trade_permission: str
 
 
 def _finite_decimal(value: object) -> Decimal:
@@ -702,4 +775,517 @@ def classify_component_effect(
         fold1=fold1,
         fold2=fold2,
         label=label,
+    )
+
+
+def _canonical_hash(value: object) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            value,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+
+
+def _plan_identity(value: object) -> PlanIdentity:
+    if not isinstance(value, Mapping):
+        raise ValueError("invalid V3 plan key")
+    try:
+        signal_date = date.fromisoformat(str(value["signal_date"]))
+        code = normalize_code6(str(value["code"]))
+        structure_id = str(value["structure_id"])
+        profile_id = str(value["profile_id"])
+    except (KeyError, TypeError, ValueError):
+        raise ValueError("invalid V3 plan key") from None
+    if not code or not structure_id or not profile_id:
+        raise ValueError("invalid V3 plan key")
+    return signal_date, code, structure_id, profile_id
+
+
+def _observation_identity(value: object) -> PlanIdentity:
+    plan = value.plan
+    return (
+        plan.candidate.signal_date,
+        normalize_code6(plan.candidate.code),
+        plan.structure_id,
+        plan.profile.profile_id,
+    )
+
+
+def _empty_review(
+    train_artifact: FiveDayRankingV3TrainArtifact,
+    parent_attribution: FiveDayRankingV3AttributionArtifact,
+    *,
+    parent_research_identity: str,
+    status: str,
+) -> FiveDayRankingV3ComponentAttributionReview:
+    return FiveDayRankingV3ComponentAttributionReview(
+        schema=COMPONENT_ATTRIBUTION_SCHEMA,
+        component_attribution_version=COMPONENT_ATTRIBUTION_VERSION,
+        parent_train_identity=train_artifact.artifact_identity,
+        parent_research_identity=parent_research_identity,
+        parent_input_fingerprint=train_artifact.parent_input_fingerprint,
+        parent_attribution_identity=parent_attribution.artifact_identity,
+        market_data_fingerprint=parent_attribution.market_data_fingerprint,
+        fold_experiments=(),
+        combined_experiments=(),
+        fold_component_correlations=(),
+        combined_component_correlations=(),
+        component_effects=(),
+        status=status,
+        train_only=True,
+        validation_outcomes_read=False,
+        test_outcomes_read=False,
+        promotion_eligible=False,
+        trade_permission="NO-TRADE",
+    )
+
+
+def _scored_without_presentation(value: object) -> str:
+    if not isinstance(value, list):
+        raise ValueError("invalid scored registry")
+    normalized: list[dict[str, object]] = []
+    for row in value:
+        if not isinstance(row, Mapping):
+            raise ValueError("invalid scored registry")
+        normalized.append(
+            {str(key): item for key, item in row.items() if key != "selected"}
+        )
+    return json.dumps(
+        normalized,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def _deduplicated_variants(
+    train_artifact: FiveDayRankingV3TrainArtifact,
+) -> dict[tuple[str, str], Mapping[str, object]]:
+    raw = train_artifact.payload.get("variants")
+    if not isinstance(raw, list):
+        raise ValueError("invalid V3 variant registry")
+    grouped: dict[tuple[str, str], dict[str, Mapping[str, object]]] = {}
+    for value in raw:
+        if not isinstance(value, Mapping):
+            raise ValueError("invalid V3 variant registry")
+        try:
+            key = (str(value["fold_id"]), str(value["policy_id"]))
+            mode = str(value["selection_mode"])
+        except KeyError:
+            raise ValueError("invalid V3 variant registry") from None
+        if mode in grouped.setdefault(key, {}):
+            raise ValueError("duplicate V3 selection mode")
+        grouped[key][mode] = value
+    expected_keys = {
+        (fold_id, policy_id)
+        for fold_id in ("train-fold-1", "train-fold-2", "train-combined")
+        for policy_id in V3_POLICY_IDS
+    }
+    if set(grouped) != expected_keys:
+        raise ValueError("invalid V3 variant registry")
+    result: dict[tuple[str, str], Mapping[str, object]] = {}
+    for key, modes in grouped.items():
+        if set(modes) != set(V3_SELECTION_MODES):
+            raise ValueError("invalid V3 selection mode registry")
+        fingerprints = {
+            _scored_without_presentation(value.get("scored"))
+            for value in modes.values()
+        }
+        if len(fingerprints) != 1:
+            raise ValueError("V3 selection-mode scored drift")
+        result[key] = modes["FORMAL"]
+    return result
+
+
+def _fold_date_registry(
+    train_artifact: FiveDayRankingV3TrainArtifact,
+) -> dict[str, frozenset[date]]:
+    folds = train_artifact.payload.get("folds")
+    if not isinstance(folds, list):
+        raise ValueError("invalid V3 fold registry")
+    result: dict[str, frozenset[date]] = {}
+    for fold in folds:
+        if not isinstance(fold, Mapping):
+            raise ValueError("invalid V3 fold registry")
+        try:
+            fold_id = str(fold["fold_id"])
+            dates = frozenset(
+                date.fromisoformat(str(value))
+                for value in fold["evaluation_dates"]
+            )
+        except (KeyError, TypeError, ValueError):
+            raise ValueError("invalid V3 fold registry") from None
+        result[fold_id] = dates
+    if set(result) != {"train-fold-1", "train-fold-2"}:
+        raise ValueError("invalid V3 fold registry")
+    return result
+
+
+def _population_fingerprint(
+    rows: Sequence[ComponentOutcome],
+    endpoints: Mapping[PlanIdentity, date],
+) -> str:
+    return _canonical_hash(
+        [
+            {
+                "identity": (
+                    row.signal_date.isoformat(),
+                    row.plan_identity[1],
+                    row.plan_identity[2],
+                    row.plan_identity[3],
+                ),
+                "endpoint": endpoints[row.plan_identity].isoformat(),
+                "raw": str(row.value.raw_return),
+                "index_excess": str(row.value.index_excess),
+                "market_excess": str(row.value.market_median_excess),
+            }
+            for row in sorted(rows, key=lambda item: item.plan_identity)
+        ]
+    )
+
+
+def _combined_coverage(
+    left: CoverageComparison,
+    right: CoverageComparison,
+    population_fingerprint: str,
+) -> CoverageComparison:
+    return CoverageComparison(
+        candidate_rows=left.candidate_rows + right.candidate_rows,
+        eligible_outcomes=left.eligible_outcomes + right.eligible_outcomes,
+        excluded_without_train_horizon=(
+            left.excluded_without_train_horizon
+            + right.excluded_without_train_horizon
+        ),
+        excluded_missing_coverage=(
+            left.excluded_missing_coverage + right.excluded_missing_coverage
+        ),
+        population_fingerprint=population_fingerprint,
+        benchmark_fingerprint=left.benchmark_fingerprint,
+    )
+
+
+def build_five_day_ranking_v3_component_attribution_review(
+    train_artifact: FiveDayRankingV3TrainArtifact,
+    research: FiveDayResearchReview,
+    parent_attribution: FiveDayRankingV3AttributionArtifact,
+    *,
+    parent_research_identity: str,
+    market_panel: MarketClosePanel,
+) -> FiveDayRankingV3ComponentAttributionReview:
+    """Build a deduplicated, aggregate-only train component diagnosis."""
+
+    try:
+        from .five_day_ranking_v3_attribution import (
+            build_five_day_ranking_v3_attribution_review,
+        )
+        from .five_day_ranking_v3_attribution_report import (
+            five_day_ranking_v3_attribution_payload,
+        )
+
+        parent_payload = parent_attribution.payload
+        if (
+            parent_research_identity != train_artifact.parent_research_identity
+            or parent_research_identity != parent_attribution.parent_research_identity
+            or research.input_fingerprint != train_artifact.parent_input_fingerprint
+            or research.input_fingerprint != parent_attribution.parent_input_fingerprint
+            or parent_attribution.parent_train_identity
+            != train_artifact.artifact_identity
+            or parent_attribution.status != "COMPLETE"
+            or not isinstance(parent_payload, Mapping)
+            or parent_payload.get("train_only") is not True
+            or parent_payload.get("validation_outcomes_read") is not False
+            or parent_payload.get("test_outcomes_read") is not False
+            or parent_payload.get("promotion_eligible") is not False
+            or parent_payload.get("trade_permission") != "NO-TRADE"
+        ):
+            raise ValueError("component attribution lineage mismatch")
+        replay = build_five_day_ranking_v3_attribution_review(
+            train_artifact,
+            research,
+            parent_research_identity=parent_research_identity,
+            market_panel=market_panel,
+        )
+        replay_payload = five_day_ranking_v3_attribution_payload(replay)
+        if (
+            replay_payload != parent_payload
+            or replay.market_data_fingerprint
+            != parent_attribution.market_data_fingerprint
+            or replay_payload.get("artifact_identity")
+            != parent_attribution.artifact_identity
+        ):
+            raise ValueError("parent attribution replay mismatch")
+        variants = _deduplicated_variants(train_artifact)
+        fold_dates = _fold_date_registry(train_artifact)
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return _empty_review(
+            train_artifact,
+            parent_attribution,
+            parent_research_identity=parent_research_identity,
+            status="LINEAGE_INVALID",
+        )
+
+    observations: dict[PlanIdentity, object] = {}
+    try:
+        for observation in research.observations:
+            identity = _observation_identity(observation)
+            if identity in observations:
+                raise ValueError("duplicate parent observation")
+            observations[identity] = observation
+    except (AttributeError, TypeError, ValueError):
+        return _empty_review(
+            train_artifact,
+            parent_attribution,
+            parent_research_identity=parent_research_identity,
+            status="LINEAGE_INVALID",
+        )
+
+    policies = {value.policy_id: value for value in build_five_day_v3_policies()}
+    outcomes: dict[tuple[str, str], tuple[ComponentOutcome, ...]] = {}
+    coverages: dict[tuple[str, str], CoverageComparison] = {}
+    endpoints_by_unit: dict[tuple[str, str], dict[PlanIdentity, date]] = {}
+    train_dates = tuple(train_artifact.split.train)
+
+    for fold_id in ("train-fold-1", "train-fold-2"):
+        for policy_id in V3_POLICY_IDS:
+            variant = variants[(fold_id, policy_id)]
+            scored = variant.get("scored")
+            if not isinstance(scored, list):
+                return _empty_review(
+                    train_artifact,
+                    parent_attribution,
+                    parent_research_identity=parent_research_identity,
+                    status="LINEAGE_INVALID",
+                )
+            rows: list[ComponentOutcome] = []
+            endpoints: dict[PlanIdentity, date] = {}
+            without_horizon = 0
+            missing_coverage = 0
+            for content in scored:
+                try:
+                    if not isinstance(content, Mapping):
+                        raise ValueError
+                    identity = _plan_identity(content["plan_key"])
+                    if identity[0] not in fold_dates[fold_id]:
+                        raise ValueError("scored plan outside fold")
+                    observation = observations.get(identity)
+                    if observation is None:
+                        raise ValueError("scored plan has no observation")
+                    endpoint = fifth_subsequent_train_date(
+                        identity[0], train_dates
+                    )
+                    if endpoint is None:
+                        without_horizon += 1
+                        continue
+                    endpoints[identity] = endpoint
+                    try:
+                        attributed = attribute_interval(
+                            identity[1], identity[0], endpoint, market_panel
+                        )
+                    except ValueError:
+                        missing_coverage += 1
+                        continue
+                    evidence = content["evidence"]
+                    feature = content["feature_adjustment"]
+                    if not isinstance(evidence, Mapping) or not isinstance(
+                        feature, Mapping
+                    ):
+                        raise ValueError
+                    components = reconstruct_score_components(
+                        edge=Decimal(str(evidence["edge"])),
+                        consistency=Decimal(str(content["consistency"])),
+                        feature_adjustment=Decimal(str(feature["total"])),
+                        downside=Decimal(str(content["downside"])),
+                        policy=policies[policy_id],
+                        persisted_score=Decimal(str(content["score"])),
+                    )
+                    rank = content["rank"]
+                    if type(rank) is not int:
+                        raise ValueError("invalid official rank")
+                    rows.append(
+                        ComponentOutcome(
+                            signal_date=identity[0],
+                            plan_identity=identity,
+                            profile_id=identity[3],
+                            setup_quality=observation.plan.candidate.setup.quality,
+                            full_edge=Decimal(str(evidence["full_edge"])),
+                            recent_edge=Decimal(str(evidence["recent_edge"])),
+                            raw_downside=Decimal(str(content["downside"])),
+                            official_rank=rank,
+                            components=components,
+                            value=attributed,
+                        )
+                    )
+                except (ArithmeticError, KeyError, TypeError, ValueError):
+                    return _empty_review(
+                        train_artifact,
+                        parent_attribution,
+                        parent_research_identity=parent_research_identity,
+                        status="SCORE_RECONSTRUCTION_FAILED",
+                    )
+            if missing_coverage:
+                return _empty_review(
+                    train_artifact,
+                    parent_attribution,
+                    parent_research_identity=parent_research_identity,
+                    status="MARKET_DATA_INCOMPLETE",
+                )
+            frozen_rows = tuple(rows)
+            fingerprint = _population_fingerprint(frozen_rows, endpoints)
+            unit = (fold_id, policy_id)
+            outcomes[unit] = frozen_rows
+            endpoints_by_unit[unit] = endpoints
+            coverages[unit] = CoverageComparison(
+                candidate_rows=len(scored),
+                eligible_outcomes=len(frozen_rows),
+                excluded_without_train_horizon=without_horizon,
+                excluded_missing_coverage=missing_coverage,
+                population_fingerprint=fingerprint,
+                benchmark_fingerprint=parent_attribution.market_data_fingerprint,
+            )
+
+    fold_experiments: list[FoldExperimentReview] = []
+    fold_correlations: list[ComponentCorrelationReview] = []
+    experiment_registry: dict[tuple[str, str, str], FoldExperimentReview] = {}
+    for fold_id in ("train-fold-1", "train-fold-2"):
+        for policy_id in V3_POLICY_IDS:
+            unit = (fold_id, policy_id)
+            fold_correlations.append(
+                ComponentCorrelationReview(
+                    fold_id=fold_id,
+                    policy_id=policy_id,
+                    population_fingerprint=coverages[unit].population_fingerprint,
+                    metrics=summarize_component_correlations(outcomes[unit]),
+                )
+            )
+            for experiment_id in EXPERIMENT_IDS:
+                try:
+                    ranking = rank_component_experiment(
+                        outcomes[unit], experiment_id
+                    )
+                except ValueError:
+                    return _empty_review(
+                        train_artifact,
+                        parent_attribution,
+                        parent_research_identity=parent_research_identity,
+                        status=(
+                            "BASELINE_REPRODUCTION_FAILED"
+                            if experiment_id == "BASELINE"
+                            else "COMPARABILITY_FAILED"
+                        ),
+                    )
+                review = FoldExperimentReview(
+                    fold_id=fold_id,
+                    policy_id=policy_id,
+                    experiment_id=experiment_id,
+                    coverage=coverages[unit],
+                    metrics=summarize_experiment_ranking(ranking),
+                    status=(
+                        "BOUNDARY_TIE_INCONCLUSIVE"
+                        if ranking.boundary_ties
+                        else "COMPLETE"
+                    ),
+                )
+                fold_experiments.append(review)
+                experiment_registry[(fold_id, policy_id, experiment_id)] = review
+
+    combined_experiments: list[FoldExperimentReview] = []
+    combined_correlations: list[ComponentCorrelationReview] = []
+    effects: list[PolicyComponentEffect] = []
+    component_experiment = {
+        "CONSISTENCY": "WITHOUT_CONSISTENCY",
+        "STRUCTURE": "WITHOUT_STRUCTURE",
+        "DOWNSIDE": "WITHOUT_DOWNSIDE",
+    }
+    for policy_id in V3_POLICY_IDS:
+        left_unit = ("train-fold-1", policy_id)
+        right_unit = ("train-fold-2", policy_id)
+        combined_rows = outcomes[left_unit] + outcomes[right_unit]
+        combined_endpoints = {
+            **endpoints_by_unit[left_unit],
+            **endpoints_by_unit[right_unit],
+        }
+        combined_fingerprint = _population_fingerprint(
+            combined_rows, combined_endpoints
+        )
+        coverage = _combined_coverage(
+            coverages[left_unit],
+            coverages[right_unit],
+            combined_fingerprint,
+        )
+        combined_correlations.append(
+            ComponentCorrelationReview(
+                fold_id="train-combined",
+                policy_id=policy_id,
+                population_fingerprint=combined_fingerprint,
+                metrics=summarize_component_correlations(combined_rows),
+            )
+        )
+        for experiment_id in EXPERIMENT_IDS:
+            ranking = rank_component_experiment(combined_rows, experiment_id)
+            combined_experiments.append(
+                FoldExperimentReview(
+                    fold_id="train-combined",
+                    policy_id=policy_id,
+                    experiment_id=experiment_id,
+                    coverage=coverage,
+                    metrics=summarize_experiment_ranking(ranking),
+                    status=(
+                        "BOUNDARY_TIE_INCONCLUSIVE"
+                        if ranking.boundary_ties
+                        else "COMPLETE"
+                    ),
+                )
+            )
+        for component_id, experiment_id in component_experiment.items():
+            try:
+                fold1 = compare_ablation(
+                    experiment_registry[("train-fold-1", policy_id, "BASELINE")].metrics,
+                    experiment_registry[("train-fold-1", policy_id, experiment_id)].metrics,
+                )
+                fold2 = compare_ablation(
+                    experiment_registry[("train-fold-2", policy_id, "BASELINE")].metrics,
+                    experiment_registry[("train-fold-2", policy_id, experiment_id)].metrics,
+                )
+            except ValueError:
+                return _empty_review(
+                    train_artifact,
+                    parent_attribution,
+                    parent_research_identity=parent_research_identity,
+                    status="COMPARABILITY_FAILED",
+                )
+            effect = classify_component_effect(
+                fold1, fold2, component_id=component_id
+            )
+            effects.append(
+                PolicyComponentEffect(
+                    policy_id=policy_id,
+                    component_id=component_id,
+                    fold1=fold1,
+                    fold2=fold2,
+                    label=effect.label,
+                )
+            )
+
+    return FiveDayRankingV3ComponentAttributionReview(
+        schema=COMPONENT_ATTRIBUTION_SCHEMA,
+        component_attribution_version=COMPONENT_ATTRIBUTION_VERSION,
+        parent_train_identity=train_artifact.artifact_identity,
+        parent_research_identity=parent_research_identity,
+        parent_input_fingerprint=research.input_fingerprint,
+        parent_attribution_identity=parent_attribution.artifact_identity,
+        market_data_fingerprint=parent_attribution.market_data_fingerprint,
+        fold_experiments=tuple(fold_experiments),
+        combined_experiments=tuple(combined_experiments),
+        fold_component_correlations=tuple(fold_correlations),
+        combined_component_correlations=tuple(combined_correlations),
+        component_effects=tuple(effects),
+        status="COMPLETE",
+        train_only=True,
+        validation_outcomes_read=False,
+        test_outcomes_read=False,
+        promotion_eligible=False,
+        trade_permission="NO-TRADE",
     )
