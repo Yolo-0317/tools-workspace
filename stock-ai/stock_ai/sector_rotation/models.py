@@ -44,6 +44,7 @@ class RotationPolicy:
     signal_day_overheat_pct: Decimal = Decimal("7")
     return5_overheat_pct: Decimal = Decimal("15")
     ma5_distance_overheat_pct: Decimal = Decimal("5")
+    coexistence_overlap_max: Decimal = Decimal("0.30")
 
 
 @dataclass(frozen=True)
@@ -127,6 +128,29 @@ class ChainScore:
     structure_score: Decimal
     overheat_penalty: Decimal
     reasons: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ScoredChain:
+    chain_code: str
+    chain_name: str
+    parent_code: str
+    raw_sector_codes: tuple[str, ...]
+    raw_sector_names: tuple[str, ...]
+    best_rank: int
+    raw_change_pct: Decimal
+    metrics: ChainMetrics
+    score: ChainScore
+    state: RotationState | None
+    previous_state: RotationState | None
+    state_reasons: tuple[str, ...]
+    coexistence_codes: tuple[str, ...]
+    member_codes: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class SelectedChain(ScoredChain):
+    bucket: RotationBucket
 
 
 @dataclass(frozen=True)

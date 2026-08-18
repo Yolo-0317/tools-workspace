@@ -12,6 +12,8 @@ from .models import (
     RotationPolicy,
     RotationRunResult,
     RotationState,
+    ScoredChain,
+    SelectedChain,
 )
 from .normalization import load_chain_rules, merge_sector_rows, normalize_sector_name
 
@@ -29,6 +31,8 @@ __all__ = (
     "RotationPolicy",
     "RotationRunResult",
     "RotationState",
+    "ScoredChain",
+    "SelectedChain",
     "load_chain_rules",
     "merge_sector_rows",
     "normalize_sector_name",
