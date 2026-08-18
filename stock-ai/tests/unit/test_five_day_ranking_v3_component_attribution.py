@@ -8,6 +8,9 @@ import json
 
 import pytest
 
+from stock_ai.buy_point_selection import (
+    five_day_ranking_v3_component_attribution as component_module,
+)
 from stock_ai.buy_point_selection.five_day_ranking_v3 import (
     FiveDayV3Policy,
     build_five_day_v3_policies,
@@ -34,6 +37,7 @@ from stock_ai.buy_point_selection.five_day_ranking_v3_component_attribution impo
 from stock_ai.buy_point_selection.five_day_ranking_v3_attribution import (
     AttributedReturn,
     MarketClosePanel,
+    MarketCoverageIncomplete,
     build_five_day_ranking_v3_attribution_review,
 )
 from stock_ai.buy_point_selection.five_day_ranking_v3_attribution_report import (
@@ -324,7 +328,7 @@ def test_full_builder_fails_closed_on_score_or_rank_drift(
     assert review.component_effects == ()
 
 
-def test_full_builder_fails_closed_on_missing_stock_coverage(
+def test_full_builder_excludes_missing_stock_endpoint_consistently(
     full_builder_fixture,
 ) -> None:
     train_artifact, research, _, panel = full_builder_fixture
@@ -347,7 +351,64 @@ def test_full_builder_fails_closed_on_missing_stock_coverage(
         market_panel=incomplete_panel,
     )
 
+    assert review.status == "COMPLETE"
+    assert len(review.fold_experiments) == 64
+    affected = tuple(
+        value
+        for value in review.fold_experiments
+        if value.fold_id == "train-fold-1"
+    )
+    assert len(affected) == 32
+    assert {
+        value.coverage.excluded_missing_coverage for value in affected
+    } == {1}
+    assert {
+        value.coverage.candidate_rows
+        - value.coverage.eligible_outcomes
+        - value.coverage.excluded_without_train_horizon
+        - value.coverage.excluded_missing_coverage
+        for value in affected
+    } == {0}
+    for policy_id in {value.policy_id for value in affected}:
+        policy_rows = tuple(
+            value for value in affected if value.policy_id == policy_id
+        )
+        assert len(policy_rows) == 4
+        assert len(
+            {
+                value.coverage.population_fingerprint
+                for value in policy_rows
+            }
+        ) == 1
+
+
+def test_full_builder_still_fails_closed_on_benchmark_coverage(
+    full_builder_fixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    train_artifact, research, parent, panel = full_builder_fixture
+
+    def missing_benchmark(*_args, **_kwargs):
+        raise MarketCoverageIncomplete("INDEX_ENDPOINT_MISSING")
+
+    monkeypatch.setattr(
+        component_module,
+        "attribute_interval",
+        missing_benchmark,
+    )
+    review = build_five_day_ranking_v3_component_attribution_review(
+        train_artifact,
+        research,
+        parent,
+        parent_research_identity=PARENT_RESEARCH_IDENTITY,
+        market_panel=panel,
+    )
+
     assert review.status == "MARKET_DATA_INCOMPLETE"
+    assert review.fold_experiments == ()
+    assert review.combined_experiments == ()
+    assert review.fold_component_correlations == ()
+    assert review.combined_component_correlations == ()
     assert review.component_effects == ()
 
 

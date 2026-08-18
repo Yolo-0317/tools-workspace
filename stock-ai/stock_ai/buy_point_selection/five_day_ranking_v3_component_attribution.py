@@ -19,6 +19,7 @@ from .five_day_ranking_v3 import (
 from .five_day_ranking_v3_attribution import (
     AttributedReturn,
     MarketClosePanel,
+    MarketCoverageIncomplete,
     attribute_interval,
     canonical_decimal_mean,
     exact_decimal_sum,
@@ -1081,14 +1082,28 @@ def build_five_day_ranking_v3_component_attribution_review(
                     if endpoint is None:
                         without_horizon += 1
                         continue
-                    endpoints[identity] = endpoint
+                    series = market_panel.stock_closes.get(identity[1])
+                    if (
+                        series is None
+                        or identity[0] not in series
+                        or endpoint not in series
+                    ):
+                        missing_coverage += 1
+                        continue
                     try:
                         attributed = attribute_interval(
                             identity[1], identity[0], endpoint, market_panel
                         )
-                    except ValueError:
-                        missing_coverage += 1
-                        continue
+                    except MarketCoverageIncomplete:
+                        return _empty_review(
+                            train_artifact,
+                            parent_attribution,
+                            parent_research_identity=(
+                                parent_research_identity
+                            ),
+                            status="MARKET_DATA_INCOMPLETE",
+                        )
+                    endpoints[identity] = endpoint
                     evidence = content["evidence"]
                     feature = content["feature_adjustment"]
                     if not isinstance(evidence, Mapping) or not isinstance(
@@ -1127,13 +1142,6 @@ def build_five_day_ranking_v3_component_attribution_review(
                         parent_research_identity=parent_research_identity,
                         status="SCORE_RECONSTRUCTION_FAILED",
                     )
-            if missing_coverage:
-                return _empty_review(
-                    train_artifact,
-                    parent_attribution,
-                    parent_research_identity=parent_research_identity,
-                    status="MARKET_DATA_INCOMPLETE",
-                )
             frozen_rows = tuple(rows)
             fingerprint = _population_fingerprint(frozen_rows, endpoints)
             unit = (fold_id, policy_id)
