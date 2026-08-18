@@ -41,6 +41,7 @@ _HOTSPOT_SELECTION_LEAK_BANNED: tuple[str, ...] = (
     "同批快讯",
     "不复述同批",
 )
+_WHY_PICK_PREFIX_RE = re.compile(r"^>?\s*为什么选这一题")
 
 # 开篇/导语禁止：结构说明、阅读路径、编审预告（2026-07-12 用户定稿）
 _HOTSPOT_READER_META_OPENING_RE = re.compile(
@@ -265,6 +266,20 @@ def _sanitize_why_pick_paragraph(paragraph: str) -> str:
     return out.strip()
 
 
+def _drop_pure_selection_meta(text: str) -> str:
+    kept: list[str] = []
+    for paragraph in re.split(r"\n\n+", text or ""):
+        stripped = paragraph.strip()
+        if not stripped:
+            continue
+        if _WHY_PICK_PREFIX_RE.search(stripped) and any(
+            marker in stripped for marker in _HOTSPOT_SELECTION_LEAK_BANNED
+        ):
+            continue
+        kept.append(stripped)
+    return "\n\n".join(kept).strip()
+
+
 def sanitize_hotspot_selection_leak(text: str) -> str:
     """去掉候选/舍弃/对比其它标题等编审话术（全文）。"""
     text = strip_hotspot_subheadings(_normalize_hotspot_legacy_sections(text))
@@ -304,9 +319,10 @@ def reflow_hotspot_body(text: str) -> str:
     """去掉小标题、粘连 ## 标题，收成纯段落。"""
     from scripts.tools.wechat_mp_prose import strip_hotspot_subheadings
 
+    source = _drop_pure_selection_meta((text or "").strip())
     out = strip_hotspot_subheadings(
         humanize_hotspot_boilerplate(
-            humanize_hotspot_field_labels(_normalize_hotspot_legacy_sections((text or "").strip()))
+            humanize_hotspot_field_labels(_normalize_hotspot_legacy_sections(source))
         )
     )
     if not out:

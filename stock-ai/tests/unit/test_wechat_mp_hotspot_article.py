@@ -184,6 +184,14 @@ def test_reflow_hotspot_why_section():
     assert "五条候选" not in out
 
 
+def test_reflow_hotspot_keeps_public_fact_with_numbered_candidates_word() -> None:
+    from scripts.tools.wechat_mp_hotspot_polish import reflow_hotspot_body
+
+    raw = "公开名单显示，五条候选线路都经过同一片施工区域。"
+
+    assert reflow_hotspot_body(raw) == raw
+
+
 def test_reflow_hotspot_strips_markdown_bold() -> None:
     from scripts.tools.wechat_mp_hotspot_polish import reflow_hotspot_body, strip_markdown_bold
 

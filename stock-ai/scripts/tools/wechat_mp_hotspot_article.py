@@ -1716,7 +1716,10 @@ def build_hotspot_title(topics: list[HotspotTopic], *, body: str = "") -> str:
 
     from scripts.tools.wechat_mp_hotspot_research import build_hotspot_title_from_facts
 
-    raw = build_hotspot_title_from_facts(hits, trend=trend)
+    if not hits and topic.bucket == "geo" and ("：" in trend or ":" in trend):
+        raw = f"{topic.section_title}，发生了什么？"
+    else:
+        raw = build_hotspot_title_from_facts(hits, trend=trend)
     from scripts.tools.wechat_mp_content import _clip_wechat_title
     from scripts.tools.wechat_mp_public import sanitize_public_title
     from scripts.tools.wechat_mp_seo import enrich_title_for_search
