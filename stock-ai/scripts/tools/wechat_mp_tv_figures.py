@@ -524,9 +524,8 @@ def normalize_tv_review_body(body: str) -> str:
     lines = _fix_merits_duplicate_character_bullets(lines)
     text = re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
     from scripts.tools.wechat_mp_monetization import strip_recommend_hook
-    from scripts.tools.wechat_mp_tv_polish import finalize_tv_review_body
 
-    return finalize_tv_review_body(strip_recommend_hook(text))
+    return strip_recommend_hook(text)
 
 
 _MERITS_ALT_LABELS = ("叙事", "镜头", "节奏", "表演", "视觉")

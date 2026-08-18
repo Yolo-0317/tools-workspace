@@ -10,6 +10,7 @@ from scripts.tools.wechat_mp_prose import strip_hotspot_subheadings
 TV_PARA_MAX_CHARS = 220
 TV_PARA_MIN_CHARS = 100
 _BULLET_LINE_RE = re.compile(r"^·\s*")
+_SCENE_LABEL_RE = re.compile(r"^[^：:\n]{2,12}[：:]")
 
 
 def merge_tv_bullets_to_prose(text: str) -> str:
@@ -18,23 +19,16 @@ def merge_tv_bullets_to_prose(text: str) -> str:
     if not paragraphs:
         return text or ""
     out: list[str] = []
-    buf: list[str] = []
     for para in paragraphs:
         lines = [ln.strip() for ln in para.splitlines() if ln.strip()]
         bullets = [ln for ln in lines if _BULLET_LINE_RE.match(ln)]
         prose = [ln for ln in lines if not _BULLET_LINE_RE.match(ln)]
         if prose:
-            if buf:
-                out.append("".join(buf))
-                buf = []
             out.append("\n".join(prose))
         for b in bullets:
             body = _BULLET_LINE_RE.sub("", b).strip()
-            body = re.sub(r"^[^：:]{1,12}[：:]\s*", "", body, count=1)
             if body:
-                buf.append(body if body.endswith("。") else body + "。")
-    if buf:
-        out.append("".join(buf))
+                out.append(body if body.endswith("。") else body + "。")
     return "\n\n".join(out).strip()
 
 
@@ -82,7 +76,13 @@ def merge_tv_short_paragraphs(
         sentences = [s for s in re.split(r"(?<=[。！？])", para) if s.strip()]
         short = len(para) < min_chars or len(sentences) < 2
         is_last = i == len(paragraphs) - 1
-        if short and out and not is_last and len(out[-1]) + len(para) <= max_chars:
+        if (
+            short
+            and out
+            and not is_last
+            and not _SCENE_LABEL_RE.match(para)
+            and len(out[-1]) + len(para) <= max_chars
+        ):
             out[-1] = out[-1] + para
         else:
             out.append(para)
