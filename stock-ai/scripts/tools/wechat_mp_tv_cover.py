@@ -504,7 +504,13 @@ def pick_discussion_draft_thumb(
     from scripts.tools.wechat_mp_discussion_figures import ensure_discussion_cover
 
     slug = resolve_tv_cover_slug(topic)
-    cover_path = ensure_discussion_cover(topic)
+    try:
+        cover_path = ensure_discussion_cover(topic)
+    except FileNotFoundError as exc:
+        return None, {
+            "errcode": -1,
+            "errmsg": f"话题讨论封面不存在: {exc}",
+        }
     cache_key = hashlib.md5(cover_path.read_bytes()).hexdigest()[:16]
     if not force_reupload:
         cached = _load_discussion_cover_cache(slug)
