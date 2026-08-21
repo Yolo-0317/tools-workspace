@@ -16,6 +16,7 @@ from stock_ai.buy_point_selection.public_challenger_runtime import (
 from stock_ai.buy_point_selection.public_challenger_report import (
     PublicChallengerFreezeArtifact,
 )
+from stock_ai.buy_point_selection.public_challenger_signals import EXECUTION_TRACK
 from stock_ai.buy_point_selection.public_challenger_validation import (
     PublicChallengerFreezeReview,
 )
@@ -233,6 +234,11 @@ def test_research_builds_train_and_validation_without_reading_test_outcomes() ->
     assert len(review.split.test) == 126
     assert review.test_outcomes_read is False
     assert review.trade_permission == "NO-TRADE"
+    assert review.validation_assessment.execution_metrics.segment == "VALIDATION"
+    assert (
+        review.validation_assessment.execution_metrics.positive_window_ratio
+        == review.track_metrics[EXECUTION_TRACK].positive_window_ratio
+    )
 
 
 def test_train_holding_period_cannot_cross_validation_boundary() -> None:
@@ -280,4 +286,5 @@ def test_test_builder_is_inconclusive_without_same_segment_v3() -> None:
     assert review.parent_freeze_identity == freeze.artifact_identity
     assert review.assessment.verdict == "INCONCLUSIVE"
     assert review.assessment.reasons == ("V3_COMPARABLE_MISSING",)
+    assert review.assessment.execution_metrics.segment == "TEST"
     assert review.trade_permission == "NO-TRADE"

@@ -129,6 +129,7 @@ def test_research_payload_is_aggregate_only_and_byte_stable(tmp_path) -> None:
     assert payload["trade_permission"] == "NO-TRADE"
     assert payload["promotion_eligible"] is False
     assert payload["test_outcomes_read"] is False
+    assert payload["evaluator_version"] == "public-challenger-evaluator-v2"
 
 
 def test_same_identity_with_different_content_is_rejected(tmp_path) -> None:

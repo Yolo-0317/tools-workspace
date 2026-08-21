@@ -310,6 +310,40 @@ def _v3_calendar(
     return tuple(rows)
 
 
+def test_compare_without_v3_uses_explicit_validation_calendar() -> None:
+    calendar = _weekday_dates(126)
+
+    assessment = compare_with_v3(
+        challenger=_qualifying_observations(),
+        v3_days=None,
+        trading_dates=calendar,
+        segment="VALIDATION",
+        input_fingerprint="fingerprint-validation-calendar",
+    )
+
+    assert assessment.execution_metrics.segment == "VALIDATION"
+    assert assessment.execution_metrics.positive_window_ratio == Decimal("1")
+    assert assessment.verdict == "INCONCLUSIVE"
+    assert assessment.reasons == ("V3_COMPARABLE_MISSING",)
+
+
+def test_compare_rejects_v3_calendar_mismatch() -> None:
+    calendar = _weekday_dates(126)
+    v3_days = _v3_calendar(
+        _qualifying_observations(),
+        return_builder=lambda _row, _index: Decimal("0"),
+    )
+
+    with pytest.raises(ValueError, match="V3_CALENDAR_MISMATCH"):
+        compare_with_v3(
+            challenger=_qualifying_observations(),
+            v3_days=v3_days[:-1],
+            trading_dates=calendar,
+            segment="TEST",
+            input_fingerprint="fingerprint-calendar-mismatch",
+        )
+
+
 def _negative_challenger() -> tuple[ChallengerObservation, ...]:
     return tuple(
         replace(
@@ -373,6 +407,12 @@ def test_frozen_verdicts(case: str, expected: str) -> None:
     assessment = compare_with_v3(
         challenger=challenger,
         v3_days=v3_days,
+        trading_dates=(
+            tuple(row.signal_date for row in v3_days)
+            if v3_days is not None
+            else _weekday_dates(126)
+        ),
+        segment="TEST",
         input_fingerprint=f"fingerprint-{case}",
     )
 

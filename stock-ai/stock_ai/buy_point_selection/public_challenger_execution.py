@@ -19,7 +19,7 @@ from .public_challenger_signals import (
 )
 
 
-PUBLIC_CHALLENGER_EVALUATOR_VERSION = "public-challenger-evaluator-v1"
+PUBLIC_CHALLENGER_EVALUATOR_VERSION = "public-challenger-evaluator-v2"
 
 
 @dataclass(frozen=True)

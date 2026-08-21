@@ -539,6 +539,8 @@ def build_public_challenger_research(
     assessment = compare_with_v3(
         challenger=execution_observations,
         v3_days=None,
+        trading_dates=split.validation,
+        segment="VALIDATION",
         input_fingerprint=inputs.input_fingerprint,
     )
     return PublicChallengerResearchReview(
@@ -637,6 +639,8 @@ def build_public_challenger_test(
     assessment = compare_with_v3(
         challenger=execution_observations,
         v3_days=v3.days if v3 is not None else None,
+        trading_dates=split.test,
+        segment="TEST",
         input_fingerprint=inputs.input_fingerprint,
     )
     return PublicChallengerTestReview(
