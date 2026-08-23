@@ -1,0 +1,23 @@
+{
+  "source_video": "zhixia-feihualing/exports/ep02-wind-subtitled-v01.mp4",
+  "figures": [
+    {
+      "file": "cover.jpg",
+      "timestamp_seconds": 14.8,
+      "purpose": "cover-zhixia-ayan-same-frame",
+      "verified": true
+    },
+    {
+      "file": "wind-visible.jpg",
+      "timestamp_seconds": 5.0,
+      "purpose": "body-visible-effects-of-wind",
+      "verified": true
+    },
+    {
+      "file": "poem-transition.jpg",
+      "timestamp_seconds": 9.8,
+      "purpose": "body-three-poem-emotional-transition",
+      "verified": true
+    }
+  ]
+}
