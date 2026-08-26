@@ -26,10 +26,22 @@ enum CoverError: Error, CustomStringConvertible {
 
 let canvasWidth: CGFloat = 720
 let canvasHeight: CGFloat = 1280
-let warmIvory = NSColor(
-    calibratedRed: 240.0 / 255.0,
-    green: 222.0 / 255.0,
-    blue: 194.0 / 255.0,
+let poemIvory = NSColor(
+    calibratedRed: 228.0 / 255.0,
+    green: 215.0 / 255.0,
+    blue: 192.0 / 255.0,
+    alpha: 1
+)
+let labelIvory = NSColor(
+    calibratedRed: 209.0 / 255.0,
+    green: 200.0 / 255.0,
+    blue: 182.0 / 255.0,
+    alpha: 1
+)
+let attributionIvory = NSColor(
+    calibratedRed: 210.0 / 255.0,
+    green: 203.0 / 255.0,
+    blue: 180.0 / 255.0,
     alpha: 1
 )
 
@@ -39,7 +51,7 @@ func drawVerticalColumn(
     top: CGFloat,
     step: CGFloat,
     font: NSFont,
-    strokeWidth: CGFloat,
+    color: NSColor,
     shadowBlur: CGFloat
 ) {
     let shadow = NSShadow()
@@ -52,9 +64,7 @@ func drawVerticalColumn(
             string: String(character),
             attributes: [
                 .font: font,
-                .foregroundColor: warmIvory,
-                .strokeColor: NSColor(calibratedWhite: 0.08, alpha: 0.58),
-                .strokeWidth: strokeWidth,
+                .foregroundColor: color,
                 .shadow: shadow,
             ]
         )
@@ -81,9 +91,9 @@ do {
         fileURLWithPath: "/System/Library/AssetsV2/com_apple_MobileAsset_Font7/aa99d0b2bad7f797f38b49d46cde28fd4b58876e.asset/AssetData/Xingkai.ttc"
     )
     CTFontManagerRegisterFontsForURL(fontURL as CFURL, .process, nil)
-    guard let labelFont = NSFont(name: "STXingkaiSC-Light", size: 28),
-          let poemFont = NSFont(name: "STXingkaiSC-Light", size: 68),
-          let attributionFont = NSFont(name: "STXingkaiSC-Light", size: 26)
+    guard let labelFont = NSFont(name: "STKaitiSC-Regular", size: 28),
+          let poemFont = NSFont(name: "STXingkaiSC-Bold", size: 68),
+          let attributionFont = NSFont(name: "STKaitiSC-Regular", size: 26)
     else {
         throw CoverError.unavailableFont
     }
@@ -107,10 +117,10 @@ do {
     NSGraphicsContext.current = context
     base.draw(in: NSRect(x: 0, y: 0, width: canvasWidth, height: canvasHeight))
 
-    drawVerticalColumn("诗词小故事", x: 50, top: 54, step: 34, font: labelFont, strokeWidth: -1.1, shadowBlur: 3)
-    drawVerticalColumn("孤舟蓑笠翁", x: 100, top: 218, step: 76, font: poemFont, strokeWidth: -1.7, shadowBlur: 5)
-    drawVerticalColumn("独钓寒江雪", x: 208, top: 292, step: 76, font: poemFont, strokeWidth: -1.7, shadowBlur: 5)
-    drawVerticalColumn("唐·柳宗元《江雪》", x: 52, top: 680, step: 35, font: attributionFont, strokeWidth: -1.1, shadowBlur: 3)
+    drawVerticalColumn("诗词小故事", x: 50, top: 54, step: 34, font: labelFont, color: labelIvory, shadowBlur: 3)
+    drawVerticalColumn("孤舟蓑笠翁", x: 100, top: 218, step: 76, font: poemFont, color: poemIvory, shadowBlur: 4)
+    drawVerticalColumn("独钓寒江雪", x: 208, top: 292, step: 76, font: poemFont, color: poemIvory, shadowBlur: 4)
+    drawVerticalColumn("唐·柳宗元《江雪》", x: 52, top: 680, step: 35, font: attributionFont, color: attributionIvory, shadowBlur: 3)
 
     NSGraphicsContext.restoreGraphicsState()
 
