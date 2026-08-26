@@ -94,7 +94,7 @@ git commit -m "归档赛博卦盘道具母板"
 
 **Interfaces:**
 - Consumes: `config/voices.json` 中的 `ayan` 与 `zhixia` 固定音色。
-- Produces: `EpisodeManifest` 可读取的六段语音，以及字幕渲染器可读取的八张透明卡清单。
+- Produces: `EpisodeManifest` 可读取的七段语音，以及字幕渲染器可读取的九张透明卡清单。
 
 - [ ] **Step 1: 把测试期望更新为已确认的精简对白**
 
@@ -118,11 +118,12 @@ class CyberDivinationEpisodeManifestTests(unittest.TestCase):
     self.assertEqual([(line.role, line.start_ms) for line in manifest.lines], [
         ("ayan", 0), ("zhixia", 2200), ("zhixia", 3700),
         ("zhixia", 4900), ("ayan", 8500), ("zhixia", 10100),
+        ("ayan", 12100),
     ])
     cards = json.loads((ROOT / "episodes/cyber-divination-ep01/subtitle-plan.json").read_text())
     self.assertEqual([item["kind"] for item in cards], [
         "dialogue", "dialogue", "hexagram", "dialogue",
-        "dialogue", "dialogue", "disclaimer", "title",
+        "dialogue", "dialogue", "dialogue", "disclaimer", "title",
     ])
     self.assertEqual(cards[2]["text"], "山雷颐")
     self.assertEqual(cards[2]["secondary"], "颐，贞吉。观颐，自求口实。")
@@ -150,14 +151,15 @@ Expected: FAIL because the existing manifest still uses 2500、4200、6800、980
     {"id": "03-system-hexagram", "role": "zhixia", "text": "山雷颐。", "start_ms": 3700},
     {"id": "04-zhixia-reading", "role": "zhixia", "text": "颐，贞吉。观颐，自求口实。", "start_ms": 4900},
     {"id": "05-ayan-hope", "role": "ayan", "text": "卦说能吃？", "start_ms": 8500},
-    {"id": "06-zhixia-reveal", "role": "zhixia", "text": "先数数空盘。", "start_ms": 10100}
+    {"id": "06-zhixia-reveal", "role": "zhixia", "text": "先数数空盘。", "start_ms": 10100},
+    {"id": "07-ayan-excuse", "role": "ayan", "text": "那是……昨天的。", "start_ms": 12100}
   ]
 }
 ```
 
 `03-system-hexagram` 复用栀夏音色生成干净源音，最终混音时只对这一句增加轻微高通、短回声与窄化处理，使它成为卦盘播报而不新增第三种付费音色。
 
-- [ ] **Step 4: 更新八项字幕清单与单集说明**
+- [ ] **Step 4: 更新九项字幕清单与单集说明**
 
 ```json
 [
@@ -167,8 +169,9 @@ Expected: FAIL because the existing manifest still uses 2500、4200、6800、980
   {"id": "04-zhixia-reading", "kind": "dialogue", "text": "颐，贞吉。观颐，自求口实。", "attribution": null},
   {"id": "05-ayan-hope", "kind": "dialogue", "text": "卦说能吃？", "attribution": null},
   {"id": "06-zhixia-reveal", "kind": "dialogue", "text": "先数数空盘。", "attribution": null},
-  {"id": "07-disclaimer", "kind": "disclaimer", "text": "传统文化趣味演绎，请勿作为现实决策依据", "attribution": null},
-  {"id": "08-series-title", "kind": "title", "text": "栀夏赛博起卦", "attribution": null}
+  {"id": "07-ayan-excuse", "kind": "dialogue", "text": "那是……昨天的。", "attribution": null},
+  {"id": "08-disclaimer", "kind": "disclaimer", "text": "传统文化趣味演绎，请勿作为现实决策依据", "attribution": null},
+  {"id": "09-series-title", "kind": "title", "text": "栀夏赛博起卦", "attribution": null}
 ]
 ```
 
@@ -182,7 +185,7 @@ Expected: `Ran 2 tests` and `OK`
 
 Run: `python3 zhixia-feihualing/scripts/generate_episode_audio.py --episode cyber-divination-ep01`
 
-Expected: exit 0，显示待生成 6 句、预计 6 次调用，并明确“当前为预览模式，未调用语音接口”。
+Expected: exit 0，显示待生成 7 句、预计 7 次调用，并明确“当前为预览模式，未调用语音接口”。
 
 ```bash
 git add zhixia-feihualing/episodes/cyber-divination-ep01 zhixia-feihualing/tests/test_cyber_divination_ep01_manifest.py
@@ -203,7 +206,7 @@ git commit -m "建立赛博起卦第一集清单"
 
 - [ ] **Step 1: 写失败测试**
 
-创建独立测试，检查八张 PNG 均为 720×1280；再用 FFmpeg 的 `alphaextract,signalstats` 验证：`dialogue` 底部区域、`hexagram` 中央区域、`disclaimer` 底部安全区和 `title` 上部标题区均有像素。
+创建独立测试，检查九张 PNG 均为 720×1280；再用 FFmpeg 的 `alphaextract,signalstats` 验证：`dialogue` 底部区域、`hexagram` 中央区域、`disclaimer` 底部安全区和 `title` 上部标题区均有像素。
 
 - [ ] **Step 2: 运行回归测试并确认新类型尚未实现**
 
@@ -276,7 +279,7 @@ Expected: `cyber divination prop: PASS`。若失败，停止本任务，不生�
 1. 双人中近景，阿砚双爪搭案盯着唯一一块桂花糕，栀夏侧坐且神情平静。
 2. 古籍与栀夏指尖近景，卦盘处于六爻生成中，保留中央文字安全区。
 3. 双人中近景，卦盘进入揭示状态，栀夏平静看阿砚，阿砚耳朵竖起、眼睛发亮。
-4. 镜头略向桌下俯移，八只空盘整齐叠放，案上仍只有一块桂花糕；阿砚收爪垂耳，栀夏只以视线指向证据。
+4. 镜头略向桌下俯移，八只空盘整齐叠放，案上仍只有一块桂花糕；阿砚收爪垂耳并小幅说出“那是……昨天的”，栀夏只以视线指向证据。
 
 - [ ] **Step 3: 生成、逐张质检并等待用户确认**
 
@@ -327,7 +330,7 @@ Expected: FAIL at `test -s`.
 
 - [ ] **Step 3: 使用固定时间轴生成原片**
 
-在 `video-prompt.md` 写入：0.0—2.2 秒阿砚提问表演；2.2—3.7 秒栀夏轻触古籍；3.7—4.9 秒卦盘框体进入“生成中”状态并依次亮起六个空白爻位；4.9—8.5 秒栀夏平静读卦辞；8.5—10.1 秒阿砚期待反问；10.1—12.1 秒栀夏垂眼拆穿并带动镜头下移；12.1—14.6 秒揭示八只空盘，阿砚收爪垂耳；14.6—15.0 秒保留反应与落版。要求三次以内的克制切镜、角色脸部稳定、无口型特写、无可辨识人声、卦名、卦辞或具体爻线；卦盘中央保留后期透明卡安全区，精确六爻与文字由 Task 3 本地渲染。
+在 `video-prompt.md` 写入：0.0—2.2 秒阿砚提问表演；2.2—3.7 秒栀夏轻触古籍；3.7—4.9 秒卦盘框体进入“生成中”状态并依次亮起六个空白爻位；4.9—8.5 秒栀夏平静读卦辞；8.5—10.1 秒阿砚期待反问；10.1—12.1 秒栀夏垂眼拆穿并带动镜头下移；12.1—14.6 秒揭示八只空盘，阿砚收爪垂耳并小幅说出最后一句；14.6—15.0 秒保留反应与落版。要求三次以内的克制切镜、角色脸部稳定、无口型特写、无可辨识人声、卦名、卦辞或具体爻线；卦盘中央保留后期透明卡安全区，精确六爻与文字由 Task 3 本地渲染。
 
 - [ ] **Step 4: 规格与关键帧人工验收**
 
@@ -355,7 +358,7 @@ git commit -m "归档赛博起卦第一集原片"
 - Modify: `zhixia-feihualing/assets/inventory.csv`
 
 **Interfaces:**
-- Consumes: 原片、六段 TTS、八张透明卡。
+- Consumes: 原片、七段 TTS、九张透明卡。
 - Produces: 720×1280、24fps、15.0—15.2 秒的 H.264/AAC 最终成片。
 
 - [ ] **Step 1: 再次预览付费调用并取得用户确认**
@@ -364,13 +367,13 @@ Run: `python3 zhixia-feihualing/scripts/generate_episode_audio.py --episode cybe
 
 Expected: 待生成数量与实际缺失音频一致；没有接口调用。把预览中的调用次数和台词列表发给用户，只有用户确认后进入下一步。
 
-- [ ] **Step 2: 生成六段配音并验证音频**
+- [ ] **Step 2: 生成七段配音并验证音频**
 
 Run: `python3 zhixia-feihualing/scripts/generate_episode_audio.py --episode cyber-divination-ep01 --generate`
 
 At prompt enter exactly: `GENERATE cyber-divination-ep01`
 
-Expected: 六段音频状态均为 `ready`，字幕时间轴写入 `episodes/cyber-divination-ep01/subtitles-cyber-divination-ep01.json`。逐段用 `ffprobe` 检查可解码与正时长。
+Expected: 七段音频状态均为 `ready`，字幕时间轴写入 `episodes/cyber-divination-ep01/subtitles-cyber-divination-ep01.json`。逐段用 `ffprobe` 检查可解码与正时长。
 
 - [ ] **Step 3: 写失败的最终视频测试**
 
@@ -392,9 +395,9 @@ echo "cyber divination final video: PASS (${duration}s)"
 
 - [ ] **Step 4: 实现可重复合成脚本**
 
-脚本先调用 `render_cyber_divination_cards.swift` 生成八张透明卡；再将六段配音按 0、2200、3700、4900、8500、10100 毫秒放入时间轴。对 `03-system-hexagram` 使用 `highpass=f=180,aecho=0.8:0.25:45:0.12`，其余对白只做 `loudnorm=I=-18:TP=-2:LRA=7`。在 3.7—8.5 秒持续叠加卦名、六爻、卦辞与出处卡；`04-zhixia-reading` 不重复叠加底部对白卡。12.1—15.0 秒叠加免责声明，14.6—15.0 秒叠加栏目名；最终编码使用 `libx264 -preset medium -crf 18 -pix_fmt yuv420p` 与 `aac -b:a 160k -ar 48000 -ac 2`。
+脚本先调用 `render_cyber_divination_cards.swift` 生成九张透明卡；再将七段配音按 0、2200、3700、4900、8500、10100、12100 毫秒放入时间轴。对 `03-system-hexagram` 使用 `highpass=f=180,aecho=0.8:0.25:45:0.12`，其余对白只做 `loudnorm=I=-18:TP=-2:LRA=7`。在 3.7—8.5 秒持续叠加卦名、六爻、卦辞与出处卡；`04-zhixia-reading` 不重复叠加底部对白卡。12.1—14.6 秒叠加 `07-ayan-excuse`，12.1—15.0 秒叠加免责声明，14.6—15.0 秒叠加栏目名；最终编码使用 `libx264 -preset medium -crf 18 -pix_fmt yuv420p` 与 `aac -b:a 160k -ar 48000 -ac 2`。
 
-对白若超过各自窗口，构建脚本根据 `ffprobe` 时长计算 `atempo=源时长/目标时长`，目标时长依次为 2.1、1.0、1.1、3.5、1.5、1.9 秒；若任一句所需倍率不在 0.80—1.25，脚本必须退出并报告具体台词，不允许截断句尾。
+对白若超过各自窗口，构建脚本根据 `ffprobe` 时长计算 `atempo=源时长/目标时长`，目标时长依次为 2.1、1.0、1.1、3.5、1.5、1.9、2.4 秒；若任一句所需倍率不在 0.80—1.25，脚本必须退出并报告具体台词，不允许截断句尾。
 
 - [ ] **Step 5: 构建并运行全部相关测试**
 
@@ -418,7 +421,7 @@ Expected: 所有命令 exit 0，Python 显示 `Ran 2 tests` 与 `OK`，四个 sh
 
 - [ ] **Step 7: 登记最终资产并提交**
 
-在 `assets/inventory.csv` 登记六段配音、原片和最终成片；最终成片状态为 `final`，备注写明 720×1280、24fps、约 15.1 秒、H.264/AAC、山雷颐卦辞、六段语音、八只空盘反转与免责声明。
+在 `assets/inventory.csv` 登记七段配音、原片和最终成片；最终成片状态为 `final`，备注写明 720×1280、24fps、约 15.1 秒、H.264/AAC、山雷颐卦辞、七段语音、八只空盘反转与免责声明。
 
 ```bash
 git add zhixia-feihualing/assets/audio/cyber-divination-ep01 zhixia-feihualing/episodes/cyber-divination-ep01/subtitles-cyber-divination-ep01.json zhixia-feihualing/scripts/build_cyber_divination_ep01.sh zhixia-feihualing/tests/test_cyber_divination_ep01_video.sh zhixia-feihualing/exports/cyber-divination-ep01-subtitled-v01.mp4 zhixia-feihualing/assets/inventory.csv
