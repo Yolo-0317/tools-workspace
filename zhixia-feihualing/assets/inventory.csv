@@ -1,0 +1,88 @@
+asset_id,type,character_or_episode,shot,path_or_url,status,source,rights_notes,notes
+conversation-001,source,project,,https://chatgpt.com/c/6a88b891-3580-83e8-8894-a225c1a2b7d4,reference,ChatGPT conversation,owner-provided conversation,角色定稿与EP01逐镜生成记录
+zhixia-final,character,栀夏,,assets/characters/zhixia-final.png,not_downloaded,ChatGPT generated image,original AI-assisted asset,需从对话下载最终高马尾版本
+ayan-final,character,阿砚,,assets/characters/ayan-final.png,not_downloaded,ChatGPT generated image,original AI-assisted asset,需从对话下载最终宣纸白墨灵版本
+ep01-01a,keyframe,EP01,01A,assets/generated-images/ep01-01a-final.png,not_downloaded,ChatGPT generated image,original AI-assisted asset,对话中已接受为视觉基准
+zhixia-voice-test-01,voice,栀夏,,assets/voices/zhixia/zhixia-tianmei-jiaoqiao-2.0-test-01.mp3,available,豆包语音合成2.0,user-generated via activated account,固定候选音色：甜美娇俏2.0；24kHz单声道；时长2.256秒
+ayan-voice-test-01,voice,阿砚,,assets/voices/ayan/ayan-jiaxiaozhi-2.0-test-01.mp3,available,豆包语音合成2.0,user-generated via activated account,固定候选音色：假小子2.0；24kHz单声道；时长4.032秒
+ep01-teaser-v01,video,EP01,teaser,exports/zhixia-15s-teaser-v01.mp4,draft,local FFmpeg,original project assets,15秒1080×1920初剪；7张关键帧轻推拉；含两段音色样片；暂未加字幕与音乐
+ep01-flower-voice-01,voice,阿砚,opening,assets/audio/ep01-flower/01-ayan-opening.mp3,available,豆包语音合成2.0,user-generated via activated account,假小子2.0；今日飞花令花；24kHz单声道；2.688秒
+ep01-flower-voice-02,voice,栀夏,poem-01,assets/audio/ep01-flower/02-zhixia-poem-01.mp3,available,豆包语音合成2.0,user-generated via activated account,甜美娇俏2.0；夜来风雨声花落知多少；24kHz单声道；3.072秒
+ep01-flower-voice-03,voice,阿砚,poem-02,assets/audio/ep01-flower/03-ayan-poem-02.mp3,available,豆包语音合成2.0,user-generated via activated account,假小子2.0；人闲桂花落夜静春山空；24kHz单声道；3.864秒
+ep01-flower-voice-04,voice,栀夏,poem-03,assets/audio/ep01-flower/04-zhixia-poem-03.mp3,available,豆包语音合成2.0,user-generated via activated account,甜美娇俏2.0；桃花潭水深千尺不及汪伦送我情；24kHz单声道；5.232秒
+ep01-flower-voice-05,voice,阿砚,outro,assets/audio/ep01-flower/05-ayan-outro.mp3,available,豆包语音合成2.0,user-generated via activated account,假小子2.0；第四句你来接；24kHz单声道；2.256秒
+ep01-flower-opening-raw,video,EP01,opening,assets/generated-video/ep01-flower/opening-raw.mp4,available,Seedance 2.0,user-generated via activated account,720×1280；24fps；5.042秒；无声；固定片头候选
+ep01-flower-content-raw,video,EP01,content,assets/generated-video/ep01-flower/content-raw.mp4,available,Seedance 2.0,user-generated via activated account,720×1280；24fps；15.042秒；无声；含雨后落花月下空山桃花潭三段诗境
+ep01-flower-outro-raw,video,EP01,outro,assets/generated-video/ep01-flower/outro-raw.mp4,available,Seedance 2.0,user-generated via activated account,720×1280；24fps；5.042秒；无声；固定片尾候选
+ep01-flower-voiced-v01,video,EP01,assembly,exports/ep01-flower-voiced-v01.mp4,draft,local FFmpeg,original project assets,20.208秒；片头正片片尾淡化转场；已加入5段TTS并统一响度；无字幕无音乐
+ep01-flower-subtitled-v01,video,EP01,assembly,exports/ep01-flower-subtitled-v01.mp4,draft,local FFmpeg,original project assets,20.208秒；720×1280；左上角双列竖排行楷字幕；纯白字与亮朱红花字；无底色；含5段TTS；无背景音乐
+ep01-flower-content-fullscreen-v02,video,EP01,content,assets/generated-video/ep01-flower/content-fullscreen-v02.mp4,available,Seedance 2.0,user-generated via activated account,720×1280；24fps；15.042秒；无声；雨后庭院桂花月夜桃花潭均为全屏诗境
+ep01-flower-subtitled-v02-fullscreen,video,EP01,assembly,exports/ep01-flower-subtitled-v02-fullscreen.mp4,draft,local FFmpeg,original project assets,20.167秒；720×1280；新版全屏诗境按三段TTS重新对时；保留片头片尾配音与竖排行楷字幕；无背景音乐
+ep02-wind-content-raw,video,EP02,content,assets/generated-video/ep02-wind/栀夏-风-内容.mp4,available,Seedance 2.0,user-generated via activated account,720×1280；24fps；15.042秒；无声；江南春景秋江白鸟栀夏入画云帆沧海双角色同框
+ep02-wind-outro-raw,video,EP02,outro,assets/generated-video/ep02-wind/新片尾 05s.mp4,available,Seedance 2.0,user-generated via activated account,720×1280；24fps；5.042秒；无声；栀夏阿砚书桌同框与翻书动作
+ep02-wind-voice-opening,voice,阿砚,opening,assets/audio/ep02-wind/阿砚-风-开头.mp3,available,豆包语音合成2.0,user-generated via activated account,假小子2.0；今日飞花令风；24kHz单声道；2.400秒
+ep02-wind-voice-poem-01,voice,栀夏,poem-01,assets/audio/ep02-wind/栀夏-风-1.mp3,available,豆包语音合成2.0,user-generated via activated account,甜美娇俏2.0；沾衣欲湿杏花雨吹面不寒杨柳风；24kHz单声道；5.232秒
+ep02-wind-voice-poem-02,voice,阿砚,poem-02,assets/audio/ep02-wind/阿砚-风-2.mp3,available,豆包语音合成2.0,user-generated via activated account,假小子2.0；风急天高猿啸哀渚清沙白鸟飞回；24kHz单声道；4.416秒
+ep02-wind-voice-poem-03,voice,栀夏,poem-03,assets/audio/ep02-wind/栀夏-风-3.mp3,available,豆包语音合成2.0,user-generated via activated account,甜美娇俏2.0；长风破浪会有时直挂云帆济沧海；24kHz单声道；5.064秒
+ep02-wind-voice-outro,voice,阿砚,outro,assets/audio/ep02-wind/阿砚-风-结尾.mp3,available,豆包语音合成2.0,user-generated via activated account,假小子2.0；风停了诗还没停第四句你来接；24kHz单声道；4.704秒
+ep02-wind-subtitled-v01,video,EP02,assembly,exports/ep02-wind-subtitled-v01.mp4,draft,local FFmpeg,original project assets,21.917秒；720×1280；24fps；三段诗境按TTS重新对时；含5段TTS与左上双列竖排行楷字幕；无背景音乐
+ep03-moon-content-raw,video,EP03,content,assets/generated-video/ep3-moon/ep03-内容.mp4,available,Seedance 2.0,user-generated via activated account,720×1280；24fps；15.042秒；无声；海月故乡月边关月；栀夏从首帧出现；阿砚中段加入
+ep03-moon-voice-opening,voice,阿砚,opening,assets/audio/ep3-moon/阿砚-月-开头.mp3,available,豆包语音合成2.0,user-generated via activated account,假小子2.0；今日飞花令月；24kHz单声道；2.400秒
+ep03-moon-voice-poem-01,voice,栀夏,poem-01,assets/audio/ep3-moon/栀夏-月-1.mp3,available,豆包语音合成2.0,user-generated via activated account,甜美娇俏2.0；海上生明月天涯共此时；24kHz单声道；4.104秒
+ep03-moon-voice-poem-02,voice,阿砚,poem-02,assets/audio/ep3-moon/阿砚-月-2.mp3,available,豆包语音合成2.0,user-generated via activated account,假小子2.0；举头望明月低头思故乡；24kHz单声道；3.264秒
+ep03-moon-voice-poem-03,voice,栀夏,poem-03,assets/audio/ep3-moon/栀夏-月-3.mp3,available,豆包语音合成2.0,user-generated via activated account,甜美娇俏2.0；秦时明月汉时关万里长征人未还；24kHz单声道；5.160秒
+ep03-moon-voice-outro,voice,阿砚,outro,assets/audio/ep3-moon/阿砚-月-结尾.mp3,available,豆包语音合成2.0,user-generated via activated account,假小子2.0；月落了诗还亮着第四句你来接；24kHz单声道；4.296秒
+ep03-moon-subtitled-v01,video,EP03,assembly,exports/ep03-moon-subtitled-v01.mp4,draft,local FFmpeg,original project assets,21.875秒；720×1280；24fps；复用片头和EP02片尾；含5段TTS与左上双列竖排行楷字幕；无背景音乐
+ep04-rain-content-raw,video,EP04,content,assets/generated-video/ep04-rain/content-raw.mp4,available,Seedance 2.0,user-generated via activated account,720×1280；24fps；15.042秒；无声；春雨田野清明古道寒雨江面；栀夏首帧出现；阿砚第三幕加入
+ep04-rain-voice-opening,voice,阿砚,opening,assets/audio/ep04-rain/01-ayan-opening.mp3,available,豆包语音合成2.0,user-generated via API,假小子2.0；飞花令雨；24kHz单声道；2.016秒
+ep04-rain-voice-poem-01,voice,栀夏,poem-01,assets/audio/ep04-rain/02-zhixia-poem-01.mp3,available,豆包语音合成2.0,user-generated via API,甜美娇俏2.0；好雨知时节当春乃发生；24kHz单声道；3.888秒
+ep04-rain-voice-poem-02,voice,阿砚,poem-02,assets/audio/ep04-rain/03-ayan-poem-02.mp3,available,豆包语音合成2.0,user-generated via API,假小子2.0；清明时节雨纷纷路上行人欲断魂；24kHz单声道；4.056秒
+ep04-rain-voice-poem-03,voice,栀夏,poem-03,assets/audio/ep04-rain/04-zhixia-poem-03.mp3,available,豆包语音合成2.0,user-generated via API,甜美娇俏2.0；寒雨连江夜入吴平明送客楚山孤；24kHz单声道；5.640秒
+ep04-rain-voice-outro,voice,阿砚,outro,assets/audio/ep04-rain/05-ayan-outro.mp3,available,豆包语音合成2.0,user-generated via API,假小子2.0；雨停了诗意未歇第四句你来接；24kHz单声道；4.440秒
+ep04-rain-cover-base,image,EP04,cover,assets/generated-images/ep04-rain-cover-base.png,available,ChatGPT web image generation,user-generated via activated account,941×1672；无文字烟雨江南栀夏封面底图
+ep04-rain-cover,image,EP04,cover,exports/ep04-rain-cover.png,draft,ChatGPT web image generation plus local overlay,original project assets,941×1672；竖排行楷栏目名；朱红主题字雨
+ep04-rain-subtitled-v01,video,EP04,assembly,exports/ep04-rain-subtitled-v01.mp4,draft,local FFmpeg,original project assets,20.458秒；720×1280；24fps；主视频末帧延长至15.75秒；复用EP02片尾；含5段TTS与左上竖排行楷字幕；无背景音乐
+ep05-heat-voice-opening,voice,阿砚,opening,episodes/ep05/assets/audio/01-ayan-opening.mp3,available,豆包语音合成2.0,user-generated via API,假小子2.0；飞花令暑；24kHz单声道；2.040秒
+ep05-heat-voice-poem-01,voice,栀夏,poem-01,episodes/ep05/assets/audio/02-zhixia-poem-01.mp3,available,豆包语音合成2.0,user-generated via API,甜美娇俏2.0；南州溽暑醉如酒隐几熟眠开北牖；24kHz单声道；4.032秒
+ep05-heat-voice-poem-02,voice,阿砚,poem-02,episodes/ep05/assets/audio/03-ayan-poem-02.mp3,available,豆包语音合成2.0,user-generated via API,假小子2.0；离离暑云散袅袅凉风起；24kHz单声道；3.048秒
+ep05-heat-voice-poem-03,voice,栀夏,poem-03,episodes/ep05/assets/audio/04-zhixia-poem-03.mp3,available,豆包语音合成2.0,user-generated via API,甜美娇俏2.0；残暑蝉催尽新秋雁戴来；24kHz单声道；3.864秒
+ep05-heat-voice-outro,voice,阿砚,outro,episodes/ep05/assets/audio/05-ayan-outro.mp3,available,豆包语音合成2.0,user-generated via API,假小子2.0；暑云将散诗意未歇第四句你来接；24kHz单声道；4.440秒
+ep05-heat-cover-base,image,EP05,cover,episodes/ep05/assets/images/cover-base-v01.png,available,ChatGPT web image generation,user-generated via activated account,941×1672；无文字翠竹青空栀夏封面底图
+ep05-heat-cover,image,EP05,cover,exports/ep05-heat-cover.png,draft,ChatGPT web image generation plus local overlay,original project assets,941×1672；竖排行楷栏目名；朱红主题字暑
+ep05-heat-content-raw,video,EP05,content,episodes/ep05/assets/video/content-raw-v01.mp4,available,Seedance,user-generated via web,720×1280；24fps；15.042秒；无音轨
+ep05-heat-subtitled-v01,video,EP05,final,exports/ep05-heat-subtitled-v01.mp4,draft,local FFmpeg assembly,original project assets,720×1280；24fps；约20.5秒；H.264/AAC；1秒封面片头；原速15秒诗境；含配音与竖排字幕
+ep05-heat-v2-subtitled-v01,video,EP05,final,exports/ep05-heat-v2-subtitled-v01.mp4,draft,local FFmpeg assembly,original project assets,720×1280；24fps；约19.4秒；H.264/AAC；复用原速15秒诗境；无封面片头；五言配音与竖排字幕
+ep06-autumn-content-raw-v02,video,EP06,content,episodes/ep06/assets/video/content-raw-v02.mp4,available,Seedance,user-generated via web,720×1280；24fps；15.042秒；无音轨；三组秋日诗境；栀夏与阿砚全程联动
+ep06-autumn-cover-base-v02,image,EP06,cover,episodes/ep06/assets/images/cover-base-v02.png,available,ChatGPT web image generation,user-generated via activated account,941×1672；无文字秋日山川栀夏与阿砚封面底图；左侧文字安全区
+ep06-autumn-cover-v02,image,EP06,cover,exports/ep06-autumn-cover-v02.png,draft,ChatGPT web image generation plus local overlay,original project assets,941×1672；两列竖排行楷；秋与第四使用朱红；文案为秋字飞花令和第四句等你
+ep06-autumn-subtitled-v03,video,EP06,final,exports/ep06-autumn-subtitled-v03.mp4,draft,local FFmpeg assembly,original project assets,720×1280；24fps；15.042秒；H.264/AAC；三句自然语速配音；竖排行楷字幕与秋字朱红高亮；无片头片尾
+ep08-flute-content-raw-v01,video,EP08,content,episodes/ep08/assets/video/content-raw-v01.mp4,available,Seedance,user-generated via web,720×1280；24fps；15.042秒；无音轨；田野骑牛、洛城追声、玉门关三幕；栀夏与阿砚全程参与
+ep08-flute-voice-poem-01,voice,阿砚,poem-01,assets/audio/ep08-flute/01-ayan-poem-01.mp3,available,豆包语音合成2.0,user-generated via API,假小子2.0；短笛无腔信口吹；24kHz单声道；2.664秒
+ep08-flute-voice-poem-02,voice,栀夏,poem-02,assets/audio/ep08-flute/02-zhixia-poem-02.mp3,available,豆包语音合成2.0,user-generated via API,甜美娇俏2.0；谁家玉笛暗飞声；24kHz单声道；2.424秒
+ep08-flute-voice-poem-03,voice,阿砚,poem-03,assets/audio/ep08-flute/03-ayan-poem-03.mp3,available,豆包语音合成2.0,user-generated via API,假小子2.0；羌笛何须怨杨柳；24kHz单声道；2.832秒
+ep08-flute-cover-base-v01,image,EP08,cover,episodes/ep08/assets/images/cover-base-v01.png,available,ChatGPT web image generation,user-generated via activated account,941×1672；无文字田野骑牛封面底图；左侧文字安全区
+ep08-flute-cover-v01,image,EP08,cover,exports/ep08-flute-cover.png,final,ChatGPT web image generation plus local overlay,original project assets,941×1672；两列竖排行楷；文案为笛字飞花令和第四句等你
+ep08-flute-subtitled-v01,video,EP08,final,exports/ep08-flute-subtitled-v01.mp4,final,local FFmpeg assembly,original project assets,720×1280；24fps；15.042秒；H.264/AAC；三句自然语速配音；竖排行楷诗句及朝代作者篇名；无片头片尾
+wen-liu-shijiu-content-raw-v01,video,问刘十九,content,episodes/wen-liu-shijiu/assets/video/content-raw-v01.mp4,available,Seedance,user-generated via web,720×1280；24fps；15.104秒；含风雪环境声、背景音乐及栀夏原始对白“再等等。”
+wen-liu-shijiu-voice-opening,voice,阿砚,opening-dialogue,assets/audio/wen-liu-shijiu/01-ayan-opening-dialogue.mp3,available,豆包语音合成2.0,user-generated via API,假小子2.0；雪都下了他怎么还没来；2.856秒
+wen-liu-shijiu-voice-poem,voice,阿砚,poem-voiceover,assets/audio/wen-liu-shijiu/02-ayan-poem-voiceover.mp3,available,豆包语音合成2.0,user-generated via API,假小子2.0；晚来天欲雪能饮一杯无；2.832秒
+wen-liu-shijiu-subtitled-v01,video,问刘十九,final,exports/wen-liu-shijiu-subtitled-v01.mp4,final,local FFmpeg assembly,original project assets,720×1280；24fps；15.104秒；H.264/AAC；保留原始风雪音乐和栀夏对白；补入阿砚对白与原诗；横排对白及竖排行楷原诗字幕
+wen-liu-shijiu-cover-base-v01,image,问刘十九,cover,episodes/wen-liu-shijiu/assets/images/cover-base-v01.png,available,ChatGPT web image generation,user-generated via activated account,941×1672；无文字雪夜候友封面底图；栀夏阿砚同框；远处提灯人影；顶部文字安全区
+wen-liu-shijiu-cover-v01,image,问刘十九,cover,exports/wen-liu-shijiu-cover-v01.png,final,ChatGPT web image generation plus local overlay,original project assets,941×1672；两列竖排悬念文案“雪都下了他还会来吗”；雪字朱红；暖金竖排标题“问刘十九”
+qiusi-content-raw-v01,video,秋思,content,episodes/qiusi/assets/video/content-raw-v01.mp4,available,Seedance,user-generated via web,720×1280；24fps；15.104秒；含背景音乐与环境声；首版可用；存在送信方向反转、家书包裹化及结尾落笔问题
+qiusi-voice-poem,voice,阿砚,poem-voiceover,assets/audio/qiusi/01-ayan-poem-voiceover.mp3,available,豆包语音合成2.0,user-generated via API,假小子2.0；复恐匆匆说不尽行人临发又开封；24kHz单声道；3.864秒
+qiusi-subtitled-v01,video,秋思,final,exports/qiusi-subtitled-v01.mp4,final,local FFmpeg assembly,original project assets,720×1280；24fps；15.104秒；H.264/AAC；保留Seedance音乐与环境声；阿砚后期朗诗；竖排行楷诗句及唐张籍秋思出处
+jiangxue-content-raw-v01,video,江雪,content,episodes/jiangxue/assets/video/content-raw-v01.mp4,available,Seedance,user-generated via web,720×1280；24fps；15.104秒；含背景音乐与环境声；首版可用；鱼竿鱼线鱼漂连接拓扑错位，根因见episodes/jiangxue/qa-notes.md
+jiangxue-voice-dialogue,voice,阿砚,dialogue,assets/audio/jiangxue/01-ayan-ayan-dialogue.mp3,available,豆包语音合成2.0,user-generated via API,假小子2.0；他怎么不收竿；1.632秒
+jiangxue-voice-poem,voice,阿砚,poem-voiceover,assets/audio/jiangxue/02-ayan-ayan-poem-voiceover.mp3,available,豆包语音合成2.0,user-generated via API,假小子2.0；孤舟蓑笠翁独钓寒江雪；3.048秒
+jiangxue-subtitled-v01,video,江雪,final,exports/jiangxue-subtitled-v01.mp4,final,local FFmpeg assembly,original project assets,720×1280；24fps；15.104秒；H.264/AAC；保留Seedance音乐与环境声；阿砚后期对白及朗诗；横排对白与竖排行楷原诗字幕
+chishang-content-raw-v01,video,池上,content,episodes/chishang/assets/video/content-raw-v01.mp4,available,Seedance,user-generated via web,720×1280；24fps；15.104秒；角色白莲小船和夏日氛围稳定；竹篙变船桨且浮萍变连续绿色飘带；本版不重生成
+chishang-voice-01,voice,阿砚,dialogue-01,assets/audio/chishang/01-ayan-ayan-dialogue.mp3,available,豆包语音合成2.0,user-generated via API,假小子2.0；栀夏浮萍把你出卖了；24kHz单声道；2.664秒
+chishang-voice-02,voice,栀夏,dialogue-02,assets/audio/chishang/02-zhixia-zhixia-dialogue.mp3,available,豆包语音合成2.0,user-generated via API,甜美娇俏2.0；我只摘了一朵莲；24kHz单声道；1.872秒
+chishang-voice-03,voice,阿砚,dialogue-03,assets/audio/chishang/03-ayan-ayan-dialogue.mp3,available,豆包语音合成2.0,user-generated via API,假小子2.0；可你留了一路痕迹；24kHz单声道；2.040秒
+chishang-voice-04,voice,阿砚,poem-voiceover,assets/audio/chishang/04-ayan-ayan-poem-voiceover.mp3,available,豆包语音合成2.0,user-generated via API,假小子2.0；不解藏踪迹浮萍一道开；24kHz单声道；3.048秒
+chishang-subtitled-v01,video,池上,final,exports/chishang-subtitled-v01.mp4,final,local FFmpeg assembly,original project assets,720×1280；24fps；15.104秒；H.264/AAC；保留音乐水声；四段角色配音；横排对白与左上竖排行楷原诗字幕；结尾保留约0.365秒水声
+chishang-cover-v01,image,池上,cover,episodes/chishang/assets/images/cover-final-v01.png,final,final video frame extraction,original project assets,720×1280；截取最终成片14.5秒画面；保留竖排诗句及唐白居易池上出处；未添加标题或评论引导
+zhixia-cinematic-semi-real-v01,character,栀夏,identity-master,assets/characters/栀夏角色卡电影半写实-v01.png,approved,ChatGPT generated image,original AI-assisted asset,941×1672；电影级半写实东方幻想角色；身份主卡；与庐山场景卡同一视觉体系；后续表情口型与全身比例卡以此为身份基准
+lushan-cover-v01-poem-story,image,望庐山瀑布,cover,episodes/lushan/assets/cover/lushan-cover-v01-poem-story.png,final,ChatGPT image generation,original AI-assisted asset,941×1672；卡4构图的诗词小故事封面；竖排“飞流直下三千尺”“疑是银河落九天”；标注唐·李白《望庐山瀑布》；不使用飞花令标识
+zhixia-full-body-cinematic-semi-real-v01,character,栀夏,full-body-master,assets/characters/栀夏全身比例卡电影半写实-v01.png,approved,ChatGPT generated image,original AI-assisted asset,941×1672；长裙正面右侧面背面三视图；盛唐轻薄夏装；负责身体比例服装结构和鞋履；脸型发型发冠仍以身份主卡为准
