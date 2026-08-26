@@ -1,308 +1,390 @@
-# AI Divination Disc Summoning Assets Implementation Plan
+# 星轨六爻盘矢量母板与召唤资产实施计划
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 生成、验收并归档“星轨六爻盘”道具卡、栀夏“引弧起盘”六段综合动作卡和 3 秒召唤模板视频，作为《栀夏赛博起卦》后续单集的固定母板。
+**Goal:** 建立严格正圆、六爻拓扑可验证的“星轨六爻盘”矢量母板，并由同一几何源输出道具设计板、栀夏动作卡叠加层和 3 秒召唤模板视频所需的确定性资产。
 
-**Architecture:** 三项资产按依赖关系串行完成：先锁定卦盘，再用卦盘与栀夏 approved 母板生成动作卡，最后用两张 approved 卡生成模板视频。每项资产必须经用户明确确认后才能归档并成为下一项的输入；单集卦象、卦名和卦辞不固化进模板视频。
+**Architecture:** SVG 是卦盘几何的唯一事实来源，Python 生成器负责正圆、同心轨道、六个空爻槽及阴阳爻状态，Swift/AppKit 只把 SVG 无损栅格化为 PNG。GPT 或视频模型只生成人物动作与非结构性氛围，圆盘、爻线和准确状态始终在本地确定性合成。
 
-**Tech Stack:** ChatGPT 网页图片生成、Seedance 或同级图生视频工具、PNG、H.264 MP4、`sips`、`ffmpeg`、`ffprobe`、shell 验收脚本、CSV 资产清单。
+**Tech Stack:** Python 3 标准库、SVG 1.1、Swift/AppKit、PNG、FFmpeg/FFprobe、Zsh 验收脚本、CSV 资产清单。
 
 ## Global Constraints
 
 - 设计依据：`docs/superpowers/specs/2026-08-26-ai-divination-disc-and-summoning-template-design.md`。
-- 栀夏身份唯一依据：`assets/characters/栀夏角色卡电影半写实-v02.png`。
-- 栀夏身体与服装结构依据：`assets/characters/栀夏全身比例卡电影半写实-v02.png`。
-- 栀夏表情与口型依据：`assets/characters/栀夏表情口型综合卡电影半写实-v01.png`。
 - 卦盘名称固定为“星轨六爻盘”，召唤动作固定为“引弧起盘”。
-- 卦盘不依附古籍、桌面、手掌或其他实体道具。
-- 卦盘为单层平面悬浮光盘，不做 3D 分层结构。
-- 卦盘配色固定为月白、浅青、暖金与极少朱砂，不使用蓝紫霓虹、强光柱或游戏法阵。
-- 主视图中心恰好六个等宽、等距的空爻槽，不得出现第七槽，不得预填六条阳爻。
-- 阳爻为一条完整横线，阴爻为中央断开的两段等长横线；首集“山雷颐”自下而上为阳、阴、阴、阴、阴、阳。
-- 六段流程固定为星点聚拢、星轨显现、能量汇聚、六爻生成、卦象稳定、余光收束。
-- 所有准确中文、卦名和卦辞均由后期透明卡叠加，图片与模板视频不得生成乱码文字。
-- 任何付费生成调用前必须先展示调用计划并获得用户确认。
-- 用户未明确确认的候选图或视频不得写入 `assets/inventory.csv` 的 `approved` 状态。
+- 所有主盘与流程盘必须引用同一个 SVG 母盘，横纵直径相等、所有同心轨道共用圆心。
+- 母盘中心恰好六个等宽、等距、低亮度空爻槽，不得出现第七槽，不得预填六条阳爻。
+- 阳爻为一条完整横线；阴爻为左右两段等长横线且中央断口清楚。
+- 第四格自下而上固定为阳、阴、阴，第四至第六槽保持空白。
+- 首集“山雷颐”自下而上固定为阳、阴、阴、阴、阴、阳。
+- 卦盘为单层平面，不做 3D 分层、透视压缩、椭圆或厚重实体结构。
+- 配色固定为月白、浅青、暖金与极少朱砂，不使用蓝紫霓虹或强光柱。
+- GPT 与视频模型不得负责圆盘轮廓、六爻数量、阴阳结构或准确文字。
+- 用户未明确确认的候选资产不得登记为 `approved`。
 
 ---
 
-### Task 1: 建立三项资产的自动验收门槛
+### Task 1: 建立矢量几何与六爻拓扑测试
 
 **Files:**
-- Create: `zhixia-feihualing/tests/test_cyber_divination_summon_assets.sh`
-- Modify: `zhixia-feihualing/tests/test_cyber_divination_prop.sh`
+- Create: `zhixia-feihualing/tests/test_divination_disc_vectors.py`
+- Create: `zhixia-feihualing/scripts/generate_divination_disc_vectors.py`
 
 **Interfaces:**
-- Consumes: 三项设计中约定的文件名、画幅、时长和 inventory 资产标识。
-- Produces: 一个在任意资产缺失、画幅错误、视频时长错误或 inventory 未批准时失败的统一验收命令。
+- Consumes: 无；几何常量直接来自已确认设计规范。
+- Produces: `build_assets(output_root: Path) -> None`，生成空爻母盘、阴阳组件、流程状态和设计板 SVG。
 
-- [ ] **Step 1: 写入预期失败的验收脚本**
+- [ ] **Step 1: 写入预期失败的几何测试**
+
+测试用 Python 标准库 `xml.etree.ElementTree` 读取 SVG，并覆盖以下断言：
+
+```python
+from pathlib import Path
+import importlib.util
+import tempfile
+import unittest
+import xml.etree.ElementTree as ET
+
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPT = ROOT / "scripts/generate_divination_disc_vectors.py"
+
+def load_generator():
+    spec = importlib.util.spec_from_file_location("disc_vectors", SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+def elements(path: Path, role: str):
+    root = ET.parse(path).getroot()
+    return [node for node in root.iter() if node.attrib.get("data-role") == role]
+
+class DivinationDiscVectorTests(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.output = Path(self.temp_dir.name)
+        load_generator().build_assets(self.output)
+
+    def tearDown(self):
+        self.temp_dir.cleanup()
+
+    def test_blank_master_is_circular_and_has_exactly_six_empty_slots(self):
+        master = self.output / "disc-master.svg"
+        rings = elements(master, "disc-ring")
+        slots = elements(master, "empty-slot")
+        self.assertGreaterEqual(len(rings), 5)
+        self.assertTrue(all(r.attrib["cx"] == r.attrib["cy"] for r in rings))
+        self.assertEqual(len(slots), 6)
+        self.assertFalse(elements(master, "filled-yao"))
+
+    def test_partial_state_is_bottom_up_yang_yin_yin(self):
+        lines = elements(self.output / "state-partial-3.svg", "filled-yao")
+        self.assertEqual([line.attrib["data-kind"] for line in lines], ["yang", "yin", "yin"])
+        self.assertEqual([line.attrib["data-position"] for line in lines], ["1", "2", "3"])
+
+    def test_shanlei_yi_has_exact_six_line_topology(self):
+        lines = elements(self.output / "state-shanlei-yi.svg", "filled-yao")
+        self.assertEqual(
+            [line.attrib["data-kind"] for line in lines],
+            ["yang", "yin", "yin", "yin", "yin", "yang"],
+        )
+```
+
+- [ ] **Step 2: 运行测试并确认失败**
+
+Run: `python3 -m unittest zhixia-feihualing/tests/test_divination_disc_vectors.py -v`
+
+Expected: FAIL because `scripts/generate_divination_disc_vectors.py` does not exist.
+
+- [ ] **Step 3: 实现最小 SVG 生成器**
+
+生成器固定使用 `viewBox="0 0 1024 1024"`、圆心 `(512, 512)`，并公开以下常量：
+
+```python
+CENTER = 512
+RING_RADII = (440, 414, 354, 292, 224)
+YAO_Y_BOTTOM_UP = (632, 584, 536, 488, 440, 392)
+YAO_X1 = 390
+YAO_X2 = 634
+YIN_GAP = 34
+SHANLEI_YI = ("yang", "yin", "yin", "yin", "yin", "yang")
+```
+
+`build_assets(output_root)` 必须生成：
+
+```text
+disc-master.svg
+component-yang.svg
+component-yin.svg
+state-empty.svg
+state-partial-3.svg
+state-shanlei-yi.svg
+design-board.svg
+```
+
+所有几何节点写入可测试的 `data-role`，爻线额外写入 `data-kind` 与 `data-position`。圆环只能使用 `<circle>`，不得用椭圆或透视变换模拟圆盘；六个空槽作为母盘固定结构，状态层使用独立发光爻线覆盖对应槽位。
+
+- [ ] **Step 4: 运行测试并确认通过**
+
+Run: `python3 -m unittest zhixia-feihualing/tests/test_divination_disc_vectors.py -v`
+
+Expected: 3 tests PASS.
+
+- [ ] **Step 5: 提交矢量生成器与测试**
+
+```bash
+git add zhixia-feihualing/scripts/generate_divination_disc_vectors.py zhixia-feihualing/tests/test_divination_disc_vectors.py
+git commit -m "建立六爻盘矢量几何生成器"
+```
+
+### Task 2: 输出并验收正圆空爻母盘
+
+**Files:**
+- Create: `zhixia-feihualing/scripts/rasterize_svg.swift`
+- Create: `zhixia-feihualing/scripts/build_divination_disc_assets.sh`
+- Create: `zhixia-feihualing/tests/test_divination_disc_assets.sh`
+- Create: `zhixia-feihualing/assets/props/ai-divination-disk-v01/vector/disc-master.svg`
+- Create: `zhixia-feihualing/assets/props/ai-divination-disk-v01/previews/disc-master.png`
+
+**Interfaces:**
+- Consumes: `build_assets(output_root: Path) -> None` 生成的 SVG。
+- Produces: 可人工审阅的 2048×2048 正圆空爻母盘 PNG，以及后续状态和设计板的统一构建入口。
+
+- [ ] **Step 1: 写入预期失败的构建验收脚本**
 
 ```zsh
 #!/bin/zsh
 set -euo pipefail
 
 project_dir="$(cd "$(dirname "$0")/.." && pwd)"
-disc="$project_dir/assets/props/ai-divination-disk-v01/master.png"
-action="$project_dir/assets/characters/栀夏引弧起盘动作卡电影半写实-v01.png"
-video="$project_dir/assets/generated-video/templates/zhixia-summon-divination-disc-template-v01.mp4"
-inventory="$project_dir/assets/inventory.csv"
+vector="$project_dir/assets/props/ai-divination-disk-v01/vector/disc-master.svg"
+preview="$project_dir/assets/props/ai-divination-disk-v01/previews/disc-master.png"
 
-test -s "$disc"
-test -s "$action"
-test -s "$video"
+test -s "$vector"
+test -s "$preview"
+python3 -m unittest "$project_dir/tests/test_divination_disc_vectors.py" -v
 
-read disc_w disc_h <<< "$(sips -g pixelWidth -g pixelHeight "$disc" 2>/dev/null | awk '/pixelWidth/{w=$2}/pixelHeight/{h=$2}END{print w" "h}')"
-awk -v w="$disc_w" -v h="$disc_h" 'BEGIN { exit !(w >= 1280 && h >= 720 && w / h >= 1.70 && w / h <= 1.90) }'
-
-read action_w action_h <<< "$(sips -g pixelWidth -g pixelHeight "$action" 2>/dev/null | awk '/pixelWidth/{w=$2}/pixelHeight/{h=$2}END{print w" "h}')"
-awk -v w="$action_w" -v h="$action_h" 'BEGIN { exit !(w >= 1280 && h >= 720 && w / h >= 1.70 && w / h <= 1.90) }'
-
-ffmpeg -v error -i "$disc" -frames:v 1 -f null -
-ffmpeg -v error -i "$action" -frames:v 1 -f null -
-ffmpeg -v error -i "$video" -frames:v 1 -f null -
-
-duration="$(ffprobe -v error -show_entries format=duration -of default=nk=1:nw=1 "$video")"
-awk -v d="$duration" 'BEGIN { exit !(d >= 2.8 && d <= 3.2) }'
-
-rg -q '^ai-divination-disk-v01,prop,AI卦盘,identity-master,assets/props/ai-divination-disk-v01/master.png,approved,' "$inventory"
-rg -q '^zhixia-summon-divination-disc-action-v01,character,栀夏,summoning-action-master,assets/characters/栀夏引弧起盘动作卡电影半写实-v01.png,approved,' "$inventory"
-rg -q '^zhixia-summon-divination-disc-template-v01,video,栀夏,summoning-video-template,assets/generated-video/templates/zhixia-summon-divination-disc-template-v01.mp4,approved,' "$inventory"
-
-echo "cyber divination summon assets: PASS"
+dimensions="$(sips -g pixelWidth -g pixelHeight "$preview" 2>/dev/null \
+  | awk '/pixelWidth/{w=$2}/pixelHeight/{h=$2}END{print w" "h}')"
+test "$dimensions" = "2048 2048"
+ffmpeg -v error -i "$preview" -frames:v 1 -f null -
+echo "divination disc vector assets: PASS"
 ```
 
-- [ ] **Step 2: 把现有道具测试的画幅门槛改为 16:9**
+- [ ] **Step 2: 运行脚本并确认失败**
 
-将 `test_cyber_divination_prop.sh` 中原有的 9:16 判断替换为：
+Run: `zsh zhixia-feihualing/tests/test_divination_disc_assets.sh`
 
-```zsh
-awk -v w="$width" -v h="$height" \
-  'BEGIN { exit !(w >= 1280 && h >= 720 && w / h >= 1.70 && w / h <= 1.90) }'
-```
+Expected: FAIL because the vector and preview files do not exist.
 
-- [ ] **Step 3: 运行脚本并确认因资产尚未完成而失败**
+- [ ] **Step 3: 实现通用 SVG 栅格化工具**
 
-Run: `zsh zhixia-feihualing/tests/test_cyber_divination_summon_assets.sh`
-
-Expected: FAIL at missing `assets/props/ai-divination-disk-v01/master.png`，且不得提前在 inventory 中写入 approved 记录。
-
-- [ ] **Step 4: 提交验收门槛**
-
-```bash
-git add zhixia-feihualing/tests/test_cyber_divination_summon_assets.sh zhixia-feihualing/tests/test_cyber_divination_prop.sh
-git commit -m "增加卦盘召唤资产验收门槛"
-```
-
-### Task 2: 生成并确认星轨六爻盘道具卡
-
-**Files:**
-- Reference: 用户提供的卦盘构思参考图
-- Create after approval: `zhixia-feihualing/assets/props/ai-divination-disk-v01/master.png`
-- Modify after approval: `zhixia-feihualing/assets/inventory.csv`
-
-**Interfaces:**
-- Consumes: 参考图的青金半透明质感与 approved 设计稿。
-- Produces: 唯一卦盘母板 `ai-divination-disk-v01`，供动作卡和后续单集引用。
-
-- [ ] **Step 1: 在 ChatGPT 中附上参考图并使用完整提示词生成一张候选图**
+`rasterize_svg.swift` 的命令接口固定为：
 
 ```text
-请以我上传的“D. 星象轨迹·天机卦盘”及其右侧六格起卦动画流程图为主要视觉参考，重新设计一张能够直接作为后续短视频母板的最终卦盘设计板。参考图只用于理解星象轨迹卦面、同心圆环、青金色光效和六段流程，不复制其中标题、说明文字、错误爻位数量、现成汉字或具体版式文字。
-
-最终道具名为“星轨六爻盘”。生成一张 16:9 横版、电影级半写实东方幻想概念设计板。背景为纯净深墨黑，整体清楚、克制、精密。左侧约占画面 46%，展示同一面卦盘最大的严格 90 度正俯视正交投影主视图；右侧约占画面 54%，用 3 列×2 行六个等大画格展示六段起卦流程；底部保留一条窄区域展示尺寸比例以及阳爻、阴爻两个标准组件。不要生成标题、编号、标签、说明文字、Logo、水印或任何可辨识汉字、英文字母和数字。
-
-星轨六爻盘是一面直径约 28—32 厘米的单层平面悬浮光盘，视觉上近乎无厚度，不做 3D 立体结构，不上下分层，不做玻璃托盘、厚重铜盘、机械罗盘、盾牌或地面法阵。卦面参考方案 D：多重同心星象轨迹、八个均匀方位区、极细暖金刻度、少量星点连线、抽象天干地支式刻痕、浅青色数据微光。所有圆环和纹路处于同一个平面。配色调整为适合栀夏的低饱和月白、浅青和暖金，只保留一枚极小朱砂定位点；不要大面积深蓝霓虹。
-
-圆形几何是最高优先级：左侧主盘必须是严格标准正圆，横向直径与纵向直径完全相等；所有内外同心环必须共享同一圆心并保持标准正圆。右侧第二至第六格出现的卦盘也全部采用严格 90 度正俯视正交投影。不得出现三分之四视角、倾斜视角、透视缩短、横向拉伸、纵向压缩、椭圆或扁圆。
-
-最高优先级结构要求：左侧主卦盘中心必须只有、并且恰好只有六个横向空爻槽。六个空槽等宽、等距、上下对齐、低亮度、尚未填入任何阴阳爻。不得出现第七条槽；不得出现五条或七条；不得把六个空槽画成六条完整发光横线；不得在主视图预先显示固定卦象。请在生成前先数清楚，从下到上总数必须为 6。
-
-底部组件区只展示两种标准爻线：阳爻是一条完整连续的发光横线；阴爻是左右两段等长发光横线，中间有清楚断口。两个组件总宽度、线宽、端点形状和光效一致。只出现一个阳爻样例和一个阴爻样例，不出现第三种样例，不附文字标签。
-
-右侧六个画格严格使用同一面卦盘、同一轮廓、同一星轨、同一配色、同一组六个空槽，依次展示：
-第一格，星点聚拢：只有少量浅青星点与淡墨光粒聚集，卦盘尚未完整出现。
-第二格，星轨显现：外圈与同心星轨从无到有闭合，六个空爻槽刚刚显现，仍未填充。
-第三格，能量汇聚：少量浅青数据微光由外环向盘心汇聚，卦盘结构完整，六个空槽仍清楚可见。
-第四格，六爻生成：固定展示生成到第三爻的中间状态。最下面第一槽填入完整阳爻，倒数第二槽填入断开阴爻，倒数第三槽填入断开阴爻；上面三个槽继续保持低亮度空槽。第四格不得仍是六槽全空，也不得提前显示完整六爻。
-第五格，卦象稳定：同一组“山雷颐”六爻全部稳定，上下卦所在星轨短暂亮起，周边光效减弱。
-第六格，余光收束：外围星点和数据微光向内收束，正确六爻继续保留，不让卦盘消失。
-
-光效为月白柔光、浅青星轨微光与极细暖金锁定线；具有东方星象演算气质，但不要蓝紫游戏法阵、强光柱、爆闪、雷电、浓烟、巨大粒子漩涡或电子游戏 HUD。不要人物、手、栀夏、阿砚、古籍、桌面和建筑场景。
-
-最终检查：左侧主视图和右侧第二至第六格的所有卦盘都是横纵直径相等的标准正圆，所有星轨严格同心；左侧主视图恰好六个空爻槽且完全未填充；右侧每一格也只有同样六个槽；第四格仅下三槽填入阳、阴、阴且上三槽保持空白；第五、六格的完整山雷颐自下而上为完整阳爻、断开阴爻、断开阴爻、断开阴爻、断开阴爻、完整阳爻；所有画格中的卦盘必须是同一设计；不得出现椭圆、透视压缩、第七条线、六条固定阳爻、3D 分层、乱码文字、说明文字、Logo 或水印。
+swift scripts/rasterize_svg.swift <input.svg> <output.png> <width> <height>
 ```
 
-- [ ] **Step 2: 按道具清单逐项人工验收**
+工具用 `NSImage(contentsOf:)` 读取 SVG，用 `NSBitmapImageRep` 绘制指定尺寸，再以 PNG 写出；输入不能解码、尺寸不是正整数或 PNG 写入失败时返回非零状态。
 
-Run: 打开 `assets/props/ai-divination-disk-v01/qa-checklist.md`，逐项检查 16:9 版式、同一平面结构、恰好六个空爻槽、阴阳组件、六段流程、配色和无水印。
+- [ ] **Step 4: 实现统一构建脚本**
 
-Expected: 所有项目通过；若任一状态结构漂移、六爻错误或出现乱码，只提供定向修改提示词，不归档。
+`build_divination_disc_assets.sh` 依次运行 Python 生成器，并将 `disc-master.svg` 栅格化为 2048×2048 PNG。构建脚本必须从自身位置计算项目根目录，不依赖调用者当前目录。
 
-- [ ] **Step 3: 用户明确确认后归档原图**
+- [ ] **Step 5: 构建并运行自动验收**
 
-Run: 将用户确认的原始 PNG 原样复制为 `zhixia-feihualing/assets/props/ai-divination-disk-v01/master.png`，不得重编码或调整尺寸；使用 `cmp` 与 `shasum -a 256` 核对复制前后文件一致。
+Run: `zsh zhixia-feihualing/scripts/build_divination_disc_assets.sh`
 
-- [ ] **Step 4: 在 inventory 追加 approved 记录**
+Run: `zsh zhixia-feihualing/tests/test_divination_disc_assets.sh`
 
-```csv
-ai-divination-disk-v01,prop,AI卦盘,identity-master,assets/props/ai-divination-disk-v01/master.png,approved,ChatGPT web image generation,original AI-assisted asset,16:9；星轨六爻盘唯一母板；单层平面星象轨迹卦面；主视图恰好六个空爻槽；含阴阳爻组件与六段起卦流程
-```
+Expected: `divination disc vector assets: PASS`.
 
-- [ ] **Step 5: 运行现有道具测试并提交**
+- [ ] **Step 6: 人工验收第一阶段母盘**
 
-Run: `zsh zhixia-feihualing/tests/test_cyber_divination_prop.sh`
+打开 `assets/props/ai-divination-disk-v01/previews/disc-master.png`，只检查：标准正圆、严格同心、八方均匀、恰好六个空槽、无填充爻、无第七槽、无透视和无文字。若结构未通过，只修改 SVG 生成器参数并重新构建，不进入状态层。
 
-Expected: `cyber divination prop: PASS`
+- [ ] **Step 7: 提交通过验收的空爻母盘**
 
 ```bash
-git add zhixia-feihualing/assets/props/ai-divination-disk-v01/master.png zhixia-feihualing/assets/inventory.csv
-git commit -m "归档星轨六爻盘道具母板"
+git add zhixia-feihualing/scripts/rasterize_svg.swift \
+  zhixia-feihualing/scripts/build_divination_disc_assets.sh \
+  zhixia-feihualing/tests/test_divination_disc_assets.sh \
+  zhixia-feihualing/assets/props/ai-divination-disk-v01/vector/disc-master.svg \
+  zhixia-feihualing/assets/props/ai-divination-disk-v01/previews/disc-master.png
+git commit -m "绘制星轨六爻盘正圆空爻母板"
 ```
 
-### Task 3: 生成并确认栀夏“引弧起盘”动作卡
+### Task 3: 生成阴阳组件、状态图与最终设计板
+
+**Files:**
+- Modify: `zhixia-feihualing/scripts/generate_divination_disc_vectors.py`
+- Modify: `zhixia-feihualing/tests/test_divination_disc_vectors.py`
+- Modify: `zhixia-feihualing/scripts/build_divination_disc_assets.sh`
+- Create: `zhixia-feihualing/assets/props/ai-divination-disk-v01/vector/component-yang.svg`
+- Create: `zhixia-feihualing/assets/props/ai-divination-disk-v01/vector/component-yin.svg`
+- Create: `zhixia-feihualing/assets/props/ai-divination-disk-v01/vector/state-partial-3.svg`
+- Create: `zhixia-feihualing/assets/props/ai-divination-disk-v01/vector/state-shanlei-yi.svg`
+- Create: `zhixia-feihualing/assets/props/ai-divination-disk-v01/master.png`
+
+**Interfaces:**
+- Consumes: 用户确认的 `disc-master.svg` 与固定六爻拓扑常量。
+- Produces: 两个标准爻组件、第四格中间态、完整山雷颐状态以及 1920×1080 最终道具设计板。
+
+- [ ] **Step 1: 扩充测试以锁定组件与设计板复用关系**
+
+新增断言：阴爻左右段等长、中央断口为 34；阳爻总宽度为 244；设计板中所有圆盘实例使用 `<use href="#disc-master">`；第四格只包含第 1—3 爻；第五、六格包含准确的六爻结果。
+
+```python
+def test_design_board_reuses_one_disc_symbol(self):
+    root = ET.parse(self.output / "design-board.svg").getroot()
+    uses = [n for n in root.iter() if n.attrib.get("data-role") == "disc-instance"]
+    self.assertEqual(len(uses), 6)
+    self.assertEqual({n.attrib["href"] for n in uses}, {"#disc-master"})
+```
+
+- [ ] **Step 2: 运行新增测试并确认失败**
+
+Run: `python3 -m unittest zhixia-feihualing/tests/test_divination_disc_vectors.py -v`
+
+Expected: FAIL because component measurements and board symbol reuse are not implemented.
+
+- [ ] **Step 3: 完成状态层与 16:9 设计板 SVG**
+
+设计板固定为 `viewBox="0 0 1920 1080"`：左侧放置一枚最大空爻主盘；右侧为 3×2 六格流程；底部只放一枚阳爻和一枚阴爻。第一格只有星点，第二、三格复用空盘，第四格叠加 `state-partial-3`，第五、六格叠加 `state-shanlei-yi`。所有盘面必须通过 `<symbol id="disc-master">` 和 `<use>` 复用，不复制不同版本的圆盘路径。
+
+- [ ] **Step 4: 构建所有 SVG 和 1920×1080 PNG**
+
+Run: `zsh zhixia-feihualing/scripts/build_divination_disc_assets.sh`
+
+构建脚本将 `design-board.svg` 栅格化为 `assets/props/ai-divination-disk-v01/master.png`，同时保留全部 SVG 作为后期和视频合成源。
+
+- [ ] **Step 5: 运行自动测试并逐项人工验收**
+
+Run: `python3 -m unittest zhixia-feihualing/tests/test_divination_disc_vectors.py -v`
+
+Run: `zsh zhixia-feihualing/tests/test_divination_disc_assets.sh`
+
+Expected: 全部通过。随后按 `assets/props/ai-divination-disk-v01/qa-checklist.md` 人工核对正圆、六槽、第四格和山雷颐拓扑；用户明确确认前不登记 approved。
+
+- [ ] **Step 6: 提交确定性状态资产与设计板**
+
+```bash
+git add zhixia-feihualing/scripts/generate_divination_disc_vectors.py \
+  zhixia-feihualing/tests/test_divination_disc_vectors.py \
+  zhixia-feihualing/scripts/build_divination_disc_assets.sh \
+  zhixia-feihualing/assets/props/ai-divination-disk-v01/vector \
+  zhixia-feihualing/assets/props/ai-divination-disk-v01/master.png
+git commit -m "生成六爻盘状态组件与设计板"
+```
+
+### Task 4: 合成栀夏动作卡与视频精确叠加层
 
 **Files:**
 - Reference: `zhixia-feihualing/assets/characters/栀夏角色卡电影半写实-v02.png`
 - Reference: `zhixia-feihualing/assets/characters/栀夏全身比例卡电影半写实-v02.png`
-- Reference: `zhixia-feihualing/assets/props/ai-divination-disk-v01/master.png`
-- Create after approval: `zhixia-feihualing/assets/characters/栀夏引弧起盘动作卡电影半写实-v01.png`
-- Modify after approval: `zhixia-feihualing/assets/inventory.csv`
+- Create after user approval: `zhixia-feihualing/assets/characters/栀夏引弧起盘人物动作底图电影半写实-v01.png`
+- Create: `zhixia-feihualing/scripts/render_divination_summon_composites.swift`
+- Create: `zhixia-feihualing/tests/test_divination_summon_composites.sh`
+- Create: `zhixia-feihualing/assets/characters/栀夏引弧起盘动作卡电影半写实-v01.png`
+- Create: `zhixia-feihualing/assets/props/ai-divination-disk-v01/overlays/video-empty.png`
+- Create: `zhixia-feihualing/assets/props/ai-divination-disk-v01/overlays/video-partial-3.png`
+- Create: `zhixia-feihualing/assets/props/ai-divination-disk-v01/overlays/video-shanlei-yi.png`
 
 **Interfaces:**
-- Consumes: approved 栀夏身份与服装母板、approved 星轨六爻盘母板。
-- Produces: 四格召唤动作母板 `zhixia-summon-divination-disc-action-v01`，供模板视频引用。
+- Consumes: approved 栀夏人物动作底图、同一个 `disc-master.svg` 和三个确定性状态。
+- Produces: 六格动作卡以及可直接叠加到 1080×1920 视频的透明 PNG 状态层。
 
-- [ ] **Step 1: 在 ChatGPT 中同时附上三张 approved 参考图并使用完整提示词**
+- [ ] **Step 1: 生成人物动作底图，不让模型绘制卦盘**
 
-```text
-请严格参考我上传的栀夏身份卡、栀夏全身比例卡和“星轨六爻盘”道具卡，生成一张 16:9 横版、3列×2行六格的电影级半写实东方幻想动作与起卦效果综合卡。人物必须是同一个栀夏，脸型、五官、黑色高马尾、白花暖金发饰、胸部体态、抹胸上缘高度和服装全部保持一致：月白抹胸、敞开的浅青半透明薄纱大袖衫、浅粉腰带、浅青高腰长裙上缘。不要重新设计人物或服装。
+向 GPT 提供栀夏身份卡和全身比例卡，只生成 16:9 六格“引弧起盘”人物动作底图：浅暖灰背景、固定中近景、六格身份和机位一致；卦盘区域完整留空；不得生成圆盘、爻线、星轨、文字或结构性光效。用户确认人物、服装、双手和动作连续性后再归档底图。
 
-背景为浅暖灰无缝影棚，固定中近景、正面略偏左三分之四机位，完整拍到头部、上半身、左右双手和桌面上方的卦盘空间。四格中的人物大小、机位、光线、发型、服装和表情必须一致；栀夏全程神情平静专注，不微笑、不闭眼、不夸张施法。
+- [ ] **Step 2: 写入预期失败的合成验收脚本**
 
-动作名为“引弧起盘”，从左到右严格分为四格：
-第一格，起势：右手从腰侧抬至胸腰之间，手肘贴近身体，掌心仍偏向侧面；左手自然稳定，不参与动作。
-第二格，翻腕：右腕平稳外翻，掌心斜向上；拇指放松，无名指与小指自然微弯，五指全部清楚可见。
-第三格，引弧：右手食指与中指自然并拢向前伸出，在桌面上空顺时针划出约四分之三圆的短弧；指尖留下克制的月白浅青光迹，弧线末端只有少量暖金；此格尚未出现完整卦盘。
-六格依次对应星点聚拢、星轨显现、能量汇聚、六爻生成、卦象稳定、余光收束。前三格完成起势、翻腕、双指引弧和六个空爻槽显现；第四格固定为下三槽已经填入阳、阴、阴而上三槽仍为空；第五格锁定完整结果；第六格收束余光并保持卦盘稳定。卦盘不接触手掌，不被手托住。
+检查动作卡为 1920×1080，三个视频叠加层为 1080×1920 RGBA PNG，并再次运行矢量拓扑测试。脚本还必须通过实际解码信息确认叠加层保留 alpha 通道。
 
-手部必须严格正确：每只手恰好五指，没有多指、少指、融合指、交叉指或粘连手掌；食指与中指只是并拢而不是融合；两只手不互相遮挡。右侧薄纱大袖随抬臂轻微后滑，露出完整手腕和手指，但服装结构不变。左手四格保持同一自然姿势。
+- [ ] **Step 3: 运行验收并确认失败**
 
-不要阿砚，不要古籍，不要桌面剧情道具，不要字幕、标题、格子编号、说明文字、Logo、水印、蓝紫霓虹、强光柱或复杂粒子。四格之间只用细窄浅灰分隔线。重点是角色一致、手势清楚、动作连续、卦盘身份准确。
-```
+Run: `zsh zhixia-feihualing/tests/test_divination_summon_composites.sh`
 
-- [ ] **Step 2: 人工检查人物、双手与动作连续性**
+Expected: FAIL because the compositor and output files do not exist.
 
-Expected: 四格人物身份一致；右手各五指正确；左手稳定；动作从起势到起盘连续；只有第四格出现完整的未起卦卦盘。
+- [ ] **Step 4: 实现确定性合成器**
 
-- [ ] **Step 3: 用户明确确认后原样归档并登记**
+`render_divination_summon_composites.swift` 接收人物六格底图、SVG 状态目录和输出目录。动作卡只把同一正圆母盘按六段状态叠加到预留区域；视频叠加层使用同一位置、同一缩放和透明背景，分别输出空盘、中间态与完整卦象。合成器不得对圆盘做非等比缩放。
 
-```csv
-zhixia-summon-divination-disc-action-v01,character,栀夏,summoning-action-master,assets/characters/栀夏引弧起盘动作卡电影半写实-v01.png,approved,ChatGPT web image generation,original AI-assisted asset,16:9六格动作效果综合卡；引弧起盘与六段流程统一；严格引用栀夏v02与星轨六爻盘母板；模板视频唯一动作依据
-```
+- [ ] **Step 5: 构建并验收动作卡与视频叠加层**
 
-Run: 使用 `cmp` 和 `shasum -a 256` 确认归档文件与用户提供原图一致。
+Run: `swift zhixia-feihualing/scripts/render_divination_summon_composites.swift zhixia-feihualing/assets/characters/栀夏引弧起盘人物动作底图电影半写实-v01.png zhixia-feihualing/assets/props/ai-divination-disk-v01/vector zhixia-feihualing/assets/characters/栀夏引弧起盘动作卡电影半写实-v01.png zhixia-feihualing/assets/props/ai-divination-disk-v01/overlays`
 
-- [ ] **Step 4: 提交动作卡**
+Run: `zsh zhixia-feihualing/tests/test_divination_summon_composites.sh`
+
+Expected: PASS；第四格的下三爻仍为阳、阴、阴，所有盘面仍为正圆。
+
+- [ ] **Step 6: 提交动作合成资产**
 
 ```bash
-git add zhixia-feihualing/assets/characters/栀夏引弧起盘动作卡电影半写实-v01.png zhixia-feihualing/assets/inventory.csv
-git commit -m "归档栀夏引弧起盘动作母板"
+git add zhixia-feihualing/scripts/render_divination_summon_composites.swift \
+  zhixia-feihualing/tests/test_divination_summon_composites.sh \
+  zhixia-feihualing/assets/characters/栀夏引弧起盘人物动作底图电影半写实-v01.png \
+  zhixia-feihualing/assets/characters/栀夏引弧起盘动作卡电影半写实-v01.png \
+  zhixia-feihualing/assets/props/ai-divination-disk-v01/overlays
+git commit -m "合成栀夏引弧起盘动作资产"
 ```
 
-### Task 4: 生成并确认 3 秒召唤动作模板视频
+### Task 5: 组装 3 秒召唤模板并登记母板
 
 **Files:**
-- Reference: `zhixia-feihualing/assets/characters/栀夏角色卡电影半写实-v02.png`
-- Reference: `zhixia-feihualing/assets/characters/栀夏引弧起盘动作卡电影半写实-v01.png`
-- Reference: `zhixia-feihualing/assets/props/ai-divination-disk-v01/master.png`
-- Create after approval: `zhixia-feihualing/assets/generated-video/templates/zhixia-summon-divination-disc-template-v01.mp4`
-- Modify after approval: `zhixia-feihualing/assets/inventory.csv`
+- Create after user approval: `zhixia-feihualing/assets/generated-video/templates/zhixia-summon-gesture-base-v01.mp4`
+- Create: `zhixia-feihualing/scripts/build_divination_summon_template.sh`
+- Modify: `zhixia-feihualing/tests/test_cyber_divination_summon_assets.sh`
+- Create: `zhixia-feihualing/assets/generated-video/templates/zhixia-summon-divination-disc-template-v01.mp4`
+- Modify: `zhixia-feihualing/assets/inventory.csv`
 
 **Interfaces:**
-- Consumes: approved 栀夏身份卡、动作卡和星轨六爻盘道具卡。
-- Produces: 无对白、无具体卦象的 3 秒动作模板，末帧供所有单集衔接六爻生成。
+- Consumes: 用户确认的无卦盘人物动作视频，以及 1080×1920 的确定性圆盘状态层。
+- Produces: 约 3 秒召唤模板视频和三项 approved 资产登记。
 
-- [ ] **Step 1: 付费生成前向用户展示调用计划并获得确认**
+- [ ] **Step 1: 生成人物动作视频底片，不让模型绘制卦盘**
 
-Expected: 用户明确确认生成平台、调用次数和预计成本后才调用；若用户自行在网页生成，则跳过 API 调用，只交付提示词。
+视频模型只生成栀夏 3 秒“引弧起盘”动作、衣袖轻摆与非结构性星点；卦盘区域保持空白，不生成圆形界面、爻线、文字或强光。付费调用前展示平台、次数与成本并取得用户确认。
 
-- [ ] **Step 2: 使用三张 approved 参考图和完整视频提示词**
+- [ ] **Step 2: 更新统一验收脚本并确认失败**
 
-```text
-生成一段 9:16 竖屏、3 秒、单镜头、电影级半写实东方幻想人物动作模板视频。严格绑定参考图中的栀夏身份、服装和“引弧起盘”六格综合动作，严格绑定参考图中的“星轨六爻盘”外观。浅暖灰无缝影棚背景，固定中近景静止机位，完整拍到栀夏头部、上半身、左右双手和她前方的卦盘空间。镜头不推拉、不摇移、不环绕、不切换。
-
-时间必须清楚：0.0—0.3 秒，栀夏右手起势，少量星点在双指附近聚拢；0.3—0.8 秒，右腕外翻并以并拢双指引弧，卦盘星轨沿弧线显现；0.8—1.3 秒，双指轻挑，同一面单层平面星轨六爻盘悬浮展开，中心恰好六个空爻槽；1.3—2.1 秒，六爻由后期透明卡自下而上填充；2.1—2.5 秒，卦象与星轨稳定；2.5—3.0 秒，外围余光收束，人物和卦盘稳定停留。
-
-视频模型只生成六个空爻槽、人物动作和通用星轨光效，不负责生成具体阴阳爻、卦名、卦辞、汉字或数字；准确结果由后期透明卡覆盖。卦盘不接触手掌，不跟随手掌漂移。栀夏神情平静专注，不微笑、不闭眼；左手全程保持自然稳定；每只手恰好五指，食指与中指只并拢不融合。浅青薄纱大袖随抬臂产生轻微真实布料运动，发型、发饰、抹胸、腰带和身体比例不改变。
-
-无对白、无口型表演、无字幕、无标题、无Logo、无水印、无阿砚、无古籍、无桌面道具、无蓝紫霓虹、无强光柱、无爆闪、无雷电、无烟雾漩涡、无镜头运动、无多指、无手部变形、无人物身份漂移、无卦盘结构漂移。允许极轻衣袖声、单次墨滴声和短促数字脉冲，不生成可辨识人声。最后至少 0.5 秒必须是稳定静止的可衔接末帧。
-```
-
-- [ ] **Step 3: 抽帧验收动作连续性与末帧**
-
-Run: 抽检 0.0、0.5、0.8、1.1、1.8、2.3、2.9 秒。
-
-Expected: 栀夏身份与五指稳定；动作和六段效果顺序正确；1.3 秒后星轨盘中心恰好六个空爻槽；具体阴阳爻仅来自后期覆盖；2.5—3.0 秒卦盘稳定；无文字。
-
-- [ ] **Step 4: 用户明确确认后原样归档并登记**
-
-```csv
-zhixia-summon-divination-disc-template-v01,video,栀夏,summoning-video-template,assets/generated-video/templates/zhixia-summon-divination-disc-template-v01.mp4,approved,Seedance,original AI-assisted asset,9:16约3秒；固定中近景单镜头；引弧起盘完整动作；末段稳定未起卦卦盘；无对白无具体卦象；后续单集统一衔接模板
-```
-
-- [ ] **Step 5: 运行三项资产统一验收并提交**
+验收脚本检查：最终视频为 1080×1920、时长 2.8—3.2 秒、可以完整解码；三项 inventory 记录均为 approved；矢量拓扑测试和动作叠加测试继续通过。
 
 Run: `zsh zhixia-feihualing/tests/test_cyber_divination_summon_assets.sh`
 
-Expected: `cyber divination summon assets: PASS`
+Expected: FAIL because the final template and approved inventory rows do not exist.
 
-```bash
-git add zhixia-feihualing/assets/generated-video/templates/zhixia-summon-divination-disc-template-v01.mp4 zhixia-feihualing/assets/inventory.csv
-git commit -m "归档栀夏卦盘召唤模板视频"
-```
+- [ ] **Step 3: 实现模板合成时间轴**
 
-### Task 5: 回写系列引用规则并完成最终复核
+`build_divination_summon_template.sh` 使用 FFmpeg 等比叠加：0.0—0.3 秒只有人物与星点；0.3—0.8 秒淡入空盘外环；0.8—1.3 秒完整空盘稳定；1.3—2.1 秒按自下而上顺序显示六爻；2.1—2.5 秒完整结果锁定；2.5—3.0 秒只减弱外围光效，不改变六爻。输出使用 H.264、`yuv420p`、AAC 48 kHz。
 
-**Files:**
-- Modify: `zhixia-feihualing/docs/superpowers/specs/2026-08-26-zhixia-cyber-divination-series-design.md`
-- Modify: `zhixia-feihualing/episodes/cyber-divination-ep01/README.md`
-- Test: `zhixia-feihualing/tests/test_cyber_divination_summon_assets.sh`
-- Test: `zhixia-feihualing/tests/test_cyber_divination_ep01_manifest.py`
+- [ ] **Step 4: 抽帧核对状态和几何**
 
-**Interfaces:**
-- Consumes: 三项 approved 资产标识与归档路径。
-- Produces: 第一集与后续单集都只引用固定母板、不再描述新卦盘或新召唤手势的制作规则。
+Run: 在 0.0、0.5、0.8、1.1、1.5、1.8、2.3、2.9 秒抽帧。
 
-- [ ] **Step 1: 在系列设计稿和第一集 README 写入三个固定引用路径**
+Expected: 圆盘全程等比且保持正圆；1.3 秒前为空槽；1.3—2.1 秒自下而上填充；2.1 秒后为准确山雷颐；人物身份和五指稳定；无模型生成的错误爻线。
 
-```markdown
-- 卦盘母板：`assets/props/ai-divination-disk-v01/master.png`。
-- 召唤动作母板：`assets/characters/栀夏引弧起盘动作卡电影半写实-v01.png`。
-- 召唤模板视频：`assets/generated-video/templates/zhixia-summon-divination-disc-template-v01.mp4`。
-- 单集从模板视频的稳定末帧继续生成六爻，不重新设计人物手势或卦盘外观。
-```
+- [ ] **Step 5: 用户确认后登记 approved**
 
-- [ ] **Step 2: 搜索并清除冲突设定**
+在 `assets/inventory.csv` 登记：`ai-divination-disk-v01`、`zhixia-summon-divination-disc-action-v01` 和 `zhixia-summon-divination-disc-template-v01`。备注必须说明圆盘与六爻来自确定性矢量源，人物与氛围为 AI 辅助生成。
 
-Run: `rg -n '古籍上方|轻触古籍|轻触书页|重新设计卦盘|复杂结印' zhixia-feihualing/docs/superpowers/specs/2026-08-26-zhixia-cyber-divination-series-design.md zhixia-feihualing/episodes/cyber-divination-ep01/README.md`
+- [ ] **Step 6: 运行全量验收并提交**
 
-Expected: 无匹配；文档中只保留“引弧起盘”和无实体依附悬浮卦盘。
+Run: `python3 -m unittest zhixia-feihualing/tests/test_divination_disc_vectors.py -v`
 
-- [ ] **Step 3: 运行最终验证**
+Run: `zsh zhixia-feihualing/tests/test_divination_disc_assets.sh`
+
+Run: `zsh zhixia-feihualing/tests/test_divination_summon_composites.sh`
 
 Run: `zsh zhixia-feihualing/tests/test_cyber_divination_summon_assets.sh`
 
-Expected: `cyber divination summon assets: PASS`
-
-Run: `python3 -m unittest zhixia-feihualing/tests/test_cyber_divination_ep01_manifest.py`
-
-Expected: 全部测试通过，无 failure 或 error。
-
-- [ ] **Step 4: 提交引用规则**
+Expected: 所有测试 PASS。
 
 ```bash
-git add zhixia-feihualing/docs/superpowers/specs/2026-08-26-zhixia-cyber-divination-series-design.md zhixia-feihualing/episodes/cyber-divination-ep01/README.md
-git commit -m "固定赛博起卦召唤母板引用"
+git add zhixia-feihualing/scripts/build_divination_summon_template.sh \
+  zhixia-feihualing/tests/test_cyber_divination_summon_assets.sh \
+  zhixia-feihualing/assets/generated-video/templates/zhixia-summon-divination-disc-template-v01.mp4 \
+  zhixia-feihualing/assets/inventory.csv
+git commit -m "归档栀夏起卦召唤模板"
 ```
