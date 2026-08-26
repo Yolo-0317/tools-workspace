@@ -21,22 +21,27 @@ class CyberDivinationEpisodeManifestTests(unittest.TestCase):
         self.assertEqual(manifest.episode, "cyber-divination-ep01")
         self.assertEqual(manifest.theme, "山雷颐")
         self.assertEqual(
-            [(line.role, line.start_ms) for line in manifest.lines],
+            [(line.id, line.role, line.text, line.start_ms) for line in manifest.lines],
             [
-                ("ayan", 0),
-                ("zhixia", 2200),
-                ("zhixia", 3700),
-                ("zhixia", 4900),
-                ("ayan", 8500),
-                ("zhixia", 10100),
-                ("ayan", 12100),
+                ("01-ayan-question", "ayan", "最后一块，能吃吗？", 0),
+                ("02-zhixia-cast", "zhixia", "起卦。", 2200),
+                ("03-zhixia-hexagram", "zhixia", "山雷颐。", 3700),
+                (
+                    "04-zhixia-reading",
+                    "zhixia",
+                    "颐，贞吉。观颐，自求口实。",
+                    4900,
+                ),
+                ("05-ayan-hope", "ayan", "卦说能吃？", 8500),
+                ("06-zhixia-reveal", "zhixia", "先数数空盘。", 10100),
+                ("07-ayan-excuse", "ayan", "那是……昨天的。", 12100),
             ],
         )
 
         durations_ms = {
             "01-ayan-question": 2100,
             "02-zhixia-cast": 1000,
-            "03-system-hexagram": 1100,
+            "03-zhixia-hexagram": 1100,
             "04-zhixia-reading": 3500,
             "05-ayan-hope": 1500,
             "06-zhixia-reveal": 1900,
@@ -80,7 +85,7 @@ class CyberDivinationEpisodeManifestTests(unittest.TestCase):
         self.assertEqual(
             cards[2],
             {
-                "id": "03-system-hexagram",
+                "id": "03-zhixia-hexagram",
                 "kind": "hexagram",
                 "text": "山雷颐",
                 "secondary": "颐，贞吉。观颐，自求口实。",

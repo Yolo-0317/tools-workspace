@@ -13,7 +13,7 @@ swift "$project_dir/scripts/render_cyber_divination_cards.swift" \
 for card in \
   01-ayan-question \
   02-zhixia-cast \
-  03-system-hexagram \
+  03-zhixia-hexagram \
   04-zhixia-reading \
   05-ayan-hope \
   06-zhixia-reveal \
@@ -25,7 +25,7 @@ for card in \
   test "$dimensions" = "720x1280"
 done
 
-hexagram_center_alpha="$(ffmpeg -v error -i "$tmp_dir/cards/03-system-hexagram.png" \
+hexagram_center_alpha="$(ffmpeg -v error -i "$tmp_dir/cards/03-zhixia-hexagram.png" \
   -vf 'crop=520:520:100:240,alphaextract,signalstats,metadata=print:file=-' -frames:v 1 -f null - 2>&1 \
   | awk -F= '/lavfi.signalstats.YAVG/{print $2; exit}')"
 disclaimer_bottom_alpha="$(ffmpeg -v error -i "$tmp_dir/cards/08-disclaimer.png" \
