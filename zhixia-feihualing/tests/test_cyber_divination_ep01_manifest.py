@@ -24,32 +24,32 @@ class CyberDivinationEpisodeManifestTests(unittest.TestCase):
             [(line.role, line.start_ms) for line in manifest.lines],
             [
                 ("ayan", 0),
-                ("zhixia", 2500),
-                ("zhixia", 4200),
-                ("zhixia", 6800),
-                ("ayan", 9800),
-                ("zhixia", 11300),
+                ("zhixia", 2200),
+                ("zhixia", 3700),
+                ("zhixia", 4900),
+                ("ayan", 8500),
+                ("zhixia", 10100),
             ],
         )
 
         durations_ms = {
-            "01-ayan-question": 2400,
-            "02-zhixia-cast": 1400,
-            "03-system-hexagram": 1000,
-            "04-zhixia-reading": 2700,
-            "05-ayan-hope": 1300,
-            "06-zhixia-reveal": 1800,
+            "01-ayan-question": 2100,
+            "02-zhixia-cast": 1000,
+            "03-system-hexagram": 1100,
+            "04-zhixia-reading": 3500,
+            "05-ayan-hope": 1500,
+            "06-zhixia-reveal": 1900,
         }
         subtitles = build_subtitles(manifest, durations_ms)
         self.assertEqual(
             [(item["start"], item["end"]) for item in subtitles],
             [
-                (0.0, 2.4),
-                (2.5, 3.9),
-                (4.2, 5.2),
-                (6.8, 9.5),
-                (9.8, 11.1),
-                (11.3, 13.1),
+                (0.0, 2.1),
+                (2.2, 3.2),
+                (3.7, 4.8),
+                (4.9, 8.4),
+                (8.5, 10.0),
+                (10.1, 12.0),
             ],
         )
 
@@ -83,6 +83,10 @@ class CyberDivinationEpisodeManifestTests(unittest.TestCase):
                 "attribution": "《周易·颐》",
             },
         )
+        self.assertEqual(cards[0]["text"], "最后一块，能吃吗？")
+        self.assertEqual(cards[1]["text"], "起卦。")
+        self.assertEqual(cards[3]["text"], "颐，贞吉。观颐，自求口实。")
+        self.assertEqual(cards[4]["text"], "卦说能吃？")
         self.assertEqual(
             cards[6]["text"], "传统文化趣味演绎，请勿作为现实决策依据"
         )

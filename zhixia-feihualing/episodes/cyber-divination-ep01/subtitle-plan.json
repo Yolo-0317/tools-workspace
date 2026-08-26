@@ -2,13 +2,13 @@
   {
     "id": "01-ayan-question",
     "kind": "dialogue",
-    "text": "最后一块桂花糕，我该不该吃？",
+    "text": "最后一块，能吃吗？",
     "attribution": null
   },
   {
     "id": "02-zhixia-cast",
     "kind": "dialogue",
-    "text": "赛博起卦。",
+    "text": "起卦。",
     "attribution": null
   },
   {
@@ -21,13 +21,13 @@
   {
     "id": "04-zhixia-reading",
     "kind": "dialogue",
-    "text": "先看看，你是怎么养自己的。",
+    "text": "颐，贞吉。观颐，自求口实。",
     "attribution": null
   },
   {
     "id": "05-ayan-hope",
     "kind": "dialogue",
-    "text": "那就是能吃？",
+    "text": "卦说能吃？",
     "attribution": null
   },
   {
