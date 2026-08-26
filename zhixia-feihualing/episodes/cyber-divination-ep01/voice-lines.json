@@ -40,6 +40,12 @@
       "role": "zhixia",
       "text": "先数数空盘。",
       "start_ms": 10100
+    },
+    {
+      "id": "07-ayan-excuse",
+      "role": "ayan",
+      "text": "那是……昨天的。",
+      "start_ms": 12100
     }
   ]
 }

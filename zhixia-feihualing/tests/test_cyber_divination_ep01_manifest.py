@@ -29,6 +29,7 @@ class CyberDivinationEpisodeManifestTests(unittest.TestCase):
                 ("zhixia", 4900),
                 ("ayan", 8500),
                 ("zhixia", 10100),
+                ("ayan", 12100),
             ],
         )
 
@@ -39,6 +40,7 @@ class CyberDivinationEpisodeManifestTests(unittest.TestCase):
             "04-zhixia-reading": 3500,
             "05-ayan-hope": 1500,
             "06-zhixia-reveal": 1900,
+            "07-ayan-excuse": 2400,
         }
         subtitles = build_subtitles(manifest, durations_ms)
         self.assertEqual(
@@ -50,6 +52,7 @@ class CyberDivinationEpisodeManifestTests(unittest.TestCase):
                 (4.9, 8.4),
                 (8.5, 10.0),
                 (10.1, 12.0),
+                (12.1, 14.5),
             ],
         )
 
@@ -66,6 +69,7 @@ class CyberDivinationEpisodeManifestTests(unittest.TestCase):
                 "dialogue",
                 "dialogue",
                 "hexagram",
+                "dialogue",
                 "dialogue",
                 "dialogue",
                 "dialogue",
@@ -87,10 +91,11 @@ class CyberDivinationEpisodeManifestTests(unittest.TestCase):
         self.assertEqual(cards[1]["text"], "起卦。")
         self.assertEqual(cards[3]["text"], "颐，贞吉。观颐，自求口实。")
         self.assertEqual(cards[4]["text"], "卦说能吃？")
+        self.assertEqual(cards[6]["text"], "那是……昨天的。")
         self.assertEqual(
-            cards[6]["text"], "传统文化趣味演绎，请勿作为现实决策依据"
+            cards[7]["text"], "传统文化趣味演绎，请勿作为现实决策依据"
         )
-        self.assertEqual(cards[7]["text"], "栀夏赛博起卦")
+        self.assertEqual(cards[8]["text"], "栀夏赛博起卦")
 
 
 if __name__ == "__main__":

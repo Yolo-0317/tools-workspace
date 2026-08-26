@@ -17,8 +17,9 @@ for card in \
   04-zhixia-reading \
   05-ayan-hope \
   06-zhixia-reveal \
-  07-disclaimer \
-  08-series-title; do
+  07-ayan-excuse \
+  08-disclaimer \
+  09-series-title; do
   test -s "$tmp_dir/cards/$card.png"
   dimensions="$(sips -g pixelWidth -g pixelHeight "$tmp_dir/cards/$card.png" 2>/dev/null | awk '/pixelWidth/{w=$2}/pixelHeight/{h=$2}END{print w"x"h}')"
   test "$dimensions" = "720x1280"
@@ -27,10 +28,10 @@ done
 hexagram_center_alpha="$(ffmpeg -v error -i "$tmp_dir/cards/03-system-hexagram.png" \
   -vf 'crop=520:520:100:240,alphaextract,signalstats,metadata=print:file=-' -frames:v 1 -f null - 2>&1 \
   | awk -F= '/lavfi.signalstats.YAVG/{print $2; exit}')"
-disclaimer_bottom_alpha="$(ffmpeg -v error -i "$tmp_dir/cards/07-disclaimer.png" \
+disclaimer_bottom_alpha="$(ffmpeg -v error -i "$tmp_dir/cards/08-disclaimer.png" \
   -vf 'crop=640:130:40:1110,alphaextract,signalstats,metadata=print:file=-' -frames:v 1 -f null - 2>&1 \
   | awk -F= '/lavfi.signalstats.YAVG/{print $2; exit}')"
-title_top_alpha="$(ffmpeg -v error -i "$tmp_dir/cards/08-series-title.png" \
+title_top_alpha="$(ffmpeg -v error -i "$tmp_dir/cards/09-series-title.png" \
   -vf 'crop=520:170:100:60,alphaextract,signalstats,metadata=print:file=-' -frames:v 1 -f null - 2>&1 \
   | awk -F= '/lavfi.signalstats.YAVG/{print $2; exit}')"
 dialogue_bottom_alpha="$(ffmpeg -v error -i "$tmp_dir/cards/01-ayan-question.png" \

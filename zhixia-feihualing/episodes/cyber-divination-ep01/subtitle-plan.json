@@ -37,13 +37,19 @@
     "attribution": null
   },
   {
-    "id": "07-disclaimer",
+    "id": "07-ayan-excuse",
+    "kind": "dialogue",
+    "text": "那是……昨天的。",
+    "attribution": null
+  },
+  {
+    "id": "08-disclaimer",
     "kind": "disclaimer",
     "text": "传统文化趣味演绎，请勿作为现实决策依据",
     "attribution": null
   },
   {
-    "id": "08-series-title",
+    "id": "09-series-title",
     "kind": "title",
     "text": "栀夏赛博起卦",
     "attribution": null
