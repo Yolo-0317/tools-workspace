@@ -38,13 +38,13 @@
     {
       "id": "06-zhixia-reveal",
       "role": "zhixia",
-      "text": "先数数空盘。",
+      "text": "先数数空格。",
       "start_ms": 10100
     },
     {
       "id": "07-ayan-excuse",
       "role": "ayan",
-      "text": "那是……昨天的。",
+      "text": "前八块……是试吃。",
       "start_ms": 12100
     }
   ]

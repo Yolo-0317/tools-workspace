@@ -33,8 +33,8 @@ class CyberDivinationEpisodeManifestTests(unittest.TestCase):
                     4900,
                 ),
                 ("05-ayan-hope", "ayan", "卦说能吃？", 8500),
-                ("06-zhixia-reveal", "zhixia", "先数数空盘。", 10100),
-                ("07-ayan-excuse", "ayan", "那是……昨天的。", 12100),
+                ("06-zhixia-reveal", "zhixia", "先数数空格。", 10100),
+                ("07-ayan-excuse", "ayan", "前八块……是试吃。", 12100),
             ],
         )
 
@@ -96,7 +96,8 @@ class CyberDivinationEpisodeManifestTests(unittest.TestCase):
         self.assertEqual(cards[1]["text"], "起卦。")
         self.assertEqual(cards[3]["text"], "颐，贞吉。观颐，自求口实。")
         self.assertEqual(cards[4]["text"], "卦说能吃？")
-        self.assertEqual(cards[6]["text"], "那是……昨天的。")
+        self.assertEqual(cards[5]["text"], "先数数空格。")
+        self.assertEqual(cards[6]["text"], "前八块……是试吃。")
         self.assertEqual(
             cards[7]["text"], "传统文化趣味演绎，请勿作为现实决策依据"
         )
