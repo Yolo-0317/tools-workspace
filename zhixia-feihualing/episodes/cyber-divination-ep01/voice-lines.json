@@ -1,0 +1,45 @@
+{
+  "episode": "cyber-divination-ep01",
+  "format": "one-poem-story",
+  "theme": "山雷颐",
+  "theme_slug": "cyber-divination-ep01",
+  "audio_slug": "cyber-divination-ep01",
+  "lines": [
+    {
+      "id": "01-ayan-question",
+      "role": "ayan",
+      "text": "最后一块桂花糕，我该不该吃？",
+      "start_ms": 0
+    },
+    {
+      "id": "02-zhixia-cast",
+      "role": "zhixia",
+      "text": "赛博起卦。",
+      "start_ms": 2500
+    },
+    {
+      "id": "03-system-hexagram",
+      "role": "zhixia",
+      "text": "山雷颐。",
+      "start_ms": 4200
+    },
+    {
+      "id": "04-zhixia-reading",
+      "role": "zhixia",
+      "text": "先看看，你是怎么养自己的。",
+      "start_ms": 6800
+    },
+    {
+      "id": "05-ayan-hope",
+      "role": "ayan",
+      "text": "那就是能吃？",
+      "start_ms": 9800
+    },
+    {
+      "id": "06-zhixia-reveal",
+      "role": "zhixia",
+      "text": "先数数空盘。",
+      "start_ms": 11300
+    }
+  ]
+}

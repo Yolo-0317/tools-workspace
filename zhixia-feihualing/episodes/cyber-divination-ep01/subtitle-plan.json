@@ -1,0 +1,51 @@
+[
+  {
+    "id": "01-ayan-question",
+    "kind": "dialogue",
+    "text": "最后一块桂花糕，我该不该吃？",
+    "attribution": null
+  },
+  {
+    "id": "02-zhixia-cast",
+    "kind": "dialogue",
+    "text": "赛博起卦。",
+    "attribution": null
+  },
+  {
+    "id": "03-system-hexagram",
+    "kind": "hexagram",
+    "text": "山雷颐",
+    "secondary": "颐，贞吉。观颐，自求口实。",
+    "attribution": "《周易·颐》"
+  },
+  {
+    "id": "04-zhixia-reading",
+    "kind": "dialogue",
+    "text": "先看看，你是怎么养自己的。",
+    "attribution": null
+  },
+  {
+    "id": "05-ayan-hope",
+    "kind": "dialogue",
+    "text": "那就是能吃？",
+    "attribution": null
+  },
+  {
+    "id": "06-zhixia-reveal",
+    "kind": "dialogue",
+    "text": "先数数空盘。",
+    "attribution": null
+  },
+  {
+    "id": "07-disclaimer",
+    "kind": "disclaimer",
+    "text": "传统文化趣味演绎，请勿作为现实决策依据",
+    "attribution": null
+  },
+  {
+    "id": "08-series-title",
+    "kind": "title",
+    "text": "栀夏赛博起卦",
+    "attribution": null
+  }
+]

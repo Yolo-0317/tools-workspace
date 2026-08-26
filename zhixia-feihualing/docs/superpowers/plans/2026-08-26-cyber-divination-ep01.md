@@ -130,7 +130,7 @@ def test_cyber_divination_ep01_contract():
 
 - [ ] **Step 2: 运行测试并确认清单缺失**
 
-Run: `python3 -m pytest zhixia-feihualing/tests/test_cyber_divination_ep01_manifest.py -v`
+Run: `python3 zhixia-feihualing/tests/test_cyber_divination_ep01_manifest.py -v`
 
 Expected: FAIL because `voice-lines.json` and `subtitle-plan.json` do not exist.
 
@@ -175,9 +175,9 @@ Expected: FAIL because `voice-lines.json` and `subtitle-plan.json` do not exist.
 
 - [ ] **Step 5: 运行测试、免费预览 TTS 计划并提交**
 
-Run: `python3 -m pytest zhixia-feihualing/tests/test_cyber_divination_ep01_manifest.py -v`
+Run: `python3 zhixia-feihualing/tests/test_cyber_divination_ep01_manifest.py -v`
 
-Expected: `1 passed`
+Expected: `Ran 2 tests` and `OK`
 
 Run: `python3 zhixia-feihualing/scripts/generate_episode_audio.py --episode cyber-divination-ep01`
 
@@ -188,32 +188,32 @@ git add zhixia-feihualing/episodes/cyber-divination-ep01 zhixia-feihualing/tests
 git commit -m "建立赛博起卦第一集清单"
 ```
 
-### Task 3: 扩展透明卡渲染器以支持卦盘信息与免责声明
+### Task 3: 建立独立的赛博起卦透明卡渲染器
 
 **Files:**
-- Modify: `zhixia-feihualing/scripts/render_story_subtitle_cards.swift`
-- Modify: `zhixia-feihualing/tests/test_story_subtitle_cards.sh`
+- Create: `zhixia-feihualing/scripts/render_cyber_divination_cards.swift`
+- Create: `zhixia-feihualing/tests/test_cyber_divination_cards.sh`
 - Test fixture: `zhixia-feihualing/episodes/cyber-divination-ep01/subtitle-plan.json`
 
 **Interfaces:**
-- Consumes: `kind` 为 `dialogue`、`poem`、`hexagram`、`disclaimer` 或 `title` 的 JSON 项；`hexagram` 额外读取 `secondary`。
-- Produces: 每项一张 720×1280 RGBA 透明 PNG；现有故事字幕输出保持不变。
+- Consumes: `kind` 为 `dialogue`、`hexagram`、`disclaimer` 或 `title` 的 JSON 项；`hexagram` 额外读取 `secondary` 与 `attribution`。
+- Produces: 每项一张 720×1280 RGBA 透明 PNG，不修改或依赖尚未提交的共享故事字幕渲染器。
 - Defines: `drawHexagram(title: String, quote: String)`、`drawDisclaimer(_ text: String)`、`drawSeriesTitle(_ text: String)`；这些函数只向当前 720×1280 透明画布绘制，不读写文件。
 
 - [ ] **Step 1: 写失败测试**
 
-在 `test_story_subtitle_cards.sh` 增加赛博清单渲染，检查八张 PNG 均为 720×1280；再用 FFmpeg 的 `alphaextract,signalstats` 验证：`hexagram` 中央区域有像素、`disclaimer` 底部安全区有像素、`title` 上部标题区有像素，并确认三者非目标区域保持透明。
+创建独立测试，检查八张 PNG 均为 720×1280；再用 FFmpeg 的 `alphaextract,signalstats` 验证：`dialogue` 底部区域、`hexagram` 中央区域、`disclaimer` 底部安全区和 `title` 上部标题区均有像素。
 
 - [ ] **Step 2: 运行回归测试并确认新类型尚未实现**
 
-Run: `zsh zhixia-feihualing/tests/test_story_subtitle_cards.sh`
+Run: `zsh zhixia-feihualing/tests/test_cyber_divination_cards.sh`
 
-Expected: FAIL on missing `secondary` decoding or new card alpha-region assertion; existing文刘十九与庐山卡仍可生成。
+Expected: FAIL because `render_cyber_divination_cards.swift` does not exist.
 
 - [ ] **Step 3: 最小扩展数据结构与分派**
 
 ```swift
-struct StorySubtitle: Decodable {
+struct CyberCard: Decodable {
     let id: String
     let kind: String
     let text: String
@@ -221,27 +221,27 @@ struct StorySubtitle: Decodable {
     let secondary: String?
 }
 
-switch subtitle.kind {
-case "poem": drawPoem(subtitle)
-case "hexagram": drawHexagram(title: subtitle.text, quote: subtitle.secondary ?? "")
-case "disclaimer": drawDisclaimer(subtitle.text)
-case "title": drawSeriesTitle(subtitle.text)
-default: drawHorizontal(subtitle.text, font: dialogueFont)
+switch card.kind {
+case "dialogue": drawDialogue(card.text)
+case "hexagram": drawHexagram(title: card.text, quote: card.secondary ?? "")
+case "disclaimer": drawDisclaimer(card.text)
+case "title": drawSeriesTitle(card.text)
+default: throw RenderError.unknownKind(card.kind)
 }
 ```
 
-`drawHexagram` 在卦盘文字安全区绘制“山雷颐”和较小号卦辞；`drawDisclaimer` 在底部安全区使用克制的小号楷体；`drawSeriesTitle` 在上部安全区绘制“栀夏赛博起卦”。不得改变现有 `dialogue` 与 `poem` 的位置、字体或颜色。
+`drawDialogue` 延续既有底部行楷对白；`drawHexagram` 在卦盘文字安全区绘制“山雷颐”、较小号卦辞与《周易·颐》出处；`drawDisclaimer` 在底部安全区使用克制的小号楷体；`drawSeriesTitle` 在上部安全区绘制“栀夏赛博起卦”。
 
 `drawHexagram` 同时用矢量线绘制颐卦六爻，固定为从画面顶部到底部 `[阳、阴、阴、阴、阴、阳]`，等价于从下往上 `[阳、阴、阴、阴、阴、阳]`；阳爻是一条完整横线，阴爻是左右两段且中央留白。六爻图形由本地渲染保证准确，原始视频只提供卦盘框体和光效，不承担卦象文字与爻线正确性。
 
 - [ ] **Step 4: 运行全部字幕卡测试并提交**
 
-Run: `zsh zhixia-feihualing/tests/test_story_subtitle_cards.sh`
+Run: `zsh zhixia-feihualing/tests/test_cyber_divination_cards.sh`
 
-Expected: `story subtitle cards: PASS`
+Expected: `cyber divination cards: PASS`
 
 ```bash
-git add zhixia-feihualing/scripts/render_story_subtitle_cards.swift zhixia-feihualing/tests/test_story_subtitle_cards.sh zhixia-feihualing/episodes/cyber-divination-ep01/subtitle-plan.json
+git add zhixia-feihualing/scripts/render_cyber_divination_cards.swift zhixia-feihualing/tests/test_cyber_divination_cards.sh zhixia-feihualing/episodes/cyber-divination-ep01/subtitle-plan.json
 git commit -m "支持赛博起卦字幕卡"
 ```
 
@@ -391,7 +391,7 @@ echo "cyber divination final video: PASS (${duration}s)"
 
 - [ ] **Step 4: 实现可重复合成脚本**
 
-脚本先调用 `render_story_subtitle_cards.swift` 生成八张透明卡；再将六段配音按 0、2500、4200、6800、9800、11300 毫秒放入时间轴。对 `03-system-hexagram` 使用 `highpass=f=180,aecho=0.8:0.25:45:0.12`，其余对白只做 `loudnorm=I=-18:TP=-2:LRA=7`。在 4.2—6.8 秒叠加卦名与卦辞卡，11.3—15.0 秒叠加免责声明，14.6—15.0 秒叠加栏目名；最终编码使用 `libx264 -preset medium -crf 18 -pix_fmt yuv420p` 与 `aac -b:a 160k -ar 48000 -ac 2`。
+脚本先调用 `render_cyber_divination_cards.swift` 生成八张透明卡；再将六段配音按 0、2500、4200、6800、9800、11300 毫秒放入时间轴。对 `03-system-hexagram` 使用 `highpass=f=180,aecho=0.8:0.25:45:0.12`，其余对白只做 `loudnorm=I=-18:TP=-2:LRA=7`。在 4.2—6.8 秒叠加卦名与卦辞卡，11.3—15.0 秒叠加免责声明，14.6—15.0 秒叠加栏目名；最终编码使用 `libx264 -preset medium -crf 18 -pix_fmt yuv420p` 与 `aac -b:a 160k -ar 48000 -ac 2`。
 
 对白若超过各自窗口，构建脚本根据 `ffprobe` 时长计算 `atempo=源时长/目标时长`，目标时长依次为 2.4、1.4、1.0、2.7、1.3、1.8 秒；若任一句所需倍率不在 0.80—1.25，脚本必须退出并报告具体台词，不允许截断句尾。
 
@@ -399,17 +399,17 @@ echo "cyber divination final video: PASS (${duration}s)"
 
 Run: `zsh zhixia-feihualing/scripts/build_cyber_divination_ep01.sh`
 
-Run: `python3 -m pytest zhixia-feihualing/tests/test_cyber_divination_ep01_manifest.py -v`
+Run: `python3 zhixia-feihualing/tests/test_cyber_divination_ep01_manifest.py -v`
 
 Run: `zsh zhixia-feihualing/tests/test_cyber_divination_prop.sh`
 
-Run: `zsh zhixia-feihualing/tests/test_story_subtitle_cards.sh`
+Run: `zsh zhixia-feihualing/tests/test_cyber_divination_cards.sh`
 
 Run: `zsh zhixia-feihualing/tests/test_cyber_divination_ep01_assets.sh`
 
 Run: `zsh zhixia-feihualing/tests/test_cyber_divination_ep01_video.sh`
 
-Expected: 所有命令 exit 0，Python 显示 `1 passed`，四个 shell 测试分别输出 `PASS`。
+Expected: 所有命令 exit 0，Python 显示 `Ran 2 tests` 与 `OK`，四个 shell 测试分别输出 `PASS`。
 
 - [ ] **Step 6: 视觉、听觉与文化文本终检**
 
