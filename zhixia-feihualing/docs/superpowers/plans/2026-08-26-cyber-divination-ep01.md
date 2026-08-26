@@ -87,16 +87,16 @@ git commit -m "归档赛博卦盘道具母板"
 ### Task 2: 建立第一集台词、字幕与资产契约
 
 **Files:**
-- Create: `zhixia-feihualing/episodes/cyber-divination-ep01/README.md`
-- Create: `zhixia-feihualing/episodes/cyber-divination-ep01/voice-lines.json`
-- Create: `zhixia-feihualing/episodes/cyber-divination-ep01/subtitle-plan.json`
-- Create: `zhixia-feihualing/tests/test_cyber_divination_ep01_manifest.py`
+- Modify: `zhixia-feihualing/episodes/cyber-divination-ep01/README.md`
+- Modify: `zhixia-feihualing/episodes/cyber-divination-ep01/voice-lines.json`
+- Modify: `zhixia-feihualing/episodes/cyber-divination-ep01/subtitle-plan.json`
+- Modify: `zhixia-feihualing/tests/test_cyber_divination_ep01_manifest.py`
 
 **Interfaces:**
 - Consumes: `config/voices.json` 中的 `ayan` 与 `zhixia` 固定音色。
 - Produces: `EpisodeManifest` 可读取的六段语音，以及字幕渲染器可读取的八张透明卡清单。
 
-- [ ] **Step 1: 写失败测试**
+- [ ] **Step 1: 把测试期望更新为已确认的精简对白**
 
 ```python
 import json
@@ -108,33 +108,34 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from zhixia_tts_manifest import load_episode_manifest, load_voice_config
 
 
-def test_cyber_divination_ep01_contract():
+class CyberDivinationEpisodeManifestTests(unittest.TestCase):
+  def test_builds_the_fixed_timeline(self):
     voices = load_voice_config(ROOT / "config" / "voices.json")
     manifest = load_episode_manifest(
         ROOT / "episodes/cyber-divination-ep01/voice-lines.json", voices
     )
-    assert manifest.episode == "cyber-divination-ep01"
-    assert [(line.role, line.start_ms) for line in manifest.lines] == [
-        ("ayan", 0), ("zhixia", 2500), ("zhixia", 4200),
-        ("zhixia", 6800), ("ayan", 9800), ("zhixia", 11300),
-    ]
+    self.assertEqual(manifest.episode, "cyber-divination-ep01")
+    self.assertEqual([(line.role, line.start_ms) for line in manifest.lines], [
+        ("ayan", 0), ("zhixia", 2200), ("zhixia", 3700),
+        ("zhixia", 4900), ("ayan", 8500), ("zhixia", 10100),
+    ])
     cards = json.loads((ROOT / "episodes/cyber-divination-ep01/subtitle-plan.json").read_text())
-    assert [item["kind"] for item in cards] == [
+    self.assertEqual([item["kind"] for item in cards], [
         "dialogue", "dialogue", "hexagram", "dialogue",
         "dialogue", "dialogue", "disclaimer", "title",
-    ]
-    assert cards[2]["text"] == "山雷颐"
-    assert cards[2]["secondary"] == "颐，贞吉。观颐，自求口实。"
-    assert cards[6]["text"] == "传统文化趣味演绎，请勿作为现实决策依据"
+    ])
+    self.assertEqual(cards[2]["text"], "山雷颐")
+    self.assertEqual(cards[2]["secondary"], "颐，贞吉。观颐，自求口实。")
+    self.assertEqual(cards[6]["text"], "传统文化趣味演绎，请勿作为现实决策依据")
 ```
 
-- [ ] **Step 2: 运行测试并确认清单缺失**
+- [ ] **Step 2: 运行测试并确认旧对白时间轴被拒绝**
 
 Run: `python3 zhixia-feihualing/tests/test_cyber_divination_ep01_manifest.py -v`
 
-Expected: FAIL because `voice-lines.json` and `subtitle-plan.json` do not exist.
+Expected: FAIL because the existing manifest still uses 2500、4200、6800、9800、11300 毫秒和旧对白。
 
-- [ ] **Step 3: 创建固定台词清单**
+- [ ] **Step 3: 更新固定台词清单**
 
 ```json
 {
@@ -144,34 +145,34 @@ Expected: FAIL because `voice-lines.json` and `subtitle-plan.json` do not exist.
   "theme_slug": "cyber-divination-ep01",
   "audio_slug": "cyber-divination-ep01",
   "lines": [
-    {"id": "01-ayan-question", "role": "ayan", "text": "最后一块桂花糕，我该不该吃？", "start_ms": 0},
-    {"id": "02-zhixia-cast", "role": "zhixia", "text": "赛博起卦。", "start_ms": 2500},
-    {"id": "03-system-hexagram", "role": "zhixia", "text": "山雷颐。", "start_ms": 4200},
-    {"id": "04-zhixia-reading", "role": "zhixia", "text": "先看看，你是怎么养自己的。", "start_ms": 6800},
-    {"id": "05-ayan-hope", "role": "ayan", "text": "那就是能吃？", "start_ms": 9800},
-    {"id": "06-zhixia-reveal", "role": "zhixia", "text": "先数数空盘。", "start_ms": 11300}
+    {"id": "01-ayan-question", "role": "ayan", "text": "最后一块，能吃吗？", "start_ms": 0},
+    {"id": "02-zhixia-cast", "role": "zhixia", "text": "起卦。", "start_ms": 2200},
+    {"id": "03-system-hexagram", "role": "zhixia", "text": "山雷颐。", "start_ms": 3700},
+    {"id": "04-zhixia-reading", "role": "zhixia", "text": "颐，贞吉。观颐，自求口实。", "start_ms": 4900},
+    {"id": "05-ayan-hope", "role": "ayan", "text": "卦说能吃？", "start_ms": 8500},
+    {"id": "06-zhixia-reveal", "role": "zhixia", "text": "先数数空盘。", "start_ms": 10100}
   ]
 }
 ```
 
 `03-system-hexagram` 复用栀夏音色生成干净源音，最终混音时只对这一句增加轻微高通、短回声与窄化处理，使它成为卦盘播报而不新增第三种付费音色。
 
-- [ ] **Step 4: 创建八项字幕清单与单集说明**
+- [ ] **Step 4: 更新八项字幕清单与单集说明**
 
 ```json
 [
-  {"id": "01-ayan-question", "kind": "dialogue", "text": "最后一块桂花糕，我该不该吃？", "attribution": null},
-  {"id": "02-zhixia-cast", "kind": "dialogue", "text": "赛博起卦。", "attribution": null},
+  {"id": "01-ayan-question", "kind": "dialogue", "text": "最后一块，能吃吗？", "attribution": null},
+  {"id": "02-zhixia-cast", "kind": "dialogue", "text": "起卦。", "attribution": null},
   {"id": "03-system-hexagram", "kind": "hexagram", "text": "山雷颐", "secondary": "颐，贞吉。观颐，自求口实。", "attribution": "《周易·颐》"},
-  {"id": "04-zhixia-reading", "kind": "dialogue", "text": "先看看，你是怎么养自己的。", "attribution": null},
-  {"id": "05-ayan-hope", "kind": "dialogue", "text": "那就是能吃？", "attribution": null},
+  {"id": "04-zhixia-reading", "kind": "dialogue", "text": "颐，贞吉。观颐，自求口实。", "attribution": null},
+  {"id": "05-ayan-hope", "kind": "dialogue", "text": "卦说能吃？", "attribution": null},
   {"id": "06-zhixia-reveal", "kind": "dialogue", "text": "先数数空盘。", "attribution": null},
   {"id": "07-disclaimer", "kind": "disclaimer", "text": "传统文化趣味演绎，请勿作为现实决策依据", "attribution": null},
   {"id": "08-series-title", "kind": "title", "text": "栀夏赛博起卦", "attribution": null}
 ]
 ```
 
-`README.md` 记录 0.0、2.5、4.2、6.8、9.8、11.3、14.6 秒节点、四个场景卡目标、角色参考和道具参考路径。
+`README.md` 记录 0.0、2.2、3.7、4.9、8.5、10.1、12.1、14.6 秒节点、四个场景卡目标、角色参考和道具参考路径。
 
 - [ ] **Step 5: 运行测试、免费预览 TTS 计划并提交**
 
@@ -326,7 +327,7 @@ Expected: FAIL at `test -s`.
 
 - [ ] **Step 3: 使用固定时间轴生成原片**
 
-在 `video-prompt.md` 写入：0.0—2.5 秒阿砚提问表演；2.5—4.2 秒栀夏轻触古籍；4.2—6.8 秒卦盘框体进入“生成中”状态并依次亮起六个空白爻位；6.8—9.8 秒栀夏平静解释；9.8—11.3 秒阿砚期待反问；11.3—14.6 秒镜头移向八只空盘；14.6—15.0 秒阿砚收爪垂耳。要求三次以内的克制切镜、角色脸部稳定、无口型特写、无可辨识人声、卦名、卦辞或具体爻线；卦盘中央保留后期透明卡安全区，精确六爻与文字由 Task 3 本地渲染。
+在 `video-prompt.md` 写入：0.0—2.2 秒阿砚提问表演；2.2—3.7 秒栀夏轻触古籍；3.7—4.9 秒卦盘框体进入“生成中”状态并依次亮起六个空白爻位；4.9—8.5 秒栀夏平静读卦辞；8.5—10.1 秒阿砚期待反问；10.1—12.1 秒栀夏垂眼拆穿并带动镜头下移；12.1—14.6 秒揭示八只空盘，阿砚收爪垂耳；14.6—15.0 秒保留反应与落版。要求三次以内的克制切镜、角色脸部稳定、无口型特写、无可辨识人声、卦名、卦辞或具体爻线；卦盘中央保留后期透明卡安全区，精确六爻与文字由 Task 3 本地渲染。
 
 - [ ] **Step 4: 规格与关键帧人工验收**
 
@@ -334,7 +335,7 @@ Run: `zsh zhixia-feihualing/tests/test_cyber_divination_ep01_assets.sh`
 
 Expected: `cyber divination raw assets: PASS`
 
-抽取 0.5、3.0、5.2、7.5、10.3、12.5、14.7 秒关键帧，确认角色身份连续、六爻按自下而上方向出现、阿砚无多肢多尾、卡 4 反转可读且空盘数量为八。用户确认原片后再登记为 `available`。
+抽取 0.5、2.8、4.2、6.5、9.2、11.2、13.0、14.7 秒关键帧，确认角色身份连续、六爻按自下而上方向出现、阿砚无多肢多尾、卡 4 反转可读且空盘数量为八。用户确认原片后再登记为 `available`。
 
 - [ ] **Step 5: 提交原片资产记录**
 
@@ -391,9 +392,9 @@ echo "cyber divination final video: PASS (${duration}s)"
 
 - [ ] **Step 4: 实现可重复合成脚本**
 
-脚本先调用 `render_cyber_divination_cards.swift` 生成八张透明卡；再将六段配音按 0、2500、4200、6800、9800、11300 毫秒放入时间轴。对 `03-system-hexagram` 使用 `highpass=f=180,aecho=0.8:0.25:45:0.12`，其余对白只做 `loudnorm=I=-18:TP=-2:LRA=7`。在 4.2—6.8 秒叠加卦名与卦辞卡，11.3—15.0 秒叠加免责声明，14.6—15.0 秒叠加栏目名；最终编码使用 `libx264 -preset medium -crf 18 -pix_fmt yuv420p` 与 `aac -b:a 160k -ar 48000 -ac 2`。
+脚本先调用 `render_cyber_divination_cards.swift` 生成八张透明卡；再将六段配音按 0、2200、3700、4900、8500、10100 毫秒放入时间轴。对 `03-system-hexagram` 使用 `highpass=f=180,aecho=0.8:0.25:45:0.12`，其余对白只做 `loudnorm=I=-18:TP=-2:LRA=7`。在 3.7—8.5 秒持续叠加卦名、六爻、卦辞与出处卡；`04-zhixia-reading` 不重复叠加底部对白卡。12.1—15.0 秒叠加免责声明，14.6—15.0 秒叠加栏目名；最终编码使用 `libx264 -preset medium -crf 18 -pix_fmt yuv420p` 与 `aac -b:a 160k -ar 48000 -ac 2`。
 
-对白若超过各自窗口，构建脚本根据 `ffprobe` 时长计算 `atempo=源时长/目标时长`，目标时长依次为 2.4、1.4、1.0、2.7、1.3、1.8 秒；若任一句所需倍率不在 0.80—1.25，脚本必须退出并报告具体台词，不允许截断句尾。
+对白若超过各自窗口，构建脚本根据 `ffprobe` 时长计算 `atempo=源时长/目标时长`，目标时长依次为 2.1、1.0、1.1、3.5、1.5、1.9 秒；若任一句所需倍率不在 0.80—1.25，脚本必须退出并报告具体台词，不允许截断句尾。
 
 - [ ] **Step 5: 构建并运行全部相关测试**
 
@@ -413,7 +414,7 @@ Expected: 所有命令 exit 0，Python 显示 `Ran 2 tests` 与 `OK`，四个 sh
 
 - [ ] **Step 6: 视觉、听觉与文化文本终检**
 
-抽取 0.5、3.0、5.2、7.5、10.3、12.5、14.7 秒组成联系表。逐项确认：首帧双人同框；卦名为“山雷颐”；卦辞无错字；栀夏不笑场；八只空盘清楚可数；阿砚最后收爪垂耳；免责声明从 11.3 秒持续到结尾；栏目名在最后 0.4 秒可辨；音乐与环境声不压对白；系统播报与栀夏正常对白有轻微但不过度的听感区分。
+抽取 0.5、2.8、4.2、6.5、9.2、11.2、13.0、14.7 秒组成联系表。逐项确认：首帧双人同框；卦名为“山雷颐”；完整卦辞无错字；栀夏不笑场；八只空盘清楚可数；阿砚最后收爪垂耳；免责声明从 12.1 秒持续到结尾；栏目名在最后 0.4 秒可辨；音乐与环境声不压对白；系统播报与栀夏正常对白有轻微但不过度的听感区分。
 
 - [ ] **Step 7: 登记最终资产并提交**
 
