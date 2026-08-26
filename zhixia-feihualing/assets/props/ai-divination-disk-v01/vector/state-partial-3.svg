@@ -131,4 +131,7 @@
 <rect data-role="empty-slot" data-position="6" x="390" y="385" width="244" height="14" rx="7" fill="#9acbd0" fill-opacity="0.055" stroke="#b9d9d8" stroke-opacity="0.36" stroke-width="1.4"/>
   <path d="M 512.00 46.00 l 7 8 l -7 8 l -7 -8 z" fill="#b84738" fill-opacity="0.92"/>
 </g>
+<g data-role="yao-state"><line data-role="filled-yao" data-kind="yang" data-position="1" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96" x1="390" y1="632" x2="634" y2="632"/>
+<g data-role="filled-yao" data-kind="yin" data-position="2" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96"><line x1="390" y1="584" x2="495.0" y2="584"/><line x1="529.0" y1="584" x2="634" y2="584"/></g>
+<g data-role="filled-yao" data-kind="yin" data-position="3" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96"><line x1="390" y1="536" x2="495.0" y2="536"/><line x1="529.0" y1="536" x2="634" y2="536"/></g></g>
 </svg>

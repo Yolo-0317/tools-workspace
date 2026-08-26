@@ -131,4 +131,5 @@
 <rect data-role="empty-slot" data-position="6" x="390" y="385" width="244" height="14" rx="7" fill="#9acbd0" fill-opacity="0.055" stroke="#b9d9d8" stroke-opacity="0.36" stroke-width="1.4"/>
   <path d="M 512.00 46.00 l 7 8 l -7 8 l -7 -8 z" fill="#b84738" fill-opacity="0.92"/>
 </g>
+<g data-role="yao-state"></g>
 </svg>

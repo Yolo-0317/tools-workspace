@@ -19,3 +19,8 @@ swift "$project_dir/scripts/rasterize_svg.swift" \
   "$preview_dir/disc-master.png" \
   2048 \
   2048
+swift "$project_dir/scripts/rasterize_svg.swift" \
+  "$vector_dir/design-board.svg" \
+  "$asset_dir/master.png" \
+  1920 \
+  1080

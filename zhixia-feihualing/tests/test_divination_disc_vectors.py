@@ -24,6 +24,10 @@ def elements(path: Path, role: str):
     return [node for node in root.iter() if node.attrib.get("data-role") == role]
 
 
+def child_elements(node, role: str):
+    return [child for child in node.iter() if child.attrib.get("data-role") == role]
+
+
 def segment_distance_from_center(x1, y1, x2, y2, center=512):
     dx, dy = x2 - x1, y2 - y1
     length_squared = dx * dx + dy * dy
@@ -93,6 +97,63 @@ class DivinationDiscVectorTests(unittest.TestCase):
                     segment_distance_from_center(*start, *end),
                     224,
                 )
+
+    def test_yang_and_yin_components_share_width_and_have_exact_gap(self):
+        yang = elements(self.output / "component-yang.svg", "filled-yao")[0]
+        yin = elements(self.output / "component-yin.svg", "filled-yao")[0]
+        yin_segments = [child for child in yin if child.tag.endswith("line")]
+
+        self.assertEqual(float(yang.attrib["x2"]) - float(yang.attrib["x1"]), 244)
+        self.assertEqual(len(yin_segments), 2)
+        self.assertEqual(float(yin_segments[0].attrib["x1"]), 390)
+        self.assertEqual(float(yin_segments[1].attrib["x2"]), 634)
+        self.assertEqual(
+            float(yin_segments[1].attrib["x1"])
+            - float(yin_segments[0].attrib["x2"]),
+            34,
+        )
+
+    def test_design_board_reuses_one_disc_symbol(self):
+        board = self.output / "design-board.svg"
+        instances = elements(board, "disc-instance")
+
+        self.assertEqual(len(instances), 6)
+        self.assertEqual({node.attrib["href"] for node in instances}, {"#disc-master"})
+
+    def test_design_board_symbol_is_definition_only_for_coresvg(self):
+        root = ET.parse(self.output / "design-board.svg").getroot()
+        direct_symbols = [child for child in root if child.tag.endswith("symbol")]
+        defined_symbols = [
+            node
+            for child in root
+            if child.tag.endswith("defs")
+            for node in child
+            if node.tag.endswith("symbol") and node.attrib.get("id") == "disc-master"
+        ]
+
+        self.assertFalse(direct_symbols)
+        self.assertEqual(len(defined_symbols), 1)
+
+    def test_design_board_workflow_states_have_exact_yao_topology(self):
+        states = elements(self.output / "design-board.svg", "workflow-state")
+        by_stage = {state.attrib["data-stage"]: state for state in states}
+        self.assertEqual(set(by_stage), {"4", "5", "6"})
+        stage_four = child_elements(by_stage["4"], "filled-yao")
+        stage_five = child_elements(by_stage["5"], "filled-yao")
+        stage_six = child_elements(by_stage["6"], "filled-yao")
+
+        self.assertEqual(
+            [line.attrib["data-kind"] for line in stage_four],
+            ["yang", "yin", "yin"],
+        )
+        self.assertEqual(
+            [line.attrib["data-kind"] for line in stage_five],
+            ["yang", "yin", "yin", "yin", "yin", "yang"],
+        )
+        self.assertEqual(
+            [line.attrib["data-kind"] for line in stage_six],
+            ["yang", "yin", "yin", "yin", "yin", "yang"],
+        )
 
 
 if __name__ == "__main__":

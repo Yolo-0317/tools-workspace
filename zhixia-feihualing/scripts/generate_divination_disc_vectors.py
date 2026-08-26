@@ -29,14 +29,6 @@ DEFS = """
     <stop offset="0.48" stop-color="#f3f1df"/>
     <stop offset="1" stop-color="#d6ad67"/>
   </linearGradient>
-  <filter id="soft-glow" x="-50%" y="-50%" width="200%" height="200%">
-    <feGaussianBlur stdDeviation="4" result="blur"/>
-    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-  </filter>
-  <filter id="line-glow" x="-50%" y="-100%" width="200%" height="300%">
-    <feGaussianBlur stdDeviation="7" result="blur"/>
-    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-  </filter>
 </defs>
 """.strip()
 
@@ -139,7 +131,7 @@ def master_group() -> str:
     return f"""
 <g id="disc-root" data-role="disc-master">
   <circle cx="{CENTER}" cy="{CENTER}" r="452" fill="url(#disc-fill)"/>
-  <circle cx="{CENTER}" cy="{CENTER}" r="446" stroke="#8bd9df" stroke-opacity="0.14" stroke-width="8" filter="url(#soft-glow)"/>
+  <circle cx="{CENTER}" cy="{CENTER}" r="446" stroke="#8bd9df" stroke-opacity="0.14" stroke-width="8"/>
   {ring_markup()}
   {sector_markup()}
   {constellation_markup()}
@@ -159,7 +151,7 @@ def yao_markup(kind: str, position: int, y: int | None = None) -> str:
     common = (
         f'data-role="filled-yao" data-kind="{kind}" data-position="{position}" '
         'stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" '
-        'filter="url(#line-glow)"'
+        'stroke-opacity="0.96"'
     )
     if kind == "yang":
         return f'<line {common} x1="{YAO_X1}" y1="{y}" x2="{YAO_X2}" y2="{y}"/>'
@@ -185,12 +177,73 @@ def component_document(kind: str) -> str:
 
 
 def design_board_document() -> str:
-    return svg_document(
-        '<rect width="1920" height="1080" fill="#020507"/>'
-        '<g transform="translate(20 64) scale(0.92)">'
-        f'{master_group()}</g>',
-        view_box="0 0 1920 1080",
+    parts = [
+        '<rect width="1920" height="1080" fill="#020507"/>',
+        '<rect x="24" y="44" width="820" height="820" rx="24" '
+        'fill="#071015" stroke="#d6ad67" stroke-opacity="0.24"/>',
+        f'<defs><symbol id="disc-master" viewBox="0 0 1024 1024">{master_group()}</symbol></defs>',
+        '<use data-role="disc-instance" href="#disc-master" '
+        'x="42" y="62" width="784" height="784"/>',
+    ]
+
+    panel_x = (884, 1214, 1544)
+    panel_y = (44, 408)
+    stage = 1
+    for row_y in panel_y:
+        for column_x in panel_x:
+            parts.append(
+                f'<rect x="{column_x}" y="{row_y}" width="306" height="340" rx="22" '
+                'fill="#060d12" stroke="#d6ad67" stroke-opacity="0.28"/>'
+            )
+            if stage == 1:
+                for index in range(19):
+                    star_x = column_x + 48 + ((index * 71) % 214)
+                    star_y = row_y + 62 + ((index * 43) % 208)
+                    star_r = 2.8 if index % 6 == 0 else 1.4
+                    parts.append(
+                        f'<circle cx="{star_x}" cy="{star_y}" r="{star_r}" '
+                        'fill="#8edce2" fill-opacity="0.64"/>'
+                    )
+            else:
+                opacity = {2: 0.38, 3: 0.70}.get(stage, 1.0)
+                parts.append(
+                    f'<use data-role="disc-instance" href="#disc-master" '
+                    f'x="{column_x + 18}" y="{row_y + 34}" width="270" height="270" '
+                    f'opacity="{opacity}"/>'
+                )
+                if stage in (4, 5, 6):
+                    kinds = ("yang", "yin", "yin") if stage == 4 else SHANLEI_YI
+                    lines = "".join(
+                        yao_markup(kind, position)
+                        for position, kind in enumerate(kinds, start=1)
+                    )
+                    parts.append(
+                        f'<g data-role="workflow-state" data-stage="{stage}" '
+                        f'transform="translate({column_x + 18} {row_y + 34}) scale({270 / 1024:.8f})">'
+                        f'{lines}</g>'
+                    )
+            stage += 1
+
+    parts.extend(
+        [
+            '<line x1="44" y1="908" x2="1876" y2="908" '
+            'stroke="#d6ad67" stroke-opacity="0.30"/>',
+            '<line x1="176" y1="980" x2="600" y2="980" '
+            'stroke="#d6ad67" stroke-opacity="0.62"/>',
+            '<circle cx="176" cy="980" r="4" fill="#d6ad67"/>',
+            '<circle cx="600" cy="980" r="4" fill="#d6ad67"/>',
+            '<line x1="832" y1="980" x2="1076" y2="980" '
+            'stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" '
+            'stroke-opacity="0.96"/>',
+            '<line x1="1300" y1="980" x2="1405" y2="980" '
+            'stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" '
+            'stroke-opacity="0.96"/>',
+            '<line x1="1439" y1="980" x2="1544" y2="980" '
+            'stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" '
+            'stroke-opacity="0.96"/>',
+        ]
     )
+    return svg_document("\n".join(parts), view_box="0 0 1920 1080")
 
 
 def build_assets(output_root: Path) -> None:

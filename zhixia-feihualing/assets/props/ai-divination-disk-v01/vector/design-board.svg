@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" fill="none">
 <defs>
   <radialGradient id="disc-fill" cx="50%" cy="46%" r="55%">
     <stop offset="0" stop-color="#173039" stop-opacity="0.42"/>
@@ -11,7 +11,9 @@
     <stop offset="1" stop-color="#d6ad67"/>
   </linearGradient>
 </defs>
-<g id="disc-root" data-role="disc-master">
+<rect width="1920" height="1080" fill="#020507"/>
+<rect x="24" y="44" width="820" height="820" rx="24" fill="#071015" stroke="#d6ad67" stroke-opacity="0.24"/>
+<defs><symbol id="disc-master" viewBox="0 0 1024 1024"><g id="disc-root" data-role="disc-master">
   <circle cx="512" cy="512" r="452" fill="url(#disc-fill)"/>
   <circle cx="512" cy="512" r="446" stroke="#8bd9df" stroke-opacity="0.14" stroke-width="8"/>
   <circle data-role="disc-ring" data-index="1" cx="512" cy="512" r="440" stroke="#d6ad67" stroke-opacity="0.88" stroke-width="2.2"/>
@@ -130,5 +132,46 @@
 <rect data-role="empty-slot" data-position="5" x="390" y="433" width="244" height="14" rx="7" fill="#9acbd0" fill-opacity="0.055" stroke="#b9d9d8" stroke-opacity="0.36" stroke-width="1.4"/>
 <rect data-role="empty-slot" data-position="6" x="390" y="385" width="244" height="14" rx="7" fill="#9acbd0" fill-opacity="0.055" stroke="#b9d9d8" stroke-opacity="0.36" stroke-width="1.4"/>
   <path d="M 512.00 46.00 l 7 8 l -7 8 l -7 -8 z" fill="#b84738" fill-opacity="0.92"/>
-</g>
+</g></symbol></defs>
+<use data-role="disc-instance" href="#disc-master" x="42" y="62" width="784" height="784"/>
+<rect x="884" y="44" width="306" height="340" rx="22" fill="#060d12" stroke="#d6ad67" stroke-opacity="0.28"/>
+<circle cx="932" cy="106" r="2.8" fill="#8edce2" fill-opacity="0.64"/>
+<circle cx="1003" cy="149" r="1.4" fill="#8edce2" fill-opacity="0.64"/>
+<circle cx="1074" cy="192" r="1.4" fill="#8edce2" fill-opacity="0.64"/>
+<circle cx="1145" cy="235" r="1.4" fill="#8edce2" fill-opacity="0.64"/>
+<circle cx="1002" cy="278" r="1.4" fill="#8edce2" fill-opacity="0.64"/>
+<circle cx="1073" cy="113" r="1.4" fill="#8edce2" fill-opacity="0.64"/>
+<circle cx="1144" cy="156" r="2.8" fill="#8edce2" fill-opacity="0.64"/>
+<circle cx="1001" cy="199" r="1.4" fill="#8edce2" fill-opacity="0.64"/>
+<circle cx="1072" cy="242" r="1.4" fill="#8edce2" fill-opacity="0.64"/>
+<circle cx="1143" cy="285" r="1.4" fill="#8edce2" fill-opacity="0.64"/>
+<circle cx="1000" cy="120" r="1.4" fill="#8edce2" fill-opacity="0.64"/>
+<circle cx="1071" cy="163" r="1.4" fill="#8edce2" fill-opacity="0.64"/>
+<circle cx="1142" cy="206" r="2.8" fill="#8edce2" fill-opacity="0.64"/>
+<circle cx="999" cy="249" r="1.4" fill="#8edce2" fill-opacity="0.64"/>
+<circle cx="1070" cy="292" r="1.4" fill="#8edce2" fill-opacity="0.64"/>
+<circle cx="1141" cy="127" r="1.4" fill="#8edce2" fill-opacity="0.64"/>
+<circle cx="998" cy="170" r="1.4" fill="#8edce2" fill-opacity="0.64"/>
+<circle cx="1069" cy="213" r="1.4" fill="#8edce2" fill-opacity="0.64"/>
+<circle cx="1140" cy="256" r="2.8" fill="#8edce2" fill-opacity="0.64"/>
+<rect x="1214" y="44" width="306" height="340" rx="22" fill="#060d12" stroke="#d6ad67" stroke-opacity="0.28"/>
+<use data-role="disc-instance" href="#disc-master" x="1232" y="78" width="270" height="270" opacity="0.38"/>
+<rect x="1544" y="44" width="306" height="340" rx="22" fill="#060d12" stroke="#d6ad67" stroke-opacity="0.28"/>
+<use data-role="disc-instance" href="#disc-master" x="1562" y="78" width="270" height="270" opacity="0.7"/>
+<rect x="884" y="408" width="306" height="340" rx="22" fill="#060d12" stroke="#d6ad67" stroke-opacity="0.28"/>
+<use data-role="disc-instance" href="#disc-master" x="902" y="442" width="270" height="270" opacity="1.0"/>
+<g data-role="workflow-state" data-stage="4" transform="translate(902 442) scale(0.26367188)"><line data-role="filled-yao" data-kind="yang" data-position="1" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96" x1="390" y1="632" x2="634" y2="632"/><g data-role="filled-yao" data-kind="yin" data-position="2" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96"><line x1="390" y1="584" x2="495.0" y2="584"/><line x1="529.0" y1="584" x2="634" y2="584"/></g><g data-role="filled-yao" data-kind="yin" data-position="3" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96"><line x1="390" y1="536" x2="495.0" y2="536"/><line x1="529.0" y1="536" x2="634" y2="536"/></g></g>
+<rect x="1214" y="408" width="306" height="340" rx="22" fill="#060d12" stroke="#d6ad67" stroke-opacity="0.28"/>
+<use data-role="disc-instance" href="#disc-master" x="1232" y="442" width="270" height="270" opacity="1.0"/>
+<g data-role="workflow-state" data-stage="5" transform="translate(1232 442) scale(0.26367188)"><line data-role="filled-yao" data-kind="yang" data-position="1" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96" x1="390" y1="632" x2="634" y2="632"/><g data-role="filled-yao" data-kind="yin" data-position="2" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96"><line x1="390" y1="584" x2="495.0" y2="584"/><line x1="529.0" y1="584" x2="634" y2="584"/></g><g data-role="filled-yao" data-kind="yin" data-position="3" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96"><line x1="390" y1="536" x2="495.0" y2="536"/><line x1="529.0" y1="536" x2="634" y2="536"/></g><g data-role="filled-yao" data-kind="yin" data-position="4" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96"><line x1="390" y1="488" x2="495.0" y2="488"/><line x1="529.0" y1="488" x2="634" y2="488"/></g><g data-role="filled-yao" data-kind="yin" data-position="5" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96"><line x1="390" y1="440" x2="495.0" y2="440"/><line x1="529.0" y1="440" x2="634" y2="440"/></g><line data-role="filled-yao" data-kind="yang" data-position="6" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96" x1="390" y1="392" x2="634" y2="392"/></g>
+<rect x="1544" y="408" width="306" height="340" rx="22" fill="#060d12" stroke="#d6ad67" stroke-opacity="0.28"/>
+<use data-role="disc-instance" href="#disc-master" x="1562" y="442" width="270" height="270" opacity="1.0"/>
+<g data-role="workflow-state" data-stage="6" transform="translate(1562 442) scale(0.26367188)"><line data-role="filled-yao" data-kind="yang" data-position="1" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96" x1="390" y1="632" x2="634" y2="632"/><g data-role="filled-yao" data-kind="yin" data-position="2" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96"><line x1="390" y1="584" x2="495.0" y2="584"/><line x1="529.0" y1="584" x2="634" y2="584"/></g><g data-role="filled-yao" data-kind="yin" data-position="3" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96"><line x1="390" y1="536" x2="495.0" y2="536"/><line x1="529.0" y1="536" x2="634" y2="536"/></g><g data-role="filled-yao" data-kind="yin" data-position="4" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96"><line x1="390" y1="488" x2="495.0" y2="488"/><line x1="529.0" y1="488" x2="634" y2="488"/></g><g data-role="filled-yao" data-kind="yin" data-position="5" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96"><line x1="390" y1="440" x2="495.0" y2="440"/><line x1="529.0" y1="440" x2="634" y2="440"/></g><line data-role="filled-yao" data-kind="yang" data-position="6" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96" x1="390" y1="392" x2="634" y2="392"/></g>
+<line x1="44" y1="908" x2="1876" y2="908" stroke="#d6ad67" stroke-opacity="0.30"/>
+<line x1="176" y1="980" x2="600" y2="980" stroke="#d6ad67" stroke-opacity="0.62"/>
+<circle cx="176" cy="980" r="4" fill="#d6ad67"/>
+<circle cx="600" cy="980" r="4" fill="#d6ad67"/>
+<line x1="832" y1="980" x2="1076" y2="980" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96"/>
+<line x1="1300" y1="980" x2="1405" y2="980" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96"/>
+<line x1="1439" y1="980" x2="1544" y2="980" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96"/>
 </svg>

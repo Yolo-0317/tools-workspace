@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="340 80 344 96" fill="none">
+<defs>
+  <radialGradient id="disc-fill" cx="50%" cy="46%" r="55%">
+    <stop offset="0" stop-color="#173039" stop-opacity="0.42"/>
+    <stop offset="0.62" stop-color="#0b1d25" stop-opacity="0.28"/>
+    <stop offset="1" stop-color="#04090d" stop-opacity="0.08"/>
+  </radialGradient>
+  <linearGradient id="cyan-gold" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#8fdfe5"/>
+    <stop offset="0.48" stop-color="#f3f1df"/>
+    <stop offset="1" stop-color="#d6ad67"/>
+  </linearGradient>
+</defs>
+<g data-role="filled-yao" data-kind="yin" data-position="1" stroke="url(#cyan-gold)" stroke-width="12" stroke-linecap="round" stroke-opacity="0.96"><line x1="390" y1="128" x2="495.0" y2="128"/><line x1="529.0" y1="128" x2="634" y2="128"/></g>
+</svg>
