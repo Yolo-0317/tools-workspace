@@ -14,6 +14,7 @@
 - 卦盘名称固定为“星轨六爻盘”，召唤动作固定为“引弧起盘”。
 - 所有主盘与流程盘必须引用同一个 SVG 母盘，横纵直径相等、所有同心轨道共用圆心。
 - 母盘中心恰好六个等宽、等距、低亮度空爻槽，不得出现第七槽，不得预填六条阳爻。
+- 最内侧圆环以内是盘心净空信息区，只保留六个空爻槽、极淡底色和状态光；任何星座连线、星点网络或方位射线都不得进入。
 - 阳爻为一条完整横线；阴爻为左右两段等长横线且中央断口清楚。
 - 第四格自下而上固定为阳、阴、阴，第四至第六槽保持空白。
 - 首集“山雷颐”自下而上固定为阳、阴、阴、阴、阴、阳。
@@ -44,6 +45,7 @@ import importlib.util
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts/generate_divination_disc_vectors.py"
@@ -57,6 +59,14 @@ def load_generator():
 def elements(path: Path, role: str):
     root = ET.parse(path).getroot()
     return [node for node in root.iter() if node.attrib.get("data-role") == role]
+
+def segment_distance_from_center(x1, y1, x2, y2, center=512):
+    dx, dy = x2 - x1, y2 - y1
+    length_squared = dx * dx + dy * dy
+    t = ((center - x1) * dx + (center - y1) * dy) / length_squared
+    t = max(0.0, min(1.0, t))
+    nearest_x, nearest_y = x1 + t * dx, y1 + t * dy
+    return ((nearest_x - center) ** 2 + (nearest_y - center) ** 2) ** 0.5
 
 class DivinationDiscVectorTests(unittest.TestCase):
     def setUp(self):
@@ -87,6 +97,15 @@ class DivinationDiscVectorTests(unittest.TestCase):
             [line.attrib["data-kind"] for line in lines],
             ["yang", "yin", "yin", "yin", "yin", "yang"],
         )
+
+    def test_constellation_links_stay_outside_inner_clear_zone(self):
+        links = elements(self.output / "disc-master.svg", "constellation-link")
+        self.assertGreaterEqual(len(links), 8)
+        for link in links:
+            values = [float(value) for value in re.findall(r"-?\d+(?:\.\d+)?", link.attrib["d"])]
+            points = list(zip(values[0::2], values[1::2]))
+            for start, end in zip(points, points[1:]):
+                self.assertGreaterEqual(segment_distance_from_center(*start, *end), 224)
 ```
 
 - [ ] **Step 2: 运行测试并确认失败**
@@ -127,7 +146,7 @@ design-board.svg
 
 Run: `python3 -m unittest zhixia-feihualing/tests/test_divination_disc_vectors.py -v`
 
-Expected: 3 tests PASS.
+Expected: 4 tests PASS.
 
 - [ ] **Step 5: 提交矢量生成器与测试**
 
