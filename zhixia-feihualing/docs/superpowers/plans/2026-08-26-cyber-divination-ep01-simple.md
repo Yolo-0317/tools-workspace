@@ -13,7 +13,7 @@
 - 本计划以 `docs/superpowers/specs/2026-08-26-cyber-divination-ep01-simple-design.md` 为唯一第一集制作依据；星轨六爻盘设计保留为未来升级版。
 - 栏目名固定为 `栀夏赛博起卦`；slogan 固定为 `AI 解周易，专断日常小心思`。
 - 单集时长为 15.0—15.2 秒；画幅为 720×1280；帧率为 24fps。
-- 第一集只使用三枚做旧黄铜色铜钱、一块桂花糕和恰好八只空盘；起卦不依赖桌子、托盘、古籍、竹简或签筒。
+- 第一集只使用三枚做旧黄铜色铜钱、一只恰好九格的浅色食盒和最后一个格子中的一块桂花糕；结尾揭示另外八个空格，起卦不依赖桌子、托盘、古籍、竹简或签筒。
 - 正片不出现悬空卦盘、星轨、法阵、光柱、粒子漩涡或立体赛博界面。
 - 栀夏采用“掌心起卦”：双手合拢轻摇两下，说“起卦”，打开双手后左掌恰好出现三枚铜钱。
 - 铜钱表面不出现可辨认文字，正反面不承担真实推演信息。
@@ -21,6 +21,7 @@
 - 颐卦六爻从画面顶部到底部固定为 `[阳、阴、阴、阴、阴、阳]`。
 - 正片从 12.1 秒持续显示 `传统文化趣味演绎，请勿作为现实决策依据`；发布说明固定包含 `起卦过程为剧情化简化展示。`。
 - 发布标题固定为 `AI美女用周易起卦：最后一块桂花糕能吃吗？｜山雷颐`，内容标签必须包含 `#周易`。
+- 图片固定使用明亮、中高饱和度和清晰但不过硬的明暗对比；桂花暖黄、庭院青绿、黄铜和浅青服装彼此分离，保持自然肤色与白色细节，不使用重 HDR、死黑、过曝或荧光霓虹。
 - Seedance 只生成画面、背景音乐和环境声，不生成可辨识人声、汉字、卦名、卦辞或具体六爻。
 - 任何豆包 TTS 付费调用前必须先运行免费预览，并再次取得用户确认。
 - 不覆盖既有角色、音频、视频或字幕资产；新增媒体使用版本化文件名并登记 `assets/inventory.csv`。
@@ -54,8 +55,8 @@ self.assertEqual(
         ("03-zhixia-hexagram", "zhixia", "山雷颐。", 3700),
         ("04-zhixia-reading", "zhixia", "颐，贞吉。观颐，自求口实。", 4900),
         ("05-ayan-hope", "ayan", "卦说能吃？", 8500),
-        ("06-zhixia-reveal", "zhixia", "先数数空盘。", 10100),
-        ("07-ayan-excuse", "ayan", "那是……昨天的。", 12100),
+        ("06-zhixia-reveal", "zhixia", "先数数空格。", 10100),
+        ("07-ayan-excuse", "ayan", "前八块……是试吃。", 12100),
     ],
 )
 self.assertEqual(cards[2]["id"], "03-zhixia-hexagram")
@@ -100,7 +101,7 @@ Expected: FAIL because `03-zhixia-hexagram.png` is not generated from the old su
 
 - [ ] **Step 4: 重写单集说明中的制作边界**
 
-`README.md` 必须写明：三枚铜钱掌心起卦、第三句由栀夏本人读出、无桌子依赖、无悬空卦盘、正片道具恰好为三枚铜钱/一块桂花糕/八只空盘，以及星轨六爻盘不参与本集。删除“等待 AI 卦盘道具卡后才能制作”的门槛。
+`README.md` 必须写明：三枚铜钱掌心起卦、第三句由栀夏本人读出、无桌子依赖、无悬空卦盘、同一只九宫格食盒贯穿开场和反转、开场只露出最后一块糕、结尾揭示八个空格，以及星轨六爻盘不参与本集。删除所有八只空盘和“等待 AI 卦盘道具卡后才能制作”的描述。
 
 - [ ] **Step 5: 运行回归测试和免费 TTS 预览**
 
@@ -136,14 +137,14 @@ git commit -m "切换第一集掌心铜钱起卦"
 
 - [ ] **Step 1: 写四张场景卡提示词**
 
-共同场景固定为明亮低饱和的东方庭院回廊；桂花糕放在宽石栏上，石栏只是食物承托面，不参与起卦。四张卡分别锁定：
+共同场景固定为明亮、中高饱和度、适度增强明暗与冷暖对比的东方庭院回廊；同一只浅色九宫格食盒放在宽石栏上，石栏与食盒都不参与起卦。四张卡分别锁定：
 
-1. `01-question-medium`：双人中近景，阿砚盯着宽石栏上的唯一一块桂花糕，栀夏站在右侧，双手尚未动作。
+1. `01-question-medium`：双人中近景，镜头只露出九宫格食盒装有最后一块糕的局部格子，另外八个空格保持在画外；阿砚盯着糕，栀夏站在右侧。
 2. `02-palm-casting-close`：栀夏胸前双手近景，双手刚刚打开，左掌恰好三枚无可辨认文字的做旧黄铜铜钱；不要求展示铜钱正反面。
-3. `03-reading-reaction`：栀夏左掌保持三枚铜钱，平静读卦；阿砚耳朵竖起、眼睛发亮；画面中央为二维卦象卡留出无遮挡区域。
-4. `04-empty-plates-reveal`：镜头移向石栏下方，地面恰好八只空盘，阿砚收爪垂耳；画面上方仍只有一块桂花糕。
+3. `03-reading-reaction`：栀夏左掌保持三枚铜钱，平静读卦；阿砚耳朵竖起、眼睛发亮；同一只食盒只露出局部，画面中央为二维卦象卡留白。
+4. `04-nine-grid-box-reveal`：镜头拉远，完整展示同一只食盒恰好九个格子，其中八个空格，最后一个格子仍有一块桂花糕；阿砚收爪垂耳。
 
-每张提示词都逐字包含：`掌心起卦`、`恰好三枚铜钱`、`唯一一块桂花糕`、`不出现悬空卦盘`、`不出现星轨六爻盘`、`不出现轻触古籍`；第四张额外包含 `恰好八只空盘`。
+每张提示词都明确：同一只浅色九宫格食盒、恰好九个格子、最后一个格子中唯一一块桂花糕、掌心起卦、恰好三枚铜钱、不出现悬空卦盘、不出现星轨六爻盘、不出现栀夏轻触古籍的动作；第四张额外明确八个空格和一个装有糕点的格子。
 
 - [ ] **Step 2: 写封面提示词与发布文案**
 
@@ -161,7 +162,7 @@ git commit -m "切换第一集掌心铜钱起卦"
 标题：AI美女用周易起卦：最后一块桂花糕能吃吗？｜山雷颐
 
 栀夏赛博起卦｜AI 解周易，专断日常小心思
-阿砚说只想吃最后一块，栀夏一卦却先看见了八只空盘。
+阿砚说只想吃最后一块，栀夏却让它先数数食盒里的八个空格。
 传统文化趣味演绎，请勿作为现实决策依据。起卦过程为剧情化简化展示。
 
 #栀夏赛博起卦 #周易 #赛博算卦 #AI美女 #国学趣味 #搞笑日常
@@ -169,7 +170,7 @@ git commit -m "切换第一集掌心铜钱起卦"
 
 - [ ] **Step 3: 按设计稿逐项审查并提交文本契约**
 
-逐项对照简版设计稿，确认四张场景卡均写明铜钱、桂花糕和空盘数量，所有提示词均排除悬空卦盘、星轨六爻盘、古籍与桌面起卦；确认封面三层文字、固定 slogan、发布标题、`#周易` 与剧情化简化说明完整。人类使用的提示词不增加只检查固定措辞的自动化测试；真实数量和构图在 Task 3 的图片验收中检查。
+逐项对照简版设计稿，确认四张场景卡均写明铜钱、食盒格数、桂花糕数量和开场/结尾的信息差，所有提示词均排除悬空卦盘、星轨六爻盘、古籍与桌面起卦；确认中高饱和度和对比度标准、封面三层文字、固定 slogan、发布标题、`#周易` 与剧情化简化说明完整。人类使用的提示词不增加只检查固定措辞的自动化测试；真实数量、色彩和构图在 Task 3 的图片验收中检查。
 
 ```bash
 git add zhixia-feihualing/episodes/cyber-divination-ep01/scene-card-prompts-simple.md zhixia-feihualing/episodes/cyber-divination-ep01/cover-prompt-simple.md zhixia-feihualing/episodes/cyber-divination-ep01/publishing-copy.md
@@ -179,11 +180,11 @@ git commit -m "建立第一集简版提示词"
 ### Task 3: 制作并确认四张场景卡与视频号封面
 
 **Files:**
-- Create: `zhixia-feihualing/episodes/cyber-divination-ep01/assets/scene-cards-simple/01-question-medium-v01.png`
-- Create: `zhixia-feihualing/episodes/cyber-divination-ep01/assets/scene-cards-simple/02-palm-casting-close-v01.png`
-- Create: `zhixia-feihualing/episodes/cyber-divination-ep01/assets/scene-cards-simple/03-reading-reaction-v01.png`
-- Create: `zhixia-feihualing/episodes/cyber-divination-ep01/assets/scene-cards-simple/04-empty-plates-reveal-v01.png`
-- Create: `zhixia-feihualing/episodes/cyber-divination-ep01/assets/cover/cover-base-simple-v01.png`
+- Create: `zhixia-feihualing/episodes/cyber-divination-ep01/assets/scene-cards-simple/01-question-medium-v02.png`
+- Create from candidate: `zhixia-feihualing/episodes/cyber-divination-ep01/assets/scene-cards-simple/02-palm-casting-close-v02.png`
+- Create: `zhixia-feihualing/episodes/cyber-divination-ep01/assets/scene-cards-simple/03-reading-reaction-v02.png`
+- Create: `zhixia-feihualing/episodes/cyber-divination-ep01/assets/scene-cards-simple/04-nine-grid-box-reveal-v01.png`
+- Create: `zhixia-feihualing/episodes/cyber-divination-ep01/assets/cover/cover-base-simple-v02.png`
 - Create: `zhixia-feihualing/episodes/cyber-divination-ep01/assets/scene-cards-simple/qa-checklist.md`
 - Modify: `zhixia-feihualing/assets/inventory.csv`
 
@@ -191,13 +192,13 @@ git commit -m "建立第一集简版提示词"
 - Consumes: Task 2 的完整提示词与 approved 角色卡。
 - Produces: 四张用户确认的 9:16 场景卡和一张无文字封面底图，供原片与最终封面制作。
 
-- [ ] **Step 1: 逐张生成，不引用卦盘道具母板**
+- [ ] **Step 1: 调整掌心起卦卡色彩，逐张重制其余图片**
 
-一次只生成一张图片，每次仅绑定栀夏、阿砚角色参考图和当前场景提示词；不得绑定 `assets/props/ai-divination-disk-v01/master.png`。输出使用上述版本化路径，保留原图，不覆盖重试版本。
+`02-palm-casting-close-v01.png` 没有食物连续性问题，以它为编辑目标，只提高饱和度与对比度并保持面部、手势和三枚铜钱不变，另存为 v02；重新生成卡 1、卡 3、卡 4 和封面。一次只生成或编辑一张图片，每次仅绑定栀夏、阿砚角色参考图和当前提示词，不绑定 `assets/props/ai-divination-disk-v01/master.png`。输出使用上述新版本路径，不覆盖旧候选图；旧 `04-empty-plates-reveal-v01.png` 明确标为 rejected，不登记、不提交。
 
 - [ ] **Step 2: 逐张执行人工数量与角色质检**
 
-对全部图片检查同一个栀夏、同一个阿砚、阿砚严格四足和唯一墨尾。卡 2、卡 3 与封面必须恰好三枚铜钱；卡 1、卡 4 与封面必须恰好一块桂花糕；卡 4 必须恰好八只空盘。任何一项数量错误、手指畸形、可辨认伪文字、卦盘或法阵残留都必须重生成该张，不能后期掩盖。
+对全部图片检查同一个栀夏、同一个阿砚、阿砚严格四足和唯一墨尾。卡 2、卡 3 与封面必须恰好三枚铜钱；卡 1、卡 3、卡 4 与封面使用同一外观的浅色九宫格食盒，食盒始终恰好九格且只有一块桂花糕。卡 1、卡 3 和封面不得完整揭示八个空格；卡 4 必须清楚展示八个空格和一个糕点格。图片需要达到中高饱和度和清晰但不过硬的对比度，同时保持自然肤色和白色细节。任何格数、数量、手指、文字、卦盘、色彩或法阵错误都必须重生成，不能后期掩盖。
 
 - [ ] **Step 3: 用户确认五张图**
 
@@ -205,10 +206,10 @@ git commit -m "建立第一集简版提示词"
 
 - [ ] **Step 4: 登记并提交已确认图片**
 
-在 `assets/inventory.csv` 新增四条 `keyframe` 和一条 `cover-base` 记录，状态为 `approved`，来源记录实际生成工具，版权说明为 `original AI-assisted asset`。
+在 `assets/inventory.csv` 新增四条 `keyframe` 和一条 `cover-base` 记录，状态为 `approved`，来源记录实际生成工具，版权说明为 `original AI-assisted asset`。不得登记旧的空盘反转图或被新版本替代的 v01 候选图。
 
 ```bash
-git add zhixia-feihualing/episodes/cyber-divination-ep01/assets/scene-cards-simple zhixia-feihualing/episodes/cyber-divination-ep01/assets/cover/cover-base-simple-v01.png zhixia-feihualing/assets/inventory.csv
+git add zhixia-feihualing/episodes/cyber-divination-ep01/assets/scene-cards-simple/01-question-medium-v02.png zhixia-feihualing/episodes/cyber-divination-ep01/assets/scene-cards-simple/02-palm-casting-close-v02.png zhixia-feihualing/episodes/cyber-divination-ep01/assets/scene-cards-simple/03-reading-reaction-v02.png zhixia-feihualing/episodes/cyber-divination-ep01/assets/scene-cards-simple/04-nine-grid-box-reveal-v01.png zhixia-feihualing/episodes/cyber-divination-ep01/assets/scene-cards-simple/qa-checklist.md zhixia-feihualing/episodes/cyber-divination-ep01/assets/cover/cover-base-simple-v02.png zhixia-feihualing/assets/inventory.csv
 git commit -m "归档第一集简版场景与封面底图"
 ```
 
@@ -248,9 +249,9 @@ Expected: FAIL at `test -s`。
 
 - [ ] **Step 3: 写固定视频提示词并生成原片**
 
-`video-prompt-simple.md` 必须逐段写入：0.0—2.2 秒阿砚提问；2.2—3.7 秒栀夏双手合拢轻摇两下；3.7—4.9 秒打开左掌并保持恰好三枚铜钱；4.9—8.5 秒栀夏看掌心读卦；8.5—10.1 秒阿砚期待反问；10.1—12.1 秒栀夏看向石栏下方并带动镜头移动；12.1—14.6 秒揭示恰好八只空盘，阿砚小幅说最后一句；14.6—15.0 秒保留心虚反应。
+`video-prompt-simple.md` 必须逐段写入：0.0—2.2 秒镜头紧贴九宫格食盒的一角，只露出最后一块糕，阿砚提问；2.2—3.7 秒栀夏双手合拢轻摇两下；3.7—4.9 秒打开左掌并保持恰好三枚铜钱；4.9—8.5 秒栀夏看掌心读卦；8.5—10.1 秒阿砚期待反问；10.1—12.1 秒栀夏看向食盒并带动镜头拉远；12.1—14.6 秒完整揭示同一只九宫格食盒的八个空格和一个糕点格，阿砚说“前八块……是试吃”；14.6—15.0 秒保留心虚反应。
 
-负面约束逐字包含：无可辨认人声、无汉字、无卦名、无卦辞、无具体六爻、无悬空卦盘、无星轨、无法阵、无桌面起卦、无多余铜钱、无多余桂花糕、无多余空盘、无多肢、无多尾。使用四张 approved 场景卡生成 `content-raw-simple-v01.mp4`。
+负面约束逐字包含：无可辨认人声、无汉字、无卦名、无卦辞、无具体六爻、无悬空卦盘、无星轨、无法阵、无桌面起卦、无多余铜钱、无多余桂花糕、无额外食盒、无格数变化、无空盘、无多肢、无多尾。色彩要求固定为中高饱和度、适度增强明暗与冷暖对比、肤色自然、白色保留细节。使用四张 approved 场景卡生成 `content-raw-simple-v01.mp4`。
 
 - [ ] **Step 4: 运行规格测试并做关键帧检查**
 
@@ -258,7 +259,7 @@ Run: `zsh zhixia-feihualing/tests/test_cyber_divination_ep01_simple_assets.sh`
 
 Expected: `cyber divination simple raw: PASS`。
 
-抽取 0.5、2.8、4.2、6.5、9.2、11.2、13.0、14.7 秒关键帧，检查角色身份、栀夏手指、三枚铜钱、一块桂花糕、八只空盘、阿砚四足与唯一墨尾，以及画面中没有卦盘或法阵。用户确认原片后再登记为 `available`。
+抽取 0.5、2.8、4.2、6.5、9.2、11.2、13.0、14.7 秒关键帧，检查角色身份、栀夏手指、三枚铜钱、同一只九宫格食盒、一块桂花糕、开场隐藏八个空格、结尾完整揭示八个空格、阿砚四足与唯一墨尾，以及画面中没有空盘、卦盘或法阵。用户确认原片后再登记为 `available`。
 
 - [ ] **Step 5: 提交原片与资产记录**
 
@@ -320,7 +321,7 @@ Expected: FAIL because final cover is absent.
 
 - [ ] **Step 5: 实现固定封面文字排版**
 
-`render_cyber_divination_ep01_cover.swift` 读取 `cover-base-simple-v01.png`，在透明安全区叠加：顶部 `AI美女·周易起卦`、中央 `最后一块，能吃吗？`、底部 `第01卦｜山雷颐`。不得修改底图人物、铜钱或桂花糕，不让文字覆盖栀夏面部、左掌、阿砚面部或桂花糕。
+`render_cyber_divination_ep01_cover.swift` 读取 `cover-base-simple-v02.png`，在透明安全区叠加：顶部 `AI美女·周易起卦`、中央 `最后一块，能吃吗？`、底部 `第01卦｜山雷颐`。不得修改底图人物、铜钱、食盒或桂花糕，不让文字覆盖栀夏面部、左掌、阿砚面部、食盒局部或桂花糕。
 
 - [ ] **Step 6: 构建并运行全部相关测试**
 
@@ -340,11 +341,11 @@ Expected: 所有命令 exit 0；Python 测试均为 `OK`；四个 shell 测试�
 
 - [ ] **Step 7: 视觉、听觉与文本终检**
 
-抽取 0.5、2.8、4.2、6.5、9.2、11.2、13.0、14.7 秒组成联系表。逐项确认：首帧双人可见；掌心恰好三枚铜钱；没有卦盘、法阵或桌面起卦；栀夏本人自然读出“山雷颐”；卦辞和六爻准确；八只空盘清楚可数；免责声明从 12.1 秒持续到结尾；栏目名在最后 0.4 秒可辨；对白持续至约 14.5 秒；音乐与环境声不压对白。封面另检三层文字、角色身份、三枚铜钱、一块桂花糕与空盘悬念。
+抽取 0.5、2.8、4.2、6.5、9.2、11.2、13.0、14.7 秒组成联系表。逐项确认：首帧双人可见且食盒只露出糕点格；掌心恰好三枚铜钱；没有空盘、卦盘、法阵或桌面起卦；栀夏本人自然读出“山雷颐”；卦辞和六爻准确；结尾同一只食盒恰好九格，八个空格和一块剩糕清楚可读；免责声明从 12.1 秒持续到结尾；栏目名在最后 0.4 秒可辨；对白持续至约 14.5 秒；音乐与环境声不压对白；色彩达到中高饱和度与适度对比，肤色和白色细节自然。封面另检三层文字、角色身份、三枚铜钱、九宫格食盒局部、一块桂花糕和未泄露八个空格。
 
 - [ ] **Step 8: 登记最终资产并提交**
 
-在 `assets/inventory.csv` 登记七段配音、简版原片、最终正片和视频号封面。正片状态为 `final`，备注包含 720×1280、24fps、约 15.1 秒、H.264/AAC、掌心三枚铜钱、山雷颐卦辞、八只空盘、免责声明；封面状态为 `final`，备注包含三层固定文字。
+在 `assets/inventory.csv` 登记七段配音、简版原片、最终正片和视频号封面。正片状态为 `final`，备注包含 720×1280、24fps、约 15.1 秒、H.264/AAC、掌心三枚铜钱、山雷颐卦辞、九宫格食盒八空一剩反转、中高饱和度与免责声明；封面状态为 `final`，备注包含三层固定文字和九宫格食盒悬念构图。
 
 ```bash
 git add zhixia-feihualing/assets/audio/cyber-divination-ep01 zhixia-feihualing/episodes/cyber-divination-ep01/subtitles-cyber-divination-ep01.json zhixia-feihualing/scripts/build_cyber_divination_ep01_simple.sh zhixia-feihualing/scripts/render_cyber_divination_ep01_cover.swift zhixia-feihualing/tests/test_cyber_divination_ep01_simple_video.sh zhixia-feihualing/tests/test_cyber_divination_ep01_cover.sh zhixia-feihualing/exports/cyber-divination-ep01-simple-v01.mp4 zhixia-feihualing/exports/cyber-divination-ep01-cover-v01.png zhixia-feihualing/assets/inventory.csv
