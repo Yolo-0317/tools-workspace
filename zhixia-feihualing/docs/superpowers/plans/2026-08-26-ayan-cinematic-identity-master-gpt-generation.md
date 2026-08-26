@@ -2,111 +2,111 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 使用 GPT 将旧版阿砚重塑为原创宣纸水墨生命，并生成一张可供后续全身比例卡与表演综合卡绑定的电影级半写实身份主卡。
+**Goal:** 以庐山场景中的阿砚为固定外观，生成并归档一张删除铃铛、改用平面浅金纹样且尾巴比例平衡的电影级半写实身份主卡。
 
-**Architecture:** 只上传旧版阿砚角色卡作为有限身份参考，通过正向结构描述和明确废弃项阻断猫系萌宠特征。GPT 返回候选图后，先按物种、结构、材质、构图和电影融合度逐项验收；只有通过验收的原始 PNG 才归档并登记为新版身份母板。
+**Architecture:** 庐山近景场景卡只负责锁定角色外观，生成时禁止重新设计脸、眼睛、耳朵和体态。先完成铃铛到平面花纹的局部替换，再以当前候选图为底图修正尾巴；通过人工验收后原样归档，并将旧版角色卡降级为历史参考。
 
-**Tech Stack:** GPT 图像生成、PNG、Markdown 设计规格、CSV 资产清单、macOS `sips`、SHA-256、Git。
+**Tech Stack:** GPT 图像编辑、PNG、Markdown 设计规格、CSV 资产清单、macOS `sips`、SHA-256、Git。
 
 ## Global Constraints
 
 - 设计依据为 `docs/superpowers/specs/2026-08-26-ayan-cinematic-identity-master-design.md`。
-- 唯一上传参考图为 `assets/characters/阿砚角色卡新.png`。
-- 旧图只提供宣纸白、笔锋双耳、暖琥珀眼、极小朱砂印和唯一 S 形墨尾；不得继承猫系脸型、萌宠比例、毛发、铃铛、金属饰品、卷草金纹、文字或设定卡版式。
-- 输出为单张 9:16 竖屏、单角色、完整全身、三分之四站姿的电影级半写实身份主卡。
-- 阿砚严格为一个头、一个躯干、两耳、四足和一尾，设定站立高度约 8 至 10 厘米。
-- 身体材质是暖象牙白手工宣纸与水墨，不是动物毛发、皮肤、折纸、陶瓷或塑料。
-- 背景固定为真实湿润青石台和虚化竹林晨光，不出现文字、版式、道具、其他角色或魔法效果。
-- 候选文件为 `assets/characters/阿砚角色卡电影半写实-v01.png`，用户验收前不得登记为 approved。
+- 外观基准为 `episodes/lushan/assets/scene-cards/01-mist-impact-close.png` 中的阿砚。
+- 只允许删除铃铛、将原位置改为平面浅暖金花纹，并把尾巴修正为长度适中、略显丰润的开放式 S 形。
+- 保持庐山版脸、眼睛、口鼻、双耳、朱砂印、头身比例、四肢和纸墨绒羽质感。
+- 输出为 941×1672 PNG、单张 9:16、单角色、完整全身、三分之四站姿。
+- 候选通过用户验收后保存为 `assets/characters/阿砚角色卡电影半写实-v01.png`。
 
 ---
 
-### Task 1: 在 GPT 中生成新版身份主卡候选图
+### Task 1: 从庐山形象生成身份主卡候选
 
 **Files:**
-- Reference: `zhixia-feihualing/assets/characters/阿砚角色卡新.png`
+- Reference: `zhixia-feihualing/episodes/lushan/assets/scene-cards/01-mist-impact-close.png`
 - Candidate: GPT 返回的原始 PNG
 
 **Interfaces:**
-- Consumes: 旧版阿砚角色卡、已确认设计规范和下方完整提示词。
-- Produces: 单张无文字的 9:16 新版阿砚身份主卡候选图。
+- Consumes: 庐山近景场景卡和局部替换提示词。
+- Produces: 保留庐山版阿砚外观、无铃铛的单角色身份主卡。
 
-- [ ] **Step 1: 只上传旧版阿砚角色卡**
+- [x] **Step 1: 只上传庐山近景场景卡**
 
-不要上传栀夏角色卡、场景卡、其他动物图、设定集拼图或额外风格参考。
+不上传失败的尖锐纸雕版本、旧设定卡、栀夏身份卡或其他动物图。
 
-- [ ] **Step 2: 粘贴完整生成提示词**
+- [x] **Step 2: 锁定庐山版角色外观**
 
-```text
-请参考我上传的旧版“阿砚”角色卡，重新设计并生成一张新版阿砚电影级半写实身份主卡。不要制作旧图的小修版，而要重塑为真正原创的东方宣纸水墨生命。
+提示词明确要求保持头脸、琥珀眼、口鼻、双耳、体态、四肢、朱砂印、纸墨绒羽材质和身体浅金纹样，不重新设计物种。
 
-参考图的使用范围非常有限：只继承暖象牙宣纸白主体、两只笔锋状长耳、偏小的暖琥珀眼、额头中央极小且固定的朱砂红印记，以及唯一一条 S 形水墨尾巴。旧图中的猫系脸型、猫嘴、大头短腿萌宠比例、水汪汪大眼、动物毛发、肩部铃铛、金属圆饰、全身金色卷草纹、文字、色卡、多视图和卡片版式全部废弃，禁止继承。
+- [x] **Step 3: 将铃铛替换为平面花纹**
 
-新版阿砚是站立高度约 8 至 10 厘米的原创东方纸墨灵，不对应猫、兔、狐狸、鹿或任何现实动物。它只有一个头、一个略修长的轻薄躯干、两只耳朵、两条前肢、两条后肢和一条尾巴，严格四足。头部比旧版明显缩小，轮廓清秀克制；口鼻短而简洁，但不能形成猫嘴或明确兽类鼻口。眼睛是偏小、清澈、克制的暖琥珀色杏仁眼，不做动漫大眼、星星眼或水汪汪宠物眼。
+删除肩胸交界处的金属铃铛和悬挂结构，在原位置生成与身体其他纹样一致的浅暖金回旋云纹；花纹不凸起、不发光、不像胸针。
 
-躯干轻薄略修长，胸廓自然，腰腹轻收，四肢纤细修长且关节可信。足端小巧，像书法收笔形成的纸质足爪，但必须能够真实承重。两只高而修长的耳朵从宣纸白自然过渡为淡墨、浓墨和飞白，末端明确收成毛笔笔锋。只保留一条稳定、克制的单一 S 形墨尾；尾巴像具有稳定厚度与重量的立体水墨笔画，不是蓬松兽尾、烟雾、火焰或分叉尾。额头中央只有一枚极小、哑光、固定形态的朱砂印，不发光、不变形、不变成宝石、火焰、花或复杂图腾。
+- [x] **Step 4: 下载原始 9:16 PNG**
 
-身体表面是具有柔和体积的暖象牙白手工宣纸，绝对不是动物毛发或皮肤。近看可见极细纸纤维、轻微纸层与自然折光，但不能像硬质折纸、纸雕、陶瓷或塑料。纸面颜色由克制的二维手绘色块组织，真实体积来自自然光影、遮挡和接触关系。淡墨像墨汁自然渗入纸纤维；深墨耳尖和墨尾具有浓淡、干湿与飞白变化，同时保持稳定空间结构。暖金只能是几乎不可察觉的纸缘细色，不能形成装饰纹样、符文或饰品。
+不截图、不裁切、不调色、不添加文字、不二次压缩。
 
-构图为单张 9:16 竖屏电影级半写实身份主卡。使用接近石面的微距低机位、自然镜头透视和三分之四侧视角。阿砚完整全身入镜，约占画面高度 55% 至 60%，耳尖、四只足爪、整条尾巴和尾梢全部保留，不能裁切。身体三分之四侧向镜头稳定站立，头部轻微转回镜头附近。它像刚察觉到一处细微异常：两只长耳略向前收拢，琥珀眼专注观察镜头附近，嘴巴自然闭合，尾巴保持单一 S 曲线。神态聪慧、独立、克制、好奇，带一点轻微试探感；不笑、不凶、不卖萌。
-
-阿砚站在真实湿润的青石台面上，背景是浅景深虚化的竹林晨景，整体为低饱和青灰绿色。石面只有少量水汽与柔和反光，不出现瀑布、强雾、水花或复杂道具。左上方自然晨光勾勒耳缘、背部宣纸纤维和墨尾层次；四只足爪下方必须有清楚但柔和的接触阴影，并带可信的青石环境反光，让它真实地站在石面上。使用克制锐度、细腻阴影、真实动态范围和极轻微电影颗粒。
-
-整体必须是高成本东方幻想电影质感：理想化、精致、半写实的原创纸墨灵与高度写实自然环境可信融合。不是现实动物写真，不是动漫、二次元、国漫立绘、游戏宠物界面、塑料 3D 或仙侠发光灵宠。
-
-严格禁止：猫化、兔化、狐化、鹿化、宠物化；大头、短腿、圆胖身体；多头、多耳、少腿、多腿、肢体重影、多尾、分叉尾；动物毛发、绒毛、羽毛、鳞片、蓬松尾巴；铃铛、项圈、金属饰品、盔甲、卷草金纹、飘带；发光朱砂印、发光眼睛、魔法粒子、仙侠神光；文字、标题、标签、边框、信息框、色卡、多视图、Logo、水印；其他人物、动物或纸灵。
-
-请直接输出一张干净的 9:16 竖屏原图，不添加任何说明文字。
-```
-
-- [ ] **Step 3: 下载 GPT 返回的原始 PNG**
-
-不截图、不裁切、不调色、不添加文字、不二次压缩。若 GPT 生成多张候选，只下载最符合结构要求的一张进入验收。
-
-### Task 2: 验收候选身份主卡
+### Task 2: 修正尾巴比例
 
 **Files:**
-- Inspect: GPT 返回的原始 PNG
-- Compare: `zhixia-feihualing/assets/characters/阿砚角色卡新.png`
+- Edit base: Task 1 当前候选 PNG
+- Candidate: GPT 返回的尾巴修正版 PNG
+
+**Interfaces:**
+- Consumes: 已通过脸、身体、花纹和背景验收的当前候选。
+- Produces: 其余画面不变、尾巴比例平衡的最终候选。
+
+- [x] **Step 1: 识别第一版尾巴问题**
+
+第一版尾巴卷曲过紧并接近封闭圆环，视觉长度偏短。
+
+- [x] **Step 2: 延长并放松尾巴**
+
+只编辑尾巴，将其改成开放式 S 形；其余角色和背景保持不变。
+
+- [x] **Step 3: 识别第二版尾巴问题**
+
+第二版尾巴过长、过细、向左上延伸过高，像细长烟带并抢夺耳朵焦点。
+
+- [x] **Step 4: 缩短并适度增粗**
+
+在第二版基础上缩短约 20% 至 25%，尾根与中段增粗约 20%，最高点降至头顶附近并低于耳尖；只在最后一小段收细。
+
+- [x] **Step 5: 下载最终原始 PNG**
+
+保存用户最终确认的原图，不重采样、不裁切、不调色、不加字。
+
+### Task 3: 验收最终候选
+
+**Files:**
+- Inspect: 用户最终确认的 941×1672 PNG
+- Compare: `zhixia-feihualing/episodes/lushan/assets/scene-cards/01-mist-impact-close.png`
 - Spec: `zhixia-feihualing/docs/superpowers/specs/2026-08-26-ayan-cinematic-identity-master-design.md`
 
 **Interfaces:**
-- Consumes: Task 1 候选图。
-- Produces: accepted 或 rejected 的明确结论，以及 rejected 时只针对失败项的修改提示词。
+- Consumes: Task 2 最终候选。
+- Produces: accepted 或 rejected 的明确结论。
 
-- [ ] **Step 1: 检查物种与轮廓**
+- [x] **Step 1: 检查身份和结构**
 
-Expected: 第一眼是原创纸墨生命；头小、躯干与四肢略修长，不像猫、兔、狐狸、鹿、普通宠物或混种兽。
+Expected: 庐山版脸、眼睛、口鼻、双耳、朱砂印、体态和四足稳定；只有一个头、两耳、四足和一尾。
 
-- [ ] **Step 2: 检查结构数量**
+- [x] **Step 2: 检查花纹替换**
 
-Expected: 准确为一个头、一个躯干、两耳、两前肢、两后肢和一尾；无残肢、重影、隐藏足、多余耳朵、多尾或分叉尾。
+Expected: 铃铛和悬挂结构完全消失；原位置为平面浅暖金回旋云纹，并与身体纹样自然融合。
 
-- [ ] **Step 3: 检查固定识别点**
+- [x] **Step 3: 检查尾巴**
 
-Expected: 两只笔锋长耳、偏小暖琥珀杏仁眼、额心极小固定朱砂印和唯一 S 形墨尾清楚稳定；朱砂印不发光。
+Expected: 唯一尾巴长度适中，尾根与中段有分量，尾梢自然收细；开放 S 形连续清楚，最高点低于耳尖，不形成圆环或细长烟带。
 
-- [ ] **Step 4: 检查材质**
+- [x] **Step 4: 检查构图和环境**
 
-Expected: 身体为暖象牙白宣纸，能看见克制纸纤维与纸层；墨色有渗化、浓淡、干湿和飞白；无毛发、绒感、皮肤感、折纸硬边、陶瓷感或塑料感。
+Expected: 阿砚完整入镜；湿润青石接触阴影、虚化山林晨光、景深和低饱和电影调色可信；无文字、版式、其他角色或水印。
 
-- [ ] **Step 5: 检查构图与接触关系**
+- [x] **Step 5: 记录用户结论**
 
-Expected: 单张 9:16；三分之四完整站姿；耳尖、四足、整尾均未裁切；四足真实接触湿润青石并形成柔和阴影，尾巴具有重量和空间遮挡。
+用户于 2026-08-26 明确确认最终候选可定稿。
 
-- [ ] **Step 6: 检查神态与电影融合度**
-
-Expected: 聪慧、独立、克制、好奇且略带试探；不卖萌、不凶。竹林晨光、浅景深、低饱和调色和宣纸角色自然融合，无贴图感、抠图感或仙侠光效。
-
-- [ ] **Step 7: 检查画面洁净度**
-
-Expected: 无铃铛、项圈、金属饰品、卷草金纹、额外道具、文字、卡片版式、色卡、多视图、Logo、水印、其他人物或动物。
-
-- [ ] **Step 8: 给出验收结论**
-
-任一物种、肢体数量、宣纸材质或完整构图要求失败，均判定为 rejected。只有七类检查全部通过才判定为 accepted。修改提示词必须要求在当前候选图上局部纠正，且列明其余已通过内容保持不变。
-
-### Task 3: 验收后归档新版身份母板
+### Task 4: 归档身份母板
 
 **Files:**
 - Create: `zhixia-feihualing/assets/characters/阿砚角色卡电影半写实-v01.png`
@@ -114,50 +114,47 @@ Expected: 无铃铛、项圈、金属饰品、卷草金纹、额外道具、文�
 - Modify: `zhixia-feihualing/assets/inventory.csv`
 
 **Interfaces:**
-- Consumes: Task 2 判定为 accepted 的原始 PNG。
-- Produces: approved 的阿砚 identity-master 资产记录，并保留旧版历史参考。
+- Consumes: Task 3 已验收原始 PNG。
+- Produces: approved 的阿砚 identity-master 记录和 superseded 的旧版参考记录。
 
-- [ ] **Step 1: 原样保存已验收 PNG**
+- [ ] **Step 1: 原样保存最终 PNG**
 
-将用户提供的 GPT 原始 PNG 保存为 `assets/characters/阿砚角色卡电影半写实-v01.png`，不得重采样、裁切、调色或加字。
+将最终候选复制为 `assets/characters/阿砚角色卡电影半写实-v01.png`，复制后使用 `cmp` 验证与用户原始文件逐字节一致。
 
-- [ ] **Step 2: 验证格式、尺寸和文件指纹**
-
-Run:
+- [ ] **Step 2: 验证格式、尺寸和指纹**
 
 ```bash
 sips -g format -g pixelWidth -g pixelHeight zhixia-feihualing/assets/characters/阿砚角色卡电影半写实-v01.png
 shasum -a 256 zhixia-feihualing/assets/characters/阿砚角色卡电影半写实-v01.png
 ```
 
-Expected: `format: png`，宽高为有效 9:16 竖屏尺寸，并记录唯一 SHA-256。
+Expected: `format: png`、`pixelWidth: 941`、`pixelHeight: 1672`、SHA-256 为 `66ef9485c29443a8d447a801b0d88c51e1ad3c1f79e045f3191209090c20ffe9`。
 
-- [ ] **Step 3: 登记新旧资产状态**
+- [ ] **Step 3: 登记新旧资产**
 
 在 `assets/inventory.csv` 新增：
 
 ```csv
-ayan-identity-cinematic-semi-real-v01,character,阿砚,identity-master,assets/characters/阿砚角色卡电影半写实-v01.png,approved,ChatGPT web image generation,original AI-assisted asset,新版电影级半写实身份母板；宣纸水墨本体；后续全身比例卡与表演综合卡唯一身份依据
+ayan-identity-legacy-reference,character,阿砚,identity-legacy,assets/characters/阿砚角色卡新.png,superseded,ChatGPT generated image,original AI-assisted asset,旧版角色设定卡；仅保留历史参考；不得继续作为角色绑定母板
+ayan-identity-cinematic-semi-real-v01,character,阿砚,identity-master,assets/characters/阿砚角色卡电影半写实-v01.png,approved,ChatGPT web image generation,original AI-assisted asset,941×1672；庐山版阿砚外观；铃铛替换为平面浅暖金花纹；唯一开放式S形墨尾；后续角色制作唯一身份依据
 ```
 
-如果 `阿砚角色卡新.png` 尚无独立记录，则同时新增：
+不得修改或暂存无关资产记录，也不得把现有 `ayan-final` 占位记录误认成本地旧版角色卡。
 
-```csv
-ayan-identity-legacy-reference,character,阿砚,identity-legacy,assets/characters/阿砚角色卡新.png,superseded,ChatGPT generated image,original AI-assisted asset,旧版猫系设定卡；仅保留历史参考；不得继续作为角色绑定母板
-```
+- [ ] **Step 4: 验证资产路径、唯一性和状态**
 
-不得修改无关资产记录，也不得把现有 `ayan-final` 的占位记录误认成这两个本地文件。
+使用 Python 标准库 `csv` 验证两个新 ID 各出现一次、路径存在、新版为 `approved` 和 `identity-master`、旧版为 `superseded`。
 
-- [ ] **Step 4: 验证路径、唯一性与状态**
-
-使用 Python 标准库 `csv` 验证：两个新资产 ID 各出现一次；新版状态为 `approved`；旧版状态为 `superseded`；两条路径均存在；新版 shot 为 `identity-master`。
-
-- [ ] **Step 5: 只提交本轮角色资产与清单行**
+- [ ] **Step 5: 只提交本轮规范与资产**
 
 ```bash
-git add zhixia-feihualing/assets/characters/阿砚角色卡电影半写实-v01.png zhixia-feihualing/assets/characters/阿砚角色卡新.png
+git add zhixia-feihualing/docs/character-bible.md
+git add zhixia-feihualing/docs/superpowers/specs/2026-08-26-ayan-cinematic-identity-master-design.md
+git add zhixia-feihualing/docs/superpowers/plans/2026-08-26-ayan-cinematic-identity-master-gpt-generation.md
+git add zhixia-feihualing/assets/characters/阿砚角色卡新.png
+git add zhixia-feihualing/assets/characters/阿砚角色卡电影半写实-v01.png
 git add -p zhixia-feihualing/assets/inventory.csv
 git commit -m "资产：定稿阿砚电影半写实身份主卡"
 ```
 
-交互暂存 `assets/inventory.csv` 时，只选择本计划新增的阿砚资产行，不暂存其他任务的改动。
+交互暂存 `assets/inventory.csv` 时，只选择本计划新增的两条阿砚记录，不暂存其他任务的改动。
