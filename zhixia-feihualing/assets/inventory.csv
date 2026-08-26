@@ -86,3 +86,5 @@ chishang-cover-v01,image,池上,cover,episodes/chishang/assets/images/cover-fina
 zhixia-cinematic-semi-real-v01,character,栀夏,identity-master,assets/characters/栀夏角色卡电影半写实-v01.png,approved,ChatGPT generated image,original AI-assisted asset,941×1672；电影级半写实东方幻想角色；身份主卡；与庐山场景卡同一视觉体系；后续表情口型与全身比例卡以此为身份基准
 lushan-cover-v01-poem-story,image,望庐山瀑布,cover,episodes/lushan/assets/cover/lushan-cover-v01-poem-story.png,final,ChatGPT image generation,original AI-assisted asset,941×1672；卡4构图的诗词小故事封面；竖排“飞流直下三千尺”“疑是银河落九天”；标注唐·李白《望庐山瀑布》；不使用飞花令标识
 zhixia-full-body-cinematic-semi-real-v01,character,栀夏,full-body-master,assets/characters/栀夏全身比例卡电影半写实-v01.png,approved,ChatGPT generated image,original AI-assisted asset,941×1672；长裙正面右侧面背面三视图；盛唐轻薄夏装；负责身体比例服装结构和鞋履；脸型发型发冠仍以身份主卡为准
+jiangxue-cover-base-v01,image,江雪,cover-base,episodes/jiangxue/assets/images/cover-base-v01.png,available,video frame extraction,original project asset,720×1280；取自frame-0.5.png；无字幕成片抽帧
+jiangxue-cover-final-v01,image,江雪,cover,episodes/jiangxue/assets/images/cover-final-v01.png,final,local Swift/AppKit typography,original project asset,720×1280；复用新版庐山诗词小故事字幕体系；发布文件exports/jiangxue-cover.png
