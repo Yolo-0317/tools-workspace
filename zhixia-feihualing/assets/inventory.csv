@@ -93,3 +93,4 @@ jiangxue-cover-base-v01,image,江雪,cover-base,episodes/jiangxue/assets/images/
 jiangxue-cover-final-v01,image,江雪,cover,episodes/jiangxue/assets/images/cover-final-v01.png,final,local Swift/AppKit typography,original project asset,720×1280；复用新版庐山诗词小故事字幕体系；发布文件exports/jiangxue-cover.png
 ayan-identity-legacy-reference,character,阿砚,identity-legacy,assets/characters/阿砚角色卡新.png,superseded,ChatGPT generated image,original AI-assisted asset,旧版角色设定卡；仅保留历史参考；不得继续作为角色绑定母板
 ayan-identity-cinematic-semi-real-v01,character,阿砚,identity-master,assets/characters/阿砚角色卡电影半写实-v01.png,approved,ChatGPT web image generation,original AI-assisted asset,941×1672；庐山版阿砚外观；铃铛替换为平面浅暖金花纹；唯一开放式S形墨尾；后续角色制作唯一身份依据
+ayan-full-body-cinematic-semi-real-v01,character,阿砚,full-body-master,assets/characters/阿砚全身比例卡电影半写实-v01.png,approved,ChatGPT web image generation,original AI-assisted asset,941×1672；正面—严格右侧面—背面三视图；三视图等高且脚底齐平；严格四足与唯一开放式S形墨尾
