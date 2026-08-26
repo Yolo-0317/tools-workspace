@@ -129,48 +129,12 @@ git commit -m "切换第一集掌心铜钱起卦"
 - Create: `zhixia-feihualing/episodes/cyber-divination-ep01/scene-card-prompts-simple.md`
 - Create: `zhixia-feihualing/episodes/cyber-divination-ep01/cover-prompt-simple.md`
 - Create: `zhixia-feihualing/episodes/cyber-divination-ep01/publishing-copy.md`
-- Create: `zhixia-feihualing/tests/test_cyber_divination_ep01_simple_prompts.py`
 
 **Interfaces:**
 - Consumes: 栀夏 v02 角色卡、阿砚 v01 角色卡与简版设计稿。
 - Produces: 四张场景卡和一张视频号封面的无文字底图提示词，以及固定发布文案。
 
-- [ ] **Step 1: 写提示词文本测试**
-
-```python
-from pathlib import Path
-import unittest
-
-ROOT = Path(__file__).resolve().parents[1]
-EPISODE = ROOT / "episodes/cyber-divination-ep01"
-
-
-class CyberDivinationSimplePromptTests(unittest.TestCase):
-    def test_scene_prompts_lock_required_counts_and_ban_disc(self):
-        text = (EPISODE / "scene-card-prompts-simple.md").read_text(encoding="utf-8")
-        for required in ["恰好三枚铜钱", "唯一一块桂花糕", "恰好八只空盘", "掌心起卦"]:
-            self.assertIn(required, text)
-        for banned in ["悬空卦盘", "星轨六爻盘", "轻触古籍"]:
-            self.assertIn(f"不出现{banned}", text)
-
-    def test_cover_and_publishing_copy_keep_wechat_packaging(self):
-        cover = (EPISODE / "cover-prompt-simple.md").read_text(encoding="utf-8")
-        copy = (EPISODE / "publishing-copy.md").read_text(encoding="utf-8")
-        self.assertIn("AI美女·周易起卦", cover)
-        self.assertIn("最后一块，能吃吗？", cover)
-        self.assertIn("第01卦｜山雷颐", cover)
-        self.assertIn("AI 解周易，专断日常小心思", copy)
-        self.assertIn("#周易", copy)
-        self.assertIn("起卦过程为剧情化简化展示。", copy)
-```
-
-- [ ] **Step 2: 运行测试并确认三个文件尚未创建**
-
-Run: `python3 zhixia-feihualing/tests/test_cyber_divination_ep01_simple_prompts.py -v`
-
-Expected: ERROR with `FileNotFoundError` for `scene-card-prompts-simple.md`.
-
-- [ ] **Step 3: 写四张场景卡提示词**
+- [ ] **Step 1: 写四张场景卡提示词**
 
 共同场景固定为明亮低饱和的东方庭院回廊；桂花糕放在宽石栏上，石栏只是食物承托面，不参与起卦。四张卡分别锁定：
 
@@ -181,7 +145,7 @@ Expected: ERROR with `FileNotFoundError` for `scene-card-prompts-simple.md`.
 
 每张提示词都逐字包含：`掌心起卦`、`恰好三枚铜钱`、`唯一一块桂花糕`、`不出现悬空卦盘`、`不出现星轨六爻盘`、`不出现轻触古籍`；第四张额外包含 `恰好八只空盘`。
 
-- [ ] **Step 4: 写封面提示词与发布文案**
+- [ ] **Step 2: 写封面提示词与发布文案**
 
 `cover-prompt-simple.md` 使用设计稿中已确认的第一集简版封面底图提示词，并单列后期文字：
 
@@ -203,14 +167,12 @@ Expected: ERROR with `FileNotFoundError` for `scene-card-prompts-simple.md`.
 #栀夏赛博起卦 #周易 #赛博算卦 #AI美女 #国学趣味 #搞笑日常
 ```
 
-- [ ] **Step 5: 运行测试并提交文本契约**
+- [ ] **Step 3: 按设计稿逐项审查并提交文本契约**
 
-Run: `python3 zhixia-feihualing/tests/test_cyber_divination_ep01_simple_prompts.py -v`
-
-Expected: `Ran 2 tests` and `OK`。
+逐项对照简版设计稿，确认四张场景卡均写明铜钱、桂花糕和空盘数量，所有提示词均排除悬空卦盘、星轨六爻盘、古籍与桌面起卦；确认封面三层文字、固定 slogan、发布标题、`#周易` 与剧情化简化说明完整。人类使用的提示词不增加只检查固定措辞的自动化测试；真实数量和构图在 Task 3 的图片验收中检查。
 
 ```bash
-git add zhixia-feihualing/episodes/cyber-divination-ep01/scene-card-prompts-simple.md zhixia-feihualing/episodes/cyber-divination-ep01/cover-prompt-simple.md zhixia-feihualing/episodes/cyber-divination-ep01/publishing-copy.md zhixia-feihualing/tests/test_cyber_divination_ep01_simple_prompts.py
+git add zhixia-feihualing/episodes/cyber-divination-ep01/scene-card-prompts-simple.md zhixia-feihualing/episodes/cyber-divination-ep01/cover-prompt-simple.md zhixia-feihualing/episodes/cyber-divination-ep01/publishing-copy.md
 git commit -m "建立第一集简版提示词"
 ```
 
@@ -365,8 +327,6 @@ Expected: FAIL because final cover is absent.
 Run: `zsh zhixia-feihualing/scripts/build_cyber_divination_ep01_simple.sh`
 
 Run: `python3 zhixia-feihualing/tests/test_cyber_divination_ep01_manifest.py -v`
-
-Run: `python3 zhixia-feihualing/tests/test_cyber_divination_ep01_simple_prompts.py -v`
 
 Run: `zsh zhixia-feihualing/tests/test_cyber_divination_cards.sh`
 
