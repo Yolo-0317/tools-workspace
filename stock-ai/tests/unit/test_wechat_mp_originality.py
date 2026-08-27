@@ -8,11 +8,22 @@ from zoneinfo import ZoneInfo
 from scripts.tools.wechat_mp_originality import (
     evaluate_film_longform,
     evaluate_hotspot_longform,
+    hotspot_originality_min_chars,
     evaluate_zhixia_newspic,
 )
 
 
 TZ = ZoneInfo("Asia/Shanghai")
+
+
+def test_hotspot_originality_minimum_can_be_lowered_for_one_run(monkeypatch) -> None:
+    monkeypatch.setenv("WECHAT_MP_CODEX_HOTSPOT_MIN_BODY", "1400")
+    assert hotspot_originality_min_chars() == 1400
+
+
+def test_hotspot_originality_default_minimum_prioritizes_completion_rate(monkeypatch) -> None:
+    monkeypatch.delenv("WECHAT_MP_CODEX_HOTSPOT_MIN_BODY", raising=False)
+    assert hotspot_originality_min_chars() == 1800
 
 
 def _specific_copy(length: int = 430) -> str:

@@ -650,10 +650,8 @@ def _text_prose_to_html(
         from scripts.tools.wechat_mp_rich_html import (
             blockquote_title_html,
             cta_box_html,
-            discussion_highlight_html,
             is_blockquote_title_line,
             parse_cta_line,
-            parse_hl_line,
         )
 
         if len(lines) == 1:
@@ -661,11 +659,6 @@ def _text_prose_to_html(
             if cta_parts:
                 parts.append(cta_box_html(cta_parts))
                 prev_was_figure = True
-                continue
-            hl_text = parse_hl_line(lines[0])
-            if hl_text:
-                parts.append(discussion_highlight_html(hl_text))
-                prev_was_figure = False
                 continue
             fig = parse_figure_line(lines[0])
             if fig:

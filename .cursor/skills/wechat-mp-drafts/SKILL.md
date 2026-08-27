@@ -59,6 +59,7 @@ paths:
 | `hot_business` | **手动** | 每日热点商业筛选与深稿，独立槽位 |
 | `silver` | **手动** | 50—65 岁退休生活：关系、健康、钱财，独立槽位 |
 | `short_drama_feature` | **手动** | Python 给收益候选，当前 Codex 研究并写稿，Python 双来源校验后写独立槽位 |
+| `literary` | **手动** | 典籍节目与文学类共用；固定 DeepSeek Chrome 会话写稿，Agent 编辑后写独立槽位 |
 
 `--kind all` = `hotspot`·`sector`·`news`·`workspace`（**不含** `temp`）。slots：`data/wechat_mp_draft_slots.json`。
 
@@ -86,6 +87,17 @@ uv run pytest tests/unit/test_wechat_mp_*.py -q
 
 **质量建议**：总分 ≥75、AI 味 ≤20、无合规红线 → 可进草稿箱。改稿流程见 [wechat-mp-writing](../wechat-mp-writing/SKILL.md)。
 
+### DeepSeek 浏览器写稿（用户主动稿）
+
+用户主动要求热点深评或文学/典籍稿时，采用两次确认：Agent 研究并展示提示词 → 用户确认 → OpenCLI `bind` 当前 Chrome 中固定的“公众号爆文秘诀”会话 → 提取本轮新回复 → Agent 核事实、编辑、高亮、配图 → 用户再次确认 → 推草稿。统一入口：
+
+```bash
+cd stock-ai
+PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_browser_write --help
+```
+
+固定会话 ID：`f0cc031d-233f-4648-807d-354275738e61`。DeepSeek 未登录时只提示用户登录并保持该会话为当前标签；禁止自动登录、读取 Cookie、切换其他会话或回退其他模型。`literary` 使用独立槽位，不覆盖 `tv_review`。
+
 ### Codex 长图文交接
 
 #### 账号角色卡前置步骤
@@ -105,7 +117,7 @@ uv run pytest tests/unit/test_wechat_mp_*.py -q
 {
   "title": "具体事件为什么引发争议？",
   "digest": "一到两句话说明文章回答的问题。",
-  "body": "不少于 2000 字的纯段落正文。",
+  "body": "1800—2200 字的纯段落正文，信息完整后不为凑字重复观点。",
   "topic": "事件检索词",
   "research_urls": ["https://a.example/report", "https://b.example/report", "https://c.example/report"],
   "original_thesis": "不少于20字、可被反驳和检验的原创核心判断。",
@@ -123,7 +135,7 @@ uv run python -m scripts.tools.wechat_mp_draft \
 # 人工确认后去掉 --dry-run，写入草稿箱
 ```
 
-`--codex-draft` 支持单篇 `hotspot`、`hot_business`、`silver` 或 `short_drama_feature`。该路径跳过自动选题和模板兜底，但仍执行正文清洗、原创增量报告、质量门禁、封面、合规检查与草稿槽位更新。热点稿原创门禁要求正文去空白后不少于 1920 字；银发稿要求 1600—2600 字。前三者均要求至少 3 个不同来源域、`original_thesis` 不少于 20 字，任一失败即在微信 API 前拒绝。`output/` 中的成稿 JSON 不提交。
+`--codex-draft` 支持单篇 `hotspot`、`hot_business`、`silver` 或 `short_drama_feature`。该路径跳过自动选题和模板兜底，但仍执行正文清洗、原创增量报告、质量门禁、封面、合规检查与草稿槽位更新。热点深评为完读优先，正文去空白后不少于 1800 字，建议控制在 1800—2200 字；热点商业仍不少于 1920 字；银发稿要求 1600—2600 字。前三者均要求至少 3 个不同来源域、`original_thesis` 不少于 20 字，任一失败即在微信 API 前拒绝。`output/` 中的成稿 JSON 不提交。
 
 `hot_business` 只允许手动触发，不进入定时批次。省略 `--topic` 时从每日热点池按热点强度、商业空间、可验证性和读者相关性评分，低于 70 分不成稿；指定 `--topic` 会跳过候选评分，但仍要求至少 3 个不同来源域。`--dry-run` 只预览并打印候选评分、来源域和事实条数；移除后仅更新独立的 `hot_business` 草稿槽位。
 
@@ -131,16 +143,22 @@ uv run python -m scripts.tools.wechat_mp_draft \
 
 自 2026-08-18 起，公众号普通长文统一禁用自动短剧返佣插入。`short_drama_feature` 仅保留为用户明确要求时使用的手动独立稿型，不得作为普通热点、影视、银发或财经稿的默认变现组件。
 
-### Codex 图片续跑协议
+### ChatGPT 网页原创配图续跑协议
 
-长图文与贴图都先由 Python 自动抓同题公开报道图。热点深评默认按 `research_urls` → 可追溯微博媒体/政务原帖 → 百度新闻 → 其他同题媒体的顺序找真实现场图；微博、百度只作为发现入口。无法核对原页、事件或来源的搬运图，以及页面明确写有禁止转载限制的图片，不自动进入正式草稿。合格素材在 `figure_sources.json` 记录原页面、图片地址、来源名、发布时间、来源类型和核验状态，图注优先显示具体媒体名。
+长图文与贴图都先找同题公开报道图。`hotspot`、`hot_business` 等热门稿件优先从已登录抖音搜索政务号、央媒、地方广电和正规新闻机构的同题视频，再补 `research_urls`、可追溯微博媒体/政务原帖、百度新闻和其他同题媒体。抖音、微博、百度只作为发现入口：抖音截图必须记录媒体账号、原视频链接、发布时间和截图画面含义；普通网友搬运、二创账号、无原视频链接、与事件无关的演播室或泛素材不得进入正式草稿。无法核对原页、事件或来源的图片，以及页面明确写有禁止转载限制的图片，也不得使用。合格素材在 `figure_sources.json` 记录原页面、图片地址、来源名、发布时间、来源类型和核验状态，图注优先显示具体媒体名。
 
-现场图不足时才使用已有原创解释图；若命令提示 `需要 Codex 原创补图`，或抛出包含 `codex-image-request.json` 的错误：
+抖音候选先建报道池再选图，不按用户随口点名的平台逐个补洞：优先级为政务原始发布 → 央媒 → 地方广电/党媒 → 全国性新闻机构。先去重同一段现场视频，再按“现场事实、官方处置、当事人回应、公共讨论”选择有不同信息增量的画面；找不到足够合格图片时允许少图，不得为凑固定数量自动生成图片。热点稿只有用户明确要求原创配图时，才进入下述网页补图协议；原创小说、栀夏生活分享等本来就需要原创视觉的稿型可直接进入。
+
+需要原创配图，且命令提示补图或抛出包含 `codex-image-request.json` 的错误时：
 
 1. 读取请求 JSON 的全部 `slots` 与 `safety_rules`。
-2. 每个 slot 单独调用一次内置 ImageGen，不使用额外 API 或 Composer。
-3. 从 `$CODEX_HOME/generated_images/` 选取结果，复制到该 slot 的绝对 `output_path`；不得覆盖请求未列出的图片。
-4. 重跑原命令，直到不再返回缺图请求；随后才允许进入草稿上传。
+2. Codex 先给每个槽位设计分镜和提示词；封面先生成，人物连续图引用封面或角色母版。
+3. 使用 OpenCLI 操作当前 Chrome 中已登录的 ChatGPT 网页逐图生成，点击页面“保存”下载；不调用图片 API，不读取 Cookie、密码或浏览器存储。
+4. Codex 检查图片格式、尺寸、比例、人物脸型/发型/服装、道具、场景、意外文字和组图连续性；通过后才保存到该 slot 的绝对 `output_path`。
+5. ChatGPT 未登录、当前标签不对、生成失败、超时、下载失败或质检失败时立即停止并提示用户处理；禁止自动回退到 Codex ImageGen、DeepSeek 或其他平台。下次从第一个未完成槽位继续，已有合格图片不重做。
+6. 重跑原命令，直到不再返回缺图请求；随后才允许进入草稿上传。
+
+用户明确说“用 Codex 生成图片”时，仅当前任务临时使用内置 ImageGen，不改变默认渠道。详细步骤见 [chatgpt-web-image-sop.md](chatgpt-web-image-sop.md)。
 
 已有 Codex 补图完成标记时，普通续跑不重复联网。需要重新寻找真实现场图时使用 `--force-figures` 或 `WECHAT_MP_DISCUSSION_FIGURES_FORCE=1`；强制刷新会绕过 ready 标记，但应保留 `manual-*` 和可用原创封面作为失败兜底。
 
@@ -172,7 +190,7 @@ uv run python -m scripts.tools.wechat_mp_newspic_draft \
 |--|------|
 | **19:00 launchd** | 自动**写/更新草稿**；跳过：`echo YYYY-MM-DD > data/wechat_mp_skip_scheduled.date` |
 | **后台定时发表** | **人工**在 mp.weixin.qq.com；**每天仅 1 次通知**（个人号）→ 多篇**同批群发**，排好头条/次条顺序；**禁止**分时段错开发表 |
-| **LLM** | 公众号写稿只用 Codex CLI，失败不回退；东财 SOP 并发仍用 `SOP_LLM_BACKEND=deepseek` |
+| **LLM** | 定时稿只用 Codex CLI；用户主动的热点深评与文学/典籍稿可走固定 DeepSeek Chrome 会话，均失败关闭；东财 SOP 并发仍用 `SOP_LLM_BACKEND=deepseek` |
 
 详 [operations-sop.md](operations-sop.md) · `stock-ai/docs/WECHAT_MP_SCHEDULING.md`。
 

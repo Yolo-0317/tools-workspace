@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import re
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
@@ -14,6 +15,15 @@ from zoneinfo import ZoneInfo
 
 
 TZ = ZoneInfo("Asia/Shanghai")
+
+
+def hotspot_originality_min_chars() -> int:
+    """热点原创报告默认 1800 字，可由一次性命令显式调整。"""
+    try:
+        requested = int(os.getenv("WECHAT_MP_CODEX_HOTSPOT_MIN_BODY", "1800"))
+    except ValueError:
+        requested = 1800
+    return max(1200, min(1920, requested))
 DISABLED_NEWPIC_LANES = {
     "popular_film",
     "classic_single",
@@ -206,7 +216,7 @@ def evaluate_hotspot_longform(
         if urlparse(url).scheme == "https" and urlparse(url).netloc
     }
     similarity = _max_title_similarity(title, history_posts, now=current)
-    if length < 1920:
+    if length < hotspot_originality_min_chars():
         failures.append("text_too_short")
     if len(distinct_hosts) < 3:
         failures.append("sources_too_few")

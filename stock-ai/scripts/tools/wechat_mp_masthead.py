@@ -47,8 +47,8 @@ _DEFAULT_SLOGAN = "打工人的智能复盘手记"
 
 
 def masthead_enabled() -> bool:
-    raw = os.environ.get("WECHAT_MP_MASTHEAD", "1").strip().lower()
-    return raw not in ("0", "false", "no", "off")
+    """公众号正文不再渲染旧牛马品牌头。"""
+    return False
 
 
 def account_name(*, kind: str | None = None) -> str:

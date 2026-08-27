@@ -65,6 +65,22 @@ def test_append_follow_hook_tv_review() -> None:
     body = "暑期档票房破70亿，八仙成黑马。"
     out = append_follow_hook(body, kind="tv_review")
     assert "星标本号" in out
+    assert "社会与文娱热点" in out
+
+
+def test_append_follow_hook_tv_review_discussion_culture() -> None:
+    body = "2021年大年初一，《典籍里的中国》开播。"
+    out = append_follow_hook(body, kind="tv_review", engagement_kind="discussion")
+    assert "最近专注文化节目" in out
+    assert "社会与文娱热点" not in out
+    assert "星标本号" in out
+
+
+def test_append_follow_hook_skips_existing_star_cta() -> None:
+    body = "《典籍里的中国》共22集。不想漏掉的，可以星标一下这个号。"
+    out = append_follow_hook(body, kind="tv_review", engagement_kind="discussion")
+    assert out == body
+    assert "最近专注文化节目" not in out
 
 
 def test_polish_for_traffic_hotspot_follow_before_recommend() -> None:

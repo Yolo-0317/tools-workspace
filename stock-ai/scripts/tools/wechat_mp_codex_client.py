@@ -30,7 +30,7 @@ _SENSITIVE_ASSIGNMENT = re.compile(
 @dataclass(frozen=True)
 class CodexGenerationEvent:
     provider: str
-    mode: Literal["codex_exec", "interactive_draft"]
+    mode: Literal["codex_exec", "interactive_draft", "opencli_bound_tab"]
     cli_version: str
     generated_at: str
     kind: str
@@ -141,6 +141,20 @@ def record_interactive_codex_draft(kind: str) -> None:
     if expected and expected != kind:
         raise ValueError(f"Codex 草稿 kind 不一致: {kind} != {expected}")
     _record_event(mode="interactive_draft")
+
+
+def record_browser_deepseek_draft(kind: str) -> None:
+    expected = _CURRENT_KIND.get()
+    if expected and expected != kind:
+        raise ValueError(f"DeepSeek 浏览器草稿 kind 不一致: {kind} != {expected}")
+    event = CodexGenerationEvent(
+        provider="deepseek_browser",
+        mode="opencli_bound_tab",
+        cli_version="opencli-bound-chrome",
+        generated_at=datetime.now().astimezone().isoformat(timespec="seconds"),
+        kind=kind.strip(),
+    )
+    _EVENTS.set((*_EVENTS.get(), event))
 
 
 def assert_codex_only_generation(*, allow_empty: bool = True) -> None:

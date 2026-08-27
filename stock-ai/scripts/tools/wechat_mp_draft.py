@@ -63,6 +63,8 @@ def _resolve_cover_kind(content_kind: str) -> str:
         return "hot_business"
     if content_kind == "short_drama_feature":
         return "tv_review"
+    if content_kind == "literary":
+        return "tv_review"
     from scripts.tools.wechat_mp_draft_batch import (
         cover_kind_for_content,
         resolve_scheduled_batch,
@@ -218,6 +220,8 @@ def _resolve_draft_slot_key(
         return "silver"
     if kind == "short_drama_feature":
         return "short_drama_feature"
+    if kind == "literary":
+        return "literary"
     if kind == "hotspot" and isinstance(draft, CodexHotspotDraft):
         return _resolve_codex_slot_key(draft)
     return None

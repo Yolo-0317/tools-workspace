@@ -70,7 +70,7 @@ ROUND_TARGETS = {"A": 4, "B": 3, "A+C": 2, "C": 1}
 MIN_SCORE = 70
 MIN_OBSERVATION_SCORE = 15
 HOTSPOT_MAX_AGE_SECONDS = 6 * 60 * 60
-COPY_RANGE = (180, 320)
+COPY_RANGE = (400, 900)
 
 
 def load_topic_card(path: Path) -> dict[str, Any]:
@@ -194,12 +194,21 @@ def validate_topic_card(
     return normalized
 
 
-def validate_opinion_copy(content: str, *, has_report_images: bool) -> str:
+def validate_opinion_copy(
+    content: str,
+    *,
+    has_report_images: bool,
+    ai_disclosure_mode: str = "body",
+) -> str:
     normalized = content.strip()
+    if ai_disclosure_mode not in {"body", "platform_publish"}:
+        raise ValueError("栀夏 AI 声明模式须为 body / platform_publish")
     minimum, maximum = COPY_RANGE
     if not minimum <= len(normalized) <= maximum:
         raise ValueError(f"观点型栀夏贴图正文须为 {minimum}-{maximum} 字")
-    if "AI 虚拟角色" not in normalized or "AI 生成示意图" not in normalized:
+    if ai_disclosure_mode == "body" and (
+        "AI 虚拟角色" not in normalized or "AI 生成示意图" not in normalized
+    ):
         raise ValueError("栀夏贴图正文须披露 AI 虚拟角色与 AI 生成示意图")
     if has_report_images and "报道图来源见文中" not in normalized:
         raise ValueError("混用报道图时正文须标注“报道图来源见文中”")

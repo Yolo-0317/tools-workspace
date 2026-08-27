@@ -1,4 +1,4 @@
-"""公众号同题报道取图与 Codex 原创补图交接协议。"""
+"""公众号同题报道取图与原创补图交接协议。"""
 
 from __future__ import annotations
 
@@ -26,14 +26,14 @@ class PreparedTopicImages:
 
 
 class CodexImageGenerationRequired(RuntimeError):
-    """报道图不足，需要 Codex 按请求文件补齐原创图。"""
+    """报道图不足，需要按请求文件补齐原创图（保留旧名称兼容调用方）。"""
 
     def __init__(self, *, request_path: Path, missing_count: int) -> None:
         self.request_path = Path(request_path)
         self.missing_count = int(missing_count)
         super().__init__(
-            f"仍缺 {self.missing_count} 张图片；请按 {self.request_path} 调用 ImageGen，"
-            "保存到各 output_path 后重试"
+            f"仍缺 {self.missing_count} 张图片；请按 {self.request_path} 使用已登录的 "
+            "ChatGPT 网页生成，保存到各 output_path 后重试；失败时停止并提示用户"
         )
 
 
@@ -138,15 +138,26 @@ def _write_request(
 ) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / REQUEST_FILENAME
+    normalized_slots: list[dict[str, str]] = []
+    has_cover = any(str(slot.get("slot") or "") == "cover" for slot in slots)
+    for slot in slots:
+        normalized = dict(slot)
+        slot_id = str(normalized.pop("slot", "") or "").strip()
+        normalized["slot_id"] = slot_id
+        if has_cover and slot_id.startswith("body-"):
+            normalized["reference_slot_id"] = "cover"
+        normalized_slots.append(normalized)
     payload = {
-        "schema_version": 1,
+        "schema_version": 2,
+        "generator": "chatgpt_web",
+        "failure_policy": "stop_and_prompt",
         "article_type": article_type,
         "topic": topic,
         "target_count": target_count,
         "report_image_count": report_image_count,
         "missing_count": len(slots),
         "safety_rules": list(SAFETY_RULES),
-        "slots": slots,
+        "slots": normalized_slots,
     }
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return path
@@ -248,7 +259,7 @@ def prepare_newspic_topic_images(
     for path in manual_paths:
         sources[path.name] = {
             "source_type": "original",
-            "fallback_reason": "同题公开报道图不足，由 Codex ImageGen 原创补位",
+            "fallback_reason": "同题公开报道图不足，由 ChatGPT 网页原创补位",
         }
     if len(image_paths) < target_count:
         _clear_ready(out_dir)

@@ -62,6 +62,9 @@ def test_prepare_newspic_requests_only_missing_original_slots(
         prepare_newspic_topic_images(topic="事件", target_count=3, slug="topic")
 
     request = json.loads(caught.value.request_path.read_text(encoding="utf-8"))
+    assert request["schema_version"] == 2
+    assert request["generator"] == "chatgpt_web"
+    assert request["failure_policy"] == "stop_and_prompt"
     assert request["article_type"] == "newspic"
     assert request["report_image_count"] == 1
     assert request["missing_count"] == 2
@@ -70,6 +73,10 @@ def test_prepare_newspic_requests_only_missing_original_slots(
         "manual-02.jpg",
     ]
     assert all(Path(slot["output_path"]).is_absolute() for slot in request["slots"])
+    assert [slot["slot_id"] for slot in request["slots"]] == [
+        "scene-02",
+        "scene-03",
+    ]
 
 
 def test_prepare_newspic_combines_reports_and_generated_images(
@@ -133,6 +140,11 @@ def test_prepare_hotspot_requests_cover_and_missing_body_slots(
 
     request = json.loads(caught.value.request_path.read_text(encoding="utf-8"))
     assert request["article_type"] == "hotspot"
+    assert request["slots"][0]["slot_id"] == "cover"
+    assert all(
+        slot.get("reference_slot_id") == "cover"
+        for slot in request["slots"][1:]
+    )
     assert [Path(slot["output_path"]).name for slot in request["slots"]] == [
         "cover.jpg",
         "manual-01.jpg",

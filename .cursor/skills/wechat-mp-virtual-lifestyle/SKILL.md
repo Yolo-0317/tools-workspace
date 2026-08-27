@@ -21,7 +21,7 @@ description: >-
 
 先建立并保存 `references/persona.md`、`references/wardrobe.md` 与 `references/story-bible.md`，再生成任何图片。角色母图只锁定外貌，衣橱由 `look_id` 单独管理，故事圣经锁定角色动机、长期故事线和商业边界；不得生成可被误认为特定真人的脸。
 
-**硬门禁**：先生成并人工确认一张角色母版图 `assets/character-master.png`，再生成任何日常贴图。后续每次 imagegen 都必须把母版图作为 `identity-preserve` 参考图；只改场景、服装和动作，不改脸型、五官、发型、肤色、身高比例与体型。角色卡与母版图任一缺失时，只能产出设定，不能批量出图或推草稿。
+**硬门禁**：先生成并人工确认一张角色母版图 `assets/character-master.png`，再生成任何日常贴图。后续默认按 [ChatGPT 网页原创配图 SOP](../wechat-mp-drafts/chatgpt-web-image-sop.md) 生成，并把母版图上传为人物参考图；只改场景、服装和动作，不改脸型、五官、发型、肤色、身高比例与体型。角色卡与母版图任一缺失时，只能产出设定，不能批量出图或推草稿。ChatGPT 网页失败时停止提示，不自动回退；用户明确指定 Codex 时才对当前任务临时使用内置 ImageGen。
 
 每次新图完成后对照母版检查：脸部特征、发色/发型、体型比例、年龄感和已选的发饰/耳饰。出现明显漂移就重生成，不以“风格不同”放行。固定的是发色、发长、微卷质感和发际线，不是每一张都使用同一发夹和耳圈。
 
@@ -117,6 +117,10 @@ look_id / HA编号 / E编号 / J编号 / B编号 / S编号 / P编号：
 | `ai_film` | 4～6 图、180～320 字 | 按内容选择 S0～S2 |
 
 单片标题必须出现片名；片单标题必须写明 3～5 的具体数量。正文可以融合普通影评口吻与栀夏观察，但不得出现提示词、检索过程、评分规则、生成规则、内部推理或“作为 AI，我分析了”等过程语言，也不得虚构“刚从电影院出来、昨晚二刷”等真人观影经历。AI 身份在文末稳定披露，不把规则写进正文。
+
+单片影视默认采用 `scene_focus`“一场戏写透”，按“剧情锚点 → 人物选择 → 关系或处境变化 → 栀夏观察”推进；需要前后对照时才使用 `character_arc`，串联两至三个不同阶段但彼此相关的场景。`announced`、`presale` 或只能核验官方预告物料的影片必须使用 `trailer_observation`，在标题或首段写明“预告观察”，不得推断完整剧情或写成观后感。正文在前两个自然段内进入第一个已核验场景，剧情及其直接因果约占六成、分析约占四成，不按字符机械切割。发布前做“换片测试”：替换片名和角色名后正文仍基本成立，直接退回重写。
+
+单片至少记录两个不同剧情锚点；`trailer_observation` 至少一个。每个锚点写清 `scene`、`character`、`action`、`counterpart_or_pressure`、`consequence`、`source_url` 与 `stage`。图片跟随“场景 → 行动 → 回应 → 后果 → 收束”推进，不以多张海报或人物宣传照重复凑数。增加剧情贴合不等于复述完整故事，仍须遵守 S0～S2 剧透边界。
 
 影视组图可以完全不出现栀夏。素材优先使用电影官方账号、片方、发行方或可追溯媒体页面的海报与宣传剧照；每张记录 `source_type=film_official/film_media`、`film_title`、`page_url`、`page_title`、`source_name`、`visual_role`、`position_role` 和 `allow_zhixia_watermark=false`。官方图、媒体图和报道图禁止添加栀夏水印。原创补图不得生成演员近似脸或伪剧照，并在正文标注“AI 生成示意图”。
 
@@ -240,13 +244,13 @@ look_id / HA编号 / E编号 / J编号 / B编号 / S编号 / P编号：
 
 1. 读取 `references/persona.md`、`references/wardrobe.md`、`references/story-bible.md`、`references/operations-benchmarks.md` 与上次内容，先确定一个可复述的主题钩子和一句非栀夏不可的观察，再选择一条长期故事线；需要角色出镜时才选择未重复的 `look_id`，并记录 `HA编号 + E编号 + A编号 + P编号` 和鞋编号。
 2. 查看正式发表台账的当前缺口，从尚未满额的八个 `content_lane` 中选择一个；产品推荐仅在需求与商品强相关时出现。
-3. 非影视稿先写行程连续性卡，再按“默认 1 张栀夏角色图 + 1～5 张主题图”组织混合组图。影视稿允许 0～1 张角色图，以可追溯的电影官方图或媒体图为主。保存每张图的 `visual_role`、来源、生成提示与拍摄方式。
-4. 按内容颗粒度写 150～800 字，首段先交代生活场景；分享型不强塞方法，涉及商品时加披露与适用边界。
+3. 非影视稿先写行程连续性卡，再按“默认 1 张栀夏角色图 + 1～5 张主题图”组织混合组图。影视稿先选写作模式并填写剧情锚点，再允许 0～1 张角色图，以可追溯的电影官方图或媒体图为主；图片须对应场景、行动、回应或后果。保存每张图的 `visual_role`、来源、生成提示与拍摄方式。
+4. 按内容颗粒度写 150～800 字；非影视分享首段先交代生活场景，单片影视须在前两个自然段进入剧情锚点。分享型不强塞方法，涉及商品时加披露与适用边界。
 5. 草稿质检后再由用户决定是否发布；使用独立槽位 `virtual_lifestyle`，不得覆盖热点或长文草稿。
 
 ### 选题卡与命令
 
-写稿前创建 JSON 选题卡，字段必须完整：`topic`、带时区的 `observed_at`、`discovery_platform`、`content_type`、`content_lane`、`fact_sources`、`contrast`、`zhixia_observation`、`click_reason`、`image_plan`、`risks`、五项 `scores`、`character_image_policy`，多角色图例外再填写 `visual_exception`。影视稿还必须填写 `film_titles`、`spoiler_level`、`release_status`、`image_rights_status`。五项评分为 `timing`、`worker_relevance`、`zhixia_observation`、`visuals`、`persona_fit`；总分至少 70，`zhixia_observation` 至少 15。只有 `popular_film` 和 `nonfilm_hotspot` 执行六小时重新核验；经典电影仍须核验片名、版本、年份、主创和素材原页。
+写稿前创建 JSON 选题卡，字段必须完整：`topic`、带时区的 `observed_at`、`discovery_platform`、`content_type`、`content_lane`、`fact_sources`、`contrast`、`zhixia_observation`、`click_reason`、`image_plan`、`risks`、五项 `scores`、`character_image_policy`，多角色图例外再填写 `visual_exception`。影视稿还必须填写 `film_titles`、`spoiler_level`、`release_status`、`image_rights_status`；单片影视另填 `film_writing_mode` 与 `plot_anchors`，每个锚点含 `scene`、`character`、`action`、`counterpart_or_pressure`、`consequence`、HTTPS `source_url` 和 `stage`。`classic_list` 不使用单片锚点结构；`announced`、`presale` 强制使用 `trailer_observation`。五项评分为 `timing`、`worker_relevance`、`zhixia_observation`、`visuals`、`persona_fit`；总分至少 70，`zhixia_observation` 至少 15。只有 `popular_film` 和 `nonfilm_hotspot` 执行六小时重新核验；经典电影仍须核验片名、版本、年份、主创和素材原页。
 
 ```bash
 cd stock-ai

@@ -114,6 +114,21 @@ def test_film_metadata_survives_pending_and_publication_ledger(tmp_path: Path) -
     assert ledger["posts"][0]["spoiler_level"] == "S0"
 
 
+def test_pending_record_preserves_platform_publish_disclosure_mode(
+    tmp_path: Path,
+) -> None:
+    pending = record_pending_draft(
+        media_id="draft-1",
+        title="这是一个标题",
+        topic_card=_valid_card() | {"ai_disclosure_mode": "platform_publish"},
+        topic_card_sha256="abc123",
+        drafted_at=NOW,
+        pending_path=tmp_path / "pending.json",
+    )
+
+    assert pending["ai_disclosure_mode"] == "platform_publish"
+
+
 def test_same_article_id_is_idempotent(tmp_path: Path) -> None:
     ledger_path = tmp_path / "history.json"
 

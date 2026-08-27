@@ -373,6 +373,28 @@ _AI_COMMENT_BANNED = (
 def _sanitize_news_reader_meta(text: str, *, ctx: Any | None = None) -> str:
     """去掉「未匹配/占位/7×24」等后台话术，避免漏进读者正文。"""
     out = (text or "").strip()
+    control_line_re = re.compile(r"^\[\[(?:fig|hl|cta):.*\]\]$")
+    if any(control_line_re.match(line.strip()) for line in out.splitlines()):
+        blocks: list[str] = []
+        prose_lines: list[str] = []
+
+        def flush_prose() -> None:
+            prose = "\n".join(prose_lines).strip()
+            prose_lines.clear()
+            if prose:
+                cleaned = _sanitize_news_reader_meta(prose, ctx=ctx)
+                if cleaned:
+                    blocks.append(cleaned)
+
+        for line in out.splitlines():
+            stripped = line.strip()
+            if control_line_re.match(stripped):
+                flush_prose()
+                blocks.append(stripped)
+            else:
+                prose_lines.append(line)
+        flush_prose()
+        return "\n\n".join(blocks)
     for phrase in _NEWS_READER_META_BANNED:
         out = out.replace(phrase, "")
     out = re.sub(r"周末未匹配[^。；！？\n]*[。；]?", "", out)

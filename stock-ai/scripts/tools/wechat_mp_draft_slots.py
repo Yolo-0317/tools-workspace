@@ -36,6 +36,14 @@ HOTSPOT_SCHEDULE_SLOT_KEYS: tuple[str, ...] = (
     "hotspot_evening",
 )
 
+LITERARY_SLOT_KEYS: tuple[str, ...] = (
+    "literary",
+    "literary_next",
+    "literary_queue",
+    "literary_queue_2",
+    "literary_queue_3",
+)
+
 # 用于识别「本脚本管理的草稿」，避免误删人工撰写的其他草稿
 _KIND_TITLE_HINTS: dict[str, tuple[str, ...]] = {
     "hotspot": (
@@ -128,6 +136,14 @@ _KIND_TITLE_HINTS: dict[str, tuple[str, ...]] = {
         "追完",
         "安利",
     ),
+    "literary": (
+        "典籍",
+        "文学",
+        "史记",
+        "尚书",
+        "诗经",
+        "人物命运",
+    ),
 }
 
 
@@ -169,6 +185,9 @@ def managed_slot_keys() -> tuple[str, ...]:
 
     keys: list[str] = list(HOTSPOT_SCHEDULE_SLOT_KEYS)
     for k in DRAFT_KINDS:
+        if k not in keys:
+            keys.append(k)
+    for k in LITERARY_SLOT_KEYS:
         if k not in keys:
             keys.append(k)
     return tuple(keys)

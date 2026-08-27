@@ -39,6 +39,7 @@ def test_load_codex_hotspot_draft_reads_valid_json(tmp_path: Path) -> None:
             "body": "第一段正文。\n\n第二段正文。",
             "topic": "具体事件",
             "research_urls": ["https://example.com/report"],
+            "original_thesis": "规则真正要解决的，是把本可提前阻止的成本留在开业之前。",
             "slot_key": "hotspot_afternoon",
         },
     )
@@ -49,6 +50,7 @@ def test_load_codex_hotspot_draft_reads_valid_json(tmp_path: Path) -> None:
     assert draft.topic == "具体事件"
     assert draft.research_urls == ("https://example.com/report",)
     assert draft.slot_key == "hotspot_afternoon"
+    assert draft.original_thesis == "规则真正要解决的，是把本可提前阻止的成本留在开业之前。"
     assert draft.as_discussion_topic() == {
         "title_zh": "具体事件",
         "trend_title": "具体事件",
@@ -56,6 +58,22 @@ def test_load_codex_hotspot_draft_reads_valid_json(tmp_path: Path) -> None:
         "from_trend": True,
         "research_urls": ["https://example.com/report"],
     }
+
+
+def test_validate_codex_hotspot_originality_rejects_missing_source_diversity() -> None:
+    from scripts.tools.wechat_mp_codex_hotspot import validate_codex_hotspot_originality
+
+    draft = CodexHotspotDraft(
+        title="一件具体事件为什么引发争议？",
+        digest="这篇文章梳理事件、规则与争议焦点。",
+        body=_valid_hotspot_body(),
+        topic="具体事件",
+        research_urls=("https://example.com/one", "https://example.com/two"),
+        original_thesis="真正的问题是成本为何被推给最后一个知道风险的普通人。",
+    )
+
+    with pytest.raises(ValueError, match="sources_too_few"):
+        validate_codex_hotspot_originality(draft, history_posts=[])
 
 
 @pytest.mark.parametrize("field", ["title", "digest", "body", "topic"])
@@ -101,6 +119,7 @@ def test_build_hotspot_article_uses_codex_body_without_generator(monkeypatch) ->
         digest="这篇文章梳理事件、规则与争议焦点。",
         body=_valid_hotspot_body(),
         topic="具体事件",
+        original_thesis="真正的问题是规则执行为何总让普通人承担最后的成本。",
     )
 
     def fail_if_generated(**_kwargs):

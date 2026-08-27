@@ -134,9 +134,19 @@ def _trend_blob(topic: dict[str, Any]) -> str:
 def _event_keywords(topic: dict[str, Any]) -> list[str]:
     blob = _trend_blob(topic)
     keys: list[str] = []
-    for token in re.findall(r"[\u4e00-\u9fff]{2,8}", blob):
+    tokens = re.findall(r"[\u4e00-\u9fff]{2,8}", blob)
+    for token in tokens:
         if token not in keys:
             keys.append(token)
+    # 无标点的中文热搜常把品牌、商品与事件动作粘成一个长词条。
+    # 补充三字滑窗，避免报道标题加入数字或标点后无法命中整段长词。
+    for token in tokens:
+        if len(token) < 7:
+            continue
+        for start in range(0, len(token) - 2):
+            part = token[start : start + 3]
+            if part not in keys:
+                keys.append(part)
     # 长词条再拆
     trend = str(topic.get("trend_title") or "")
     for sep in ("，", ",", "、", " "):
@@ -200,7 +210,7 @@ def _parse_article_page(url: str, html: str) -> ResearchHit | None:
     title = re.sub(r"[_\-|].{0,30}(新浪|网易|搜狐|腾讯|中华网).*$", "", title).strip()
     desc_m = _META_DESC_RE.search(html)
     snippet = unescape(desc_m.group(1)).strip() if desc_m else ""
-    if not snippet:
+    if len(snippet) < 20:
         for pm in _P_RE.finditer(html):
             text = _strip_html(pm.group(1))
             if len(text) >= 40 and "cookie" not in text.lower():

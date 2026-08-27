@@ -148,10 +148,16 @@ def test_draft_article_payload_strips_body_text() -> None:
             "content": "c",
             "body_text": "plain",
             "short_drama": {"drama_id": "123"},
+            "engagement_kind": "discussion",
+            "recommended_hashtags": ["a"],
+            "publish_reminder": "reminder",
         }
     )
     assert "body_text" not in payload
     assert "short_drama" not in payload
+    assert "engagement_kind" not in payload
+    assert "recommended_hashtags" not in payload
+    assert "publish_reminder" not in payload
     assert payload["title"] == "t"
 
 

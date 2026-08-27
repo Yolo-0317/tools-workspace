@@ -73,6 +73,31 @@ def test_is_junk_discussion_figure_detects_qr_and_tv(tmp_path) -> None:
     assert _score_discussion_figure(portrait) > 100
 
 
+def test_nonstandard_wide_news_photo_is_not_treated_as_tv_frame(tmp_path) -> None:
+    from PIL import Image
+    from scripts.tools.wechat_mp_discussion_figures import _is_junk_discussion_figure
+
+    storefront = tmp_path / "storefront.jpg"
+    Image.effect_noise((1025, 580), 80).convert("RGB").save(storefront, quality=80)
+
+    assert not _is_junk_discussion_figure(storefront)
+
+
+def test_large_public_photo_is_compressed_instead_of_rejected(tmp_path) -> None:
+    from PIL import Image
+    from scripts.tools.wechat_mp_discussion_figures import (
+        _MAX_FIGURE_BYTES,
+        _normalize_downloaded_figure,
+    )
+
+    photo = tmp_path / "large.jpg"
+    Image.effect_noise((1600, 1000), 90).convert("RGB").save(photo, quality=98)
+    assert photo.stat().st_size > _MAX_FIGURE_BYTES
+
+    assert _normalize_downloaded_figure(photo)
+    assert photo.stat().st_size <= _MAX_FIGURE_BYTES
+
+
 def test_distributed_inject_spreads_across_long_body(monkeypatch) -> None:
     from scripts.tools.wechat_mp_discussion_figures import _distributed_inject_para_indices
 
@@ -136,6 +161,28 @@ def test_inject_discussion_figures_with_mocked_assets(monkeypatch) -> None:
     out = inject_discussion_figures(body, topic)
     assert out.count("[[fig:") == 2
     assert "discussion/demo-topic/still-01.jpg" in out
+
+
+def test_inject_discussion_figures_can_preserve_silver_subheadings(monkeypatch) -> None:
+    topic = {"cover_slug": "silver-demo", "trend_title": "防骗提醒"}
+    monkeypatch.setattr(
+        "scripts.tools.wechat_mp_discussion_figures.ensure_discussion_body_figures",
+        lambda _topic, *, max_images=3: [
+            {"rel": "discussion/silver-demo/still-01.jpg", "cap": "图源：公开报道"}
+        ],
+    )
+    body = (
+        "> 骗子先切断求证渠道\n\n"
+        "第一段事实。第二句解释。\n\n"
+        "> 先恢复和家人的联系\n\n"
+        "挂断，再用自己保存的号码核实。"
+    )
+
+    out = inject_discussion_figures(body, topic, preserve_headings=True)
+
+    assert "> 骗子先切断求证渠道" in out
+    assert "> 先恢复和家人的联系" in out
+    assert out.count("[[fig:") == 1
 
 
 def test_manual_figures_are_used_as_original_illustration_fallback(tmp_path) -> None:
@@ -271,6 +318,91 @@ def test_generated_cover_does_not_suppress_verified_body_photo(
     ]
 
 
+def test_manual_public_report_figure_keeps_source_caption(tmp_path, monkeypatch) -> None:
+    import json
+    from pathlib import Path
+
+    from PIL import Image
+    from scripts.tools import wechat_mp_discussion_figures as mod
+
+    out_dir = tmp_path / "demo-topic"
+    out_dir.mkdir()
+    Image.effect_noise((800, 600), 70).convert("RGB").save(out_dir / "manual-01.jpg")
+    (out_dir / "figure_sources.json").write_text(
+        json.dumps(
+            {
+                "manual-01.jpg": {
+                    "page_title": "学校发型规范报道",
+                    "page_url": "https://example.com/report",
+                    "source_name": "公开报道",
+                    "published_at": "2026-08-25",
+                    "source_type": "news",
+                    "verified": True,
+                }
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(mod, "INLINE_DISCUSSION_ROOT", tmp_path)
+
+    figures = mod._manual_figure_dicts(out_dir, slug="demo-topic", limit=1)
+
+    assert figures[0]["cap"] == "图源：公开报道现场报道"
+
+
+def test_cover_duplicate_supplement_does_not_reduce_manual_fallback(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    import shutil
+    from pathlib import Path
+
+    from PIL import Image
+    from scripts.tools import wechat_mp_discussion_figures as mod
+
+    out_dir = tmp_path / "demo-topic"
+    out_dir.mkdir()
+    Image.effect_noise((800, 600), 80).convert("RGB").save(out_dir / "still-01.jpg")
+    Image.effect_noise((800, 600), 60).convert("RGB").save(out_dir / "still-03.jpg")
+    Image.effect_noise((800, 600), 40).convert("RGB").save(out_dir / "manual-01.jpg")
+    Image.effect_noise((800, 600), 20).convert("RGB").save(out_dir / "manual-02.jpg")
+    monkeypatch.setattr(mod, "INLINE_DISCUSSION_ROOT", tmp_path)
+    monkeypatch.setattr(
+        mod,
+        "ensure_discussion_figures",
+        lambda _topic, max_images: [
+            {"rel": "discussion/demo-topic/still-01.jpg", "cap": "封面同图"},
+            {"rel": "discussion/demo-topic/still-03.jpg", "cap": "正文报道图"},
+        ],
+    )
+    monkeypatch.setattr(
+        mod,
+        "_pick_discussion_cover_source",
+        lambda _out, _topic: out_dir / "still-01.jpg",
+    )
+    monkeypatch.setattr(mod, "_cover_source_filename", lambda _out: "still-01.jpg")
+
+    def add_cover_duplicate(*_args, **_kwargs):
+        shutil.copy2(out_dir / "still-01.jpg", out_dir / "still-02.jpg")
+        return [
+            {"rel": "discussion/demo-topic/still-02.jpg", "cap": "补充报道图"}
+        ]
+
+    monkeypatch.setattr(mod, "_supplement_missing_figures", add_cover_duplicate)
+
+    figures = mod.ensure_discussion_body_figures(
+        {"cover_slug": "demo-topic", "trend_title": "演示事件"},
+        max_images=3,
+    )
+
+    assert [Path(fig["rel"]).name for fig in figures] == [
+        "still-03.jpg",
+        "manual-01.jpg",
+        "manual-02.jpg",
+    ]
+
+
 def test_figure_caption_uses_verified_source_name() -> None:
     from scripts.tools.wechat_mp_discussion_figures import _figure_caption
 
@@ -278,6 +410,78 @@ def test_figure_caption_uses_verified_source_name() -> None:
         _figure_caption({"source_name": "新民晚报", "verified": "true"})
         == "图源：新民晚报现场报道"
     )
+
+
+def test_verified_related_context_figure_survives_topic_filter(tmp_path) -> None:
+    from scripts.tools import wechat_mp_discussion_figures as mod
+
+    path = tmp_path / "still-03.jpg"
+    path.write_bytes(b"report-image")
+    topic = {
+        "trend_title": "格力技工学校首届招生，董明珠担任校长",
+        "title_zh": "格力技工学校首届招生，董明珠担任校长",
+    }
+    meta = {
+        path.name: {
+            "page_title": "车间进校园 实践促就业",
+            "page_url": "https://www.news.cn/photo/example/c.html",
+            "source_name": "新华社",
+            "verified": "true",
+            "usage_scope": "related_context",
+            "caption": "职业教育资料图：学生进行智能制造实训。图源：新华社",
+        }
+    }
+
+    kept = mod._filter_stills_with_meta(
+        topic,
+        [path],
+        meta,
+        mod._topic_figure_keywords(topic),
+    )
+
+    assert kept == [path]
+
+
+def test_consolidate_stills_preserves_all_images_when_score_reorders_names(
+    tmp_path,
+) -> None:
+    import json
+
+    from PIL import Image
+    from scripts.tools import wechat_mp_discussion_figures as mod
+
+    sizes = ((640, 480), (1200, 900), (900, 675))
+    meta = {}
+    for index, size in enumerate(sizes, 1):
+        name = f"still-{index:02d}.jpg"
+        Image.effect_noise(size, 40 + index * 15).convert("RGB").save(
+            tmp_path / name,
+            quality=88,
+        )
+        meta[name] = {
+            "page_title": f"格力技工学校技能实训资料图{index}",
+            "page_url": f"https://example{index}.com/report",
+            "source_name": f"来源{index}",
+            "verified": "true",
+        }
+    (tmp_path / "figure_sources.json").write_text(
+        json.dumps(meta, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    mod._consolidate_stills(
+        tmp_path,
+        topic={"trend_title": "格力技工学校首届招生"},
+        max_images=3,
+    )
+
+    assert len(list(tmp_path.glob("still-*.jpg"))) == 3
+    saved = mod._load_figure_sources(tmp_path)
+    assert {item["page_url"] for item in saved.values()} == {
+        "https://example1.com/report",
+        "https://example2.com/report",
+        "https://example3.com/report",
+    }
 
 
 def test_legacy_figure_metadata_remains_readable() -> None:
@@ -537,6 +741,136 @@ def test_lazy_img_data_src_parsed() -> None:
     page = "https://news.163.com/article/123.html"
     imgs = _content_images_from_html(html, page)
     assert imgs
+
+
+def test_163_post_body_excludes_recommendation_images() -> None:
+    html = """
+    <div class="post_body">
+      <p>事件正文</p>
+      <img src="https://nimg.ws.126.net/?url=https%3A%2F%2Fdingyue.ws.126.net%2F2026%2F0811%2Fevent.jpg&amp;thumbnail=660x9999">
+    </div>
+    <div class="post_recommend">
+      <img src="https://dingyue.ws.126.net/2026/0812/unrelated.jpg">
+    </div>
+    """
+
+    imgs = _content_images_from_html(html, "https://www.163.com/dy/article/example.html")
+
+    assert imgs == ["https://dingyue.ws.126.net/2026/0811/event.jpg"]
+
+
+def test_sina_article_without_body_image_does_not_use_recommendation_image() -> None:
+    html = """
+    <div class="article" id="article"><p>AI 配音侵权正文。</p></div>
+    <div id="timeline_pc_tmpl">
+      <img src="https://n.sinaimg.cn/sinakd/20260814/example-carrier.jpg">
+    </div>
+    """
+
+    imgs = _content_images_from_html(
+        html,
+        "https://k.sina.com.cn/article_example.html",
+    )
+
+    assert imgs == []
+
+
+def test_sina_article_uses_body_image_and_excludes_recommendation_image() -> None:
+    html = """
+    <div class="article" id="article">
+      <img src="https://n.sinaimg.cn/sinakd/20260814/voice-event.jpg">
+    </div>
+    <div id="timeline_pc_tmpl">
+      <img src="https://n.sinaimg.cn/sinakd/20260814/example-carrier.jpg">
+    </div>
+    """
+
+    imgs = _content_images_from_html(
+        html,
+        "https://k.sina.com.cn/article_example.html",
+    )
+
+    assert imgs == ["https://n.sinaimg.cn/sinakd/20260814/voice-event.jpg"]
+
+
+def test_compound_chinese_topic_matches_headline_with_split_terms() -> None:
+    from scripts.tools import wechat_mp_discussion_figures as mod
+
+    topic = {
+        "trend_title": "赵一鸣牛肉干称重争议",
+        "title_zh": "赵一鸣牛肉干称重争议",
+    }
+    html = """
+    <html><head>
+      <title>赵一鸣4块牛肉干64元，复称仅17元</title>
+      <meta name="description" content="河北顾客购买散装牛肉干后发现小票重量与回家复称结果存在明显差异，门店回应称系统出错。">
+    </head></html>
+    """
+
+    relevant, parsed = mod._page_relevant_for_figures(
+        topic,
+        page_url="https://www.163.com/dy/article/example.html",
+        html=html,
+        hit=None,
+        keywords=mod._topic_figure_keywords(topic),
+        strict=True,
+    )
+
+    assert parsed is not None
+    assert relevant
+
+
+def test_163_article_has_traceable_source_name() -> None:
+    from scripts.tools import wechat_mp_discussion_figures as mod
+
+    info = mod._verified_figure_source(
+        page_url="https://www.163.com/dy/article/example.html",
+        image_url="https://dingyue.ws.126.net/2026/0811/example.jpg",
+        html='<meta property="article:published_time" content="2026-08-11T21:39:10+08:00">',
+        hit=None,
+    )
+
+    assert info["source_name"] == "网易订阅"
+    assert info["verified"] == "true"
+
+
+def test_fetch_html_respects_gb18030_response_charset(monkeypatch) -> None:
+    from scripts.tools import wechat_mp_discussion_figures as mod
+
+    html = "<html><head><title>赵一鸣牛肉干称重争议</title></head></html>"
+
+    class FakeResponse:
+        headers = {"Content-Type": "text/html; charset=gb18030"}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def read(self, _limit):
+            return html.encode("gb18030")
+
+    monkeypatch.setattr(mod.urllib.request, "urlopen", lambda *_args, **_kwargs: FakeResponse())
+
+    assert "赵一鸣牛肉干称重争议" in mod._fetch_html("https://www.163.com/example")
+
+
+def test_short_meta_description_falls_back_to_article_paragraph() -> None:
+    from scripts.tools.wechat_mp_discussion_research import _parse_article_page
+
+    html = """
+    <title>赵一鸣4块牛肉干64元，复称仅17元_网易订阅</title>
+    <meta name="description" content="赵一鸣涉事店铺老板回应">
+    <div class="post_body">
+      <p>河北沧州一名顾客购买散装牛肉干后发现，小票所示重量与回家复称结果存在明显差异，门店回应称系统出错。</p>
+    </div>
+    """
+
+    hit = _parse_article_page("https://www.163.com/dy/article/example.html", html)
+
+    assert hit is not None
+    assert "重量" in hit.snippet
 
 
 def test_figure_search_queries_splits_title() -> None:

@@ -226,7 +226,7 @@ def title_sousou_hook_score(title: str, kind: str) -> int:
             - (3 if "必读" in t else 0)
             - (2 if "怎么读" in t else 0)
         )
-    if kind in {"hotspot", "hot_business", "tv_review"}:
+    if kind in {"hotspot", "hot_business", "tv_review", "literary"}:
         front = t[:15]
         return (
             (2 if re.search(r"\d", front) else 0)

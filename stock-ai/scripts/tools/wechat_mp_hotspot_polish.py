@@ -367,6 +367,11 @@ def dedupe_hotspot_index_mentions(text: str) -> str:
 
 
 HOTSPOT_PARA_MAX_CHARS = 130
+_RICH_CONTROL_LINE_RE = re.compile(r"^\[\[(?:fig|hl|cta):.*\]\]$")
+
+
+def _is_rich_control_line(text: str) -> bool:
+    return bool(_RICH_CONTROL_LINE_RE.match((text or "").strip()))
 
 
 def reflow_hotspot_layout(text: str, *, max_chars: int = HOTSPOT_PARA_MAX_CHARS) -> str:
@@ -374,30 +379,42 @@ def reflow_hotspot_layout(text: str, *, max_chars: int = HOTSPOT_PARA_MAX_CHARS)
     paragraphs = [p.strip() for p in re.split(r"\n\n+", (text or "").strip()) if p.strip()]
     if not paragraphs:
         return text or ""
+    from scripts.tools.wechat_mp_rich_html import (
+        hold_inline_hl_markers,
+        restore_inline_hl_markers,
+    )
+
     out: list[str] = []
     for para in paragraphs:
+        para, held = hold_inline_hl_markers(para)
         if len(para) <= max_chars:
-            out.append(para)
+            out.append(restore_inline_hl_markers(para, held))
             continue
         sentences = [s for s in re.split(r"(?<=[。！？])", para) if s.strip()]
         if len(sentences) <= 1:
-            out.append(para)
+            out.append(restore_inline_hl_markers(para, held))
             continue
         buf = ""
         for sent in sentences:
             if len(buf) + len(sent) <= max_chars or not buf:
                 buf += sent
                 if len(buf) >= max_chars:
-                    out.append(buf.strip())
+                    out.append(restore_inline_hl_markers(buf.strip(), held))
                     buf = ""
             else:
-                out.append(buf.strip())
+                out.append(restore_inline_hl_markers(buf.strip(), held))
                 buf = sent
         if buf.strip():
-            out.append(buf.strip())
+            out.append(restore_inline_hl_markers(buf.strip(), held))
     merged: list[str] = []
     for para in out:
-        if merged and len(para) < 36 and len(merged[-1]) < max_chars:
+        if (
+            merged
+            and len(para) < 36
+            and len(merged[-1]) < max_chars
+            and not _is_rich_control_line(para)
+            and not _is_rich_control_line(merged[-1])
+        ):
             merged[-1] = merged[-1].rstrip() + para
         else:
             merged.append(para)

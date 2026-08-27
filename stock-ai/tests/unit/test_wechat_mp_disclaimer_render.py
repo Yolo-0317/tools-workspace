@@ -44,40 +44,59 @@ def test_single_disclaimer_in_rendered_html() -> None:
     assert html.index("盘面速览") < html.rindex("不构成投资建议")
 
 
-def test_hotspot_uses_commentary_notice_not_finance() -> None:
+def test_commentary_longforms_skip_generic_notices() -> None:
     from scripts.tools.wechat_mp_public import (
         COMMENTARY_INFORMATION_NOTICE,
         INFORMATION_NOTICE,
         information_notice_for_kind,
     )
 
-    assert information_notice_for_kind("hotspot") == COMMENTARY_INFORMATION_NOTICE
+    assert information_notice_for_kind("hotspot") == ""
+    assert information_notice_for_kind("hot_business") == ""
+    assert information_notice_for_kind("tv_review") == ""
     assert INFORMATION_NOTICE not in information_notice_for_kind("hotspot")
     assert information_notice_for_kind("news") == INFORMATION_NOTICE
 
 
-def test_hotspot_render_commentary_notice_and_disclaimer() -> None:
+def test_hotspot_render_has_no_generic_notice_or_disclaimer() -> None:
     from scripts.tools.wechat_mp_content import COMMENTARY_DISCLAIMER
     from scripts.tools.wechat_mp_public import COMMENTARY_INFORMATION_NOTICE
 
     body = "张三是笔试第一名。第二名花钱劝他弃考。"
     html, merged = render_article_content_html(body, kind="hotspot", upload_figures=False)
-    assert COMMENTARY_INFORMATION_NOTICE in merged
+    assert COMMENTARY_INFORMATION_NOTICE not in merged
     assert "非证券投资咨询" not in merged
     assert "公开市场数据整理" not in merged
-    assert COMMENTARY_DISCLAIMER in merged
-    assert COMMENTARY_INFORMATION_NOTICE in html or "公开报道" in html
+    assert COMMENTARY_DISCLAIMER not in merged
+    assert "不代表本号立场" not in html
 
 
-def test_tv_review_keeps_spoiler_warning_before_commentary_notice() -> None:
+def test_tv_review_discussion_skips_commentary_notice_and_masthead() -> None:
+    from scripts.tools.wechat_mp_public import COMMENTARY_INFORMATION_NOTICE
+
+    body = "2021年大年初一，央视播《典籍里的中国》第一集。"
+    html, merged = render_article_content_html(
+        body,
+        kind="tv_review",
+        engagement_kind="discussion",
+        upload_figures=False,
+    )
+
+    assert COMMENTARY_INFORMATION_NOTICE not in merged
+    assert "公开报道与网络讨论" not in merged
+    assert "牛马也智能" not in html
+    assert "banner.png" not in html
+
+
+def test_tv_review_keeps_spoiler_warning_without_commentary_notice() -> None:
     from scripts.tools.wechat_mp_public import COMMENTARY_INFORMATION_NOTICE
 
     body = "剧透预警：下文涉及《奥德赛》完整剧情与结局。\n\n正文第一段。"
     html, merged = render_article_content_html(body, kind="tv_review", upload_figures=False)
 
     assert merged.startswith("剧透预警：下文涉及《奥德赛》完整剧情与结局。")
-    assert merged.index("剧透预警") < merged.index(COMMENTARY_INFORMATION_NOTICE)
-    assert html.index("剧透预警") < html.index("公开报道")
+    assert COMMENTARY_INFORMATION_NOTICE not in merged
+    assert "公开报道与网络讨论" not in html
 
 
 def test_information_notice_not_duplicated_on_re_render() -> None:

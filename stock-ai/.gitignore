@@ -47,6 +47,9 @@ jupyter/
 
 # 公众号 API 运行时（含 access_token，勿提交）
 data/
+!data/
+data/*
+!data/wechat_mp_silver_topics.json
 .cache/
 
 # Codex 公众号补图续跑请求（运行时生成）

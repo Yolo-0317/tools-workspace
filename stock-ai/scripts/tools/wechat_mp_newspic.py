@@ -24,7 +24,12 @@ from scripts.tools.wechat_mp_client import (
     fetch_draft_news_item,
 )
 from scripts.tools.wechat_mp_draft_slots import get_slot_media_id, set_slot_media_id
-from scripts.tools.wechat_mp_virtual_film import FILM_LANES, FILM_RULES
+from scripts.tools.wechat_mp_virtual_film import (
+    FILM_LANES,
+    FILM_RULES,
+    film_copy_ranges,
+    is_film_copy_length_valid,
+)
 
 TZ = ZoneInfo("Asia/Shanghai")
 IMAGE_CACHE_PATH = ROOT / "data" / "wechat_mp_newspic_image_cache.json"
@@ -36,13 +41,13 @@ SIX_IMAGE_CONTENT_RANGE = (600, 800)
 MULTI_IMAGE_CONTENT_RANGE = (800, 1000)
 VIRTUAL_MIN_IMAGES = 2
 VIRTUAL_MAX_IMAGES = 6
-VIRTUAL_MAX_TITLE_CHARS = 32
+VIRTUAL_MAX_TITLE_CHARS = MAX_TITLE_CHARS
 VIRTUAL_CONTENT_RANGES = {
-    2: (150, 300),
-    3: (150, 500),
-    4: (300, 500),
-    5: (600, 800),
-    6: (600, 800),
+    2: (400, 600),
+    3: (400, 700),
+    4: (400, 800),
+    5: (500, 900),
+    6: (600, 1000),
 }
 WATERMARK_FONT_CANDIDATES = (
     "/System/Library/Fonts/PingFang.ttc",
@@ -81,7 +86,20 @@ def _validate_newspic_text(
             raise ValueError(
                 f"{content_lane} 须使用 {minimum_images}-{maximum_images} 张图片"
             )
-        content_min, content_max = FILM_RULES[content_lane]["copy"]
+        if not is_film_copy_length_valid(
+            content_lane=content_lane,
+            length=len(normalized_content),
+            image_count=image_count,
+        ):
+            ranges = " 或 ".join(
+                f"{minimum}-{maximum}"
+                for minimum, maximum in film_copy_ranges(
+                    content_lane=content_lane,
+                    image_count=image_count,
+                )
+            )
+            raise ValueError(f"{image_count} 图贴图说明须为 {ranges} 字")
+        return
     elif _is_virtual_lifestyle(draft_profile):
         if not VIRTUAL_MIN_IMAGES <= image_count <= VIRTUAL_MAX_IMAGES:
             raise ValueError(
@@ -130,8 +148,11 @@ def validate_newspic_image_sources(
     content_lane: str = "",
     character_image_policy: str = "default_one",
     visual_exception: str = "",
+    ai_disclosure_mode: str = "body",
 ) -> dict[str, dict[str, Any]]:
     """要求每张贴图保留报道图或原创补位的来源记录。"""
+    if ai_disclosure_mode not in {"body", "platform_publish"}:
+        raise ValueError("栀夏 AI 声明模式须为 body / platform_publish")
     sources = load_newspic_image_sources(sources_path)
     has_original = False
     has_virtual_character = False
@@ -228,7 +249,9 @@ def validate_newspic_image_sources(
             raise ValueError("未知的栀夏角色图片策略")
     if has_original and content is not None:
         if _is_virtual_lifestyle(draft_profile):
-            if "AI 虚拟角色" not in content or "AI 生成示意图" not in content:
+            if ai_disclosure_mode == "body" and (
+                "AI 虚拟角色" not in content or "AI 生成示意图" not in content
+            ):
                 raise ValueError(
                     "栀夏贴图正文须同时标注“AI 虚拟角色 / AI 生成示意图”"
                 )
@@ -403,6 +426,7 @@ def upsert_newspic_draft(
     content_lane: str = "",
     character_image_policy: str = "default_one",
     visual_exception: str = "",
+    ai_disclosure_mode: str = "body",
 ) -> tuple[str, str]:
     paths = validate_newspic_input(
         title=title,
@@ -422,6 +446,7 @@ def upsert_newspic_draft(
             content_lane=content_lane,
             character_image_policy=character_image_policy,
             visual_exception=visual_exception,
+            ai_disclosure_mode=ai_disclosure_mode,
         )
     with tempfile.TemporaryDirectory(prefix="wechat-mp-newspic-") as temp_dir:
         upload_paths = prepare_newspic_images(

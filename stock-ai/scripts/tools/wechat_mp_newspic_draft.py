@@ -16,10 +16,16 @@ from scripts.tools.wechat_mp_codex_images import (
     CodexImageGenerationRequired,
     prepare_newspic_topic_images,
 )
+from scripts.tools.wechat_mp_client import verify_required_wechat_egress
 from scripts.tools.wechat_mp_newspic import (
     upsert_newspic_draft,
     validate_newspic_image_sources,
     validate_newspic_input,
+)
+from scripts.tools.wechat_mp_originality import (
+    evaluate_zhixia_newspic,
+    format_originality_report,
+    require_originality,
 )
 from scripts.tools.wechat_mp_virtual_editorial import (
     FILM_LANES,
@@ -56,6 +62,15 @@ def _resolve_newspic_images(args: argparse.Namespace) -> tuple[list[Path], Path]
     if not images or sources_path is None:
         raise ValueError("必须提供 --topic，或同时提供 --images 与 --image-sources")
     return images, Path(sources_path)
+
+
+def _preflight_before_mutation(*, dry_run: bool) -> None:
+    if dry_run:
+        return
+    try:
+        verify_required_wechat_egress()
+    except RuntimeError as exc:
+        raise ValueError(str(exc)) from exc
 
 
 def main() -> int:
@@ -168,8 +183,24 @@ def main() -> int:
             visual_exception=(
                 str(topic_card.get("visual_exception") or "") if topic_card else ""
             ),
+            ai_disclosure_mode=(
+                str(topic_card.get("ai_disclosure_mode") or "body")
+                if topic_card
+                else "body"
+            ),
         )
         if topic_card is not None:
+            originality_report = require_originality(
+                evaluate_zhixia_newspic(
+                    title=args.title,
+                    content=content,
+                    content_lane=content_lane,
+                    image_paths=image_paths,
+                    image_sources=image_sources,
+                    history_posts=history.get("posts", []),
+                )
+            )
+            print(format_originality_report(originality_report))
             has_report_images = any(
                 str(source.get("source_type") or "") == "report"
                 for source in image_sources.values()
@@ -186,7 +217,14 @@ def main() -> int:
                     ),
                 )
             else:
-                validate_opinion_copy(content, has_report_images=has_report_images)
+                validate_opinion_copy(
+                    content,
+                    has_report_images=has_report_images,
+                    ai_disclosure_mode=str(
+                        topic_card.get("ai_disclosure_mode") or "body"
+                    ),
+                )
+        _preflight_before_mutation(dry_run=args.dry_run)
     except CodexImageGenerationRequired as exc:
         print(f"需要 Codex 原创补图: {exc}", file=sys.stderr)
         return 2
@@ -225,6 +263,11 @@ def main() -> int:
         ),
         visual_exception=(
             str(topic_card.get("visual_exception") or "") if topic_card else ""
+        ),
+        ai_disclosure_mode=(
+            str(topic_card.get("ai_disclosure_mode") or "body")
+            if topic_card
+            else "body"
         ),
     )
     if topic_card is not None and args.topic_card is not None:

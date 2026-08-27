@@ -42,14 +42,26 @@ TECH_DISCLAIMER = "本文为作者个人工程笔记，仅供学习交流。"
 TECH_DRAFT_KINDS = frozenset({"workspace", "temp", "tech", "lab", "dev"})
 
 
+def masthead_kind_for_render(
+    kind: str | None,
+    engagement_kind: str | None = None,
+    masthead_kind: str | None = None,
+) -> str | None:
+    """品牌头 kind：影视/热点等已禁用 masthead 时勿因 engagement_kind=discussion 误开牛马图。"""
+    if masthead_kind:
+        return masthead_kind
+    k = (kind or "").strip().lower()
+    if k in {"guba", "hotspot", "hot_business", "tv_review", "tv", "film", "movie", "literary"}:
+        return k
+    return engagement_kind or kind
+
+
 def disclaimer_for_kind(kind: str | None) -> str:
     """行情稿用投资免责；热点评论用信息整理说明；技术分享用工程笔记说明。"""
     k = (kind or "").strip().lower()
     if k == "guba":
         return ""
-    if k == "hotspot":
-        return COMMENTARY_DISCLAIMER
-    if k in {"short_drama_feature", "tv_review", "tv", "film", "movie"}:
+    if k in {"hotspot", "hot_business", "short_drama_feature", "tv_review", "tv", "film", "movie", "literary"}:
         return ""
     if k == "silver":
         return ""
@@ -656,7 +668,7 @@ def render_article_content_html(
             from scripts.tools.wechat_mp_discussion_polish import finalize_discussion_body
 
             core = finalize_discussion_body(core)
-    notice = information_notice_for_kind(kind)
+    notice = information_notice_for_kind(kind, engagement_kind=engagement_kind)
     if notice:
         normalized_kind = (kind or "").strip().lower()
         if normalized_kind in {"tv_review", "tv", "film", "movie"} and core.startswith(
@@ -680,7 +692,11 @@ def render_article_content_html(
     body_html = text_to_html(core, upload_figures=upload_figures, article_kind=html_kind)
     disc_html = disclaimer_html(disc_text, kind=kind) if disc_text else ""
     masthead = masthead_html(
-        masthead_kind or engagement_kind or kind,
+        masthead_kind_for_render(
+            kind,
+            engagement_kind=engagement_kind,
+            masthead_kind=masthead_kind,
+        ),
         upload_images=upload_figures,
     )
     content = f"{masthead}{body_html}{disc_html}" if masthead else f"{body_html}{disc_html}"
@@ -767,6 +783,29 @@ def _redact_account_hints(line: str) -> str:
     return line.strip()
 
 
+def _hotspot_clickworthy_opening(
+    body: str,
+    *,
+    topic_label: str,
+    research_hits: list[dict[str, str]],
+    enabled: bool,
+) -> str:
+    """研究命中足够时，给自动热点稿加已披露的合成情境引子。"""
+    from scripts.tools.wechat_mp_clickworthy import prepend_disclosed_composite_opening
+
+    facts = [
+        "。".join(part for part in (row.get("title", ""), row.get("snippet", "")) if part)
+        for row in research_hits
+        if row.get("title") or row.get("snippet")
+    ]
+    return prepend_disclosed_composite_opening(
+        body,
+        topic_label=topic_label,
+        fact_lines=facts,
+        enabled=enabled,
+    )
+
+
 def build_hotspot_article(
     *,
     edition: str | None = None,
@@ -820,6 +859,18 @@ def build_hotspot_article(
         trade_label=trade_label,
         primary_theme=primary,
     )
+    if codex_draft is None and topics:
+        hits = hotspot_mod._research_hits_from_topic(topics[0])
+        polished = _hotspot_clickworthy_opening(
+            polished,
+            topic_label=primary,
+            research_hits=[
+                {"title": str(hit.title or ""), "snippet": str(hit.snippet or "")}
+                for hit in hits
+            ],
+            enabled=os.getenv("WECHAT_MP_TITLE_VIRAL_MODE", "").strip().lower()
+            in {"1", "true", "yes", "on"},
+        )
     title = title_override or build_hotspot_title(topics, body=polished)
     digest = digest_override or build_hotspot_digest(topics, trade_label=trade_label)
 
@@ -1156,6 +1207,7 @@ DRAFT_KINDS = (
     "temp",
     "guba",
     "tv_review",
+    "literary",
 )
 
 
@@ -1224,6 +1276,8 @@ def build_article(
         from scripts.tools.wechat_mp_tv_review_article import build_tv_review_article
 
         return build_tv_review_article()
+    if k == "literary":
+        raise ValueError("literary 必须通过 DeepSeek 浏览器工作流提供结构化稿件")
     raise ValueError(f"未知 kind={kind!r}，可选: {', '.join(DRAFT_KINDS)}")
 
 

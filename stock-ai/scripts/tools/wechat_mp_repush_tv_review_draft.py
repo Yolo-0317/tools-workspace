@@ -111,9 +111,7 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 1
-        from scripts.tools.wechat_mp_content import disclaimer_for_kind
-
-        body = f"{body}\n\n{disclaimer_for_kind('tv_review')}"
+        body = body.rstrip()
     else:
         ensure_tv_stills(topic)
         body_core = str(cache.get("body_core") or "")

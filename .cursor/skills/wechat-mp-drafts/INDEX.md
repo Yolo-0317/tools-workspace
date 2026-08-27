@@ -36,6 +36,15 @@
 3. **[social-commentary-voice.md](../wechat-mp-writing/social-commentary-voice.md)** — **社会民生热点**：短段、物件立人、通报对照、感情色彩  
 4. [eval-gates.md](../wechat-mp-writing/eval-gates.md) · [revision-workflow.md](../wechat-mp-writing/revision-workflow.md) · [anti-ai-voice.md](../wechat-mp-writing/anti-ai-voice.md) · [depth-and-opinion.md](../wechat-mp-writing/depth-and-opinion.md)
 
+用户主动要求新写热点深评时，优先走 [deepseek-writer-sop.md](../wechat-mp-writing/deepseek-writer-sop.md) 的固定 Chrome 会话双确认流程；定时热点仍使用 Codex，不依赖浏览器登录。
+
+### 文学与典籍（literary · 手动独立槽位）
+
+1. 读取 [deepseek-writer-sop.md](../wechat-mp-writing/deepseek-writer-sop.md)。
+2. Agent 研究并展示提示词，用户第一次确认后绑定固定 DeepSeek 会话写稿。
+3. Agent 核验原文、节目、篇数、字数、时代和人物关系，完成高亮及公开来源配图。
+4. 用户第二次确认后写入 `literary`，不得复用或覆盖 `tv_review`。
+
 ### 热点商业（手动独立流程）
 
 1. 从每日热点自动选题：`uv run python -m scripts.tools.wechat_mp_draft --kind hot_business --dry-run`
@@ -136,7 +145,7 @@
 
 ```bash
 # stock-ai/.env
-WECHAT_MP_CODEX_TIMEOUT_SECONDS=420 # 公众号写稿只用 Codex，失败不回退
+WECHAT_MP_CODEX_TIMEOUT_SECONDS=420 # 定时公众号写稿只用 Codex，失败不回退
 WECHAT_MP_CODEX_MAX_RETRIES=1
 SOP_LLM_BACKEND=deepseek          # 仅非公众号的东财 SOP
 DEEPSEEK_API_KEY=sk-...

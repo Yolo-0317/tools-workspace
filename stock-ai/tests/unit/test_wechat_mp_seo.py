@@ -67,7 +67,7 @@ def test_title_sousou_hook_score_prefers_search_winners():
     assert title_sousou_hook_score("A股电力｜产业链怎么拆？收盘观察", "sector") >= 4
 
 
-def test_sync_article_content_keeps_banner_img(monkeypatch, tmp_path) -> None:
+def test_sync_article_content_does_not_restore_disabled_banner(monkeypatch, tmp_path) -> None:
     import json
 
     from scripts.tools import wechat_mp_masthead as mh
@@ -101,8 +101,8 @@ def test_sync_article_content_keeps_banner_img(monkeypatch, tmp_path) -> None:
         "content": "<p>old</p>",
     }
     out = sync_article_content_from_body(article, kind="market")
-    assert "https://mmbiz.qpic.cn/test/banner" in out["content"]
-    assert "<img " in out["content"]
+    assert "https://mmbiz.qpic.cn/test/banner" not in out["content"]
+    assert "<img " not in out["content"]
     assert out["content"].endswith("</mp-common-cpsad>")
 
 

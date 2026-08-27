@@ -36,6 +36,10 @@ from scripts.tools.wechat_mp_sousou_eval import (
     check_title_opening_aligned,
     check_title_sousou_complete,
 )
+from scripts.tools.wechat_mp_empathy_checklist import (
+    EMPATHY_SUPPORTED_KINDS,
+    run_empathy_discussion_checks,
+)
 
 # 移动端约 3 分钟阅读（纯文字，不含 HTML）
 READ_MIN_CHARS = 400
@@ -50,6 +54,7 @@ class TrafficCheckItem:
     passed: bool
     hint: str = ""
     manual: bool = False
+    advisory: bool = False
 
 
 @dataclass
@@ -61,19 +66,23 @@ class TrafficChecklistReport:
 
     @property
     def auto_passed(self) -> int:
-        return sum(1 for i in self.items if not i.manual and i.passed)
+        return sum(1 for i in self.items if not i.manual and not i.advisory and i.passed)
 
     @property
     def auto_total(self) -> int:
-        return sum(1 for i in self.items if not i.manual)
+        return sum(1 for i in self.items if not i.manual and not i.advisory)
 
     @property
     def manual_pending(self) -> list[TrafficCheckItem]:
         return [i for i in self.items if i.manual and not i.passed]
 
     @property
+    def advisory_pending(self) -> list[TrafficCheckItem]:
+        return [i for i in self.items if i.advisory and not i.passed]
+
+    @property
     def verdict(self) -> str:
-        failed = [i for i in self.items if not i.manual and not i.passed]
+        failed = [i for i in self.items if not i.manual and not i.advisory and not i.passed]
         if not failed:
             return "自动项通过"
         return f"待优化 {len(failed)} 项"
@@ -396,6 +405,33 @@ def run_traffic_checklist(
         )
     )
 
+    if kind in EMPATHY_SUPPORTED_KINDS:
+        try:
+            for check in run_empathy_discussion_checks(
+                title=t,
+                body=plain,
+                kind=kind,
+            ):
+                items.append(
+                    TrafficCheckItem(
+                        id=check.id,
+                        label=check.label,
+                        passed=check.passed,
+                        hint=check.hint,
+                        advisory=True,
+                    )
+                )
+        except Exception as exc:  # noqa: BLE001
+            items.append(
+                TrafficCheckItem(
+                    id="empathy_check_error",
+                    label="共鸣讨论点检查执行异常",
+                    passed=False,
+                    hint=f"{type(exc).__name__}: {exc}" if str(exc) else "请重试",
+                    advisory=True,
+                )
+            )
+
     # 后台人工项（API 无法代做）
     items.extend(
         [
@@ -439,12 +475,21 @@ def format_traffic_report(report: TrafficChecklistReport, *, verbose: bool = Tru
     ]
     if verbose:
         for item in report.items:
-            mark = "✓" if item.passed else ("○" if item.manual else "✗")
+            if item.manual:
+                mark = "○"
+            elif item.advisory:
+                mark = "●"
+            else:
+                mark = "✓" if item.passed else "✗"
             suffix = f" — {item.hint}" if item.hint else ""
-            tag = " [后台]" if item.manual else ""
+            tag = " [后台]" if item.manual else (" [建议]" if item.advisory else "")
             lines.append(f"  {mark} {item.label}{tag}{suffix}")
     else:
-        failed = [i.label for i in report.items if not i.passed and not i.manual]
+        failed = [
+            i.label
+            for i in report.items
+            if not i.passed and not i.manual and not i.advisory
+        ]
         if failed:
             lines.append("待优化: " + "、".join(failed))
     return "\n".join(lines)

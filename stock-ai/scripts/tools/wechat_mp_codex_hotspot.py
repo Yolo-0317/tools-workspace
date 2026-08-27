@@ -8,6 +8,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from scripts.tools.wechat_mp_originality import (
+    OriginalityReport,
+    evaluate_hotspot_longform,
+    require_originality,
+)
+
 
 @dataclass(frozen=True)
 class CodexHotspotDraft:
@@ -19,6 +25,7 @@ class CodexHotspotDraft:
     topic: str
     research_urls: tuple[str, ...] = ()
     slot_key: str = ""
+    original_thesis: str = ""
 
     def as_discussion_topic(self) -> dict[str, object]:
         slug = re.sub(r"[^\w\-]+", "-", self.topic[:28]).strip("-").lower()
@@ -66,4 +73,21 @@ def load_codex_hotspot_draft(path: Path) -> CodexHotspotDraft:
         topic=_required_text(data, "topic"),
         research_urls=tuple(url.strip() for url in raw_urls),
         slot_key=raw_slot.strip(),
+        original_thesis=str(data.get("original_thesis") or "").strip(),
+    )
+
+
+def validate_codex_hotspot_originality(
+    draft: CodexHotspotDraft,
+    *,
+    history_posts: list[dict[str, Any]],
+) -> OriginalityReport:
+    return require_originality(
+        evaluate_hotspot_longform(
+            title=draft.title,
+            body=draft.body,
+            research_urls=draft.research_urls,
+            thesis=draft.original_thesis,
+            history_posts=history_posts,
+        )
     )

@@ -474,8 +474,14 @@ def draft_article_payload(article: dict[str, Any]) -> dict[str, Any]:
     from scripts.tools.wechat_mp_content import content_source_url_enabled
 
     item = dict(article)
-    item.pop("body_text", None)
-    item.pop("short_drama", None)
+    for key in (
+        "body_text",
+        "short_drama",
+        "engagement_kind",
+        "recommended_hashtags",
+        "publish_reminder",
+    ):
+        item.pop(key, None)
     if not content_source_url_enabled():
         item.pop("content_source_url", None)
     return item

@@ -74,3 +74,20 @@ def test_silver_natural_ending_question_counts_as_engagement() -> None:
 
     by_id = {item.id: item for item in rep.items}
     assert by_id["engagement_hook"].passed
+
+
+def test_traffic_checklist_marks_empathy_items_as_advisory() -> None:
+    rep = run_traffic_checklist(
+        title="银发栏目：高叶在职场里的坚持",
+        digest="高叶新片反转与真实生活共振。",
+        body=(
+            "高叶的表演让观众第一次看见，工作家庭和自我之间并不对立。"
+            "她在账本和理想间反复折中，为了孩子也不愿放弃这份体面的职业。"
+            "同事推她加班，父母担心她放弃体面，三方都在施加压力。"
+            "如果是你，你会让她先保住家庭？还是先保住自己的选择？"
+        ),
+        kind="silver",
+    )
+    empathy = [i for i in rep.items if i.id in {"empathy_subject_early", "concrete_cost_before_third", "balanced_tension_before_third", "reader_choice_connected"}]
+    assert empathy
+    assert all(i.advisory for i in empathy)
