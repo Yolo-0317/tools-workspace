@@ -8,6 +8,16 @@
 
 `exports/ep01-flower-subtitled-v02-fullscreen.mp4`
 
+> 历史兼容：本页第2节至第9节中的“一字三诗”约20秒流程保留给已存在栏目。后续新建的“单诗一境”作品默认执行下方的10秒规范，并引用[10秒写实超现实诗境设计](superpowers/specs/2026-08-27-10s-realistic-surreal-poetry-camera-and-color-design.md)。
+
+## 1.1 新默认：10 秒单诗一境
+
+1. 先生成最终采用的 TTS：两句极短互动与两句完整诗句；以真实时长反推画面节点，禁止为了预设时间轴强制加速诗句。
+2. 时间轴默认是：0—2.4 秒第一帧钩子与两句极短互动；2.4 秒后朗诵第一句诗；第二句诗朗诵期间完成唯一方向变化与诗境揭示；最后一个字结束即收束。
+3. 每集只选 M01—M04 的一个镜头母题、一个视觉承接物、零或一个辅助特效；写实材质和超现实位移可并存。
+4. 默认调色是清透、略高饱和、暖冷分层，不使用灰雾脏画面、荧光色或无来源的全屏特效。
+5. Seedance 只生成画面、无人声音乐与环境声；所有互动、诗句和字幕由后期添加。
+
 ## 2. 成片结构
 
 | 时间 | 内容 | 是否复用 |
@@ -51,7 +61,7 @@ EP01使用的字幕与配音时间以 `episodes/ep01/subtitles-flower.json` 为�
 
 | 角色 | 豆包TTS音色 | 用途 |
 | --- | --- | --- |
-| 栀夏 | `ICL_uranus_zh_female_tianmeijiaoqiao_tob` | 第一、第三句等较柔和诗句 |
+| 栀夏 | `ICL_uranus_zh_female_tianmeihuopo_tob` | 对白、诗句与轻盈灵动的情绪表演 |
 | 阿砚 | `ICL_uranus_zh_female_jiaxiaozi_tob` | 报题、第二句、片尾互动 |
 
 角色到音色的固定映射保存在 `config/voices.json`。自动化固定生成24kHz、单声道、64kbps MP3，每段台词单独保存到：
