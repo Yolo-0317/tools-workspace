@@ -34,6 +34,7 @@ alwaysApply: false
 | 少儿英语、ORT、听读与带读 | `.cursor/rules/memory-english-buddy.mdc` |
 | 小智固件、Mac 网关、夸克播放 | `.cursor/rules/memory-xiaozhi.mdc` |
 | HarryPutter、仓库级历史、跨项目规则、公众号专题复盘 | `.cursor/rules/memory-workspace.mdc` |
+| 栀夏、飞花令、诗境、Seedance | `.cursor/rules/memory-workspace.mdc` |
 
 ## 文档与 Skill 路由
 
