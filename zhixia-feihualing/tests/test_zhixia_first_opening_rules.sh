@@ -16,7 +16,8 @@ done
 for phrase in \
   "每份 Seedance 提示词的第一句必须先声明" \
   "@图片1与@图片2均为本项目原创虚拟角色" \
-  "最终提交给 Seedance 的提示词正文不得保留内部镜头或特效代号" \
+  "最终提交给 Seedance 的提示词正文不得出现任何项目内部代码" \
+  "只允许平台明确支持的参考图标记" \
   "第一个可感知动作必须来自栀夏" \
   "首帧必须已经能辨认栀夏" \
   "0.5秒内" \
@@ -27,6 +28,8 @@ done
 for phrase in \
   "所有 Seedance 提示词在进入三层结构前" \
   "实际提交给模型的提示词正文内" \
+  "从内部设计稿转换为最终提示词时" \
+  "逐项展开为模型可直接理解的自然语言" \
   "第一秒先看见谁、谁先动" \
   "第一个动作来自栀夏" \
   "0.5秒内清楚展示她的脸"; do
@@ -68,7 +71,7 @@ for phrase in \
   print -r -- "$prompt_block" | rg -qF "$phrase"
 done
 
-if print -r -- "$prompt_block" | rg -n '(^|[^[:alnum:]])[MH][0-9]{2}([^[:alnum:]]|$)'; then
+if print -r -- "$prompt_block" | rg -n '(^|[^[:alnum:]])[MHDS][0-9]{2}([^[:alnum:]]|$)|assets/|\.png|\.jpg|seedance-v[0-9]+|状态图[[:space:]]*[0-9]{2}'; then
   exit 1
 fi
 
