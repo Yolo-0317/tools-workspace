@@ -83,6 +83,48 @@ def _write_verified_image(
     return path
 
 
+def _write_cover_source(
+    out_dir: Path,
+    *,
+    source_filename: str = "still-01.jpg",
+    reuse_in_body: object = False,
+) -> None:
+    (out_dir / "cover_source.json").write_text(
+        json.dumps(
+            {
+                "source_filename": source_filename,
+                "reuse_in_body": reuse_in_body,
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+
+def _prepare_verified_images(out_dir: Path, image_count: int = 4) -> None:
+    _write_douyin_state(
+        out_dir,
+        topic="测试热点",
+        candidates=[_douyin_candidate()],
+    )
+    for index in range(1, image_count + 1):
+        _write_verified_image(
+            out_dir,
+            f"still-{index:02d}.jpg",
+            source_type=(
+                "douyin_cover"
+                if index == 1
+                else "official_media_webpage_screenshot"
+            ),
+            page_url=(
+                "https://www.douyin.com/video/123"
+                if index == 1
+                else f"https://example.com/report-{index}"
+            ),
+        )
+
+
 def test_missing_douyin_search_state_is_rejected(tmp_path: Path) -> None:
     validate_verified_hotspot_images = _load_api()
 
@@ -174,6 +216,90 @@ def test_verified_images_use_one_cover_and_up_to_three_body_images(
     assert result.cover_source.name == "still-01.jpg"
     assert len(result.body_figures) == expected_body_count
     assert all(figure.path.name != "still-01.jpg" for figure in result.body_figures)
+
+
+def test_explicit_cover_reuse_places_cover_first_in_body(tmp_path: Path) -> None:
+    validate_verified_hotspot_images = _load_api()
+    _prepare_verified_images(tmp_path)
+    _write_cover_source(tmp_path, reuse_in_body=True)
+
+    result = validate_verified_hotspot_images(
+        tmp_path,
+        expected_topic="测试热点",
+    )
+
+    assert [figure.path.name for figure in result.body_figures] == [
+        "still-01.jpg",
+        "still-02.jpg",
+        "still-03.jpg",
+    ]
+
+
+def test_cover_reuse_obeys_requested_body_limit(tmp_path: Path) -> None:
+    validate_verified_hotspot_images = _load_api()
+    _prepare_verified_images(tmp_path)
+    _write_cover_source(tmp_path, reuse_in_body=True)
+
+    result = validate_verified_hotspot_images(
+        tmp_path,
+        expected_topic="测试热点",
+        max_body=2,
+    )
+
+    assert [figure.path.name for figure in result.body_figures] == [
+        "still-01.jpg",
+        "still-02.jpg",
+    ]
+
+
+def test_cover_reuse_with_zero_body_limit_returns_no_body_images(
+    tmp_path: Path,
+) -> None:
+    validate_verified_hotspot_images = _load_api()
+    _prepare_verified_images(tmp_path)
+    _write_cover_source(tmp_path, reuse_in_body=True)
+
+    result = validate_verified_hotspot_images(
+        tmp_path,
+        expected_topic="测试热点",
+        max_body=0,
+    )
+
+    assert result.body_figures == ()
+
+
+@pytest.mark.parametrize("invalid_value", ["true", 1, None, [], {}])
+def test_non_boolean_cover_reuse_value_keeps_cover_out_of_body(
+    tmp_path: Path,
+    invalid_value: object,
+) -> None:
+    validate_verified_hotspot_images = _load_api()
+    _prepare_verified_images(tmp_path, image_count=2)
+    _write_cover_source(tmp_path, reuse_in_body=invalid_value)
+
+    result = validate_verified_hotspot_images(
+        tmp_path,
+        expected_topic="测试热点",
+    )
+
+    assert [figure.path.name for figure in result.body_figures] == [
+        "still-02.jpg"
+    ]
+
+
+def test_malformed_cover_source_keeps_cover_out_of_body(tmp_path: Path) -> None:
+    validate_verified_hotspot_images = _load_api()
+    _prepare_verified_images(tmp_path, image_count=2)
+    (tmp_path / "cover_source.json").write_text("{", encoding="utf-8")
+
+    result = validate_verified_hotspot_images(
+        tmp_path,
+        expected_topic="测试热点",
+    )
+
+    assert [figure.path.name for figure in result.body_figures] == [
+        "still-02.jpg"
+    ]
 
 
 def test_zero_verified_images_are_rejected(tmp_path: Path) -> None:

@@ -191,15 +191,19 @@ def _load_verified_figures(
     return figures, normalized_meta
 
 
-def _requested_cover_name(out_dir: Path) -> str:
+def _load_cover_preferences(out_dir: Path) -> tuple[str, bool]:
     path = out_dir / COVER_SOURCE_FILENAME
     if not path.is_file():
-        return ""
+        return "", False
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
-        return ""
-    return str(payload.get("source_filename") or "").strip() if isinstance(payload, dict) else ""
+        return "", False
+    if not isinstance(payload, dict):
+        return "", False
+    requested = str(payload.get("source_filename") or "").strip()
+    reuse_in_body = payload.get("reuse_in_body") is True
+    return requested, reuse_in_body
 
 
 def validate_verified_hotspot_images(
@@ -227,7 +231,7 @@ def validate_verified_hotspot_images(
         raise ValueError("缺少可追溯封面")
 
     by_name = {figure.path.name: figure for figure in figures}
-    requested = _requested_cover_name(root)
+    requested, reuse_in_body = _load_cover_preferences(root)
     cover = by_name.get(requested)
     if cover is None and selected_urls:
         cover = next(
@@ -236,7 +240,12 @@ def validate_verified_hotspot_images(
         )
     if cover is None:
         cover = figures[0]
-    body = tuple(figure for figure in figures if figure.path != cover.path)[:max_body]
+    body_candidates = (
+        [cover, *(figure for figure in figures if figure.path != cover.path)]
+        if reuse_in_body
+        else [figure for figure in figures if figure.path != cover.path]
+    )
+    body = tuple(body_candidates[:max_body])
     return VerifiedHotspotImages(
         cover_source=cover.path,
         body_figures=body,
