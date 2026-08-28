@@ -16,7 +16,8 @@
 | 形态 | **纯段落**，禁止 `> ` / `##` / 「一、二、三」小标题 |
 | 长度 | **1800—2200 字**；Codex 手写稿门禁 ≥1800，信息完整后优先完读，不为凑字重复观点 |
 | 口吻 | **[social-commentary-voice.md](social-commentary-voice.md)**：读者转述者，摆事实、摆说法 |
-| 配图 | **固定 4 张**：事件封面 1 张 + 正文 3 张；优先同题公开报道图，不足才生成原创事件图 |
+| 用户主动成稿 | 固定 DeepSeek Chrome 会话直接产出标题和初稿，Agent 核实编辑；两次确认 |
+| 配图 | 至少 1 张可追溯真实图作封面；正文 0—3 张，有几张用几张；禁止生成图 |
 
 **默认主轴是社会热点**，不是 A 股收盘复盘。仅当热搜条目本身带盘面/个股关键词时，代码才走财经 `fetch_hotspot_research` 分支。
 
@@ -27,14 +28,15 @@
 ```text
 双榜热搜选题（自动避当日已用标题）
   → fetch_discussion_research（360/搜狗/百度新闻 + 报道页正文补摘要）
-  → Codex 社会热点深评 JSON（推荐手动入口）或旧自动 Composer 成稿
+  → 用户主动稿：第一次确认后由固定 DeepSeek 会话直接产出标题和初稿
+  → Agent 核事实、编辑并记录 edit notes
   → 可选：对照参考二次仿写（WECHAT_MP_HOTSPOT_IMITATE_REWRITE，默认关）
   → scan_report_voice 门禁 → 不足则重写（最多 2 轮）
   → 清洗元叙述 + 拆短段（reflow_hotspot_layout）
-  → 同题公开报道配图（先抓 4 张原始图）
-  → 不足的图位生成原创事件新闻插画（仅补缺，不替代已找到的同题图）
-  → 封面 1 张 + 正文 3 张门禁（discussion_figures）
-  → 事实标题 + 质量门禁 → upsert 分槽草稿
+  → 抖音优先：只读搜索结果卡片与封面，禁止打开/播放视频
+  → 再补政府官网、官方媒体或法条页面证据图
+  → 封面至少 1 张；正文 0—3 张；禁止生成或自动补图
+  → 展示预演摘要，第二次确认后 upsert 分槽草稿
 ```
 
 **耗时预期**（单篇）：
@@ -42,8 +44,8 @@
 | 阶段 | 约耗时 | 说明 |
 |------|--------|------|
 | 取材 | 20～60s | 多门户检索 + 逐页抓摘要 |
-| LLM 成稿 | 50～90s | Composer 1 次；+重写最多 2 轮（默认无二次仿写） |
-| 配图 | 20～90s | 多源报道页抓 og:image / 正文图；缺口再生成原创事件图 |
+| LLM 成稿 | 50～90s | 固定 DeepSeek 网页会话本轮回复；失败即停 |
+| 配图 | 20～90s | 抖音搜索卡片封面优先，再补权威证据图；不生成 |
 | 推草稿 | 5～15s | 微信 API |
 
 推稿务必：`export WECHAT_MP_HOTSPOT_TREND_ENRICH=0`（避免东财 enrich 污染社会稿且变慢）。
@@ -85,19 +87,16 @@ uv run python -m scripts.tools.wechat_mp_eval --kind hotspot --traffic
 
 ---
 
-## Codex 成稿入口（推荐）
+## 用户主动成稿入口（强制）
 
-当前手动长图文由 Codex 完成联网取材、标题、摘要和正文，然后通过结构化 JSON 交给发布脚本：
+Agent 先研究并展示提示词，用户第一次确认后，固定 DeepSeek Chrome 会话直接产出标题和初稿；Agent 再核实编辑并记录改动。直接 `--codex-draft` 绕过该 workflow 会被拒绝：
 
 ```bash
 cd stock-ai
-uv run python -m scripts.tools.wechat_mp_draft \
-  --kind hotspot \
-  --codex-draft output/hotspot_codex.json \
-  --dry-run
+PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_browser_write --help
 ```
 
-JSON 必填 `title`、`digest`、`body`、`topic`、`original_thesis` 和 `research_urls`；`slot_key` 可选。`research_urls` 至少覆盖 3 个不同来源域，`original_thesis` 须用不少于 20 字写出可被反驳和检验的原创核心判断。去掉 `--dry-run` 后才写入公众号草稿箱。该入口不调用 Composer，不自动扩写或模板兜底；正文去空白后少于 1800 字，或未过来源多样性、原创观点、段落、套话、配图或合规门禁时直接拒绝，由 Codex 修改源 JSON 后重试。
+编辑稿 JSON 必填 `title`、`digest`、`body`、`topic`、`original_thesis` 和 `research_urls`；`slot_key` 可选。`research_urls` 至少覆盖 3 个不同来源域，`original_thesis` 须用不少于 20 字写出可被反驳和检验的原创核心判断。正文去空白后少于 1800 字，或未过来源多样性、原创观点、段落、套话、真实配图或合规门禁时直接拒绝，由 Agent 修改源 JSON 后重试。
 
 ## 旧自动写稿 LLM（兼容路径）
 
@@ -112,20 +111,20 @@ JSON 必填 `title`、`digest`、`body`、`topic`、`original_thesis` 和 `resea
 
 ---
 
-## 配图（固定四图）
+## 配图（抖音优先、只用真实图）
 
 | 项 | 说明 |
 |----|------|
 | 开关 | `WECHAT_MP_HOTSPOT_SOCIAL_FIGURES=1`（trends 默认开） |
-| 正文图 | `inject_discussion_figures`：3 张，均匀插在正文中后段；不得与封面使用同一张图 |
-| 封面 | `ensure_discussion_cover`：1 张，优先同题报道图裁 2.35:1，**不用** sector 牛马主图 |
-| 找图顺序 | 热门稿先从已登录抖音建立政务号、央媒、地方广电和正规媒体的视频报道池，截图须绑定账号、原视频链接与发布时间；再补同题报道页 og:image / 正文图 |
-| 数量原则 | 合格公开图有几张用几张；不得为凑固定数量使用搬运图、重复帧、无关演播室画面或自动生成图。仅当用户明确要求原创配图时，才对缺口生成新闻插画 |
-| 图注 | 报道图标「图源：公开报道（引用）」；生成图标「原创新闻插画」，两者不得混标 |
-| 门禁 | `WECHAT_MP_HOTSPOT_REQUIRE_FIGURES=1`：正文少于 3 张或封面缺失即拒推；调试可 `=0` |
-| 扩源 | 360/搜狗/百度新闻检索 + 多门户 CDN；见 `wechat_mp_discussion_figures.py` |
+| 正文图 | 0—3 张，按已核验真实图数量注入；不得与封面使用同一张图 |
+| 封面 | 至少 1 张可追溯真实图，裁成 2.35:1；零图拒推 |
+| 第一来源 | 已登录抖音的搜索结果卡片与封面；禁止点击、打开或播放视频 |
+| 后续来源 | 政府官网、官方媒体、法条页面等可追溯证据图 |
+| 留痕 | `douyin-search.json` 记录主题、检索词、完成时间、候选或无候选原因；`figure_sources.json` 记录来源与核验状态 |
+| 数量原则 | 有几张用几张，正文允许少图；不得使用搬运图、重复帧、无关画面或生成图 |
+| 门禁 | 所选抖音候选须匹配 `douyin_cover` 来源；没有可追溯封面即拒推 |
 
-配图失败常见原因：选题太新、门户反爬、报道页无大图。现在入口会先自动扩源抓图；仍不足时写出同一话题目录下的 `codex-image-request.json` 并拒推。Codex 必须逐项读取 `slots`，每个缺口单独调用一次内置 ImageGen，然后从 `$CODEX_HOME/generated_images/` 复制到请求给出的绝对 `output_path`，再重跑原命令。生成封面为 `cover.jpg`，正文补图为 `manual-01.jpg`、`manual-02.jpg`、`manual-03.jpg`；脚本把 `manual-*` 识别为「原创新闻插画」，只补缺口，不替换已找到的报道图。不要因找不到图退回默认品牌封面。
+配图不足不是生成图片的理由。抖音无合格候选时必须写明原因，再补权威网页证据图；正文不足 3 张照常使用现有图片，正文 0 张也可继续。若连封面所需的一张可追溯真实图都没有，则停止并报告，不创建 `codex-image-request.json`，不调用 ChatGPT、ImageGen、DeepSeek 或其他图片生成能力，也不退回默认品牌封面。
 
 ---
 
@@ -191,7 +190,7 @@ JSON 必填 `title`、`digest`、`body`、`topic`、`original_thesis` 和 `resea
 但系统只能解释错误发生在哪一环，不能替经营者承担责任。
 ```
 
-当前 `reflow_hotspot_layout` 仍按 ≤130 字重排并可能合并过短段落；本节先作为 Codex 手写稿和人工改稿参考。若要让自动稿稳定执行“一句一段”，应另开代码改造与 A/B 数据验证，不在文档修订中静默改变生产行为。
+当前 `reflow_hotspot_layout` 仍按 ≤130 字重排并可能合并过短段落；本节先作为 DeepSeek 初稿后的 Agent 编辑参考。若要让自动稿稳定执行“一句一段”，应另开代码改造与 A/B 数据验证，不在文档修订中静默改变生产行为。
 
 ---
 
@@ -204,8 +203,8 @@ JSON 必填 `title`、`digest`、`body`、`topic`、`original_thesis` 和 `resea
 | `WECHAT_MP_HOTSPOT_TREND_ENRICH` | `0` | **保持 0**；1=东财 enrich（慢，污染社会稿） |
 | `WECHAT_MP_HOTSPOT_IMITATE_REWRITE` | `0` | 对照参考二次仿写 |
 | `WECHAT_MP_HOTSPOT_SOCIAL_FIGURES` | `1` | 社会布局配图 |
-| `WECHAT_MP_HOTSPOT_REQUIRE_FIGURES` | `1` | 无正文事件图拒推 |
-| `WECHAT_MP_DISCUSSION_BODY_FIGURES` | `3` | 正文图数量；正式稿固定 3，调试可临时下调 |
+| `WECHAT_MP_HOTSPOT_REQUIRE_FIGURES` | `1` | 旧自动链路兼容变量；用户主动稿以真实封面门禁为准 |
+| `WECHAT_MP_DISCUSSION_BODY_FIGURES` | `3` | 正文图上限；用户主动稿实际为 0—3 张 |
 | `WECHAT_MP_DISCUSSION_FIGURES_FORCE` | `0` | 1=忽略缓存重抓配图 |
 | `WECHAT_MP_HOTSPOT_TOPIC` | — | 手动定题关键词 |
 | `WECHAT_MP_LLM_MODEL` | `composer-2.5` | Composer 模型 slug |
@@ -220,8 +219,9 @@ JSON 必填 `title`、`digest`、`body`、`topic`、`original_thesis` 和 `resea
 - [ ] 无导读腔 / 热榜播报 / 财经盘面套话  
 - [ ] 标题路牌完整、与开篇同题  
 - [ ] 情绪主语+具体代价+两侧张力已在正文前 1/3 内体现；文末有清晰读者选择
-- [ ] 封面 1 张 + 正文 3 张，正文图均与事件相关且不重复  
-- [ ] 报道图不足时仅补缺生成图，并标注「原创新闻插画」  
+- [ ] 已先检索抖音，且只读取搜索结果卡片/封面，没有打开或播放视频
+- [ ] 至少 1 张可追溯真实封面；正文 0—3 张，均与事件相关且不重复
+- [ ] 没有创建图片生成请求，也没有自动生成图片
 
 ---
 
@@ -230,7 +230,7 @@ JSON 必填 `title`、`digest`、`body`、`topic`、`original_thesis` 和 `resea
 | 现象 | 原因 | 处理 |
 |------|------|------|
 | 构建失败「未达 2000 字」 | 取材薄 / LLM 短稿 | `TREND_ENRICH=0` 重跑；换素材更足的题；查 `web_research_blob` 长度 |
-| 构建失败「配图不足 3 张」 | 报道页无足量合格图 | `DISCUSSION_FIGURES_FORCE=1`；换检索词；仍不足则生成缺口图并重推 |
+| 构建失败「缺少可追溯封面」 | 抖音和权威网页均无合格真实图 | 记录抖音无候选原因，换同题检索词或补权威来源；仍无封面则停止 |
 | 单篇 3～5 min | 多轮 LLM + 配图抓取 | 默认已关仿写、2 轮上限；`DISCUSSION_FIGURES_FORCE=0` |
 | 总分 <75 且正文几百字 | 旧短模板 fallback | 社会稿应已禁止；查 `generate_hotspot_body` 日志 |
 | 文末「复盘的朋友」 | 财经增长句误注入 | `hotspot` 已在 `_NO_RECOMMEND_HOOK_KINDS` |

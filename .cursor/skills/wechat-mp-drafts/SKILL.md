@@ -34,6 +34,7 @@ paths:
 ```
 用户意图？
 ├─ 推草稿 / 定时 / env / 报错     → INDEX「工程」→ operations-sop + reference
+├─ 用户主动热点深评               → deepseek-writer-sop + hotspot-deep-review（固定 DeepSeek 双确认）
 ├─ 改 market|news|sector|workspace → templates + writing-guide
 ├─ 栀夏贴图 / 电影分享 / 经典片单  → [wechat-mp-virtual-lifestyle](../wechat-mp-virtual-lifestyle/SKILL.md) + newspic-sop
 ├─ 长图文影视试跑 / tv_review      → [tv-review-template.md](tv-review-template.md)（v2·《铁拳教育》）
@@ -68,7 +69,6 @@ paths:
 ```bash
 cd stock-ai
 uv run python -m scripts.tools.wechat_mp_draft --dry-run
-uv run python -m scripts.tools.wechat_mp_draft --kind hotspot --codex-draft output/hotspot_codex.json --dry-run
 uv run python -m scripts.tools.wechat_mp_draft --kind hot_business --dry-run
 uv run python -m scripts.tools.wechat_mp_draft --kind hot_business --topic "具体热点" --dry-run
 uv run python -m scripts.tools.wechat_mp_draft --kind silver --dry-run
@@ -89,7 +89,7 @@ uv run pytest tests/unit/test_wechat_mp_*.py -q
 
 ### DeepSeek 浏览器写稿（用户主动稿）
 
-用户主动要求热点深评或文学/典籍稿时，采用两次确认：Agent 研究并展示提示词 → 用户确认 → OpenCLI `bind` 当前 Chrome 中固定的“公众号爆文秘诀”会话 → 提取本轮新回复 → Agent 核事实、编辑、高亮、配图 → 用户再次确认 → 推草稿。统一入口：
+用户主动要求热点深评或文学/典籍稿时，采用两次确认：Agent 研究并展示提示词 → 用户确认 → OpenCLI `bind` 当前 Chrome 中固定的“公众号爆文秘诀”会话，由 DeepSeek **直接产出标题与初稿** → 提取本轮新回复 → Agent 核事实、编辑、高亮、配图 → 用户再次确认 → 推草稿。用户主动热点不得由 Agent、Codex JSON 或其他模型直接成稿绕过 DeepSeek。统一入口：
 
 ```bash
 cd stock-ai
@@ -102,7 +102,7 @@ PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_browser_write --help
 
 #### 账号角色卡前置步骤
 
-当前 Codex 手写或改写 `hotspot`、`hot_business`、`silver`、`tv_review` 时：
+当前 Agent 编辑用户主动 `hotspot`，或 Codex 手写/改写 `hot_business`、`silver`、`tv_review` 时：
 
 1. 先完整读取 [account-role-card.md](../wechat-mp-writing/account-role-card.md)。
 2. 再按本 Skill 决策树读取唯一命中的稿型专题文档。
@@ -111,7 +111,7 @@ PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_browser_write --help
 
 `virtual_lifestyle` 继续使用其显性人物母版，不读取本角色卡。
 
-手动热点长图文优先由 Codex 完成取材与成稿，再保存为本地 JSON：
+用户主动热点的编辑终稿保存为本地 JSON，但该 JSON 必须来自本次固定 DeepSeek 浏览器 workflow，并保留 Agent 核实编辑记录：
 
 ```json
 {
@@ -127,15 +127,14 @@ PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_browser_write --help
 
 ```bash
 cd stock-ai
-uv run python -m scripts.tools.wechat_mp_draft \
-  --kind hotspot \
-  --codex-draft output/hotspot_codex.json \
-  --dry-run
-
-# 人工确认后去掉 --dry-run，写入草稿箱
+PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_browser_write stage \
+  <workflow-id> \
+  --article output/hotspot_codex.json \
+  --edit-note "核对关键事实、日期和引语" \
+  --edit-note "删除无法回源的判断"
 ```
 
-`--codex-draft` 支持单篇 `hotspot`、`hot_business`、`silver` 或 `short_drama_feature`。该路径跳过自动选题和模板兜底，但仍执行正文清洗、原创增量报告、质量门禁、封面、合规检查与草稿槽位更新。热点深评为完读优先，正文去空白后不少于 1800 字，建议控制在 1800—2200 字；热点商业仍不少于 1920 字；银发稿要求 1600—2600 字。前三者均要求至少 3 个不同来源域、`original_thesis` 不少于 20 字，任一失败即在微信 API 前拒绝。`output/` 中的成稿 JSON 不提交。
+直接运行 `wechat_mp_draft --kind hotspot --codex-draft ...` 会被拒绝。热点深评为完读优先，正文去空白后不少于 1800 字，建议控制在 1800—2200 字；至少 3 个不同来源域，`original_thesis` 不少于 20 字。`output/` 中的成稿 JSON 不提交。
 
 `hot_business` 只允许手动触发，不进入定时批次。省略 `--topic` 时从每日热点池按热点强度、商业空间、可验证性和读者相关性评分，低于 70 分不成稿；指定 `--topic` 会跳过候选评分，但仍要求至少 3 个不同来源域。`--dry-run` 只预览并打印候选评分、来源域和事实条数；移除后仅更新独立的 `hot_business` 草稿槽位。
 
@@ -143,11 +142,13 @@ uv run python -m scripts.tools.wechat_mp_draft \
 
 自 2026-08-18 起，公众号普通长文统一禁用自动短剧返佣插入。`short_drama_feature` 仅保留为用户明确要求时使用的手动独立稿型，不得作为普通热点、影视、银发或财经稿的默认变现组件。
 
-### ChatGPT 网页原创配图续跑协议
+### 图片协议
 
-长图文与贴图都先找同题公开报道图。`hotspot`、`hot_business` 等热门稿件优先从已登录抖音搜索政务号、央媒、地方广电和正规新闻机构的同题视频，再补 `research_urls`、可追溯微博媒体/政务原帖、百度新闻和其他同题媒体。抖音、微博、百度只作为发现入口：抖音截图必须记录媒体账号、原视频链接、发布时间和截图画面含义；普通网友搬运、二创账号、无原视频链接、与事件无关的演播室或泛素材不得进入正式草稿。无法核对原页、事件或来源的图片，以及页面明确写有禁止转载限制的图片，也不得使用。合格素材在 `figure_sources.json` 记录原页面、图片地址、来源名、发布时间、来源类型和核验状态，图注优先显示具体媒体名。
+用户主动 `hotspot` 必须先从已登录抖音搜索政务号、央媒、地方广电和正规新闻机构的同题内容。**只读取搜索结果卡片与封面图，禁止点击、打开或播放视频。** 每次检索必须保存 `douyin-search.json`；选中封面须记录媒体账号、结果页显示时间、原视频链接和封面地址。没有合格候选时也必须记录检索词、完成时间和失败原因，之后才可补政府官网、官方媒体或法条页面的证据图。
 
-抖音候选先建报道池再选图，不按用户随口点名的平台逐个补洞：优先级为政务原始发布 → 央媒 → 地方广电/党媒 → 全国性新闻机构。先去重同一段现场视频，再按“现场事实、官方处置、当事人回应、公共讨论”选择有不同信息增量的画面；找不到足够合格图片时允许少图，不得为凑固定数量自动生成图片。热点稿只有用户明确要求原创配图时，才进入下述网页补图协议；原创小说、栀夏生活分享等本来就需要原创视觉的稿型可直接进入。
+合格素材必须在 `figure_sources.json` 记录原页面、图片地址、来源名、发布时间、来源类型、图注和核验状态。选中的抖音封面必须与其中一条 `douyin_cover` 来源完全对应。正文真实图有几张用几张，允许 0—3 张；至少需要 1 张可追溯真实图作为封面，零图直接停止。该流程禁止 ChatGPT、ImageGen、DeepSeek 或任何其他模型生成图片，禁止创建或消费 `codex-image-request.json`，也禁止为凑数联网自动补图。
+
+下面的 ChatGPT 网页原创配图续跑协议只适用于原创小说、栀夏生活分享等明确需要原创视觉的稿型，**不适用于用户主动热点深评**。
 
 需要原创配图，且命令提示补图或抛出包含 `codex-image-request.json` 的错误时：
 
@@ -158,7 +159,7 @@ uv run python -m scripts.tools.wechat_mp_draft \
 5. ChatGPT 未登录、当前标签不对、生成失败、超时、下载失败或质检失败时立即停止并提示用户处理；禁止自动回退到 Codex ImageGen、DeepSeek 或其他平台。下次从第一个未完成槽位继续，已有合格图片不重做。
 6. 重跑原命令，直到不再返回缺图请求；随后才允许进入草稿上传。
 
-用户明确说“用 Codex 生成图片”时，仅当前任务临时使用内置 ImageGen，不改变默认渠道。详细步骤见 [chatgpt-web-image-sop.md](chatgpt-web-image-sop.md)。
+用户明确说“用 Codex 生成图片”时，仅非热点稿型可在当前任务临时使用内置 ImageGen，不改变默认渠道。详细步骤见 [chatgpt-web-image-sop.md](chatgpt-web-image-sop.md)。
 
 已有 Codex 补图完成标记时，普通续跑不重复联网。需要重新寻找真实现场图时使用 `--force-figures` 或 `WECHAT_MP_DISCUSSION_FIGURES_FORCE=1`；强制刷新会绕过 ready 标记，但应保留 `manual-*` 和可用原创封面作为失败兜底。
 
@@ -190,7 +191,7 @@ uv run python -m scripts.tools.wechat_mp_newspic_draft \
 |--|------|
 | **19:00 launchd** | 自动**写/更新草稿**；跳过：`echo YYYY-MM-DD > data/wechat_mp_skip_scheduled.date` |
 | **后台定时发表** | **人工**在 mp.weixin.qq.com；**每天仅 1 次通知**（个人号）→ 多篇**同批群发**，排好头条/次条顺序；**禁止**分时段错开发表 |
-| **LLM** | 定时稿只用 Codex CLI；用户主动的热点深评与文学/典籍稿可走固定 DeepSeek Chrome 会话，均失败关闭；东财 SOP 并发仍用 `SOP_LLM_BACKEND=deepseek` |
+| **LLM** | 定时稿只用 Codex CLI；用户主动的热点深评与文学/典籍稿必须走固定 DeepSeek Chrome 会话，均失败关闭；东财 SOP 并发仍用 `SOP_LLM_BACKEND=deepseek` |
 
 详 [operations-sop.md](operations-sop.md) · `stock-ai/docs/WECHAT_MP_SCHEDULING.md`。
 
