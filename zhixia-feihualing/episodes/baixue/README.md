@@ -51,6 +51,8 @@
 
 四段固定音色 TTS、实际字幕时间轴、互动横排字幕和诗句竖排字幕已经完成本地合成。最终成片为 [`../../exports/baixue-subtitled-v01.mp4`](../../exports/baixue-subtitled-v01.mp4)，1080×1920、24fps、10.100 秒；配音区间将 Seedance 原声压低约 5 dB，整体音频峰值为 −4.8 dB，无削波。
 
+舞蹈版发布封面取自无字幕原片 8.800 秒的收势画面，保留栀夏全身舞姿、阿砚和原始 AI 生成标识，仅叠加“栀夏会跳舞了”“白雪歌”竖排标题。成品为 [`../../exports/baixue-dance-cover-v01.png`](../../exports/baixue-dance-cover-v01.png)，1080×1920。
+
 ## 关联文档
 
 - [Seedance 2.0 公开案例导向提示词重建设计](../../docs/superpowers/specs/2026-08-28-seedance-2-public-case-prompt-reset-design.md)
@@ -61,3 +63,4 @@
 - [人工构图参考](prompts/scene-cards.md)
 - [Seedance 最终提示词](prompts/seedance-v01.md)
 - [最终成片](../../exports/baixue-subtitled-v01.mp4)
+- [舞蹈版封面](../../exports/baixue-dance-cover-v01.png)
