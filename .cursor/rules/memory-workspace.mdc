@@ -478,3 +478,16 @@ alwaysApply: false
   - 摄影机建立一条主路径，同时允许由画面内可见事件触发最多两次小幅推拉、升降、有限弧移或速度变化；须写明起始与结束构图、相对运动、视差参照和触发原因。
   - 最终正文按六类语义自然组织，不固定段数；复杂 10 秒事件推荐三个宽时间段，简单事件不强制分段。原创虚构角色首句声明、栀夏首帧及 0.5 秒内首动作、阿砚约 40 厘米、后期对白字幕和内部代码清除继续有效。
   - 真源：`zhixia-feihualing/docs/superpowers/specs/2026-08-28-seedance-evidence-tiered-prompt-rules-rewrite-design.md`；执行规范：`zhixia-feihualing/docs/realistic-visual-style.md`、`zhixia-feihualing/docs/production-workflow.md`。
+
+### 2026-08-28-high-impact 栀夏诗境 · 高冲击力舞蹈增强诗景
+
+- **Context**: 用户明确不追求复刻指定舞蹈套路，而要以两张角色母版和纯文字持续生成原创、好看、允许自由变化的国风舞蹈；每个新诗境保留诗中景色，并以栀夏的旋转、动作特效和动态镜头增强演绎。
+- **Pitfall/Error**: “轻盈克制”与中等复杂度短舞句会压低动作幅度，容易退化成原地左右挥袖；只删除形容词而不补充移动、旋转、高潮、特效轨迹和镜头反应仍不能形成稳定的新能力。把结尾强制设计成封面姿态也会反过来限制诗意结束。阿砚的“柔软细腻毛发”表述还会诱导模型生成贴身顺毛小猫，偏离母版中向外呲出的纸纤维轮廓。
+- **Solution/Rule**:
+  - 本条覆盖同日较早的“轻盈克制”“中等复杂度”和“具体动作完全自由发挥”默认结论；既有已确认或已发布视频不返工。
+  - 新诗境以诗中核心景物、时空和自然事件为叙事基础，栀夏舞蹈进入、回应并增强诗境，不取代景色或退化成无关舞台表演。
+  - 默认纯文字编舞必须包含空间移动、完整旋转、至少两次重心或高低层次变化、衣料或单一道具轨迹、动作触发的唯一主要特效、一个视觉高潮，以及摄影机在旋转与高潮处的两次有因反应；动作舒展有力、节奏鲜明、连续自然，面部在主要节点可见。
+  - 结尾服从诗意，可以收势、继续舞动、建立人物与景物关系或揭示景观，不强制形成封面舞姿。
+  - 每次设计调用 `docs/zhixia-poetry-dance-composer.md`，读取 `operations/dance-design-history.csv` 最近五行完成去重，最终正文清除所有内部编号和项目代码。
+  - 阿砚不增加强制特写或额外表演；每次出现都保持约 40 厘米、笔锋双耳、唯一墨尾及向外放射、分叉、翘起的外扩纸纤维毛束，禁止贴身顺毛、普通白猫和圆润幼猫化。
+  - 真源：`zhixia-feihualing/docs/superpowers/specs/2026-08-28-zhixia-high-impact-poetry-dance-design.md`；执行规范：`zhixia-feihualing/docs/realistic-visual-style.md`、`zhixia-feihualing/docs/production-workflow.md`、`zhixia-feihualing/docs/zhixia-poetry-dance-composer.md`。
