@@ -12,7 +12,7 @@ description: 牛马也智能公众号改稿、去 AI 味、参考文阅读提炼
 | 用户说 | 读 |
 |--------|-----|
 | 润色 / 改稿 / 去 AI 味 | [human-say-pass.md](human-say-pass.md) · [anti-ai-voice.md](anti-ai-voice.md) |
-| **DeepSeek 写标题+正文** | **[deepseek-writer-sop.md](deepseek-writer-sop.md)**（默认：Agent 定题 + 轻量 prompt；你网页写完再配图推送） |
+| **DeepSeek 写标题+正文** | **[deepseek-writer-sop.md](deepseek-writer-sop.md)**（Agent 给完整提示词；你自行取稿并贴回，再由 Agent 配图推送） |
 | DeepSeek 成稿后观察者改稿 | [deepseek-observer-polish.md](deepseek-observer-polish.md) |
 | **读参考文 / 扩容语料库**（非每篇） | [reference-reading-sop.md](reference-reading-sop.md) |
 | **典籍里的中国 · 一集一点** | [voice-corpus-dianji.md](voice-corpus-dianji.md) + [dianji-zhongguo-column.md](dianji-zhongguo-column.md) |

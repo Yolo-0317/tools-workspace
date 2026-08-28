@@ -255,6 +255,21 @@
       "verify": ["bash scripts/check-quark-mcp.sh"],
       "runtime": {"kind": "service", "ports": [8765, 8766]},
       "aliases": ["小智网关", "Mac 模拟设备", "夸克播放"]
+    },
+    {
+      "id": "zhixia-feihualing",
+      "path": "zhixia-feihualing",
+      "domain": "media",
+      "summary": "原创国风诗词幻想动画IP、抖音账号运营与视频生产档案",
+      "lifecycle": "incubating",
+      "entry_docs": ["zhixia-feihualing/README.md"],
+      "depends_on": [],
+      "serves": [],
+      "memory_topics": [],
+      "skills": [],
+      "verify": [],
+      "runtime": {"kind": "offline", "ports": []},
+      "aliases": ["栀夏飞花令", "飞花令", "抖音国风动画"]
     }
   ]
 }

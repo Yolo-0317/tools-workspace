@@ -1,0 +1,39 @@
+[
+  {
+    "id": "01-ayan-dialogue",
+    "kind": "dialogue",
+    "role": "ayan",
+    "text": "栀夏，浮萍把你出卖了。",
+    "start": 0.0,
+    "end": 2.4,
+    "layout": "horizontal-lower-third"
+  },
+  {
+    "id": "02-zhixia-dialogue",
+    "kind": "dialogue",
+    "role": "zhixia",
+    "text": "我只摘了一朵莲。",
+    "start": 2.5,
+    "end": 4.1,
+    "layout": "horizontal-lower-third"
+  },
+  {
+    "id": "03-ayan-dialogue",
+    "kind": "dialogue",
+    "role": "ayan",
+    "text": "可你留了一路痕迹。",
+    "start": 4.3,
+    "end": 6.34,
+    "layout": "horizontal-lower-third"
+  },
+  {
+    "id": "04-ayan-poem-voiceover",
+    "kind": "poem",
+    "role": "ayan",
+    "text": "不解藏踪迹，浮萍一道开。",
+    "attribution": "唐·白居易《池上》",
+    "start": 9.5,
+    "end": 14.755,
+    "layout": "vertical-poem-with-attribution"
+  }
+]

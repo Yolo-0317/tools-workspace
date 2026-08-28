@@ -2,13 +2,7 @@
   {
     "id": "01-ayan-question",
     "kind": "dialogue",
-    "text": "最后一块，能吃吗？",
-    "attribution": null
-  },
-  {
-    "id": "02-zhixia-cast",
-    "kind": "dialogue",
-    "text": "起卦。",
+    "text": "想吃",
     "attribution": null
   },
   {
@@ -33,7 +27,7 @@
   {
     "id": "06-zhixia-reveal",
     "kind": "dialogue",
-    "text": "先数数空格。",
+    "text": "你都吃了多少啦？",
     "attribution": null
   },
   {

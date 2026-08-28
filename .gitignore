@@ -3,6 +3,9 @@
 logs/
 __pycache__/
 *.py[cod]
+:memory:.ses
+artifacts/
+a-share-short-term-trading/dist/
 
 # 环境变量与密钥（各子目录 .env 亦勿提交）
 .env

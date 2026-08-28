@@ -1,0 +1,26 @@
+[
+  {
+    "id": "01-poem-01",
+    "text": "短笛无腔信口吹。",
+    "start": 0.3,
+    "end": 2.964,
+    "highlight": "笛",
+    "attribution": "宋·雷震《村晚》"
+  },
+  {
+    "id": "02-poem-02",
+    "text": "谁家玉笛暗飞声。",
+    "start": 5.1,
+    "end": 7.524,
+    "highlight": "笛",
+    "attribution": "唐·李白《春夜洛城闻笛》"
+  },
+  {
+    "id": "03-poem-03",
+    "text": "羌笛何须怨杨柳。",
+    "start": 12.05,
+    "end": 14.882,
+    "highlight": "笛",
+    "attribution": "唐·王之涣《凉州词》"
+  }
+]

@@ -16,7 +16,7 @@
 | 形态 | **纯段落**，禁止 `> ` / `##` / 「一、二、三」小标题 |
 | 长度 | **1800—2200 字**；Codex 手写稿门禁 ≥1800，信息完整后优先完读，不为凑字重复观点 |
 | 口吻 | **[social-commentary-voice.md](social-commentary-voice.md)**：读者转述者，摆事实、摆说法 |
-| 用户主动成稿 | 固定 DeepSeek Chrome 会话直接产出标题和初稿，Agent 核实编辑；两次确认 |
+| 用户主动成稿 | Agent 给完整提示词，用户自行向 DeepSeek 取标题和初稿并贴回，Agent 核实编辑；两次确认 |
 | 配图 | 至少 1 张可追溯真实图作封面；正文 0—3 张，有几张用几张；封面可按需复用并计入上限；禁止生成图 |
 
 **默认主轴是社会热点**，不是 A 股收盘复盘。仅当热搜条目本身带盘面/个股关键词时，代码才走财经 `fetch_hotspot_research` 分支。
@@ -28,7 +28,7 @@
 ```text
 双榜热搜选题（自动避当日已用标题）
   → fetch_discussion_research（360/搜狗/百度新闻 + 报道页正文补摘要）
-  → 用户主动稿：第一次确认后由固定 DeepSeek 会话直接产出标题和初稿
+  → 用户主动稿：第一次确认后由用户自行向 DeepSeek 取标题和初稿并贴回
   → Agent 核事实、编辑并记录 edit notes
   → 可选：对照参考二次仿写（WECHAT_MP_HOTSPOT_IMITATE_REWRITE，默认关）
   → scan_report_voice 门禁 → 不足则重写（最多 2 轮）
@@ -44,7 +44,7 @@
 | 阶段 | 约耗时 | 说明 |
 |------|--------|------|
 | 取材 | 20～60s | 多门户检索 + 逐页抓摘要 |
-| LLM 成稿 | 50～90s | 固定 DeepSeek 网页会话本轮回复；失败即停 |
+| LLM 成稿 | 由用户决定 | 等待用户贴回 DeepSeek 完整输出；未收到即停 |
 | 配图 | 20～90s | 抖音搜索卡片封面优先，再补权威证据图；不生成 |
 | 推草稿 | 5～15s | 微信 API |
 
@@ -89,12 +89,7 @@ uv run python -m scripts.tools.wechat_mp_eval --kind hotspot --traffic
 
 ## 用户主动成稿入口（强制）
 
-Agent 先研究并展示提示词，用户第一次确认后，固定 DeepSeek Chrome 会话直接产出标题和初稿；Agent 再核实编辑并记录改动。直接 `--codex-draft` 绕过该 workflow 会被拒绝：
-
-```bash
-cd stock-ai
-PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_browser_write --help
-```
+Agent 先研究并展示完整提示词，用户第一次确认后自行把提示词交给 DeepSeek，再将完整标题和初稿贴回当前任务；Agent 收到后核实编辑并记录改动。Agent 禁止直接调用、打开、绑定、操作或检查 DeepSeek，也不得用其他模型代写初稿。未收到用户贴回稿件时暂停。
 
 编辑稿 JSON 必填 `title`、`digest`、`body`、`topic`、`original_thesis` 和 `research_urls`；`slot_key` 可选。`research_urls` 至少覆盖 3 个不同来源域，`original_thesis` 须用不少于 20 字写出可被反驳和检验的原创核心判断。正文去空白后少于 1800 字，或未过来源多样性、原创观点、段落、套话、真实配图或合规门禁时直接拒绝，由 Agent 修改源 JSON 后重试。
 

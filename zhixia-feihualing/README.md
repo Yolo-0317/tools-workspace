@@ -9,7 +9,7 @@
 - 主角：18岁的栀夏、原创墨灵阿砚
 - 核心玩法：阿砚出题，栀夏接诗，汉字苏醒，诗境展开
 - 画面比例：9:16竖屏
-- 视觉方向：明亮、清透、低饱和的东方二维动画，融合宣纸、水墨与书法飞白
+- 默认视觉方向：电影级写实古装自然摄影、低饱和东方美学与克制的诗意自然景观；实验风格须在单集设计中单独确认
 - 当前制作节点：EP01“一字三诗·花”完整流程已跑通；推荐成片为 `exports/ep01-flower-subtitled-v02-fullscreen.mp4`
 - 配音自动化：已支持按剧集清单预览、付费确认、五句分段生成、断点续做、版本保护和字幕时间轴生成
 
@@ -39,6 +39,8 @@ EP01、EP02、EP03 的既有音频、字幕和成片不纳入自动补生成，�
 - [世界观母版](docs/world-bible.md)
 - [角色母版](docs/character-bible.md)
 - [视觉母版](docs/visual-bible.md)
+- [电影级写实视觉规范](docs/realistic-visual-style.md)
+- [栀夏专属古典舞动作库](docs/zhixia-classical-dance-library.md)
 - [生产流程](docs/production-workflow.md)
 - [“一字三诗”短视频生产SOP](docs/one-character-three-poems-sop.md)
 - [EP01剧情](episodes/ep01/script.md)

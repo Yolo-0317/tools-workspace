@@ -29,11 +29,13 @@ class VoiceLine:
     start_ms: int | None = None
     gap_before_ms: int = 0
     revision: int = 1
+    context_texts: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
 class EpisodeManifest:
     episode: str
+    format: str
     theme: str
     theme_slug: str
     audio_slug: str
@@ -57,6 +59,17 @@ def _positive_integer(value: Any, field: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
         raise ValueError(f"{field} 必须是正整数")
     return value
+
+
+def _context_texts(value: Any, field: str) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if not isinstance(value, list):
+        raise ValueError(f"{field} 必须是字符串列表")
+    return tuple(
+        _nonempty_string(item, f"{field}[{index}]")
+        for index, item in enumerate(value)
+    )
 
 
 def load_voice_config(path: Path) -> dict[str, VoiceConfig]:
@@ -91,6 +104,15 @@ def manifest_from_dict(
         raise ValueError("配音清单必须是对象")
 
     episode = _nonempty_string(data.get("episode"), "episode")
+    episode_format = data.get("format", "one-character-three-poems")
+    episode_format = _nonempty_string(episode_format, "format")
+    allowed_line_counts: dict[str, set[int] | None] = {
+        "one-character-three-poems": {4, 5},
+        "one-character-two-poems": {2, 3},
+        "one-poem-story": None,
+    }
+    if episode_format not in allowed_line_counts:
+        raise ValueError(f"未知飞花令格式: {episode_format}")
     theme = _nonempty_string(data.get("theme"), "theme")
     theme_slug = _nonempty_string(data.get("theme_slug"), "theme_slug")
     audio_slug = _nonempty_string(data.get("audio_slug"), "audio_slug")
@@ -102,8 +124,15 @@ def manifest_from_dict(
         raise ValueError("audio_slug 必须是小写英文、数字或连字符")
 
     raw_lines = data.get("lines")
-    if not isinstance(raw_lines, list) or len(raw_lines) != 5:
-        raise ValueError("一字三诗配音清单必须恰好包含 5 句")
+    expected_counts = allowed_line_counts[episode_format]
+    if not isinstance(raw_lines, list):
+        raise ValueError(f"{episode_format} 配音清单的 lines 必须是列表")
+    if expected_counts is None:
+        if not raw_lines:
+            raise ValueError(f"{episode_format} 配音清单必须至少包含 1 句")
+    elif len(raw_lines) not in expected_counts:
+        expected = " 或 ".join(str(count) for count in sorted(expected_counts))
+        raise ValueError(f"{episode_format} 配音清单必须包含 {expected} 句")
 
     parsed: list[VoiceLine] = []
     seen_ids: set[str] = set()
@@ -139,6 +168,9 @@ def manifest_from_dict(
             else 0
         )
         revision = _positive_integer(raw.get("revision", 1), f"{line_id}.revision")
+        context_texts = _context_texts(
+            raw.get("context_texts"), f"{line_id}.context_texts"
+        )
         parsed.append(
             VoiceLine(
                 id=line_id,
@@ -147,11 +179,13 @@ def manifest_from_dict(
                 start_ms=start_ms,
                 gap_before_ms=gap_before_ms,
                 revision=revision,
+                context_texts=context_texts,
             )
         )
 
     return EpisodeManifest(
         episode=episode,
+        format=episode_format,
         theme=theme,
         theme_slug=theme_slug,
         audio_slug=audio_slug,

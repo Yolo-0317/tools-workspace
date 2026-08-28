@@ -85,7 +85,7 @@ class ManifestTests(unittest.TestCase):
         )
         self.assertEqual(
             loaded["zhixia"].speaker,
-            "ICL_uranus_zh_female_tianmeijiaoqiao_tob",
+            "ICL_uranus_zh_female_tianmeihuopo_tob",
         )
         self.assertEqual(loaded["ayan"].resource_id, "seed-tts-2.0")
 
@@ -101,6 +101,30 @@ class ManifestTests(unittest.TestCase):
 
         self.assertEqual(manifest.episode, "ep04")
         self.assertEqual(manifest.lines[1].role, "zhixia")
+
+    def test_manifest_preserves_optional_context_texts(self) -> None:
+        data = valid_manifest_data()
+        data["lines"][1]["context_texts"] = [  # type: ignore[index]
+            "她迎风追上同伴，带笑自然回嘴。",
+            "不要朗读，不要播音腔。",
+        ]
+
+        manifest = manifest_from_dict(data, voices())
+
+        self.assertEqual(
+            manifest.lines[1].context_texts,
+            (
+                "她迎风追上同伴，带笑自然回嘴。",
+                "不要朗读，不要播音腔。",
+            ),
+        )
+
+    def test_manifest_rejects_blank_context_text(self) -> None:
+        data = valid_manifest_data()
+        data["lines"][1]["context_texts"] = ["  "]  # type: ignore[index]
+
+        with self.assertRaisesRegex(ValueError, "context_texts"):
+            manifest_from_dict(data, voices())
 
     def test_build_subtitles_uses_real_durations_and_gap(self) -> None:
         manifest = manifest_from_dict(valid_manifest_data(), voices())
@@ -171,11 +195,102 @@ class ManifestTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "start_ms.*gap_before_ms"):
             manifest_from_dict(data, voices())
 
-    def test_exactly_five_lines_are_required(self) -> None:
+    def test_four_lines_without_opening_are_accepted(self) -> None:
         data = valid_manifest_data()
+        data["lines"] = data["lines"][1:]  # type: ignore[index]
+
+        manifest = manifest_from_dict(data, voices())
+
+        self.assertEqual(len(manifest.lines), 4)
+        self.assertEqual(manifest.lines[0].id, "02-poem-01")
+
+    def test_two_poem_lines_without_opening_or_outro_are_accepted(self) -> None:
+        data = valid_manifest_data()
+        data["format"] = "one-character-two-poems"
+        data["episode"] = "ep06"
+        data["theme"] = "秋"
+        data["theme_slug"] = "autumn"
+        data["audio_slug"] = "ep06-autumn"
+        data["lines"] = [
+            {
+                "id": "02-poem-01",
+                "role": "zhixia",
+                "text": "树树皆秋色，山山唯落晖。",
+                "start_ms": 1800,
+            },
+            {
+                "id": "03-poem-02",
+                "role": "ayan",
+                "text": "秋风生渭水，落叶满长安。",
+                "start_ms": 7800,
+            },
+        ]
+
+        manifest = manifest_from_dict(data, voices())
+
+        self.assertEqual(len(manifest.lines), 2)
+        self.assertEqual(manifest.lines[0].start_ms, 1800)
+        self.assertEqual(manifest.lines[1].start_ms, 7800)
+
+    def test_two_poem_format_accepts_opening_plus_two_poems(self) -> None:
+        data = valid_manifest_data()
+        data["format"] = "one-character-two-poems"
+        data["lines"] = data["lines"][:3]  # type: ignore[index]
+
+        manifest = manifest_from_dict(data, voices())
+
+        self.assertEqual(manifest.format, "one-character-two-poems")
+        self.assertEqual(len(manifest.lines), 3)
+
+    def test_one_poem_story_format_accepts_single_voiceover(self) -> None:
+        data = valid_manifest_data()
+        data["format"] = "one-poem-story"
+        data["episode"] = "qiusi"
+        data["theme"] = "秋思"
+        data["theme_slug"] = "qiusi"
+        data["audio_slug"] = "qiusi"
+        data["lines"] = [
+            {
+                "id": "01-poem-voiceover",
+                "role": "ayan",
+                "text": "复恐匆匆说不尽，行人临发又开封。",
+                "start_ms": 10500,
+            }
+        ]
+
+        manifest = manifest_from_dict(data, voices())
+
+        self.assertEqual(manifest.format, "one-poem-story")
+        self.assertEqual(len(manifest.lines), 1)
+        self.assertEqual(manifest.lines[0].role, "ayan")
+
+    def test_one_poem_story_format_accepts_four_voice_lines(self) -> None:
+        data = valid_manifest_data()
+        data["format"] = "one-poem-story"
+        data["episode"] = "chishang"
+        data["theme"] = "池上"
+        data["theme_slug"] = "chishang"
+        data["audio_slug"] = "chishang"
         data["lines"] = data["lines"][:4]  # type: ignore[index]
 
-        with self.assertRaisesRegex(ValueError, "恰好包含 5 句"):
+        manifest = manifest_from_dict(data, voices())
+
+        self.assertEqual(manifest.format, "one-poem-story")
+        self.assertEqual(len(manifest.lines), 4)
+
+    def test_one_poem_story_format_rejects_empty_lines(self) -> None:
+        data = valid_manifest_data()
+        data["format"] = "one-poem-story"
+        data["lines"] = []
+
+        with self.assertRaisesRegex(ValueError, "至少包含 1 句"):
+            manifest_from_dict(data, voices())
+
+    def test_fewer_than_four_lines_are_rejected(self) -> None:
+        data = valid_manifest_data()
+        data["lines"] = data["lines"][:3]  # type: ignore[index]
+
+        with self.assertRaisesRegex(ValueError, "4 或 5 句"):
             manifest_from_dict(data, voices())
 
     def test_negative_gap_is_rejected(self) -> None:

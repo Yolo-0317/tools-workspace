@@ -1,0 +1,17 @@
+{
+  "episode": "yesu-shansi",
+  "format": "one-poem-story",
+  "theme": "夜宿山寺·栀夏甜美活泼音色诗句试听",
+  "theme_slug": "yesu-shansi-zhixia-tianmeihuopo-poem-test",
+  "audio_slug": "yesu-shansi-zhixia-tianmeihuopo-poem-test",
+  "lines": [
+    {
+      "id": "01-zhixia-poem-test",
+      "role": "zhixia",
+      "text": "危楼高百尺，手可摘星辰。",
+      "context_texts": [
+        "栀夏刚和阿砚飞到云海之上的高塔顶端，抬头看见近在眼前的星光，惊喜尚未散去，又被高塔与星空的辽阔震住。她不是在课堂朗诵，而是情不自禁轻声说出诗句。前半句带仰望高塔的敬畏，逗号处自然停顿；后半句更明亮，像伸手真的快要触到星星，带一点笑意和不可思议。保持十八岁少女的自然呼吸与灵动感，吐字清楚，不要播音腔，不要朗诵比赛腔，不要拖长尾音。"
+      ]
+    }
+  ]
+}

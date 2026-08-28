@@ -29,6 +29,10 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--episode", required=True, help="剧集编号，例如 ep04")
     parser.add_argument(
+        "--manifest",
+        help="配音清单路径；缺省为 episodes/<episode>/voice-lines.json",
+    )
+    parser.add_argument(
         "--generate",
         action="store_true",
         help="确认后调用豆包 TTS；缺省时只预览",
@@ -117,7 +121,11 @@ def run_cli(
     root = Path(project_root) if project_root is not None else PROJECT_ROOT
     try:
         voices = load_voice_config(root / "config" / "voices.json")
-        manifest_path = root / "episodes" / args.episode / "voice-lines.json"
+        manifest_path = (
+            root / args.manifest
+            if args.manifest
+            else root / "episodes" / args.episode / "voice-lines.json"
+        )
         manifest = load_episode_manifest(manifest_path, voices)
         if manifest.episode != args.episode:
             raise ValueError(

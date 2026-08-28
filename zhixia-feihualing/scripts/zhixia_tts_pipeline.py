@@ -91,6 +91,7 @@ def _identity_matches(
             record.get("id") == line.id,
             record.get("role") == line.role,
             record.get("text") == line.text,
+            record.get("context_texts", []) == list(line.context_texts),
             record.get("speaker") == voice.speaker,
             record.get("resource_id") == voice.resource_id,
             record.get("revision") == line.revision,
@@ -254,6 +255,7 @@ def _record_for(
         "id": state.line.id,
         "role": state.line.role,
         "text": state.line.text,
+        "context_texts": list(state.line.context_texts),
         "speaker": state.voice.speaker,
         "resource_id": state.voice.resource_id,
         "revision": state.line.revision,
@@ -287,6 +289,7 @@ def generate_pending_lines(
                     speaker=state.voice.speaker,
                     resource_id=state.voice.resource_id,
                     uid=f"{plan.manifest.episode}-{state.line.id}",
+                    context_texts=state.line.context_texts,
                 )
             )
             with tempfile.NamedTemporaryFile(

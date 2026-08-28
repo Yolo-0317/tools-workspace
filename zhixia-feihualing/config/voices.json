@@ -6,7 +6,17 @@
   },
   "zhixia": {
     "name": "栀夏",
-    "speaker": "ICL_uranus_zh_female_tianmeijiaoqiao_tob",
+    "speaker": "ICL_uranus_zh_female_tianmeihuopo_tob",
+    "resource_id": "seed-tts-2.0"
+  },
+  "zhixia-xinling-test": {
+    "name": "栀夏·心灵鸡汤候选",
+    "speaker": "zh_female_xinlingjitang_uranus_bigtts",
+    "resource_id": "seed-tts-2.0"
+  },
+  "zhixia-lingling-test": {
+    "name": "栀夏·玲玲候选",
+    "speaker": "zh_female_lingling_uranus_bigtts",
     "resource_id": "seed-tts-2.0"
   }
 }

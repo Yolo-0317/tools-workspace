@@ -2,22 +2,22 @@
 
 > **适用**：用户主动要求的热点深评，以及文学/典籍稿。
 > **Agent**：研究、定题、给提示词，并在推送前完成事实编辑。
-> **DeepSeek 固定网页会话**：通过 OpenCLI 绑定当前 Chrome 标签完成标题和正文初稿。
-> **两次确认**：提示词发送前一次，微信草稿写入前一次。
+> **DeepSeek 交接**：Agent 只把完整提示词交给用户；用户自行与 DeepSeek 交流并贴回输出。
+> **两次确认**：提示词交付前一次，微信草稿写入前一次。
 
 ## 默认流水线
 
 ```text
 Agent 研究并定题（钉子、禁假钩子、32字内）
-  → 展示来源包和提示词，等待第一次确认
-  → OpenCLI bind 当前 Chrome 的固定 DeepSeek 会话并发送
-  → 只提取本轮新增回复，随后 unbind
+  → 展示来源包和完整提示词，等待第一次确认
+  → 用户自行把提示词交给 DeepSeek，并将完整输出贴回当前任务
+  → 未收到贴回稿件时暂停，不调用 DeepSeek，也不回退其他模型代写
   → Agent 核事实并编辑，在原句里包 2～3 处 [[hl:…]]；热点先查抖音搜索卡片封面
   → 展示 DeepSeek 来源、Agent 编辑记录、标题、摘要、字数、来源、真实图片与门禁报告，等待第二次确认
   → hotspot 写目标热点槽位；文学/典籍写 literary 独立槽位
 ```
 
-固定会话 ID 为 `f0cc031d-233f-4648-807d-354275738e61`。Agent **不要**调用 `wechat_mp_deepseek_write` API 路线，也不要另开自动化窗口。未登录时只提示用户登录并保持固定会话为当前标签；禁止读取 Cookie 或回退其他模型。
+Agent 禁止打开、绑定、操作或检查 DeepSeek 网页，禁止调用 DeepSeek API、OpenCLI DeepSeek 浏览器写稿命令或其他自动发送方式，也不处理 DeepSeek 登录状态、Cookie、会话 ID。DeepSeek 交流完全由用户完成；用户贴回的完整输出是 Agent 进入核实编辑阶段的唯一输入。禁止回退其他模型代写初稿。
 
 ## Agent 定题时交什么
 
@@ -26,7 +26,7 @@ Agent 研究并定题（钉子、禁假钩子、32字内）
 - 轻量 prompt（下面模板，按集替换）
 - 不要塞语料库全文
 
-## 热点深评 prompt（复制给网页 DeepSeek）
+## 热点深评 prompt（完整复制给用户）
 
 ```text
 写一篇微信公众号热点深评，正文约1800—2200字，纯段落，不要小标题。
@@ -44,7 +44,7 @@ Agent 研究并定题（钉子、禁假钩子、32字内）
 6. 只输出标题和正文，不写写作说明、来源列表或配图建议
 ```
 
-## 文学/典籍轻量 prompt（复制给网页 DeepSeek）
+## 文学/典籍轻量 prompt（完整复制给用户）
 
 ```text
 写一篇微信公众号讨论稿，约800字，纯段落，不要小标题。
@@ -62,14 +62,14 @@ Agent 研究并定题（钉子、禁假钩子、32字内）
 
 ## DeepSeek 返回初稿后 Agent 做什么
 
-1. 只提取当前轮新增回复，并把工作流状态记为 `response_received`。
+1. 接收用户贴回的完整 DeepSeek 输出；未收到时暂停。
 2. 核验标题、数字、人物、时间、引语和来源；文学/典籍稿还要核开篇是否有具体场面。
 3. 编辑为结构化终稿，在原句里包 2～3 处 `[[hl:…]]`，补至少三个公开来源域，并以可重复的 `--edit-note` 记录核实和改动。
 4. 用户主动热点配图必须先检索抖音，只查看搜索结果卡片与封面，禁止打开或播放视频；再按需补政府官网、官方媒体或法条页面证据图。正文允许 0—3 张，至少一张真实图作为封面；禁止任何自动生成图片或 `codex-image-request.json`。
 5. 暂存终稿并展示 DeepSeek 来源、Agent 编辑记录、标题、摘要、字数、来源、封面与正文图数量，以及“本稿未自动生成图片”，等待第二次确认。
 6. 用户确认后才登记推送许可并写入微信草稿箱：热点写指定热点槽位，文学/典籍写 `literary`。
 
-命令顺序：
+用户贴回初稿后的暂存与推送命令：
 
 ```bash
 cd stock-ai
@@ -85,9 +85,9 @@ uv run python -m scripts.tools.wechat_mp_browser_write push \
 
 `confirm-push` 只能在用户第二次明确确认后执行。`push` 失败时保留在 `push_confirmed`，修复网络或微信白名单后可重试，不重复生成正文。
 
-## 旧 API 路线
+## 禁止的自动写稿路线
 
-`scripts.tools.wechat_mp_deepseek_write` 不属于本流程，热点深评和文学/典籍稿不得用它绕过固定网页会话与两次确认。
+`scripts.tools.wechat_mp_deepseek_write`、`scripts.tools.wechat_mp_deepseek_browser` 以及 `wechat_mp_browser_write write` 均不属于本流程。热点深评和文学/典籍稿不得用任何自动化方式把提示词发给 DeepSeek，也不得绕过两次确认。
 
-代码真源：`scripts/tools/wechat_mp_browser_write.py`、`scripts/tools/wechat_mp_deepseek_browser.py`
+推稿代码：`scripts/tools/wechat_mp_browser_write.py`（仅用于用户贴回稿件后的暂存、确认和写草稿，不执行 `write`）
 规律沉淀：`stock-ai/data/wechat_mp_reference_corpus/dianji-zhongguo/distilled-patterns.md`

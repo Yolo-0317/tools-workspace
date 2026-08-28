@@ -1,0 +1,38 @@
+[
+  {
+    "id": "01-ayan-lead",
+    "kind": "dialogue",
+    "text": "栀夏，跟紧我！",
+    "attribution": null
+  },
+  {
+    "id": "02-zhixia-reply",
+    "kind": "dialogue",
+    "text": "哈？明明是你跟紧我呀！",
+    "attribution": null
+  },
+  {
+    "id": "03-zhixia-stars",
+    "kind": "dialogue",
+    "text": "阿砚，你看——是星星！",
+    "attribution": null
+  },
+  {
+    "id": "04-ayan-reach",
+    "kind": "dialogue",
+    "text": "那就伸手试试。",
+    "attribution": null
+  },
+  {
+    "id": "05-zhixia-poem-one",
+    "kind": "poem",
+    "text": "危楼高百尺",
+    "attribution": null
+  },
+  {
+    "id": "06-zhixia-poem-two",
+    "kind": "poem",
+    "text": "手可摘星辰",
+    "attribution": null
+  }
+]

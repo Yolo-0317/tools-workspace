@@ -1,0 +1,33 @@
+{
+  "episode": "jingyesi",
+  "format": "one-poem-story",
+  "theme": "静夜思",
+  "theme_slug": "jingyesi",
+  "audio_slug": "jingyesi-chant-preview",
+  "lines": [
+    {
+      "id": "01-zhixia-chant",
+      "role": "zhixia",
+      "text": "床前明月光。",
+      "start_ms": 300
+    },
+    {
+      "id": "02-zhixia-chant",
+      "role": "zhixia",
+      "text": "疑是地上霜。",
+      "start_ms": 3500
+    },
+    {
+      "id": "03-zhixia-chant",
+      "role": "zhixia",
+      "text": "举头望明月。",
+      "start_ms": 6700
+    },
+    {
+      "id": "04-zhixia-chant",
+      "role": "zhixia",
+      "text": "低头思故乡。",
+      "start_ms": 9900
+    }
+  ]
+}

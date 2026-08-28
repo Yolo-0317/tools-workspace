@@ -1,0 +1,21 @@
+{
+  "episode": "wen-liu-shijiu",
+  "format": "one-character-two-poems",
+  "theme": "问刘十九",
+  "theme_slug": "wen-liu-shijiu",
+  "audio_slug": "wen-liu-shijiu",
+  "lines": [
+    {
+      "id": "01-opening-dialogue",
+      "role": "ayan",
+      "text": "雪都下了，他怎么还没来？",
+      "start_ms": 400
+    },
+    {
+      "id": "02-poem-voiceover",
+      "role": "ayan",
+      "text": "晚来天欲雪，能饮一杯无？",
+      "start_ms": 12050
+    }
+  ]
+}

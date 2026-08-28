@@ -33,7 +33,7 @@
 - Modify: `stock-ai/tests/unit/test_wechat_mp_tv_trial.py` — 验证题目注册和 20 字标题。
 - Modify: `stock-ai/tests/unit/test_wechat_mp_tv_figures.py` — 验证 5 张图按正文剧情锚点顺序注入。
 - Create: `stock-ai/data/wechat_mp_tv_review_golden/nanjing-photo-studio.body_core.md` — 无评分、无插图标记的正文金样。
-- Create: `stock-ai/data/wechat_mp_tv_body_cache/nanjing_photo_studio.json` — 标题、摘要和正文缓存，供预演与后续重推复用。
+- Create: `stock-ai/data/wechat_mp_tv_body_cache/nanjing-photo-studio.json` — 标题、摘要和正文缓存，供预演与后续重推复用。
 - Create: `stock-ai/assets/wechat_mp/inline-tv/nanjing-photo-studio/figure_sources.json` — 封面与 5 张正文图的原页、原图 URL、来源名、发布时间、用途与授权备注。
 - Create: `stock-ai/assets/wechat_mp/inline-tv/nanjing-photo-studio/cover.jpg` — 暗房与底片主题封面。
 - Create: `stock-ai/assets/wechat_mp/inline-tv/nanjing-photo-studio/still-01.jpg` — 照相馆与暗房场景。
@@ -135,7 +135,7 @@ Expected: 新增测试和既有影视测试全部 PASS。
 
 **Files:**
 - Create: `stock-ai/data/wechat_mp_tv_review_golden/nanjing-photo-studio.body_core.md`
-- Create: `stock-ai/data/wechat_mp_tv_body_cache/nanjing_photo_studio.json`
+- Create: `stock-ai/data/wechat_mp_tv_body_cache/nanjing-photo-studio.json`
 
 **Interfaces:**
 - Consumes: Task 1 的剧情锚点、历史边界和原创判断。
@@ -171,7 +171,7 @@ Run:
 
 ```bash
 cd stock-ai
-PYTHONPATH=. .venv/bin/python -c 'import json,re; from pathlib import Path; p=Path("data/wechat_mp_tv_review_golden/nanjing-photo-studio.body_core.md"); b=p.read_text(); ps=[x.strip() for x in b.split("\n\n") if x.strip()]; d=json.loads(Path("data/wechat_mp_tv_body_cache/nanjing_photo_studio.json").read_text()); print({"text_length":len(re.sub(r"\s+","",b)),"paragraphs":len(ps),"max_paragraph":max(map(len,ps)),"title_length":len(d["title"]),"anchors":sum(x in b for x in ["暗房里第一次看清","摆拍的亲善照","万一日本人输了","把底片缝进衣服","证据必须活下去"])}); assert 2400 <= len(re.sub(r"\s+","",b)) <= 3000; assert max(map(len,ps)) <= 220; assert len(d["title"]) <= 20'
+PYTHONPATH=. .venv/bin/python -c 'import json,re; from pathlib import Path; p=Path("data/wechat_mp_tv_review_golden/nanjing-photo-studio.body_core.md"); b=p.read_text(); ps=[x.strip() for x in b.split("\n\n") if x.strip()]; d=json.loads(Path("data/wechat_mp_tv_body_cache/nanjing-photo-studio.json").read_text()); print({"text_length":len(re.sub(r"\s+","",b)),"paragraphs":len(ps),"max_paragraph":max(map(len,ps)),"title_length":len(d["title"]),"anchors":sum(x in b for x in ["暗房里第一次看清","摆拍的亲善照","万一日本人输了","把底片缝进衣服","证据必须活下去"])}); assert 2400 <= len(re.sub(r"\s+","",b)) <= 3000; assert max(map(len,ps)) <= 220; assert len(d["title"]) <= 20'
 rg -n '(^|\n)[#>]|^[-*+] |^[0-9]+[.、]|我看|我觉得|值得注意的是|真正的问题是|戏眼|意象|正向反馈|遮羞布|场面堆叠|综上所述' data/wechat_mp_tv_review_golden/nanjing-photo-studio.body_core.md
 ```
 
@@ -224,7 +224,7 @@ Expected: 6 个哈希均不同；来源清单顺序与文件顺序一致；每�
 
 **Files:**
 - Read: `stock-ai/output/nanjing_photo_studio_quality.json`
-- Read: `stock-ai/data/wechat_mp_tv_body_cache/nanjing_photo_studio.json`
+- Read: `stock-ai/data/wechat_mp_tv_body_cache/nanjing-photo-studio.json`
 - Read: `stock-ai/assets/wechat_mp/inline-tv/nanjing-photo-studio/figure_sources.json`
 
 **Interfaces:**

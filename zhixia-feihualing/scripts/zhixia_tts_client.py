@@ -41,6 +41,7 @@ class TTSRequest:
     speaker: str
     resource_id: str
     uid: str = "zhixia-feihualing"
+    context_texts: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -116,6 +117,8 @@ def parse_sse(
         code = payload.get("code")
         if code == 0:
             encoded_audio = payload.get("data")
+            if encoded_audio is None and "sentence" in payload:
+                continue
             if not isinstance(encoded_audio, str):
                 raise TTSProtocolError(
                     f"audio chunk is missing (request_id={request_id or 'unknown'})"
@@ -227,6 +230,9 @@ class DoubaoTTSClient:
             "X-Api-Resource-Id": request.resource_id,
             "X-Api-Request-Id": client_request_id,
         }
+        additions: dict[str, object] = {"disable_markdown_filter": True}
+        if request.context_texts:
+            additions["context_texts"] = list(request.context_texts)
         body: dict[str, object] = {
             "user": {"uid": request.uid},
             "req_params": {
@@ -239,7 +245,7 @@ class DoubaoTTSClient:
                     "loudness_rate": 0,
                     "bit_rate": 64000,
                 },
-                "additions": json.dumps({"disable_markdown_filter": True}),
+                "additions": json.dumps(additions, ensure_ascii=False),
             },
         }
 

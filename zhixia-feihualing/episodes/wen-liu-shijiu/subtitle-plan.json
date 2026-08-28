@@ -1,0 +1,31 @@
+[
+  {
+    "id": "01-opening-dialogue",
+    "kind": "dialogue",
+    "role": "ayan",
+    "text": "雪都下了，他怎么还没来？",
+    "start": 0.4,
+    "end": 3.256,
+    "layout": "horizontal-lower-third"
+  },
+  {
+    "id": "02-original-dialogue",
+    "kind": "dialogue",
+    "role": "zhixia",
+    "source": "seedance-original-audio",
+    "text": "再等等。",
+    "start": 8.7,
+    "end": 9.5,
+    "layout": "horizontal-lower-third"
+  },
+  {
+    "id": "03-poem-voiceover",
+    "kind": "poem",
+    "role": "ayan",
+    "text": "晚来天欲雪，能饮一杯无？",
+    "attribution": "唐·白居易《问刘十九》",
+    "start": 12.05,
+    "end": 14.882,
+    "layout": "vertical-poem-with-attribution"
+  }
+]

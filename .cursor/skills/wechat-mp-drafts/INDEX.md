@@ -36,12 +36,12 @@
 3. **[social-commentary-voice.md](../wechat-mp-writing/social-commentary-voice.md)** — **社会民生热点**：短段、物件立人、通报对照、感情色彩  
 4. [eval-gates.md](../wechat-mp-writing/eval-gates.md) · [revision-workflow.md](../wechat-mp-writing/revision-workflow.md) · [anti-ai-voice.md](../wechat-mp-writing/anti-ai-voice.md) · [depth-and-opinion.md](../wechat-mp-writing/depth-and-opinion.md)
 
-用户主动要求新写热点深评时，必须走 [deepseek-writer-sop.md](../wechat-mp-writing/deepseek-writer-sop.md) 的固定 Chrome 会话双确认流程：DeepSeek 直接产出标题和初稿，Agent 再核实编辑。配图必须先查抖音搜索结果卡片，只取封面且不打开视频；正文允许 0—3 张真实图，零图因缺封面而停止，禁止任何自动生成图片。定时热点仍使用 Codex，不依赖浏览器登录。
+用户主动要求新写热点深评时，必须走 [deepseek-writer-sop.md](../wechat-mp-writing/deepseek-writer-sop.md) 的手工交接双确认流程：Agent 只提供完整提示词，用户自行向 DeepSeek 取标题和初稿并贴回，Agent 再核实编辑。Agent 不直接调用或控制 DeepSeek。配图必须先查抖音搜索结果卡片，只取封面且不打开视频；正文允许 0—3 张真实图，零图因缺封面而停止，禁止任何自动生成图片。定时热点仍使用 Codex。
 
 ### 文学与典籍（literary · 手动独立槽位）
 
 1. 读取 [deepseek-writer-sop.md](../wechat-mp-writing/deepseek-writer-sop.md)。
-2. Agent 研究并展示提示词，用户第一次确认后绑定固定 DeepSeek 会话写稿。
+2. Agent 研究并展示完整提示词，用户第一次确认后自行向 DeepSeek 取稿并贴回；Agent 不直接调用 DeepSeek。
 3. Agent 核验原文、节目、篇数、字数、时代和人物关系，完成高亮及公开来源配图。
 4. 用户第二次确认后写入 `literary`，不得复用或覆盖 `tv_review`。
 

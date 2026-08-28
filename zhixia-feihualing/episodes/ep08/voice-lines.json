@@ -1,0 +1,27 @@
+{
+  "episode": "ep08",
+  "format": "one-character-two-poems",
+  "theme": "笛",
+  "theme_slug": "flute",
+  "audio_slug": "ep08-flute",
+  "lines": [
+    {
+      "id": "01-poem-01",
+      "role": "ayan",
+      "text": "短笛无腔信口吹。",
+      "start_ms": 300
+    },
+    {
+      "id": "02-poem-02",
+      "role": "zhixia",
+      "text": "谁家玉笛暗飞声。",
+      "start_ms": 5100
+    },
+    {
+      "id": "03-poem-03",
+      "role": "ayan",
+      "text": "羌笛何须怨杨柳。",
+      "start_ms": 12050
+    }
+  ]
+}

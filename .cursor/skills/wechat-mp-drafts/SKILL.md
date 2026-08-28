@@ -34,7 +34,7 @@ paths:
 ```
 用户意图？
 ├─ 推草稿 / 定时 / env / 报错     → INDEX「工程」→ operations-sop + reference
-├─ 用户主动热点深评               → deepseek-writer-sop + hotspot-deep-review（固定 DeepSeek 双确认）
+├─ 用户主动热点深评               → deepseek-writer-sop + hotspot-deep-review（手工交接 + 双确认）
 ├─ 改 market|news|sector|workspace → templates + writing-guide
 ├─ 栀夏贴图 / 电影分享 / 经典片单  → [wechat-mp-virtual-lifestyle](../wechat-mp-virtual-lifestyle/SKILL.md) + newspic-sop
 ├─ 长图文影视试跑 / tv_review      → [tv-review-template.md](tv-review-template.md)（v2·《铁拳教育》）
@@ -60,7 +60,7 @@ paths:
 | `hot_business` | **手动** | 每日热点商业筛选与深稿，独立槽位 |
 | `silver` | **手动** | 50—65 岁退休生活：关系、健康、钱财，独立槽位 |
 | `short_drama_feature` | **手动** | Python 给收益候选，当前 Codex 研究并写稿，Python 双来源校验后写独立槽位 |
-| `literary` | **手动** | 典籍节目与文学类共用；固定 DeepSeek Chrome 会话写稿，Agent 编辑后写独立槽位 |
+| `literary` | **手动** | 典籍节目与文学类共用；用户自行向 DeepSeek 取初稿，Agent 编辑后写独立槽位 |
 
 `--kind all` = `hotspot`·`sector`·`news`·`workspace`（**不含** `temp`）。slots：`data/wechat_mp_draft_slots.json`。
 
@@ -87,16 +87,9 @@ uv run pytest tests/unit/test_wechat_mp_*.py -q
 
 **质量建议**：总分 ≥75、AI 味 ≤20、无合规红线 → 可进草稿箱。改稿流程见 [wechat-mp-writing](../wechat-mp-writing/SKILL.md)。
 
-### DeepSeek 浏览器写稿（用户主动稿）
+### DeepSeek 手工交接（用户主动稿）
 
-用户主动要求热点深评或文学/典籍稿时，采用两次确认：Agent 研究并展示提示词 → 用户确认 → OpenCLI `bind` 当前 Chrome 中固定的“公众号爆文秘诀”会话，由 DeepSeek **直接产出标题与初稿** → 提取本轮新回复 → Agent 核事实、编辑、高亮、配图 → 用户再次确认 → 推草稿。用户主动热点不得由 Agent、Codex JSON 或其他模型直接成稿绕过 DeepSeek。统一入口：
-
-```bash
-cd stock-ai
-PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_browser_write --help
-```
-
-固定会话 ID：`f0cc031d-233f-4648-807d-354275738e61`。DeepSeek 未登录时只提示用户登录并保持该会话为当前标签；禁止自动登录、读取 Cookie、切换其他会话或回退其他模型。`literary` 使用独立槽位，不覆盖 `tv_review`。
+用户主动要求热点深评或文学/典籍稿时，采用两次确认：Agent 研究并展示完整提示词 → 用户确认 → 用户自行把提示词交给 DeepSeek，并把完整输出贴回当前任务 → Agent 核事实、编辑、高亮、配图 → 用户再次确认 → 推草稿。Agent 禁止直接调用、打开、绑定、操作或检查 DeepSeek，不处理其登录状态、Cookie、会话或标签页；未收到用户贴回的输出时暂停，也不回退其他模型代写。`literary` 使用独立槽位，不覆盖 `tv_review`。
 
 ### Codex 长图文交接
 
@@ -111,7 +104,7 @@ PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_browser_write --help
 
 `virtual_lifestyle` 继续使用其显性人物母版，不读取本角色卡。
 
-用户主动热点的编辑终稿保存为本地 JSON，但该 JSON 必须来自本次固定 DeepSeek 浏览器 workflow，并保留 Agent 核实编辑记录：
+用户主动热点的编辑终稿保存为本地 JSON，但初稿必须是用户本次贴回的 DeepSeek 输出，并保留 Agent 核实编辑记录：
 
 ```json
 {
@@ -191,7 +184,7 @@ uv run python -m scripts.tools.wechat_mp_newspic_draft \
 |--|------|
 | **19:00 launchd** | 自动**写/更新草稿**；跳过：`echo YYYY-MM-DD > data/wechat_mp_skip_scheduled.date` |
 | **后台定时发表** | **人工**在 mp.weixin.qq.com；**每天仅 1 次通知**（个人号）→ 多篇**同批群发**，排好头条/次条顺序；**禁止**分时段错开发表 |
-| **LLM** | 定时稿只用 Codex CLI；用户主动的热点深评与文学/典籍稿必须走固定 DeepSeek Chrome 会话，均失败关闭；东财 SOP 并发仍用 `SOP_LLM_BACKEND=deepseek` |
+| **LLM** | 定时稿只用 Codex CLI；用户主动的热点深评与文学/典籍稿必须由 Agent 给提示词、用户自行向 DeepSeek 取稿并贴回；未收到初稿即停止；东财 SOP 并发仍用 `SOP_LLM_BACKEND=deepseek` |
 
 详 [operations-sop.md](operations-sop.md) · `stock-ai/docs/WECHAT_MP_SCHEDULING.md`。
 

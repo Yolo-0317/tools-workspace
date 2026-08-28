@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "topic": "兔子警官回应辅警身份争议",
+  "query": "兔子警官 辅警身份争议",
+  "completed_at": "2026-08-28T11:30:00+08:00",
+  "fallback_reason": "",
+  "candidates": [
+    {
+      "account": "浙江日报",
+      "display_time": "2026-08-27（搜索页显示1天前）",
+      "video_url": "https://www.douyin.com/video/7678519795821661481",
+      "cover_url": "https://p3-pc-sign.douyinpic.com/image-cut-tos-priv/c958ed4d087c8d9e070f9264f229937e~tplv-dy-resize-origshort-autoq-75:330.jpeg",
+      "selected": true
+    },
+    {
+      "account": "美丽浙江",
+      "display_time": "2026-08-27（搜索页显示19小时前）",
+      "video_url": "https://www.douyin.com/video/7678621571656830208",
+      "cover_url": "https://p3-pc-sign.douyinpic.com/tos-cn-i-dy/04c654a2a4ec411d85f679d938271f83~tplv-dy-cropcenter:323:430.jpeg",
+      "selected": false
+    }
+  ]
+}

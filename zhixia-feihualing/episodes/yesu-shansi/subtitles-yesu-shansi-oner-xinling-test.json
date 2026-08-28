@@ -1,0 +1,30 @@
+[
+  {
+    "id": "01-zhixia-reply",
+    "text": "明明是你跟紧我。",
+    "start": 0.0,
+    "end": 2.424,
+    "highlight": "夜宿山寺"
+  },
+  {
+    "id": "02-zhixia-stars",
+    "text": "阿砚，那是星星吗？",
+    "start": 2.424,
+    "end": 5.664,
+    "highlight": "夜宿山寺"
+  },
+  {
+    "id": "03-zhixia-poem-one",
+    "text": "危楼高百尺。",
+    "start": 5.664,
+    "end": 8.304,
+    "highlight": "夜宿山寺"
+  },
+  {
+    "id": "04-zhixia-poem-two",
+    "text": "手可摘星辰。",
+    "start": 8.304,
+    "end": 10.752,
+    "highlight": "夜宿山寺"
+  }
+]

@@ -38,6 +38,7 @@ def manifest() -> EpisodeManifest:
     }
     return EpisodeManifest(
         episode="ep04",
+        format="one-character-three-poems",
         theme="雨",
         theme_slug="rain",
         audio_slug="ep04-rain",
@@ -62,11 +63,13 @@ class FakeClient:
     def __init__(self, *, fail_once: set[str] | None = None) -> None:
         self.fail_once = set(fail_once or ())
         self.calls: list[str] = []
+        self.contexts: dict[str, tuple[str, ...]] = {}
 
     def synthesize(self, request: object) -> TTSResult:
         uid = request.uid  # type: ignore[attr-defined]
         line_id = uid.removeprefix("ep04-")
         self.calls.append(line_id)
+        self.contexts[line_id] = request.context_texts  # type: ignore[attr-defined]
         if line_id in self.fail_once:
             self.fail_once.remove(line_id)
             raise TTSTemporaryError("temporary fixture failure")
@@ -115,6 +118,30 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(second_client.calls, [])
         self.assertEqual(result.expected_api_calls, 0)
         self.assertEqual(len(result.ready), 5)
+
+    def test_context_texts_are_forwarded_to_tts_request(self) -> None:
+        lines = list(self.manifest.lines)
+        direction = "她迎风追上同伴，带笑自然回嘴。"
+        lines[1] = replace(lines[1], context_texts=(direction,))
+        context_manifest = replace(self.manifest, lines=tuple(lines))
+        client = FakeClient()
+
+        plan = build_generation_plan(self.root, context_manifest, probe=fake_probe)
+        generate_pending_lines(plan, client, probe=fake_probe)
+
+        self.assertEqual(client.contexts["02-poem-01"], (direction,))
+
+    def test_changed_context_requires_revision_instead_of_reusing_audio(self) -> None:
+        plan = build_generation_plan(self.root, self.manifest, probe=fake_probe)
+        generate_pending_lines(plan, FakeClient(), probe=fake_probe)
+        changed_lines = list(self.manifest.lines)
+        changed_lines[1] = replace(
+            changed_lines[1], context_texts=("带笑自然回嘴。",)
+        )
+        changed_manifest = replace(self.manifest, lines=tuple(changed_lines))
+
+        with self.assertRaisesRegex(VersionConflict, "revision"):
+            build_generation_plan(self.root, changed_manifest, probe=fake_probe)
 
     def test_changed_text_requires_revision_instead_of_overwrite(self) -> None:
         plan = build_generation_plan(self.root, self.manifest, probe=fake_probe)

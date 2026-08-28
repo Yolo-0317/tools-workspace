@@ -1,0 +1,32 @@
+{
+  "still-01.jpg": {
+    "page_url": "https://www.douyin.com/video/7678328780686921012",
+    "image_url": "https://p3-pc-sign.douyinpic.com/image-cut-tos-priv/2e5c9ec95d2542128492f9db04e2b424~tplv-dy-resize-origshort-autoq-75:330.jpeg?biz_tag=pcweb_cover&from=327834062&lk3s=138a59ce&s=PackSourceEnum_SEARCH&sc=cover&se=false&x-expires=2103256800&x-signature=7xc7Z7pnG%2BggvILNLjdDM093F9k%3D",
+    "source_name": "央视频",
+    "published_at": "2026-08-27（抖音搜索页显示1天前）",
+    "source_type": "douyin_cover",
+    "verified": "true",
+    "page_title": "国务院食安办对敌敌畏消杀餐厅事件实行挂牌督办",
+    "caption": "图源：抖音认证账号“央视频”搜索结果封面"
+  },
+  "still-02.jpg": {
+    "page_url": "https://www.xinhuanet.com/politics/20260826/65a11e2dd3fd471885b4b2d6ae4475e7/c.html",
+    "image_url": "",
+    "source_name": "新华网",
+    "published_at": "2026-08-26",
+    "source_type": "official_media_webpage_screenshot",
+    "verified": "true",
+    "page_title": "国务院食安办对‘消杀公司违规使用敌敌畏为餐饮门店消杀’事件实行挂牌督办",
+    "caption": "图源：新华网，国务院食安办对涉事事件实行挂牌督办"
+  },
+  "still-03.jpg": {
+    "page_url": "https://scjgj.cq.gov.cn/zz/jjq/zwgk/fdzdgknr_146781/jdjc_146793/spyp/202104/t20210409_9112102.html",
+    "image_url": "",
+    "source_name": "重庆市市场监督管理局",
+    "published_at": "2021-04-09",
+    "source_type": "official_regulation_webpage_screenshot",
+    "verified": "true",
+    "page_title": "餐饮服务食品安全操作规范（2018年修订）",
+    "caption": "图源：《餐饮服务食品安全操作规范》，化学防治须防止食品及接触面受到污染"
+  }
+}

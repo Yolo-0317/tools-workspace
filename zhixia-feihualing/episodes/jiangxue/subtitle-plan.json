@@ -1,0 +1,21 @@
+[
+  {
+    "id": "01-ayan-dialogue",
+    "kind": "dialogue",
+    "role": "ayan",
+    "text": "他怎么不收竿？",
+    "start": 9.224,
+    "end": 10.856,
+    "layout": "horizontal-lower-third"
+  },
+  {
+    "id": "02-ayan-poem-voiceover",
+    "kind": "poem",
+    "role": "ayan",
+    "text": "孤舟蓑笠翁，独钓寒江雪。",
+    "attribution": "唐·柳宗元《江雪》",
+    "start": 11.556,
+    "end": 14.604,
+    "layout": "vertical-poem-with-attribution"
+  }
+]

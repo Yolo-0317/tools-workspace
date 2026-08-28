@@ -132,6 +132,33 @@ class CLITests(unittest.TestCase):
         self.assertIn("栀夏：2 句", stdout)
         self.assertFalse((self.root / "assets").exists())
 
+    def test_manifest_option_previews_alternate_manifest(self) -> None:
+        original = json.loads(
+            (self.root / "episodes" / "ep04" / "voice-lines.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        original["audio_slug"] = "ep04-rain-v2"
+        original["lines"] = original["lines"][1:]
+        alternate = self.root / "episodes" / "ep04" / "voice-lines-v2.json"
+        alternate.write_text(
+            json.dumps(original, ensure_ascii=False), encoding="utf-8"
+        )
+
+        code, stdout, stderr = self.run_command(
+            [
+                "--episode",
+                "ep04",
+                "--manifest",
+                "episodes/ep04/voice-lines-v2.json",
+            ]
+        )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        self.assertIn("预计产生豆包 TTS 调用：4 次", stdout)
+        self.assertIn("ep04-rain-v2", stdout)
+
     def test_generate_requires_exact_confirmation(self) -> None:
         code, stdout, _ = self.run_command(
             ["--episode", "ep04", "--generate"],

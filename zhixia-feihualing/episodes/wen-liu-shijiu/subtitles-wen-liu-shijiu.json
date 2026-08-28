@@ -1,0 +1,16 @@
+[
+  {
+    "id": "01-opening-dialogue",
+    "text": "雪都下了，他怎么还没来？",
+    "start": 0.4,
+    "end": 3.256,
+    "highlight": "问刘十九"
+  },
+  {
+    "id": "02-poem-voiceover",
+    "text": "晚来天欲雪，能饮一杯无？",
+    "start": 12.05,
+    "end": 14.882,
+    "highlight": "问刘十九"
+  }
+]

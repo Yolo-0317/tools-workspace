@@ -1,0 +1,45 @@
+{
+  "episode": "yesu-shansi",
+  "format": "one-poem-story",
+  "theme": "夜宿山寺",
+  "theme_slug": "yesu-shansi-oner-test",
+  "audio_slug": "yesu-shansi-oner-test",
+  "lines": [
+    {
+      "id": "01-ayan-lead",
+      "role": "ayan",
+      "text": "栀夏，跟紧我。",
+      "start_ms": 200
+    },
+    {
+      "id": "02-zhixia-reply",
+      "role": "zhixia",
+      "text": "明明是你跟紧我。",
+      "start_ms": 2350
+    },
+    {
+      "id": "03-zhixia-stars",
+      "role": "zhixia",
+      "text": "阿砚，那是星星吗？",
+      "start_ms": 4900
+    },
+    {
+      "id": "04-ayan-reach",
+      "role": "ayan",
+      "text": "伸手就知道了。",
+      "start_ms": 7450
+    },
+    {
+      "id": "05-zhixia-poem-one",
+      "role": "zhixia",
+      "text": "危楼高百尺。",
+      "start_ms": 9800
+    },
+    {
+      "id": "06-zhixia-poem-two",
+      "role": "zhixia",
+      "text": "手可摘星辰。",
+      "start_ms": 12500
+    }
+  ]
+}

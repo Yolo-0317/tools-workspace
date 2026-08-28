@@ -79,6 +79,22 @@ class ClientTests(unittest.TestCase):
 
         self.assertEqual(parse_sse(lines).audio, b"abcdef")
 
+    def test_parse_sse_ignores_sentence_metadata_event_without_audio(self) -> None:
+        lines = [
+            sse_data({"code": 0, "data": b64(b"abc")}),
+            sse_data(
+                {
+                    "code": 0,
+                    "data": None,
+                    "message": "",
+                    "sentence": {"text": "飞花令，雨。"},
+                }
+            ),
+            sse_data({"code": 20000000, "message": "OK", "data": None}),
+        ]
+
+        self.assertEqual(parse_sse(lines).audio, b"abc")
+
     def test_parse_sse_requires_terminal_success(self) -> None:
         with self.assertRaisesRegex(TTSProtocolError, "terminal success"):
             parse_sse([sse_data({"code": 0, "data": b64(b"abc")})])
@@ -127,6 +143,31 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(result.request_id, "server-id")
         self.assertNotIn("secret-key", repr(client))
         self.assertNotIn("secret-key", repr(client.last_request_summary))
+
+    def test_request_serializes_context_texts_as_tts_addition(self) -> None:
+        transport = FakeTransport(
+            [HTTPResponse(200, successful_sse(), {"X-Request-Id": "server-id"})]
+        )
+        client = DoubaoTTSClient("secret-key", transport=transport)
+        direction = "栀夏迎风追上阿砚，微微喘气，带笑自然回嘴。不要朗读。"
+
+        client.synthesize(
+            TTSRequest(
+                "明明是你跟紧我。",
+                "speaker-id",
+                "seed-tts-2.0",
+                context_texts=(direction,),
+            )
+        )
+
+        params = transport.calls[0]["body"]["req_params"]  # type: ignore[index]
+        self.assertEqual(
+            json.loads(params["additions"]),
+            {
+                "disable_markdown_filter": True,
+                "context_texts": [direction],
+            },
+        )
 
     def test_http_401_does_not_retry_or_expose_key(self) -> None:
         transport = FakeTransport([HTTPResponse(401, (), {"X-Request-Id": "denied"})])

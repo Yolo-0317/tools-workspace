@@ -1,0 +1,44 @@
+{
+  "episode": "yesu-shansi",
+  "format": "one-poem-story",
+  "theme": "夜宿山寺",
+  "theme_slug": "yesu-shansi",
+  "audio_slug": "yesu-shansi",
+  "lines": [
+    {
+      "id": "01-ayan-dialogue",
+      "role": "ayan",
+      "text": "这楼怎么钻进云里了？",
+      "revision": 2,
+      "start_ms": 0
+    },
+    {
+      "id": "02-zhixia-dialogue",
+      "role": "zhixia",
+      "text": "因为我们在山顶呀。",
+      "revision": 3,
+      "start_ms": 2800
+    },
+    {
+      "id": "03-ayan-dialogue",
+      "role": "ayan",
+      "text": "再高些……能摸到星星吗？",
+      "revision": 2,
+      "start_ms": 5400
+    },
+    {
+      "id": "04-zhixia-dialogue",
+      "role": "zhixia",
+      "text": "轻声些，山顶太静了。",
+      "revision": 3,
+      "start_ms": 8200
+    },
+    {
+      "id": "05-ayan-dialogue",
+      "role": "ayan",
+      "text": "那天上的人……听得见我吗？",
+      "revision": 2,
+      "start_ms": 12100
+    }
+  ]
+}

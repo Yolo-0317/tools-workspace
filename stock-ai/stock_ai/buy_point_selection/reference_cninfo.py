@@ -191,7 +191,7 @@ class CninfoReferenceProvider:
             raise ProviderFailure(
                 self.provider_name, "announcements", "PROVIDER_UNAVAILABLE"
             ) from exc
-        if response.status_code == 429:
+        if response.status_code in {403, 429}:
             raise ProviderFailure(
                 self.provider_name, "announcements", "PROVIDER_RATE_LIMITED"
             )

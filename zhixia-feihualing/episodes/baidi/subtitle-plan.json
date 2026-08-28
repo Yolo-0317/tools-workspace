@@ -1,0 +1,48 @@
+[
+  {
+    "id": "01-ayan-dialogue",
+    "kind": "dialogue",
+    "role": "ayan",
+    "text": "栀夏，船在飞！",
+    "start": 0.0,
+    "end": 2.04,
+    "layout": "horizontal-lower-third"
+  },
+  {
+    "id": "02-zhixia-dialogue",
+    "kind": "dialogue",
+    "role": "zhixia",
+    "text": "坐稳，山要追不上了。",
+    "start": 2.04,
+    "end": 4.488,
+    "layout": "horizontal-lower-third"
+  },
+  {
+    "id": "03-ayan-counting",
+    "kind": "dialogue",
+    "role": "ayan",
+    "text": "一座、两座、三座——",
+    "start": 4.488,
+    "end": 7.152,
+    "layout": "horizontal-lower-third"
+  },
+  {
+    "id": "05-ayan-dialogue",
+    "kind": "dialogue",
+    "role": "ayan",
+    "text": "它们什么时候，都跑到身后了？",
+    "start": 7.152,
+    "end": 9.816,
+    "layout": "horizontal-lower-third"
+  },
+  {
+    "id": "06-ayan-poem-voiceover",
+    "kind": "poem",
+    "role": "ayan",
+    "text": "两岸猿声啼不住，轻舟已过万重山。",
+    "attribution": "唐·李白《早发白帝城》",
+    "start": 10.8,
+    "end": 14.856,
+    "layout": "vertical-poem-with-attribution"
+  }
+]

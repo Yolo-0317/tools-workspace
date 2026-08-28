@@ -12,7 +12,6 @@ swift "$project_dir/scripts/render_cyber_divination_cards.swift" \
 
 for card in \
   01-ayan-question \
-  02-zhixia-cast \
   03-zhixia-hexagram \
   04-zhixia-reading \
   05-ayan-hope \
