@@ -41,6 +41,8 @@ EP01、EP02、EP03 的既有音频、字幕和成片不纳入自动补生成，�
 - [视觉母版](docs/visual-bible.md)
 - [电影级写实视觉规范](docs/realistic-visual-style.md)
 - [栀夏专属古典舞动作库](docs/zhixia-classical-dance-library.md)
+- [栀夏诗境自动编舞组合器](docs/zhixia-poetry-dance-composer.md)
+- [舞蹈设计去重台账](operations/dance-design-history.csv)
 - [Seedance 公开提示词案例库](docs/seedance-case-library/README.md)
 - [生产流程](docs/production-workflow.md)
 - [“一字三诗”短视频生产SOP](docs/one-character-three-poems-sop.md)
