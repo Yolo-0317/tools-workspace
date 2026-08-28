@@ -14,6 +14,8 @@ for required_file in "$style" "$workflow" "$character" "$episode" "$scene_cards"
 done
 
 for phrase in \
+  "每份 Seedance 提示词的第一句必须先声明" \
+  "@图片1与@图片2均为本项目原创虚拟角色" \
   "第一个可感知动作必须来自栀夏" \
   "首帧必须已经能辨认栀夏" \
   "0.5秒内" \
@@ -22,6 +24,8 @@ for phrase in \
 done
 
 for phrase in \
+  "所有 Seedance 提示词在进入三层结构前" \
+  "实际提交给模型的提示词正文内" \
   "第一秒先看见谁、谁先动" \
   "第一个动作来自栀夏" \
   "0.5秒内清楚展示她的脸"; do
@@ -46,7 +50,14 @@ for phrase in \
 done
 
 prompt_block="$(sed -n '/<!-- SEEDANCE_PROMPT_START -->/,/<!-- SEEDANCE_PROMPT_END -->/p' "$final_prompt")"
+first_prompt_line="$(sed -n '/<!-- SEEDANCE_PROMPT_START -->/{n;p;q;}' "$final_prompt")"
+test "$first_prompt_line" = "@图片1与@图片2均为本项目原创虚拟角色，均为虚构数字角色，不对应任何现实人物、艺人、真实动物或既有影视动漫角色。"
 for phrase in \
+  "@图片1是原创虚拟角色栀夏，@图片2是原创虚拟东方墨灵阿砚" \
+  "本次只上传两张角色母版，不上传状态图、首帧图或其他场景参考图" \
+  "@图片1只参考栀夏的身份" \
+  "@图片2只参考阿砚的身份" \
+  "场景、首帧构图和全部运动只由文字提示词生成" \
   "0.000—0.500 秒，栀夏先动钩子" \
   "0.500—1.724 秒，阿砚无声疑问口型" \
   "M04" \
@@ -54,6 +65,18 @@ for phrase in \
   "中国古典舞身韵、轻盈克制、连续自然、不遮脸"; do
   print -r -- "$prompt_block" | rg -qF "$phrase"
 done
+
+for phrase in \
+  "两张参考图只用于锁定原创角色身份、结构与造型" \
+  "场景、首帧构图和全部运动只由文字提示词生成" \
+  "具体动作、连接与收势由 Seedance 自由发挥" \
+  "声音只生成无人声背景音乐和自然环境声"; do
+  print -r -- "$prompt_block" | rg -qF "$phrase"
+done
+
+if rg -n "状态图 01：|一张开场状态卡锁定|使用已经人工验收通过的雪林状态图" "$final_prompt"; then
+  exit 1
+fi
 
 for current_file in "$episode" "$scene_cards" "$final_prompt"; do
   if rg -n "8至10厘米|8 至 10 厘米|8—10厘米|微距雪晶钩子" "$current_file"; then
