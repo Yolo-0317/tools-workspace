@@ -16,7 +16,11 @@ project_dir = Path(sys.argv[1])
 sys.path.insert(0, str(project_dir / "scripts"))
 
 from generate_episode_audio import run_cli
-from zhixia_tts_manifest import load_episode_manifest, load_voice_config
+from zhixia_tts_manifest import (
+    build_subtitles,
+    load_episode_manifest,
+    load_voice_config,
+)
 
 
 manifest_path = project_dir / "episodes" / "baixue" / "voice-lines.json"
@@ -37,11 +41,51 @@ assert all(line.revision == 1 for line in manifest.lines)
 assert all(line.context_texts for line in manifest.lines)
 
 raw = json.loads(manifest_path.read_text(encoding="utf-8"))
-assert all("start_ms" not in line for line in raw["lines"])
+assert [line["start_ms"] for line in raw["lines"]] == [500, 1850, 3600, 6200]
 assert all("gap_before_ms" not in line for line in raw["lines"])
 
 audio_dir = project_dir / "assets" / "audio" / "baixue"
-assert not audio_dir.exists()
+metadata = json.loads((audio_dir / "audio-metadata.json").read_text(encoding="utf-8"))
+durations_ms = {line["id"]: line["duration_ms"] for line in metadata["lines"]}
+assert durations_ms == {
+    "01-ayan-dialogue": 1224,
+    "02-zhixia-dialogue": 1632,
+    "03-zhixia-poem-one": 2448,
+    "04-zhixia-poem-two": 2832,
+}
+expected_subtitles = [
+    {
+        "id": "01-ayan-dialogue",
+        "text": "梨花？",
+        "start": 0.5,
+        "end": 1.724,
+        "highlight": "白雪",
+    },
+    {
+        "id": "02-zhixia-dialogue",
+        "text": "是新雪。",
+        "start": 1.85,
+        "end": 3.482,
+        "highlight": "白雪",
+    },
+    {
+        "id": "03-zhixia-poem-one",
+        "text": "忽如一夜春风来。",
+        "start": 3.6,
+        "end": 6.048,
+        "highlight": "白雪",
+    },
+    {
+        "id": "04-zhixia-poem-two",
+        "text": "千树万树梨花开。",
+        "start": 6.2,
+        "end": 9.032,
+        "highlight": "白雪",
+    },
+]
+assert build_subtitles(manifest, durations_ms) == expected_subtitles
+subtitles_path = project_dir / "episodes" / "baixue" / "subtitles-baixue.json"
+assert json.loads(subtitles_path.read_text(encoding="utf-8")) == expected_subtitles
 
 stdout = io.StringIO()
 stderr = io.StringIO()
@@ -63,12 +107,10 @@ code = run_cli(
 assert code == 0
 assert stderr.getvalue() == ""
 preview = stdout.getvalue()
-assert "预计产生豆包 TTS 调用：4 次" in preview
-assert "待生成：4 句" in preview
-assert "阿砚：1 句" in preview
-assert "栀夏：3 句" in preview
+assert "预计产生豆包 TTS 调用：0 次" in preview
+assert "待生成：0 句" in preview
+assert "已就绪并跳过：4 句" in preview
 assert "当前为预览模式，未调用语音接口。" in preview
-assert not audio_dir.exists()
 
-print("PASS: Baixue 10s manifest and offline preview are consistent")
+print("PASS: Baixue 10s audio timeline and offline preview are consistent")
 PY

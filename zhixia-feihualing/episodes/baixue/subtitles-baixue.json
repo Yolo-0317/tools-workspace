@@ -1,0 +1,30 @@
+[
+  {
+    "id": "01-ayan-dialogue",
+    "text": "梨花？",
+    "start": 0.5,
+    "end": 1.724,
+    "highlight": "白雪"
+  },
+  {
+    "id": "02-zhixia-dialogue",
+    "text": "是新雪。",
+    "start": 1.85,
+    "end": 3.482,
+    "highlight": "白雪"
+  },
+  {
+    "id": "03-zhixia-poem-one",
+    "text": "忽如一夜春风来。",
+    "start": 3.6,
+    "end": 6.048,
+    "highlight": "白雪"
+  },
+  {
+    "id": "04-zhixia-poem-two",
+    "text": "千树万树梨花开。",
+    "start": 6.2,
+    "end": 9.032,
+    "highlight": "白雪"
+  }
+]
