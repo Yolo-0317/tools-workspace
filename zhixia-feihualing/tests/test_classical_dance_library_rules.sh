@@ -32,7 +32,7 @@ for phrase in \
 done
 
 for phrase in \
-  "M02" \
+  "M04" \
   "H05" \
   "一片真实雪花" \
   "最终 10 秒音画时间轴" \
