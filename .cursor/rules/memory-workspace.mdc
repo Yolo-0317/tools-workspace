@@ -47,6 +47,7 @@ alwaysApply: false
 | **xiaozhi 云端+HTTP 播夸克** | **2026-07-26** | `memory-xiaozhi.mdc` · `DESIGN_CLOUD_HTTP_QUARK_PLAY.md` · `FIRMWARE_HTTP_MP3_PLAY.md` |
 | **xiaozhi 固件 HTTP MP3 / 大分区** | **2026-07-26** | `memory-xiaozhi.mdc` §固件 HTTP MP3 |
 | **xiaozhi MCP 卡死无反馈 / speak_hint** | **2026-07-29** | `memory-xiaozhi.mdc` §2026-07-29 |
+| **栀夏 Seedance 分级提示词规则** | **2026-08-28** | 本节 §2026-08-28-evidence-tiered |
 
 ---
 
@@ -466,3 +467,14 @@ alwaysApply: false
   - 只提供栀夏与阿砚两张角色母版时，不要求精确口型、严格对齐每句 TTS、复杂特效或多次景别变化；台词、诗句和字幕由后期完成。
   - 摄影机只写一个主要运动目的；需要扩大景别时，在同一次连续跟随中逐渐增加距离，不叠加环绕、升降、甩镜或追逐粒子。
   - 真源：`zhixia-feihualing/docs/superpowers/specs/2026-08-28-seedance-2-public-case-prompt-reset-design.md`。
+
+### 2026-08-28-evidence-tiered 栀夏诗境 · Seedance 分级输入与可观察控制
+
+- **Context**: 公开案例与两轮成片复盘表明，只写“中国古典舞身韵、轻盈克制、连续自然、不遮脸”后完全自由发挥，容易退化成原地左右挥臂；把“一条摄影机路径”理解为全程单一匀速运动，也会让镜头缺少层次。
+- **Pitfall/Error**: 固定六段正文、强制三个时间段、舞蹈动作完全放任、摄影机只允许一种不变运动，都会把旧提示词框架继续带入新诗境。本条明确覆盖同日较早的“单状态卡 + Seedance 自由舞蹈”和“公开案例导向提示词重建”中与之冲突的结论。
+- **Solution/Rule**:
+  - 输入分为基础级（两张角色母版＋文字）、控制级（增加一张动作分镜、状态卡或场景参考）和迁移级（增加自有或已授权参考视频）；复杂编舞、严格节拍与特定镜头复刻不得交给基础级承担。
+  - 舞蹈风格仍保持“中国古典舞身韵、轻盈克制、连续自然、不遮脸”，但必须写明移动或脚步、重心变化、方向或高低层次、上肢与衣料反馈、起止状态；模型只在这些可观察条件内自然连接。
+  - 摄影机建立一条主路径，同时允许由画面内可见事件触发最多两次小幅推拉、升降、有限弧移或速度变化；须写明起始与结束构图、相对运动、视差参照和触发原因。
+  - 最终正文按六类语义自然组织，不固定段数；复杂 10 秒事件推荐三个宽时间段，简单事件不强制分段。原创虚构角色首句声明、栀夏首帧及 0.5 秒内首动作、阿砚约 40 厘米、后期对白字幕和内部代码清除继续有效。
+  - 真源：`zhixia-feihualing/docs/superpowers/specs/2026-08-28-seedance-evidence-tiered-prompt-rules-rewrite-design.md`；执行规范：`zhixia-feihualing/docs/realistic-visual-style.md`、`zhixia-feihualing/docs/production-workflow.md`。
