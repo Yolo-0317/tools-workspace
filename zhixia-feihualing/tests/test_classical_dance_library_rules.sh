@@ -24,7 +24,7 @@ for phrase in \
 done
 
 for phrase in \
-  "每支诗境只保留一张开场状态卡" \
+  "每支诗境至多保留一张开场状态卡作为人工构图参考" \
   "不再为单集自创或指定具体舞蹈动作" \
   "中国古典舞身韵、轻盈克制、连续自然、不遮脸" \
   "具体动作、连接与收势由 Seedance 自由发挥"; do
@@ -32,10 +32,10 @@ for phrase in \
 done
 
 for phrase in \
-  "M04" \
-  "H05" \
-  "一片真实雪花" \
-  "最终 10 秒音画时间轴" \
+  "三段自然过程" \
+  "一条摄影机路径" \
+  "枝头粉雪自然落下" \
+  "梨花般的视觉联想" \
   "只限定中国古典舞身韵、轻盈克制、连续自然、不遮脸" \
   "具体动作由 Seedance 自由发挥" \
   "不生成图片或视频"; do
@@ -57,6 +57,10 @@ prompt_block="$(sed -n '/<!-- SEEDANCE_PROMPT_START -->/,/<!-- SEEDANCE_PROMPT_E
 print -r -- "$prompt_block" | rg -qF "中国古典舞身韵、轻盈克制、连续自然、不遮脸"
 
 if print -r -- "$prompt_block" | rg -q "D01|沉转提|立圆|云手|山膀|圆场|135 度|90 度"; then
+  exit 1
+fi
+
+if print -r -- "$prompt_block" | rg -q "唯一雪花|唯一引导雪花|无声.*口型|[0-9]+\.[0-9]{3}—[0-9]+\.[0-9]{3}"; then
   exit 1
 fi
 
