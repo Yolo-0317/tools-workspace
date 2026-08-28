@@ -36,4 +36,38 @@
 
 ## 当前统计
 
-案例整理中；最终统计将列出唯一案例总数、A/B/C 数量及各专题覆盖数。
+最后核验日期：2026-08-28。
+
+- 唯一案例：80 个。
+- A 级官方成片案例：10 个。
+- B 级社区可复核案例：22 个。
+- C 级词汇与方法参考：48 个。
+- 人物肖像与首次亮相：8 个。
+- 双人及多人互动：6 个。
+- 舞蹈与身体运动：10 个，其中 8 个明确涉及脚步、重心、动作顺序或节拍参考。
+- 动作与表演：8 个。
+- 风景与环境：14 个。
+- 运镜与一镜到底：12 个，覆盖推近、后拉、横移、跟随、弧移、升降、穿越、主观镜头、速度变化及多镜头表等路径。
+- 特效与物理反馈：8 个。
+- 声音、对白与节拍：6 个。
+- 多模态参考：8 个。
+- 可复用句式：16 条，均反向引用 A/B 级案例。
+
+## 主要来源
+
+- [字节 Seed：Seedance 2.0 正式发布](https://seed.bytedance.com/zh/blog/official-launch-of-seedance-2-0?view_from=content_recommend)：官方 A 级案例与官方能力边界。
+- [FreyaVideo Prompt + Video Cases](https://freyavideo.com/video-models/seedance-2-0/prompts)：带匹配视频、提示词和设置的 B 级案例。
+- [Scenic 舞蹈分镜工作流](https://www.scenic.sh/en/blog/gpt-image-seedance-dance-video)：舞蹈分镜、固定全身镜头、衣料物理和音频同步案例。
+- [SeedanceTips Prompt Library](https://seedancetips.com/prompts/seedance-prompt-library/)：分类完整但缺少逐例成片证据，统一按 C 级使用。
+- [ClipDance Camera Movement List](https://clipdance.ai/blog/seedance-2-camera-movement-prompt-list)：运镜词汇池，统一按 C 级使用。
+- [SeedanceNow Cinematic Prompts](https://seedancenow.com/seedance-prompts)：风景、人物和材质词汇池，统一按 C 级使用。
+- [Reddit：整段舞蹈换皮](https://www.reddit.com/r/Seedance_AI/comments/1uk9jhd/reskin_an_entire_dance_swap_the_dancer_and_the/)、[一镜打斗摄影机路径](https://www.reddit.com/r/Seedance_AI/comments/1tzvjpv/onetake_fight_in_a_single_shot_the_camerapath/)、[七镜头结构表](https://www.reddit.com/r/Seedance_AI/comments/1tprtbi/7_shots_from_one_seedance_20_prompt_shot_list/)：带作者输入、提示词或成片的社区 B 级案例。
+
+## 首轮结论
+
+1. 舞蹈只写舞种和气质不足以保证复杂度；高等级案例会写步法、重心、方向、节拍或直接提供分镜/动作视频。
+2. 固定全身镜头更有利于复杂动作可读性；复杂运镜与复杂编舞同时出现时容易争夺模型控制力。
+3. 一条主运镜不等于匀速后退。可执行镜头还需要起点、路径、速度变化、前景视差和最终揭示目标。
+4. 高质量复合镜头普遍采用“主体动作发生—摄影机作出反应—环境产生结果”的因果写法。
+5. 两张角色母版加纯文字适合低成本诗境，但复杂舞蹈与复杂一镜到底存在能力上限；更高控制需要合法动作视频、分镜板或场景参考。
+6. 官方明确提示多主体一致性、文字还原和复杂编辑仍有改进空间，案例库不把单次成功写成稳定保证。

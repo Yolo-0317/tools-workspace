@@ -79,6 +79,9 @@ done
 
 all_case_text="$(cat "${case_files[@]}")"
 for phrase_file in "$LIBRARY_DIR/camera-phrases.md" "$LIBRARY_DIR/character-dance-phrases.md"; do
+  phrase_count="$(rg -c '^## PHRASE-[A-Z]+-[0-9]{2} ' "$phrase_file" || true)"
+  phrase_count="${phrase_count:-0}"
+  (( phrase_count >= 8 )) || fail "${phrase_file##*/} must contain at least 8 reusable phrases, found $phrase_count"
   while read -r id; do
     [[ -n "$id" ]] || continue
     case_block="$(awk -v target="$id" '
