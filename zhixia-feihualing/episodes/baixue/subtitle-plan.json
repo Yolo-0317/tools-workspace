@@ -1,0 +1,26 @@
+[
+  {
+    "id": "01-ayan-dialogue",
+    "kind": "dialogue",
+    "text": "梨花？",
+    "attribution": null
+  },
+  {
+    "id": "02-zhixia-dialogue",
+    "kind": "dialogue",
+    "text": "是新雪。",
+    "attribution": null
+  },
+  {
+    "id": "03-zhixia-poem-one",
+    "kind": "poem",
+    "text": "忽如一夜春风来",
+    "attribution": "唐·岑参"
+  },
+  {
+    "id": "04-zhixia-poem-two",
+    "kind": "poem",
+    "text": "千树万树梨花开",
+    "attribution": null
+  }
+]

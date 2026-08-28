@@ -42,7 +42,8 @@ for phrase in \
   "弧线移动" \
   "两次换重" \
   "两次动作触发反应" \
-  "本次只允许文字审阅"; do
+  "用户已确认层次舞蹈版 Seedance 原片通过" \
+  "最终成片"; do
   require_phrase "$(<"$readme")" "$phrase" "Baixue README"
 done
 

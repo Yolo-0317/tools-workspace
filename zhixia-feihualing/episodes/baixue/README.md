@@ -47,9 +47,9 @@
 
 ## 当前状态
 
-层次舞蹈与动作触发运镜版文字提示词已经完成。本次只允许文字审阅；没有用户对当次生成的明确授权时，不生成图片或视频，不创建付费素材。
+用户已确认层次舞蹈版 Seedance 原片通过：舞蹈、角色和整体雪林画面保留，雪量偏少但不因此返工。原片归档为 `assets/video/content-seedance-v01.mp4`，10.100 秒、496×864、24fps，含原始音乐与环境声。
 
-正式生成前必须记录模型、时长、分辨率、生成数量和预计费用，并取得用户对当次生成的明确确认。
+四段固定音色 TTS、实际字幕时间轴、互动横排字幕和诗句竖排字幕已经完成本地合成。最终成片为 [`../../exports/baixue-subtitled-v01.mp4`](../../exports/baixue-subtitled-v01.mp4)，1080×1920、24fps、10.100 秒；配音区间将 Seedance 原声压低约 5 dB，整体音频峰值为 −4.8 dB，无削波。
 
 ## 关联文档
 
@@ -57,5 +57,7 @@
 - [电影级写实视觉规范](../../docs/realistic-visual-style.md)
 - [四段配音清单](voice-lines.json)
 - [最终字幕时间轴](subtitles-baixue.json)
+- [字幕版式清单](subtitle-plan.json)
 - [人工构图参考](prompts/scene-cards.md)
 - [Seedance 最终提示词](prompts/seedance-v01.md)
+- [最终成片](../../exports/baixue-subtitled-v01.mp4)
