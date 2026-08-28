@@ -16,18 +16,22 @@ test -s "$final_prompt"
 test "$(rg -c '^### D[0-9]{2} ' "$library")" = "12"
 
 for phrase in \
-  "历史参考" \
-  "每支诗境只制作一张开场状态卡" \
+  "只作历史与动作研究" \
+  "全局视觉规范" \
   "中国古典舞身韵、轻盈克制、连续自然、不遮脸" \
-  "具体舞蹈由 Seedance 自由发挥"; do
+  "不完全放任动作"; do
   rg -qF "$phrase" "$library"
 done
 
 for phrase in \
   "每支诗境至多保留一张开场状态卡作为人工构图参考" \
-  "不再为单集自创或指定具体舞蹈动作" \
   "中国古典舞身韵、轻盈克制、连续自然、不遮脸" \
-  "具体动作、连接与收势由 Seedance 自由发挥"; do
+  "移动或脚步" \
+  "重心变化" \
+  "方向或高低层次" \
+  "上肢与衣料反馈" \
+  "起止状态" \
+  "具体连接由模型在这些可观察条件内自然完成"; do
   rg -qF "$phrase" "$style_rules"
 done
 
@@ -72,4 +76,4 @@ if rg -n "😀|🎬|✨" "$library" "$style_rules" "$episode" "$scene_cards" "$f
   exit 1
 fi
 
-echo "PASS: Zhixia single-state-card free-dance rules are enforced"
+echo "PASS: Zhixia dance research boundary and observable-action rules are enforced"
