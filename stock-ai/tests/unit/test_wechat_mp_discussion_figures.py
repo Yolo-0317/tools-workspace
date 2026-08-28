@@ -44,6 +44,77 @@ def test_inject_discussion_figures_skips_when_already_present() -> None:
         mod.ensure_discussion_body_figures = orig
 
 
+def test_inject_discussion_figures_uses_supplied_verified_figures_without_fetch(
+    monkeypatch,
+) -> None:
+    import scripts.tools.wechat_mp_discussion_figures as mod
+
+    monkeypatch.setattr(
+        mod,
+        "ensure_discussion_body_figures",
+        lambda *_args, **_kwargs: pytest.fail("已核验图片注入不得联网补图"),
+    )
+    out = inject_discussion_figures(
+        "第一段。\n\n第二段。\n\n第三段。",
+        {"cover_slug": "x", "trend_title": "测试话题"},
+        figures=[
+            {
+                "rel": "discussion/x/official-01.jpg",
+                "cap": "图源：官方媒体",
+            }
+        ],
+    )
+
+    assert "official-01.jpg" in out
+
+
+def test_inject_discussion_figures_allows_zero_verified_body_images(
+    monkeypatch,
+) -> None:
+    import scripts.tools.wechat_mp_discussion_figures as mod
+
+    monkeypatch.setattr(
+        mod,
+        "ensure_discussion_body_figures",
+        lambda *_args, **_kwargs: pytest.fail("零正文图不得触发联网补图"),
+    )
+    out = inject_discussion_figures(
+        "第一段。\n\n第二段。",
+        {"cover_slug": "x", "trend_title": "测试话题"},
+        figures=[],
+    )
+
+    assert out == "第一段。\n\n第二段。"
+
+
+def test_ensure_discussion_cover_crops_explicit_source_without_fetch(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    from PIL import Image
+    import scripts.tools.wechat_mp_discussion_figures as mod
+
+    source = tmp_path / "topic" / "douyin-cover.jpg"
+    source.parent.mkdir(parents=True)
+    Image.effect_noise((1200, 800), 80).convert("RGB").save(source, quality=90)
+    monkeypatch.setattr(mod, "INLINE_DISCUSSION_ROOT", tmp_path)
+    monkeypatch.setattr(
+        mod,
+        "ensure_discussion_figures",
+        lambda *_args, **_kwargs: pytest.fail("显式封面源不得触发联网抓图"),
+    )
+
+    cover = mod.ensure_discussion_cover(
+        {"cover_slug": "topic", "trend_title": "测试话题"},
+        source_path=source,
+        allow_fetch=False,
+    )
+
+    assert cover.name == "cover.jpg"
+    assert cover.is_file()
+    assert mod._cover_source_filename(source.parent) == "douyin-cover.jpg"
+
+
 def test_strip_discussion_figures_removes_markers() -> None:
     from scripts.tools.wechat_mp_discussion_figures import strip_discussion_figures
 

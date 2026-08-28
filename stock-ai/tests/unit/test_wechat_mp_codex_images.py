@@ -19,6 +19,58 @@ def _valid_image(path: Path) -> None:
     Image.effect_noise((800, 600), 100).convert("RGB").save(path, quality=94)
 
 
+def _verified_hotspot_files(out_dir: Path) -> None:
+    _valid_image(out_dir / "douyin-cover.jpg")
+    _valid_image(out_dir / "official-01.jpg")
+    (out_dir / "douyin-search.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "topic": "事件",
+                "query": "事件",
+                "completed_at": "2026-08-28T09:00:00+08:00",
+                "fallback_reason": "",
+                "candidates": [
+                    {
+                        "account": "媒体账号",
+                        "display_time": "昨天",
+                        "video_url": "https://www.douyin.com/video/123",
+                        "cover_url": "https://example.com/cover.jpg",
+                        "selected": True,
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    common = {
+        "source_name": "媒体账号",
+        "published_at": "2026-08-27",
+        "page_title": "事件报道",
+        "caption": "图源：媒体账号",
+        "verified": True,
+    }
+    (out_dir / "figure_sources.json").write_text(
+        json.dumps(
+            {
+                "douyin-cover.jpg": {
+                    **common,
+                    "source_type": "douyin_cover",
+                    "page_url": "https://www.douyin.com/video/123",
+                },
+                "official-01.jpg": {
+                    **common,
+                    "source_type": "official_report",
+                    "page_url": "https://example.gov.cn/report",
+                },
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+
 def _patch_report_fetch(
     monkeypatch: pytest.MonkeyPatch,
     *,
@@ -136,6 +188,7 @@ def test_prepare_hotspot_requests_cover_and_missing_body_slots(
         prepare_hotspot_topic_images(
             {"cover_slug": "topic", "trend_title": "事件"},
             body_count=3,
+            image_policy="legacy",
         )
 
     request = json.loads(caught.value.request_path.read_text(encoding="utf-8"))
@@ -177,6 +230,7 @@ def test_prepare_hotspot_accepts_generated_cover_and_body_images(
     prepare_hotspot_topic_images(
         {"cover_slug": "topic", "trend_title": "事件"},
         body_count=3,
+        image_policy="legacy",
     )
 
     assert not (out_dir / "codex-image-request.json").exists()
@@ -195,7 +249,7 @@ def test_prepare_hotspot_resume_skips_completed_network_fetch(
     )
     topic = {"cover_slug": "topic", "trend_title": "事件"}
     with pytest.raises(CodexImageGenerationRequired):
-        prepare_hotspot_topic_images(topic, body_count=3)
+        prepare_hotspot_topic_images(topic, body_count=3, image_policy="legacy")
     _valid_image(out_dir / "cover.jpg")
     for index in range(1, 4):
         _valid_image(out_dir / f"manual-{index:02d}.jpg")
@@ -217,6 +271,63 @@ def test_prepare_hotspot_resume_skips_completed_network_fetch(
         ],
     )
 
-    prepare_hotspot_topic_images(topic, body_count=3)
+    prepare_hotspot_topic_images(topic, body_count=3, image_policy="legacy")
 
     assert (out_dir / "codex-images-ready.json").is_file()
+
+
+def test_prepare_hotspot_verified_only_never_fetches_or_creates_request(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    out_dir = tmp_path / "topic"
+    _verified_hotspot_files(out_dir)
+    monkeypatch.setattr(images_mod.figures_mod, "INLINE_DISCUSSION_ROOT", tmp_path)
+    monkeypatch.setattr(
+        images_mod.figures_mod,
+        "ensure_discussion_figures",
+        lambda *_args, **_kwargs: pytest.fail("真实图模式禁止自动抓取或补图"),
+    )
+
+    prepared = prepare_hotspot_topic_images(
+        {"cover_slug": "topic", "trend_title": "事件"},
+        body_count=3,
+        image_policy="verified_only",
+    )
+
+    assert prepared.cover_source.name == "douyin-cover.jpg"
+    assert [figure.path.name for figure in prepared.body_figures] == [
+        "official-01.jpg"
+    ]
+    assert not (out_dir / "codex-image-request.json").exists()
+
+
+def test_prepare_hotspot_verified_only_rejects_zero_images_without_request(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    out_dir = tmp_path / "topic"
+    out_dir.mkdir(parents=True)
+    (out_dir / "douyin-search.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "topic": "事件",
+                "query": "事件",
+                "completed_at": "2026-08-28T09:00:00+08:00",
+                "fallback_reason": "没有合格同题封面",
+                "candidates": [],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(images_mod.figures_mod, "INLINE_DISCUSSION_ROOT", tmp_path)
+
+    with pytest.raises(ValueError, match="缺少可追溯封面"):
+        prepare_hotspot_topic_images(
+            {"cover_slug": "topic", "trend_title": "事件"},
+            image_policy="verified_only",
+        )
+
+    assert not (out_dir / "codex-image-request.json").exists()

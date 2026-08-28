@@ -1076,7 +1076,12 @@ def _pick_discussion_cover_source(
     return scored[0][2]
 
 
-def ensure_discussion_cover(topic: dict[str, Any]) -> Path:
+def ensure_discussion_cover(
+    topic: dict[str, Any],
+    *,
+    source_path: Path | None = None,
+    allow_fetch: bool = True,
+) -> Path:
     """话题讨论首图：同题报道配图裁 2.35:1，不用牛马 sector 主图。"""
     from scripts.tools.wechat_mp_tv_cover import COVER_H, COVER_W
 
@@ -1088,11 +1093,17 @@ def ensure_discussion_cover(topic: dict[str, Any]) -> Path:
         "true",
         "yes",
     }
-    if cover.is_file() and cover.stat().st_size > 8000 and not force:
+    if (
+        source_path is None
+        and cover.is_file()
+        and cover.stat().st_size > 8000
+        and not force
+    ):
         return cover
 
-    ensure_discussion_figures(topic, max_images=3)
-    src_path = _pick_discussion_cover_source(out_dir, topic)
+    if source_path is None and allow_fetch:
+        ensure_discussion_figures(topic, max_images=3)
+    src_path = Path(source_path) if source_path is not None else _pick_discussion_cover_source(out_dir, topic)
     if src_path is None or not src_path.is_file():
         if cover.is_file() and cover.stat().st_size > 8000:
             return cover
@@ -2161,16 +2172,19 @@ def inject_discussion_figures(
     topic: dict[str, Any],
     *,
     preserve_headings: bool = False,
+    figures: list[dict[str, str]] | None = None,
 ) -> str:
     """在正文均匀段落位插入公开配图（会先去掉已有 [[fig:]] 再重插）。"""
     text = strip_discussion_figures((body or "").strip())
     if not text:
         return body
-    figures = ensure_discussion_body_figures(
-        topic, max_images=discussion_body_figure_target()
-    )
+    supplied_figures = figures is not None
+    if figures is None:
+        figures = ensure_discussion_body_figures(
+            topic, max_images=discussion_body_figure_target()
+        )
     if not figures:
-        return body
+        return text if supplied_figures else body
 
     paragraphs = _split_body_paragraphs(text)
     text_idxs = _text_paragraph_indices(paragraphs)
