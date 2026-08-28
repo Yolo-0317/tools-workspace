@@ -43,7 +43,7 @@ for phrase in \
 done
 
 test "$(rg -c '^## 状态图 01：' "$scene_cards")" = "1"
-test "$(rg -c '^## 状态图 0[2-9]：' "$scene_cards" || true)" = "0"
+test "$(rg -c '^## 状态图 0[2-9]：' "$scene_cards" || echo 0)" = "0"
 
 for phrase in \
   "只用于生成和审阅一张开场状态图" \
