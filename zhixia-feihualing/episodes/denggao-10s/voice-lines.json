@@ -1,0 +1,37 @@
+{
+  "episode": "denggao-10s",
+  "format": "one-poem-story",
+  "theme": "登高",
+  "theme_slug": "denggao-10s",
+  "audio_slug": "denggao-10s",
+  "lines": [
+    {
+      "id": "01-ayan-hook",
+      "role": "ayan",
+      "text": "风起了！",
+      "revision": 1,
+      "start_ms": 1000
+    },
+    {
+      "id": "02-zhixia-hook",
+      "role": "zhixia",
+      "text": "看江上。",
+      "revision": 1,
+      "start_ms": 1700
+    },
+    {
+      "id": "03-zhixia-poem-one",
+      "role": "zhixia",
+      "text": "无边落木萧萧下。",
+      "revision": 1,
+      "start_ms": 2400
+    },
+    {
+      "id": "04-zhixia-poem-two",
+      "role": "zhixia",
+      "text": "不尽长江滚滚来。",
+      "revision": 1,
+      "start_ms": 5800
+    }
+  ]
+}
