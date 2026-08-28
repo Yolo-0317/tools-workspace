@@ -3,8 +3,10 @@ set -euo pipefail
 
 project_dir="${0:A:h:h}"
 library="$project_dir/docs/zhixia-classical-dance-library.md"
+style_rules="$project_dir/docs/realistic-visual-style.md"
 
 test -s "$library"
+test -s "$style_rules"
 test "$(rg -c '^### D[0-9]{2} ' "$library")" = "12"
 
 for phrase in \
@@ -33,6 +35,15 @@ for phrase in \
   "阿砚回应" \
   "脸部安全区"; do
   rg -qF "$phrase" "$library"
+done
+
+for phrase in \
+  "zhixia-classical-dance-library.md" \
+  "只选择一个 Dxx 动作母题" \
+  "专业舞蹈术语必须转译" \
+  "承重脚" \
+  "不是专业水袖"; do
+  rg -qF "$phrase" "$style_rules"
 done
 
 if rg -n "😀|🎬|✨" "$library"; then
