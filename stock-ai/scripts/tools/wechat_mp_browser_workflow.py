@@ -51,6 +51,7 @@ class BrowserWritingWorkflow:
     research_urls: tuple[str, ...] = ()
     raw_response: str = ""
     response_provider: str = ""
+    edit_notes: tuple[str, ...] = ()
     article_path: str = ""
     created_at: str = ""
     sent_at: str = ""
@@ -82,6 +83,7 @@ def _save(workflow: BrowserWritingWorkflow, *, root: Path | None) -> BrowserWrit
     payload = asdict(workflow)
     payload["status"] = workflow.status.value
     payload["research_urls"] = list(workflow.research_urls)
+    payload["edit_notes"] = list(workflow.edit_notes)
     temp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
     temp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     temp.replace(path)
@@ -97,6 +99,7 @@ def load_workflow(
     data = json.loads(path.read_text(encoding="utf-8"))
     data["status"] = WorkflowStatus(str(data["status"]))
     data["research_urls"] = tuple(data.get("research_urls") or ())
+    data["edit_notes"] = tuple(data.get("edit_notes") or ())
     return BrowserWritingWorkflow(**data)
 
 
@@ -146,6 +149,13 @@ def require_deepseek_browser_response(workflow: BrowserWritingWorkflow) -> None:
         raise WorkflowTransitionError("热点深评缺少 DeepSeek 浏览器初稿来源")
 
 
+def require_hotspot_agent_edit(workflow: BrowserWritingWorkflow) -> None:
+    if workflow.kind == "hotspot" and not any(
+        note.strip() for note in workflow.edit_notes
+    ):
+        raise WorkflowTransitionError("热点深评缺少 Agent 核实编辑记录")
+
+
 def confirm_prompt(workflow_id: str, *, root: Path | None = None) -> BrowserWritingWorkflow:
     workflow = load_workflow(workflow_id, root=root)
     _require(workflow, WorkflowStatus.RESEARCHED)
@@ -189,6 +199,7 @@ def stage_edited_article(
     workflow_id: str,
     article_path: Path,
     *,
+    edit_notes: tuple[str, ...] = (),
     root: Path | None = None,
 ) -> BrowserWritingWorkflow:
     workflow = load_workflow(workflow_id, root=root)
@@ -197,8 +208,16 @@ def stage_edited_article(
     source = Path(article_path).resolve()
     if not source.is_file():
         raise FileNotFoundError(f"未找到编辑后稿件: {source}")
+    notes = tuple(note.strip() for note in edit_notes if note.strip())
+    if workflow.kind == "hotspot" and not notes:
+        raise WorkflowTransitionError("热点深评缺少 Agent 核实编辑记录")
     return _save(
-        replace(workflow, status=WorkflowStatus.EDITED, article_path=str(source)),
+        replace(
+            workflow,
+            status=WorkflowStatus.EDITED,
+            article_path=str(source),
+            edit_notes=notes,
+        ),
         root=root,
     )
 
@@ -206,6 +225,8 @@ def stage_edited_article(
 def confirm_push(workflow_id: str, *, root: Path | None = None) -> BrowserWritingWorkflow:
     workflow = load_workflow(workflow_id, root=root)
     _require(workflow, WorkflowStatus.EDITED)
+    require_deepseek_browser_response(workflow)
+    require_hotspot_agent_edit(workflow)
     return _save(
         replace(
             workflow,

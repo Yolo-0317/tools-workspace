@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from scripts.tools import wechat_mp_browser_write as browser_cli
@@ -8,6 +9,7 @@ from scripts.tools.wechat_mp_browser_workflow import (
     confirm_prompt,
     create_workflow,
     load_workflow,
+    record_response,
 )
 from scripts.tools.wechat_mp_deepseek_browser import (
     DeepSeekLoginRequired,
@@ -74,3 +76,82 @@ def test_write_records_only_browser_response(tmp_path: Path, monkeypatch) -> Non
     assert calls == ["提示词"]
     assert saved.status == WorkflowStatus.RESPONSE_RECEIVED
     assert saved.raw_response == "测试标题\n\n测试正文"
+
+
+def test_hotspot_stage_cli_records_repeated_agent_edit_notes(
+    tmp_path: Path, monkeypatch
+) -> None:
+    workflow = create_workflow(kind="hotspot", topic="题目", prompt="提示词", root=tmp_path)
+    confirm_prompt(workflow.workflow_id, root=tmp_path)
+    record_response(workflow.workflow_id, "标题\n\n正文", root=tmp_path)
+    article = tmp_path / "hotspot.json"
+    article.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(
+        browser_cli,
+        "_validate_staged_article",
+        lambda *_args, **_kwargs: "第二次确认摘要",
+    )
+
+    result = browser_cli.main(
+        [
+            "stage",
+            workflow.workflow_id,
+            "--article",
+            str(article),
+            "--edit-note",
+            "核对关键事实",
+            "--edit-note",
+            "删除无来源判断",
+            "--root",
+            str(tmp_path),
+        ]
+    )
+
+    saved = load_workflow(workflow.workflow_id, root=tmp_path)
+    assert result == 0
+    assert saved.edit_notes == ("核对关键事实", "删除无来源判断")
+
+
+def test_hotspot_second_confirmation_summary_discloses_sources_and_no_generation(
+    tmp_path: Path, monkeypatch
+) -> None:
+    from scripts.tools import wechat_mp_codex_hotspot as hotspot_mod
+    from scripts.tools import wechat_mp_codex_images as images_mod
+    from scripts.tools.wechat_mp_hotspot_image_policy import VerifiedHotspotImages
+
+    article = tmp_path / "hotspot.json"
+    article.write_text(
+        json.dumps(
+            {
+                "title": "热点标题",
+                "digest": "热点摘要",
+                "body": "第一段。\n\n第二段。",
+                "topic": "热点主题",
+                "research_urls": ["https://example.com/report"],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    workflow = create_workflow(kind="hotspot", topic="热点主题", prompt="提示词", root=tmp_path)
+    monkeypatch.setattr(hotspot_mod, "validate_codex_hotspot_originality", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        images_mod,
+        "prepare_hotspot_topic_images",
+        lambda *_a, **_k: VerifiedHotspotImages(
+            cover_source=tmp_path / "cover-source.jpg",
+            body_figures=(),
+            source_meta={},
+        ),
+    )
+
+    summary = browser_cli._validate_staged_article(
+        workflow,
+        article,
+        edit_notes=("核对公开回应",),
+    )
+
+    assert "成稿来源: DeepSeek 固定浏览器会话" in summary
+    assert "Agent 核实编辑: 核对公开回应" in summary
+    assert "配图: 封面 1 张，正文 0 张" in summary
+    assert "本稿未自动生成图片" in summary

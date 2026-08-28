@@ -7,12 +7,15 @@ from pathlib import Path
 from scripts.tools import wechat_mp_browser_write as browser_cli
 from scripts.tools.wechat_mp_browser_workflow import (
     BrowserWritingWorkflow,
+    FIXED_CONVERSATION_ID,
     WorkflowStatus,
+    WorkflowTransitionError,
     confirm_prompt,
     create_workflow,
     load_workflow,
     record_response,
 )
+import pytest
 
 
 def test_literary_next_push_uses_article_slot(tmp_path: Path, monkeypatch) -> None:
@@ -152,3 +155,94 @@ def test_stage_rejects_article_kind_mismatch(tmp_path: Path) -> None:
 
     assert result == 2
     assert load_workflow(workflow.workflow_id, root=tmp_path).status == WorkflowStatus.RESPONSE_RECEIVED
+
+
+def test_hotspot_push_rechecks_deepseek_browser_provider(tmp_path: Path) -> None:
+    article_path = tmp_path / "hotspot.json"
+    article_path.write_text(
+        json.dumps(
+            {
+                "title": "热点标题",
+                "digest": "热点摘要",
+                "body": "热点正文",
+                "topic": "热点主题",
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    workflow = BrowserWritingWorkflow(
+        workflow_id="00000000-0000-0000-0000-000000000002",
+        kind="hotspot",
+        topic="热点主题",
+        prompt="提示词",
+        prompt_sha256="hash",
+        conversation_id="bad-conversation",
+        status=WorkflowStatus.PUSH_CONFIRMED,
+        article_path=str(article_path),
+    )
+
+    with pytest.raises(WorkflowTransitionError, match="DeepSeek 固定会话"):
+        browser_cli.push_staged_workflow(workflow, root=tmp_path)
+
+
+def test_hotspot_push_forces_verified_only_image_policy(
+    tmp_path: Path, monkeypatch
+) -> None:
+    from scripts.tools import wechat_mp_codex_client
+    from scripts.tools import wechat_mp_content
+    from scripts.tools import wechat_mp_draft
+    from scripts.tools import wechat_mp_draft_slots
+    from scripts.tools import wechat_mp_short_drama
+
+    article_path = tmp_path / "hotspot.json"
+    article_path.write_text(
+        json.dumps(
+            {
+                "title": "热点标题",
+                "digest": "热点摘要",
+                "body": "热点正文",
+                "topic": "热点主题",
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    workflow = BrowserWritingWorkflow(
+        workflow_id="00000000-0000-0000-0000-000000000003",
+        kind="hotspot",
+        topic="热点主题",
+        prompt="提示词",
+        prompt_sha256="hash",
+        conversation_id=FIXED_CONVERSATION_ID,
+        status=WorkflowStatus.PUSH_CONFIRMED,
+        raw_response="DeepSeek 初稿",
+        response_provider="deepseek_browser",
+        edit_notes=("核对公开回应",),
+        article_path=str(article_path),
+    )
+    policies: list[str] = []
+
+    def build(*, codex_draft, upload_figures, image_policy):
+        policies.append(image_policy)
+        return {"title": codex_draft.title, "content": "<p>正文</p>"}
+
+    monkeypatch.setattr(wechat_mp_content, "build_hotspot_article", build)
+    monkeypatch.setattr(
+        wechat_mp_draft,
+        "_pick_cover_for_kind",
+        lambda **_kwargs: ("cover", "thumb", None),
+    )
+    monkeypatch.setattr(wechat_mp_codex_client, "generation_scope", lambda kind: nullcontext())
+    monkeypatch.setattr(wechat_mp_codex_client, "record_browser_deepseek_draft", lambda kind: None)
+    monkeypatch.setattr(wechat_mp_short_drama, "assert_longform_promotion_safe", lambda *a, **k: None)
+    monkeypatch.setattr(
+        wechat_mp_draft_slots,
+        "upsert_draft_article",
+        lambda *a, **k: ("media-id", "created", None),
+    )
+
+    media_id = browser_cli.push_staged_workflow(workflow, root=tmp_path)
+
+    assert media_id == "media-id"
+    assert policies == ["verified_only"]

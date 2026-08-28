@@ -24,6 +24,8 @@ from scripts.tools.wechat_mp_browser_workflow import (
     mark_blocked,
     mark_drafted,
     record_response,
+    require_deepseek_browser_response,
+    require_hotspot_agent_edit,
     resume_after_login,
     stage_edited_article,
 )
@@ -62,6 +64,7 @@ def _parser() -> argparse.ArgumentParser:
     stage = sub.add_parser("stage")
     stage.add_argument("workflow_id")
     stage.add_argument("--article", type=Path, required=True)
+    stage.add_argument("--edit-note", action="append", default=[])
     stage.add_argument("--root", default="")
     return parser
 
@@ -77,34 +80,62 @@ def _show(workflow_id: str, root: Path | None) -> None:
         print(f"error_code: {workflow.error_code}")
 
 
-def _validate_staged_article(workflow: BrowserWritingWorkflow, article_path: Path) -> None:
+def _validate_staged_article(
+    workflow: BrowserWritingWorkflow,
+    article_path: Path,
+    *,
+    edit_notes: tuple[str, ...] = (),
+) -> str:
     if workflow.kind == "literary":
         from scripts.tools.wechat_mp_literary import load_literary_draft
         from scripts.tools.wechat_mp_literary_cache import save_literary_body_cache
 
         draft = load_literary_draft(article_path)
         save_literary_body_cache(draft)
-        print(f"标题: {draft.title}")
-        print(f"摘要: {draft.digest}")
-        print(f"正文字符数: {len(''.join(draft.body.split()))}")
-        print(f"来源数: {len(draft.research_urls)}")
-        return
+        return "\n".join(
+            (
+                f"标题: {draft.title}",
+                f"摘要: {draft.digest}",
+                f"正文字符数: {len(''.join(draft.body.split()))}",
+                f"来源数: {len(draft.research_urls)}",
+            )
+        )
 
     from scripts.tools.wechat_mp_codex_hotspot import (
         load_codex_hotspot_draft,
         validate_codex_hotspot_originality,
     )
     from scripts.tools.wechat_mp_virtual_ledger import load_virtual_history
+    from scripts.tools.wechat_mp_codex_images import prepare_hotspot_topic_images
 
     draft = load_codex_hotspot_draft(article_path)
+    if not any(note.strip() for note in edit_notes):
+        raise WorkflowTransitionError("热点深评缺少 Agent 核实编辑记录")
     validate_codex_hotspot_originality(
         draft,
         history_posts=load_virtual_history().get("posts", []),
     )
-    print(f"标题: {draft.title}")
-    print(f"摘要: {draft.digest}")
-    print(f"正文字符数: {len(''.join(draft.body.split()))}")
-    print(f"来源数: {len(draft.research_urls)}")
+    prepared = prepare_hotspot_topic_images(
+        draft.as_discussion_topic(),
+        body_count=3,
+        image_policy="verified_only",
+    )
+    if prepared is None:
+        raise RuntimeError("热点真实图片校验未返回结果")
+    notes = tuple(note.strip() for note in edit_notes if note.strip())
+    return "\n".join(
+        (
+            "成稿来源: DeepSeek 固定浏览器会话",
+            f"Agent 核实编辑: {'；'.join(notes) if notes else '缺失'}",
+            f"标题: {draft.title}",
+            f"摘要: {draft.digest}",
+            f"正文字符数: {len(''.join(draft.body.split()))}",
+            f"来源数: {len(draft.research_urls)}",
+            f"配图: 封面 1 张，正文 {len(prepared.body_figures)} 张",
+            "配图策略: 抖音优先，仅使用可追溯真实图片",
+            "本稿未自动生成图片",
+        )
+    )
 
 
 def push_staged_workflow(
@@ -136,12 +167,18 @@ def push_staged_workflow(
         thumb, cover_error = pick_discussion_draft_thumb(topic)
         slot_key = draft.slot_key
     else:
+        require_deepseek_browser_response(workflow)
+        require_hotspot_agent_edit(workflow)
         from scripts.tools.wechat_mp_codex_hotspot import load_codex_hotspot_draft
         from scripts.tools.wechat_mp_content import build_hotspot_article
         from scripts.tools.wechat_mp_draft import _pick_cover_for_kind
 
         draft = load_codex_hotspot_draft(article_path)
-        article = build_hotspot_article(codex_draft=draft, upload_figures=True)
+        article = build_hotspot_article(
+            codex_draft=draft,
+            upload_figures=True,
+            image_policy="verified_only",
+        )
         _, thumb, cover_error = _pick_cover_for_kind(
             kind="hotspot",
             cover_kind="hotspot",
@@ -217,12 +254,19 @@ def main(argv: Sequence[str] | None = None) -> int:
                 raise WorkflowTransitionError(
                     f"workflow 当前为 {workflow.status.value}，需要 response_received"
                 )
-            _validate_staged_article(workflow, args.article)
+            summary = _validate_staged_article(
+                workflow,
+                args.article,
+                edit_notes=tuple(args.edit_note),
+            )
             saved = stage_edited_article(
                 workflow.workflow_id,
                 args.article,
+                edit_notes=tuple(args.edit_note),
                 root=root,
             )
+            if summary:
+                print(summary)
             print(f"OK 编辑稿已暂存，等待第二次确认: {saved.workflow_id}")
             return 0
         if args.command == "confirm-push":

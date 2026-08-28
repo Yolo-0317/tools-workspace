@@ -812,6 +812,7 @@ def build_hotspot_article(
     codex_draft: CodexHotspotDraft | None = None,
     article_kind: str = "hotspot",
     upload_figures: bool = True,
+    image_policy: str | None = None,
 ) -> dict[str, Any]:
     if article_kind not in {"hotspot", "hot_business"}:
         raise ValueError(f"未知热点文章 kind: {article_kind}")
@@ -903,17 +904,43 @@ def build_hotspot_article(
         figures_required = os.getenv(
             "WECHAT_MP_HOTSPOT_REQUIRE_FIGURES", "1"
         ).strip().lower() not in {"0", "false", "no", "off"}
-        prepare_hotspot_topic_images(
-            topic_dict,
-            body_count=figure_target if figures_required else 0,
+        effective_image_policy = image_policy or (
+            "verified_only" if codex_draft is not None else "legacy"
         )
-        body_core = inject_discussion_figures(polished, topic_dict)
-        if body_core.count("[[fig:") < figure_target and figures_required:
-            raise RuntimeError(
-                f"热点深评正文配图不足 {figure_target} 张可用事件图（当前 {body_core.count('[[fig:')}），"
-                f"已拒绝推送：{topic_dict.get('title_zh') or ''}"
+        prepared = prepare_hotspot_topic_images(
+            topic_dict,
+            body_count=(
+                figure_target
+                if effective_image_policy == "verified_only" or figures_required
+                else 0
+            ),
+            image_policy=effective_image_policy,
+        )
+        if effective_image_policy == "verified_only":
+            if prepared is None:
+                raise RuntimeError("热点真实图片校验未返回结果")
+            verified_figures = [
+                {"rel": figure.rel, "cap": figure.caption}
+                for figure in prepared.body_figures
+            ]
+            body_core = inject_discussion_figures(
+                polished,
+                topic_dict,
+                figures=verified_figures,
             )
-        ensure_discussion_cover(topic_dict)
+            ensure_discussion_cover(
+                topic_dict,
+                source_path=prepared.cover_source,
+                allow_fetch=False,
+            )
+        else:
+            body_core = inject_discussion_figures(polished, topic_dict)
+            if body_core.count("[[fig:") < figure_target and figures_required:
+                raise RuntimeError(
+                    f"热点深评正文配图不足 {figure_target} 张可用事件图（当前 {body_core.count('[[fig:')}），"
+                    f"已拒绝推送：{topic_dict.get('title_zh') or ''}"
+                )
+            ensure_discussion_cover(topic_dict)
     else:
         body_core = inject_market_figures(polished)
 

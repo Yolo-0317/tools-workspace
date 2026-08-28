@@ -134,7 +134,7 @@ def test_build_hotspot_article_uses_codex_body_without_generator(monkeypatch) ->
     assert "第1组公开信息记录于2026年8月10日" in article["body_text"]
 
 
-def test_build_hotspot_article_surfaces_codex_image_request(
+def test_build_hotspot_article_uses_verified_images_without_filling_to_target(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -156,8 +156,6 @@ def test_build_hotspot_article_surfaces_codex_image_request(
     from scripts.tools import wechat_mp_discussion_figures as figures_mod
     from scripts.tools import wechat_mp_hotspot_article as hotspot_mod
 
-    request_path = tmp_path / "codex-image-request.json"
-    request_path.write_text("{}", encoding="utf-8")
     draft = CodexHotspotDraft(
         title="具体事件为什么引发争议？",
         digest="这篇文章梳理事件、规则与争议焦点。",
@@ -165,27 +163,71 @@ def test_build_hotspot_article_surfaces_codex_image_request(
         topic="具体事件",
     )
     monkeypatch.setattr(hotspot_mod, "hotspot_social_layout_enabled", lambda: True)
+    monkeypatch.setattr(figures_mod, "INLINE_DISCUSSION_ROOT", tmp_path)
     monkeypatch.setattr(
-        figures_mod,
-        "inject_discussion_figures",
-        lambda body, _topic: body
-        + "\n\n[[fig:a|cap=x]]\n\n[[fig:b|cap=x]]\n\n[[fig:c|cap=x]]",
+        "scripts.tools.wechat_mp_seo.attach_publish_hints",
+        lambda article, *_args, **_kwargs: article,
     )
-    monkeypatch.setattr(figures_mod, "ensure_discussion_cover", lambda _topic: tmp_path / "cover.jpg")
+    calls: dict[str, object] = {}
+    cover_source = tmp_path / "topic" / "douyin-cover.jpg"
+    body_source = tmp_path / "topic" / "official-01.jpg"
+    body_source.parent.mkdir(parents=True)
+    from PIL import Image
 
-    def require_generation(_topic: dict[str, object], *, body_count: int = 3) -> None:
-        raise images_mod.CodexImageGenerationRequired(
-            request_path=request_path,
-            missing_count=2,
+    Image.effect_noise((800, 600), 80).convert("RGB").save(body_source)
+
+    def prepare(_topic, *, body_count, image_policy):
+        from scripts.tools.wechat_mp_hotspot_image_policy import (
+            VerifiedFigure,
+            VerifiedHotspotImages,
         )
 
-    monkeypatch.setattr(images_mod, "prepare_hotspot_topic_images", require_generation)
+        calls["image_policy"] = image_policy
+        return VerifiedHotspotImages(
+            cover_source=cover_source,
+            body_figures=(
+                VerifiedFigure(
+                    path=body_source,
+                    rel="discussion/topic/official-01.jpg",
+                    caption="图源：官方媒体",
+                    page_url="https://example.gov.cn/report",
+                    source_name="官方媒体",
+                    source_type="official_report",
+                ),
+            ),
+            source_meta={},
+        )
 
-    with pytest.raises(images_mod.CodexImageGenerationRequired) as caught:
-        content_mod.build_hotspot_article(codex_draft=draft)
+    def inject(body, _topic, *, figures):
+        calls["figures"] = figures
+        return body + "\n\n[[fig:discussion/topic/official-01.jpg|cap=图源：官方媒体]]"
 
-    assert caught.value.request_path == request_path
-    assert caught.value.missing_count == 2
+    def cover(_topic, *, source_path, allow_fetch):
+        calls["cover_source"] = source_path
+        calls["allow_fetch"] = allow_fetch
+        return tmp_path / "cover.jpg"
+
+    monkeypatch.setattr(images_mod, "prepare_hotspot_topic_images", prepare)
+    monkeypatch.setattr(figures_mod, "inject_discussion_figures", inject)
+    monkeypatch.setattr(figures_mod, "ensure_discussion_cover", cover)
+
+    article = content_mod.build_hotspot_article(
+        codex_draft=draft,
+        upload_figures=False,
+    )
+
+    assert article["body_text"].count("[[fig:") == 1
+    assert calls == {
+        "image_policy": "verified_only",
+        "figures": [
+            {
+                "rel": "discussion/topic/official-01.jpg",
+                "cap": "图源：官方媒体",
+            }
+        ],
+        "cover_source": cover_source,
+        "allow_fetch": False,
+    }
 
 
 def test_validate_codex_hotspot_body_rejects_short_body() -> None:

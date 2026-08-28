@@ -69,6 +69,73 @@ def test_hotspot_stage_rejects_missing_deepseek_browser_provider(tmp_path: Path)
         stage_edited_article(responded.workflow_id, article_path, root=tmp_path)
 
 
+def test_hotspot_stage_requires_agent_edit_notes(tmp_path: Path) -> None:
+    workflow = create_workflow(
+        kind="hotspot",
+        topic="测试热点",
+        prompt="写一篇热点深评",
+        root=tmp_path,
+    )
+    confirm_prompt(workflow.workflow_id, root=tmp_path)
+    record_response(workflow.workflow_id, "标题\n\n正文", root=tmp_path)
+    article_path = tmp_path / "hotspot.json"
+    article_path.write_text("{}", encoding="utf-8")
+
+    with pytest.raises(WorkflowTransitionError, match="Agent 核实编辑记录"):
+        stage_edited_article(workflow.workflow_id, article_path, root=tmp_path)
+
+
+def test_hotspot_stage_records_agent_edit_notes(tmp_path: Path) -> None:
+    workflow = create_workflow(
+        kind="hotspot",
+        topic="测试热点",
+        prompt="写一篇热点深评",
+        root=tmp_path,
+    )
+    confirm_prompt(workflow.workflow_id, root=tmp_path)
+    record_response(workflow.workflow_id, "标题\n\n正文", root=tmp_path)
+    article_path = tmp_path / "hotspot.json"
+    article_path.write_text("{}", encoding="utf-8")
+
+    saved = stage_edited_article(
+        workflow.workflow_id,
+        article_path,
+        edit_notes=("核对法院案号与裁判要点", "删去无法回源的推断"),
+        root=tmp_path,
+    )
+
+    assert saved.edit_notes == (
+        "核对法院案号与裁判要点",
+        "删去无法回源的推断",
+    )
+
+
+def test_hotspot_confirm_push_rechecks_agent_edit_notes(tmp_path: Path) -> None:
+    workflow = create_workflow(
+        kind="hotspot",
+        topic="测试热点",
+        prompt="写一篇热点深评",
+        root=tmp_path,
+    )
+    confirm_prompt(workflow.workflow_id, root=tmp_path)
+    responded = record_response(workflow.workflow_id, "标题\n\n正文", root=tmp_path)
+    article_path = tmp_path / "hotspot.json"
+    article_path.write_text("{}", encoding="utf-8")
+    staged = stage_edited_article(
+        responded.workflow_id,
+        article_path,
+        edit_notes=("核对关键事实",),
+        root=tmp_path,
+    )
+    state_path = tmp_path / f"{staged.workflow_id}.json"
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    state["edit_notes"] = []
+    state_path.write_text(json.dumps(state, ensure_ascii=False), encoding="utf-8")
+
+    with pytest.raises(WorkflowTransitionError, match="Agent 核实编辑记录"):
+        confirm_push(staged.workflow_id, root=tmp_path)
+
+
 def test_workflow_requires_second_confirmation_before_drafted(tmp_path: Path) -> None:
     workflow = create_workflow(
         kind="literary",
