@@ -178,8 +178,11 @@ def _assert_article_provenance(
 
 
 def _validate_codex_draft_kinds(kinds: list[str], path: Path | None) -> None:
+    if path is not None and kinds == ["hotspot"]:
+        raise ValueError(
+            "用户主动热点必须使用 scripts.tools.wechat_mp_browser_write 的 DeepSeek 双确认流程"
+        )
     if path is not None and kinds not in (
-        ["hotspot"],
         ["hot_business"],
         ["silver"],
         ["short_drama_feature"],

@@ -206,6 +206,13 @@ def test_validate_codex_draft_kinds_requires_single_hotspot(
         draft_cli._validate_codex_draft_kinds(kinds, tmp_path / "draft.json")
 
 
+def test_direct_hotspot_codex_draft_requires_browser_workflow(tmp_path: Path) -> None:
+    from scripts.tools import wechat_mp_draft as draft_cli
+
+    with pytest.raises(ValueError, match="wechat_mp_browser_write"):
+        draft_cli._validate_codex_draft_kinds(["hotspot"], tmp_path / "draft.json")
+
+
 def test_resolve_codex_slot_key_prefers_environment(monkeypatch) -> None:
     from scripts.tools import wechat_mp_draft as draft_cli
 
@@ -294,7 +301,7 @@ def test_main_invalid_codex_kind_reports_plain_error(
     assert "❌" not in error
 
 
-def test_main_invalid_codex_body_reports_plain_error(
+def test_main_direct_hotspot_json_reports_browser_workflow_error(
     monkeypatch,
     capsys,
     tmp_path: Path,
@@ -324,11 +331,11 @@ def test_main_invalid_codex_body_reports_plain_error(
 
     assert draft_cli.main() == 1
     error = capsys.readouterr().err
-    assert "错误 [hotspot]: Codex 热点正文未通过质量门禁" in error
+    assert "错误: 用户主动热点必须使用 scripts.tools.wechat_mp_browser_write" in error
     assert "❌" not in error
 
 
-def test_main_missing_mp_credentials_reports_plain_error(
+def test_main_direct_hotspot_json_is_rejected_before_mp_credentials(
     monkeypatch,
     capsys,
     tmp_path: Path,
@@ -358,5 +365,5 @@ def test_main_missing_mp_credentials_reports_plain_error(
 
     assert draft_cli.main() == 1
     error = capsys.readouterr().err
-    assert "错误: 未配置 WECHAT_MP_APPID / WECHAT_MP_SECRET" in error
+    assert "错误: 用户主动热点必须使用 scripts.tools.wechat_mp_browser_write" in error
     assert "❌" not in error

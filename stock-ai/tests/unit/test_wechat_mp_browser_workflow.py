@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -32,6 +33,40 @@ def test_workflow_requires_prompt_confirmation_before_response(tmp_path: Path) -
         record_response(workflow.workflow_id, "标题\n\n正文", root=tmp_path)
 
     assert load_workflow(workflow.workflow_id, root=tmp_path).status == WorkflowStatus.RESEARCHED
+
+
+def test_hotspot_response_records_deepseek_browser_provider(tmp_path: Path) -> None:
+    workflow = create_workflow(
+        kind="hotspot",
+        topic="测试热点",
+        prompt="写一篇热点深评",
+        root=tmp_path,
+    )
+    confirm_prompt(workflow.workflow_id, root=tmp_path)
+
+    saved = record_response(workflow.workflow_id, "标题\n\n正文", root=tmp_path)
+
+    assert saved.response_provider == "deepseek_browser"
+
+
+def test_hotspot_stage_rejects_missing_deepseek_browser_provider(tmp_path: Path) -> None:
+    workflow = create_workflow(
+        kind="hotspot",
+        topic="测试热点",
+        prompt="写一篇热点深评",
+        root=tmp_path,
+    )
+    confirm_prompt(workflow.workflow_id, root=tmp_path)
+    responded = record_response(workflow.workflow_id, "标题\n\n正文", root=tmp_path)
+    state_path = tmp_path / f"{responded.workflow_id}.json"
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    state["response_provider"] = ""
+    state_path.write_text(json.dumps(state, ensure_ascii=False), encoding="utf-8")
+    article_path = tmp_path / "hotspot.json"
+    article_path.write_text("{}", encoding="utf-8")
+
+    with pytest.raises(WorkflowTransitionError, match="DeepSeek 浏览器初稿来源"):
+        stage_edited_article(responded.workflow_id, article_path, root=tmp_path)
 
 
 def test_workflow_requires_second_confirmation_before_drafted(tmp_path: Path) -> None:

@@ -50,6 +50,7 @@ class BrowserWritingWorkflow:
     status: WorkflowStatus
     research_urls: tuple[str, ...] = ()
     raw_response: str = ""
+    response_provider: str = ""
     article_path: str = ""
     created_at: str = ""
     sent_at: str = ""
@@ -134,6 +135,17 @@ def _require(workflow: BrowserWritingWorkflow, expected: WorkflowStatus) -> None
         )
 
 
+def require_deepseek_browser_response(workflow: BrowserWritingWorkflow) -> None:
+    """用户主动热点必须保留固定 DeepSeek 网页会话的初稿来源。"""
+
+    if workflow.kind != "hotspot":
+        return
+    if workflow.conversation_id != FIXED_CONVERSATION_ID:
+        raise WorkflowTransitionError("热点深评必须来自指定 DeepSeek 固定会话")
+    if workflow.response_provider != "deepseek_browser" or not workflow.raw_response.strip():
+        raise WorkflowTransitionError("热点深评缺少 DeepSeek 浏览器初稿来源")
+
+
 def confirm_prompt(workflow_id: str, *, root: Path | None = None) -> BrowserWritingWorkflow:
     workflow = load_workflow(workflow_id, root=root)
     _require(workflow, WorkflowStatus.RESEARCHED)
@@ -165,6 +177,7 @@ def record_response(
             workflow,
             status=WorkflowStatus.RESPONSE_RECEIVED,
             raw_response=response,
+            response_provider="deepseek_browser",
             sent_at=sent_at or now,
             response_received_at=now,
         ),
@@ -180,6 +193,7 @@ def stage_edited_article(
 ) -> BrowserWritingWorkflow:
     workflow = load_workflow(workflow_id, root=root)
     _require(workflow, WorkflowStatus.RESPONSE_RECEIVED)
+    require_deepseek_browser_response(workflow)
     source = Path(article_path).resolve()
     if not source.is_file():
         raise FileNotFoundError(f"未找到编辑后稿件: {source}")
