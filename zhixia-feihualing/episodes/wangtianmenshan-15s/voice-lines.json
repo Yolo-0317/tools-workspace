@@ -1,0 +1,13 @@
+{
+  "episode": "wangtianmenshan-15s",
+  "format": "one-poem-story",
+  "theme": "望天门山十五秒全诗朗诵",
+  "theme_slug": "wangtianmenshan-15s",
+  "audio_slug": "wangtianmenshan-15s-paced-v01",
+  "lines": [
+    {"id":"01-zhixia-line-one","role":"zhixia","text":"天门中断楚江开。","revision":1,"gap_before_ms":0,"context_texts":["十五秒望天门山诗境第一句。保持十八岁东方少女清透、轻盈、明亮而不甜腻的固定声线，带自然书卷气与开阔山水感；起声自然，天门中断清楚有力，楚江开放开但不拖长。不念标题和作者，不用播音腔、戏曲腔、喊诗或夸张拖尾。"]},
+    {"id":"02-zhixia-line-two","role":"zhixia","text":"碧水东流至此回。","revision":1,"gap_before_ms":900,"context_texts":["紧接上一句，保持完全相同的十八岁少女固定声线。碧水东流舒展流动，至此回略有转折感但不刻意表演；自然清楚，不赶字，不逐字等长，不使用主持腔或拖腔。"]},
+    {"id":"03-zhixia-line-three","role":"zhixia","text":"两岸青山相对出。","revision":1,"gap_before_ms":900,"context_texts":["青山与舞姿展开时朗诵。保持同一清透、轻盈、有书卷气的少女声线，情绪比前两句更开阔；两岸青山有空间层次，相对出自然提亮，不喊、不使用朗诵比赛腔或戏曲腔。"]},
+    {"id":"04-zhixia-line-four","role":"zhixia","text":"孤帆一片日边来。","revision":1,"gap_before_ms":900,"context_texts":["落日孤帆出现时朗诵最后一句。保持同一十八岁少女固定声线，孤帆一片轻而清楚，日边来带温暖辽阔的收束感并完整落尾；不额外补话，不拖腔，不使用主持腔、戏曲腔或夸张颤音。"]}
+  ]
+}

@@ -76,7 +76,7 @@ matches = [row for row in rows if row["episode"] == "wangtianmenshan-15s"]
 assert len(matches) == 1, "dance history must contain exactly one Wangtianmenshan entry"
 assert matches[0]["climax_family"] == "纵向提沉", "wrong climax family"
 assert matches[0]["rotation"] == "无完整旋转", "rotation must not be mandatory"
-assert matches[0]["status"] == "designed", "history entry must be designed"
+assert matches[0]["status"] in {"designed", "accepted"}, "history entry must be designed or accepted"
 
 print("PASS: Wangtianmenshan 15s Seedance prompt is ready")
 PY
