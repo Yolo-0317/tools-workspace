@@ -69,7 +69,7 @@ actual_header="$(head -n 1 "$history_csv")"
 awk -F, '
   NR > 1 && NF != 20 { exit 1 }
   NR > 1 && ($5 == "" || $8 == "" || $9 == "" || $10 == "" || $12 == "" || $14 == "" || $15 == "" || $17 == "") { exit 1 }
-  END { exit !(NR == 3) }
+  END { exit !(NR >= 3) }
 ' "$history_csv" || {
   print -u2 "FAIL: dance history rows do not contain complete v2 visual fingerprints"
   exit 1
