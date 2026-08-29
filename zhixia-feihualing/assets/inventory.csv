@@ -152,3 +152,4 @@ huanghe-10s-seedance-v01,video,黄河,seedance-source,episodes/huanghe/assets/vi
 huanghe-voiced-v01,video,黄河,voiced-preview,exports/huanghe-voiced-v01.mp4,available,local FFmpeg assembly,original project assets,10.054秒；496×864；24fps；两段固定音色自然语速；无字幕；人声区间原声压低约5dB；综合音频峰值−3.0dB；视频码流与原片一致
 huanghe-subtitled-v01,video,黄河,final-subtitled,exports/huanghe-subtitled-v01.mp4,final,local FFmpeg and Swift assembly,original project assets,1080×1920；24fps；10.054秒；阿砚横排对白；两段栀夏诗句竖排；8.152秒字幕退场；复用无字幕试听版混音；综合音频峰值−3.0dB
 huanghe-dance-cover-v01,cover,黄河,dance-cover,exports/huanghe-dance-cover-v01.png,final,local FFmpeg frame extraction plus Swift typography,derived from approved project video,1080×1920；取自无字幕配音版5.800秒；竖排栀夏与黄河一舞；附李白将进酒题署；保留AI生成标识；无图像模型重绘
+shanxing-dance-cover-v01,cover,山行,dance-cover,exports/shanxing-dance-cover-v01.png,final,local FFmpeg frame extraction plus Swift typography,derived from approved project video,1080×1920；取自无字幕原片12.600秒；竖排栀夏与山行一舞；附杜牧山行题署；保留AI生成标识；无图像模型重绘
