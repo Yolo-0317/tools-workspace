@@ -145,3 +145,4 @@ jingtao-voice-01,voice,阿砚,dialogue-01,assets/audio/jingtao/01-ayan-ayan-dial
 jingtao-voice-02,voice,栀夏,poem-voiceover,assets/audio/jingtao/02-zhixia-zhixia-poem.mp3,available,豆包语音合成2.0,user-generated via API,确认稿v1；甜美活泼女声；乱石穿空惊涛拍岸卷起千堆雪；24kHz单声道64kbps；4.656秒
 jingtao-voiced-v01,video,惊涛,voiced-preview,exports/jingtao-voiced-v01.mp4,available,local FFmpeg assembly,original project assets,10.100秒；496×864；24fps；两段固定音色自然语速；无字幕；人声区间原声压低约5dB；综合音频峰值−1.4dB；保留原片画面
 jingtao-subtitled-v01,video,惊涛,final-subtitled,exports/jingtao-subtitled-v01.mp4,final,local FFmpeg and Swift assembly,original project assets,1080×1920；24fps；10.100秒；阿砚横排对白；三段栀夏诗句竖排；8.606秒字幕退场；复用无字幕试听版混音；综合音频峰值−1.4dB
+jingtao-dance-cover-v01,cover,惊涛,dance-cover,exports/jingtao-dance-cover-v01.png,final,local FFmpeg frame extraction plus Swift typography,derived from approved project video,1080×1920；取自无字幕配音版4.000秒；双列竖排栀夏与惊涛一舞；附苏轼念奴娇赤壁怀古题署；保留AI生成标识；无图像模型重绘

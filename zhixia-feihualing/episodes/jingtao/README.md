@@ -38,6 +38,8 @@ Seedance 只生成无人声电影感国风音乐、江风、江水、湿石脚�
 
 无字幕配音试听版保留为 [`../../exports/jingtao-voiced-v01.mp4`](../../exports/jingtao-voiced-v01.mp4)，便于后续对照或重新排版。
 
+舞蹈版发布封面为 [`../../exports/jingtao-dance-cover-v01.png`](../../exports/jingtao-dance-cover-v01.png)，1080×1920；底图取自无字幕配音版 4.000 秒旋转帧，左侧采用“栀夏”与“惊涛一舞”双列竖排标题，并附小字题署“苏轼《念奴娇·赤壁怀古》”。封面只做原片截帧、放大和本地文字排版，不重绘角色或诗景。
+
 ## 关联文档
 
 - [单集设计](../../docs/superpowers/specs/2026-08-28-jingtao-10s-poetry-dance-design.md)
