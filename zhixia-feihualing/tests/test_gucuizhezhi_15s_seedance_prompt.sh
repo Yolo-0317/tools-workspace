@@ -80,7 +80,7 @@ for forbidden in [
         raise SystemExit(f"FAIL: internal or forbidden term leaked into copyable prompt: {forbidden}")
 
 for required_readme in [
-    "设计与提示词完成，待生成视频",
+    "首轮视频已复盘，v02 修正提示词完成；v02 视频尚未生成",
     "prompts/seedance-v01.md",
     "2026-08-29-gucuizhezhi-15s-pilot-design.md",
 ]:
