@@ -1,0 +1,31 @@
+[
+  {
+    "id": "01-poem-line-one",
+    "kind": "poem",
+    "text": "毕竟西湖六月中",
+    "attribution": "宋·杨万里",
+    "start": 0.279,
+    "end": 2.394
+  },
+  {
+    "id": "02-poem-line-two",
+    "kind": "poem",
+    "text": "风光不与四时同",
+    "start": 3.857,
+    "end": 6.142
+  },
+  {
+    "id": "03-poem-line-three",
+    "kind": "poem",
+    "text": "接天莲叶无穷碧",
+    "start": 7.511,
+    "end": 9.784
+  },
+  {
+    "id": "04-poem-line-four",
+    "kind": "poem",
+    "text": "映日荷花别样红",
+    "start": 12.064,
+    "end": 14.347
+  }
+]
