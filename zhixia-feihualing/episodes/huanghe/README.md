@@ -31,9 +31,15 @@
 - 栀夏诗句按真实语音停顿拆成两段竖排字幕：“黄河之水天上来”显示于 4.368–6.064 秒，并附“唐·李白”题署；“奔流到海不复回”显示于 6.447–8.152 秒。
 - 句间约 0.383 秒停顿不挂字幕；8.152 秒后字幕全部退场，保留约 1.902 秒无字舞蹈、黄河与镜头余韵。
 
+## 正式封面
+
+- 封面为 [`../../exports/huanghe-dance-cover-v01.png`](../../exports/huanghe-dance-cover-v01.png)，1080×1920 PNG。
+- 从无字幕配音版 5.800 秒截取栀夏腾跃、水弧展开且阿砚轮廓完整的画面，左侧竖排“栀夏”“黄河一舞”与“李白《将进酒》”。
+- 封面仅使用本地 FFmpeg 截帧和 Swift 精确排版，不调用图像模型，不重绘人物与场景，并保留原片 AI 生成标识。
+
 ## 当前状态
 
-单集设计、Seedance 2.0 最终提示词、用户确认的 Seedance 成片、两句独立后期配音、无字幕配音试听版和正式字幕版均已完成。原片保存在 [`assets/video/content-seedance-v01.mp4`](assets/video/content-seedance-v01.mp4)；试听版为 [`../../exports/huanghe-voiced-v01.mp4`](../../exports/huanghe-voiced-v01.mp4)，10.054 秒、496×864、24fps；正式字幕版为 [`../../exports/huanghe-subtitled-v01.mp4`](../../exports/huanghe-subtitled-v01.mp4)，10.054 秒、1080×1920、24fps。正式版直接复用已确认的混音，不改变声音数据；字幕已烧录进画面，不含独立字幕流。
+单集设计、Seedance 2.0 最终提示词、用户确认的 Seedance 成片、两句独立后期配音、无字幕配音试听版、正式字幕版和正式封面均已完成。原片保存在 [`assets/video/content-seedance-v01.mp4`](assets/video/content-seedance-v01.mp4)；试听版为 [`../../exports/huanghe-voiced-v01.mp4`](../../exports/huanghe-voiced-v01.mp4)，10.054 秒、496×864、24fps；正式字幕版为 [`../../exports/huanghe-subtitled-v01.mp4`](../../exports/huanghe-subtitled-v01.mp4)，10.054 秒、1080×1920、24fps。正式版直接复用已确认的混音，不改变声音数据；字幕已烧录进画面，不含独立字幕流。
 
 ## 关联文档
 
