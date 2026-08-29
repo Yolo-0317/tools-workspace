@@ -37,6 +37,13 @@
 
 四句使用同一栀夏固定音色，按各句真实有效语音区间裁切并适度放慢；句间保留自然留白，第三、四句之间的较长留白用于承接旋转、朝阳与红荷高潮。原片音乐和环境声完整保留，只在人声区间压低约 5 dB。
 
+## 正式封面
+
+- 正式封面为 [`../../exports/jingci-lotus-dance-cover-v01.png`](../../exports/jingci-lotus-dance-cover-v01.png)，1080×1920 PNG。
+- 底图取自无字幕原片 13.800 秒：栀夏仰身展臂，朝阳、阿砚与前景红荷同时完整可见。
+- 右上三列竖排“杨万里《晓出净慈寺送林子方》”“荷花一舞”“栀夏”，使用项目既有行楷与楷体，不遮挡角色和核心诗景。
+- 封面仅使用本地 FFmpeg 截帧、Lanczos 放大和 Swift 精确排版，不调用图像模型、不重绘画面，并保留原片“AI生成”标识。
+
 ## 关联文件
 
 - [最终 Seedance 2.0 提示词](prompts/seedance-v01.md)
@@ -46,7 +53,9 @@
 - [字幕时间轴](subtitle-plan.json)
 - [Seedance 原片](assets/video/content-seedance-v01.mp4)
 - [正式字幕成片](../../exports/jingci-lotus-15s-subtitled-v01.mp4)
+- [正式舞蹈封面](../../exports/jingci-lotus-dance-cover-v01.png)
+- [封面设计](../../docs/superpowers/specs/2026-08-29-jingci-lotus-cover-design.md)
 
 ## 当前状态
 
-单集设计、Seedance 2.0 提示词、用户确认的 Seedance 原片、四句栀夏全诗朗诵和正式竖排字幕成片均已完成。正式成片为 15.093 秒、1080×1920、24fps、H.264/AAC，综合音频峰值约 −3.5 dB；保留原片音乐、环境声和 AI 生成标识。封面与发布文案待后续制作。
+单集设计、Seedance 2.0 提示词、用户确认的 Seedance 原片、四句栀夏全诗朗诵、正式竖排字幕成片和正式舞蹈封面均已完成。正式成片为 15.093 秒、1080×1920、24fps、H.264/AAC，综合音频峰值约 −3.5 dB；保留原片音乐、环境声和 AI 生成标识。发布文案待后续制作。
