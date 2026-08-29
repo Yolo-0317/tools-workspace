@@ -43,7 +43,7 @@ for current_file in "$style" "$workflow" "$composer"; do
     "0.3 秒内" \
     "0.8 秒内" \
     "1.0 秒内" \
-    "离开初始落点"; do
+    "进入第一个主体舞句"; do
     require_phrase "$phrase" "$current_file"
   done
 done
