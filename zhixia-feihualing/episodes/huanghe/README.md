@@ -27,7 +27,7 @@
 
 ## 当前状态
 
-单集设计、Seedance 2.0 最终提示词、用户确认的 Seedance 成片和两句独立后期配音均已完成。下一步可将人声混入原片，在人声区间适度降低原音乐，并制作字幕版。
+单集设计、Seedance 2.0 最终提示词、用户确认的 Seedance 成片、两句独立后期配音和无字幕配音试听版均已完成。原片保存在 [`assets/video/content-seedance-v01.mp4`](assets/video/content-seedance-v01.mp4)；试听版为 [`../../exports/huanghe-voiced-v01.mp4`](../../exports/huanghe-voiced-v01.mp4)，10.054 秒、496×864、24fps。画面码流与原片完全一致；人声区间将原音乐降低约 5 dB，两句 TTS 保持自然语速，综合音频峰值为 −3.0 dB，无字幕。下一步可试听人声、原声和节奏关系，确认后制作正式字幕版。
 
 ## 关联文档
 
