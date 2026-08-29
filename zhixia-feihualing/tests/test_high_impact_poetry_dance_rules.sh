@@ -29,10 +29,10 @@ for current_file in "$style" "$workflow" "$composer"; do
   for phrase in \
     "诗中核心景物" \
     "动作舒展有力、节奏鲜明、连续自然" \
-    "完整旋转" \
+    "主高潮动作" \
     "视觉高潮" \
     "特效由动作触发" \
-    "旋转与高潮" \
+    "开场进入与主高潮动作" \
     "不强制形成封面舞姿" \
     "近期至少五支诗境"; do
     require_phrase "$phrase" "$current_file"
@@ -54,7 +54,7 @@ for current_file in "$ayan_rules" "$character_bible" "$style" "$workflow"; do
   require_phrase "不强制安排阿砚单独特写" "$current_file"
 done
 
-expected_header="episode,poem,opening,movement,rotation,body_level,carrier,effect,camera_reaction,ending,status,notes"
+expected_header="episode,poem,opening,movement,climax_family,rotation,body_level,opening_silhouette,arm_path,leg_silhouette,carrier,carrier_shape,effect,effect_shape,climax_window,camera_reaction,camera_climax,ending,status,notes"
 actual_header="$(head -n 1 "$history_csv")"
 if [[ "$actual_header" != "$expected_header" ]]; then
   print -u2 -r -- "FAIL: unexpected dance history header '$actual_header'"
