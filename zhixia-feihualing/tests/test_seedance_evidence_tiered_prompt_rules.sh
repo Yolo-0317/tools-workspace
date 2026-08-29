@@ -34,7 +34,10 @@ for current_file in "$style" "$workflow"; do
     "最多两次" \
     "视差" \
     "动作触发反应" \
-    "0.5 秒内" \
+    "蓄势舞姿" \
+    "0.3 秒内" \
+    "0.8 秒内" \
+    "1.0 秒内" \
     "约 40 厘米"; do
     require_phrase "$phrase" "$current_file"
   done

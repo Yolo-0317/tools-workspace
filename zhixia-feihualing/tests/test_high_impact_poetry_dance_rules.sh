@@ -37,6 +37,15 @@ for current_file in "$style" "$workflow" "$composer"; do
     "近期至少五支诗境"; do
     require_phrase "$phrase" "$current_file"
   done
+
+  for phrase in \
+    "蓄势舞姿" \
+    "0.3 秒内" \
+    "0.8 秒内" \
+    "1.0 秒内" \
+    "离开初始落点"; do
+    require_phrase "$phrase" "$current_file"
+  done
 done
 
 for current_file in "$ayan_rules" "$character_bible" "$style" "$workflow"; do
@@ -54,7 +63,8 @@ fi
 
 for obsolete in \
   "中国古典舞身韵、轻盈克制、连续自然、不遮脸" \
-  "承载一个主要视觉事件和中等复杂度以内的舞蹈短句"; do
+  "承载一个主要视觉事件和中等复杂度以内的舞蹈短句" \
+  "0.5 秒内产生第一个清楚动作"; do
   if rg -nF "$obsolete" "$style" "$workflow"; then
     print -u2 -r -- "FAIL: obsolete dance baseline remains: $obsolete"
     exit 1
