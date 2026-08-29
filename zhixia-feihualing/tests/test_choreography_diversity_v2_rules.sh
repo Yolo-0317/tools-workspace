@@ -59,7 +59,7 @@ for obsolete in \
   fi
 done
 
-expected_header="episode,poem,opening,movement,climax_family,rotation,body_level,opening_silhouette,arm_path,leg_silhouette,carrier,carrier_shape,effect,effect_shape,climax_window,camera_reaction,camera_climax,ending,status,notes"
+expected_header="episode,poem,opening,movement,climax_family,rotation,body_level,opening_silhouette,arm_path,leg_silhouette,carrier,carrier_shape,effect,effect_shape,climax_window,camera_reaction,camera_climax,ending,status,notes,peak_sequence,peak_directions,peak_windows,carrier_trajectories,camera_peak_reactions"
 actual_header="$(head -n 1 "$history_csv")"
 [[ "$actual_header" == "$expected_header" ]] || {
   print -u2 -r -- "FAIL: unexpected dance history header '$actual_header'"
@@ -67,7 +67,7 @@ actual_header="$(head -n 1 "$history_csv")"
 }
 
 awk -F, '
-  NR > 1 && NF != 20 { exit 1 }
+  NR > 1 && NF != 25 { exit 1 }
   NR > 1 && ($5 == "" || $8 == "" || $9 == "" || $10 == "" || $12 == "" || $14 == "" || $15 == "" || $17 == "") { exit 1 }
   END { exit !(NR >= 3) }
 ' "$history_csv" || {

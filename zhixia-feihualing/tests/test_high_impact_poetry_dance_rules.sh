@@ -54,7 +54,7 @@ for current_file in "$ayan_rules" "$character_bible" "$style" "$workflow"; do
   require_phrase "不强制安排阿砚单独特写" "$current_file"
 done
 
-expected_header="episode,poem,opening,movement,climax_family,rotation,body_level,opening_silhouette,arm_path,leg_silhouette,carrier,carrier_shape,effect,effect_shape,climax_window,camera_reaction,camera_climax,ending,status,notes"
+expected_header="episode,poem,opening,movement,climax_family,rotation,body_level,opening_silhouette,arm_path,leg_silhouette,carrier,carrier_shape,effect,effect_shape,climax_window,camera_reaction,camera_climax,ending,status,notes,peak_sequence,peak_directions,peak_windows,carrier_trajectories,camera_peak_reactions"
 actual_header="$(head -n 1 "$history_csv")"
 if [[ "$actual_header" != "$expected_header" ]]; then
   print -u2 -r -- "FAIL: unexpected dance history header '$actual_header'"
