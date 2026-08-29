@@ -141,3 +141,6 @@ denggao-10s-cover-v01,cover,登高,video-frame-cover,exports/denggao-10s-cover-v
 baixue-10s-seedance-v01,video,白雪歌,seedance-source,episodes/baixue/assets/video/content-seedance-v01.mp4,approved,user-provided Seedance output,owner-provided AI-assisted asset,10.100秒；496×864；24fps；用户确认舞蹈与整体画面通过；雪量偏少但不返工；保留AI生成标识
 baixue-10s-subtitled-v01,video,白雪歌,final-subtitled,exports/baixue-subtitled-v01.mp4,final,local FFmpeg assembly,original project assets,1080×1920；24fps；10.100秒；四段固定音色；互动横排字幕；诗句竖排字幕；原声在人声区间压低约5dB；音频峰值-4.8dB；保留AI生成标识
 baixue-dance-cover-v01,cover,白雪歌,dance-cover,exports/baixue-dance-cover-v01.png,final,local FFmpeg frame extraction plus Swift typography,derived from approved project video,1080×1920；取自无字幕原片8.800秒；竖排栀夏会跳舞了与白雪歌；保留AI生成标识；无图像模型重绘
+jingtao-voice-01,voice,阿砚,dialogue-01,assets/audio/jingtao/01-ayan-ayan-dialogue.mp3,available,豆包语音合成2.0,user-generated via API,确认稿v1；假小子2.0；哇这浪一拍江水都成雪啦；24kHz单声道64kbps；3.648秒
+jingtao-voice-02,voice,栀夏,poem-voiceover,assets/audio/jingtao/02-zhixia-zhixia-poem.mp3,available,豆包语音合成2.0,user-generated via API,确认稿v1；甜美活泼女声；乱石穿空惊涛拍岸卷起千堆雪；24kHz单声道64kbps；4.656秒
+jingtao-voiced-v01,video,惊涛,voiced-preview,exports/jingtao-voiced-v01.mp4,available,local FFmpeg assembly,original project assets,10.100秒；496×864；24fps；两段固定音色自然语速；无字幕；人声区间原声压低约5dB；综合音频峰值−1.4dB；保留原片画面

@@ -1,0 +1,16 @@
+[
+  {
+    "id": "01-ayan-dialogue",
+    "text": "哇，这浪一拍，江水都成雪啦！",
+    "start": 0.0,
+    "end": 3.648,
+    "highlight": "惊涛"
+  },
+  {
+    "id": "02-zhixia-poem",
+    "text": "乱石穿空，惊涛拍岸，卷起千堆雪。",
+    "start": 3.95,
+    "end": 8.606,
+    "highlight": "惊涛"
+  }
+]
