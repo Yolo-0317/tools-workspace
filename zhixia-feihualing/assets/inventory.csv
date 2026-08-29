@@ -150,3 +150,4 @@ huanghe-voice-01,voice,阿砚,dialogue-01,assets/audio/huanghe/01-ayan-ayan-dial
 huanghe-voice-02,voice,栀夏,poem-voiceover,assets/audio/huanghe/02-zhixia-zhixia-poem.mp3,available,豆包语音合成2.0,user-generated via API,确认稿v1；甜美活泼女声；黄河之水天上来奔流到海不复回；24kHz单声道64kbps；4.848秒；峰值−8.6dB
 huanghe-10s-seedance-v01,video,黄河,seedance-source,episodes/huanghe/assets/video/content-seedance-v01.mp4,approved,user-provided Seedance output,owner-provided AI-assisted asset,10.054秒；496×864；24fps；用户确认整体效果可以；舞蹈持续至结尾；保留AI生成标识
 huanghe-voiced-v01,video,黄河,voiced-preview,exports/huanghe-voiced-v01.mp4,available,local FFmpeg assembly,original project assets,10.054秒；496×864；24fps；两段固定音色自然语速；无字幕；人声区间原声压低约5dB；综合音频峰值−3.0dB；视频码流与原片一致
+huanghe-subtitled-v01,video,黄河,final-subtitled,exports/huanghe-subtitled-v01.mp4,final,local FFmpeg and Swift assembly,original project assets,1080×1920；24fps；10.054秒；阿砚横排对白；两段栀夏诗句竖排；8.152秒字幕退场；复用无字幕试听版混音；综合音频峰值−3.0dB

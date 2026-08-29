@@ -1,0 +1,20 @@
+[
+  {
+    "id": "01-ayan-dialogue",
+    "kind": "dialogue",
+    "text": "哇，黄河真从天上冲下来啦！",
+    "attribution": null
+  },
+  {
+    "id": "02-poem-one",
+    "kind": "poem",
+    "text": "黄河之水天上来",
+    "attribution": "唐·李白"
+  },
+  {
+    "id": "03-poem-two",
+    "kind": "poem",
+    "text": "奔流到海不复回",
+    "attribution": null
+  }
+]
