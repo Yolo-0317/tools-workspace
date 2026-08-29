@@ -1,0 +1,26 @@
+[
+  {
+    "id": "01-ayan-dialogue",
+    "kind": "dialogue",
+    "text": "哇，这浪一拍，江水都成雪啦！",
+    "attribution": null
+  },
+  {
+    "id": "02-poem-one",
+    "kind": "poem",
+    "text": "乱石穿空",
+    "attribution": "宋·苏轼"
+  },
+  {
+    "id": "03-poem-two",
+    "kind": "poem",
+    "text": "惊涛拍岸",
+    "attribution": null
+  },
+  {
+    "id": "04-poem-three",
+    "kind": "poem",
+    "text": "卷起千堆雪",
+    "attribution": null
+  }
+]
