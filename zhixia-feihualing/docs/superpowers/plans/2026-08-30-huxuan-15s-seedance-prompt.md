@@ -34,7 +34,7 @@
 - Consumes: 设计规范和预期文件路径。
 - Produces: 一个可执行验收入口，验证正式提示词、单集说明和台账记录。
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```zsh
 #!/bin/zsh
@@ -43,9 +43,9 @@ set -euo pipefail
 project_dir="${0:A:h:h}"
 readme="$project_dir/episodes/huxuan-15s/README.md"
 prompt="$project_dir/episodes/huxuan-15s/prompts/seedance-v01.md"
-history="$project_dir/operations/dance-design-history.csv"
+history_file="$project_dir/operations/dance-design-history.csv"
 
-for required in "$readme" "$prompt" "$history"; do
+for required in "$readme" "$prompt" "$history_file"; do
   [[ -s "$required" ]] || { print -u2 -r -- "FAIL: missing required Huxuan component $required"; exit 1; }
 done
 
@@ -71,8 +71,8 @@ rg -qF '<!-- SEEDANCE_PROMPT_END -->' "$prompt" || { print -u2 "FAIL: prompt end
 rg -qF '弦鼓一声双袖举' "$readme" || { print -u2 "FAIL: README lacks poem"; exit 1; }
 rg -qF '千匝万周无已时' "$readme" || { print -u2 "FAIL: README lacks final poem line"; exit 1; }
 
-awk -F, 'NF != 25 { print NR ":" NF; bad=1 } END { exit bad }' "$history"
-[[ "$(rg -c '^huxuan-15s,' "$history")" == "1" ]] || { print -u2 "FAIL: Huxuan history row is missing or duplicated"; exit 1; }
+awk -F, 'NF != 25 { print NR ":" NF; bad=1 } END { exit bad }' "$history_file"
+[[ "$(rg -c '^huxuan-15s,' "$history_file")" == "1" ]] || { print -u2 "FAIL: Huxuan history row is missing or duplicated"; exit 1; }
 
 prompt_body="$(sed -n '/SEEDANCE_PROMPT_START/,/SEEDANCE_PROMPT_END/p' "$prompt")"
 for forbidden in 'D01' 'M01' 'H01' 'S01' '图片2' '琵琶道具卡'; do
@@ -82,7 +82,7 @@ done
 print -r -- "PASS: Huxuan 15s prompt and history are complete"
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run: `cd zhixia-feihualing && zsh tests/test_huxuan_15s_prompt.sh`
 
@@ -98,7 +98,7 @@ Expected: FAIL，报告缺少 `episodes/huxuan-15s/README.md`，而不是 shell 
 - Consumes: 已确认设计规范和栀夏敦煌 v03 上传版。
 - Produces: 单集定位与一段位于 `SEEDANCE_PROMPT_START/END` 标记之间、可直接提交 Seedance 的正式提示词正文。
 
-- [ ] **Step 1: 写单集 README**
+- [x] **Step 1: 写单集 README**
 
 README 固定包含以下信息：系列编号 03、标题《回雪胡旋》、15 秒 9:16 一镜到底、白居易《胡旋女》四句、唯一上传图路径、三高潮表、无道具与无人声边界、原片验收重点，以及当前状态“提示词已完成，等待生成原片”。四句文本准确写为：
 
@@ -109,7 +109,7 @@ README 固定包含以下信息：系列编号 03、标题《回雪胡旋》、1
 千匝万周无已时。
 ```
 
-- [ ] **Step 2: 写参考图映射、总目标和场景**
+- [x] **Step 2: 写参考图映射、总目标和场景**
 
 提示词正文第一句固定为：
 
@@ -119,7 +119,7 @@ README 固定包含以下信息：系列编号 03、标题《回雪胡旋》、1
 
 紧接着写图片 1 只锁定 v03 大脸身份、年龄感、妆发、服装、配饰、鞋履和蓝橙双层飘带固定点，不复制角色卡排版。随后建立同一处蓝调暮色敦煌石窟前庭、赭石岩壁、朱砂旧金低舞台、固定织锦幡幔、少量油灯和单一暮光主光源，并明确不出现长城、月轮、沙漠、飞雪、沙尘、画鼓、佛像特写和现代舞台。
 
-- [ ] **Step 3: 写 0—10 秒动作链**
+- [x] **Step 3: 写 0—10 秒动作链**
 
 按以下四段顺序写清落脚、承重、躯干、手臂、腿部、飘带、幡幔和镜头反应：
 
@@ -128,17 +128,17 @@ README 固定包含以下信息：系列编号 03、标题《回雪胡旋》、1
 3. `4.800—7.000秒`：前脚横踏、后膝接近地面、贴地低位枢轴旋转、外倾反折、低位宽三角、横向急停，镜头有限侧弧移并降低，两侧幡幔只横向卷开。
 4. `7.000—10.000秒`：提身后斜向交叉舞步、一次不超过 90 度改面、双臂形成前后长斜线，为腾跃换轴蓄势。
 
-- [ ] **Step 4: 写 10—15 秒动作链**
+- [x] **Step 4: 写 10—15 秒动作链**
 
 `10.000—13.200秒` 写沿斜向景深完成两次短促腾跃换轴：第一次落地换脚承重，第二次反向转体并落地即刹停；最终形成一屈一伸、前后错层的纵深长线。镜头只短撤并轻微抬升，人物不得小于画面高度约一半；后方幡幔由近向远逐层掠动一次。
 
 `13.200—15.000秒` 写第三次落地余势中的前后换重和上肢反向展开，飘带自然回落，最后一帧仍在有效舞动中切断，不站定谢幕、不拉成大远景。
 
-- [ ] **Step 5: 写连续性、运镜、声音与禁止项**
+- [x] **Step 5: 写连续性、运镜、声音与禁止项**
 
 集中锁定一个栀夏、v03 同一张脸、固定服化道、唯一一组上臂固定蓝橙飘带、固定幡幔悬挂点和单一侧前低位斜向后退镜头路径。声音使用无人声的快速西域乐舞配乐、连续短音弦拨、手鼓与小框鼓节拍、真实脚步和衣料破风；明确不生成对白、旁白、诗歌朗诵、吟唱、歌声、歌词、字幕、标题、水印和 logo。禁止连续原地转圈、旋转镜头伪造动作、道具、其他人物、雪花、沙尘、发光粒子、多肢、脚底滑行、飘带或幡幔穿体。
 
-- [ ] **Step 6: 运行测试观察下一处预期失败**
+- [x] **Step 6: 运行测试观察下一处预期失败**
 
 Run: `cd zhixia-feihualing && zsh tests/test_huxuan_15s_prompt.sh`
 
@@ -154,7 +154,7 @@ Expected: README 与提示词检查通过，仅因 `operations/dance-design-hist
 - Consumes: Task 2 已固化的三高潮顺序、承接物轨迹和镜头反馈。
 - Produces: 唯一 `huxuan-15s` 去重记录、已完成计划和通过验证的正式提示词。
 
-- [ ] **Step 1: 追加唯一历史记录**
+- [x] **Step 1: 追加唯一历史记录**
 
 在 CSV 末尾追加以下完整 25 列记录，不修改已有行：
 
@@ -162,7 +162,7 @@ Expected: README 与提示词检查通过，仅因 `operations/dance-design-hist
 huxuan-15s,白居易《胡旋女》,未完成立轴疾旋双袖错层上挑,小范围弧形圆场转斜向交叉舞步,三高潮异轴旋转,一组立轴疾旋；一组贴地低旋；两次斜向腾跃换轴且落地即刹停,直立窄轴；低位外倾；腾跃换轴,三分之四侧脸立轴疾旋转一高一低纵向急停,上挑与斜下错层；贴地宽扫与侧上反折；前后长斜线,收合落脚；低位宽三角；一屈一伸前后线,蓝橙双层飘带与固定织锦幡幔,上下错层双螺旋；低位横向宽扇；前后错层纵深长线,织锦幡幔受旋转气流牵引,近处纵向扬起；两侧横向卷开；由近向远逐层掠动,0.000—1.800秒；4.800—7.000秒；10.000—13.200秒,侧前低位斜向后退主路径三次反应,短促微推并降低；有限侧弧移并降低；短撤并轻微抬升,反向落地刹停后继续换重并在余势中切断,designed,敦煌十六舞03；仅上传栀夏v03；无阿砚无道具；四句诗后期加入；禁止真实雪花和连续原地转圈,立轴疾旋骤停；贴地低旋反折；斜向腾跃换轴,纵向；横向；斜向纵深,0.000—1.800秒；4.800—7.000秒；10.000—13.200秒,双带上下错层双螺旋；贴地横向宽扇；前后错层纵深长线,短促微推并降低；有限侧弧移并降低；短撤并轻微抬升
 ```
 
-- [ ] **Step 2: 标记计划完成并运行最终验证**
+- [x] **Step 2: 标记计划完成并运行最终验证**
 
 将本计划的所有 checkbox 改为 `[x]`，然后运行：
 
@@ -176,7 +176,7 @@ git diff --check -- episodes/huxuan-15s tests/test_huxuan_15s_prompt.sh operatio
 
 Expected: 专用测试输出 PASS；CSV 每行 25 列；`huxuan-15s` 仅一行；差异检查无错误。
 
-- [ ] **Step 3: 提交提示词**
+- [x] **Step 3: 提交提示词**
 
 只暂存本计划、单集 README、正式提示词、验证脚本和历史台账中的 `huxuan-15s` 新增行，使用中文提交：
 
