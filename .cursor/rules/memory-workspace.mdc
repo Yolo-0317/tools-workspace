@@ -491,3 +491,18 @@ alwaysApply: false
   - 每次设计调用 `docs/zhixia-poetry-dance-composer.md`，读取 `operations/dance-design-history.csv` 最近五行完成去重，最终正文清除所有内部编号和项目代码。
   - 阿砚不增加强制特写或额外表演；每次出现都保持约 40 厘米、笔锋双耳、唯一墨尾及向外放射、分叉、翘起的外扩纸纤维毛束，禁止贴身顺毛、普通白猫和圆润幼猫化。
   - 真源：`zhixia-feihualing/docs/superpowers/specs/2026-08-28-zhixia-high-impact-poetry-dance-design.md`；执行规范：`zhixia-feihualing/docs/realistic-visual-style.md`、`zhixia-feihualing/docs/production-workflow.md`、`zhixia-feihualing/docs/zhixia-poetry-dance-composer.md`。
+
+### 2026-08-30-huxuan-video-review 栀夏 · 《回雪胡旋》原片复盘
+
+- **Context**: 《栀夏·敦煌十六舞》第三支《回雪胡旋》15 秒原片完成；用户确认当前版本可用、不返工，要求记录问题并确保后续不再出现。
+- **Pitfall/Error**:
+  - 第一高潮人物大且立轴疾旋清楚；第二低旋的反向急停不够独立，仍像连续旋转的一部分。
+  - 第三次腾跃换轴成立，但镜头约从 4 秒开始持续后退，10 秒后人物继续缩小，使第三高潮视觉强度低于开场。
+  - 幡幔只在中后段明显可见，纵向、横向、纵深三种方向反馈没有形成同等清楚的差异。
+- **Solution/Rule**:
+  - 本片结论固定为“可用、不返工、不把偏差当成新默认”。
+  - 后续三高潮必须同时比较动作强度与人物占比；第三高潮人物高度至少约 55%，13—15 秒至少约 50%，禁止从第一连接开始持续后退到结尾。
+  - 三次镜头反馈均须短促并回到同一中全景基准；人物不满足占比门槛时，第三高潮禁止后撤，改为保持或微推。
+  - 第二高潮须以落脚、反向刹停和独立全身剪影结束，再发生一次明确方向改变后进入连接，禁止与前后旋转连成一段。
+  - 环境承接物在每次高潮前必须已经位于可见画面内；三次分别写清可见起点、运动方向与回落终点，不能只写“随气流摆动”。
+  - 真源：`zhixia-feihualing/episodes/huxuan-15s/qa-notes.md`、`zhixia-feihualing/operations/dance-design-history.csv`。
