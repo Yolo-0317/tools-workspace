@@ -68,6 +68,10 @@ rg -q 'amix=inputs=2:duration=first:dropout_transition=0:normalize=0' "$build_sc
   print -u2 "FAIL: Huxuan build script must mix the unattenuated bed with voice"
   exit 1
 }
+rg -q 'alimiter=limit=0.870964:attack=5:release=80:level=false' "$build_script" || {
+  print -u2 "FAIL: Huxuan final bus must reserve AAC true-peak headroom"
+  exit 1
+}
 
 "$build_script" >/dev/null
 
