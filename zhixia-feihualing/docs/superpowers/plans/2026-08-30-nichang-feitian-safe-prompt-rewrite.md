@@ -143,3 +143,71 @@ Expected: 测试 PASS；两个目标文件无未提交变更。
 - [ ] **Step 2: 向用户交付完整正文**
 
 回复中明确说明本地安全词与动作结构检查通过，但平台审核需要用户实际提交验证；同时提供正式提示词文件链接和完整可复制正文。
+
+### Task 4: 第二次纯正向重写
+
+**Files:**
+- Modify: `zhixia-feihualing/tests/test_nichang_feitian_15s_prompt.sh`
+- Modify: `zhixia-feihualing/episodes/nichang-feitian-15s/prompts/seedance-v01.md`
+
+**Interfaces:**
+- Consumes: 用户确认的约 600 字纯正向动作稿设计。
+- Produces: 不含身份声明和长篇否定清单、仍保留三高潮结构的第二版正文。
+
+- [ ] **Step 1: 先修改门禁并观察失败**
+
+安全正文必须包含以下正向锚点：
+
+```text
+人物造型全程保持一致
+三次高能舞姿同等强烈
+纵向提展
+横向S形腾移
+斜前低位延伸再向上提展
+莲瓣垂直扬起
+莲瓣向左右展开
+莲瓣由远向近掠过
+第三段镜头保持近距离
+```
+
+标记正文不得包含以下反向表达：
+
+```text
+原创虚构
+只有一个
+没有其他人物
+不得
+禁止
+不生成
+不要
+不拿
+不抓
+```
+
+Run:
+
+```bash
+zsh zhixia-feihualing/tests/test_nichang_feitian_15s_prompt.sh
+```
+
+Expected: FAIL，报告旧正文缺少新的正向锚点或仍含反向表达。
+
+- [ ] **Step 2: 用约 600 字纯正向正文替换标记内容**
+
+正文固定为五段：角色与规格、场景、三次高潮时间轴、镜头与飘带、音乐。角色段只写“参考上传图片中的栀夏，人物造型全程保持一致”；动作段只写可见结果，不列举异常情况。
+
+- [ ] **Step 3: 运行门禁和格式检查**
+
+```bash
+zsh zhixia-feihualing/tests/test_nichang_feitian_15s_prompt.sh
+git diff --check -- zhixia-feihualing/episodes/nichang-feitian-15s/prompts/seedance-v01.md zhixia-feihualing/tests/test_nichang_feitian_15s_prompt.sh
+```
+
+Expected: 门禁 PASS；格式检查无输出。
+
+- [ ] **Step 4: 提交并交付正文**
+
+```bash
+git add zhixia-feihualing/episodes/nichang-feitian-15s/prompts/seedance-v01.md zhixia-feihualing/tests/test_nichang_feitian_15s_prompt.sh
+git commit -m "重写霓裳飞天纯正向提示词"
+```
