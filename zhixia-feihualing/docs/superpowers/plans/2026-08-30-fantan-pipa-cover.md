@@ -29,7 +29,7 @@
 - Consumes: 已存在的无字幕高清配音版、预期构建脚本、渲染器和资产清单路径。
 - Produces: 一个可执行验收入口，验证构建、关键文字、PNG 规格、完全不透明和资产清单记录。
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```zsh
 #!/bin/zsh
@@ -67,7 +67,7 @@ rg -qF "fantan-pipa-dance-cover-v01" "$inventory" || { print -u2 "FAIL: Fantan P
 print -r -- "PASS: Fantan Pipa dance cover is valid, 1080x1920, and inventoried"
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run: `cd zhixia-feihualing && zsh tests/test_fantan_pipa_dance_cover.sh`
 
@@ -84,7 +84,7 @@ Expected: FAIL，报告缺少 `build_fantan_pipa_dance_cover.sh`，而不是语�
 - Consumes: `exports/fantan-pipa-15s-voiced-v01.mp4` 中 1.250 秒的 1080×1920 帧。
 - Produces: `render_fantan_pipa_dance_cover.swift <base.png> <output.png>` 和无透明底的正式 PNG。
 
-- [ ] **Step 1: 写最小构建脚本**
+- [x] **Step 1: 写最小构建脚本**
 
 ```zsh
 #!/bin/zsh
@@ -110,7 +110,7 @@ swift "$renderer" "$base" "$output"
 print -r -- "$output"
 ```
 
-- [ ] **Step 2: 写本地文字渲染器**
+- [x] **Step 2: 写本地文字渲染器**
 
 创建以下完整渲染器；它只注册本地字体、原样绘制底图并叠加三列竖排文字：
 
@@ -218,7 +218,7 @@ drawVertical("唐·王昌龄《从军行七首·其二》", x: 342, top: 700, st
 }
 ```
 
-- [ ] **Step 3: 赋予构建脚本执行权限并运行测试**
+- [x] **Step 3: 赋予构建脚本执行权限并运行测试**
 
 Run:
 
@@ -239,19 +239,19 @@ Expected: PNG 媒体检查通过，仅因资产清单尚无 `fantan-pipa-dance-c
 - Consumes: Task 2 的正式封面。
 - Produces: 视觉确认、唯一资产记录和可重复验证的正式交付。
 
-- [ ] **Step 1: 查看原尺寸封面**
+- [x] **Step 1: 查看原尺寸封面**
 
 使用本地原尺寸预览检查：栀夏侧脸、高抬腿、反弓、上举手臂和蓝橙飘带完整；满月与长城可辨；三组文字未遮挡人物或 AI 标识；不存在诗句字幕残留、乱码、边框、琵琶或新增图像元素。
 
-- [ ] **Step 2: 若文字遮挡，仅调整三列坐标**
+- [x] **Step 2: 若文字遮挡，仅调整三列坐标**
 
 只允许修改 `x`、`top`、`step` 和既有字号；重新运行构建脚本并再次原尺寸预览。不得修改取帧时间、底图内容或调用图像生成。
 
-- [ ] **Step 3: 登记资产清单**
+- [x] **Step 3: 登记资产清单**
 
 向 `assets/inventory.csv` 新增唯一 ID `fantan-pipa-dance-cover-v01`；备注写明“1080×1920；取自无字幕配音版 1.250 秒；左侧竖排栀夏与月照反弹琵琶；附唐·王昌龄《从军行七首·其二》题署；保留 AI 生成标识；无图像模型重绘”。
 
-- [ ] **Step 4: 运行最终验证**
+- [x] **Step 4: 运行最终验证**
 
 Run:
 
@@ -266,7 +266,7 @@ git diff --check
 
 Expected: 专用测试输出 PASS；PNG 解码无错误；CSV 每行九列；资产 ID 唯一；差异检查无错误。
 
-- [ ] **Step 5: 提交封面**
+- [x] **Step 5: 提交封面**
 
 只暂存本次脚本、渲染器、测试、计划和资产清单中的本次记录，使用中文提交：
 
