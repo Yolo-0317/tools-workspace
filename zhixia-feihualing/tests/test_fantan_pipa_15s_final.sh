@@ -120,4 +120,14 @@ for output in "$voiced" "$final"; do
   ffmpeg -v error -i "$output" -f null -
 done
 
+loudness_report="$(ffmpeg -hide_banner -i "$voiced" \
+  -af loudnorm=I=-16:TP=-1:LRA=7:print_format=json -f null - 2>&1)"
+true_peak="$(print -r -- "$loudness_report" | awk -F'"' '/"input_tp"/ { print $4 }')"
+awk -v peak="$true_peak" 'BEGIN {
+  if (peak > -1.0) {
+    printf "FAIL: true peak %.2f dBTP exceeds -1.0 dBTP\n", peak > "/dev/stderr";
+    exit 1;
+  }
+}'
+
 print "PASS: Fantan Pipa four-line recitation finals preserve the original music level"

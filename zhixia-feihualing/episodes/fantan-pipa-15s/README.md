@@ -8,7 +8,7 @@
 - 诗文：唐·王昌龄《从军行七首·其二》。
 - 画幅与时长：9:16 竖屏，15 秒，一镜到底。
 - 情绪：边塞壮阔、清冷有力。
-- 当前状态：实体琵琶版实验未能形成肩后反弹效果，已转入无道具重制；按用户决定跳过 5 秒测试，15 秒正式提示词已完成，等待生成原片。
+- 当前状态：无道具舞蹈原片已由用户确认可用；四句栀夏朗诵、逐句竖排字幕与 1080×1920 高清成片已完成，等待用户最终试听确认。
 
 ## 诗文
 
@@ -27,7 +27,7 @@
 - 设计：`../../docs/superpowers/specs/2026-08-30-fantan-pipa-no-prop-15s-design.md`。
 - 5 秒动作测试：`prompts/seedance-no-prop-test-v01.md`。
 - 15 秒正式提示词：`prompts/seedance-no-prop-v02.md`。
-- 状态：按用户决定跳过 5 秒测试，15 秒无道具版本待生成。
+- 状态：按用户决定跳过 5 秒测试；15 秒无道具原片已确认可用。
 - 正式生成只上传栀夏敦煌 v03 单张大脸锁定版，不上传琵琶道具卡或其他参考图。
 - 全片不出现实体乐器或虚影，以反弓身法、肩后高低双臂、反手弹拨、飘带和琵琶声表现反弹意象。
 - 实体琵琶版保留为失败实验记录，不再用于生成。
@@ -55,10 +55,23 @@
 - 摄影机只有侧前方低位缓慢后退主路径，12.500 秒后不继续拉远。
 - 原始声音只有冷峻琵琶、低沉羯鼓、长风、脚步、衣料和拨弦声，无可辨识人声。
 
+## 朗诵字幕成片
+
+- 源视频：`assets/video/content-seedance-no-prop-v02.mp4`，与用户下载原片 SHA-256 一致。
+- 四句声音：栀夏固定音色 `ICL_uranus_zh_female_tianmeihuopo_tob`，分别朗诵“琵琶起舞换新声”“总是关山旧别情”“撩乱边愁听不尽”“高高秋月照长城”。
+- 混音：原片背景音乐与动作声全程保持 `volume=1.0`，不使用侧链、闪避或人声时间窗音量包络；只在最终总线进行透明峰值保护。
+- 字幕：暖象牙白竖排逐句出现，第一句附“唐·王昌龄《从军行七首·其二》”题署，位于右侧安全区并保留右下角 AI 标识。
+- 无字幕试听版：`../../exports/fantan-pipa-15s-voiced-v01.mp4`。
+- 最终字幕版：`../../exports/fantan-pipa-15s-subtitled-v01.mp4`。
+- 输出规格：1080×1920、24fps、15.104 秒、48kHz 双声道 AAC；最终综合响度约 −15.09 LUFS，真峰值约 −1.01 dBTP。
+- QA：`qa-recitation-subtitles-v01.md`。
+
 ## 真源
 
 - 当前设计规范：`docs/superpowers/specs/2026-08-30-fantan-pipa-no-prop-15s-design.md`。
 - 当前 5 秒测试提示词：`episodes/fantan-pipa-15s/prompts/seedance-no-prop-test-v01.md`。
 - 当前 15 秒正式提示词：`episodes/fantan-pipa-15s/prompts/seedance-no-prop-v02.md`。
+- 朗诵字幕成片设计：`docs/superpowers/specs/2026-08-30-fantan-pipa-recitation-subtitles-design.md`。
+- 朗诵字幕实施计划：`docs/superpowers/plans/2026-08-30-fantan-pipa-recitation-subtitles.md`。
 - 旧版实体道具设计：`docs/superpowers/specs/2026-08-30-fantan-pipa-15s-dance-design.md`。
 - 旧版实体道具提示词：`episodes/fantan-pipa-15s/prompts/seedance-v01.md`。
