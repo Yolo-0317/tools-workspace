@@ -58,6 +58,7 @@
 - 字幕计划：`subtitle-plan.json`
 - 无字幕朗诵试听版：`../../exports/nichang-feitian-15s-voiced-v01.mp4`
 - 正式字幕成片：`../../exports/nichang-feitian-15s-subtitled-v01.mp4`
+- 正式舞蹈封面：`../../exports/nichang-feitian-dance-cover-v01.png`
 - 高清构建脚本：`../../scripts/build_nichang_feitian_15s_final.sh`
 - 设计真源：`../../docs/superpowers/specs/2026-08-30-nichang-feitian-15s-dance-design.md`
 - 实施计划：`../../docs/superpowers/plans/2026-08-30-nichang-feitian-15s-seedance-prompt.md`
@@ -74,6 +75,13 @@
 - 正式版实测综合响度约 −11.9 LUFS，真峰值约 −1.0 dBFS。
 - 正式字幕版直接复用无字幕朗诵版音轨，两者提取音频的 SHA-256 完全一致。
 - 字幕抽帧检查通过，没有遮挡栀夏面部或核心舞姿，并保留原片标识。
+
+## 正式封面
+
+- 封面为 `../../exports/nichang-feitian-dance-cover-v01.png`，1080×1920 PNG。
+- 底图取自无字幕高清朗诵版 1.450 秒的第一高潮动作帧，保留栀夏正脸、高抬腿飞天舞姿、双层飘带、石莲台、水面倒影和荷花。
+- 左侧竖排“栀夏”“霓裳飞天”与“唐·李白《古风·其十九》”，文字只覆盖少量左侧飘带和暗部背景。
+- 封面使用本地 FFmpeg 精确取帧与 Swift/AppKit 文字排版，不调用图像模型，不重绘人物或场景。
 
 ## 原片验收重点
 
