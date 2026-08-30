@@ -51,6 +51,7 @@
 - 字幕计划：`subtitle-plan.json`
 - 无字幕朗诵试听版：`../../exports/huxuan-15s-voiced-v01.mp4`
 - 正式字幕成片：`../../exports/huxuan-15s-subtitled-v01.mp4`
+- 正式舞蹈封面：`../../exports/huxuan-dance-cover-v01.png`
 - 高清合成脚本：`../../scripts/build_huxuan_15s_final.sh`
 - 设计真源：`../../docs/superpowers/specs/2026-08-30-huxuan-15s-dance-design.md`
 - 朗诵字幕设计：`../../docs/superpowers/specs/2026-08-30-huxuan-poem-voiceover-final-design.md`
@@ -63,6 +64,13 @@
 - 试听版和正式版均为 1080×1920、24fps、15.069 秒、H.264 视频与 48kHz 双声道 AAC 音频。
 - 正式版实测综合响度约 −11.56 LUFS，真峰值约 −1.10 dBTP。
 - 字幕抽帧已检查，位于左侧安全区，没有遮挡栀夏面部、核心舞姿或右下角 AI 标识。
+
+## 正式封面
+
+- 封面为 `../../exports/huxuan-dance-cover-v01.png`，1080×1920 PNG。
+- 底图取自无字幕高清朗诵版 1.250 秒的第一高潮动作帧，保留栀夏正脸、旋转裙摆、蓝橙双层飘带和右下角 AI 标识。
+- 左侧竖排“栀夏”“回雪胡旋”与“唐·白居易《胡旋女》”；文字只覆盖部分飘带，没有遮挡五官、头冠或上举手掌。
+- 封面仅使用本地 FFmpeg 精确取帧与 Swift/AppKit 文字排版，不调用图像模型，不重绘人物或场景。
 
 ## 原片验收重点
 
