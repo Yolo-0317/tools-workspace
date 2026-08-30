@@ -11,23 +11,22 @@ for required in "$readme" "$prompt" "$history_file"; do
 done
 
 for required_text in \
-  '@图片1是本项目原创虚构数字角色栀夏' \
-  '只有一个栀夏' \
-  '双手全程空着' \
+  '参考上传图片中的栀夏' \
+  '人物造型全程保持一致' \
+  '三次高能舞姿同等强烈' \
   '0.000—1.800秒' \
   '4.800—7.000秒' \
   '10.000—13.200秒' \
-  '纵向离地提展' \
+  '纵向提展' \
   '横向S形腾移' \
   '斜前低位延伸再向上提展' \
-  '莲瓣只从脚下浅水莲池纵向扬起' \
-  '莲瓣只向画面左右横向分开' \
-  '莲瓣只沿斜向纵深由远向近掠动' \
-  '第三高潮人物高度至少约60%' \
-  '13—15秒人物高度不得低于约55%' \
-  '第三高潮保持或微推，禁止后撤' \
+  '莲瓣垂直扬起' \
+  '莲瓣向左右展开' \
+  '莲瓣由远向近掠过' \
+  '第三段镜头保持近距离' \
+  '结尾人物仍占画面一半以上' \
   '左右上臂后外侧' \
-  '不生成对白、旁白、诗歌朗诵、吟唱、歌声、歌词'; do
+  '无人声敦煌乐舞配乐'; do
   rg -qF "$required_text" "$prompt" || { print -u2 -r -- "FAIL: prompt lacks $required_text"; exit 1; }
 done
 
@@ -47,6 +46,10 @@ done
 
 for risky_expression in '18岁' '现实人物' '艺人' '俯冲' '撞击' '反关节' '穿体'; do
   [[ "$prompt_body" != *"$risky_expression"* ]] || { print -u2 -r -- "FAIL: safe prompt body contains risky expression $risky_expression"; exit 1; }
+done
+
+for negative_expression in '原创虚构' '只有一个' '没有其他人物' '不得' '禁止' '不生成' '不要' '不拿' '不抓'; do
+  [[ "$prompt_body" != *"$negative_expression"* ]] || { print -u2 -r -- "FAIL: positive prompt body contains negative expression $negative_expression"; exit 1; }
 done
 
 print -r -- "PASS: Nichang Feitian 15s prompt and history are complete"
