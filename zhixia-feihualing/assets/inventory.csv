@@ -200,3 +200,4 @@ huxuan-voice-03,voice,栀夏,poem-line-03,assets/audio/huxuan-15s-paced-v01/03-z
 huxuan-voice-04,voice,栀夏,poem-line-04,assets/audio/huxuan-15s-paced-v01/04-zhixia-zhixia-line-four.mp3,available,豆包语音合成2.0,user-generated via API,千匝万周无已时；固定栀夏音色；24kHz单声道；2.448秒
 huxuan-15s-voiced-v01,video,回雪胡旋,voiced-preview,exports/huxuan-15s-voiced-v01.mp4,available,local FFmpeg assembly,original project assets,15.069秒；1080×1920；24fps；栀夏四句诗朗诵；原片背景音乐全程0dB无闪避；无字幕；真峰值约−1.10dBTP；保留AI生成标识
 huxuan-15s-subtitled-v01,video,回雪胡旋,final-subtitled,exports/huxuan-15s-subtitled-v01.mp4,final,local FFmpeg and Swift assembly,original project assets,15.069秒；1080×1920；24fps；栀夏四句诗朗诵；逐句竖排字幕；首句附唐·白居易胡旋女题署；原声0dB无闪避；综合响度约−11.56LUFS；真峰值约−1.10dBTP；保留AI生成标识
+huxuan-dance-cover-v01,cover,回雪胡旋,dance-cover,exports/huxuan-dance-cover-v01.png,final,local FFmpeg frame extraction plus Swift typography,derived from approved project video,1080×1920；取自无字幕高清朗诵版1.250秒；竖排栀夏与回雪胡旋；附唐·白居易胡旋女题署；保留AI生成标识；无图像模型重绘
