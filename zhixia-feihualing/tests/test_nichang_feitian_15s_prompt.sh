@@ -19,7 +19,7 @@ for required_text in \
   '10.000—13.200秒' \
   '纵向离地提展' \
   '横向S形腾移' \
-  '斜前俯冲再提展' \
+  '斜前低位延伸再向上提展' \
   '莲瓣只从脚下浅水莲池纵向扬起' \
   '莲瓣只向画面左右横向分开' \
   '莲瓣只沿斜向纵深由远向近掠动' \
@@ -43,6 +43,10 @@ awk -F, 'NF != 25 { print NR ":" NF; bad=1 } END { exit bad }' "$history_file"
 prompt_body="$(sed -n '/SEEDANCE_PROMPT_START/,/SEEDANCE_PROMPT_END/p' "$prompt")"
 for forbidden in '基础级' '高潮动作家族' '视觉指纹' 'v03' '文件名' '复原唐代舞谱' '图片2'; do
   [[ "$prompt_body" != *"$forbidden"* ]] || { print -u2 -r -- "FAIL: prompt body contains forbidden token $forbidden"; exit 1; }
+done
+
+for risky_expression in '18岁' '现实人物' '艺人' '俯冲' '撞击' '反关节' '穿体'; do
+  [[ "$prompt_body" != *"$risky_expression"* ]] || { print -u2 -r -- "FAIL: safe prompt body contains risky expression $risky_expression"; exit 1; }
 done
 
 print -r -- "PASS: Nichang Feitian 15s prompt and history are complete"
