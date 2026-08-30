@@ -36,6 +36,8 @@ EP01、EP02、EP03 的既有音频、字幕和成片不纳入自动补生成，�
 
 - [“一字三诗”单集总览](episodes/README.md)
 - [账号规划](docs/account-plan.md)
+- [文化诗舞合集后续方向](docs/cultural-poetry-dance-roadmap.md)
+- [九歌祭舞研究与十一篇舞蹈设计](docs/jiuge-dance-research-and-design.md)
 - [世界观母版](docs/world-bible.md)
 - [角色母版](docs/character-bible.md)
 - [视觉母版](docs/visual-bible.md)
