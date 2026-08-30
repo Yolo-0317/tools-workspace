@@ -54,6 +54,21 @@ PROMPT_REQUIRED = [
     "不得生成可辨识人声",
 ]
 
+PROMPT_EMPTY_HANDS_REQUIRED = (
+    "双手始终空着",
+    "全程不触碰、不拿取任何器物",
+)
+
+PROMPT_HANDHELD_FORBIDDEN = (
+    "道具牵引",
+    "只持一枝",
+    "唯一花枝",
+    "持花手",
+    "执剑手",
+    "唯一礼剑",
+    "同一只手持有",
+)
+
 PROMPT_FORBIDDEN = [
     "主高潮家族",
     "验收标准",
@@ -93,6 +108,12 @@ def validate_prompt(path: Path, chapter: str) -> None:
     for phrase in PROMPT_REQUIRED:
         if phrase not in body:
             fail(f"{path.name}: prompt body missing {phrase}")
+    for phrase in PROMPT_EMPTY_HANDS_REQUIRED:
+        if phrase not in body:
+            fail(f"{path.name}: prompt body missing {phrase}")
+    for phrase in PROMPT_HANDHELD_FORBIDDEN:
+        if phrase in body:
+            fail(f"{path.name}: prompt body contains forbidden handheld term {phrase}")
     for phrase in PROMPT_FORBIDDEN:
         if phrase in body:
             fail(f"{path.name}: prompt body contains forbidden term {phrase}")
@@ -124,7 +145,6 @@ def validate_ledger(path: Path) -> None:
         fail(f"ledger must contain 11 rows, found {len(rows)}")
 
     expected_windows = ("0.300—4.200秒", "5.000—8.800秒", "9.600—13.500秒")
-    allowed_props = {"少司命": "单枝白芷或兰花", "国殇": "单剑"}
     recent_peak_sequences: list[tuple[str, str, str]] = []
     recent_direction_sequences: list[tuple[str, str, str]] = []
 
@@ -138,9 +158,8 @@ def validate_ledger(path: Path) -> None:
         actual_windows = (row["peak1_window"], row["peak2_window"], row["peak3_window"])
         if actual_windows != expected_windows:
             fail(f"ledger row {order}: incorrect peak windows")
-        expected_prop = allowed_props.get(chapter, "无")
-        if row["prop"] != expected_prop:
-            fail(f"ledger row {order}: expected prop {expected_prop}")
+        if row["prop"] != "无":
+            fail(f"ledger row {order}: expected prop 无")
 
         peak_sequence = (row["peak1_family"], row["peak2_family"], row["peak3_family"])
         direction_sequence = (row["peak1_direction"], row["peak2_direction"], row["peak3_direction"])
