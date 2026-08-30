@@ -8,7 +8,7 @@
 - 诗文：唐·王昌龄《从军行七首·其二》。
 - 画幅与时长：9:16 竖屏，15 秒，一镜到底。
 - 情绪：边塞壮阔、清冷有力。
-- 当前状态：Seedance v01 提示词已完成，等待生成原片。
+- 当前状态：实体琵琶版实验未能形成肩后反弹效果，已转入无道具重制；等待 5 秒动作测试成片。
 
 ## 诗文
 
@@ -22,12 +22,21 @@
 
 原始视频不生成人声、诗句或字幕；四句朗诵和字幕在舞蹈原片通过后另行制作。
 
-## 输入图片
+## 无道具重制
+
+- 设计：`../../docs/superpowers/specs/2026-08-30-fantan-pipa-no-prop-15s-design.md`。
+- 5 秒动作测试：`prompts/seedance-no-prop-test-v01.md`。
+- 状态：等待 5 秒动作测试成片。
+- 正式生成只上传栀夏敦煌 v03 单张大脸锁定版，不上传琵琶道具卡或其他参考图。
+- 全片不出现实体乐器或虚影，以反弓身法、肩后高低双臂、反手弹拨、飘带和琵琶声表现反弹意象。
+- 实体琵琶版保留为失败实验记录，不再用于生成。
+
+## 旧版实体道具实验输入
 
 1. 图片 1：`assets/characters/栀夏敦煌十六舞角色母板-v03-单张大脸锁定-Seedance上传版.jpg`。
 2. 图片 2：`assets/props/fantan-pipa-v01/敦煌反弹琵琶道具卡-v01-Seedance上传版.jpg`。
 
-只上传这两张图。图片 1 负责栀夏身份与固定服化道；图片 2 负责同一把四弦四轴曲项琵琶的结构、材质、比例、正反方向和肩后持握关系。
+旧版曾同时上传这两张图：图片 1 负责栀夏身份与固定服化道；图片 2 负责四弦四轴曲项琵琶。实测模型仍把道具移到胸前，因此此输入组合不再使用。
 
 ## 三次同强度高潮
 
@@ -47,6 +56,7 @@
 
 ## 真源
 
-- 设计规范：`docs/superpowers/specs/2026-08-30-fantan-pipa-15s-dance-design.md`。
-- 视频提示词：`episodes/fantan-pipa-15s/prompts/seedance-v01.md`。
-- 琵琶固定说明：`assets/props/fantan-pipa-v01/README.md`。
+- 当前设计规范：`docs/superpowers/specs/2026-08-30-fantan-pipa-no-prop-15s-design.md`。
+- 当前 5 秒测试提示词：`episodes/fantan-pipa-15s/prompts/seedance-no-prop-test-v01.md`。
+- 旧版实体道具设计：`docs/superpowers/specs/2026-08-30-fantan-pipa-15s-dance-design.md`。
+- 旧版实体道具提示词：`episodes/fantan-pipa-15s/prompts/seedance-v01.md`。
