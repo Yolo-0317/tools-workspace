@@ -1,0 +1,30 @@
+[
+  {
+    "id": "01-zhixia-line-one",
+    "text": "南国有佳人。",
+    "start": 0.0,
+    "end": 1.848,
+    "highlight": "飞袂绿腰十五秒四句自然朗诵"
+  },
+  {
+    "id": "02-zhixia-line-two",
+    "text": "轻盈绿腰舞。",
+    "start": 1.848,
+    "end": 3.72,
+    "highlight": "飞袂绿腰十五秒四句自然朗诵"
+  },
+  {
+    "id": "03-zhixia-line-three",
+    "text": "华筵九秋暮。",
+    "start": 3.72,
+    "end": 5.76,
+    "highlight": "飞袂绿腰十五秒四句自然朗诵"
+  },
+  {
+    "id": "04-zhixia-line-four",
+    "text": "飞袂拂云雨。",
+    "start": 5.76,
+    "end": 8.016,
+    "highlight": "飞袂绿腰十五秒四句自然朗诵"
+  }
+]
