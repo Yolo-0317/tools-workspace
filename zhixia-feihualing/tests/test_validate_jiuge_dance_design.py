@@ -43,6 +43,7 @@ def prompt_text(extra_body: str = "") -> str:
 def future_prompt_text() -> str:
     windows = "\n".join(validator.WINDOWS)
     return f"""# 湘君
+> 状态：待按15秒诗舞剧规范重写，不得直接付费生成。
 ## 原典与现代转译
 说明
 ## 十五秒舞蹈设计卡
@@ -57,12 +58,9 @@ def future_prompt_text() -> str:
 严格两个
 不复刻角色卡排版
 双手始终空着，全程不触碰、不拿取任何器物。
-声音与朗诵：生成完整的双声道环境声、克制的东方氛围音乐，以及一位年轻中国女性的画外朗诵。
-朗诵者不在画面中说话，栀夏全程不张嘴说话、不做朗诵口型、不需要与声音对口型。
-女声使用正常自然人声；不拖字、不吟唱、不机械慢放。
-只朗诵这些文字，不增词、不改词。
-朗诵：“君不行兮夷犹，蹇谁留兮中洲。”
-约第13.4秒才说出末尾短句“中洲”，读完后保留环境声与音乐余韵。
+声音分工：Seedance 不得生成可辨识人声，只生成无人声电影感国风音乐、自然环境声和动作声。
+栀夏不张嘴说话、不做朗诵口型。
+准确诗文与当代映射使用当前栀夏固定音色后期生成。
 ## 验收要点
 完成
 """
@@ -81,36 +79,30 @@ class PromptRulesTests(unittest.TestCase):
             path.write_text(text, encoding="utf-8")
             validator.validate_prompt(path, "湘君")
 
-    def test_future_prompt_accepts_native_offscreen_recitation(self) -> None:
+    def test_future_prompt_accepts_post_tts_pending_rewrite_contract(self) -> None:
         try:
             self.validate_future_text(future_prompt_text())
         except ValueError as error:
-            self.fail(f"native offscreen recitation should be accepted: {error}")
+            self.fail(f"post-TTS pending rewrite should be accepted: {error}")
 
-    def test_future_prompt_rejects_legacy_no_voice_rule(self) -> None:
+    def test_future_prompt_requires_pending_rewrite_marker(self) -> None:
         text = future_prompt_text().replace(
-            "## 验收要点", "原片不得生成可辨识人声。\n## 验收要点"
+            "> 状态：待按15秒诗舞剧规范重写，不得直接付费生成。\n", ""
         )
-        with self.assertRaisesRegex(ValueError, "legacy no-voice rule"):
+        with self.assertRaisesRegex(ValueError, "pending poetry-drama rewrite marker"):
             self.validate_future_text(text)
 
-    def test_future_prompt_requires_offscreen_recitation_contract(self) -> None:
-        text = future_prompt_text().replace("栀夏全程不张嘴说话", "")
-        with self.assertRaisesRegex(ValueError, "native audio phrase"):
+    def test_future_prompt_requires_post_tts_contract(self) -> None:
+        text = future_prompt_text().replace("后期生成", "另行处理")
+        with self.assertRaisesRegex(ValueError, "post-TTS phrase"):
             self.validate_future_text(text)
 
-    def test_future_prompt_requires_exact_quoted_poem(self) -> None:
+    def test_future_prompt_rejects_native_offscreen_recitation(self) -> None:
         text = future_prompt_text().replace(
-            "朗诵：“君不行兮夷犹，蹇谁留兮中洲。”", "朗诵：“错误诗句”"
+            "## 验收要点",
+            "年轻中国女性的画外朗诵，只朗诵这些文字。\n## 验收要点",
         )
-        with self.assertRaisesRegex(ValueError, "quoted recitation"):
-            self.validate_future_text(text)
-
-    def test_future_prompt_requires_final_cue_near_end(self) -> None:
-        text = future_prompt_text().replace(
-            "约第13.4秒才说出末尾短句“中洲”", "约第10秒说出末尾短句“中洲”"
-        )
-        with self.assertRaisesRegex(ValueError, "final recitation cue"):
+        with self.assertRaisesRegex(ValueError, "forbidden native audio phrase"):
             self.validate_future_text(text)
 
     def test_prompt_requires_global_empty_hands_sentence(self) -> None:

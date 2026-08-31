@@ -53,35 +53,21 @@ VISUAL_PROMPT_REQUIRED = [
     "不复刻角色卡排版",
 ]
 
-NATIVE_RECITATION_FROM_ORDER = 3
+POETRY_DRAMA_REWRITE_FROM_ORDER = 3
 
-NATIVE_AUDIO_REQUIRED = (
-    "生成完整的双声道环境声",
-    "年轻中国女性的画外朗诵",
-    "栀夏全程不张嘴说话",
-    "不需要与声音对口型",
-    "正常自然人声",
-    "不拖字、不吟唱、不机械慢放",
-    "只朗诵这些文字，不增词、不改词",
-)
+POETRY_DRAMA_PENDING_MARKER = "待按15秒诗舞剧规范重写，不得直接付费生成"
 
-LEGACY_NO_VOICE_PHRASES = (
+POST_TTS_REQUIRED = (
     "不得生成可辨识人声",
-    "无可辨识人声",
-    "不生成任何可辨识人声",
+    "不做朗诵口型",
+    "后期生成",
 )
 
-RECITATION_CONTRACTS = {
-    "湘君": ("君不行兮夷犹，蹇谁留兮中洲。", "中洲"),
-    "湘夫人": ("袅袅兮秋风，洞庭波兮木叶下。", "木叶下"),
-    "大司命": ("广开兮天门，纷吾乘兮玄云。", "玄云"),
-    "少司命": ("秋兰兮麋芜，罗生兮堂下。", "堂下"),
-    "东君": ("暾将出兮东方，照吾槛兮扶桑。", "扶桑"),
-    "河伯": ("与女游兮九河，冲风起兮水扬波。", "水扬波"),
-    "山鬼": ("既含睇兮又宜笑，子慕予兮善窈窕。", "善窈窕"),
-    "国殇": ("身既死兮神以灵，魂魄毅兮为鬼雄。", "鬼雄"),
-    "礼魂": ("春兰兮秋菊，长无绝兮终古。", "终古"),
-}
+NATIVE_AUDIO_FORBIDDEN = (
+    "年轻中国女性的画外朗诵",
+    "只朗诵这些文字",
+    "约第13.4秒才说出末尾短句",
+)
 
 PROMPT_EMPTY_HANDS_REQUIRED = (
     "双手始终空着",
@@ -155,18 +141,15 @@ def validate_prompt(path: Path, chapter: str) -> None:
         if phrase not in body:
             fail(f"{path.name}: prompt body missing {phrase}")
     order = int(path.name.split("-", 1)[0])
-    if order >= NATIVE_RECITATION_FROM_ORDER:
-        for phrase in LEGACY_NO_VOICE_PHRASES:
-            if phrase in body:
-                fail(f"{path.name}: prompt body contains legacy no-voice rule {phrase}")
-        for phrase in NATIVE_AUDIO_REQUIRED:
+    if order >= POETRY_DRAMA_REWRITE_FROM_ORDER:
+        if POETRY_DRAMA_PENDING_MARKER not in text:
+            fail(f"{path.name}: missing pending poetry-drama rewrite marker")
+        for phrase in POST_TTS_REQUIRED:
             if phrase not in body:
-                fail(f"{path.name}: prompt body missing native audio phrase {phrase}")
-        quoted_text, final_cue = RECITATION_CONTRACTS[chapter]
-        if f"朗诵：“{quoted_text}”" not in body:
-            fail(f"{path.name}: prompt body missing quoted recitation")
-        if f"约第13.4秒才说出末尾短句“{final_cue}”" not in body:
-            fail(f"{path.name}: prompt body missing final recitation cue")
+                fail(f"{path.name}: prompt body missing post-TTS phrase {phrase}")
+        for phrase in NATIVE_AUDIO_FORBIDDEN:
+            if phrase in body:
+                fail(f"{path.name}: prompt body contains forbidden native audio phrase {phrase}")
     for phrase in PROMPT_EMPTY_HANDS_REQUIRED:
         if phrase not in body:
             fail(f"{path.name}: prompt body missing {phrase}")
@@ -262,7 +245,7 @@ def main() -> int:
     except ValueError as error:
         print(f"FAIL: {error}", file=sys.stderr)
         return 1
-    print("PASS: Jiuge future Seedance prompts use native offscreen recitation")
+    print("PASS: Jiuge future prompts are blocked pending poetry-dance drama rewrites")
     return 0
 
 

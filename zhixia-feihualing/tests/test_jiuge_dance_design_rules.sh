@@ -11,7 +11,7 @@ fi
 
 python3 -m unittest "$project_dir/tests/test_validate_jiuge_dance_design.py" -v
 validator_output=$(python3 "$validator" --project-root "$project_dir")
-expected='PASS: Jiuge future Seedance prompts use native offscreen recitation'
+expected='PASS: Jiuge future prompts are blocked pending poetry-dance drama rewrites'
 if [[ "$validator_output" != "$expected" ]]; then
   print -u2 -r -- "FAIL: unexpected validator result: $validator_output"
   exit 1
