@@ -262,7 +262,7 @@ def main() -> int:
     except ValueError as error:
         print(f"FAIL: {error}", file=sys.stderr)
         return 1
-    print("PASS: Jiuge 15s three-peak dance designs are complete and distinct")
+    print("PASS: Jiuge future Seedance prompts use native offscreen recitation")
     return 0
 
 
