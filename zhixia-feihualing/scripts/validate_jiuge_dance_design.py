@@ -59,6 +59,19 @@ PROMPT_EMPTY_HANDS_REQUIRED = (
     "全程不触碰、不拿取任何器物",
 )
 
+DESIGN_CARD_REQUIRED = (
+    "- 视线对象：",
+    "- 初始表情：",
+    "- 情绪转折：",
+    "- 结束状态：",
+)
+
+LEDGER_AESTHETIC_NOTE_TOKENS = (
+    "视线对象=",
+    "表情弧线=",
+    "声音模式=",
+)
+
 PROMPT_HANDHELD_FORBIDDEN = (
     "道具牵引",
     "只持一枝",
@@ -104,6 +117,10 @@ def validate_prompt(path: Path, chapter: str) -> None:
     for window in WINDOWS:
         if window not in text:
             fail(f"{path.name}: missing time window {window}")
+    if not path.name.startswith("01-"):
+        for phrase in DESIGN_CARD_REQUIRED:
+            if phrase not in text:
+                fail(f"{path.name}: missing design-card field {phrase[2:-1]}")
     body = prompt_body(text)
     for phrase in PROMPT_REQUIRED:
         if phrase not in body:
@@ -160,6 +177,10 @@ def validate_ledger(path: Path) -> None:
             fail(f"ledger row {order}: incorrect peak windows")
         if row["prop"] != "无":
             fail(f"ledger row {order}: expected prop 无")
+        if order != "01":
+            for token in LEDGER_AESTHETIC_NOTE_TOKENS:
+                if token not in row["notes"]:
+                    fail(f"ledger row {order}: missing notes token {token}")
 
         peak_sequence = (row["peak1_family"], row["peak2_family"], row["peak3_family"])
         direction_sequence = (row["peak1_direction"], row["peak2_direction"], row["peak3_direction"])

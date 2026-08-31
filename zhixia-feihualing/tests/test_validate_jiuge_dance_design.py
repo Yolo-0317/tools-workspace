@@ -56,6 +56,16 @@ class PromptRulesTests(unittest.TestCase):
         ):
             self.validate_text(prompt_text("第二高潮使用道具牵引。"))
 
+    def test_future_chapter_requires_gaze_and_expression_contract(self) -> None:
+        text = prompt_text().replace("# 东皇太一", "# 云中君", 1)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "02-yunzhongjun-15s.md"
+            path.write_text(text, encoding="utf-8")
+            with self.assertRaisesRegex(
+                ValueError, "missing design-card field 视线对象"
+            ):
+                validator.validate_prompt(path, "云中君")
+
 
 class LedgerRulesTests(unittest.TestCase):
     def write_ledger(self, rows: list[dict[str, str]], directory: str) -> Path:
@@ -70,8 +80,14 @@ class LedgerRulesTests(unittest.TestCase):
         source = PROJECT_ROOT / "operations" / "jiuge-dance-design-history.csv"
         with source.open(encoding="utf-8", newline="") as handle:
             rows = list(csv.DictReader(handle))
-        for row in rows:
+        for index, row in enumerate(rows):
             row["prop"] = "无"
+            if index:
+                row["notes"] += (
+                    "；视线对象=神境承接物；"
+                    "表情弧线=初始情绪→关系转折→结束余势；"
+                    "声音模式=栀夏克制女声"
+                )
         return rows
 
     def test_all_no_prop_rows_are_accepted(self) -> None:
@@ -88,6 +104,15 @@ class LedgerRulesTests(unittest.TestCase):
         rows[0]["prop"] = "礼剑"
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaisesRegex(ValueError, "expected prop 无"):
+                validator.validate_ledger(self.write_ledger(rows, directory))
+
+    def test_future_chapter_requires_aesthetic_notes(self) -> None:
+        rows = self.no_prop_rows()
+        rows[1]["notes"] = "不悬浮且不生成翅膀"
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(
+                ValueError, "missing notes token 视线对象="
+            ):
                 validator.validate_ledger(self.write_ledger(rows, directory))
 
 
