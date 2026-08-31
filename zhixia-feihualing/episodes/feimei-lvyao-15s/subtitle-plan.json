@@ -1,0 +1,31 @@
+[
+  {
+    "id": "01-poem-line-one",
+    "kind": "poem",
+    "text": "南国有佳人",
+    "attribution": "唐·李群玉《长沙九日登东楼观舞》",
+    "start": 1.300,
+    "end": 3.450
+  },
+  {
+    "id": "02-poem-line-two",
+    "kind": "poem",
+    "text": "轻盈绿腰舞",
+    "start": 4.100,
+    "end": 6.250
+  },
+  {
+    "id": "03-poem-line-three",
+    "kind": "poem",
+    "text": "华筵九秋暮",
+    "start": 7.050,
+    "end": 9.200
+  },
+  {
+    "id": "04-poem-line-four",
+    "kind": "poem",
+    "text": "飞袂拂云雨",
+    "start": 11.100,
+    "end": 13.350
+  }
+]
