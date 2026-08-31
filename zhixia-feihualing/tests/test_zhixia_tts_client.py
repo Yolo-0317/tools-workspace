@@ -144,6 +144,24 @@ class ClientTests(unittest.TestCase):
         self.assertNotIn("secret-key", repr(client))
         self.assertNotIn("secret-key", repr(client.last_request_summary))
 
+    def test_request_serializes_native_speech_rate(self) -> None:
+        transport = FakeTransport(
+            [HTTPResponse(200, successful_sse(), {"X-Request-Id": "server-id"})]
+        )
+        client = DoubaoTTSClient("secret-key", transport=transport)
+
+        client.synthesize(
+            TTSRequest(
+                "灵皇皇兮既降。",
+                "speaker-id",
+                "seed-tts-2.0",
+                speech_rate=-50,
+            )
+        )
+
+        params = transport.calls[0]["body"]["req_params"]  # type: ignore[index]
+        self.assertEqual(params["audio_params"]["speech_rate"], -50)
+
     def test_request_serializes_context_texts_as_tts_addition(self) -> None:
         transport = FakeTransport(
             [HTTPResponse(200, successful_sse(), {"X-Request-Id": "server-id"})]

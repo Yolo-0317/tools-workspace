@@ -42,6 +42,7 @@ class TTSRequest:
     resource_id: str
     uid: str = "zhixia-feihualing"
     context_texts: tuple[str, ...] = ()
+    speech_rate: int = 0
 
 
 @dataclass(frozen=True)
@@ -216,6 +217,12 @@ class DoubaoTTSClient:
             raise ValueError("text cannot be empty")
         if not request.speaker.strip() or not request.resource_id.strip():
             raise ValueError("speaker and resource_id cannot be empty")
+        if (
+            isinstance(request.speech_rate, bool)
+            or not isinstance(request.speech_rate, int)
+            or not -50 <= request.speech_rate <= 100
+        ):
+            raise ValueError("speech_rate must be an integer from -50 to 100")
 
         client_request_id = str(uuid.uuid4())
         self.last_request_summary = RequestSummary(
@@ -241,7 +248,7 @@ class DoubaoTTSClient:
                 "sample_rate": 24000,
                 "audio_params": {
                     "format": "mp3",
-                    "speech_rate": 0,
+                    "speech_rate": request.speech_rate,
                     "loudness_rate": 0,
                     "bit_rate": 64000,
                 },

@@ -64,12 +64,14 @@ class FakeClient:
         self.fail_once = set(fail_once or ())
         self.calls: list[str] = []
         self.contexts: dict[str, tuple[str, ...]] = {}
+        self.speech_rates: dict[str, int] = {}
 
     def synthesize(self, request: object) -> TTSResult:
         uid = request.uid  # type: ignore[attr-defined]
         line_id = uid.removeprefix("ep04-")
         self.calls.append(line_id)
         self.contexts[line_id] = request.context_texts  # type: ignore[attr-defined]
+        self.speech_rates[line_id] = request.speech_rate  # type: ignore[attr-defined]
         if line_id in self.fail_once:
             self.fail_once.remove(line_id)
             raise TTSTemporaryError("temporary fixture failure")
@@ -130,6 +132,17 @@ class PipelineTests(unittest.TestCase):
         generate_pending_lines(plan, client, probe=fake_probe)
 
         self.assertEqual(client.contexts["02-poem-01"], (direction,))
+
+    def test_speech_rate_is_forwarded_to_tts_request(self) -> None:
+        lines = list(self.manifest.lines)
+        lines[1] = replace(lines[1], speech_rate=-50)
+        slow_manifest = replace(self.manifest, lines=tuple(lines))
+        client = FakeClient()
+
+        plan = build_generation_plan(self.root, slow_manifest, probe=fake_probe)
+        generate_pending_lines(plan, client, probe=fake_probe)
+
+        self.assertEqual(client.speech_rates["02-poem-01"], -50)
 
     def test_changed_context_requires_revision_instead_of_reusing_audio(self) -> None:
         plan = build_generation_plan(self.root, self.manifest, probe=fake_probe)

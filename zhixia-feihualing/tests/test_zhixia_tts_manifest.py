@@ -119,6 +119,21 @@ class ManifestTests(unittest.TestCase):
             ),
         )
 
+    def test_manifest_preserves_native_speech_rate(self) -> None:
+        data = valid_manifest_data()
+        data["lines"][1]["speech_rate"] = -50  # type: ignore[index]
+
+        manifest = manifest_from_dict(data, voices())
+
+        self.assertEqual(manifest.lines[1].speech_rate, -50)
+
+    def test_manifest_rejects_speech_rate_outside_provider_range(self) -> None:
+        data = valid_manifest_data()
+        data["lines"][1]["speech_rate"] = -51  # type: ignore[index]
+
+        with self.assertRaisesRegex(ValueError, "speech_rate"):
+            manifest_from_dict(data, voices())
+
     def test_manifest_rejects_blank_context_text(self) -> None:
         data = valid_manifest_data()
         data["lines"][1]["context_texts"] = ["  "]  # type: ignore[index]

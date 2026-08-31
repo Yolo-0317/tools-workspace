@@ -21,12 +21,14 @@ class YunzhongjunRecitationManifestTest(unittest.TestCase):
         self.assertEqual(voice["audio_slug"], "jiuge-yunzhongjun-15s-slow-v01")
         self.assertEqual(
             [line["text"] for line in voice["lines"]],
-            ["灵皇皇兮既降。", "猋远举兮云中。"],
+            ["灵皇皇兮，既降。", "猋，远举兮，云中。"],
         )
         self.assertEqual(
             [line["start_ms"] for line in voice["lines"]],
             [1000, 7700],
         )
+        self.assertEqual([line["speech_rate"] for line in voice["lines"]], [-50, -50])
+        self.assertEqual([line["revision"] for line in voice["lines"]], [3, 4])
 
         self.assertEqual(
             [(item["text"], item["side"]) for item in subtitle],

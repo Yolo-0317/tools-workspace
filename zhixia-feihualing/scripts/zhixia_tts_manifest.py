@@ -30,6 +30,7 @@ class VoiceLine:
     gap_before_ms: int = 0
     revision: int = 1
     context_texts: tuple[str, ...] = ()
+    speech_rate: int = 0
 
 
 @dataclass(frozen=True)
@@ -58,6 +59,12 @@ def _nonnegative_integer(value: Any, field: str) -> int:
 def _positive_integer(value: Any, field: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
         raise ValueError(f"{field} 必须是正整数")
+    return value
+
+
+def _speech_rate(value: Any, field: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or not -50 <= value <= 100:
+        raise ValueError(f"{field} 必须是 -50 到 100 之间的整数")
     return value
 
 
@@ -171,6 +178,7 @@ def manifest_from_dict(
         context_texts = _context_texts(
             raw.get("context_texts"), f"{line_id}.context_texts"
         )
+        speech_rate = _speech_rate(raw.get("speech_rate", 0), f"{line_id}.speech_rate")
         parsed.append(
             VoiceLine(
                 id=line_id,
@@ -180,6 +188,7 @@ def manifest_from_dict(
                 gap_before_ms=gap_before_ms,
                 revision=revision,
                 context_texts=context_texts,
+                speech_rate=speech_rate,
             )
         )
 
