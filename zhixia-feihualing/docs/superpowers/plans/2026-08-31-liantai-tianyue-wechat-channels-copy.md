@@ -4,13 +4,14 @@
 
 **Goal:** 生成并登记一套采用最新五段式格式、可直接复制发布的《莲台天乐》视频号标题、正文、标签、首评和发布提醒。
 
-**Architecture:** 单一 Markdown 文件保存完整发布物，独立 zsh 门禁验证五个固定区块、标题、四句诗、六个标签、AI 声明、首评以及视频和封面路径。实现不访问视频号后台，不执行实际发布，也不修改视频、封面或其他单集内容。
+**Architecture:** 单一 Markdown 文件保存完整发布物，独立 zsh 门禁验证五个固定区块、统一系列标题、四句诗、六个标签、AI 声明、首评以及视频和封面路径。`docs/production-workflow.md` 保存后续敦煌十六舞的统一标题规则；实现不访问视频号后台，不执行实际发布，也不修改视频、封面或其他单集内容。
 
 **Tech Stack:** Markdown、zsh、ripgrep
 
 ## Global Constraints
 
-- 标题固定为“月光落进石窟，栀夏循着一声钟起舞”。
+- 标题固定为“《栀夏·敦煌十六舞》06｜莲台天乐”。
+- 后续《栀夏·敦煌十六舞》视频号主标题统一使用“《栀夏·敦煌十六舞》NN｜单集名”，其中 `NN` 为两位阿拉伯数字，分隔符为无空格的全角竖线。
 - 文件按“标题、发布正文、话题标签、首评（置顶评论）、发布提醒”五个区块排列。
 - 正文准确引用唐·李白《庐山东林寺夜怀》四句，不改字、不漏句、不打乱顺序。
 - 只使用六个标签：`#栀夏飞花令 #敦煌舞 #李白 #庐山东林寺夜怀 #中国古典舞 #古诗词`。
@@ -48,7 +49,7 @@ for heading in '## 标题' '## 发布正文' '## 话题标签' '## 首评（置�
 done
 
 for line in \
-  '月光落进石窟，栀夏循着一声钟起舞' \
+  '《栀夏·敦煌十六舞》06｜莲台天乐' \
   '霜清东林钟，' \
   '水白虎溪月。' \
   '天香生虚空，' \
@@ -85,7 +86,7 @@ Expected: FAIL，输出 `FAIL: missing Liantai Tianyue WeChat Channels copy`。
 ```markdown
 ## 标题
 
-月光落进石窟，栀夏循着一声钟起舞
+《栀夏·敦煌十六舞》06｜莲台天乐
 
 ## 发布正文
 
@@ -141,4 +142,76 @@ Commit:
 ```zsh
 git add tests/test_liantai_tianyue_wechat_channels_copy.sh episodes/liantai-tianyue-15s/wechat-channels-copy.md docs/superpowers/plans/2026-08-31-liantai-tianyue-wechat-channels-copy.md
 git commit -m "制作莲台天乐视频号文案"
+```
+
+---
+
+### Task 2: 统一当前标题并固化后续系列规则
+
+**Files:**
+- Modify: `zhixia-feihualing/tests/test_liantai_tianyue_wechat_channels_copy.sh`
+- Modify: `zhixia-feihualing/episodes/liantai-tianyue-15s/wechat-channels-copy.md`
+- Modify: `zhixia-feihualing/docs/production-workflow.md`
+
+**Interfaces:**
+- Consumes: 已确认的系列格式 `《栀夏·敦煌十六舞》NN｜单集名` 与当前单集编号 `06`。
+- Produces: 使用统一标题的《莲台天乐》发布文案，以及后续新单集可直接继承的发布流程规则。
+
+- [ ] **Step 1: 先修改门禁以表达新标题规则**
+
+把 `tests/test_liantai_tianyue_wechat_channels_copy.sh` 中原标题断言替换为：
+
+```zsh
+'《栀夏·敦煌十六舞》06｜莲台天乐'
+```
+
+增加生产流程规则断言：
+
+```zsh
+workflow="$project_dir/docs/production-workflow.md"
+rg -Fq '《栀夏·敦煌十六舞》视频号主标题统一使用 `《栀夏·敦煌十六舞》NN｜单集名`' "$workflow"
+```
+
+- [ ] **Step 2: 运行门禁确认旧标题导致失败**
+
+Run: `zsh tests/test_liantai_tianyue_wechat_channels_copy.sh`
+
+Expected: FAIL，因为当前发布文案仍是旧的画面钩子标题，尚未包含 `《栀夏·敦煌十六舞》06｜莲台天乐`。
+
+- [ ] **Step 3: 修改当前文案并记录长期规则**
+
+将 `episodes/liantai-tianyue-15s/wechat-channels-copy.md` 的标题行替换为：
+
+```text
+《栀夏·敦煌十六舞》06｜莲台天乐
+```
+
+在 `docs/production-workflow.md` 的“六、发布与复盘”中增加：
+
+```markdown
+7. 《栀夏·敦煌十六舞》视频号主标题统一使用 `《栀夏·敦煌十六舞》NN｜单集名`：`NN` 使用两位阿拉伯数字，分隔符固定为全角竖线 `｜` 且左右不留空格；动作钩子与诗意句放在正文开头，不替代主标题。本规则从第六支及后续新发布文案开始执行，不追溯批量重写已发布旧稿。
+```
+
+- [ ] **Step 4: 运行门禁确认新标题与长期规则均通过**
+
+Run: `zsh tests/test_liantai_tianyue_wechat_channels_copy.sh`
+
+Expected: PASS，输出 `PASS: Liantai Tianyue WeChat Channels copy is ready`。
+
+- [ ] **Step 5: 复核范围并提交**
+
+Run:
+
+```zsh
+git diff --check -- tests/test_liantai_tianyue_wechat_channels_copy.sh episodes/liantai-tianyue-15s/wechat-channels-copy.md docs/production-workflow.md docs/superpowers/plans/2026-08-31-liantai-tianyue-wechat-channels-copy.md
+zsh tests/test_liantai_tianyue_wechat_channels_copy.sh
+```
+
+Expected: diff 无空白错误，门禁通过，正文、首评、标签和素材路径保持不变。
+
+Commit:
+
+```zsh
+git add tests/test_liantai_tianyue_wechat_channels_copy.sh episodes/liantai-tianyue-15s/wechat-channels-copy.md docs/production-workflow.md docs/superpowers/plans/2026-08-31-liantai-tianyue-wechat-channels-copy.md
+git commit -m "应用敦煌十六舞统一标题格式"
 ```
