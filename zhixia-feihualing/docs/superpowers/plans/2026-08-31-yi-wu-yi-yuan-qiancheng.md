@@ -1,5 +1,7 @@
 # 《一舞一愿·前程》首轮三条 Implementation Plan
 
+> **2026-09-01 修订说明：** 本计划中关于 30—34 字、三段配音、11.500 秒前结束人声和 3.000 秒纯舞尾段的要求已经失效，不得继续执行。首条“重新出发”的新版贯穿朗诵试验改由 [`2026-09-01-yi-wu-yi-yuan-full-length-recitation.md`](2026-09-01-yi-wu-yi-yuan-full-length-recitation.md) 执行；新版语音通过试听和时长验收后，再修订本计划中的舞蹈、字幕与成片任务。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 制作《一舞一愿·前程》首轮三条十五秒祝福诗舞，分别覆盖重新出发、奔赴远方和走出困境，并建立可重复验证字数、朗诵时长、字幕、成片与发布数据的最小流水线。
