@@ -1,0 +1,40 @@
+{
+  "episode": "yiwu-yiyuan-qiancheng-01-restart-15s",
+  "measurement": {
+    "trim_filter": "silenceremove=start_periods=1:start_duration=0.05:start_threshold=-48dB,areverse,silenceremove=start_periods=1:start_duration=0.05:start_threshold=-48dB,areverse",
+    "sample_timeline_unit": "ms"
+  },
+  "lines": [
+    {
+      "id": "01-recipient",
+      "filename": "01-zhixia-recipient.mp3",
+      "sha256": "ac2d72440d41e8448866cc3e9f4b423dd9d8ba80a7ffb1e3f622c1953a0b54e1",
+      "source_duration_ms": 2448,
+      "trimmed_duration_ms": 1352,
+      "start_ms": 0,
+      "end_ms": 1352
+    },
+    {
+      "id": "02-blessing",
+      "filename": "02-zhixia-blessing.mp3",
+      "sha256": "cb78143eb03c1cb6badac772b7de392c79783d0bd27844aae0b996cd258a7b1e",
+      "source_duration_ms": 3048,
+      "trimmed_duration_ms": 2009,
+      "start_ms": 1532,
+      "end_ms": 3541
+    },
+    {
+      "id": "03-poem",
+      "filename": "03-zhixia-poem.mp3",
+      "sha256": "17e122b6fae6595c29a21e8858d1a23d5b99b750fcf3c3b5e29ae549741ba13b",
+      "source_duration_ms": 4416,
+      "trimmed_duration_ms": 3500,
+      "start_ms": 3941,
+      "end_ms": 7441
+    }
+  ],
+  "voice_end_ms": 7441,
+  "voice_end_limit_ms": 11500,
+  "tail_ms": 7559,
+  "tail_min_ms": 3000
+}
