@@ -80,3 +80,11 @@
 - 无字幕朗诵版：`../../exports/feimei-lvyao-15s-voiced-v01.mp4`。
 - 正式字幕版：`../../exports/feimei-lvyao-15s-subtitled-v01.mp4`。
 - 两版音轨字节一致；正式版综合响度约 −14.4 LUFS，真峰值约 −1.1 dBFS，并保留原片 AI 生成标识。
+
+## 正式舞蹈封面
+
+- 文件：`../../exports/feimei-lvyao-dance-cover-v01.png`。
+- 规格：1080×1920 PNG。
+- 底图：无字幕朗诵版 13.000 秒第三高潮定格。
+- 排版：左侧“栀夏”“飞袂绿腰”“唐·李群玉《长沙九日登东楼观舞》”三列竖排文字。
+- 制作：本地 FFmpeg 取帧与 Swift/AppKit 排版；未调用图片生成模型，保留原片 AI 生成标识。
