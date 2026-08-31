@@ -3,17 +3,24 @@ set -euo pipefail
 
 project_dir=${0:A:h:h}
 builder="$project_dir/scripts/build_yunzhongjun_15s_final.sh"
-audio_dir="$project_dir/assets/audio/jiuge-yunzhongjun-15s-slow-v01"
+audio_dir="$project_dir/assets/audio/jiuge-yunzhongjun-15s-natural-v02"
 cards_dir="$project_dir/assets/subtitles/jiuge-yunzhongjun-15s"
-voiced="$project_dir/exports/jiuge-yunzhongjun-15s-voiced-v01.mp4"
-final="$project_dir/exports/jiuge-yunzhongjun-15s-subtitled-v01.mp4"
+voiced="$project_dir/exports/jiuge-yunzhongjun-15s-voiced-v02.mp4"
+final="$project_dir/exports/jiuge-yunzhongjun-15s-subtitled-v02.mp4"
 
 [[ -x "$builder" ]] || { print -u2 "FAIL: missing executable Yunzhongjun builder"; exit 1; }
 for name in \
-  01-zhixia-zhixia-line-one-v03.mp3 \
-  02-zhixia-zhixia-line-two-v04.mp3; do
-  [[ -s "$audio_dir/$name" ]] || { print -u2 "FAIL: missing slow voice asset $name"; exit 1; }
+  01-zhixia-zhixia-line-one-a.mp3 \
+  02-zhixia-zhixia-line-one-b.mp3 \
+  03-zhixia-zhixia-line-two-a.mp3 \
+  04-zhixia-zhixia-line-two-b.mp3; do
+  [[ -s "$audio_dir/$name" ]] || { print -u2 "FAIL: missing natural voice asset $name"; exit 1; }
 done
+
+if rg -q 'atempo|speech_rate=-50|slow-v01|v03\.mp3|v04\.mp3' "$builder"; then
+  print -u2 "FAIL: builder still contains rejected voice-speed processing"
+  exit 1
+fi
 
 "$builder" >/dev/null
 [[ "$(find "$cards_dir" -maxdepth 1 -name '*.png' -type f | wc -l | tr -d ' ')" == "2" ]]
@@ -43,4 +50,4 @@ ffmpeg -v error -i "$voiced" -map 0:a:0 -c copy -f adts "$hash_dir/voiced.aac"
 ffmpeg -v error -i "$final" -map 0:a:0 -c copy -f adts "$hash_dir/final.aac"
 [[ "$(shasum -a 256 "$hash_dir/voiced.aac" | awk '{print $1}')" == "$(shasum -a 256 "$hash_dir/final.aac" | awk '{print $1}')" ]]
 
-print "PASS: Yunzhongjun slow recitation subtitle finals are ready"
+print "PASS: Yunzhongjun natural recitation v02 finals are ready"

@@ -18,17 +18,18 @@ class YunzhongjunRecitationManifestTest(unittest.TestCase):
 
         self.assertEqual(voice["episode"], "jiuge-yunzhongjun-15s")
         self.assertEqual(voice["format"], "one-poem-story")
-        self.assertEqual(voice["audio_slug"], "jiuge-yunzhongjun-15s-slow-v01")
+        self.assertEqual(voice["audio_slug"], "jiuge-yunzhongjun-15s-natural-v02")
         self.assertEqual(
             [line["text"] for line in voice["lines"]],
-            ["灵皇皇兮，既降。", "猋，远举兮，云中。"],
+            ["灵皇皇兮，", "既降。", "猋远举兮，", "云中。"],
         )
         self.assertEqual(
             [line["start_ms"] for line in voice["lines"]],
-            [1000, 7700],
+            [1000, 3800, 7700, 10800],
         )
-        self.assertEqual([line["speech_rate"] for line in voice["lines"]], [-50, -50])
-        self.assertEqual([line["revision"] for line in voice["lines"]], [3, 4])
+        self.assertEqual([line["speech_rate"] for line in voice["lines"]], [0, 0, 0, 0])
+        self.assertEqual([line["revision"] for line in voice["lines"]], [1, 1, 1, 1])
+        self.assertEqual([line["role"] for line in voice["lines"]], ["zhixia"] * 4)
 
         self.assertEqual(
             [(item["text"], item["side"]) for item in subtitle],
