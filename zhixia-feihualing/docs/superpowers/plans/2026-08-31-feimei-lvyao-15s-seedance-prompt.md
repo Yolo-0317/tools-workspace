@@ -37,7 +37,7 @@
 - Consumes: `docs/superpowers/specs/2026-08-31-feimei-lvyao-15s-dance-design.md` 的已确认约束。
 - Produces: 在单集说明、正式提示词或去重台账缺失时失败的可执行门禁。
 
-- [ ] **Step 1: 写入测试脚本**
+- [x] **Step 1: 写入测试脚本**
 
 创建以下完整 zsh 门禁：
 
@@ -109,13 +109,13 @@ done
 print -r -- "PASS: Feimei Lvyao 15s prompt and history are complete"
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [x] **Step 2: 运行测试确认失败**
 
 Run: `zsh tests/test_feimei_lvyao_15s_prompt.sh`
 
 Expected: FAIL，首先报告缺少《飞袂绿腰》README 或正式提示词，而不是 zsh 语法错误。
 
-- [ ] **Step 3: 提交门禁**
+- [x] **Step 3: 提交门禁**
 
 ```zsh
 git add tests/test_feimei_lvyao_15s_prompt.sh
@@ -132,7 +132,7 @@ git commit -m "建立飞袂绿腰提示词门禁"
 - Consumes: 已确认设计中的诗文、角色、场景、视线情绪、固定服装、三高潮、摄影机、声音和生成边界。
 - Produces: 项目可追溯的单集说明，以及用户可直接复制提交的完整 Seedance 提示词。
 
-- [ ] **Step 1: 写入 README**
+- [x] **Step 1: 写入 README**
 
 README 使用以下固定内容：
 
@@ -201,7 +201,7 @@ README 使用以下固定内容：
 6. 栀夏面部、冠饰、固定服装、人体结构、脚底接触和上臂飘带连接稳定，双手始终空置。
 ```
 
-- [ ] **Step 2: 写入上传说明**
+- [x] **Step 2: 写入上传说明**
 
 在正式提示词代码块之前明确写入：
 
@@ -214,7 +214,7 @@ README 使用以下固定内容：
 - 四句诗朗诵、竖排字幕、高清处理、封面和发布文案在原始舞蹈视频通过后分别制作。
 ```
 
-- [ ] **Step 3: 写入纯正向模型正文**
+- [x] **Step 3: 写入纯正向模型正文**
 
 正文放在 `<!-- SEEDANCE_PROMPT_START -->` 和 `<!-- SEEDANCE_PROMPT_END -->` 之间，使用以下完整内容：
 
@@ -242,7 +242,7 @@ README 使用以下固定内容：
 
 模型正文只保留正向可观察结果。内部资产路径、母板版本、设计分类、生产状态、回退条件、历史边界与负面清单全部留在代码块外。
 
-- [ ] **Step 4: 运行测试确认失败点前移到台账**
+- [x] **Step 4: 运行测试确认失败点前移到台账**
 
 Run: `zsh tests/test_feimei_lvyao_15s_prompt.sh`
 
@@ -257,7 +257,7 @@ Expected: README 和提示词检查通过，只因缺少 `feimei-lvyao-15s` 台�
 - Consumes: Task 2 的最终开场、动作、环境反馈、视线和摄影机设计。
 - Produces: 一条完整 25 列、状态为 `designed` 的第七支视觉指纹记录。
 
-- [ ] **Step 1: 追加唯一台账行**
+- [x] **Step 1: 追加唯一台账行**
 
 追加以下完整 25 列记录：
 
@@ -265,13 +265,13 @@ Expected: README 和提示词检查通过，只因缺少 `feimei-lvyao-15s` 台�
 feimei-lvyao-15s,李群玉《长沙九日登东楼观舞》,深侧弓步C形折腰高低袖蓄势,两步交叉连接转斜向S形三步再斜前三步剪步腾跃,三高潮绿腰软舞序列,零完整旋转；两次反向四分之一改面,深侧弓回弹；宽侧弓急停；剪步腾跃落深弓,三分之四正面深侧弓C形折腰,高低反向侧弧；前后双S；前上后下纵深长线,侧弓承重；S形交叉步压宽侧弓；剪步腾跃落前后深弓,蓝橙双层飘带与青绿帷幔,高低错层弧；反向双S；前后纵深线,秋叶、帷幔与旧金流苏,秋叶窄幅上扬；左右帷幔横向起伏；后方帷幔流苏斜前掠动,0.000—1.800秒；4.800—7.000秒；10.000—13.200秒,侧前略低中全景小范围伴随,短促推近轻抬；有限横移；沿原轴迎面短推,反向换重与非对称袖线余势中切断,designed,敦煌十六舞07；仅上传栀夏v03；全身强起势；固定服装不换绿衣；不直视镜头；徒手绿腰舞意象；后期朗诵不压低音乐,兰苕侧折；游龙回腰；飞袂凌云,侧向；左右S形；斜前纵深,0.000—1.800秒；4.800—7.000秒；10.000—13.200秒,秋叶向上弧；左右帷幔横向波；后方帷幔流苏斜前线,短促推近轻抬；有限横移；沿原轴迎面短推
 ```
 
-- [ ] **Step 2: 运行完整门禁**
+- [x] **Step 2: 运行完整门禁**
 
 Run: `zsh tests/test_feimei_lvyao_15s_prompt.sh`
 
 Expected: PASS，输出 `PASS: Feimei Lvyao 15s prompt and history are complete`。
 
-- [ ] **Step 3: 执行最终验证**
+- [x] **Step 3: 执行最终验证**
 
 Run:
 
@@ -284,7 +284,7 @@ test "$(rg -c '^feimei-lvyao-15s,' operations/dance-design-history.csv)" = "1"
 
 Expected: 门禁输出 PASS；目标文件无空白错误；台账全部 25 列；`feimei-lvyao-15s` 恰有一条记录。
 
-- [ ] **Step 4: 提交单集与台账**
+- [x] **Step 4: 提交单集与台账**
 
 ```zsh
 git add episodes/feimei-lvyao-15s/README.md episodes/feimei-lvyao-15s/prompts/seedance-v01.md operations/dance-design-history.csv
