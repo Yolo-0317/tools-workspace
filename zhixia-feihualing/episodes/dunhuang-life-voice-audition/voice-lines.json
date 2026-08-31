@@ -1,0 +1,37 @@
+{
+  "episode": "dunhuang-life-voice-audition",
+  "format": "one-poem-story",
+  "theme": "敦煌生活映射朗诵音色试听",
+  "theme_slug": "dunhuang-life-voice-audition",
+  "audio_slug": "dunhuang-huanxisha-life-voice-audition-v01",
+  "lines": [
+    {
+      "id": "01-current-zhixia",
+      "role": "zhixia",
+      "text": "看山恰似走来迎。仔细看山，山不动，是船行。有时候，你以为是世界变了。其实，是你终于开始往前走了。",
+      "revision": 1,
+      "speech_rate": 0
+    },
+    {
+      "id": "02-qingchezizi",
+      "role": "zhixia-qingchezizi-test",
+      "text": "看山恰似走来迎。仔细看山，山不动，是船行。有时候，你以为是世界变了。其实，是你终于开始往前走了。",
+      "revision": 1,
+      "speech_rate": 0
+    },
+    {
+      "id": "03-zhixingnv",
+      "role": "zhixia-zhixingnv-test",
+      "text": "看山恰似走来迎。仔细看山，山不动，是船行。有时候，你以为是世界变了。其实，是你终于开始往前走了。",
+      "revision": 1,
+      "speech_rate": 0
+    },
+    {
+      "id": "04-wenrouxiaoya",
+      "role": "zhixia-wenrouxiaoya-test",
+      "text": "看山恰似走来迎。仔细看山，山不动，是船行。有时候，你以为是世界变了。其实，是你终于开始往前走了。",
+      "revision": 1,
+      "speech_rate": 0
+    }
+  ]
+}

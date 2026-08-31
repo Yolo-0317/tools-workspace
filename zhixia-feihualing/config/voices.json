@@ -18,5 +18,20 @@
     "name": "栀夏·玲玲候选",
     "speaker": "zh_female_lingling_uranus_bigtts",
     "resource_id": "seed-tts-2.0"
+  },
+  "zhixia-qingchezizi-test": {
+    "name": "栀夏·清澈梓梓候选",
+    "speaker": "zh_female_qingchezizi_uranus_bigtts",
+    "resource_id": "seed-tts-2.0"
+  },
+  "zhixia-zhixingnv-test": {
+    "name": "栀夏·知性女声候选",
+    "speaker": "zh_female_zhixingnv_uranus_bigtts",
+    "resource_id": "seed-tts-2.0"
+  },
+  "zhixia-wenrouxiaoya-test": {
+    "name": "栀夏·温柔小雅候选",
+    "speaker": "zh_female_wenrouxiaoya_uranus_bigtts",
+    "resource_id": "seed-tts-2.0"
   }
 }
