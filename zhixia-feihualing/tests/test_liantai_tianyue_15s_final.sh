@@ -31,10 +31,10 @@ jq -e '
 jq -e '
   length == 4 and
   [.[].text] == ["霜清东林钟", "水白虎溪月", "天香生虚空", "天乐鸣不歇"] and
-  .[0].start == 0.250 and .[0].end == 3.200 and
-  .[1].start == 3.500 and .[1].end == 6.450 and
-  .[2].start == 6.750 and .[2].end == 9.800 and
-  .[3].start == 10.100 and .[3].end == 14.650 and
+  .[0].start == 0.250 and .[0].end == 2.750 and
+  .[1].start == 3.500 and .[1].end == 6.050 and
+  .[2].start == 6.900 and .[2].end == 9.450 and
+  .[3].start == 11.200 and .[3].end == 13.700 and
   .[0].attribution == "唐·李白《庐山东林寺夜怀》" and
   ([.[1,2,3].attribution // ""] | all(. == "")) and
   .[0].end < .[1].start and .[1].end < .[2].start and .[2].end < .[3].start
@@ -65,6 +65,14 @@ rg -q 'amix=inputs=2:duration=first:dropout_transition=0:normalize=0' "$build_sc
 }
 rg -q 'alimiter=limit=0.870964:attack=5:release=80:level=false' "$build_script" || {
   print -u2 "FAIL: Liantai Tianyue final bus must reserve AAC true-peak headroom"
+  exit 1
+}
+[[ "$(rg -o 'atempo=0\.92' "$build_script" | wc -l | tr -d ' ')" == "4" ]] || {
+  print -u2 "FAIL: each Liantai Tianyue line must use only the approved 0.92 correction"
+  exit 1
+}
+[[ "$(rg -o 'atempo=' "$build_script" | wc -l | tr -d ' ')" == "4" ]] || {
+  print -u2 "FAIL: Liantai Tianyue narration must not use chained time stretching"
   exit 1
 }
 

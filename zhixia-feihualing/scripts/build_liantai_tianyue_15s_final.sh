@@ -41,18 +41,18 @@ ffmpeg -hide_banner -loglevel error -y \
       hqdn3d=0.6:0.6:1.8:1.8,\
       unsharp=5:5:0.22:3:3:0,\
       fps=24,format=yuv420p[vout];\
-    [1:a]atrim=start=0.664625:end=2.640250,asetpts=PTS-STARTPTS,atempo=0.72,\
-      afade=t=in:st=0:d=0.035,afade=t=out:st=2.620:d=0.120,\
+    [1:a]atrim=start=0.664625:end=2.640250,asetpts=PTS-STARTPTS,atempo=0.92,\
+      afade=t=in:st=0:d=0.035,afade=t=out:st=2.020:d=0.120,\
       aresample=48000,aformat=channel_layouts=stereo,adelay=250|250[a1];\
-    [2:a]atrim=start=0.581667:end=2.503042,asetpts=PTS-STARTPTS,atempo=0.70,\
-      afade=t=in:st=0:d=0.035,afade=t=out:st=2.625:d=0.120,\
+    [2:a]atrim=start=0.581667:end=2.503042,asetpts=PTS-STARTPTS,atempo=0.92,\
+      afade=t=in:st=0:d=0.035,afade=t=out:st=1.960:d=0.120,\
       aresample=48000,aformat=channel_layouts=stereo,adelay=3500|3500[a2];\
-    [3:a]atrim=start=0.667750:end=2.609583,asetpts=PTS-STARTPTS,atempo=0.68,\
-      afade=t=in:st=0:d=0.035,afade=t=out:st=2.735:d=0.120,\
-      aresample=48000,aformat=channel_layouts=stereo,adelay=6750|6750[a3];\
-    [4:a]atrim=start=0.677417:end=2.386083,asetpts=PTS-STARTPTS,atempo=0.50,atempo=0.82,\
-      afade=t=in:st=0:d=0.035,afade=t=out:st=4.040:d=0.120,\
-      aresample=48000,aformat=channel_layouts=stereo,adelay=10100|10100[a4];\
+    [3:a]atrim=start=0.667750:end=2.609583,asetpts=PTS-STARTPTS,atempo=0.92,\
+      afade=t=in:st=0:d=0.035,afade=t=out:st=1.980:d=0.120,\
+      aresample=48000,aformat=channel_layouts=stereo,adelay=6900|6900[a3];\
+    [4:a]atrim=start=0.677417:end=2.386083,asetpts=PTS-STARTPTS,atempo=0.92,\
+      afade=t=in:st=0:d=0.035,afade=t=out:st=1.730:d=0.120,\
+      aresample=48000,aformat=channel_layouts=stereo,adelay=11200|11200[a4];\
     [a1][a2][a3][a4]amix=inputs=4:duration=longest:dropout_transition=0:normalize=0,\
       highpass=f=90,equalizer=f=2600:t=q:w=1.0:g=1.8,\
       acompressor=threshold=0.08:ratio=2:attack=10:release=120:makeup=1.35,\
@@ -74,17 +74,17 @@ ffmpeg -hide_banner -loglevel error -y \
   -loop 1 -framerate 24 -i "$cards_dir/04-poem-line-four.png" \
   -filter_complex "\
     [1:v]scale=1080:1920:flags=lanczos,format=rgba,\
-      fade=t=in:st=0.250:d=0.120:alpha=1,fade=t=out:st=3.080:d=0.120:alpha=1[c1];\
+      fade=t=in:st=0.250:d=0.120:alpha=1,fade=t=out:st=2.630:d=0.120:alpha=1[c1];\
     [2:v]scale=1080:1920:flags=lanczos,format=rgba,\
-      fade=t=in:st=3.500:d=0.120:alpha=1,fade=t=out:st=6.330:d=0.120:alpha=1[c2];\
+      fade=t=in:st=3.500:d=0.120:alpha=1,fade=t=out:st=5.930:d=0.120:alpha=1[c2];\
     [3:v]scale=1080:1920:flags=lanczos,format=rgba,\
-      fade=t=in:st=6.750:d=0.120:alpha=1,fade=t=out:st=9.680:d=0.120:alpha=1[c3];\
+      fade=t=in:st=6.900:d=0.120:alpha=1,fade=t=out:st=9.330:d=0.120:alpha=1[c3];\
     [4:v]scale=1080:1920:flags=lanczos,format=rgba,\
-      fade=t=in:st=10.100:d=0.120:alpha=1,fade=t=out:st=14.530:d=0.120:alpha=1[c4];\
-    [0:v][c1]overlay=eof_action=pass:enable='between(t,0.250,3.200)'[v1];\
-    [v1][c2]overlay=eof_action=pass:enable='between(t,3.500,6.450)'[v2];\
-    [v2][c3]overlay=eof_action=pass:enable='between(t,6.750,9.800)'[v3];\
-    [v3][c4]overlay=eof_action=pass:enable='between(t,10.100,14.650)',format=yuv420p[vout]" \
+      fade=t=in:st=11.200:d=0.120:alpha=1,fade=t=out:st=13.580:d=0.120:alpha=1[c4];\
+    [0:v][c1]overlay=eof_action=pass:enable='between(t,0.250,2.750)'[v1];\
+    [v1][c2]overlay=eof_action=pass:enable='between(t,3.500,6.050)'[v2];\
+    [v2][c3]overlay=eof_action=pass:enable='between(t,6.900,9.450)'[v3];\
+    [v3][c4]overlay=eof_action=pass:enable='between(t,11.200,13.700)',format=yuv420p[vout]" \
   -map "[vout]" -map 0:a:0 \
   -t "$duration" \
   -c:v libx264 -preset slow -crf 17 -pix_fmt yuv420p \

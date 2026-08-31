@@ -5,27 +5,27 @@
     "text": "霜清东林钟",
     "attribution": "唐·李白《庐山东林寺夜怀》",
     "start": 0.250,
-    "end": 3.200
+    "end": 2.750
   },
   {
     "id": "02-poem-line-two",
     "kind": "poem",
     "text": "水白虎溪月",
     "start": 3.500,
-    "end": 6.450
+    "end": 6.050
   },
   {
     "id": "03-poem-line-three",
     "kind": "poem",
     "text": "天香生虚空",
-    "start": 6.750,
-    "end": 9.800
+    "start": 6.900,
+    "end": 9.450
   },
   {
     "id": "04-poem-line-four",
     "kind": "poem",
     "text": "天乐鸣不歇",
-    "start": 10.100,
-    "end": 14.650
+    "start": 11.200,
+    "end": 13.700
   }
 ]
