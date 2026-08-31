@@ -30,7 +30,7 @@
 - Consumes: `docs/superpowers/specs/2026-08-31-liantai-tianyue-wechat-channels-copy-design.md`、正式字幕视频路径和正式封面路径。
 - Produces: 可直接复制的五区块发布文案和可重复执行的文本门禁。
 
-- [ ] **Step 1: 写入失败门禁**
+- [x] **Step 1: 写入失败门禁**
 
 创建可执行文件 `tests/test_liantai_tianyue_wechat_channels_copy.sh`：
 
@@ -72,13 +72,13 @@ done
 print "PASS: Liantai Tianyue WeChat Channels copy is ready"
 ```
 
-- [ ] **Step 2: 运行测试确认因文案缺失而失败**
+- [x] **Step 2: 运行测试确认因文案缺失而失败**
 
 Run: `zsh tests/test_liantai_tianyue_wechat_channels_copy.sh`
 
 Expected: FAIL，输出 `FAIL: missing Liantai Tianyue WeChat Channels copy`。
 
-- [ ] **Step 3: 写入发布文案**
+- [x] **Step 3: 写入发布文案**
 
 创建 `episodes/liantai-tianyue-15s/wechat-channels-copy.md`，严格写入五个二级区块：
 
@@ -119,13 +119,13 @@ Expected: FAIL，输出 `FAIL: missing Liantai Tianyue WeChat Channels copy`。
 - 发布时选择视频号要求的 AI 内容声明。
 ```
 
-- [ ] **Step 4: 运行测试确认通过**
+- [x] **Step 4: 运行测试确认通过**
 
 Run: `zsh tests/test_liantai_tianyue_wechat_channels_copy.sh`
 
 Expected: PASS，输出 `PASS: Liantai Tianyue WeChat Channels copy is ready`。
 
-- [ ] **Step 5: 复核可复制性并提交**
+- [x] **Step 5: 复核可复制性并提交**
 
 Run:
 
