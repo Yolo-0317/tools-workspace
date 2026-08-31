@@ -34,7 +34,7 @@ ffmpeg -hide_banner -loglevel error -y \
       eof_action=pass:format=auto,format=yuv420p[vout];\
     aevalsrc='(0.62*sin(2*PI*72*t)+0.24*sin(2*PI*46*t))*exp(-7*t)':\
       s=44100:d=0.55,afade=t=out:st=0.30:d=0.25[drum];\
-    anoisesrc=color=white:amplitude=0.30:sample_rate=44100:duration=0.55,\
+    anoisesrc=color=white:amplitude=0.30:sample_rate=44100:duration=0.55:seed=20260831,\
       highpass=f=900,lowpass=f=5200,afade=t=in:st=0:d=0.10,\
       afade=t=out:st=0.24:d=0.31,volume=0.18[whoosh];\
     aevalsrc='(0.18*sin(2*PI*940*t)+0.12*sin(2*PI*1410*t)+0.08*sin(2*PI*1880*t))*exp(-5*t)':\

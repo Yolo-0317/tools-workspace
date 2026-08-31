@@ -36,6 +36,8 @@ fi
   exit 1
 }
 
+first_build_hash="$(shasum -a 256 "$output" | awk '{ print $1 }')"
+
 video_json="$(ffprobe -v error -select_streams v:0 \
   -show_entries stream=codec_name,width,height,r_frame_rate \
   -show_entries format=duration -of json "$output")"
@@ -103,5 +105,12 @@ for pulse_time in 0.420 5.450 11.550; do
     }
   '
 done
+
+"$build_script" >/dev/null
+second_build_hash="$(shasum -a 256 "$output" | awk '{ print $1 }')"
+[[ "$second_build_hash" == "$first_build_hash" ]] || {
+  print -u2 -r -- "FAIL: repeated builds are not deterministic"
+  exit 1
+}
 
 print -r -- "PASS: Feimei Lvyao repaired master meets the delivery contract"
