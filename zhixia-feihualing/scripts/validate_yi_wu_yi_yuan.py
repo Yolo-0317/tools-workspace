@@ -13,9 +13,11 @@ from typing import Any
 HANZI = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
 SLUG = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 ATTRIBUTION = re.compile(r"^[^·《》]+·[^·《》]+《[^《》]+》$")
-SPOKEN_FIELDS = ("recipient", "blessing", "poem")
+VOICE_TRIAL_FIELDS = ("recipient", "situation", "blessing", "poem")
+OUTLINE_FIELDS = ("recipient", "blessing", "poem")
 EPISODE_FIELDS = (
     "episode",
+    "production_status",
     "recipient",
     "blessing",
     "poem",
@@ -23,7 +25,7 @@ EPISODE_FIELDS = (
     "share_scene",
     "dance_event",
 )
-SUBTITLE_IDS = ["01-recipient", "02-blessing", "03-poem"]
+SUBTITLE_IDS = ["01-recipient", "02-situation", "03-blessing", "04-poem"]
 
 
 def count_hanzi(text: str) -> int:
@@ -55,20 +57,19 @@ def validate_season(path: Path) -> None:
     if not SLUG.fullmatch(season):
         raise ValueError("season must be a lowercase hyphenated slug")
 
-    for field, expected in (
-        ("duration_ms", 15000),
-        ("voice_end_max_ms", 11500),
-        ("tail_min_ms", 3000),
-    ):
-        if data.get(field) != expected:
-            raise ValueError(f"{field} must be {expected}")
-
-    limits = data.get("max_hanzi")
-    if not isinstance(limits, dict):
-        raise ValueError("max_hanzi must be an object")
-    expected_limits = {"recipient": 10, "blessing": 12, "poem": 14, "total": 34}
-    if limits != expected_limits:
-        raise ValueError(f"max_hanzi must be {expected_limits}")
+    recitation = data.get("recitation")
+    expected_recitation = {
+        "target_hanzi_min": 55,
+        "target_hanzi_max": 60,
+        "voice_start_max_ms": 200,
+        "voice_end_min_ms": 14000,
+        "voice_end_target_max_ms": 14800,
+        "duration_ms": 15000,
+        "max_gap_ms": 500,
+        "speech_rate": 0,
+    }
+    if recitation != expected_recitation:
+        raise ValueError(f"recitation must be {expected_recitation}")
 
     banned = data.get("banned_phrases")
     if not isinstance(banned, list) or not banned or not all(
@@ -82,6 +83,7 @@ def validate_season(path: Path) -> None:
 
     unique_fields = ("episode", "recipient", "poem", "dance_event")
     seen: dict[str, set[str]] = {field: set() for field in unique_fields}
+    voice_trials: list[str] = []
     for index, episode in enumerate(episodes, start=1):
         if not isinstance(episode, dict):
             raise ValueError(f"episodes[{index}] must be an object")
@@ -96,23 +98,40 @@ def validate_season(path: Path) -> None:
                 f"episodes[{index}].attribution must include dynasty, author and title"
             )
 
+        status = values["production_status"]
+        if status not in {"voice-trial", "theme-outline"}:
+            raise ValueError(
+                f"episodes[{index}].production_status must be voice-trial or theme-outline"
+            )
+        spoken_fields = OUTLINE_FIELDS
+        if status == "voice-trial":
+            voice_trials.append(values["episode"])
+            situation = _require_nonempty_string(
+                episode.get("situation"), f"episodes[{index}].situation"
+            )
+            values["situation"] = situation
+            spoken_fields = VOICE_TRIAL_FIELDS
+
+        if count_hanzi(values["recipient"]) > 10:
+            raise ValueError(f"episodes[{index}].recipient exceeds 10 Hanzi")
+        if count_hanzi(values["poem"]) > 14:
+            raise ValueError(f"episodes[{index}].poem exceeds 14 Hanzi")
+
         total = 0
-        for field in SPOKEN_FIELDS:
-            length = count_hanzi(values[field])
-            limit = limits[field]
-            if length > limit:
-                raise ValueError(
-                    f"episodes[{index}].{field} has {length} Hanzi; maximum is {limit}"
-                )
-            total += length
+        for field in spoken_fields:
+            total += count_hanzi(values[field])
             for phrase in banned:
                 if phrase in values[field]:
                     raise ValueError(
                         f"episodes[{index}].{field} contains banned phrase: {phrase}"
                     )
-        if total > limits["total"]:
+        if status == "voice-trial" and not (
+            recitation["target_hanzi_min"] <= total <= recitation["target_hanzi_max"]
+        ):
             raise ValueError(
-                f"episodes[{index}] has {total} spoken Hanzi; maximum is {limits['total']}"
+                f"episodes[{index}] voice-trial has {total} Hanzi; "
+                f"required {recitation['target_hanzi_min']} to "
+                f"{recitation['target_hanzi_max']}"
             )
 
         for field in unique_fields:
@@ -121,18 +140,23 @@ def validate_season(path: Path) -> None:
                 raise ValueError(f"episodes[{index}].{field} must be unique")
             seen[field].add(value)
 
+    if voice_trials != ["yiwu-yiyuan-qiancheng-01-restart-15s"]:
+        raise ValueError("restart must be the only voice-trial episode")
+
 
 def validate_subtitle_plan(
     path: Path,
     duration_ms: int,
-    voice_end_max_ms: int,
-    tail_min_ms: int,
+    voice_start_max_ms: int,
+    voice_end_min_ms: int,
+    voice_end_target_max_ms: int,
+    max_gap_ms: int,
 ) -> None:
     items = _read_json(path)
-    if not isinstance(items, list) or len(items) != 3:
-        raise ValueError("subtitle plan must contain exactly 3 items")
+    if not isinstance(items, list) or len(items) != 4:
+        raise ValueError("subtitle plan must contain exactly 4 items")
     if [item.get("id") if isinstance(item, dict) else None for item in items] != SUBTITLE_IDS:
-        raise ValueError("subtitle ids must be recipient, blessing, poem")
+        raise ValueError("subtitle ids must be recipient, situation, blessing, poem")
 
     for index, item in enumerate(items):
         start = item.get("start")
@@ -144,14 +168,28 @@ def validate_subtitle_plan(
         if start < 0 or end <= start:
             raise ValueError(f"subtitle {index + 1} must have a positive interval")
 
-    if any(items[index]["end"] > items[index + 1]["start"] for index in range(2)):
+    if any(items[index]["end"] > items[index + 1]["start"] for index in range(3)):
         raise ValueError("subtitle timeline overlaps")
 
+    voice_start_ms = round(float(items[0]["start"]) * 1000)
+    if voice_start_ms > voice_start_max_ms:
+        raise ValueError(f"voice start {voice_start_ms} exceeds {voice_start_max_ms}")
+
+    for index in range(3):
+        gap_ms = round(
+            (float(items[index + 1]["start"]) - float(items[index]["end"])) * 1000
+        )
+        if gap_ms > max_gap_ms:
+            raise ValueError(f"subtitle gap {gap_ms} exceeds {max_gap_ms}")
+
     voice_end_ms = round(float(items[-1]["end"]) * 1000)
-    if voice_end_ms > voice_end_max_ms:
-        raise ValueError(f"voice end {voice_end_ms} exceeds {voice_end_max_ms}")
-    if duration_ms - voice_end_ms < tail_min_ms:
-        raise ValueError("tail is shorter than required")
+    if voice_end_ms < voice_end_min_ms:
+        raise ValueError(f"voice end {voice_end_ms} is before {voice_end_min_ms}")
+    if voice_end_ms > duration_ms:
+        raise ValueError(f"voice end {voice_end_ms} exceeds {duration_ms}")
+
+    if voice_end_target_max_ms > duration_ms:
+        raise ValueError("voice end target exceeds video duration")
 
 
 def main() -> int:
@@ -165,10 +203,16 @@ def main() -> int:
         validate_season(args.season)
         data = _read_json(args.season)
         for episode in data["episodes"]:
-            total = sum(count_hanzi(episode[field]) for field in SPOKEN_FIELDS)
-            print(f"{episode['episode']}: {total} Hanzi")
+            status = episode["production_status"]
+            fields = VOICE_TRIAL_FIELDS if status == "voice-trial" else OUTLINE_FIELDS
+            total = sum(count_hanzi(episode[field]) for field in fields)
+            print(f"{episode['episode']}: {status}: {total} Hanzi")
     else:
-        validate_subtitle_plan(args.subtitle_plan, 15000, 11500, 3000)
+        validate_subtitle_plan(args.subtitle_plan, 15000, 200, 14000, 14800, 500)
+        items = _read_json(args.subtitle_plan)
+        voice_end_ms = round(float(items[-1]["end"]) * 1000)
+        if voice_end_ms > 14800:
+            print(f"warning: voice end {voice_end_ms} exceeds target 14800")
         print(f"subtitle plan valid: {args.subtitle_plan}")
     return 0
 

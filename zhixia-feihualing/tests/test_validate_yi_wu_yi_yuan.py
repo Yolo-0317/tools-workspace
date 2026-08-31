@@ -31,26 +31,80 @@ def validate_plan_temp(plan: list[dict[str, object]]) -> None:
     with tempfile.TemporaryDirectory() as directory:
         path = Path(directory) / "subtitle-plan.json"
         path.write_text(json.dumps(plan, ensure_ascii=False), encoding="utf-8")
-        module.validate_subtitle_plan(path, 15000, 11500, 3000)
+        try:
+            module.validate_subtitle_plan(path, 15000, 200, 14000, 14800, 500)
+        except TypeError as exc:
+            raise AssertionError("full-length subtitle interface is missing") from exc
+
+
+def full_length_plan() -> list[dict[str, object]]:
+    return [
+        {"id": "01-recipient", "start": 0.0, "end": 1.5},
+        {"id": "02-situation", "start": 1.68, "end": 5.4},
+        {"id": "03-blessing", "start": 5.64, "end": 10.1},
+        {"id": "04-poem", "start": 10.45, "end": 14.6},
+    ]
 
 
 class YiWuYiYuanValidationTests(unittest.TestCase):
     def test_counts_only_hanzi(self) -> None:
         self.assertEqual(module.count_hanzi("愿你此去有路，所盼有期。"), 10)
 
-    def test_current_season_is_valid_and_has_three_32_hanzi_episodes(self) -> None:
+    def test_restart_is_the_only_full_length_voice_trial(self) -> None:
         data = valid_season()
 
         module.validate_season(SEASON_PATH)
 
-        episodes = data["episodes"]
-        self.assertEqual(len(episodes), 3)
-        for episode in episodes:
-            total = sum(
-                module.count_hanzi(episode[field])
-                for field in ("recipient", "blessing", "poem")
-            )
-            self.assertEqual(total, 32)
+        self.assertEqual(
+            data.get("recitation"),
+            {
+                "target_hanzi_min": 55,
+                "target_hanzi_max": 60,
+                "voice_start_max_ms": 200,
+                "voice_end_min_ms": 14000,
+                "voice_end_target_max_ms": 14800,
+                "duration_ms": 15000,
+                "max_gap_ms": 500,
+                "speech_rate": 0,
+            },
+        )
+        trials = [
+            item
+            for item in data["episodes"]
+            if item.get("production_status") == "voice-trial"
+        ]
+        self.assertEqual(
+            [item["episode"] for item in trials],
+            ["yiwu-yiyuan-qiancheng-01-restart-15s"],
+        )
+        entry = trials[0]
+        self.assertEqual(
+            [entry["recipient"], entry["situation"], entry["blessing"], entry["poem"]],
+            [
+                "送给重新出发的你",
+                "也许这一程并不轻松，也许前方还有风浪",
+                "愿你此去有路，所盼有期；走过的每一步，都算数",
+                "长风破浪会有时，直挂云帆济沧海",
+            ],
+        )
+        self.assertEqual(
+            sum(
+                module.count_hanzi(entry[field])
+                for field in ("recipient", "situation", "blessing", "poem")
+            ),
+            58,
+        )
+        self.assertEqual(
+            [item.get("production_status") for item in data["episodes"][1:]],
+            ["theme-outline", "theme-outline"],
+        )
+
+    def test_rejects_voice_trial_shorter_than_55_hanzi(self) -> None:
+        data = valid_season()
+        data["episodes"][0]["situation"] = "前路有风浪"
+
+        with self.assertRaisesRegex(ValueError, "voice-trial.*55"):
+            validate_temp(data)
 
     def test_rejects_overlong_recipient(self) -> None:
         data = valid_season()
@@ -80,31 +134,46 @@ class YiWuYiYuanValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "attribution"):
             validate_temp(data)
 
-    def test_accepts_exact_voice_deadline_and_tail(self) -> None:
-        plan = [
-            {"id": "01-recipient", "start": 0.0, "end": 2.5},
-            {"id": "02-blessing", "start": 2.7, "end": 5.4},
-            {"id": "03-poem", "start": 5.7, "end": 11.5},
-        ]
+    def test_accepts_full_length_timeline_inside_target_window(self) -> None:
+        validate_plan_temp(full_length_plan())
 
-        validate_plan_temp(plan)
+    def test_rejects_voice_start_after_200_ms(self) -> None:
+        plan = full_length_plan()
+        plan[0]["start"] = 0.201
 
-    def test_rejects_voice_end_after_11500(self) -> None:
-        plan = [
-            {"id": "01-recipient", "start": 0.0, "end": 2.5},
-            {"id": "02-blessing", "start": 2.7, "end": 5.4},
-            {"id": "03-poem", "start": 6.0, "end": 11.6},
-        ]
+        with self.assertRaisesRegex(ValueError, "voice start"):
+            validate_plan_temp(plan)
+
+    def test_rejects_voice_end_before_14000_ms(self) -> None:
+        plan = full_length_plan()
+        plan[-1]["end"] = 13.999
 
         with self.assertRaisesRegex(ValueError, "voice end"):
             validate_plan_temp(plan)
 
+    def test_accepts_voice_end_after_target_but_before_video_end(self) -> None:
+        plan = full_length_plan()
+        plan[-1]["end"] = 14.9
+
+        validate_plan_temp(plan)
+
+    def test_rejects_voice_end_after_video(self) -> None:
+        plan = full_length_plan()
+        plan[-1]["end"] = 15.001
+
+        with self.assertRaisesRegex(ValueError, "voice end"):
+            validate_plan_temp(plan)
+
+    def test_rejects_gap_over_500_ms(self) -> None:
+        plan = full_length_plan()
+        plan[2]["start"] = 5.901
+
+        with self.assertRaisesRegex(ValueError, "gap"):
+            validate_plan_temp(plan)
+
     def test_rejects_overlapping_subtitles(self) -> None:
-        plan = [
-            {"id": "01-recipient", "start": 0.0, "end": 2.5},
-            {"id": "02-blessing", "start": 2.4, "end": 5.4},
-            {"id": "03-poem", "start": 5.7, "end": 11.0},
-        ]
+        plan = full_length_plan()
+        plan[1]["start"] = 1.4
 
         with self.assertRaisesRegex(ValueError, "overlaps"):
             validate_plan_temp(plan)

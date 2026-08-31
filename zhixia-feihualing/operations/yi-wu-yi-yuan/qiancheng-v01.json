@@ -1,14 +1,15 @@
 {
   "series": "yi-wu-yi-yuan",
   "season": "qiancheng-v01",
-  "duration_ms": 15000,
-  "voice_end_max_ms": 11500,
-  "tail_min_ms": 3000,
-  "max_hanzi": {
-    "recipient": 10,
-    "blessing": 12,
-    "poem": 14,
-    "total": 34
+  "recitation": {
+    "target_hanzi_min": 55,
+    "target_hanzi_max": 60,
+    "voice_start_max_ms": 200,
+    "voice_end_min_ms": 14000,
+    "voice_end_target_max_ms": 14800,
+    "duration_ms": 15000,
+    "max_gap_ms": 500,
+    "speech_rate": 0
   },
   "banned_phrases": [
     "转给某人",
@@ -19,8 +20,10 @@
   "episodes": [
     {
       "episode": "yiwu-yiyuan-qiancheng-01-restart-15s",
+      "production_status": "voice-trial",
       "recipient": "送给重新出发的你",
-      "blessing": "愿你此去有路，所盼有期",
+      "situation": "也许这一程并不轻松，也许前方还有风浪",
+      "blessing": "愿你此去有路，所盼有期；走过的每一步，都算数",
       "poem": "长风破浪会有时，直挂云帆济沧海",
       "attribution": "唐·李白《行路难·其一》",
       "share_scene": "换工作、毕业、重新开始，也可自我收藏",
@@ -28,6 +31,7 @@
     },
     {
       "episode": "yiwu-yiyuan-qiancheng-02-journey-15s",
+      "production_status": "theme-outline",
       "recipient": "送给奔赴远方的你",
       "blessing": "愿你一路有景，前路有友",
       "poem": "莫愁前路无知己，天下谁人不识君",
@@ -37,6 +41,7 @@
     },
     {
       "episode": "yiwu-yiyuan-qiancheng-03-persist-15s",
+      "production_status": "theme-outline",
       "recipient": "送给仍在坚持的你",
       "blessing": "愿你越过此山，得见新路",
       "poem": "山重水复疑无路，柳暗花明又一村",
