@@ -32,6 +32,13 @@ python3 scripts/generate_episode_audio.py --episode ep04
 
 EP01、EP02、EP03 的既有音频、字幕和成片不纳入自动补生成，保持原样。
 
+## 正式封面
+
+- 《雪袖白纻》：`exports/xuexiu-baizhu-dance-cover-v01.png`，1080×1920。
+- 画面取自无字幕高清朗诵版 0.800 秒首个高潮动作。
+- 左侧竖排“栀夏”“雪袖白纻”，并附“唐·李白《白纻辞三首·其三》”题署。
+- 使用本地 FFmpeg 抽帧与 Swift/AppKit 排版制作，未调用图像模型重绘，保留原片 AI 生成标识。
+
 ## 文档导航
 
 - [“一字三诗”单集总览](episodes/README.md)
