@@ -157,7 +157,7 @@ git commit -m "制作莲台天乐视频号文案"
 - Consumes: 已确认的系列格式 `《栀夏·敦煌十六舞》NN｜单集名` 与当前单集编号 `06`。
 - Produces: 使用统一标题的《莲台天乐》发布文案，以及后续新单集可直接继承的发布流程规则。
 
-- [ ] **Step 1: 先修改门禁以表达新标题规则**
+- [x] **Step 1: 先修改门禁以表达新标题规则**
 
 把 `tests/test_liantai_tianyue_wechat_channels_copy.sh` 中原标题断言替换为：
 
@@ -172,13 +172,13 @@ workflow="$project_dir/docs/production-workflow.md"
 rg -Fq '《栀夏·敦煌十六舞》视频号主标题统一使用 `《栀夏·敦煌十六舞》NN｜单集名`' "$workflow"
 ```
 
-- [ ] **Step 2: 运行门禁确认旧标题导致失败**
+- [x] **Step 2: 运行门禁确认旧标题导致失败**
 
 Run: `zsh tests/test_liantai_tianyue_wechat_channels_copy.sh`
 
 Expected: FAIL，因为当前发布文案仍是旧的画面钩子标题，尚未包含 `《栀夏·敦煌十六舞》06｜莲台天乐`。
 
-- [ ] **Step 3: 修改当前文案并记录长期规则**
+- [x] **Step 3: 修改当前文案并记录长期规则**
 
 将 `episodes/liantai-tianyue-15s/wechat-channels-copy.md` 的标题行替换为：
 
@@ -192,13 +192,13 @@ Expected: FAIL，因为当前发布文案仍是旧的画面钩子标题，尚未
 7. 《栀夏·敦煌十六舞》视频号主标题统一使用 `《栀夏·敦煌十六舞》NN｜单集名`：`NN` 使用两位阿拉伯数字，分隔符固定为全角竖线 `｜` 且左右不留空格；动作钩子与诗意句放在正文开头，不替代主标题。本规则从第六支及后续新发布文案开始执行，不追溯批量重写已发布旧稿。
 ```
 
-- [ ] **Step 4: 运行门禁确认新标题与长期规则均通过**
+- [x] **Step 4: 运行门禁确认新标题与长期规则均通过**
 
 Run: `zsh tests/test_liantai_tianyue_wechat_channels_copy.sh`
 
 Expected: PASS，输出 `PASS: Liantai Tianyue WeChat Channels copy is ready`。
 
-- [ ] **Step 5: 复核范围并提交**
+- [x] **Step 5: 复核范围并提交**
 
 Run:
 
