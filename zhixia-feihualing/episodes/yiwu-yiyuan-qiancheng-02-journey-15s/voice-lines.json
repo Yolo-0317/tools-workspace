@@ -1,0 +1,42 @@
+{
+  "episode": "yiwu-yiyuan-qiancheng-02-journey-15s",
+  "format": "one-poem-story",
+  "theme": "一舞一愿前程季奔赴远方",
+  "theme_slug": "yiwu-yiyuan-qiancheng-02-journey-15s",
+  "audio_slug": "yiwu-yiyuan-qiancheng-02-journey-15s-voice-v01",
+  "lines": [
+    {
+      "id": "01-recipient",
+      "role": "zhixia",
+      "text": "送给奔赴远方的你。",
+      "revision": 1,
+      "speech_rate": 0,
+      "gap_before_ms": 0,
+      "context_texts": [
+        "年轻清透、真诚克制，像把一句话递给具体的人；不喊栏目名、不用广告腔，只读给定文本。"
+      ]
+    },
+    {
+      "id": "02-blessing",
+      "role": "zhixia",
+      "text": "愿你一路有景，前路有友。",
+      "revision": 1,
+      "speech_rate": 0,
+      "gap_before_ms": 180,
+      "context_texts": [
+        "保持同一距离与声线，语气温和明亮，句内自然连贯；不说教、不甜腻、不拖尾，只读给定文本。"
+      ]
+    },
+    {
+      "id": "03-poem",
+      "role": "zhixia",
+      "text": "莫愁前路无知己，天下谁人不识君。",
+      "revision": 1,
+      "speech_rate": 0,
+      "gap_before_ms": 400,
+      "context_texts": [
+        "由现代话自然提升为清朗说诗，保持正常语速；不念作者篇名、不吟唱、不用朗诵比赛腔，只读给定原文。"
+      ]
+    }
+  ]
+}
