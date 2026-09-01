@@ -4,13 +4,15 @@ set -euo pipefail
 project_dir="${0:A:h:h}"
 readme="$project_dir/episodes/pipaxing-empty-hand-15s/README.md"
 prompt="$project_dir/episodes/pipaxing-empty-hand-15s/prompts/seedance-v01.md"
+history_file="$project_dir/operations/dance-design-history.csv"
 
 for required in "$readme" "$prompt"; do
   [[ -s "$required" ]] || { print -u2 -r -- "FAIL: missing Pipaxing component $required"; exit 1; }
 done
 
-python3 - "$readme" "$prompt" <<'PY'
+python3 - "$readme" "$prompt" "$history_file" <<'PY'
 from pathlib import Path
+import csv
 import sys
 
 readme = Path(sys.argv[1]).read_text(encoding="utf-8")
@@ -66,6 +68,16 @@ for forbidden in [
     ".png",
 ]:
     assert forbidden not in seedance, f"reference or internal detail leaked: {forbidden}"
+
+with Path(sys.argv[3]).open(encoding="utf-8", newline="") as handle:
+    rows = list(csv.DictReader(handle))
+matches = [row for row in rows if row["episode"] == "pipaxing-empty-hand-15s"]
+assert len(matches) == 1, "dance history must contain one Pipaxing entry"
+row = matches[0]
+assert row["status"] == "designed", "Pipaxing status must be designed"
+assert row["peak_sequence"] == "纵向惊弦；横向回澜；斜向裂帛"
+assert row["peak_directions"] == "纵向；横向；斜向纵深"
+assert row["carrier"] == "蓝橙双层飘带与真实长影"
 
 print("PASS: Pipaxing prompt package is complete")
 PY
