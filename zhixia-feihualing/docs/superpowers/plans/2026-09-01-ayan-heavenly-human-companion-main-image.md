@@ -2,79 +2,71 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Generate one 9:16 full-body main image of Ayan’s adult heavenly-palace human form for later dual-female Latin dance videos.
+**Goal:** Produce one 9:16 Ayan main-image candidate whose only change from the approved v04b composition is a pair of Zhixia-matching closed-toe high heels with Ayan’s ivory, pale-gold, and smoke-ink color language.
 
-**Architecture:** Use only the approved Ayan masterboard as the image reference; describe the heavenly palace, adult human face, materials, costume, broad ink-tip ribbons, and cloud-toe dance shoes entirely in text so Zhixia cannot contaminate Ayan’s identity. Generate a new v04 project-bound working image from scratch with natural dawn cinematic live-action texture, compare it against rejected v03 for ribbon width, garment ink distribution, footwear, and material realism, and preserve it non-destructively for user review before any character-card work.
+**Architecture:** Use v04b as the sole edit target and the confirmed Zhixia Heavenly Palace character card only as a footwear-shape reference. Perform one precise two-shoe edit, lock every non-footwear invariant, save the result as v04c without overwriting earlier candidates, and inspect shoe silhouette, color treatment, anatomy, and identity preservation before user review.
 
-**Tech Stack:** Codex built-in image generation, local image inspection, PNG metadata verification.
+**Tech Stack:** Codex built-in image editing, local image inspection, PNG metadata verification.
 
 ## Global Constraints
 
-- Ayan is an adult woman around age 18 and 162cm tall; no childlike or chibi proportions.
-- Ayan has a short round oval face, soft cheeks, slightly wide-set warm-amber almond eyes with gently lifted outer corners, short straight brows, a small natural nose bridge, slightly fuller lips, and shoulder-length layered ink-black hair with pale-ink tips.
-- Preserve brush-tip cat ears, exactly one open S-shaped ink tail, warm amber eyes, central cinnabar forehead mark, paper-white/ink/gold motifs.
-- Costume uses an ivory shallow sweetheart strapless bodice, restrained pale ink at both side waists, a diagonal smoke-ink gradient covering about one third of the skirt, and exactly two broad upper-arm ink-tip ribbons with the same width as Zhixia’s ribbons; no deep V, exaggerated cleavage, or duplicated Zhixia costume.
-- Footwear is a closed-toe ivory cloud-toe dance shoe with a subtle upturned toe, pale-gold crossed ankle ties, matte woven satin, pale ink dry-brush and warm-gold spiral-cloud details, and an approximately 3.5cm concealed low curved heel; no modern strappy Latin sandal, exposed toe, metal buckle, patent leather, stiletto, thick platform, or exaggerated opera shoe.
-- Skin must be naturally matte with restrained pores, fine facial hair, and slight color variation; hair, satin, and chiffon must show dry physical texture without beauty-filter glow, plastic shine, or game-render polish.
-- Full body, both hands, both shoes, both ears, and the full tail must be visible in a 9:16 composition.
-- No text, card layout, border, watermark, other character, animal, prop, weapon, extra limb, extra ear, or extra tail.
+- Preserve v04b’s exact Ayan face, short layered hair, brush-tip ears, cinnabar mark, body proportions, pose, hands, single ink tail, costume, broad ink-tip ribbons, heavenly-palace background, lighting, and framing.
+- Both shoes use Zhixia’s moon-white closed-toe tango-shoe silhouette, stable enclosed heel cups, simple crossed instep straps, and approximately 5.5cm flared heels.
+- Ayan’s version uses matte ivory satin, pale warm-gold spiral-cloud patterns at the toe and sides, a restrained smoke-ink gradient from heel toward the sides, and smoke-ink heels edged by one fine pale-gold line.
+- Do not copy Zhixia’s face, body, hair, crown, costume, pose, card layout, or text; Image 2 controls footwear silhouette only.
+- No exposed toes, flat shoes, cloud-toe shoes, concealed low curved heels, stilettos, platforms, metal buckles, patent leather, all-black uppers, mismatched shoes, floating feet, or distorted ankles.
+- Save non-destructively as `assets/characters/work/阿砚天宫限定人形小女伴主图-v04c-栀夏同款高跟鞋.png`.
 
 ---
 
-### Task 1: Generate and inspect the working main image
+### Task 1: Edit and inspect Ayan’s footwear
 
 **Files:**
-- Reference: `zhixia-feihualing/assets/characters/阿砚角色母板高写实CG-v01-最终版-Seedance上传版.jpg`
-- Rejected comparison only, never an image-generation input: `zhixia-feihualing/assets/characters/work/阿砚天宫限定人形小女伴主图-v01.png`
-- Rejected material comparison only, never an image-generation input: `zhixia-feihualing/assets/characters/work/阿砚天宫限定人形小女伴主图-v02.png`
-- Rejected width, ink-distribution, and footwear comparison only, never an image-generation input: `zhixia-feihualing/assets/characters/work/阿砚天宫限定人形小女伴主图-v03.png`
-- Create: `zhixia-feihualing/assets/characters/work/阿砚天宫限定人形小女伴主图-v04.png`
+- Edit target: `zhixia-feihualing/assets/characters/work/阿砚天宫限定人形小女伴主图-v04b-云头舞履.png`
+- Footwear-shape reference: `/var/folders/k9/byvrwvls2y384yw4hq3gpqkm0000gn/T/codex-clipboard-2189f009-531a-4199-8bac-abb4ea51cfb1.jpg`
+- Supporting written reference: `zhixia-feihualing/assets/characters/栀夏天宫探戈角色母板-v01-Seedance固定说明.md`
+- Create: `zhixia-feihualing/assets/characters/work/阿砚天宫限定人形小女伴主图-v04c-栀夏同款高跟鞋.png`
 
 **Interfaces:**
-- Consumes: one local Ayan identity reference plus the approved written design.
+- Consumes: one Ayan edit target, one Zhixia card restricted to shoe silhouette, and the confirmed design spec.
 - Produces: one PNG candidate for user visual approval; it is not yet a formal character masterboard.
 
-- [ ] **Step 1: Inspect the sole identity reference**
+- [ ] **Step 1: Inspect the edit target and footwear reference**
 
-Open the Ayan masterboard and confirm the brush-tip ears, single ink tail, amber eyes, cinnabar mark, paper-white body, pale ink texture, and warm-gold spiral cloud motif. Do not provide any Zhixia, v01, v02, or v03 image to the generator. Open rejected v03 only after v04 generation for a visual comparison of ribbon width, garment ink distribution, footwear, and material realism.
+Open v04b and confirm the exact non-footwear invariants to preserve. Open the Zhixia card and inspect only the front and side shoe modules: closed moon-white toe, pale-gold edging, enclosed heel cup, simple crossed instep straps, and approximately 5.5cm pale-gold flared heel. Do not use any Zhixia face, body, hair, crown, clothing, or layout feature as an edit reference.
 
-- [ ] **Step 2: Generate one main-image candidate**
+- [ ] **Step 2: Perform one precise footwear edit**
 
-Use the built-in image generator with the Ayan masterboard as the only image reference and this production prompt:
+Use the built-in image editor with v04b as Image 1 and the Zhixia card as Image 2:
 
 ```text
-Use case: identity-preserve
+Use case: precise-object-edit
 Asset type: 9:16 full-body character main image for a Chinese fantasy dance-video project
-Input image: Image 1 is the only image reference and is the authoritative identity and markings source for Ayan. No Zhixia image is provided. Build the adult human face, heavenly-palace atmosphere, fabric quality, and Latin-dance styling from the written description only.
 
-Primary request: Transform Ayan from Image 1 into her temporary adult human form used only in the heavenly-palace series. She is an East Asian adult woman around age 18, 162cm tall, petite and light with natural adult proportions and narrow shoulders. Preserve Ayan’s calm, bright, agile personality and give her a genuinely independent human identity.
+Input-image roles:
+Image 1 is the edit target and the sole authority for Ayan’s identity, face, body, hair, ears, forehead mark, tail, pose, hands, costume, ribbons, scene, lighting, framing, and every non-footwear detail.
+Image 2 is only a footwear-shape reference. Read only Zhixia’s moon-white closed-toe tango shoes: rounded closed toe, elegant low-cut instep opening, stable enclosed heel cup, simple crossed instep straps, and approximately 5.5cm flared heel. Ignore and never copy Image 2’s face, body, hair, crown, clothing, card layout, text, or background.
 
-Identity invariants: exactly two upward-outward brush-tip cat ears integrated naturally with the hair; exactly one open S-shaped ink tail growing clearly from the tailbone, never forked or detached; bright warm amber eyes; one small fixed cinnabar-red mark centered on the forehead; paper-white, pale ink dry-brush, and pale warm-gold spiral-cloud visual language. No ordinary round cosplay ears, no human-ear emphasis, no second tail.
+Primary request: change only both shoes and their immediate floor-contact shadows in Image 1. Replace the current shoes with the same elegant closed-toe high-heel silhouette and the same heel height as Zhixia’s shoes in Image 2. Preserve realistic foot anatomy, ankle alignment, grounded outsoles, and the original leg pose.
 
-Hair and face: short round oval adult East Asian face with soft cheeks; slightly wide-set warm-amber almond eyes with gently lifted outer corners; short straight brows; a small natural nose bridge; slightly fuller lips; innocent, friendly, lively expression without childish anatomy. Deep ink-black shoulder-length layered hair with subtle pale-ink gradient tips, only a tiny pale-gold cloud-pattern side hairpin and one small cinnabar accent. No long straight half-down hair, high bun, crown, narrow elongated face, narrow-set eyes, or facial resemblance to Zhixia.
+Ayan color treatment: matte ivory woven-satin upper; restrained pale warm-gold spiral-cloud patterns across the toe box and outer side; a controlled smoke-ink gradient beginning at the enclosed heel cup and fading forward along the outer side; smoke-ink flared heel with one fine pale-gold edge. Keep most of each upper ivory so the shoe remains light and elegant. Both shoes must match exactly in silhouette, pattern language, heel height, and color placement.
 
-Costume: elegant ivory-white adult Latin dance costume. A secure shallow sweetheart strapless bodice fully covers and supports the chest, with restrained pale-ink dry-brush edging, no deep V and no exaggerated cleavage. Keep the center front of the bodice bright ivory and place restrained pale-ink washes only on both side-waist areas. An asymmetric fitted dance skirt opens from the waist, longest point at mid-calf and shorter side still covering the upper thigh. Create one diagonal ink gradient from one side waist toward the opposite skirt hem, with about one third of the skirt in smoke-ink gray; place one restrained pale warm-gold spiral-cloud motif along the boundary between white and ink. Exactly two broad ink-tip cloud ribbons, one fixed to the back-outer side of each upper arm; both have the same generous width as Zhixia’s broad celestial ribbons, beginning fully broad at the upper arm and tapering only near the dense ink brush-tip ends. Each ribbon transitions from translucent paper-white chiffon through smoke-ink gray to a clearly dark ink brush-tip, with one fine pale-gold edge, ending at the lower-mid calf without touching the floor. Keep both ribbons separate from the body, skirt, legs, and tail. Keep the dark tail distinct from all garment ink.
+Hard invariants: preserve Image 1’s exact Ayan face and expression, short layered hair, exactly two brush-tip ears, cinnabar forehead mark, body proportions, pose, both hands, exactly one connected ink tail, shallow sweetheart bodice, diagonal smoke-ink skirt, exactly two broad ink-tip ribbons, heavenly-palace architecture, cloud sea, lighting, composition, and 9:16 framing. Do not change any garment edge or leg anatomy.
 
-Footwear: ivory closed-toe celestial cloud-toe dance shoes, with only a subtle upward curve at the toe and no exaggerated opera silhouette. Matte woven satin with pale-ink dry-brush marks and restrained pale warm-gold spiral-cloud embroidery. Keep the instep moderately open for a long dance leg line and secure each ankle with pale-gold crossed ties. Use an approximately 3.5cm concealed low curved heel that supports cha-cha weight changes and forefoot pressure. The shoes must read as celestial dance footwear, never as modern strappy Latin sandals.
-
-Pose and composition: single character, full body in a vertical 9:16 frame; front view turned slightly three-quarter, natural weight on one foot and the other toe lightly touching as a cha-cha preparation pose; one hand naturally open and the other held near but outside the waist. Show the entire head, both brush-tip ears, both hands, both shoes, and the full single tail. Keep the two ribbons visually separated from arms, torso, skirt, legs, and tail.
-
-Scene and style: warm-gold dawn heavenly palace, luminous cloud sea and pale jade steps, simple depth without distracting figures. Natural-light live-action period-film photography, not game illustration or glossy CG. Side-front morning light illuminates the face neutrally while warm gold remains mainly in the background and rim light. Naturally matte adult skin with restrained visible pores, fine facial hair, and slight skin-tone variation; small realistic catchlights and natural eyeball structure; individual hair strands and flyaways without oily clumps; matte woven silk-satin bodice and dry lightweight translucent chiffon. Subtle film grain and realistic lens depth of field. No beauty filter, creamy skin, porcelain skin, water-glow makeup, excessive HDR, global bloom, plastic fabric, liquid chiffon, or oily highlights.
-
-Avoid: child, minor, chibi, doll face, sexualized juvenile, exaggerated bust, deep neckline, Zhixia face, Zhixia crown, copied Zhixia dress, narrow ribbons, pure-white ribbon tips, garment ink covering the center chest, garment ink fused with the tail, modern strappy Latin sandals, exposed toes, metal shoe buckles, patent leather, stilettos, thick platforms, exaggerated opera shoes, extra person, animal, text, character-sheet layout, watermark, border, weapon, prop, collar, bell, paws, cat nose, whiskers, body fur, extra fingers, fused hands, extra limbs, missing limbs, extra ears, round ears, extra tail, split tail, looped tail, detached tail, ribbons fused into the body or legs.
+Avoid: exposed toes, sandals, flat shoes, cloud-toe shoes, concealed low curved heels, stilettos, platforms, metal buckles, patent leather, all-black shoes, complicated ankle wraps, mismatched left and right shoes, floating soles, warped feet, twisted ankles, changed pose, changed identity, Zhixia face, Zhixia costume, extra limbs, text, card layout, watermark.
 ```
 
-- [ ] **Step 3: Persist the generated candidate in the workspace**
+- [ ] **Step 3: Save non-destructively and verify metadata**
 
-Copy the selected built-in output to `zhixia-feihualing/assets/characters/work/阿砚天宫限定人形小女伴主图-v04.png` without overwriting v01, v02, or v03.
+Copy the selected built-in output to `zhixia-feihualing/assets/characters/work/阿砚天宫限定人形小女伴主图-v04c-栀夏同款高跟鞋.png` without overwriting v04 or v04b. Verify that it is a readable portrait PNG and record its pixel dimensions and SHA-256 hash.
 
-- [ ] **Step 4: Verify image metadata and perform visual QA**
+- [ ] **Step 4: Perform visual QA**
 
-Verify the saved file is a readable portrait PNG. Inspect it at full resolution and confirm the adult proportions, short round face, wide-set amber almond eyes, shoulder-length layered hair, exactly two brush-tip ears, one connected S-shaped tail, cinnabar mark, shallow sweetheart bodice, pale-ink side waists, diagonal smoke-ink covering about one third of the skirt, exactly two broad tapering ink-tip ribbons with the same visual width as Zhixia’s, complete hands, and closed cloud-toe dance shoes with crossed ankle ties and a concealed low heel. Confirm the chest center stays ivory, the tail stays separate from garment ink, and there is no text or other figure. Compare v04 with rejected v03 and reject v04 if the ribbons are still narrow, the clothing lacks smoke-ink weight, shoes read as modern sandals, skin looks oily or overly smooth, hair forms glossy blocks, fabric looks plastic, facial highlights bloom, or the image reads as game illustration rather than live-action film. If a structural invariant fails, run one targeted image-edit iteration changing only the failed item and re-inspect.
+Inspect v04c at full resolution. Confirm both shoes have the same Zhixia-style closed-toe silhouette and approximately 5.5cm flared heel; ivory uppers remain dominant; pale-gold cloud patterns, side smoke-ink gradients, and smoke-ink heels are visible; both feet contact the floor naturally. Compare v04c with v04b and reject it if any non-footwear feature drifts, if the shoes remain cloud-toe or low-heeled, or if the pair differs in shape or color.
 
-- [ ] **Step 5: Commit the approved working candidate only after visual inspection**
+- [ ] **Step 5: Commit only after user approval**
 
 ```bash
-git add -f zhixia-feihualing/assets/characters/work/阿砚天宫限定人形小女伴主图-v04.png
-git commit -m "生成阿砚天宫限定人形主图"
+git add -f zhixia-feihualing/assets/characters/work/阿砚天宫限定人形小女伴主图-v04c-栀夏同款高跟鞋.png
+git commit -m "生成阿砚天宫同款高跟鞋主图"
 ```
