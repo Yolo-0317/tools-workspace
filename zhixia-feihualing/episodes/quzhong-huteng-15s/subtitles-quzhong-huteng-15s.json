@@ -1,0 +1,30 @@
+[
+  {
+    "id": "01-modern-farewell",
+    "text": "有些告别，不必说出口。",
+    "start": 0.2,
+    "end": 2.0,
+    "highlight": "曲终胡腾十五秒现代映射与唐诗朗诵"
+  },
+  {
+    "id": "02-modern-departure",
+    "text": "把最后一步跳完，就该继续上路。",
+    "start": 3.3,
+    "end": 5.865,
+    "highlight": "曲终胡腾十五秒现代映射与唐诗朗诵"
+  },
+  {
+    "id": "03-classic-ending",
+    "text": "丝桐忽奏一曲终，",
+    "start": 7.3,
+    "end": 9.375,
+    "highlight": "曲终胡腾十五秒现代映射与唐诗朗诵"
+  },
+  {
+    "id": "04-classic-horn",
+    "text": "呜呜画角城头发。",
+    "start": 11.6,
+    "end": 13.195,
+    "highlight": "曲终胡腾十五秒现代映射与唐诗朗诵"
+  }
+]
