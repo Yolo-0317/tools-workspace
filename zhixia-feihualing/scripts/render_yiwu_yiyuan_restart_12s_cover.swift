@@ -5,11 +5,12 @@ import CoreText
 import Foundation
 
 enum CoverError: Error, CustomStringConvertible {
-    case usage, invalidImage, unavailableFont, bitmapCreation, pngEncoding
+    case usage, invalidZoom, invalidImage, unavailableFont, bitmapCreation, pngEncoding
 
     var description: String {
         switch self {
-        case .usage: return "usage: render_yiwu_yiyuan_restart_12s_cover.swift <base.png> <output.png>"
+        case .usage: return "usage: render_yiwu_yiyuan_restart_12s_cover.swift <base.png> <output.png> [zoom]"
+        case .invalidZoom: return "zoom must be greater than 1"
         case .invalidImage: return "unable to load 一舞一愿 restart cover base image"
         case .unavailableFont: return "required Chinese fonts are unavailable"
         case .bitmapCreation: return "unable to create cover bitmap"
@@ -20,7 +21,7 @@ enum CoverError: Error, CustomStringConvertible {
 
 let width: CGFloat = 1080
 let height: CGFloat = 1920
-let subjectZoom: CGFloat = 1.15
+let defaultSubjectZoom: CGFloat = 1.15
 let warmGold = NSColor(calibratedRed: 0.98, green: 0.91, blue: 0.70, alpha: 1)
 let quietGold = NSColor(calibratedRed: 0.94, green: 0.87, blue: 0.70, alpha: 0.98)
 
@@ -52,9 +53,18 @@ func drawCentered(_ text: String, top: CGFloat, font: NSFont, color: NSColor, tr
 }
 
 do {
-    guard CommandLine.arguments.count == 3 else { throw CoverError.usage }
+    guard CommandLine.arguments.count == 3 || CommandLine.arguments.count == 4 else { throw CoverError.usage }
     let baseURL = URL(fileURLWithPath: CommandLine.arguments[1])
     let outputURL = URL(fileURLWithPath: CommandLine.arguments[2])
+    let subjectZoom: CGFloat
+    if CommandLine.arguments.count == 4 {
+        guard let parsedZoom = Double(CommandLine.arguments[3]), parsedZoom > 1 else {
+            throw CoverError.invalidZoom
+        }
+        subjectZoom = CGFloat(parsedZoom)
+    } else {
+        subjectZoom = defaultSubjectZoom
+    }
     guard let base = NSImage(contentsOf: baseURL) else { throw CoverError.invalidImage }
 
     let xingkaiURL = URL(fileURLWithPath: "/System/Library/AssetsV2/com_apple_MobileAsset_Font7/aa99d0b2bad7f797f38b49d46cde28fd4b58876e.asset/AssetData/Xingkai.ttc")
