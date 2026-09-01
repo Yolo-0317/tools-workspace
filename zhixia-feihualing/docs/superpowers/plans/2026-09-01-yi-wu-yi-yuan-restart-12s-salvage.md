@@ -81,10 +81,10 @@
   python3 scripts/generate_episode_audio.py \
     --episode yiwu-yiyuan-qiancheng-01-restart-15s \
     --manifest episodes/yiwu-yiyuan-qiancheng-01-restart-15s/voice-lines-12s-v01.json \
-    --confirm
+    --generate
   ```
 
-  Expected: 三句均生成成功，字幕草稿自动写入 episode 目录。
+  按脚本提示输入 `GENERATE yiwu-yiyuan-qiancheng-01-restart-15s`。Expected: 三句均生成成功，字幕草稿自动写入 episode 目录。
 
 - [ ] **Step 2: 探测并记录每句有效语音时长**
 
