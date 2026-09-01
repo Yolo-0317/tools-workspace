@@ -41,16 +41,16 @@ func textAttributes(font: NSFont, color: NSColor, tracking: CGFloat, blur: CGFlo
     ]
 }
 
-func drawCentered(_ text: String, top: CGFloat, font: NSFont, color: NSColor, tracking: CGFloat, blur: CGFloat) {
+func drawLabel(_ text: String, left: CGFloat, top: CGFloat, width: CGFloat, font: NSFont, color: NSColor, tracking: CGFloat, blur: CGFloat) {
     let attributed = NSAttributedString(
         string: text,
         attributes: textAttributes(font: font, color: color, tracking: tracking, blur: blur)
     )
     let measuredHeight = attributed.size().height + 18
-    attributed.draw(in: NSRect(x: 70, y: canvasHeight - top - measuredHeight, width: canvasWidth - 140, height: measuredHeight))
+    attributed.draw(in: NSRect(x: left, y: canvasHeight - top - measuredHeight, width: width, height: measuredHeight))
 }
 
-func drawVerticalTitle(_ text: String, left: CGFloat, top: CGFloat, font: NSFont) {
+func drawVerticalTitle(_ text: String, left: CGFloat, top: CGFloat, columnWidth: CGFloat, step: CGFloat, font: NSFont) {
     var currentTop = top
     for character in text {
         let glyph = NSAttributedString(
@@ -61,10 +61,10 @@ func drawVerticalTitle(_ text: String, left: CGFloat, top: CGFloat, font: NSFont
         glyph.draw(in: NSRect(
             x: left,
             y: canvasHeight - currentTop - size.height,
-            width: 220,
+            width: columnWidth,
             height: size.height + 10
         ))
-        currentTop += 174
+        currentTop += step
     }
 }
 
@@ -79,8 +79,8 @@ do {
     CTFontManagerRegisterFontsForURL(xingkaiURL as CFURL, .process, nil)
     CTFontManagerRegisterFontsForURL(kaitiURL as CFURL, .process, nil)
 
-    guard let titleFont = NSFont(name: "STXingkaiSC-Bold", size: 176),
-          let seriesFont = NSFont(name: "STKaitiSC-Regular", size: 42) else {
+    guard let titleFont = NSFont(name: "STXingkaiSC-Bold", size: 106),
+          let seriesFont = NSFont(name: "STKaitiSC-Regular", size: 32) else {
         throw CoverError.unavailableFont
     }
 
@@ -113,8 +113,8 @@ do {
     )
     reference.draw(in: drawRect, from: .zero, operation: .copy, fraction: 1)
 
-    drawCentered("栀夏｜一舞一愿", top: 82, font: seriesFont, color: quietGold, tracking: 9, blur: 9)
-    drawVerticalTitle("欢喜", left: 54, top: 252, font: titleFont)
+    drawLabel("一舞一愿", left: 34, top: 1050, width: 236, font: seriesFont, color: quietGold, tracking: 7, blur: 8)
+    drawVerticalTitle("步步生风", left: 54, top: 1120, columnWidth: 150, step: 112, font: titleFont)
 
     NSGraphicsContext.restoreGraphicsState()
 

@@ -25,7 +25,10 @@ dimensions="$(ffprobe -v error -select_streams v:0 -show_entries stream=width,he
 codec="$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=nw=1:nk=1 "$output")"
 [[ "$codec" == "png" ]] || fail "unexpected codec: $codec"
 
-rg -q '欢喜' "$renderer" || fail "missing exact main title"
-rg -q '栀夏｜一舞一愿' "$renderer" || fail "missing exact series label"
+rg -q '步步生风' "$renderer" || fail "missing revised main title"
+rg -q '一舞一愿' "$renderer" || fail "missing revised series label"
+if rg -q 'drawVerticalTitle\("欢喜"' "$renderer"; then
+  fail "rejected old main title remains"
+fi
 
 print -r -- "PASS: heavenly cha-cha 1080x1920 cover is ready"
