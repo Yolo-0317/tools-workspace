@@ -59,15 +59,32 @@ def validate_season(path: Path) -> None:
 
     recitation = data.get("recitation")
     expected_recitation = {
-        "target_hanzi_min": 55,
-        "target_hanzi_max": 60,
+        "target_hanzi_min": 50,
+        "target_hanzi_max": 53,
         "voice_start_max_ms": 200,
         "voice_end_min_ms": 14000,
         "voice_end_target_max_ms": 14800,
         "duration_ms": 15000,
-        "max_gap_ms": 500,
+        "max_gap_ms": 900,
+        "target_gaps_ms": [650, 750, 850],
         "speech_rate": 0,
     }
+    if isinstance(recitation, dict):
+        target_gaps = recitation.get("target_gaps_ms")
+        max_gap_ms = recitation.get("max_gap_ms")
+        if (
+            not isinstance(target_gaps, list)
+            or len(target_gaps) != 3
+            or any(
+                isinstance(gap, bool)
+                or not isinstance(gap, int)
+                or gap <= 0
+                or not isinstance(max_gap_ms, int)
+                or gap > max_gap_ms
+                for gap in target_gaps
+            )
+        ):
+            raise ValueError("target_gaps_ms must contain 3 positive gaps within max_gap_ms")
     if recitation != expected_recitation:
         raise ValueError(f"recitation must be {expected_recitation}")
 
@@ -208,7 +225,7 @@ def main() -> int:
             total = sum(count_hanzi(episode[field]) for field in fields)
             print(f"{episode['episode']}: {status}: {total} Hanzi")
     else:
-        validate_subtitle_plan(args.subtitle_plan, 15000, 200, 14000, 14800, 500)
+        validate_subtitle_plan(args.subtitle_plan, 15000, 200, 14000, 14800, 900)
         items = _read_json(args.subtitle_plan)
         voice_end_ms = round(float(items[-1]["end"]) * 1000)
         if voice_end_ms > 14800:

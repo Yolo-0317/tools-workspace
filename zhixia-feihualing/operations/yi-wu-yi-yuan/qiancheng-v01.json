@@ -2,13 +2,14 @@
   "series": "yi-wu-yi-yuan",
   "season": "qiancheng-v01",
   "recitation": {
-    "target_hanzi_min": 55,
-    "target_hanzi_max": 60,
+    "target_hanzi_min": 50,
+    "target_hanzi_max": 53,
     "voice_start_max_ms": 200,
     "voice_end_min_ms": 14000,
     "voice_end_target_max_ms": 14800,
     "duration_ms": 15000,
-    "max_gap_ms": 500,
+    "max_gap_ms": 900,
+    "target_gaps_ms": [650, 750, 850],
     "speech_rate": 0
   },
   "banned_phrases": [
@@ -22,8 +23,8 @@
       "episode": "yiwu-yiyuan-qiancheng-01-restart-15s",
       "production_status": "voice-trial",
       "recipient": "送给重新出发的你",
-      "situation": "也许这一程并不轻松，也许前方还有风浪",
-      "blessing": "愿你此去有路，所盼有期；走过的每一步，都算数",
+      "situation": "这一程或许不轻松，前方也会有风浪",
+      "blessing": "愿你所盼有期，走过的每一步都算数",
       "poem": "长风破浪会有时，直挂云帆济沧海",
       "attribution": "唐·李白《行路难·其一》",
       "share_scene": "换工作、毕业、重新开始，也可自我收藏",

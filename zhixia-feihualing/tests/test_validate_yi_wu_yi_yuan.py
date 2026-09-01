@@ -32,17 +32,17 @@ def validate_plan_temp(plan: list[dict[str, object]]) -> None:
         path = Path(directory) / "subtitle-plan.json"
         path.write_text(json.dumps(plan, ensure_ascii=False), encoding="utf-8")
         try:
-            module.validate_subtitle_plan(path, 15000, 200, 14000, 14800, 500)
+            module.validate_subtitle_plan(path, 15000, 200, 14000, 14800, 900)
         except TypeError as exc:
             raise AssertionError("full-length subtitle interface is missing") from exc
 
 
 def full_length_plan() -> list[dict[str, object]]:
     return [
-        {"id": "01-recipient", "start": 0.0, "end": 1.5},
-        {"id": "02-situation", "start": 1.68, "end": 5.4},
-        {"id": "03-blessing", "start": 5.64, "end": 10.1},
-        {"id": "04-poem", "start": 10.45, "end": 14.6},
+        {"id": "01-recipient", "start": 0.0, "end": 1.25},
+        {"id": "02-situation", "start": 1.9, "end": 5.2},
+        {"id": "03-blessing", "start": 5.95, "end": 9.4},
+        {"id": "04-poem", "start": 10.25, "end": 14.4},
     ]
 
 
@@ -58,13 +58,14 @@ class YiWuYiYuanValidationTests(unittest.TestCase):
         self.assertEqual(
             data.get("recitation"),
             {
-                "target_hanzi_min": 55,
-                "target_hanzi_max": 60,
+                "target_hanzi_min": 50,
+                "target_hanzi_max": 53,
                 "voice_start_max_ms": 200,
                 "voice_end_min_ms": 14000,
                 "voice_end_target_max_ms": 14800,
                 "duration_ms": 15000,
-                "max_gap_ms": 500,
+                "max_gap_ms": 900,
+                "target_gaps_ms": [650, 750, 850],
                 "speech_rate": 0,
             },
         )
@@ -82,28 +83,42 @@ class YiWuYiYuanValidationTests(unittest.TestCase):
             [entry["recipient"], entry["situation"], entry["blessing"], entry["poem"]],
             [
                 "送给重新出发的你",
-                "也许这一程并不轻松，也许前方还有风浪",
-                "愿你此去有路，所盼有期；走过的每一步，都算数",
+                "这一程或许不轻松，前方也会有风浪",
+                "愿你所盼有期，走过的每一步都算数",
                 "长风破浪会有时，直挂云帆济沧海",
             ],
         )
         self.assertEqual(
-            sum(
+            [
                 module.count_hanzi(entry[field])
                 for field in ("recipient", "situation", "blessing", "poem")
-            ),
-            58,
+            ],
+            [8, 15, 15, 14],
         )
         self.assertEqual(
             [item.get("production_status") for item in data["episodes"][1:]],
             ["theme-outline", "theme-outline"],
         )
 
-    def test_rejects_voice_trial_shorter_than_55_hanzi(self) -> None:
+    def test_rejects_voice_trial_shorter_than_50_hanzi(self) -> None:
         data = valid_season()
-        data["episodes"][0]["situation"] = "前路有风浪"
+        data["episodes"][0]["blessing"] = "愿你所盼有期走过每步算数"
 
-        with self.assertRaisesRegex(ValueError, "voice-trial.*55"):
+        with self.assertRaisesRegex(ValueError, "voice-trial.*50"):
+            validate_temp(data)
+
+    def test_rejects_voice_trial_longer_than_53_hanzi(self) -> None:
+        data = valid_season()
+        data["episodes"][0]["blessing"] = "愿你所盼有期走过的每一步也全都算数"
+
+        with self.assertRaisesRegex(ValueError, "voice-trial.*53"):
+            validate_temp(data)
+
+    def test_rejects_target_gap_over_maximum(self) -> None:
+        data = valid_season()
+        data["recitation"]["target_gaps_ms"] = [650, 750, 901]
+
+        with self.assertRaisesRegex(ValueError, "target_gaps_ms"):
             validate_temp(data)
 
     def test_rejects_overlong_recipient(self) -> None:
@@ -164,16 +179,16 @@ class YiWuYiYuanValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "voice end"):
             validate_plan_temp(plan)
 
-    def test_rejects_gap_over_500_ms(self) -> None:
+    def test_rejects_gap_over_900_ms(self) -> None:
         plan = full_length_plan()
-        plan[2]["start"] = 5.901
+        plan[2]["start"] = 6.101
 
         with self.assertRaisesRegex(ValueError, "gap"):
             validate_plan_temp(plan)
 
     def test_rejects_overlapping_subtitles(self) -> None:
         plan = full_length_plan()
-        plan[1]["start"] = 1.4
+        plan[1]["start"] = 1.2
 
         with self.assertRaisesRegex(ValueError, "overlaps"):
             validate_plan_temp(plan)
