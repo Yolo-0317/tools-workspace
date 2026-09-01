@@ -1,0 +1,42 @@
+{
+  "episode": "yiwu-yiyuan-qiancheng-01-restart-15s",
+  "format": "one-poem-story",
+  "theme": "一舞一愿前程季重新出发十二秒挽救版",
+  "theme_slug": "yiwu-yiyuan-qiancheng-01-restart-12s",
+  "audio_slug": "yiwu-yiyuan-qiancheng-01-restart-12s-voice-v01",
+  "lines": [
+    {
+      "id": "01-restart",
+      "role": "zhixia",
+      "text": "重新出发，或许并不轻松。",
+      "revision": 1,
+      "speech_rate": 0,
+      "gap_before_ms": 0,
+      "context_texts": [
+        "保持栀夏年轻清透的同一声线和近距离表达。第一字自然开口，像理解一个正在重新开始的人，平静、真诚，带一点体谅但不悲情。‘重新出发’清楚而不刻意重压，逗号处自然呼吸；‘或许并不轻松’读出理解，句号完整落下。不热场、不说教、不喊口号，只读给定文本。"
+      ]
+    },
+    {
+      "id": "02-blessing",
+      "role": "zhixia",
+      "text": "愿你所盼有期，每一步都算数。",
+      "revision": 1,
+      "speech_rate": 0,
+      "gap_before_ms": 600,
+      "context_texts": [
+        "延续上一句的人物、距离和自然语速，温柔中加入确定感。‘愿你所盼有期’读出真诚希望，逗号处保留清楚呼吸；‘每一步都算数’读出认可与力量，完整收住，不逐字用力、不甜腻、不使用广告祝福腔，只读给定文本。"
+      ]
+    },
+    {
+      "id": "03-poem",
+      "role": "zhixia",
+      "text": "长风破浪会有时，直挂云帆济沧海。",
+      "revision": 1,
+      "speech_rate": 0,
+      "gap_before_ms": 800,
+      "context_texts": [
+        "从现代祝愿自然抬升为清朗说诗，情绪打开、明亮坚定，但音量和语速仍然从容。‘长风破浪会有时’读出相信与展开，逗号清楚并自然停连；‘直挂云帆济沧海’坚定完整收束。不吟唱、不拖腔、不喊、不使用朗诵比赛腔，只读给定原文。"
+      ]
+    }
+  ]
+}
