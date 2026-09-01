@@ -56,5 +56,14 @@
     "channels": 1,
     "final_poem_tail_preserved": true
   },
+  "exact_15s_preview": {
+    "filename": "full-recitation-preview-v02-15s.wav",
+    "sha256": "6c1244b62b101c1c28e3dfa9cfa2e0f261d1c605a062a36fd2d1b6bfd2298547",
+    "duration_ms": 15000,
+    "sample_rate_hz": 48000,
+    "channels": 1,
+    "padding_after_natural_tail_ms": 231,
+    "time_stretching": false
+  },
   "automatic_gate": "pass"
 }
