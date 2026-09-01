@@ -36,7 +36,7 @@ class YiWuYiYuanQianchengConfigTests(unittest.TestCase):
         self.assertEqual(raw["format"], "one-poem-story")
         self.assertEqual(raw["theme"], "一舞一愿前程季重新出发全程朗诵")
         self.assertEqual(raw["theme_slug"], RESTART)
-        self.assertEqual(raw["audio_slug"], f"{RESTART}-voice-v02")
+        self.assertEqual(raw["audio_slug"], f"{RESTART}-voice-v03")
         self.assertEqual(
             [line["id"] for line in raw["lines"]],
             ["01-recipient", "02-situation", "03-blessing", "04-poem"],
@@ -49,9 +49,9 @@ class YiWuYiYuanQianchengConfigTests(unittest.TestCase):
         self.assertEqual({line.speech_rate for line in manifest.lines}, {0})
         self.assertEqual(
             [line.gap_before_ms for line in manifest.lines],
-            [0, 180, 240, 350],
+            [0, 650, 750, 850],
         )
-        self.assertEqual({line.revision for line in manifest.lines}, {2})
+        self.assertEqual({line.revision for line in manifest.lines}, {3})
         self.assertTrue(all(line.context_texts for line in manifest.lines))
 
     def test_other_two_episodes_remain_non_production_outlines(self) -> None:
@@ -60,7 +60,7 @@ class YiWuYiYuanQianchengConfigTests(unittest.TestCase):
             ["theme-outline", "theme-outline"],
         )
 
-    def test_restart_readme_records_the_failed_short_trial_and_v02_gate(self) -> None:
+    def test_restart_readme_records_both_failed_trials_and_v03_gate(self) -> None:
         text = (ROOT / "episodes" / RESTART / "README.md").read_text(encoding="utf-8")
 
         self.assertIn("voice-v01", text)
@@ -68,6 +68,10 @@ class YiWuYiYuanQianchengConfigTests(unittest.TestCase):
         self.assertIn("不能用于十五秒成片", text)
         self.assertIn("voice-v02", text)
         self.assertIn("58 个汉字", text)
+        self.assertIn("人工验收失败", text)
+        self.assertIn("voice-v03", text)
+        self.assertIn("52 个汉字", text)
+        self.assertIn("650、750、850 毫秒", text)
         self.assertIn("speech_rate=0", text)
         self.assertIn("14.000—14.800 秒", text)
 

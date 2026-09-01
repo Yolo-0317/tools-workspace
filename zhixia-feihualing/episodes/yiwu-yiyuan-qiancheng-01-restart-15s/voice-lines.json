@@ -3,50 +3,50 @@
   "format": "one-poem-story",
   "theme": "一舞一愿前程季重新出发全程朗诵",
   "theme_slug": "yiwu-yiyuan-qiancheng-01-restart-15s",
-  "audio_slug": "yiwu-yiyuan-qiancheng-01-restart-15s-voice-v02",
+  "audio_slug": "yiwu-yiyuan-qiancheng-01-restart-15s-voice-v03",
   "lines": [
     {
       "id": "01-recipient",
       "role": "zhixia",
       "text": "送给重新出发的你。",
-      "revision": 2,
+      "revision": 3,
       "speech_rate": 0,
       "gap_before_ms": 0,
       "context_texts": [
-        "年轻清透、真诚克制，从容地把一句话递给一个具体的人。第一字直接进入，不喊栏目名，不赶字，不用广告祝福腔，只读给定文本。"
+        "从第一字自然开口，像把一句话稳稳递给一个具体的人。句号完整落下，不喊栏目名，不赶字，不用广告祝福腔，只读给定文本。"
       ]
     },
     {
       "id": "02-situation",
       "role": "zhixia",
-      "text": "也许这一程并不轻松，也许前方还有风浪。",
-      "revision": 2,
+      "text": "这一程或许不轻松，前方也会有风浪。",
+      "revision": 3,
       "speech_rate": 0,
-      "gap_before_ms": 180,
+      "gap_before_ms": 650,
       "context_texts": [
-        "像理解对方正在经历的难处，语气平静、有分寸。两个‘也许’自然呼应，中间保留真实呼吸，不悲情、不说教、不用广告安慰腔，不加快语速，只读给定文本。"
+        "理解对方正在经历的困难，但不渲染苦难。逗号处有轻微呼吸，句号处完整收住，不赶向下一句，不悲情、不说教、不用广告安慰腔，只读给定文本。"
       ]
     },
     {
       "id": "03-blessing",
       "role": "zhixia",
-      "text": "愿你此去有路，所盼有期；走过的每一步，都算数。",
-      "revision": 2,
+      "text": "愿你所盼有期，走过的每一步都算数。",
+      "revision": 3,
       "speech_rate": 0,
-      "gap_before_ms": 240,
+      "gap_before_ms": 750,
       "context_texts": [
-        "保持同一人物、距离和从容语速，语气温和而坚定。‘所盼有期’自然落下，‘每一步’和‘都算数’有轻微层次但不逐字重读；不说教、不甜腻、不拖尾，只读给定文本。"
+        "保持同一人物、距离和从容语速，语气温和而坚定。‘所盼有期’自然落下，‘每一步都算数’整体表达，不逐字重读、不说教、不甜腻，只读给定文本。"
       ]
     },
     {
       "id": "04-poem",
       "role": "zhixia",
       "text": "长风破浪会有时，直挂云帆济沧海。",
-      "revision": 2,
+      "revision": 3,
       "speech_rate": 0,
-      "gap_before_ms": 350,
+      "gap_before_ms": 850,
       "context_texts": [
-        "由现代话自然提升为清朗说诗，保持同一人物、距离和正常语速。‘长风破浪’自然打开，‘济沧海’完整收束；不吟唱、不念作者篇名、不用朗诵比赛腔、不赶最后几个字，只读给定原文。"
+        "由现代话自然抬起为清朗说诗，保持同一人物、距离和正常语速。逗号清楚，‘济沧海’完整收束；不吟唱、不念作者篇名、不用朗诵比赛腔、不赶最后几个字，只读给定原文。"
       ]
     }
   ]
