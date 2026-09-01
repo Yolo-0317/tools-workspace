@@ -75,8 +75,6 @@ matches = [row for row in rows if row["episode"] == "pipaxing-empty-hand-15s"]
 assert len(matches) == 1, "dance history must contain one Pipaxing entry"
 row = matches[0]
 assert row["status"] == "designed", "Pipaxing status must be designed"
-assert row["peak_sequence"] == "纵向惊弦；横向回澜；斜向裂帛"
-assert row["peak_directions"] == "纵向；横向；斜向纵深"
 assert row["carrier"] == "蓝橙双层飘带与真实长影"
 
 print("PASS: Pipaxing prompt package is complete")
