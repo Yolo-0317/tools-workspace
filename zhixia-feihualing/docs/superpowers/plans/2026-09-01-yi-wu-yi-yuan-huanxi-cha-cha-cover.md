@@ -1,8 +1,8 @@
-# Heavenly Cha-Cha “欢喜” Cover Implementation Plan
+# Heavenly Cha-Cha “步步生风” Cover Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build one 1080×1920 PNG cover for the confirmed 10-second heavenly cha-cha video, with “欢喜” as the only large title.
+**Goal:** Build one 1080×1920 PNG cover for the confirmed 10-second heavenly cha-cha video, with “步步生风” as the main title beside the lower-left skirt.
 
 **Architecture:** Extract a small set of clean frames from the no-subtitle voiced master, visually select the strongest front-facing dance pose, then render typography deterministically with Swift/AppKit. A shell builder owns frame extraction and output paths; a focused renderer owns crop, tonal treatment, and text layout.
 
@@ -12,7 +12,8 @@
 
 - Output is exactly 1080×1920 PNG in 9:16.
 - Preserve the original face, body, costume, and heavenly-palace scene; do not use generative redraw.
-- Main title is exactly `欢喜`; supporting label is exactly `栀夏｜一舞一愿`.
+- Main title is exactly `步步生风`; supporting label is exactly `一舞一愿`.
+- The main title is a restrained single vertical column in the lower-left negative space beside the skirt, not oversized display lettering.
 - Do not add a full poem, author attribution, long blessing, sharing prompt, English title, watermark, sticker, block, thick outline, or decorative border.
 - Do not modify the existing video, narration, subtitles, or publishing copy.
 
@@ -92,7 +93,7 @@ git commit -m "选定天宫恰恰欢喜封面画面"
 
 - [ ] **Step 1: Write the failing cover test**
 
-The test must require executable builder and renderer files, run the builder, verify PNG decoding and exact dimensions, and verify both text literals are present in the renderer source:
+The test must require executable builder and renderer files, run the builder, verify PNG decoding and exact dimensions, and verify both revised text literals are present in the renderer source while the rejected old literal is absent:
 
 ```zsh
 #!/bin/zsh
@@ -105,8 +106,9 @@ output="$project_dir/exports/yiwu-yiyuan-huanxi-cha-cha-10s-cover-v01.png"
 "$builder" >/dev/null
 ffmpeg -v error -i "$output" -f null -
 [[ "$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0:s=x "$output")" == "1080x1920" ]]
-rg -q '欢喜' "$renderer"
-rg -q '栀夏｜一舞一愿' "$renderer"
+rg -q '步步生风' "$renderer"
+rg -q '一舞一愿' "$renderer"
+! rg -q 'drawVerticalTitle\("欢喜"' "$renderer"
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -121,7 +123,7 @@ Expected: FAIL because the builder and renderer do not exist.
 
 - [ ] **Step 3: Implement the renderer and builder**
 
-The renderer must use AppKit/CoreText, register the local Xingkai and Kaiti fonts, aspect-fill the selected reference without stretching, apply only restrained contrast/brightness treatment, draw `欢喜` in warm-gold Xingkai as the only large title, and draw `栀夏｜一舞一愿` in smaller quiet-gold Kaiti. Position both in a stable negative-space region selected after viewing the reference, with a soft dark shadow and no panel or border.
+The renderer must use AppKit/CoreText, register the local Xingkai and Kaiti fonts, aspect-fill the selected reference without stretching, apply only restrained contrast/brightness treatment, draw `步步生风` as a single warm-gold vertical Xingkai column in the lower-left negative space beside the skirt, and draw `一舞一愿` nearby in smaller quiet-gold Kaiti. Position the title below the left hand and outside the skirt silhouette, with a soft dark shadow and no panel or border.
 
 The builder must validate the reference and renderer, render into a temporary directory with isolated Swift module caches, and atomically produce:
 
@@ -141,7 +143,7 @@ Expected: PASS with a fully decodable 1080×1920 PNG.
 
 - [ ] **Step 5: Perform visual QA at full and thumbnail sizes**
 
-Inspect the formal cover at 1080×1920 and a 270×480 downscale. Confirm the face is clear, the person remains the primary subject, the palace depth is readable, “欢喜” is legible at thumbnail size, the support label is subordinate, and neither text block overlaps the face, shoulders, arms, or main pose.
+Inspect the formal cover at 1080×1920 and a 270×480 downscale. Confirm the face is clear, the person remains the primary subject, the palace depth is readable, “步步生风” is legible at thumbnail size, the support label is subordinate, and neither text block overlaps the face, shoulders, arms, skirt, legs, or main pose.
 
 - [ ] **Step 6: Commit the renderer and verification**
 
