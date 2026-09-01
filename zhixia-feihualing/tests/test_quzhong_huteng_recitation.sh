@@ -68,3 +68,27 @@ awk -v value="$continuous_duration" 'BEGIN { exit !(value >= 14.99 && value <= 1
 }
 
 print "PASS: continuous emotional preview duration is $continuous_duration seconds"
+
+fullspan_preview="$project_root/exports/quzhong-huteng-15s-recitation-fullspan-v04.m4a"
+[[ -f "$fullspan_preview" ]] || {
+  print -u2 "FAIL: missing full-span 15-second recitation preview"
+  exit 1
+}
+
+fullspan_duration="$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "$fullspan_preview")"
+awk -v value="$fullspan_duration" 'BEGIN { exit !(value >= 14.99 && value <= 15.01) }' || {
+  print -u2 "FAIL: full-span preview must be 15 seconds, got $fullspan_duration"
+  exit 1
+}
+
+last_voice_end="$(
+  ffmpeg -hide_banner -i "$fullspan_preview" -af silencedetect=noise=-40dB:d=0.08 -f null - 2>&1 \
+    | sed -n 's/.*silence_start: \([0-9.]*\).*/\1/p' \
+    | tail -n 1
+)"
+awk -v value="$last_voice_end" 'BEGIN { exit !(value >= 14.60 && value <= 14.90) }' || {
+  print -u2 "FAIL: final spoken line must end near 15 seconds, got $last_voice_end"
+  exit 1
+}
+
+print "PASS: final spoken line ends at $last_voice_end seconds"
