@@ -1,0 +1,36 @@
+{
+  "duration_ms": 10080,
+  "method": "original-tts-segments-without-speed-change",
+  "lines": [
+    {
+      "id": "01-modern-blessing",
+      "text": "九月，愿所有美好，久久相伴。",
+      "source_duration_ms": 3864,
+      "start_ms": 150,
+      "end_ms": 4014,
+      "audible_start_ms": 420,
+      "audible_end_ms": 3575
+    },
+    {
+      "id": "02-middle-wish",
+      "text": "所念，皆能如愿。",
+      "source_duration_ms": 2280,
+      "start_ms": 4100,
+      "end_ms": 6380,
+      "audible_start_ms": 4573,
+      "audible_end_ms": 5967
+    },
+    {
+      "id": "02-poem",
+      "text": "好风凭借力，送我上青云。",
+      "source_duration_ms": 3048,
+      "start_ms": 6545,
+      "end_ms": 9593,
+      "audible_start_ms": 6965,
+      "audible_end_ms": 9324
+    }
+  ],
+  "audible_gaps_ms": [998, 998],
+  "tail_silence_ms": 756,
+  "analysis_threshold_db": -45
+}
