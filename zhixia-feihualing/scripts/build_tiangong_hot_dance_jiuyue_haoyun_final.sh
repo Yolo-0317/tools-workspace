@@ -52,7 +52,7 @@ ffmpeg -hide_banner -loglevel error -y \
       apad,atrim=0:10.08,\
       asplit=2[bed_main][tail_source];\
     [tail_source]atrim=start=8.40:end=8.70,asetpts=PTS-STARTPTS,\
-      volume=0.35,afade=t=in:st=0:d=0.03,\
+      volume=0.55,afade=t=in:st=0:d=0.03,\
       aecho=0.8:0.70:180|360|540:0.50|0.30|0.20,\
       adelay=delays=9400:all=1[tail];\
     [bed_main][tail]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[bed_raw];\
