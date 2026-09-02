@@ -1,0 +1,24 @@
+[
+  {
+    "id": "01-modern-blessing",
+    "kind": "modern",
+    "text": "九月 愿所有美好 久久相伴",
+    "start": 0.42,
+    "end": 3.7
+  },
+  {
+    "id": "02-middle-wish",
+    "kind": "modern",
+    "text": "所念 皆能如愿",
+    "start": 4.57,
+    "end": 6.1
+  },
+  {
+    "id": "03-poem",
+    "kind": "poem",
+    "text": "好风凭借力，送我上青云",
+    "attribution": "清·曹雪芹《临江仙·柳絮》",
+    "start": 6.96,
+    "end": 9.52
+  }
+]
