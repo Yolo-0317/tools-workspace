@@ -192,3 +192,7 @@ alwaysApply: false
   - **配图**：`after_anchor` 锚点须与正文逐字匹配（`制服还在`、`台灯底下`）；末段可插第四张图；脚注 TMDB 片用「TMDB 宣传剧照」。
   - **改稿**：`golden` → `save_tv_body_cache` → `wechat_mp_repush_tv_review_draft`。
   - **Skill**：`tv-review-template.md` §院线单片剧评固化规则 · `wechat-mp-writing/tv-review-voice.md`（IGN 仿写）。
+
+### 2026-09-05 公众号热点 · 教育政策选题范围
+
+- **近期选题范围**：用户要求近期热点候选只写全国教育政策、招生考试和升学规则；高讨论度地方教育新政可纳入，但必须标明实施地区、适用人群和政策状态。优先官方原文，禁止把地方试点写成全国政策或把专家建议写成正式政策。执行真源：`.cursor/skills/wechat-mp-writing/hotspot-deep-review.md`「用户近期选题偏好：全国教育政策与升学规则」。
