@@ -16,6 +16,7 @@
 | 热点研究与补图 | `wechat_mp_hotspot_article.py`、`wechat_mp_discussion_research.py` | `test_wechat_mp_hot_trends_enrich.py` |
 | 用户主动热点暂存、推送与双确认（`write` 为旧兼容能力，主动稿禁止调用） | `wechat_mp_browser_workflow.py`、`wechat_mp_browser_write.py` | `test_wechat_mp_browser_workflow.py`、`test_wechat_mp_browser_write_cli.py`、`test_wechat_mp_browser_push.py` |
 | 用户主动热点抖音优先与真实图片门禁 | `wechat_mp_hotspot_image_policy.py`、`wechat_mp_codex_images.py`、`wechat_mp_discussion_figures.py`、`wechat_mp_content.py` | `test_wechat_mp_hotspot_image_policy.py`、`test_wechat_mp_codex_images.py`、`test_wechat_mp_discussion_figures.py`、`test_wechat_mp_codex_hotspot.py` |
+| 北上广深义务教育与高中择校专题、招生承诺门禁 | `wechat-mp-writing/school-choice-policy.md`、`wechat_mp_hotspot_quality_gate.py` | `test_wechat_mp_hotspot_quality_gate.py` |
 | 通知 | `wechat_mp_draft_notify.py` | `test_wechat_mp_draft_notify.py` |
 | 质量与流量检查 | `wechat_mp_eval.py`、`wechat_mp_traffic_checklist.py`、`wechat_mp_empathy_checklist.py` | `test_wechat_mp_eval.py`、`test_wechat_mp_traffic_checklist.py`、`test_wechat_mp_empathy_checklist.py` |
 
@@ -29,3 +30,4 @@
 - 用户主动热点由 Agent 展示完整提示词，用户自行向 DeepSeek 取标题和初稿并贴回；Agent 不调用浏览器写稿 `write`。Agent 核实编辑并记录 `edit_notes`，推草稿前仍需第二次确认。现有浏览器写稿代码仅属旧兼容能力，不代表当前操作授权。
 - 用户主动热点必须先检索抖音，只读取搜索结果卡片与封面，不打开或播放视频；随后才可补政府官网、官方媒体或法条页面证据图。
 - 用户主动热点正文使用 0—3 张已核验真实图，至少 1 张可追溯真实图作为封面；禁止自动抓图补齐、禁止生成图片、禁止 `codex-image-request.json`。stage 和 push 都重新校验。
+- 北上广深择校稿必须明确城市、区县或市级范围、学段、入学年度和政策状态；自动门禁拦截明确的学位或录取承诺，否定和反诈骗语境放行。

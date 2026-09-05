@@ -19,6 +19,7 @@ description: 牛马也智能公众号改稿、去 AI 味、参考文阅读提炼
 | **引流 / 完读 / 转发 / 语气用词 / 怎么让人看下去** | **[traffic-copy-craft.md](traffic-copy-craft.md)** |
 | **社会热点 / 民生新闻 / 排版语气感情** | **[social-commentary-voice.md](social-commentary-voice.md)** |
 | **热点深评 / hotspot 太水 / 仿写参考 / 标题很怪** | **[hotspot-deep-review.md](hotspot-deep-review.md)**（2026-07-30 定稿） |
+| **择校 / 学区 / 幼升小 / 小升初 / 高中选校** | **[hotspot-deep-review.md](hotspot-deep-review.md)**，再按其中路由读取 [school-choice-policy.md](school-choice-policy.md) |
 | **原创小说 / 单元故事 / 连载 / 小说人物** | **[fiction-author-role-card.md](fiction-author-role-card.md)**（独立虚构人格，不读取公众号观察者角色卡） |
 | **原创配图 / 小说插图 / 栀夏生图** | **[ChatGPT 网页原创配图 SOP](../wechat-mp-drafts/chatgpt-web-image-sop.md)**（失败即停，不自动回退） |
 | 写深一点 / 立意 / 宏观见解 | **[depth-and-opinion.md](depth-and-opinion.md)** |
