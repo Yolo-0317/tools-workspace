@@ -1,0 +1,35 @@
+{
+  "version": "jingfang-najia-v1",
+  "collected_at": "2026-09-12",
+  "source": {
+    "book": "增删卜易",
+    "edition": "维基文库简体展示页",
+    "source_url": "https://zh.wikisource.org/zh-hans/增删卜易",
+    "fixed_revision_url": "https://zh.wikisource.org/w/index.php?title=增刪卜易&oldid=2572918",
+    "verification": "来源抽取并核对规则表，尚未逐字校勘"
+  },
+  "evidence": [
+    {
+      "chapter": "八纯卦纳甲图",
+      "coverage": "八纯卦六爻纳甲、地支与五行，原文标明从左至右为初爻到六爻",
+      "source_lines": "页面第 282—295 行"
+    },
+    {
+      "chapter": "旬空计算法",
+      "coverage": "六甲旬空对应关系",
+      "source_lines": "页面第 296—307 行"
+    },
+    {
+      "chapter": "世应章第六",
+      "coverage": "乾宫八卦世爻位置及应爻与世爻相隔两位",
+      "source_url": "https://zh.wikisource.org/zh-hans/增删卜易/6",
+      "fixed_revision_url": "https://zh.wikisource.org/w/index.php?title=增刪卜易/6&oldid=2100291"
+    },
+    {
+      "chapter": "六冲章第二十",
+      "coverage": "十二地支六冲与月破、日冲的基本定义",
+      "source_lines": "页面第 985—993 行"
+    }
+  ],
+  "scope_note": "本版本只固化排盘和基础关系，不据单一标签生成吉凶、应期或确定事件。"
+}

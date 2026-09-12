@@ -1,0 +1,66 @@
+# 观易
+
+自用周易起卦与典籍解读工具。Vue 3 + Element Plus 前端，FastAPI 后端，独立 MySQL 业务库，DeepSeek 白话解读。
+
+## 使用
+
+启动后访问 http://127.0.0.1:8796 。首页可选主题和问题模板，也可自由提问。程序按三钱法的 1:3:3:1 概率生成六爻，但页面以三束数字信号汇聚和逐爻扫描表现，不显示铜钱。固定规则选择主读、辅读和背景材料，再由 DeepSeek 解释。历史页保存原问题、随机过程、各次解读与复盘笔记。重新解读不会重新起卦。
+
+起卦支持两种可选模式：
+
+- 经典取辞：依据《周易》经传、《周易本义》和版本化变占规则。
+- 六爻纳甲：使用同一卦象，增加北京时间干支、旬空、八宫、世应、纳支五行、六亲、六神和基础月日关系。
+
+六爻纳甲默认采用点击起卦时的北京时间，可修改时间和所在地。第一版固定按北京时间零点换日，不计算真太阳时；姓名、性别和生辰八字都不是必填项，也不参与计算。结果定位为“卦象启示与行动参考”，用于观察处境、变化条件和下一步行动，不作为确定预测。
+
+界面、典籍展示和白话解读使用简体中文。底本原文、来源编号和校验值保留，简体转换另作展示，方便核对来源。
+
+## 安装与启动
+
+以下命令从工作区根目录执行，需要 Python 3.11+、Node.js 与可访问的 MySQL：
+
+```sh
+python3 -m venv zhouyi/.venv
+zhouyi/.venv/bin/python -m pip install -r zhouyi/backend/requirements.lock.txt
+zhouyi/.venv/bin/python -m pip install --no-deps -e 'zhouyi/backend[test]'
+cp zhouyi/.env.example zhouyi/.env
+cd zhouyi/frontend
+npm ci
+npm run build
+cd ../backend
+../.venv/bin/python -m zhouyi.manage init
+cd ../..
+sh zhouyi/scripts/start.sh
+```
+
+已有 `.env` 时保留现有配置，不覆盖。项目配置优先级是环境变量、项目 `.env`、指定共享文件。`ZHOUYI_SHARED_ENV=../stock-ai/.env` 仅读取 `MYSQL_URL`、`DEEPSEEK_API_KEY` 和 `DEEPSEEK_MODEL`。可用 `ZHOUYI_MYSQL_HOST`、`ZHOUYI_MYSQL_PORT` 覆盖连接地址；业务库固定为 `zhouyi` 或 `zhouyi_` 前缀。
+
+当前已通过局域网 MySQL 建立独立 `zhouyi` 库，应用使用已有普通账号。管理员凭据仅用于一次性建库授权，不进入应用配置。新环境需先建立该库，并授予应用账号该库的 SELECT、INSERT、UPDATE、DELETE、CREATE、ALTER、INDEX、REFERENCES 权限。初始化命令可重复执行，负责建表、兼容升级和同步典籍。
+
+当前模型为 `deepseek-flash`。关闭思考模式后生成结构化解释，后端核对来源编号及引文；格式错误可修复一次，连同网络重试最多请求三次。失败原因会显示在原记录中，可重试。自动化测试通过注入的本地解释器运行，不读取密钥、不访问 DeepSeek；真实模型联调必须单独执行。
+
+服务默认只监听本机 `127.0.0.1:8796`。`ZHOUYI_HOST`、`ZHOUYI_PORT` 可配置监听地址与端口；当前没有登录系统，供个人使用。
+
+## 典籍范围
+
+已有 1027 条材料：64 卦经传完整覆盖，《周易本义》覆盖 64 卦的经传与注合录；《周易正义》目前仅乾卦开篇部分补注。来源已做抽取和结构检查，尚未人工逐字校勘。详细来源、异文和取辞规则证据见 [CORPUS_SOURCES.md](docs/CORPUS_SOURCES.md)。
+
+三爻变采用《易学启蒙通释》图序的前十、后十主次，不以变卦卦序排序。规则和提示词均记录版本。古籍底本快照与抽取结果可离线重建，来源许可说明见上述文档。
+
+纳甲排盘版本为 `jingfang-najia-v1`，基础规则证据记录在 [najia-rule-evidence.json](data/najia-rule-evidence.json)。当前依据《增删卜易》的八纯卦纳甲图、旬空、世应及六冲章节核对排盘表；只输出固定规则可推出的结构，不据单一标签生成吉凶或应期。
+
+赛博动画由 Vue、Canvas 2D 与 CSS 实现，不使用外部图片。正常时约 6 秒，支持跳过、后台暂停、窄屏减少粒子、低帧率降级和系统“减少动态效果”。后端在动画开始前已经保存结果，关闭页面或跳过动画不会改变卦象。
+
+## 验证
+
+```sh
+cd zhouyi/backend
+../.venv/bin/python -m pytest -q
+cd ../frontend
+npm test -- --run
+npm run build
+```
+
+后端测试覆盖六爻 4096 种状态、取辞边界、材料完整性、北京时间干支、旬空、八宫纳甲、请求幂等、失败恢复、引文核验和简体转换；前端覆盖模式表单、赛博动画、性能降级、重试、历史和引用定位等交互。纳甲升级已在真实 MySQL 完成，测试过程没有访问 DeepSeek。
+
+`.env`、虚拟环境、构建产物、运行记录和密钥均不纳入版本控制。

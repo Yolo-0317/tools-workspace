@@ -1,0 +1,39 @@
+考变占第四-易学启蒙通释全文原文及译文-识典古籍 (https://www.shidianguji.com/book/SK0061/chapter/1l9qr24ok8562)
+citeturn103view0 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({"ref_id":"https://www.shidianguji.com/book/SK0061/chapter/1l9qr24ok8562","lineno":null}); Total lines: 40
+L0: # 易学启蒙通释
+L1: 
+L2: [宋] 胡方平 撰 · [宋] 朱士立 补
+L3: 
+L4: cite0†All Books L5: #### 考变占第四
+L6: 
+L7: 乾卦：用九，见群龙无首，吉。象曰：用九，天德不可为首也。坤卦用六，利永贞。象曰：用六永贞，以大终也。
+L8: 
+L9: 用九、用六者，变卦之凡例也。言凡阳爻皆用九，而不用七；阴爻皆用六，而不用八。用九，故老阳变为少阴；用六，故老阴变为少阳。不用七、八，故少阳、少阴不变。独于乾、坤二卦言之者，以其在诸卦之首，又为纯阳、纯阴之卦也。圣人因繋以辞，使遇乾而六爻皆九，遇坤而六爻皆六者，即此而占之。盖群龙无首，则阳皆变阴之象；利永贞，则阴皆变阳之义也。余见六爻变例。欧阳子曰：乾坤之用九、用六，何谓也？曰：乾爻七、九，坤爻八、六，九六变而七八无为。易道占其变，故以其所占者名爻，不谓六爻皆九、六也。及其筮也，七八常多，而九、六常少，有无九六者焉。此不可以不择也。六十四卦皆然，特于乾坤见之，则余可知矣。 愚案：此说发明先儒所未到，最为有功。其论七八多而九六少，又见当时占法三变皆挂，如一行说。
+L10: 群龙，六龙也。筮得六爻皆用老阳之九，则变而之坤，既变而坤，故不可为首。首，先也。坤为首，则先迷矣。永贞，阳也，筮得六爻皆用老阴之六，则变而之乾，既变而乾，故以大终。大，阳也，易中称大为阳也。乾爻七、九，坤爻八六者，盖谓遇乾而变者，为老阳之九，其间亦有不变而为少阴之七者。遇坤而变遇之为易矣。进齐徐氏曰：六爻皆用九，则乾变之坤。九者，则乾之极，天德也。天德𣎴可为首，指卦变言，即坤无首之义，非谓乾刚有所不足也。善用九者，物极必变，刚而能柔，不为物先，用坤道也。
+L11: 凡卦六爻皆不变，则占本卦彖辞，而以内卦为贞，外卦为悔。彖辞为卦下之辞。孔子筮立卫公子元，遇屯，曰：利建侯。秦伯伐晋，筮之遇蛊，曰：贞，风也；其悔，山也。朱子曰：阳用九而不用七，且姤占得纯乾卦皆七数，这却不是变底。他未当得九，未在这爻里面，所以只就占上面彖辞，他亦然。以内卦为贞，外卦为悔者，朱子曰：贞是事之始，悔是事之终。贞是事之主，悔是事之客。贞是事在我底，悔是应人底。今就占本卦彖辞，而分内外卦为贞悔者，大抵筮法有悔山之类，是以贞为我，悔为彼也。论贞悔详见后篇未。 左昭七年，卫卿孔成子欲立公子元，筮之，遇屯，以示子朝。子朝曰：元亨，且其繇辞曰：利建侯。子其建之。成子遂立元，即灵父也。僖十五年，秦伯伐晋，卜徒父筮之，吉。其卦遇蛊。贞，风也；悔，山也。岁云秋矣，我落其实，而取其材，所以克也。实落材亡，
+L12: 
+L13: 一爻变，则以本卦变爻辞占。沙随程氏曰：“毕万遇屯之比，初九变也。蔡墨曰：乾之同人，九二变也。晋文公遇大有之暌，九三变也。陈敬仲遇观之否，九四变也。南蒯遇坤之比，六五变也。晋献公遇归妹之暌，上六变也。
+L14: 一爻变者，凡六卦，有图在后。如第一图以乾为本卦，一爻变自姤至夬；以坤为本卦，一爻变自复至剥是也。余放此。沙随所举六事，皆各得一爻变，就本变卦爻占，其例观后注可见。 左闵元年：毕万筮仕于晋，遇屯之比，辛廖占之，曰：吉孰大焉？其必蕃昌，公侯之卦也。 昭二十九年：秋，龙见于绛郊。魏献子问于蔡墨，墨曰：乾之同人，九二变也。 僖二十五年：晋文公将纳王，使卜偃筮之，遇大有之暌，曰：公用飨于天子之卦。战克而王飨，吉孰大焉？庄二十二年：陈厉公生敬仲，使周史筮之，遇观之否，曰：是谓观国之光，利用宾于王。此其伐陈有国乎？ 昭十二年：南蒯将叛，筮遇坤之比，曰：黄裳秦，遇归妹之暌，史苏占之，曰：不吉。其由曰：士刲羊，亦无衁也；女承筐，亦无贶也。
+L15: 
+L16: 二爻变，则以本卦二变爻辞占，仍以上爻为主。经传无文，今以例推之，当如此。
+L17: 
+L18: 二爻变者，凡十五卦。如第一图，以乾为本卦，二爻变，自遁至大壮；以坤为本卦，二爻变，自临至观是
+L19: 三爻变，则占本卦及之卦之彖辞，即以本卦为贞，之卦为悔。前十卦主贞，后十卦主悔。凡三爻变者，通二十卦，有图在后。 沙随程氏曰：晋公子重耳筮得国，遇贞屯悔豫皆八。盖初与四、五，凡三爻变也。初与五用九变，四用六变。其不变者二、三、上，在两卦皆为八，故云皆八。而司空季子占之曰：皆利建侯。
+L20: 三爻变者，凡二十卦。如第 一图，以“乾”为本卦，三爻变，自“否”至“泰”；以“坤”为本卦，三爻变，自“泰”至“否”是也。后放此。所以占本卦及之卦彖辞者，盖变至三爻，则所变爻与不变爻六爻平分，故就两卦彖辞占，而以本卦为贞，之卦为悔也。前本卦主贞，后本卦主悔者，且如乾三爻变，自否至恒为前十卦，自益至泰为后十卦。如坤三爻变，自泰至益为前十卦，自恒至否为后十卦。若所得变卦在前十卦内，虽占两卦，彖辞却以本卦贞为主，是重在本卦彖辞占也。若所得变卦在后十卦内，虽亦占两卦，彖辞，却以变卦悔为主，是重在变卦彖辞占也。司空季子所占屯、豫，皆利建侯，其例可见。朱子曰：三爻变，则所主者不一，故以两卦彖辞占。又曰：所以到那三爻变，第三十二卦以后，占变卦彖辞者，无也。到这里时，离那本卦分数多了，到四画无画，则更多矣。 国语晋公子重耳筮得国，亲筮之，曰：尚有晋国。得贞屯悔豫，皆八。司空季子曰：吉，是在周易，皆利建侯。我命筮曰：尚有晋国，告我曰：利建侯，得国
+L21: 
+L22: 四爻变，则以之卦二不变爻占，仍以下爻为主。经传亦无文，今以例推之，当如此。
+L23: 
+L24: 四爻变，凡十五卦。如第一图，以乾为本卦，四爻变，自观至临；以坤为本卦，四爻变，自大壮至遁是也。
+L25: 五爻变，则以之卦不变爻占。穆姜往东宫，筮遇艮之八。史曰：是谓艮之随。盖五爻皆变，唯二得八，故不变也。法宜以系小子失丈夫为占，而史妄引随之彖辞以对，则非也。
+L26: 
+L27: 五爻变，凡六卦。如第一图，以乾为本卦，五爻变，自剥至复；以坤为本卦，五爻变，自夬至姤是也。后放此。 左襄九年，穆姜始往东宫，筮之遇艮之八。史曰：是谓艮之随，随其出也，君必速出。姜曰云云。案，穆姜，鲁成公母。姜淫侨如，欲废成公，故徙居太子宫也。筮遇艮之八者，艮五爻皆变，惟六二少阴八𣎴变，不云之随，而云之八者，八指随之六二言也。以之卦𣎴变爻占，则重在六二，故云之八也。史妄引随之彖辞以对，故又不云之八，而云之随耳。
+L28: 
+L29: 六爻变，则乾坤占二用，余卦占之卦彖辞。蔡墨曰：“乾之坤曰：见群龙无首，吉是也。然群龙无首，即坤之牝马先迷也。坤之利永贞，即乾之不言所利也。
+L30: 六爻变只一卦，如第一图以乾为本卦，六爻尽变，则为坤；以坤为本卦，六爻尽变，则为乾是也。后放此。乾坤占用九、用六之辞，余卦无二用可占，故占之卦彖辞也。朱子曰：遇乾而六爻皆变，则为阴，故有群龙无首之象，即坤利牝马之贞也。言群龙而却无头，刚而能柔，则吉也。牝马顺而健行者，故坤利此以为贞。先迷，阳先阴后，以阴而先阳，则迷矣。又曰：遇坤而六爻皆变，则为阳，故有利永贞之象，则乾之元亨利贞也𣎴，言所利者利也。 左昭二十九年，蔡墨答魏献子曰：乾之坤曰见群龙无首，
+L31: 
+L32: 于是一卦可变六十四卦，而四千九十六卦在其中矣。所谓引而伸之，触类而长之，天下之能事毕矣。岂不信哉？今以六十四卦之变，列为三十二图，得初卦者，自初而终，自上而下；得末卦者，自终而初，自下而上。变在第三十二卦以前者，占本卦爻之辞；变在第三十二卦以后者，占变卦爻之辞。凡言初终上下者，象圆而言；言第几卦前后者，从本卦起。
+L33: 得初卦者，自初而终，自上而下，如得乾卦者，自变姤初六至坤上六之类。得末卦者，自终而初，自下而上，如得坤卦者，自变复初九至乾上九之类。后放此。三十二卦前后者，如乾自姤至恒，坤自复至益，为三十二卦之前，皆占本卦爻辞者，即所谓一爻、二爻以至三爻之变前十卦，皆以本卦为占也。如乾自益至坤，坤自恒至乾，为三十二卦之后，皆占变卦爻辞者，即所谓三爻之变后十卦，以至四、象、卦变，无不应矣。文王、周公之辞，虽以明卦，然辞之所该终有限，故有时而不应。必如左传及国语所载，占卦体、卦象、卦变，又推互体，始足以济辞之所不及，而为吉凶之前知耳。读易者不可不察也。cite1†Image†p9-ancientlib-sign.byteimg.com cite2†Image†p9-ancientlib-sign.byteimg.com cite3†Image†p6-ancientlib-sign.byteimg.com cite4†Image†p6-ancientlib-sign.byteimg.com cite5†Image†p3-ancientlib-sign.byteimg.com cite6†Image†p9-ancientlib-sign.byteimg.com cite7†Image†p6-ancientlib-sign.byteimg.com cite8†Image†p9-ancientlib-sign.byteimg.com cite9†Image†p9-ancientlib-sign.byteimg.com cite10†Image†p6-ancientlib-sign.byteimg.com cite11†Image†p9-ancientlib-sign.byteimg.com cite12†Image†p3-ancientlib-sign.byteimg.com cite13†Image†p3-ancientlib-sign.byteimg.com cite14†Image†p9-ancientlib-sign.byteimg.com cite15†Image†p6-ancientlib-sign.byteimg.com cite16†Image†p9-ancientlib-sign.byteimg.com cite17†Image†p3-ancientlib-sign.byteimg.com cite18†Image†p6-ancientlib-sign.byteimg.com cite19†Image†p3-ancientlib-sign.byteimg.com cite20†Image†p9-ancientlib-sign.byteimg.com cite21†Image†p6-ancientlib-sign.byteimg.com cite22†Image†p3-ancientlib-sign.byteimg.com cite23†Image†p6-ancientlib-sign.byteimg.com cite24†Image†p3-ancientlib-sign.byteimg.com cite25†Image†p6-ancientlib-sign.byteimg.com cite26†Image†p3-ancientlib-sign.byteimg.com cite27†Image†p3-ancientlib-sign.byteimg.com cite28†Image†p3-ancientlib-sign.byteimg.com cite29†Image†p6-ancientlib-sign.byteimg.com cite30†Image†p9-ancientlib-sign.byteimg.com cite31†Image†p3-ancientlib-sign.byteimg.com cite32†Image†p9-ancientlib-sign.byteimg.com cite33†Image†p6-ancientlib-sign.byteimg.com cite34†Image†p6-ancientlib-sign.byteimg.com cite35†Image†p9-ancientlib-sign.byteimg.com cite36†Image†p3-ancientlib-sign.byteimg.com cite37†Image†p6-ancientlib-sign.byteimg.com cite38†Image†p9-ancientlib-sign.byteimg.com cite39†Image†p3-ancientlib-sign.byteimg.com cite40†Image†p9-ancientlib-sign.byteimg.com cite41†Image†p3-ancientlib-sign.byteimg.com cite42†Image†p3-ancientlib-sign.byteimg.com cite43†Image†p9-ancientlib-sign.byteimg.com cite44†Image†p6-ancientlib-sign.byteimg.com cite45†Image†p9-ancientlib-sign.byteimg.com cite46†Image†p6-ancientlib-sign.byteimg.com cite47†Image†p9-ancientlib-sign.byteimg.com cite48†Image†p3-ancientlib-sign.byteimg.com cite49†Image†p9-ancientlib-sign.byteimg.com cite50†Image†p9-ancientlib-sign.byteimg.com cite51†Image†p9-ancientlib-sign.byteimg.com cite52†Image†p9-ancientlib-sign.byteimg.com cite53†Image†p9-ancientlib-sign.byteimg.com cite54†Image†p3-ancientlib-sign.byteimg.com cite55†Image†p6-ancientlib-sign.byteimg.com cite56†Image†p6-ancientlib-sign.byteimg.com cite57†Image†p3-ancientlib-sign.byteimg.com cite58†Image†p9-ancientlib-sign.byteimg.com cite59†Image†p6-ancientlib-sign.byteimg.com cite60†Image†p9-ancientlib-sign.byteimg.com cite61†Image†p3-ancientlib-sign.byteimg.com cite62†Image†p9-ancientlib-sign.byteimg.com cite63†Image†p6-ancientlib-sign.byteimg.com cite64†Image†p9-ancientlib-sign.byteimg.com cite65†Image†p3-ancientlib-sign.byteimg.com cite66†Image†p3-ancientlib-sign.byteimg.com cite67†Image†p3-ancientlib-sign.byteimg.com cite68†Image†p9-ancientlib-sign.byteimg.com cite69†Image†p9-ancientlib-sign.byteimg.com cite70†Image†p3-ancientlib-sign.byteimg.com cite71†Image†p9-ancientlib-sign.byteimg.com cite72†Image†p3-ancientlib-sign.byteimg.com L34: 以上三十二图，反复之则为六十四图。图以一卦为主，而各具六十四卦，凡四千九十六卦，与焦赣易林合。然其条理精密，则有先儒所未发者，览者详之。三十二图反复其变，悉如乾坤二卦变图例。每图各以第一卦为本卦，顺变将去，则自初而终，自上而下，是由乾以至于坤。反之则又以末一卦为本卦，逆变转求，则终而初，自下而上，是由坤以至于乾。一顺 逆，每图遂以两卦为本卦，而成两图矣。合三十二图反复则为六十四图矣。然三十二图先后次第皆本于乾坤卦变，只以第一图观之可见。如以乾为本卦，则次姤，次同人，以至于常、讣，三十二卦，今各为三十二图之第一卦，而次第不紊矣。如以坤为本卦，则次复，次师，以至于益，计三十二卦，今各为三十二图之末一卦，而次第亦不紊矣。此即三十二图之序也。五以三十二图未一图逆数转来，如以益为本卦，则次噬嗑，次随，以至于坤，计三十二卦，即第一图后三十二卦，由益而顺数至坤也。如以恒为本卦，则次井，次蛊，以至于乾，亦计三十二卦，即第一图之前三十二卦一画易而成之义。而乾坤艮兑震巽坎离虽无先后次序，然其对待则一定而不易也。本不过明卦变之凡例，而阴阳对待自然之妙如此，亦足以见易画从横逆顺，无适非一阴一阳之道而不乱也。此皆条理精密，先儒所未发者。合而论之，图之变固无穷，而莫𣎴以乾坤卦变为主焉。然乾坤第一图次第，固皆为三卜二图之例矣。又必先乾六爻之变者，盖乾坤虽阴阳之纯，而乾又坤之尊故也。故曰：乾者君道，首出庶物；坤者臣道，无成而代有终。其分如此，其数如此，推而至于图之变亦如此。愚所cite73†Image†p6-ancientlib-sign.byteimg.com L35: 易学启蒙通释卷下
+L36: 
+L37: cite74†Next L38: 
+L39: Log in for a better reading experience
+

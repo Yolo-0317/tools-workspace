@@ -257,6 +257,21 @@
       "aliases": ["小智网关", "Mac 模拟设备", "夸克播放"]
     },
     {
+      "id": "zhouyi",
+      "path": "zhouyi",
+      "domain": "personal",
+      "summary": "三钱起卦、典籍取辞、DeepSeek 简体白话解读与复盘",
+      "lifecycle": "active",
+      "entry_docs": ["zhouyi/README.md"],
+      "depends_on": ["stock-mysql"],
+      "serves": [],
+      "memory_topics": [],
+      "skills": [],
+      "verify": ["cd backend && ../.venv/bin/python -m pytest -q"],
+      "runtime": {"kind": "service", "ports": [8796]},
+      "aliases": ["观易", "周易", "易经", "起卦"]
+    },
+    {
       "id": "zhixia-feihualing",
       "path": "zhixia-feihualing",
       "domain": "media",

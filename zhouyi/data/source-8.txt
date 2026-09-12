@@ -1,0 +1,112 @@
+周易/比 - 维基文库，自由的图书馆 (https://zh.wikisource.org/wiki/%E5%91%A8%E6%98%93/%E6%AF%94)
+citeturn22view0 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({"ref_id":"https://zh.wikisource.org/wiki/周易/比","lineno":120}); Total lines: 167
+L0: cite0†跳转到内容 L1: 
+L2: [Input] 主菜单
+L3: 
+L4: 主菜单
+L5: 
+L6: [Button: 移至侧栏] [Button: 隐藏]
+L7: 
+L8: 导航
+L9: 
+L10:   * cite1†首页 L11:   * cite2†随机作品 L12:   * cite3†随机作者 L13:   * cite4†随机原本 L14:   * cite5†所有页面 L15: 
+L16: 编者
+L17: 
+L18:   * cite6†社群首页 L19:   * cite7†写字间 L20:   * cite8†最近更改 L21:   * cite9†特殊页面 L22: 
+L23: 帮助
+L24: 
+L25:   * cite10†帮助 L26:   * cite11†关于维基文库 L27:   * cite12†联系我们 L28:   * cite13†方针与指引 L29: 
+L30: 显示选项
+L31: 
+L32: cite14†搜索 L33: 
+L34: [Input: 搜索Wikisource内容]
+L35: 
+L36: [Input]
+L37: 
+L38: [Button: 搜索]
+L39: 
+L40: [Input] 外观
+L41: 
+L42:   * cite15†资助†donate.wikimedia.org L43:   * cite16†创建账号 L44:   * cite17†登录 L45: 
+L46: [Input] 个人工具
+L47: 
+L48:   * cite15†资助†donate.wikimedia.org L49:   * cite16†创建账号 L50:   * cite17†登录 L51: # 周易/比
+L52: 
+L53: [Input] 添加语言
+L54: 
+L55: cite18†添加链接†www.wikidata.org L56: 
+L57:   * cite19†作品 L58:   * cite20†讨论 L59: 
+L60: [Input] 不转换
+L61: 
+L62:   * cite21†不转换 L63:   * cite22†简体 L64:   * cite23†繁體 L65: 
+L66:   * cite19†阅读 L67:   * cite24†编辑 L68:   * cite25†查看历史 L69: 
+L70: [Input] 工具
+L71: 
+L72: 工具
+L73: 
+L74: [Button: 移至侧栏] [Button: 隐藏]
+L75: 
+L76: 操作
+L77: 
+L78:   * cite19†阅读 L79:   * cite24†编辑 L80:   * cite25†查看历史 L81: 
+L82: 常规
+L83: 
+L84:   * cite26†链入页面 L85:   * cite27†相关更改 L86:   * cite28†上传文件†commons.wikimedia.org L87:   * cite29†固定链接 L88:   * cite30†页面信息 L89:   * cite31†引用此页 L90:   * cite32†获取短链接 L91: 
+L92: 打印/导出
+L93:   * 可打印版
+L94:   * cite33†下载为EPUB†ws-export.wmcloud.org L95:   * cite34†下载为MOBI†ws-export.wmcloud.org L96:   * cite35†下载为PDF†ws-export.wmcloud.org L97:   * cite36†其他格式†ws-export.wmcloud.org L98: 
+L99: 在其他项目中
+L100: 
+L101:   * cite37†维基数据项目†www.wikidata.org L102: 
+L103: 外观
+L104: 
+L105: [Button: 移至侧栏] [Button: 隐藏]
+L106: 
+L107: cite33†下载†ws-export.wmcloud.org L108: 
+L109: < cite38†周易 L110: 
+L111: cite39†師 ◄  | 周易
+L112: 比  | ► cite40†小畜 L113: 
+L114: cite38†周易 第八卦
+L115: 
+L116: 比
+L117: 
+L118: 坤下坎上
+L119: 
+L120:   * 易經：
+L121:     * 比：吉。原筮元永貞，无咎。不寧方來，後夫凶。
+L122:     1. 初六：有孚，比之，无咎。有孚盈缶，終來有它，吉。
+L123:     2. 六二：比之自內，貞吉。
+L124:     3. 六三：比之匪人。
+L125:     4. 六四：外比之，貞吉。
+L126:     5. 九五：顯比。王用三驅，失前禽，邑人不誡，吉。
+L127:     6. 上六：比之无首，凶。
+L128:   * 彖曰：
+L129:     * 比，吉也。比，輔也，下順從也。原筮，元永貞，无咎，以剛中也。不寧方來，上下應也。後夫凶，其道窮也。
+L130: 
+L131:   * 象曰：
+L132:     * 地上有水，比；先王以建萬國，親諸侯。
+L133:     1. 比之初六，有它吉也。
+L134:     2. 比之自內，不自失也。
+L135:     3. 比之匪人，不亦傷乎！
+L136:     4. 外比於賢，以從上也。
+L137:     5. 顯比之吉，位正中也。舍逆取順，失前禽也。邑人不誡，上使中也。
+L138:     6. 比之无首，无所終也。
+L139: 
+L140: cite41†Image L141: 
+L142: 检索自“cite29†https://zh.wikisource.org/w/index.php?title=周易/比&oldid=2405022 ”
+L143:   * 此页面最后编辑于2024年5月9日 (星期四) 09:31。
+L144:   * 本站的全部文字在cite42†知识共享 署名-相同方式共享 4.0协议†creativecommons.org 之条款下提供，附加条款亦可能应用。（请参阅cite43†使用条款†foundation.wikimedia.org ）
+L145: 在部份国家和地区，包括中国大陆、澳门和台湾，作者精神权（含署名权）永久有效（cite44†详情 ）。
+L146: Wikisource®和维基文库标志是cite45†维基媒体基金会†wikimediafoundation.org 的注册商标；维基™是维基媒体基金会的商标。
+L147: 维基媒体基金会是在美国佛罗里达州登记的501(c)(3)cite46†免税†donate.wikimedia.org 、非营利、慈善机构。
+L148:   * cite47†隐私政策†foundation.wikimedia.org L149:   * cite11†关于维基文库 L150:   * cite48†免责声明 L151:   * cite49†法律与安全事项联系方式†foundation.wikimedia.org L152:   * cite50†行为准则†foundation.wikimedia.org L153:   * cite51†开发者†developer.wikimedia.org L154:   * cite52†统计†stats.wikimedia.org L155:   * cite53†Cookie声明†foundation.wikimedia.org L156:   * 搜索
+L157: 
+L158: [Input: 搜索Wikisource内容]
+L159: 
+L160: [Input]
+L161: 
+L162: [Button: 搜索]
+L163: 
+L164: 周易/比
+L165: 
+L166: 添加语言 cite54†添加话题 
