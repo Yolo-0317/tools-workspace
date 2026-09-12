@@ -204,6 +204,18 @@ it("explains the original, moving and changed hexagrams using this cast", async 
   expect(guide.text()).toContain("不是重新起了一卦");
   w.unmount();
 });
+it("waits for a manual click before starting a classic interpretation", async () => {
+  const w = await setup(ReadingView, "/readings/r-1");
+  expect(requests.some((request) => request.url.endsWith("/interpretations"))).toBe(false);
+  expect(w.text()).toContain("卦象和原典已经保存");
+  await w.get('[data-testid="start-classic-interpretation"]').trigger("click");
+  await flushPromises();
+  expect(
+    requests.filter((request) => request.url === "/api/readings/r-1/interpretations"),
+  ).toHaveLength(1);
+  expect(w.text()).toContain("正在解读");
+  w.unmount();
+});
 it("reloads stored reading without posting a new cast; failed interpretation retries same reading", async () => {
   responseReading.interpretations = [
     {

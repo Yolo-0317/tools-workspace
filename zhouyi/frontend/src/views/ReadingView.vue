@@ -83,10 +83,10 @@ function schedule() {
   if (disposed || latest.value?.status !== "running") return;
   timer = setTimeout(async () => {
     now.value = Date.now();
-    await load(false);
+    await load();
   }, 2000);
 }
-async function load(initial = true) {
+async function load() {
   try {
     const value = await api<Reading>(`/readings/${encodeURIComponent(id)}`);
     if (disposed) return;
@@ -96,9 +96,6 @@ async function load(initial = true) {
         value.najia.selected_use || value.najia.use_candidates[0] || "世爻";
     }
     error.value = "";
-    if (initial && !value.interpretations.length && value.mode !== "najia") {
-      await interpret(false);
-    }
     schedule();
   } catch (e) {
     if (disposed) return;
@@ -364,14 +361,23 @@ onUnmounted(() => {
                 :label="`解读 ${index + 1} · ${date(a.started_at)}`"
             /></el-select>
           </div>
-          <div v-if="reading.mode === 'najia' && !reading.interpretations.length" class="status-box">
-            <p>先确认上方的观察重点，再生成白话解读。</p>
+          <div v-if="!reading.interpretations.length" class="status-box">
+            <p v-if="reading.mode === 'najia'">先确认上方的观察重点，再生成白话解读。</p>
+            <p v-else>卦象和原典已经保存。需要白话说明时，再手动生成解读。</p>
             <el-button
+              v-if="reading.mode === 'najia'"
               type="primary"
               data-testid="start-najia-interpretation"
               :loading="useSaving || busy"
               @click="startNajiaInterpretation"
             >按此重点生成解读</el-button>
+            <el-button
+              v-else
+              type="primary"
+              data-testid="start-classic-interpretation"
+              :loading="busy"
+              @click="interpret(false)"
+            >生成白话解读</el-button>
           </div>
           <div
             v-if="latest?.status === 'running'"
