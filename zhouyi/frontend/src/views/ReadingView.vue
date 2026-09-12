@@ -4,7 +4,7 @@ import { requestId as newRequestId } from "../request-id";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import { api, date, errorText, listHexagrams } from "../api";
-import type { Reading, Attempt, ClassicSummary, Reflection } from "../types";
+import type { Reading, Attempt, Classic, ClassicSummary, Reflection } from "../types";
 import Hexagram from "../components/Hexagram.vue";
 import SourceCard from "../components/SourceCard.vue";
 import CitedParagraph from "../components/CitedParagraph.vue";
@@ -23,8 +23,10 @@ const route = useRoute(),
   useChoice = ref(""),
   useSaving = ref(false),
   useError = ref(""),
+  canonicalTexts = ref<string[]>([]),
   now = ref(Date.now());
 let disposed = false,
+  canonicalFor = 0,
   timer: ReturnType<typeof setTimeout> | undefined;
 const latest = computed(() => reading.value?.interpretations.at(-1)),
   successes = computed(
@@ -86,11 +88,30 @@ function schedule() {
     await load();
   }, 2000);
 }
+async function loadCanonicalTexts(hexagramId: number) {
+  if (canonicalFor === hexagramId) return;
+  canonicalFor = hexagramId;
+  try {
+    const value = await api<Classic>(`/classics/${hexagramId}`);
+    if (disposed) return;
+    canonicalTexts.value = [
+      value.judgment,
+      value.tuan,
+      value.xiang,
+      ...(value.lines || []),
+      ...(value.xiaoxiang || []),
+      ...(value.use ? [value.use] : []),
+    ].filter(Boolean).map((material) => material.text);
+  } catch {
+    canonicalFor = 0;
+  }
+}
 async function load() {
   try {
     const value = await api<Reading>(`/readings/${encodeURIComponent(id)}`);
     if (disposed) return;
     reading.value = value;
+    await loadCanonicalTexts(value.cast.original_id);
     if (value.najia) {
       useChoice.value =
         value.najia.selected_use || value.najia.use_candidates[0] || "世爻";
@@ -343,6 +364,7 @@ onUnmounted(() => {
             :anchor="false"
             :key="material.id"
             :material="material"
+            :canonical-texts="canonicalTexts"
           />
           <p v-if="!primary.length" class="muted">暂无主读材料。</p>
         </section>
@@ -448,6 +470,7 @@ onUnmounted(() => {
             v-for="material in reading.materials"
             :key="material.id"
             :material="material"
+            :canonical-texts="canonicalTexts"
           />
         </details>
         <section class="panel">

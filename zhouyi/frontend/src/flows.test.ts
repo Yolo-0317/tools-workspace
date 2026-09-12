@@ -204,6 +204,42 @@ it("explains the original, moving and changed hexagrams using this cast", async 
   expect(guide.text()).toContain("不是重新起了一卦");
   w.unmount();
 });
+it("uses the full local classic to restore punctuation in commentary on a reading", async () => {
+  const commentary = {
+    id: "zhouyibenyi-3",
+    role: "commentary",
+    book: "周易本义",
+    edition: "四库全书本",
+    chapter: "屯·经传注释",
+    text: "○六二屯如邅如乗马班如匪寇婚媾女子贞不字十年乃字〈注〉",
+    source_url: "https://example.com",
+    checksum: "sha",
+    verification: "checked",
+    hexagram_id: 1,
+    kind: "commentary",
+    position: null,
+  };
+  responseReading.materials = [commentary];
+  const previousFetch = fetch;
+  vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+    if (url === "/api/classics/1") {
+      const line = { ...commentary, kind: "line", text: "六二：屯如邅如，乘马班如，匪寇婚媾，女子贞不字，十年乃字。" };
+      return new Response(JSON.stringify({
+        judgment: line,
+        tuan: line,
+        xiang: line,
+        lines: [line],
+        xiaoxiang: [],
+        use: null,
+      }));
+    }
+    return previousFetch(url, init);
+  });
+
+  const w = await setup(ReadingView, "/readings/r-1");
+  expect(w.get(".classical-lead").text()).toBe("屯如邅如，乘马班如，匪寇婚媾，女子贞不字，十年乃字。");
+  w.unmount();
+});
 it("waits for a manual click before starting a classic interpretation", async () => {
   const w = await setup(ReadingView, "/readings/r-1");
   expect(requests.some((request) => request.url.endsWith("/interpretations"))).toBe(false);

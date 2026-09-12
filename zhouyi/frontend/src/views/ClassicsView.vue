@@ -15,6 +15,18 @@ const route = useRoute(),
 const filtered = computed(() =>
   items.value.filter((x) => `${x.id} ${x.name}`.includes(query.value)),
 );
+const canonicalTexts = computed(() => {
+  const value = detail.value;
+  if (!value) return [];
+  return [
+    value.judgment,
+    value.tuan,
+    value.xiang,
+    ...value.lines,
+    ...value.xiaoxiang,
+    ...(value.use ? [value.use] : []),
+  ].filter(Boolean).map((material) => material.text);
+});
 let sequence = 0;
 async function load() {
   const current = ++sequence;
@@ -101,6 +113,7 @@ watch(() => route.params.id, load);
           v-for="m in detail.commentaries"
           :key="m.id"
           :material="m"
+          :canonical-texts="canonicalTexts"
         />
         <p v-if="!detail.commentaries.length" class="muted">
           此卦暂未收录注疏。

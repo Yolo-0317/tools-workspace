@@ -523,12 +523,38 @@ main {
   overflow-wrap: anywhere;
 }
 .classical-sections {
-  margin: 2px 0 18px;
+  margin: 0;
+  padding: 4px 17px 17px;
+  border-top: 1px solid rgba(76, 217, 232, 0.12);
+}
+.commentary-volume {
+  margin: 4px 0 18px;
+  border: 1px solid rgba(76, 217, 232, 0.14);
+  background: rgba(4, 11, 17, 0.46);
+}
+.commentary-volume > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 15px;
+  color: #9eb7bc;
+  font-size: 13px;
+}
+.commentary-volume > summary small {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.commentary-volume[open] > summary {
+  margin-bottom: 0;
 }
 .classical-section {
   margin: 0;
   padding: 17px 0;
   border-top: 1px solid #e4ded2;
+  font-size: 16px;
+  line-height: 1.85;
 }
 .classical-section:first-child {
   padding-top: 0;
@@ -550,7 +576,7 @@ main {
 }
 .classical-lead {
   color: #35454a;
-  font-weight: 600;
+  font-weight: 500;
   margin: 0;
 }
 .classical-note-details {
