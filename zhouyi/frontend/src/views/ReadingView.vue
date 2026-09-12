@@ -8,6 +8,7 @@ import type { Reading, Attempt, ClassicSummary, Reflection } from "../types";
 import Hexagram from "../components/Hexagram.vue";
 import SourceCard from "../components/SourceCard.vue";
 import CitedParagraph from "../components/CitedParagraph.vue";
+import ConceptGuide from "../components/ConceptGuide.vue";
 const route = useRoute(),
   id = String(route.params.id || route.path.split("/").pop()),
   reading = ref<Reading>(),
@@ -235,6 +236,7 @@ onUnmounted(() => {
                 : "六爻不变"
             }}
           </p>
+          <ConceptGuide kind="hexagram" :moving="reading.cast.moving" />
           <details>
             <summary>查看六次随机结果</summary>
             <ol class="throws">
@@ -279,6 +281,7 @@ onUnmounted(() => {
             旬空：{{ reading.calendar.xunkong.join('、') }}；世爻在{{ positionName(reading.najia.shi_position) }}，
             应爻在{{ positionName(reading.najia.ying_position) }}。
           </p>
+          <ConceptGuide kind="najia" />
           <label class="use-picker">本次观察重点
             <select
               v-model="useChoice"

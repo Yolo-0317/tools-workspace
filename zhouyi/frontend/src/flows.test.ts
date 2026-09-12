@@ -181,11 +181,27 @@ it("shows the saved Najia chart separately from the classic passages", async () 
   expect(w.text()).toContain("六爻纳甲排盘");
   expect(w.text()).toContain("甲辰年 · 丙寅月 · 甲辰日 · 己巳时");
   expect(w.text()).toContain("北京时间零点换日");
+  expect(w.get('[data-testid="najia-concept-guide"]').text()).toContain("什么是六爻纳甲盘");
+  expect(w.get('[data-testid="najia-concept-guide"]').text()).toContain("不是生辰八字排盘");
+  expect(w.get('[data-testid="najia-concept-guide"]').text()).toContain("世爻");
+  expect(w.get('[data-testid="najia-concept-guide"]').text()).toContain("六亲");
+  expect(w.get('[data-testid="najia-concept-guide"]').text()).toContain("六神");
+  expect(w.get('[data-testid="najia-concept-guide"]').text()).toContain("旬空");
   expect(w.findAll('[data-testid="najia-line"]')).toHaveLength(6);
   expect(w.find('[data-testid="najia-use"]').exists()).toBe(true);
   expect(requests.some((request) => request.url.endsWith("/interpretations"))).toBe(false);
   expect(w.find('[data-testid="start-najia-interpretation"]').exists()).toBe(true);
   expect(w.get('[data-testid="najia-source"]').attributes("href")).toBe("https://example.com/najia");
+  w.unmount();
+});
+it("explains the original, moving and changed hexagrams using this cast", async () => {
+  responseReading.cast.moving = [2, 5];
+  const w = await setup(ReadingView, "/readings/r-1");
+  const guide = w.get('[data-testid="hexagram-concept-guide"]');
+  expect(guide.text()).toContain("本卦是六次随机结果直接组成的卦");
+  expect(guide.text()).toContain("这次是二爻、五爻发生变化");
+  expect(guide.text()).toContain("之卦由本卦的动爻阴阳翻转后形成");
+  expect(guide.text()).toContain("不是重新起了一卦");
   w.unmount();
 });
 it("reloads stored reading without posting a new cast; failed interpretation retries same reading", async () => {

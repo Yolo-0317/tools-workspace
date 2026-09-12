@@ -170,6 +170,54 @@ main {
   padding: 28px;
   border-radius: 5px;
 }
+.concept-guide {
+  margin: 18px 0 16px;
+  border: 1px solid #ded8cd;
+  border-radius: 4px;
+  background: #faf7f0;
+}
+.concept-guide summary {
+  padding: 12px 14px;
+  color: #69483f;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.concept-guide[open] summary {
+  border-bottom: 1px solid #e5dfd4;
+}
+.concept-guide dl {
+  margin: 0;
+  padding: 6px 14px 12px;
+}
+.concept-guide dl > div {
+  padding: 9px 0;
+  border-bottom: 1px solid #ebe6dc;
+}
+.concept-guide dl > div:last-child {
+  border-bottom: 0;
+}
+.concept-guide dt {
+  color: #34464c;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.concept-guide dd,
+.concept-intro {
+  margin: 0;
+  color: #6f7774;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.concept-guide-wide dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 28px;
+}
+.concept-intro {
+  padding: 14px 14px 4px;
+}
 .cast-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 242px;
@@ -711,6 +759,9 @@ footer {
   }
 }
 @media (max-width: 540px) {
+  .concept-guide-wide dl {
+    grid-template-columns: 1fr;
+  }
   .app-shell {
     padding: 0 18px;
   }
