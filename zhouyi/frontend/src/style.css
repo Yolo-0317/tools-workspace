@@ -522,6 +522,35 @@ main {
   margin-bottom: 14px;
   overflow-wrap: anywhere;
 }
+.classical-sections {
+  margin: 2px 0 18px;
+}
+.classical-section {
+  margin: 0;
+  padding: 17px 0;
+  border-top: 1px solid #e4ded2;
+}
+.classical-section:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.classical-section:last-child {
+  padding-bottom: 0;
+}
+.classical-lead {
+  display: block;
+  color: #35454a;
+  font-weight: 600;
+}
+.classical-note {
+  display: block;
+  margin-top: 7px;
+  color: #68726f;
+  font-family: "Songti SC", STSong, serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 2;
+}
 details {
   font-size: 12px;
   color: #7e857e;
