@@ -149,7 +149,7 @@ async function finishAnimation() {
       <h1>把心中的事，问清楚。</h1>
       <p class="muted">从一个具体问题开始，读原典，也留意自己的处境。</p>
     </div>
-    <span class="seal" aria-hidden="true">观易</span>
+    <span class="signal-badge" aria-hidden="true"><b>64</b><small>卦象协议</small></span>
   </section>
   <div class="cast-layout">
     <section class="panel">

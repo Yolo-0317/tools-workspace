@@ -32,16 +32,24 @@ function splitCommentary(text: string) {
   return sections;
 }
 
-const commentarySections = computed(() =>
-  props.material.kind === "commentary"
-    ? splitCommentary(props.material.text).map((text) => {
-        const noteStart = text.indexOf("〈");
-        return noteStart < 0
-          ? { lead: text, note: "" }
-          : { lead: text.slice(0, noteStart), note: text.slice(noteStart) };
-      })
-    : [],
-);
+const commentarySections = computed(() => {
+  if (props.material.kind !== "commentary") return [];
+  let context = "经文";
+  return splitCommentary(props.material.text).map((text) => {
+    const marked = text.startsWith("○");
+    const cleanText = marked ? text.slice(1) : text;
+    const noteStart = cleanText.indexOf("〈");
+    const lead = noteStart < 0 ? cleanText : cleanText.slice(0, noteStart);
+    const note = noteStart < 0 ? "" : cleanText.slice(noteStart);
+    let label = context;
+    if (marked && lead.startsWith("彖曰")) context = label = "彖传";
+    else if (marked && lead.startsWith("象曰")) context = label = "大象";
+    else if (/^(初[六九]|[六九][二三四五]|上[六九])/.test(lead)) {
+      context = label = "爻辞";
+    } else if (!marked && lead.startsWith("象曰")) label = "小象";
+    return { label, lead, note };
+  });
+});
 function safeUrl(url: string) {
   try {
     const u = new URL(url);
@@ -63,14 +71,16 @@ function safeUrl(url: string) {
       ><span v-if="material.role === 'primary'">主读</span>
     </div>
     <div v-if="commentarySections.length" class="classical-sections">
-      <p
+      <section
         v-for="(section, index) in commentarySections"
         :key="index"
         class="classical-text classical-section"
-      ><span class="classical-lead">{{ section.lead }}</span><span
-          v-if="section.note"
-          class="classical-note"
-        >{{ section.note }}</span></p>
+      ><span class="classical-section-label">{{ section.label }}</span
+        ><p class="classical-lead">{{ section.lead }}</p
+        ><details v-if="section.note" class="classical-note-details"
+          ><summary>查看本义注原文</summary
+          ><p class="classical-note">{{ section.note }}</p></details
+        ></section>
     </div>
     <p v-else class="classical-text">{{ material.text }}</p>
     <details>
