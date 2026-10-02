@@ -1,0 +1,10 @@
+[
+  {
+    "id": "01-ai-note",
+    "text": "本来让 AI 说“减肥”，结果两个字直接粘一块儿了",
+    "start": 0.125,
+    "end": 2.200,
+    "kind": "commentary",
+    "fontSize": 30
+  }
+]

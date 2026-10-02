@@ -4,7 +4,9 @@ set -euo pipefail
 project_dir="$(cd "$(dirname "$0")/.." && pwd)"
 episode_dir="$project_dir/episodes/tiangong-hot-dance-zhixia-ayan-duet-10s"
 source_video="$episode_dir/assets/video/content-seedance-v01.mp4"
-voice_audio="$project_dir/assets/audio/tiangong-hot-dance-zhixia-ayan-duet-10s-jiuyue-haoyun-voice-v01/full-recitation-preview-three-lines-10.08s-v02.wav"
+voice_dir="$project_dir/assets/audio/tiangong-hot-dance-zhixia-ayan-duet-10s-jiuyue-haoyun-voice-v01"
+voice_audio="$voice_dir/full-recitation-preview-three-lines-10.08s-v03-mono-safe.wav"
+voice_builder="$project_dir/scripts/build_jiuyue_haoyun_recitation_v03.sh"
 subtitle_plan="$episode_dir/subtitle-plan-jiuyue-haoyun-v01.json"
 renderer="$project_dir/scripts/render_jiuyue_haoyun_subtitle_cards.swift"
 builder="$project_dir/scripts/build_tiangong_hot_dance_jiuyue_haoyun_final.sh"
@@ -16,7 +18,12 @@ fail() {
   exit 1
 }
 
-for required in "$source_video" "$voice_audio" "$subtitle_plan"; do
+for required in \
+  "$source_video" \
+  "$voice_dir/01-zhixia-modern-blessing.mp3" \
+  "$voice_dir/02-zhixia-middle-wish.mp3" \
+  "$voice_dir/02-zhixia-poem.mp3" \
+  "$subtitle_plan"; do
   [[ -s "$required" ]] || fail "missing required input: $required"
 done
 
@@ -28,7 +35,38 @@ jq -e '
 ' "$subtitle_plan" >/dev/null || fail "invalid subtitle plan"
 
 [[ -s "$renderer" ]] || fail "missing subtitle renderer"
+[[ -x "$voice_builder" ]] || fail "missing mono-safe recitation builder"
 [[ -x "$builder" ]] || fail "missing executable final builder"
+
+"$voice_builder" >/dev/null
+[[ -s "$voice_audio" ]] || fail "missing rebuilt mono-safe recitation"
+voice_json="$(
+  ffprobe -v error \
+    -show_entries format=duration:stream=codec_name,sample_rate,channels \
+    -of json "$voice_audio"
+)"
+print -r -- "$voice_json" | jq -e '
+  ([.streams[] | select(.codec_name == "pcm_s16le" and .sample_rate == "48000" and .channels == 2)] | length) == 1 and
+  ((.format.duration | tonumber) >= 10.079) and
+  ((.format.duration | tonumber) <= 10.081)
+' >/dev/null || fail "invalid rebuilt recitation parameters"
+voice_channel_difference_db="$(
+  ffmpeg -hide_banner -i "$voice_audio" \
+    -af "pan=mono|c0=c0-c1,volumedetect" -f null - 2>&1 |
+    sed -n 's/.*mean_volume: \([-a-zA-Z0-9.]*\) dB.*/\1/p' |
+    tail -1
+)"
+[[ "$voice_channel_difference_db" == "-91.0" || "$voice_channel_difference_db" == "-inf" ]] || \
+  fail "rebuilt narration channels are not identical: ${voice_channel_difference_db} dB"
+first_audible_second="$(
+  ffmpeg -hide_banner -i "$voice_audio" \
+    -af "pan=mono|c0=c0,silencedetect=noise=-42dB:d=0.05" -f null - 2>&1 |
+    sed -n 's/.*silence_end: \([0-9.]*\).*/\1/p' |
+    head -1
+)"
+[[ -n "$first_audible_second" ]] || fail "cannot detect first narration entry"
+awk -v value="$first_audible_second" 'BEGIN { exit !(value >= 0.40 && value <= 0.48) }' || \
+  fail "first narration entry drifted from the subtitle: ${first_audible_second}s"
 
 test_dir="$(mktemp -d /tmp/zhixia-jiuyue-final-test.XXXXXX)"
 trap 'rm -rf "$test_dir"' EXIT

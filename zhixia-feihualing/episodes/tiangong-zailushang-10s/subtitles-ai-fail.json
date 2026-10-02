@@ -1,0 +1,30 @@
+[
+  {
+    "id": "01-setup",
+    "text": "我让 AI 拍\n“还没出门，嘴已在路上”",
+    "start": 0.000,
+    "end": 1.800,
+    "kind": "commentary"
+  },
+  {
+    "id": "02-volume-fail",
+    "text": "让她小声说“吹点儿风”\n她喊得整个天宫都听见了",
+    "start": 1.800,
+    "end": 3.900,
+    "kind": "commentary"
+  },
+  {
+    "id": "03-action-fail",
+    "text": "风还没吹明白\n先挨了一掌",
+    "start": 3.900,
+    "end": 6.700,
+    "kind": "commentary"
+  },
+  {
+    "id": "04-punchline",
+    "text": "栀夏：快到了\n头发：我先到了",
+    "start": 6.700,
+    "end": 10.000,
+    "kind": "commentary"
+  }
+]

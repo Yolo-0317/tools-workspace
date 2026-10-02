@@ -4,7 +4,8 @@ set -euo pipefail
 project_dir="$(cd "$(dirname "$0")/.." && pwd)"
 episode_dir="$project_dir/episodes/tiangong-hot-dance-zhixia-ayan-duet-10s"
 source_video="$episode_dir/assets/video/content-seedance-v01.mp4"
-voice_audio="$project_dir/assets/audio/tiangong-hot-dance-zhixia-ayan-duet-10s-jiuyue-haoyun-voice-v01/full-recitation-preview-three-lines-10.08s-v02.wav"
+voice_audio="$project_dir/assets/audio/tiangong-hot-dance-zhixia-ayan-duet-10s-jiuyue-haoyun-voice-v01/full-recitation-preview-three-lines-10.08s-v03-mono-safe.wav"
+voice_builder="$project_dir/scripts/build_jiuyue_haoyun_recitation_v03.sh"
 subtitle_plan="$episode_dir/subtitle-plan-jiuyue-haoyun-v01.json"
 renderer="$project_dir/scripts/render_jiuyue_haoyun_subtitle_cards.swift"
 voiced_output="$project_dir/exports/tiangong-hot-dance-zhixia-ayan-duet-10s-jiuyue-haoyun-voiced-v01.mp4"
@@ -12,14 +13,21 @@ subtitled_output="$project_dir/exports/tiangong-hot-dance-zhixia-ayan-duet-10s-j
 build_dir="$(mktemp -d /tmp/zhixia-jiuyue-hot-dance-final.XXXXXX)"
 cards_dir="$build_dir/cards"
 master="$build_dir/voiced-master.mp4"
+tail_track="$build_dir/tail-track.wav"
 trap 'rm -rf "$build_dir"' EXIT
 
-for required in "$source_video" "$voice_audio" "$subtitle_plan" "$renderer"; do
+for required in "$source_video" "$subtitle_plan" "$renderer" "$voice_builder"; do
   [[ -s "$required" ]] || {
     print -u2 -r -- "Missing required input: $required"
     exit 1
   }
 done
+
+"$voice_builder" >/dev/null
+[[ -s "$voice_audio" ]] || {
+  print -u2 -r -- "Missing rebuilt narration: $voice_audio"
+  exit 1
+}
 
 mkdir -p "$cards_dir" "$project_dir/exports"
 export CLANG_MODULE_CACHE_PATH="$build_dir/clang-module-cache"
@@ -35,7 +43,20 @@ done
 
 ffmpeg -hide_banner -loglevel error -y \
   -i "$source_video" \
+  -filter_complex "\
+    [0:a]atrim=start=8.40:end=8.70,asetpts=PTS-STARTPTS,\
+      aresample=48000,aformat=channel_layouts=stereo,\
+      volume=0.55,afade=t=in:st=0:d=0.03,\
+      aecho=0.8:0.70:180|360|540:0.50|0.30|0.20[tail_hit];\
+    anullsrc=r=48000:cl=stereo:d=9.40[tail_silence];\
+    [tail_silence][tail_hit]concat=n=2:v=0:a=1,\
+      apad,atrim=0:10.08[tail]" \
+  -map "[tail]" -c:a pcm_s16le "$tail_track"
+
+ffmpeg -hide_banner -loglevel error -y \
+  -i "$source_video" \
   -i "$voice_audio" \
+  -i "$tail_track" \
   -filter_complex "\
     [0:v]trim=start=0:duration=10.08,setpts=PTS-STARTPTS,\
       scale=-2:1920:flags=lanczos+accurate_rnd+full_chroma_int,\
@@ -49,12 +70,9 @@ ffmpeg -hide_banner -loglevel error -y \
       volume=1.08,asplit=2[voice][voice_sc];\
     [0:a]atrim=0:10.08,asetpts=PTS-STARTPTS,\
       aresample=48000,aformat=channel_layouts=stereo,volume=0.90,\
-      apad,atrim=0:10.08,\
-      asplit=2[bed_main][tail_source];\
-    [tail_source]atrim=start=8.40:end=8.70,asetpts=PTS-STARTPTS,\
-      volume=0.55,afade=t=in:st=0:d=0.03,\
-      aecho=0.8:0.70:180|360|540:0.50|0.30|0.20,\
-      adelay=delays=9400:all=1[tail];\
+      apad,atrim=0:10.08[bed_main];\
+    [2:a]atrim=0:10.08,asetpts=PTS-STARTPTS,\
+      aresample=48000,aformat=channel_layouts=stereo[tail];\
     [bed_main][tail]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[bed_raw];\
     [bed_raw][voice_sc]sidechaincompress=threshold=0.018:ratio=5:attack=60:release=220:makeup=1[bed];\
     [bed][voice]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,\

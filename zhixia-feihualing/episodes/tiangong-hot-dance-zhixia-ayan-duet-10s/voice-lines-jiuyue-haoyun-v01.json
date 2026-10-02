@@ -1,0 +1,31 @@
+{
+  "episode": "tiangong-hot-dance-zhixia-ayan-duet-10s",
+  "format": "one-poem-story",
+  "theme": "一舞一愿九月好运天宫双人热舞十秒朗诵",
+  "theme_slug": "tiangong-hot-dance-zhixia-ayan-duet-10s-jiuyue-haoyun",
+  "audio_slug": "tiangong-hot-dance-zhixia-ayan-duet-10s-jiuyue-haoyun-voice-v01",
+  "lines": [
+    {
+      "id": "01-modern-blessing",
+      "role": "zhixia",
+      "text": "九月，愿所有美好，久久相伴。",
+      "revision": 1,
+      "speech_rate": 0,
+      "start_ms": 150,
+      "context_texts": [
+        "这是十秒《一舞一愿·九月好运》的开场祝福。保持年轻、清透、自然、有生命力的栀夏固定声线，像真诚地把祝福送给镜头前熟悉的人。‘九月’轻轻唤起新开始，短停后说‘愿所有美好’；‘久久相伴’温暖笃定，两个‘久’清楚但不刻意玩谐音。语速从容，吐字清楚，情绪明亮并含有自然笑意，但不甜腻、不撒娇、不喊口号、不使用广告腔、播音腔或机械慢速。只读给定正文。"
+      ]
+    },
+    {
+      "id": "02-poem",
+      "role": "zhixia",
+      "text": "好风凭借力，送我上青云。",
+      "revision": 1,
+      "speech_rate": 0,
+      "gap_before_ms": 850,
+      "context_texts": [
+        "承接前一句祝福，中间先留一个能够被听见的完整气口，再自然进入诗句。保持同一位栀夏、同一距离和同一明亮情绪，由温暖祝愿逐渐展开为轻快、自信、向上的说诗。‘好风’清朗开启，‘凭借力’读出借势向前的动感；逗号处自然停连，‘送我上青云’随天宫舞蹈收势逐渐打开空间，‘青云’明亮而完整地落下。正常语速，不吟唱、不拖字、不喊诗、不使用朗诵比赛腔、仙侠配音腔或夸张颤音。只读给定原文，不念作者、题目和说明。"
+      ]
+    }
+  ]
+}

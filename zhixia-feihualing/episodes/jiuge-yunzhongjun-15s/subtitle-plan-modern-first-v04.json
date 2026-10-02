@@ -1,0 +1,35 @@
+[
+  {
+    "id": "01-modern-cloud",
+    "kind": "modern",
+    "text": "有些人如云而来也如云而去",
+    "side": "right",
+    "start": 0.000,
+    "end": 3.456
+  },
+  {
+    "id": "02-modern-farewell",
+    "kind": "modern",
+    "text": "留不住便目送他远去",
+    "side": "left",
+    "start": 3.600,
+    "end": 6.648
+  },
+  {
+    "id": "03-classic-arrival",
+    "kind": "poem",
+    "text": "灵皇皇兮既降",
+    "attribution": "屈原《九歌·云中君》节选",
+    "side": "right",
+    "start": 7.000,
+    "end": 9.448
+  },
+  {
+    "id": "04-classic-departure",
+    "kind": "poem",
+    "text": "猋远举兮云中",
+    "side": "left",
+    "start": 10.000,
+    "end": 12.256
+  }
+]

@@ -1,0 +1,31 @@
+[
+  {
+    "id": "01-recipient",
+    "kind": "modern",
+    "text": "送给重新出发的你",
+    "start": 0.0,
+    "end": 1.334
+  },
+  {
+    "id": "02-situation",
+    "kind": "modern",
+    "text": "这一程或许不轻松，前方也会有风浪",
+    "start": 1.984,
+    "end": 5.249
+  },
+  {
+    "id": "03-blessing",
+    "kind": "modern",
+    "text": "愿你所盼有期，走过的每一步都算数",
+    "start": 5.999,
+    "end": 9.428
+  },
+  {
+    "id": "04-poem",
+    "kind": "poem",
+    "text": "长风破浪会有时，直挂云帆济沧海",
+    "attribution": "唐·李白《行路难·其一》",
+    "start": 10.278,
+    "end": 13.43
+  }
+]

@@ -1,0 +1,30 @@
+[
+  {
+    "id": "01-poem-line-one",
+    "kind": "poem",
+    "text": "远上寒山石径斜",
+    "start": 0.285,
+    "end": 2.841
+  },
+  {
+    "id": "02-poem-line-two",
+    "kind": "poem",
+    "text": "白云生处有人家",
+    "start": 4.517,
+    "end": 6.889
+  },
+  {
+    "id": "03-poem-line-three",
+    "kind": "poem",
+    "text": "停车坐爱枫林晚",
+    "start": 8.569,
+    "end": 10.795
+  },
+  {
+    "id": "04-poem-line-four",
+    "kind": "poem",
+    "text": "霜叶红于二月花",
+    "start": 12.473,
+    "end": 14.587
+  }
+]

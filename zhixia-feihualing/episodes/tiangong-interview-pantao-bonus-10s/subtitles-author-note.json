@@ -1,0 +1,42 @@
+[
+  {
+    "id": "01-question",
+    "text": "姐姐，天宫年终奖发什么？",
+    "start": 0.125,
+    "end": 2.425,
+    "kind": "dialogue",
+    "placement": "bottom"
+  },
+  {
+    "id": "02-answer",
+    "text": "蟠桃。",
+    "start": 2.625,
+    "end": 3.325,
+    "kind": "dialogue",
+    "placement": "bottom"
+  },
+  {
+    "id": "03-author-note",
+    "text": "本来让 AI 说“蟠桃”，结果说成了“fan桃”",
+    "start": 2.550,
+    "end": 4.950,
+    "kind": "commentary",
+    "fontSize": 30
+  },
+  {
+    "id": "04-followup",
+    "text": "这么好？",
+    "start": 3.650,
+    "end": 4.425,
+    "kind": "dialogue",
+    "placement": "bottom"
+  },
+  {
+    "id": "05-punchline",
+    "text": "去年的。",
+    "start": 5.100,
+    "end": 6.100,
+    "kind": "dialogue",
+    "placement": "bottom"
+  }
+]

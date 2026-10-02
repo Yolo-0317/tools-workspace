@@ -1,0 +1,30 @@
+[
+  {
+    "id": "01-zhixia-line-one",
+    "text": "霜清东林钟。",
+    "start": 0.0,
+    "end": 3.096,
+    "highlight": "莲台天乐十五秒四句舒缓朗诵"
+  },
+  {
+    "id": "02-zhixia-line-two",
+    "text": "水白虎溪月。",
+    "start": 3.396,
+    "end": 6.468,
+    "highlight": "莲台天乐十五秒四句舒缓朗诵"
+  },
+  {
+    "id": "03-zhixia-line-three",
+    "text": "天香生虚空。",
+    "start": 6.768,
+    "end": 9.864,
+    "highlight": "莲台天乐十五秒四句舒缓朗诵"
+  },
+  {
+    "id": "04-zhixia-line-four",
+    "text": "天乐鸣不歇。",
+    "start": 10.164,
+    "end": 12.996,
+    "highlight": "莲台天乐十五秒四句舒缓朗诵"
+  }
+]

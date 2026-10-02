@@ -1,0 +1,5 @@
+[
+  {"id":"01-off-duty","speaker":"小黑","text":"不是，下班还找我？","start":0.70,"end":2.82},
+  {"id":"02-overtime-pay","speaker":"小黑","text":"我尾巴摇一天了，加班费呢？","start":2.84,"end":5.62},
+  {"id":"03-no-work","speaker":"小黑","text":"没加班费，我可不营业啊。","start":5.64,"end":8.25}
+]

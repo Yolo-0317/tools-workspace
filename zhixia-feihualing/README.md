@@ -15,6 +15,8 @@
 
 ## 当前优先级
 
+所有新写、修订和交付的 Seedance 提示词（包括聊天中直接贴出的正文），必须先执行[官方提示词交付门禁](docs/seedance-official-prompt-gate.md)。该门禁区分拦截与风险提醒，不代表自动检测或生成效果保证；栏目选择以用户最新确认为准。
+
 1. 以EP01流程为模板，确定后续4个主题字及每集三句诗。
 2. 复用固定角色、音色、字幕模板和FFmpeg流程。
 3. 每集只重新生成15秒全屏诗境和对应TTS。
@@ -48,6 +50,7 @@ EP01、EP02、EP03 的既有音频、字幕和成片不纳入自动补生成，�
 - [世界观母版](docs/world-bible.md)
 - [角色母版](docs/character-bible.md)
 - [视觉母版](docs/visual-bible.md)
+- [天宫日常道具与审片规则](docs/heavenly-comedy/production-rules.md)
 - [电影级写实视觉规范](docs/realistic-visual-style.md)
 - [栀夏专属古典舞动作库](docs/zhixia-classical-dance-library.md)
 - [栀夏诗境自动编舞组合器](docs/zhixia-poetry-dance-composer.md)

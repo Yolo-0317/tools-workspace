@@ -1,0 +1,77 @@
+{
+  "episode": "yiwu-yiyuan-qiancheng-01-restart-15s",
+  "audio_slug": "yiwu-yiyuan-qiancheng-01-restart-15s-voice-v03",
+  "measurement": {
+    "trim_filter": "silenceremove=start_periods=1:start_duration=0.05:start_threshold=-48dB,areverse,silenceremove=start_periods=1:start_duration=0.05:start_threshold=-48dB,areverse",
+    "timeline_unit": "ms"
+  },
+  "lines": [
+    {
+      "id": "01-recipient",
+      "filename": "01-zhixia-recipient-v03.mp3",
+      "sha256": "3f684700ce0d91eba7fb7f834b72ba24db5e167ef26981de5733b0e6b5022016",
+      "source_duration_ms": 2664,
+      "trimmed_duration_ms": 1334,
+      "gap_before_ms": 0,
+      "start_ms": 0,
+      "end_ms": 1334
+    },
+    {
+      "id": "02-situation",
+      "filename": "02-zhixia-situation-v03.mp3",
+      "sha256": "83c47d69db0eaca9303344498c5d624ca40db380264d2e11c930c6d2f0d6f923",
+      "source_duration_ms": 4248,
+      "trimmed_duration_ms": 3265,
+      "gap_before_ms": 650,
+      "start_ms": 1984,
+      "end_ms": 5249
+    },
+    {
+      "id": "03-blessing",
+      "filename": "03-zhixia-blessing-v03.mp3",
+      "sha256": "82f00371a4891d878490cfb7f96a2efd6e5345447f2acdc08c546d63f39fec36",
+      "source_duration_ms": 4680,
+      "trimmed_duration_ms": 3429,
+      "gap_before_ms": 750,
+      "start_ms": 5999,
+      "end_ms": 9428
+    },
+    {
+      "id": "04-poem",
+      "filename": "04-zhixia-poem-v03.mp3",
+      "sha256": "6ab18f84da036fe59f844ae229031693535475c03429a9225df2b22ba9a0f8ff",
+      "source_duration_ms": 4032,
+      "trimmed_duration_ms": 3152,
+      "gap_before_ms": 850,
+      "start_ms": 10278,
+      "end_ms": 13430
+    }
+  ],
+  "gaps_ms": [650, 750, 850],
+  "voice_start_ms": 0,
+  "voice_end_ms": 13430,
+  "voice_end_target_min_ms": 14000,
+  "voice_end_target_max_ms": 14800,
+  "voice_end_shortfall_ms": 570,
+  "max_gap_ms": 850,
+  "preview": {
+    "filename": "full-recitation-preview-v03.mp3",
+    "sha256": "4fba46a96922d2da6282e7197f51ae2f64364cb4e8d6a1cd51fa75f0a0c8af1c",
+    "duration_ms": 13430,
+    "sample_rate_hz": 48000,
+    "channels": 1,
+    "final_poem_tail_preserved": true
+  },
+  "exact_15s_preview": {
+    "filename": "full-recitation-preview-v03-15s.wav",
+    "sha256": "babe340c94656501fe00877604b8248ad70832696eb2a760d8a15037713ac0e1",
+    "duration_ms": 15000,
+    "sample_rate_hz": 48000,
+    "channels": 1,
+    "padding_after_natural_tail_ms": 1570,
+    "time_stretching": false
+  },
+  "automatic_gate": "fail",
+  "automatic_gate_reason": "voice_end_before_14000_ms",
+  "human_gate": "pending"
+}
