@@ -589,12 +589,44 @@ main {
 }
 .classical-note {
   margin: 10px 0 0;
-  padding: 12px 14px;
+  padding: 14px 16px;
   color: #68726f;
   font-family: inherit;
   font-size: 14px;
   font-weight: 400;
   line-height: 1.9;
+}
+.classical-note-pronunciation {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(76, 217, 232, 0.11);
+}
+.classical-note-pronunciation span,
+.classical-note-block strong {
+  flex: 0 0 auto;
+  color: #35cbd8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1px;
+}
+.classical-note-block {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(76, 217, 232, 0.08);
+}
+.classical-note-pronunciation + .classical-note-block,
+.classical-note-block:first-child {
+  border-top: 0;
+}
+.classical-note-block p {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 details {
   font-size: 12px;

@@ -71,6 +71,37 @@ function splitCommentary(text: string) {
   return sections;
 }
 
+function formatClassicalNote(note: string, hexagramName: string) {
+  const content = note.trim().replace(/^〈/u, "").replace(/〉$/u, "");
+  const noteDivider = content.indexOf("○");
+  const pronunciation = noteDivider >= 0 ? content.slice(0, noteDivider).trim() : "";
+  const body = (noteDivider >= 0 ? content.slice(noteDivider + 1) : content).trim();
+  if (!body) return { pronunciation, blocks: [] };
+
+  const boundaries: Array<{ index: number; label: string }> = [{ index: 0, label: "卦象" }];
+  const addBoundary = (index: number, label: string) => {
+    if (index > 0 && !boundaries.some((boundary) => boundary.index === index)) {
+      boundaries.push({ index, label });
+    }
+  };
+  addBoundary(body.indexOf(`${hexagramName}六画卦之名`), "卦名");
+  addBoundary(body.indexOf("其卦以"), "卦体");
+  const tendency = body.match(/[乾坤震巽坎离離艮兑兌][^〈〉○]{0,6}在下/u);
+  if (tendency?.index !== undefined) addBoundary(tendency.index, "卦势");
+  addBoundary(body.indexOf("故筮得之者"), "占断");
+  const mainLine = body.match(/又(?:初[六九]|[六九][二三四五]|上[六九])/u);
+  if (mainLine?.index !== undefined) addBoundary(mainLine.index, "主爻");
+  boundaries.sort((left, right) => left.index - right.index);
+
+  return {
+    pronunciation,
+    blocks: boundaries.map((boundary, index) => ({
+      label: boundary.label,
+      text: body.slice(boundary.index, boundaries[index + 1]?.index ?? body.length),
+    })),
+  };
+}
+
 const commentarySections = computed(() => {
   if (props.material.kind !== "commentary") return [];
   const hexagramName = props.material.chapter.split("·")[0];
@@ -102,7 +133,12 @@ const commentarySections = computed(() => {
         lead = lead.slice(hexagramName.length);
       }
     }
-    return { label, lead: restorePunctuation(lead, props.canonicalTexts), note };
+    return {
+      label,
+      lead: restorePunctuation(lead, props.canonicalTexts),
+      note,
+      annotation: note ? formatClassicalNote(note, hexagramName) : null,
+    };
   });
 });
 function safeUrl(url: string) {
@@ -134,9 +170,17 @@ function safeUrl(url: string) {
           class="classical-text classical-section"
         ><span class="classical-section-label">{{ section.label }}</span
           ><p class="classical-lead">{{ section.lead }}</p
-          ><details v-if="section.note" class="classical-note-details"
+          ><details v-if="section.annotation" class="classical-note-details"
             ><summary>查看本义注原文</summary
-            ><p class="classical-note">{{ section.note }}</p></details
+            ><div class="classical-note"
+              ><p v-if="section.annotation.pronunciation" class="classical-note-pronunciation"
+                ><span>音注</span>{{ section.annotation.pronunciation }}</p
+              ><div
+                v-for="(block, blockIndex) in section.annotation.blocks"
+                :key="blockIndex"
+                class="classical-note-block"
+                ><strong>{{ block.label }}</strong><p>{{ block.text }}</p></div
+              ></div></details
           ></section>
       </div>
     </details>
