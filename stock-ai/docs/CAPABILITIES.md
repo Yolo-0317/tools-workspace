@@ -1,5 +1,7 @@
 # stock-ai 能力总览
 
+> 股票 Skill 路由更新（2026-09-16）：仅启用妙想系列，统一入口为 `.cursor/skills/miaoxiang-stock-workbench/SKILL.md`（工作区根目录）。下述本地代码与历史流程保留供维护，不作为当前股票 Skill 默认调用链；已有服务和调度未变更。
+
 > 工作目录：`/Users/yolo/dev/yolo/tools-workspace/stock-ai`  
 > 投资 Agent：`investment-agent/`（**投顾带操**：`投顾主策略.md` 决策 → 工具执行 → 看板/微信交付）  
 > 本文档为**当前生产链路**的单一入口；细节见各子文档链接。

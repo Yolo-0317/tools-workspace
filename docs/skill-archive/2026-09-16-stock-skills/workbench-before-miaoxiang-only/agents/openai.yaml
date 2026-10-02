@@ -1,0 +1,4 @@
+interface:
+  display_name: "妙想选股与个股分析"
+  short_description: "结合本地买点与风险门禁，使用妙想数据完成每日选股、个股及板块研究"
+  default_prompt: "使用 $miaoxiang-stock-workbench 做今天的选股，结合妙想证据说明候选资格、风险和缺失数据。"

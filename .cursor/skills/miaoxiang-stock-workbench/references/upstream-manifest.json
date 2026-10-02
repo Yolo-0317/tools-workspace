@@ -1,0 +1,41 @@
+{
+  "source": "https://marketing.dfcfw.com/res/download/A620260623NIYC2U.md",
+  "installed": "2026-09-20",
+  "credential": "MX_APIKEY",
+  "skills": [
+    {
+      "skill": "mx-data",
+      "url": "https://marketing.dfcfw.com/res/download/A620260331IHX67H.zip",
+      "archive_sha256": "8c4eff9df2eeaba3bc29fa289346b4a5f660fd0b38e4f7fcc3a0fc7b304547f7"
+    },
+    {
+      "skill": "mx-search",
+      "url": "https://marketing.dfcfw.com/res/download/A620260331K5WDTK.zip",
+      "archive_sha256": "c0a4b43d46b18619bf85df9d4bb62bf6ff02bb64b3e75d2ed7f62a97bd6e0597"
+    },
+    {
+      "skill": "mx-xuangu",
+      "url": "https://marketing.dfcfw.com/res/download/A620260623PHDKPP.zip",
+      "archive_sha256": "9c5b25ea3959509474431b168059b74b356f44c0f642882d288d27eb71feb4d2"
+    },
+    {
+      "skill": "mx-zixuan",
+      "url": "https://marketing.dfcfw.com/res/download/A6202603314TMGR1.zip",
+      "archive_sha256": "92d8889c70a112fe8c24aeae1d6677130eb44f6e0a0371124003921fc8a1c2fa"
+    },
+    {
+      "skill": "mx-moni",
+      "url": "https://marketing.dfcfw.com/res/download/A620260529ON5BMY.zip",
+      "archive_sha256": "80cba4f9a56486826e195c8de1f249d490c59d5dbd67fda7d23beeaee99bbc23"
+    },
+    {
+      "skill": "mx-poster",
+      "url": "https://marketing.dfcfw.com/res/download/A6202606169PIWQO.zip",
+      "archive_sha256": "bcc15f267d6fb943d9f1fd33a2af3acfc98bbc3002f187c5a26dffb2f04a6887"
+    }
+  ],
+  "local_changes": [
+    "mx-moni: add required name and description frontmatter"
+  ],
+  "historical_source_compatibility": "mx-finance-data retained only as offline scorer input label"
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "妙想选股与个股分析"
+  short_description: "仅用妙想六技能数据开展选股与五维诊股，保留V3规则并明确缺项"
+  default_prompt: "使用 $miaoxiang-stock-workbench 按V3五因子规则做今天的选股，列出妙想数据、风险及待核验项。"

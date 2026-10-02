@@ -1,12 +1,10 @@
-# OpenCLI 路由
+# 股票 Skill 已暂停
 
-只在用户明确涉及东财、公众号后台或 JYWG 时使用。
+AI_STATUS: DISABLED
+AI_USAGE: FORBIDDEN
 
-- 实时行情、快讯、行业榜：`stock-ai/scripts/tools/fetch_eastmoney_quotes.py`
-- 单股分析或个股诊断：转到 `stock-strategy-selector` 的新版个股诊断；东财仅作数据源
-- 公众号内容分析：`fetch_wechat_mp_analytics_opencli.py`
-- JYWG 持仓：`fetch_jywg_positions_opencli.py`
-- 连接或页面故障：再读 `SKILL.md` 的环境与故障章节。
+2026-09-16 用户要求股票 Skill 只保留妙想系列。本目录的 `SKILL.md` 已改名为 `SKILL.disabled.md`，仅供人工恢复，不读取或执行归档指令。股票任务统一使用 `/Users/huan.yu/dev/tools-workspace/.cursor/skills/miaoxiang-stock-workbench/SKILL.md`。
 
-普通任务不要读取完整 `SKILL.md`，也不要执行 `opencli --help`。
-已弃用的东财八维/十一维 SOP 禁止 AI 调用、推荐或读取正文。
+恢复说明：`docs/skill-archive/2026-09-16-stock-skills/README.md`。
+
+公众号后台抓取仍用 `.cursor/skills/wechat-mp-drafts/content-analytics-sop.md`，不恢复本目录股票采集入口。

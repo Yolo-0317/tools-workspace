@@ -6,6 +6,8 @@ alwaysApply: false
 
 # Project Memory Router
 
+2026-09-16 路由覆盖：股票 Skill 仅启用妙想系列，统一入口为 `.cursor/skills/miaoxiang-stock-workbench/SKILL.md`。历史 Memory 中的 stock-opencli、stock-strategy-selector、旧东财 SOP 和 QClaw 个股诊断调用规则已暂停；不得据此恢复。旧代码/调度维护不在本次 Skill 下线范围内。
+
 本文件只提供项目和主题索引。不要一次性加载全部 Memory；先按任务定位项目，再读取一个命中的专项 Memory 或通用历史片段。
 
 ## 工作空间速览
@@ -43,7 +45,8 @@ alwaysApply: false
 | 项目定位、生命周期、依赖 | `project-registry/projects.json` 或 `scripts/workspace_preflight.py` |
 | 跨项目稳定知识 | `docs/wiki/README.md`，再运行 `scripts/search_workspace_wiki.py` |
 | A 股项目结构 | `stock-ai/docs/PROJECT_LAYOUT.md` |
-| OpenCLI、东财采集 | `.cursor/skills/stock-opencli/ROUTING.md` |
+| 股票选股、个股分析、板块研究 | `.cursor/skills/miaoxiang-stock-workbench/SKILL.md` |
+| 公众号后台采集 | `.cursor/skills/wechat-mp-drafts/content-analytics-sop.md` |
 | 公众号 | `.cursor/skills/wechat-mp-drafts/SKILL.md` 决策树 |
 | SideStore、Caddy、DDNS | `sidestore-infra/README.md` |
 | Sub-Store、Clash | `substore-clash/README.md` |
@@ -59,3 +62,9 @@ alwaysApply: false
 3. Skill 有 `ROUTING.md` 时先读路由页；否则读取命中的 `SKILL.md`。
 4. `draft`、过期 Wiki 和涉及当前外部状态的问题必须回源验证。
 5. 完整历史保存在 `memory-workspace.mdc`，迁移前的条目未删除。
+
+2026-09-17 历史用户更新（已被2026-09-20仅Skill数据源要求覆盖）：妙想工作台的历史日线默认改用原Tushare及其stock_daily库，允许日线读取和必要同步；妙想保留预筛与研究能力。此例外不恢复任何已下线的股票Skill或旧选股执行后端。
+
+2026-09-20 用户更新：卸载此前十个妙想技能；股票工作台仅整合 mx-data、mx-search、mx-xuangu、mx-zixuan、mx-moni、mx-poster 六个技能。V3规则保持；当时的Tushare日线安排已被下述最新要求覆盖；旧专项分析改为查数与搜索证据综合，不调用归档技能。自选、模拟账户与真实持仓必须区分，研究不自动触发交易或社区发布。
+
+2026-09-20 最新用户要求：股票研究数据仅通过 mx-data、mx-search、mx-xuangu、mx-zixuan、mx-moni、mx-poster 六个妙想 Skill 获取，覆盖并撤销此前 Tushare/stock_daily 读取与同步例外。不直接调用东财旧接口、网页抓取、浏览器行情采集、其他行情源或通用网页搜索补数。V3公式保留；仅在当前六技能来源的日线完整性、复权、单位及适配经过验证后计算，缺项标记未完成，不回退旧来源。

@@ -67,6 +67,13 @@ python3 scripts/validate_workspace.py
 | `openrouter-chat` | tooling | OpenRouter 极简流式聊天页 | [README](openrouter-chat/README.md) |
 | `sillytavern-mac` | tooling | SillyTavern 角色聊天前端 | [README](sillytavern-mac/README.md) |
 
+### 个人工具与内容制作
+
+| 项目 | 生命周期 | 职责 | 入口 |
+| --- | --- | --- | --- |
+| `zhouyi` | active | 周易起卦、典籍取辞、白话解读与复盘 | [README](zhouyi/README.md) |
+| `zhixia-feihualing` | incubating | 国风诗词幻想动画与视频生产档案 | [README](zhixia-feihualing/README.md) |
+
 ## 核心关系
 
 ```text

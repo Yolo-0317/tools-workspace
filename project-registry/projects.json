@@ -11,7 +11,7 @@
       "depends_on": ["stock-ai", "stock-mysql"],
       "serves": [],
       "memory_topics": ["stock-ai"],
-      "skills": ["stock-opencli"],
+      "skills": ["miaoxiang-stock-workbench"],
       "verify": [],
       "runtime": {"kind": "cli", "ports": []},
       "aliases": ["A 股短线", "短线交易", "盘中门禁"]
@@ -176,7 +176,7 @@
       "depends_on": ["stock-mysql", "wechat-cursor-acp"],
       "serves": ["home-hub"],
       "memory_topics": ["stock-ai", "wechat-mp"],
-      "skills": ["stock-opencli", "wechat-mp-drafts", "wechat-mp-writing"],
+      "skills": ["miaoxiang-stock-workbench", "wechat-mp-drafts", "wechat-mp-writing", "wechat-mp-title-writing", "wechat-mp-native-ad-writing", "wechat-mp-senior-health"],
       "verify": [],
       "runtime": {"kind": "mixed", "ports": [9876]},
       "aliases": ["A 股", "选股", "持仓监控", "公众号"]
