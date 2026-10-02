@@ -32,11 +32,14 @@
 ### 润色 / 改稿 / eval 质检 / **热点深评**
 
 1. **[wechat-mp-writing/SKILL.md](../wechat-mp-writing/SKILL.md)** — 改稿与推稿门禁  
-2. **[hotspot-deep-review.md](../wechat-mp-writing/hotspot-deep-review.md)** — 热点深评：参考仿写、去元叙述、事实标题、排版  
-3. **[social-commentary-voice.md](../wechat-mp-writing/social-commentary-voice.md)** — **社会民生热点**：短段、物件立人、通报对照、感情色彩  
-4. [eval-gates.md](../wechat-mp-writing/eval-gates.md) · [revision-workflow.md](../wechat-mp-writing/revision-workflow.md) · [anti-ai-voice.md](../wechat-mp-writing/anti-ai-voice.md) · [depth-and-opinion.md](../wechat-mp-writing/depth-and-opinion.md)
+2. **[wechat-mp-title-writing/SKILL.md](../wechat-mp-title-writing/SKILL.md)** — 起标题、改标题、核对标题与首段是否同题；各稿型通用
+3. **[hotspot-deep-review.md](../wechat-mp-writing/hotspot-deep-review.md)** — 热点深评：参考仿写、去元叙述、事实标题、排版
+4. **[social-commentary-voice.md](../wechat-mp-writing/social-commentary-voice.md)** — **社会民生热点**：短段、物件立人、通报对照、感情色彩
+5. [eval-gates.md](../wechat-mp-writing/eval-gates.md) · [revision-workflow.md](../wechat-mp-writing/revision-workflow.md) · [anti-ai-voice.md](../wechat-mp-writing/anti-ai-voice.md) · [depth-and-opinion.md](../wechat-mp-writing/depth-and-opinion.md)
 
 用户主动要求新写热点深评时，必须走 [deepseek-writer-sop.md](../wechat-mp-writing/deepseek-writer-sop.md) 的手工交接双确认流程：Agent 只提供完整提示词，用户自行向 DeepSeek 取标题和初稿并贴回，Agent 再核实编辑。Agent 不直接调用或控制 DeepSeek。配图必须先查抖音搜索结果卡片，只取封面且不打开视频；正文允许 0—3 张真实图，零图因缺封面而停止，禁止任何自动生成图片。定时热点仍使用 Codex。
+
+普通人的经济生活选题和研究先读 [wechat-mp-everyday-economy/SKILL.md](../wechat-mp-everyday-economy/SKILL.md)；它只负责候选、证据和适用人群明确的算账。确认写稿后仍按上面的手工交接与草稿门禁执行，不设自动发布入口。
 
 ### 文学与典籍（literary · 手动独立槽位）
 
@@ -75,6 +78,20 @@
 3. `stock-ai/assets/wechat_mp/templates/teach_you_a_lesson.body_core.md`
 4. 改定稿 → `repush`；微调仍由 Codex 完成，禁止切换其他模型
 
+### 返佣单品推荐稿（product_feature · 手动独立槽位）
+
+1. [wechat-mp-native-ad-writing](../wechat-mp-native-ad-writing/SKILL.md) — 生活场景、轻包袱和自然口语的单品推荐写法。
+2. [product-feature.md](../wechat-mp-writing/product-feature.md) — 在零食与日用小百货中采样畅销候选，记录销量口径，试三种文案角度后写稿。
+3. `stock-ai/.venv/bin/python -m scripts.tools.wechat_mp_draft --kind product_feature --dry-run` — 只读 Select 查询，打印候选请求。
+4. 当前 Codex 写结构化终稿；带 `--codex-draft` 先预检。写入前还须准备品类相符的封面并在 JSON 填 `cover_asset_path`；写入时由 `product_feature` 流程把独立「广告」标识和唯一返佣商品卡直接加入草稿 HTML，写后回读核对。`all` 与定时批次不含此稿型。
+
+### 健康生活与营养题材（独立研究写法）
+
+中老年读者的健康知识稿，先读 [中老年健康稿 Skill](../wechat-mp-senior-health/SKILL.md)：近期默认从丁香医生找读者问题，独立核实原始证据；真实配图、图下小字来源、蓝色高亮和用户要求时的手动 API 草稿流程也在其中。它不进入定时批次。
+
+1. [wechat-mp-health-content](../wechat-mp-health-content/SKILL.md) — 按年轻、中年、老年读者分别研究健康话题与商品候选；健康知识稿和保健食品广告素材分开处理。
+2. 一般健康题材仍只提供研究与写作 Skill；不复用 `product_feature` 的小商品选品、返佣卡和草稿槽位，也没有自动推稿入口。中老年知识稿在用户明确要求时按上面的专用 Skill 手动推草稿。
+
 ### 单剧强情节推广稿（short_drama_feature · 手动独立槽位）
 
 1. 生成请求：`uv run python -m scripts.tools.wechat_mp_draft --kind short_drama_feature --dry-run`，写出 `output/short_drama_feature_request.json`。
@@ -100,7 +117,7 @@
 3. [traffic-optimization.md](traffic-optimization.md) — `--traffic`、`wechat_mp_eval`  
 3. [sousou-analytics-sop.md](sousou-analytics-sop.md) — 看板与改稿闭环  
 4. **[content-analytics-sop.md](content-analytics-sop.md)** — **内容分析页**：日期范围、`.highcharts-container`、渠道 API  
-5. [stock-opencli](../stock-opencli/SKILL.md) — OpenCLI 抓取命令  
+5. [公众号内容分析](../wechat-mp-drafts/content-analytics-sop.md) — OpenCLI 抓取命令
 6. `stock-ai/docs/wechat_mp_seo_topics.md` — 热点实体 SEO / `#话题` 词表  
 
 ### 改代码 / 合规 / 不回退

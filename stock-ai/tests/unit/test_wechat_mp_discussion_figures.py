@@ -115,6 +115,42 @@ def test_ensure_discussion_cover_crops_explicit_source_without_fetch(
     assert mod._cover_source_filename(source.parent) == "douyin-cover.jpg"
 
 
+def test_ensure_discussion_cover_preserves_reuse_in_body_preference(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    import json
+
+    from PIL import Image
+    import scripts.tools.wechat_mp_discussion_figures as mod
+
+    source = tmp_path / "topic" / "douyin-cover.jpg"
+    source.parent.mkdir(parents=True)
+    Image.effect_noise((1200, 800), 80).convert("RGB").save(source, quality=90)
+    (source.parent / "cover_source.json").write_text(
+        json.dumps(
+            {"source_filename": "old-cover.jpg", "reuse_in_body": True},
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(mod, "INLINE_DISCUSSION_ROOT", tmp_path)
+
+    mod.ensure_discussion_cover(
+        {"cover_slug": "topic", "trend_title": "测试话题"},
+        source_path=source,
+        allow_fetch=False,
+    )
+
+    payload = json.loads(
+        (source.parent / "cover_source.json").read_text(encoding="utf-8")
+    )
+    assert payload == {
+        "source_filename": "douyin-cover.jpg",
+        "reuse_in_body": True,
+    }
+
+
 def test_strip_discussion_figures_removes_markers() -> None:
     from scripts.tools.wechat_mp_discussion_figures import strip_discussion_figures
 

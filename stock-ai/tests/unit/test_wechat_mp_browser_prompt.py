@@ -44,6 +44,28 @@ def test_literary_prompt_requires_scene_opening_and_verified_quotes() -> None:
     assert "《史记》共130篇" in prompt
 
 
+def test_hotspot_and_literary_prompts_keep_distinct_length_and_voice() -> None:
+    common = dict(
+        topic="幼儿园费用规则",
+        thesis="家长能否核对每项费用，比看到一张收费公示表更影响缴费判断。",
+        fact_lines=("本区已公示收费项目与标准｜来源：区发展改革局",),
+        research_urls=(
+            "https://a.example/notice",
+            "https://b.example/rule",
+            "https://c.example/report",
+        ),
+    )
+    hotspot = build_browser_prompt(kind="hotspot", **common)
+    literary = build_browser_prompt(kind="literary", **common)
+
+    assert "900—1100字" in hotspot
+    assert "有依据的个人判断" in hotspot
+    assert "不得虚构亲历" in hotspot
+    assert "事实、责任边界和普通人处境逐层推进" not in hotspot
+    assert "1600—2400字" in literary
+    assert "叙述者保持隐形" in literary
+
+
 def test_prompt_rejects_fewer_than_three_source_domains() -> None:
     with pytest.raises(ValueError, match="3 个不同来源域"):
         build_browser_prompt(
@@ -68,3 +90,36 @@ def test_prompt_rejects_credential_shaped_text() -> None:
                 "https://c.example/3",
             ),
         )
+
+
+def test_rejects_editorial_instruction_inside_fact_lines() -> None:
+    with pytest.raises(ValueError, match="已核验事实包含写作或审校指令"):
+        build_browser_prompt(
+            kind="hotspot",
+            topic="陆远迪复读",
+            thesis="复读决定必须在不知道第二年结果时评估风险和替代路径。",
+            fact_lines=(
+                "图灵班采用多轮招生机制，不能把个案写成复读后直接锁定图灵班。",
+            ),
+            research_urls=(
+                "https://news.example.com/a",
+                "https://school.example.edu/b",
+                "https://media.example.org/c",
+            ),
+        )
+
+
+def test_allows_positive_boundary_fact_line() -> None:
+    prompt = build_browser_prompt(
+        kind="hotspot",
+        topic="陆远迪复读",
+        thesis="复读决定必须在不知道第二年结果时评估风险和替代路径。",
+        fact_lines=("图灵班存在多轮招生机制，高考录取并非唯一选拔环节。",),
+        research_urls=(
+            "https://news.example.com/a",
+            "https://school.example.edu/b",
+            "https://media.example.org/c",
+        ),
+    )
+
+    assert "高考录取并非唯一选拔环节" in prompt

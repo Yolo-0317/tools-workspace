@@ -199,9 +199,9 @@ def hotspot_min_body_gate(*, social: bool = False) -> int:
 
 
 def codex_hotspot_min_body_gate() -> int:
-    """Codex 手写稿默认 1800 字，单次命令仍可显式调整。"""
-    requested = _env_int("WECHAT_MP_CODEX_HOTSPOT_MIN_BODY", 1800)
-    return max(1200, min(HOTSPOT_MIN_BODY_CHARS, requested))
+    """用户主动热点默认至少 850 字，单次命令仍可显式提高。"""
+    requested = _env_int("WECHAT_MP_CODEX_HOTSPOT_MIN_BODY", 850)
+    return max(850, min(HOTSPOT_MIN_BODY_CHARS, requested))
 
 
 def hotspot_topic_count() -> int:
@@ -1136,7 +1136,7 @@ def _hotspot_body_reject_reasons(
         reasons.append("含markdown标题")
     if any(title in text for title in HOTSPOT_BANNED_SECTION_TITLES):
         reasons.append("含禁节名")
-    if any(label.rstrip("：:") in text for label in HOTSPOT_RIGID_FIELD_LABELS):
+    if any(label in text for label in HOTSPOT_RIGID_FIELD_LABELS):
         reasons.append("含刚性字段标签")
     hit_phrase = next((p for p in HOTSPOT_BOILERPLATE_PHRASES if p in text), "")
     if hit_phrase:
@@ -1152,11 +1152,15 @@ def validate_codex_hotspot_body(body: str, *, topic: str) -> str:
     """清洗 Codex 成稿并复用热点正文硬门禁；失败时不做生成兜底。"""
 
     polished = _polish_hotspot_llm_body(body)
+    floor = codex_hotspot_min_body_gate()
     reasons = _hotspot_body_reject_reasons(
         polished,
         bucket=_theme_bucket(topic),
-        min_chars=codex_hotspot_min_body_gate(),
+        min_chars=0,
     )
+    body_chars = len(re.sub(r"\s+", "", polished))
+    if body_chars < floor:
+        reasons.insert(0, f"字数{body_chars}<{floor}")
     if reasons:
         raise ValueError(f"Codex 热点正文未通过质量门禁：{'、'.join(reasons)}")
     return polished
@@ -1181,7 +1185,7 @@ def _hotspot_body_usable(
         return False
     if any(title in text for title in HOTSPOT_BANNED_SECTION_TITLES):
         return False
-    if any(label.rstrip("：:") in text for label in HOTSPOT_RIGID_FIELD_LABELS):
+    if any(label in text for label in HOTSPOT_RIGID_FIELD_LABELS):
         return False
     if any(phrase in text for phrase in HOTSPOT_BOILERPLATE_PHRASES):
         return False

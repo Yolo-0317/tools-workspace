@@ -86,8 +86,8 @@ def test_codex_hotspot_minimum_can_be_lowered_for_one_run(monkeypatch) -> None:
     assert codex_hotspot_min_body_gate() == 1500
 
 
-def test_codex_hotspot_default_minimum_prioritizes_completion_rate(monkeypatch) -> None:
+def test_codex_hotspot_default_minimum_targets_1000_word_article(monkeypatch) -> None:
     from scripts.tools.wechat_mp_hotspot_article import codex_hotspot_min_body_gate
 
     monkeypatch.delenv("WECHAT_MP_CODEX_HOTSPOT_MIN_BODY", raising=False)
-    assert codex_hotspot_min_body_gate() == 1800
+    assert codex_hotspot_min_body_gate() == 850

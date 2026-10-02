@@ -31,7 +31,7 @@ uv run python -m scripts.tools.fetch_wechat_mp_analytics_opencli \
 uv run python -m scripts.tools.fetch_wechat_mp_sousou_opencli
 ```
 
-内容分析解读：[content-analytics-sop.md](../wechat-mp-drafts/content-analytics-sop.md) · OpenCLI：[stock-opencli](../stock-opencli/SKILL.md)
+内容分析解读：[content-analytics-sop.md](../wechat-mp-drafts/content-analytics-sop.md) · OpenCLI：[公众号内容分析](../wechat-mp-drafts/content-analytics-sop.md)
 
 OpenCLI 联合脚本（Agent 可 inline Python）：见历史 `fetch_eastmoney_quotes._open_page` + `_eval_js`；输出 `output/wechat_mp_ops_latest.json` / `output/wechat_mp_publisher_latest.json`。
 

@@ -2,7 +2,7 @@
 
 > **页面**：`https://mp.weixin.qq.com/misc/appmsganalysis?action=report&type=daily_v2&token=…&lang=zh_CN`  
 > **代码**：`stock-ai/scripts/tools/fetch_wechat_mp_analytics_opencli.py` · `wechat_mp_analytics_page.py`  
-> **OpenCLI**：[stock-opencli](../stock-opencli/SKILL.md)  
+> **OpenCLI**：本页保留公众号专用采集入口；旧股票 Skill 已下线。
 > **与搜一搜看板区别**：本页 = **已发文章各渠道阅读占比**；plugin 10071 = **搜索词 / 搜索后阅读**（[sousou-analytics-sop.md](sousou-analytics-sop.md)）
 
 ---

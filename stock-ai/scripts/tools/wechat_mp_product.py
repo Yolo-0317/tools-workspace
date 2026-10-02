@@ -480,6 +480,9 @@ def draft_article_payload(article: dict[str, Any]) -> dict[str, Any]:
         "engagement_kind",
         "recommended_hashtags",
         "publish_reminder",
+        "product_feature_product_id",
+        "product_feature_warehouse_id",
+        "product_feature_sku_id",
     ):
         item.pop(key, None)
     if not content_source_url_enabled():

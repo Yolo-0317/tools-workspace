@@ -18,12 +18,12 @@ TZ = ZoneInfo("Asia/Shanghai")
 
 
 def hotspot_originality_min_chars() -> int:
-    """热点原创报告默认 1800 字，可由一次性命令显式调整。"""
+    """用户主动热点原创报告默认至少 850 字，可显式提高。"""
     try:
-        requested = int(os.getenv("WECHAT_MP_CODEX_HOTSPOT_MIN_BODY", "1800"))
+        requested = int(os.getenv("WECHAT_MP_CODEX_HOTSPOT_MIN_BODY", "850"))
     except ValueError:
-        requested = 1800
-    return max(1200, min(1920, requested))
+        requested = 850
+    return max(850, min(1920, requested))
 DISABLED_NEWPIC_LANES = {
     "popular_film",
     "classic_single",

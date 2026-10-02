@@ -162,7 +162,7 @@ def test_zero_douyin_candidates_can_use_official_cover(tmp_path: Path) -> None:
     result = validate_verified_hotspot_images(tmp_path, expected_topic="测试热点")
 
     assert result.cover_source.name == "still-01.jpg"
-    assert result.body_figures == ()
+    assert [figure.path.name for figure in result.body_figures] == ["still-01.jpg"]
 
 
 def test_selected_douyin_candidate_must_match_figure_source(tmp_path: Path) -> None:
@@ -183,13 +183,19 @@ def test_selected_douyin_candidate_must_match_figure_source(tmp_path: Path) -> N
 
 
 @pytest.mark.parametrize(
-    ("image_count", "expected_body_count"),
-    [(1, 0), (2, 1), (4, 3), (6, 3)],
+    ("image_count", "expected_body_names"),
+    [
+        (1, ["still-01.jpg"]),
+        (2, ["still-01.jpg", "still-02.jpg"]),
+        (3, ["still-01.jpg", "still-02.jpg", "still-03.jpg"]),
+        (4, ["still-02.jpg", "still-03.jpg", "still-04.jpg"]),
+        (6, ["still-02.jpg", "still-03.jpg", "still-04.jpg"]),
+    ],
 )
-def test_verified_images_use_one_cover_and_up_to_three_body_images(
+def test_up_to_three_verified_images_all_appear_in_body(
     tmp_path: Path,
     image_count: int,
-    expected_body_count: int,
+    expected_body_names: list[str],
 ) -> None:
     validate_verified_hotspot_images = _load_api()
     _write_douyin_state(
@@ -214,8 +220,7 @@ def test_verified_images_use_one_cover_and_up_to_three_body_images(
     result = validate_verified_hotspot_images(tmp_path, expected_topic="测试热点")
 
     assert result.cover_source.name == "still-01.jpg"
-    assert len(result.body_figures) == expected_body_count
-    assert all(figure.path.name != "still-01.jpg" for figure in result.body_figures)
+    assert [figure.path.name for figure in result.body_figures] == expected_body_names
 
 
 def test_explicit_cover_reuse_places_cover_first_in_body(tmp_path: Path) -> None:
@@ -269,7 +274,7 @@ def test_cover_reuse_with_zero_body_limit_returns_no_body_images(
 
 
 @pytest.mark.parametrize("invalid_value", ["true", 1, None, [], {}])
-def test_non_boolean_cover_reuse_value_keeps_cover_out_of_body(
+def test_non_boolean_cover_reuse_value_does_not_drop_cover_when_only_two_images(
     tmp_path: Path,
     invalid_value: object,
 ) -> None:
@@ -283,11 +288,14 @@ def test_non_boolean_cover_reuse_value_keeps_cover_out_of_body(
     )
 
     assert [figure.path.name for figure in result.body_figures] == [
-        "still-02.jpg"
+        "still-01.jpg",
+        "still-02.jpg",
     ]
 
 
-def test_malformed_cover_source_keeps_cover_out_of_body(tmp_path: Path) -> None:
+def test_malformed_cover_source_does_not_drop_cover_when_only_two_images(
+    tmp_path: Path,
+) -> None:
     validate_verified_hotspot_images = _load_api()
     _prepare_verified_images(tmp_path, image_count=2)
     (tmp_path / "cover_source.json").write_text("{", encoding="utf-8")
@@ -298,7 +306,8 @@ def test_malformed_cover_source_keeps_cover_out_of_body(tmp_path: Path) -> None:
     )
 
     assert [figure.path.name for figure in result.body_figures] == [
-        "still-02.jpg"
+        "still-01.jpg",
+        "still-02.jpg",
     ]
 
 
@@ -326,3 +335,45 @@ def test_topic_mismatch_is_rejected(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="主题不一致"):
         validate_verified_hotspot_images(tmp_path, expected_topic="测试热点")
+
+
+def test_new_hotspot_images_require_visual_check_metadata(tmp_path: Path) -> None:
+    validate_verified_hotspot_images = _load_api()
+    _write_douyin_state(
+        tmp_path, topic="测试热点", candidates=[], fallback_reason="搜索卡片没有证据图"
+    )
+    _write_verified_image(
+        tmp_path, "still-01.jpg", source_type="official_media_webpage_screenshot"
+    )
+
+    with pytest.raises(ValueError, match="视觉核对"):
+        validate_verified_hotspot_images(
+            tmp_path, expected_topic="测试热点", require_visual_check=True
+        )
+
+
+def test_new_hotspot_visual_check_keeps_cover_in_body(tmp_path: Path) -> None:
+    validate_verified_hotspot_images = _load_api()
+    _write_douyin_state(
+        tmp_path, topic="测试热点", candidates=[], fallback_reason="搜索卡片没有证据图"
+    )
+    for index in (1, 2):
+        path = _write_verified_image(
+            tmp_path, f"still-{index:02d}.jpg",
+            source_type="official_media_webpage_screenshot",
+        )
+        sources_path = tmp_path / "figure_sources.json"
+        sources = json.loads(sources_path.read_text(encoding="utf-8"))
+        sources[path.name].update(
+            visual_description="上海松江公寓房源页面，月租1500元起",
+            visual_checked_at="2026-09-23T17:00:00+08:00",
+            evidence_role="price_snapshot",
+        )
+        sources_path.write_text(json.dumps(sources, ensure_ascii=False), encoding="utf-8")
+
+    result = validate_verified_hotspot_images(
+        tmp_path, expected_topic="测试热点", require_visual_check=True
+    )
+
+    assert len(result.body_figures) == 2
+    assert result.cover_source in [figure.path for figure in result.body_figures]

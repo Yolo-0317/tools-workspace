@@ -237,6 +237,52 @@ def test_validate_codex_hotspot_body_rejects_short_body() -> None:
         validate_codex_hotspot_body("2026年发生了一件事。", topic="具体事件")
 
 
+def _hotspot_body_with_non_whitespace_chars(target: int) -> str:
+    paragraphs = [
+        "2026年当事人公开说明了事情经过。",
+        "第二段交代已经核实的时间和地点。",
+        "第三段解释双方各自主张的理由。",
+        "第四段分析规则怎样影响普通人。",
+        "第五段留下仍需调查确认的问题。",
+    ]
+    non_whitespace = sum(len(paragraph) for paragraph in paragraphs)
+    assert non_whitespace <= target
+    padding, extra = divmod(target - non_whitespace, len(paragraphs))
+    padded = [
+        paragraph + "甲" * (padding + (1 if index < extra else 0))
+        for index, paragraph in enumerate(paragraphs)
+    ]
+    body = "\n\n".join(padded)
+    assert len("".join(body.split())) == target
+    return body
+
+
+def test_validate_codex_hotspot_body_uses_850_character_floor(monkeypatch) -> None:
+    from scripts.tools.wechat_mp_hotspot_article import validate_codex_hotspot_body
+
+    monkeypatch.delenv("WECHAT_MP_CODEX_HOTSPOT_MIN_BODY", raising=False)
+    with pytest.raises(ValueError, match="字数"):
+        validate_codex_hotspot_body(
+            _hotspot_body_with_non_whitespace_chars(849), topic="具体事件"
+        )
+
+    accepted = validate_codex_hotspot_body(
+        _hotspot_body_with_non_whitespace_chars(850), topic="具体事件"
+    )
+
+    assert len("".join(accepted.split())) >= 850
+
+
+def test_hotspot_gate_allows_rigid_label_words_inside_natural_sentence() -> None:
+    from scripts.tools.wechat_mp_hotspot_article import _hotspot_body_reject_reasons
+
+    body = "2026年项目完成撤场。\n\n还要查清两年之间究竟发生了什么。\n\n责任需要证据认定。\n\n现场已经清理。\n\n后续仍应完善验收。"
+
+    reasons = _hotspot_body_reject_reasons(body, bucket="event", min_chars=1)
+
+    assert "含刚性字段标签" not in reasons
+
+
 @pytest.mark.parametrize("kinds", [["news"], ["hotspot", "news"]])
 def test_validate_codex_draft_kinds_requires_single_hotspot(
     kinds: list[str],

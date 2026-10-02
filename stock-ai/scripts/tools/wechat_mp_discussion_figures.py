@@ -250,8 +250,18 @@ def _cover_source_filename(out_dir: Path) -> str:
 def _save_cover_source(out_dir: Path, source: Path) -> None:
     import json
 
-    (out_dir / _COVER_SOURCE_META).write_text(
-        json.dumps({"source_filename": source.name}, ensure_ascii=False, indent=2),
+    path = out_dir / _COVER_SOURCE_META
+    payload: dict[str, object] = {}
+    if path.is_file():
+        try:
+            existing = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(existing, dict) and existing.get("reuse_in_body") is True:
+                payload["reuse_in_body"] = True
+        except (OSError, json.JSONDecodeError):
+            pass
+    payload["source_filename"] = source.name
+    path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
 

@@ -4,18 +4,6 @@ description: >-
   WeChat Official Account 「牛马也智能」(WECHAT_MP_*): hotspot, hot business,
   silver and film long-form drafts, writing/compliance and draft operations.
   Read INDEX.md first, then task-specific child docs.
-paths:
-  - .cursor/skills/wechat-mp-drafts/INDEX.md
-  - .cursor/skills/wechat-mp-drafts/content-analytics-sop.md
-  - stock-ai/scripts/tools/fetch_wechat_mp_analytics_opencli.py
-  - stock-ai/scripts/tools/wechat_mp_analytics_page.py
-  - stock-ai/output/wechat_mp_recommend_daily_page*.json
-  - stock-ai/scripts/tools/wechat_mp_product.py
-  - stock-ai/tests/unit/test_wechat_mp_*.py
-  - stock-ai/data/wechat_mp_draft_slots.json
-  - stock-ai/docs/WECHAT_MP_SCHEDULING.md
-  - .cursor/skills/wechat-mp-drafts/brand.md
-  - .cursor/skills/wechat-mp-drafts/operations-sop.md
 ---
 
 # 牛马也智能 · 微信公众号
@@ -34,14 +22,19 @@ paths:
 ```
 用户意图？
 ├─ 推草稿 / 定时 / env / 报错     → INDEX「工程」→ operations-sop + reference
-├─ 用户主动热点深评               → deepseek-writer-sop + hotspot-deep-review（手工交接 + 双确认）
+├─ 普通人的经济生活选题 / 研究    → [wechat-mp-everyday-economy](../wechat-mp-everyday-economy/SKILL.md)（只读筛选与研究；确认后回到用户主动热点路线）
+├─ 用户主动热点深评               → deepseek-writer-sop + hotspot-deep-review（手工交接 + 正文/提示词双入口 + 草稿确认）
 ├─ 改 market|news|sector|workspace → templates + writing-guide
 ├─ 栀夏贴图 / 电影分享 / 经典片单  → [wechat-mp-virtual-lifestyle](../wechat-mp-virtual-lifestyle/SKILL.md) + newspic-sop
 ├─ 长图文影视试跑 / tv_review      → [tv-review-template.md](tv-review-template.md)（v2·《铁拳教育》）
 ├─ 短剧列表选剧 / 单剧推广稿       → `short_drama_feature`（收益前三 + 双来源剧情核验）
+├─ 返佣商品 / 单品推荐稿           → [wechat-mp-native-ad-writing](../wechat-mp-native-ad-writing/SKILL.md) 写作；[product-feature.md](../wechat-mp-writing/product-feature.md) 选品与草稿
+├─ 近期健康话题 / 热点选题         → [wechat-mp-health-topic-discovery](../wechat-mp-health-topic-discovery/SKILL.md) 核关注度与可答性；不限年龄
+├─ 中老年健康知识稿 / 配图 / 草稿   → [wechat-mp-senior-health](../wechat-mp-senior-health/SKILL.md)；近期先从丁香医生找问题，再独立核事实与写稿
+├─ 健康生活 / 营养 / 保健品调研     → [wechat-mp-health-content](../wechat-mp-health-content/SKILL.md) 独立研究与写法；不走 product_feature 小商品流程
 ├─ 关注引流 / 星标 / 写作笔记 / 关注回复  → follow-growth-copy + account-packaging + operations-sop §二点六
 ├─ 运营增长 / 复盘 / 涨阅读 / 流量主  → [wechat-mp-growth-ops](../wechat-mp-growth-ops/SKILL.md)
-├─ 阅读量 / 搜一搜 / 标题优化      → traffic-optimization + sousou-analytics-sop
+├─ 起标题 / 改标题 / 标题太差      → [wechat-mp-title-writing](../wechat-mp-title-writing/SKILL.md)；阅读数据复盘再读 traffic-optimization + sousou-analytics-sop
 ├─ 内容分析 / 渠道占比 / 7日阅读    → content-analytics-sop + stock-opencli
 └─ 改 Python 行为 / 合规          → rules-implemented → pytest
 ```
@@ -60,7 +53,10 @@ paths:
 | `hot_business` | **手动** | 每日热点商业筛选与深稿，独立槽位 |
 | `silver` | **手动** | 50—65 岁退休生活：关系、健康、钱财，独立槽位 |
 | `short_drama_feature` | **手动** | Python 给收益候选，当前 Codex 研究并写稿，Python 双来源校验后写独立槽位 |
+| `product_feature` | **手动** | 返佣 Select 只在零食与日用小百货采样来源平台高销量候选，当前 Codex 试三种文案角度并写单品稿，独立草稿槽位 |
 | `literary` | **手动** | 典籍节目与文学类共用；用户自行向 DeepSeek 取初稿，Agent 编辑后写独立槽位 |
+
+`product_feature` 写入草稿时，必须把所选商品的返佣卡直接放进草稿正文 HTML：商品卡前是独立的「广告」标识，卡片为 `<mp-common-cpsad>`，`data-pid` 由已选商品的 `sku_id` 或仓库 ID 与商品 ID 计算。使用本稿型现有构建与写入链路，不让作者在纯正文里手写卡片，也不改用旧「简选小电」流程。预检要求恰好一张卡且商品身份匹配；写入后回读公众号草稿，再核对卡片和标识，失败则不得替换原 `product_feature` 槽位。操作步骤见 [product-feature.md](../wechat-mp-writing/product-feature.md)。
 
 `--kind all` = `hotspot`·`sector`·`news`·`workspace`（**不含** `temp`）。slots：`data/wechat_mp_draft_slots.json`。
 
@@ -75,6 +71,7 @@ uv run python -m scripts.tools.wechat_mp_draft --kind silver --dry-run
 uv run python -m scripts.tools.wechat_mp_draft --kind silver --silver-lane relation --dry-run
 uv run python -m scripts.tools.wechat_mp_draft --kind silver --silver-lane health --topic "退休后怎样改善睡眠习惯" --dry-run
 uv run python -m scripts.tools.wechat_mp_draft --kind short_drama_feature --dry-run
+uv run python -m scripts.tools.wechat_mp_draft --kind product_feature --dry-run
 uv run python -m scripts.tools.wechat_mp_draft --kind short_drama_feature --codex-draft output/short_drama_feature_codex.json --dry-run
 uv run python -m scripts.tools.wechat_mp_draft_batch --batch evening --dry-run
 bash scripts/wechat_mp_draft_scheduled.sh
@@ -85,11 +82,11 @@ uv run python -m scripts.tools.wechat_mp_push_quality_gate --batch evening
 uv run pytest tests/unit/test_wechat_mp_*.py -q
 ```
 
-**质量建议**：总分 ≥75、AI 味 ≤20、无合规红线 → 可进草稿箱。改稿流程见 [wechat-mp-writing](../wechat-mp-writing/SKILL.md)。
+**自动稿质量建议**：总分 ≥75、AI 味 ≤20、无合规红线 → 可进草稿箱。用户主动热点稿不适用这套通用分数；先做文章级人工审稿与专用预检，再走其独立的草稿暂存流程。改稿流程见 [wechat-mp-writing](../wechat-mp-writing/SKILL.md)。
 
 ### DeepSeek 手工交接（用户主动稿）
 
-用户主动要求热点深评或文学/典籍稿时，采用两次确认：Agent 研究并展示完整提示词 → 用户确认 → 用户自行把提示词交给 DeepSeek，并把完整输出贴回当前任务 → Agent 核事实、编辑、高亮、配图 → 用户再次确认 → 推草稿。Agent 禁止直接调用、打开、绑定、操作或检查 DeepSeek，不处理其登录状态、Cookie、会话或标签页；未收到用户贴回的输出时暂停，也不回退其他模型代写。`literary` 使用独立槽位，不覆盖 `tv_review`。
+用户主动要求热点深评或文学/典籍稿时，采用两次确认：Agent 研究并展示完整提示词 → 用户确认 → 用户自行把提示词交给 DeepSeek，并把完整输出贴回当前任务 → Agent 核事实、编辑、高亮、配图 → 用户再次确认 → 推草稿。默认仍由用户贴回 DeepSeek 完整输出；如果完整正文已经在当前任务中完整展示，且用户明确要求按该正文发布，可登记为“当前任务已确认正文”，无需再次复制。审核结论、摘要、零散修改或 Agent 转述不能替代完整正文。Agent 禁止直接调用、打开、绑定、操作或检查 DeepSeek，不处理其登录状态、Cookie、会话或标签页；正文尚未完整出现时暂停，也不回退其他模型代写。`literary` 使用独立槽位，不覆盖 `tv_review`。
 
 ### Codex 长图文交接
 
@@ -104,13 +101,13 @@ uv run pytest tests/unit/test_wechat_mp_*.py -q
 
 `virtual_lifestyle` 继续使用其显性人物母版，不读取本角色卡。
 
-用户主动热点的编辑终稿保存为本地 JSON，但初稿必须是用户本次贴回的 DeepSeek 输出，并保留 Agent 核实编辑记录：
+用户主动热点的编辑终稿保存为本地 JSON。默认保留用户本次贴回的 DeepSeek 输出；若当前任务已完整展示正文并获得明确发布确认，则保存该完整正文、确认原话和 Agent 核实编辑记录：
 
 ```json
 {
   "title": "具体事件为什么引发争议？",
   "digest": "一到两句话说明文章回答的问题。",
-  "body": "1800—2200 字的纯段落正文，信息完整后不为凑字重复观点。",
+  "body": "目标 900—1100 字的纯段落正文；信息复杂时允许超过 1100 字，但应优先精简。",
   "topic": "事件检索词",
   "research_urls": ["https://a.example/report", "https://b.example/report", "https://c.example/report"],
   "original_thesis": "不少于20字、可被反驳和检验的原创核心判断。",
@@ -123,11 +120,21 @@ cd stock-ai
 PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_browser_write stage \
   <workflow-id> \
   --article output/hotspot_codex.json \
+  --handoff output/editorial_handoff.json \
   --edit-note "核对关键事实、日期和引语" \
   --edit-note "删除无法回源的判断"
 ```
 
-直接运行 `wechat_mp_draft --kind hotspot --codex-draft ...` 会被拒绝。热点深评为完读优先，正文去空白后不少于 1800 字，建议控制在 1800—2200 字；至少 3 个不同来源域，`original_thesis` 不少于 20 字。`output/` 中的成稿 JSON 不提交。
+当前任务已经完整展示正文并获明确确认时，使用：
+
+```bash
+PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_browser_write record-confirmed-body \
+  <workflow-id> \
+  --response-file <full-body-file> \
+  --confirmation-text "就按照刚刚的正文发布"
+```
+
+直接运行 `wechat_mp_draft --kind hotspot --codex-draft ...` 会被拒绝。用户主动热点深评正文目标 900—1100 字，去空白后少于 850 字拒绝；信息复杂时允许超过 1100 字，但应优先精简，不为凑字重复观点。至少 3 个不同来源域，`original_thesis` 不少于 20 字。`output/` 中的成稿 JSON 不提交。新建用户主动热点工作流的 `stage` 还须提交 `editorial_handoff.json`；历史工作流不强制补造。当前任务已有完整正文并获明确发布确认时，可从研究状态直接登记正文，无须伪造提示词确认。
 
 `hot_business` 只允许手动触发，不进入定时批次。省略 `--topic` 时从每日热点池按热点强度、商业空间、可验证性和读者相关性评分，低于 70 分不成稿；指定 `--topic` 会跳过候选评分，但仍要求至少 3 个不同来源域。`--dry-run` 只预览并打印候选评分、来源域和事实条数；移除后仅更新独立的 `hot_business` 草稿槽位。
 
@@ -137,9 +144,11 @@ PYTHONPATH=. .venv/bin/python -m scripts.tools.wechat_mp_browser_write stage \
 
 ### 图片协议
 
+新用户主动热点工作流的入选图，除下述来源资料外，还须在 `figure_sources.json` 记录 `visual_description`、`visual_checked_at`、`evidence_role`。打开实际图片核对内容，价格截图写清图上可读价格与地点；实景照不得标成价格证据。入选图及封面要与 `editorial_handoff.json` 对应，字段见 [operations-sop.md](operations-sop.md)。
+
 用户主动 `hotspot` 必须先从已登录抖音搜索政务号、央媒、地方广电和正规新闻机构的同题内容。**只读取搜索结果卡片与封面图，禁止点击、打开或播放视频。** 每次检索必须保存 `douyin-search.json`；选中封面须记录媒体账号、结果页显示时间、原视频链接和封面地址。没有合格候选时也必须记录检索词、完成时间和失败原因，之后才可补政府官网、官方媒体或法条页面的证据图。
 
-合格素材必须在 `figure_sources.json` 记录原页面、图片地址、来源名、发布时间、来源类型、图注和核验状态。选中的抖音封面必须与其中一条 `douyin_cover` 来源完全对应。正文真实图有几张用几张，允许 0—3 张；至少需要 1 张可追溯真实图作为封面，零图直接停止。封面可按需复用于正文，不视为重复冲突；复用后计入正文 0—3 张上限。是否复用由 Agent 根据内容与素材决定，不要求每篇复用；需要复用时在该选题的 `cover_source.json` 中显式写入 `"reuse_in_body": true`，未声明或为 `false` 时仍从正文图片中排除封面。该流程禁止 ChatGPT、ImageGen、DeepSeek 或任何其他模型生成图片，禁止创建或消费 `codex-image-request.json`，也禁止为凑数联网自动补图。
+合格素材必须在 `figure_sources.json` 记录原页面、图片地址、来源名、发布时间、来源类型、图注和核验状态。选中的抖音封面必须与其中一条 `douyin_cover` 来源完全对应。正文真实图最多 3 张；合格真实图总数为 1—3 张时全部进入正文，并从中选 1 张同时作为封面。至少需要 1 张可追溯真实图，零图直接停止。合格图超过 3 张时，正文仍只取 3 张；如需让封面占用其中一个正文名额，在该选题的 `cover_source.json` 中显式写入 `"reuse_in_body": true`。该流程禁止 ChatGPT、ImageGen、DeepSeek 或任何其他模型生成图片，禁止创建或消费 `codex-image-request.json`，也禁止为凑数联网自动补图。
 
 下面的 ChatGPT 网页原创配图续跑协议只适用于原创小说、栀夏生活分享等明确需要原创视觉的稿型，**不适用于用户主动热点深评**。
 
@@ -213,4 +222,4 @@ uv run python -m scripts.tools.wechat_mp_newspic_draft \
 | 小标题不居中 / 无图 / Top5 空 | [reference.md](reference.md) 文末表 |
 | 行业题抓成「资金流」 | [sector-discovery.md](sector-discovery.md) + `wechat_mp_hot_theme.py` |
 | 封面未更新 | `assets/wechat_mp/COVER_THUMBS.md` + 删 `data/wechat_mp_thumb_*.json` |
-| OpenCLI 后台数据 | [stock-opencli](../stock-opencli/SKILL.md) |
+| OpenCLI 后台数据 | [公众号内容分析](../wechat-mp-drafts/content-analytics-sop.md) |

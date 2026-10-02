@@ -43,12 +43,16 @@
 
 ### DeepSeek 手工交接双确认
 
+新建用户主动热点工作流在暂存前准备 `editorial_handoff.json`。其中 `workflow_id` 对应本次工作流；`article_sha256` 是终稿 JSON 文件的 SHA-256；`confirmed_body_sha256` 是已登记完整正文的摘要；`confirmation_mode` 与工作流来源一致。`editorial_review` 记录文章级人工审稿：`target_reader`、`reader_question`、`central_thesis`、正文中真实出现的 `thesis_anchor`、说明段落如何推进主线的 `paragraph_progression`，审稿通过才写 `decision: "pass"`；主线散乱时退回改稿，不创建“通过”记录。`claims` 只列标题、导语、关键数字和结论依赖事实，每条含 `text`、`kind`（`source_fact` / `reported_snapshot` / `party_statement` / `author_inference`）、`source_url`、`published_at`、`observed_at`、`scope_or_period`、`body_anchor`；页面快照的正文锚点必须写出“报道时”“当时”等时间限定。`images` 为全部入选正文图，每张含 `filename`、文件 `sha256`、`evidence_role`；封面也必须是正文入选图之一。入选图的 `figure_sources.json` 还要有实际画面描述、人工核对时间与用途。机器只核字段与正文的对应关系，来源真实性、主线是否成立、视觉内容和叙述分寸仍需人工检查。
+
+`stage --article <终稿 JSON> --handoff <editorial_handoff.json> --edit-note <核实动作>` 在写入前检查交付记录、图片和正文质量，并列出失败项。推草稿前再核文章和图片是否变动；有变动就重新核验、必要时重新请用户确认，不沿用旧摘要。当前任务完整确认正文可直接用 `record-confirmed-body` 登记，无须先执行 `confirm-prompt`。两条路线都只进草稿箱，不自动发表。微信 API 出口预检失败属于环境失败：保持推草稿确认和稿件，检查网络出口后允许手动重试一次；再次失败就停下报告，不关闭预检、不擅改白名单，也不输出凭据。
+
 1. Agent 完成选题、三个来源域以上的事实包和提示词，先给用户确认。
-2. 用户确认后自行把完整提示词交给 DeepSeek，并把完整输出贴回当前任务。Agent 不打开、控制、调用或检查 DeepSeek。
+2. 用户确认后自行把完整提示词交给 DeepSeek，并把完整输出贴回当前任务。若完整正文已经在当前任务中完整展示，且用户明确要求按该正文发布，可登记为“当前任务已确认正文”，无需再次复制；审核结论、摘要、零散修改或 Agent 转述不能替代完整正文。Agent 不打开、控制、调用或检查 DeepSeek。
 3. Agent 核事实、编辑、高亮并寻找公开来源配图，展示推送前报告。
 4. 用户第二次确认后才允许调用微信草稿 API。
 
-未收到用户贴回的 DeepSeek 输出时暂停，不调用 DeepSeek，不检查登录状态，也不回退其他模型代写。用户贴回后继续核实编辑，不重复消耗第一次确认，也不绕过第二次确认。
+正文尚未完整出现时暂停，不调用 DeepSeek，不检查登录状态，也不回退其他模型代写。用户贴回完整正文，或当前任务已有完整正文并获明确发布确认后，继续核实编辑，不重复消耗第一次确认，也不绕过第二次确认。
 
 ```bash
 cd stock-ai
@@ -102,7 +106,7 @@ bash scripts/wechat_mp_hotspot_draft_scheduled.sh hotspot_evening --dry-run
 **定稿稿末句**（`WECHAT_MP_FOLLOW_HOOK_TEXT` 可覆盖）：
 
 ```text
-我们会继续整理社会与文娱热点；星标本号，下一篇不易漏看。
+我们会继续把教育新闻里的规则、费用和选择讲清楚，也分享一点国学。星标本号，下篇见。
 ```
 
 ### 禁止
@@ -191,7 +195,7 @@ WECHAT_MP_DRAMA_WEB_SESSION_FILE=data/wechat_mp_drama_web_session.json
 | 项 | 动作 |
 |----|------|
 | **运营周报** | 周一落盘 `stock-ai/output/wechat_mp_weekly/YYYY-MM-DD.md`（搜一搜 7 天 + 只调一类） |
-| **搜一搜看板** | 周一 15min：[sousou-analytics-sop.md](sousou-analytics-sop.md)；内容分析：[stock-opencli](../stock-opencli/SKILL.md) |
+| **搜一搜看板** | 周一 15min：[sousou-analytics-sop.md](sousou-analytics-sop.md)；内容分析：[公众号内容分析](../wechat-mp-drafts/content-analytics-sop.md) |
 | 白名单 IP | `uv run python -m scripts.tools.wechat_mp_check_whitelist` |
 | 质量抽检 | 热点稿 `wechat_mp_eval --kind hotspot --traffic`；讨论稿对照 tv-morning §九 |
 | 11:00 链路 | 抽查：合格缓存是否存在、配图、禁词 grep（勿假设定时任务用手改稿） |

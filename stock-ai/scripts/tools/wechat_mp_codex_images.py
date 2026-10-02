@@ -314,6 +314,7 @@ def prepare_hotspot_topic_images(
     *,
     body_count: int = 3,
     image_policy: str = "verified_only",
+    require_visual_check: bool = False,
 ) -> VerifiedHotspotImages | None:
     """准备长图文图片；主动热点默认只接受已核验真实图片。"""
     if body_count < 0:
@@ -329,6 +330,7 @@ def prepare_hotspot_topic_images(
             out_dir,
             expected_topic=normalized_topic,
             max_body=min(body_count, 3),
+            require_visual_check=require_visual_check,
         )
     if image_policy != "legacy":
         raise ValueError(f"未知热点配图策略: {image_policy}")

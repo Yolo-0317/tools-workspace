@@ -30,7 +30,13 @@ _SENSITIVE_ASSIGNMENT = re.compile(
 @dataclass(frozen=True)
 class CodexGenerationEvent:
     provider: str
-    mode: Literal["codex_exec", "interactive_draft", "opencli_bound_tab"]
+    mode: Literal[
+        "codex_exec",
+        "interactive_draft",
+        "opencli_bound_tab",
+        "user_pasted_response",
+        "thread_confirmed_response",
+    ]
     cli_version: str
     generated_at: str
     kind: str
@@ -151,6 +157,34 @@ def record_browser_deepseek_draft(kind: str) -> None:
         provider="deepseek_browser",
         mode="opencli_bound_tab",
         cli_version="opencli-bound-chrome",
+        generated_at=datetime.now().astimezone().isoformat(timespec="seconds"),
+        kind=kind.strip(),
+    )
+    _EVENTS.set((*_EVENTS.get(), event))
+
+
+def record_user_pasted_deepseek_draft(kind: str) -> None:
+    expected = _CURRENT_KIND.get()
+    if expected and expected != kind:
+        raise ValueError(f"DeepSeek 用户粘贴稿 kind 不一致: {kind} != {expected}")
+    event = CodexGenerationEvent(
+        provider="deepseek_user_paste",
+        mode="user_pasted_response",
+        cli_version="user-pasted-deepseek",
+        generated_at=datetime.now().astimezone().isoformat(timespec="seconds"),
+        kind=kind.strip(),
+    )
+    _EVENTS.set((*_EVENTS.get(), event))
+
+
+def record_thread_confirmed_body(kind: str) -> None:
+    expected = _CURRENT_KIND.get()
+    if expected and expected != kind:
+        raise ValueError(f"当前任务确认稿 kind 不一致: {kind} != {expected}")
+    event = CodexGenerationEvent(
+        provider="thread_confirmed_body",
+        mode="thread_confirmed_response",
+        cli_version="thread-confirmed-body",
         generated_at=datetime.now().astimezone().isoformat(timespec="seconds"),
         kind=kind.strip(),
     )

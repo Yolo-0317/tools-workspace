@@ -6,7 +6,7 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
 from scripts._bootstrap import ensure_repo_root_on_path
@@ -200,6 +200,11 @@ def get_slot_media_id(kind: str) -> str | None:
     return mid or None
 
 
+def get_slot_title(kind: str) -> str:
+    slots = _load_slots().get("slots") or {}
+    return str((slots.get(kind) or {}).get("title") or "").strip()
+
+
 def set_slot_media_id(kind: str, media_id: str, *, title: str = "") -> None:
     data = _load_slots()
     slots = dict(data.get("slots") or {})
@@ -243,6 +248,35 @@ def upsert_draft_article(
         set_slot_media_id(slot, new_id, title=str(item.get("title") or ""))
     action = "recreated" if old_id else "created"
     return new_id, action, None
+
+
+def upsert_product_feature_draft(
+    article: dict[str, Any], *, thumb_media_id: str,
+    verify_saved: Callable[[str], None] | None = None,
+) -> tuple[str | None, str, dict[str, Any] | None]:
+    """先建立新稿再替换单品槽位，创建失败时保留旧稿。"""
+    from scripts.tools.wechat_mp_product import draft_article_payload
+
+    item = draft_article_payload(article)
+    item["thumb_media_id"] = thumb_media_id
+    attach_cover_crop_fields(item, thumb_media_id=thumb_media_id)
+    old_id = get_slot_media_id("product_feature")
+    new_id, err = draft_add(articles=[item])
+    if err or not new_id:
+        return None, "failed", err or {"errmsg": "草稿 API 未返回 media_id"}
+    if verify_saved is not None:
+        try:
+            verify_saved(new_id)
+        except Exception as exc:
+            draft_delete(media_id=new_id)
+            return None, "failed", {"errmsg": str(exc)}
+    if old_id:
+        delete_err = draft_delete(media_id=old_id)
+        if delete_err:
+            draft_delete(media_id=new_id)
+            return None, "failed", delete_err
+    set_slot_media_id("product_feature", new_id, title=str(item.get("title") or ""))
+    return new_id, "recreated" if old_id else "created", None
 
 
 def prune_extra_managed_drafts(

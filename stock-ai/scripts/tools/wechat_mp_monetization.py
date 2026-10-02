@@ -138,11 +138,8 @@ _ENGAGEMENT_POOL: dict[str, tuple[str, ...]] = {
 }
 
 _FOLLOW_HOOK_DEFAULT = (
-    "我们会继续整理社会与文娱热点；星标本号，下一篇不易漏看。"
-)
-
-_FOLLOW_HOOK_CULTURE_TV = (
-    "最近专注文化节目，还会继续写；星标本号，下一篇不易漏看。"
+    "我们会继续把教育新闻里的规则、费用和选择讲清楚，也分享一点国学。"
+    "星标本号，下篇见。"
 )
 
 # 微信审核违规：关注后回复关键词领资料类诱导
@@ -162,11 +159,14 @@ _FOLLOW_HOOK_BY_KIND: dict[str, str] = {
     "silver": "我们会继续整理退休生活里的关系、健康和钱财问题；星标本号，下一篇不易漏看。",
     "tv_review": _FOLLOW_HOOK_DEFAULT,
     "tv": _FOLLOW_HOOK_DEFAULT,
-    "literary": _FOLLOW_HOOK_CULTURE_TV,
+    "literary": _FOLLOW_HOOK_DEFAULT,
 }
 
 _FOLLOW_HOOK_MARKERS: tuple[str, ...] = (
     "星标本号",
+    "教育新闻里的规则、费用和选择",
+    "也分享一点国学",
+    "下篇见",
     "下一篇不易漏看",
     "我们会继续整理社会与文娱热点",
     "最近专注文化节目",
@@ -228,6 +228,7 @@ _NO_RECOMMEND_HOOK_KINDS = frozenset({
     "hot_business",
     "silver",
     "short_drama_feature",
+    "product_feature",
     "tv_review",
     "tv",
     "film",
@@ -261,9 +262,6 @@ def default_follow_hook_line(kind: str, engagement_kind: str | None = None) -> s
     if custom:
         return custom
     k = (kind or "").strip().lower()
-    ek = (engagement_kind or "").strip().lower()
-    if ek == "discussion" and k in ("tv_review", "tv"):
-        return _FOLLOW_HOOK_CULTURE_TV
     return _FOLLOW_HOOK_BY_KIND.get(k, "")
 
 

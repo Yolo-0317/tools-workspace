@@ -51,7 +51,7 @@ def masthead_kind_for_render(
     if masthead_kind:
         return masthead_kind
     k = (kind or "").strip().lower()
-    if k in {"guba", "hotspot", "hot_business", "tv_review", "tv", "film", "movie", "literary"}:
+    if k in {"guba", "hotspot", "hot_business", "tv_review", "tv", "film", "movie", "literary", "product_feature"}:
         return k
     return engagement_kind or kind
 
@@ -61,7 +61,7 @@ def disclaimer_for_kind(kind: str | None) -> str:
     k = (kind or "").strip().lower()
     if k == "guba":
         return ""
-    if k in {"hotspot", "hot_business", "short_drama_feature", "tv_review", "tv", "film", "movie", "literary"}:
+    if k in {"hotspot", "hot_business", "short_drama_feature", "tv_review", "tv", "film", "movie", "literary", "product_feature"}:
         return ""
     if k == "silver":
         return ""
@@ -1229,6 +1229,7 @@ DRAFT_KINDS = (
     "hot_business",
     "silver",
     "short_drama_feature",
+    "product_feature",
     "market",
     "news",
     "temp",

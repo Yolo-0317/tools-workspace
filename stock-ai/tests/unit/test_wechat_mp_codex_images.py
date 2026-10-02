@@ -297,6 +297,7 @@ def test_prepare_hotspot_verified_only_never_fetches_or_creates_request(
 
     assert prepared.cover_source.name == "douyin-cover.jpg"
     assert [figure.path.name for figure in prepared.body_figures] == [
+        "douyin-cover.jpg",
         "official-01.jpg"
     ]
     assert not (out_dir / "codex-image-request.json").exists()

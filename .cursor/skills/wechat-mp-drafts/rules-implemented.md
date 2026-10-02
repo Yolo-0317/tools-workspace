@@ -16,6 +16,7 @@
 | 热点研究与补图 | `wechat_mp_hotspot_article.py`、`wechat_mp_discussion_research.py` | `test_wechat_mp_hot_trends_enrich.py` |
 | 用户主动热点暂存、推送与双确认（`write` 为旧兼容能力，主动稿禁止调用） | `wechat_mp_browser_workflow.py`、`wechat_mp_browser_write.py` | `test_wechat_mp_browser_workflow.py`、`test_wechat_mp_browser_write_cli.py`、`test_wechat_mp_browser_push.py` |
 | 用户主动热点抖音优先与真实图片门禁 | `wechat_mp_hotspot_image_policy.py`、`wechat_mp_codex_images.py`、`wechat_mp_discussion_figures.py`、`wechat_mp_content.py` | `test_wechat_mp_hotspot_image_policy.py`、`test_wechat_mp_codex_images.py`、`test_wechat_mp_discussion_figures.py`、`test_wechat_mp_codex_hotspot.py` |
+| 热点公开文案阻断与 7 项编辑评分（含文章层级自我解释阻断；主张分类、来源独立性和信息增量由 Agent 人工核验） | `wechat_mp_hotspot_quality_gate.py`、`wechat_mp_browser_write.py`、`wechat-mp-writing/editorial-evidence-gate.md` | `test_wechat_mp_hotspot_quality_gate.py`、`test_wechat_mp_browser_write_cli.py`、`test_wechat_mp_browser_push.py` |
 | 北上广深义务教育与高中择校专题、招生承诺门禁 | `wechat-mp-writing/school-choice-policy.md`、`wechat_mp_hotspot_quality_gate.py` | `test_wechat_mp_hotspot_quality_gate.py` |
 | 通知 | `wechat_mp_draft_notify.py` | `test_wechat_mp_draft_notify.py` |
 | 质量与流量检查 | `wechat_mp_eval.py`、`wechat_mp_traffic_checklist.py`、`wechat_mp_empathy_checklist.py` | `test_wechat_mp_eval.py`、`test_wechat_mp_traffic_checklist.py`、`test_wechat_mp_empathy_checklist.py` |
@@ -27,7 +28,8 @@
 - 通知失败和热点研究失败必须可见，不得静默伪装成功。
 - 自动批次不得重新引入已退役稿型。
 - `WECHAT_MP_TITLE_VIRAL_MODE=1` 才启用自动热点/热点商业的具体化标题与合成情境引子；人工标题、Codex 手写稿和研究不足稿保持原样。合成情境必须披露且紧随可核验事实，不能写成采访、私信或内部信息。
-- 用户主动热点由 Agent 展示完整提示词，用户自行向 DeepSeek 取标题和初稿并贴回；Agent 不调用浏览器写稿 `write`。Agent 核实编辑并记录 `edit_notes`，推草稿前仍需第二次确认。现有浏览器写稿代码仅属旧兼容能力，不代表当前操作授权。
+- 用户主动热点由 Agent 展示完整提示词，用户自行向 DeepSeek 取标题和初稿并贴回；若完整正文已经在当前任务中展示并获明确发布确认，可登记为 `thread_confirmed_body`，无需重复粘贴。审核结论、摘要和零散修改不能替代完整正文。Agent 不调用浏览器写稿 `write`，仍须核实编辑、记录 `edit_notes` 并获得第二次确认。
 - 用户主动热点必须先检索抖音，只读取搜索结果卡片与封面，不打开或播放视频；随后才可补政府官网、官方媒体或法条页面证据图。
-- 用户主动热点正文使用 0—3 张已核验真实图，至少 1 张可追溯真实图作为封面；禁止自动抓图补齐、禁止生成图片、禁止 `codex-image-request.json`。stage 和 push 都重新校验。
+- 用户主动热点至少使用 1 张可追溯真实图；合格图总数为 1—3 张时全部进入正文，其中 1 张兼作封面；超过 3 张时正文最多 3 张。禁止自动抓图补齐、禁止生成图片、禁止 `codex-image-request.json`。stage 和 push 都重新校验。
+- 用户主动热点在 stage 和 push 前扫描面向编辑者的过程语言、标题夸大与承诺兑现、重复段落和残留格式；同时执行 7 项编辑质量评分，至少 5 项通过。push 检查先于文章构建、图片上传和微信接口调用。
 - 北上广深择校稿必须明确城市、区县或市级范围、学段、入学年度和政策状态；自动门禁拦截明确的学位或录取承诺，否定和反诈骗语境放行。

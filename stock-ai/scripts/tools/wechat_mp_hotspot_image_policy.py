@@ -176,6 +176,9 @@ def _load_verified_figures(
             "page_title": page_title,
             "caption": caption,
             "verified": "true",
+            "visual_description": str(raw.get("visual_description") or "").strip(),
+            "visual_checked_at": str(raw.get("visual_checked_at") or "").strip(),
+            "evidence_role": str(raw.get("evidence_role") or "").strip(),
         }
         normalized_meta[path.name] = meta
         figures.append(
@@ -211,6 +214,7 @@ def validate_verified_hotspot_images(
     *,
     expected_topic: str,
     max_body: int = 3,
+    require_visual_check: bool = False,
 ) -> VerifiedHotspotImages:
     if not 0 <= max_body <= 3:
         raise ValueError("热点正文真实图片数量必须为 0—3")
@@ -240,12 +244,23 @@ def validate_verified_hotspot_images(
         )
     if cover is None:
         cover = figures[0]
-    body_candidates = (
-        [cover, *(figure for figure in figures if figure.path != cover.path)]
-        if reuse_in_body
-        else [figure for figure in figures if figure.path != cover.path]
-    )
+    if max_body > 0 and len(figures) <= max_body:
+        body_candidates = figures
+    else:
+        body_candidates = (
+            [cover, *(figure for figure in figures if figure.path != cover.path)]
+            if reuse_in_body
+            else [figure for figure in figures if figure.path != cover.path]
+        )
     body = tuple(body_candidates[:max_body])
+    if require_visual_check:
+        for figure in (cover, *body):
+            meta = source_meta[figure.path.name]
+            if not all(
+                meta.get(key)
+                for key in ("visual_description", "visual_checked_at", "evidence_role")
+            ):
+                raise ValueError(f"图片 {figure.path.name} 缺少人工视觉核对记录")
     return VerifiedHotspotImages(
         cover_source=cover.path,
         body_figures=body,
