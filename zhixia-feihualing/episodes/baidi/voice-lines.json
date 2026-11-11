@@ -1,0 +1,39 @@
+{
+  "episode": "baidi",
+  "format": "one-poem-story",
+  "theme": "早发白帝城",
+  "theme_slug": "baidi",
+  "audio_slug": "baidi",
+  "lines": [
+    {
+      "id": "01-ayan-dialogue",
+      "role": "ayan",
+      "text": "栀夏，船在飞！",
+      "start_ms": 0
+    },
+    {
+      "id": "02-zhixia-dialogue",
+      "role": "zhixia",
+      "text": "坐稳，山要追不上了。",
+      "start_ms": 2040
+    },
+    {
+      "id": "03-ayan-counting",
+      "role": "ayan",
+      "text": "一座、两座、三座——",
+      "start_ms": 4488
+    },
+    {
+      "id": "05-ayan-dialogue",
+      "role": "ayan",
+      "text": "它们什么时候，都跑到身后了？",
+      "start_ms": 7152
+    },
+    {
+      "id": "06-ayan-poem-voiceover",
+      "role": "ayan",
+      "text": "两岸猿声啼不住，轻舟已过万重山。",
+      "start_ms": 10800
+    }
+  ]
+}

@@ -1,0 +1,1232 @@
+{
+  "date": "2026-10-25",
+  "promoted_entries": 50,
+  "reclassified_entries": 54,
+  "changed_entries": 109,
+  "changes": [
+    {
+      "id": "W0031",
+      "lemma": "后来",
+      "changed_fields": [
+        "senses"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0044",
+      "lemma": "往往",
+      "changed_fields": [
+        "senses"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0062",
+      "lemma": "同时",
+      "changed_fields": [
+        "senses"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0071",
+      "lemma": "于是",
+      "changed_fields": [
+        "senses"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0082",
+      "lemma": "为了",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0092",
+      "lemma": "并非",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0097",
+      "lemma": "并不",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0129",
+      "lemma": "需要",
+      "changed_fields": [
+        "senses"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0134",
+      "lemma": "准备",
+      "changed_fields": [
+        "senses"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0154",
+      "lemma": "给",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0159",
+      "lemma": "随着",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0170",
+      "lemma": "看到",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0173",
+      "lemma": "听到",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0180",
+      "lemma": "提出",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0198",
+      "lemma": "老师",
+      "changed_fields": [
+        "senses"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0254",
+      "lemma": "身份",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0316",
+      "lemma": "此前",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0323",
+      "lemma": "夜里",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0330",
+      "lemma": "每年",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0337",
+      "lemma": "推迟",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0349",
+      "lemma": "时而",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0350",
+      "lemma": "接着",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0365",
+      "lemma": "早已",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0378",
+      "lemma": "反倒",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0379",
+      "lemma": "倒是",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0384",
+      "lemma": "从而",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0385",
+      "lemma": "以至",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0387",
+      "lemma": "即便",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0388",
+      "lemma": "哪怕",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0395",
+      "lemma": "乃至",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0397",
+      "lemma": "何尝",
+      "changed_fields": [
+        "senses"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0403",
+      "lemma": "差点",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0427",
+      "lemma": "担负",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0479",
+      "lemma": "得到",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0514",
+      "lemma": "找到",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0530",
+      "lemma": "报道",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0534",
+      "lemma": "发送",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0535",
+      "lemma": "接听",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0540",
+      "lemma": "答复",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0542",
+      "lemma": "咨询",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0556",
+      "lemma": "想象",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0597",
+      "lemma": "支持",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0598",
+      "lemma": "帮助",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0599",
+      "lemma": "协助",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0600",
+      "lemma": "配合",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0601",
+      "lemma": "合作",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0631",
+      "lemma": "标注",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0632",
+      "lemma": "填写",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0633",
+      "lemma": "填报",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0634",
+      "lemma": "提交",
+      "changed_fields": [
+        "groups",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0635",
+      "lemma": "交付",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0636",
+      "lemma": "交给",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "groups",
+        "notes",
+        "review",
+        "senses",
+        "status",
+        "tags"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0637",
+      "lemma": "领取",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0638",
+      "lemma": "取回",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "groups",
+        "notes",
+        "review",
+        "senses",
+        "status",
+        "tags"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0639",
+      "lemma": "归还",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0640",
+      "lemma": "借用",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0641",
+      "lemma": "借阅",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "groups",
+        "notes",
+        "review",
+        "senses",
+        "status",
+        "tags"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0642",
+      "lemma": "租用",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0643",
+      "lemma": "购买",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0644",
+      "lemma": "出售",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0645",
+      "lemma": "支付",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0646",
+      "lemma": "缴纳",
+      "changed_fields": [
+        "groups",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0647",
+      "lemma": "退还",
+      "changed_fields": [
+        "groups",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0648",
+      "lemma": "报销",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0649",
+      "lemma": "收费",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0650",
+      "lemma": "免费",
+      "changed_fields": [
+        "groups",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0651",
+      "lemma": "赔偿",
+      "changed_fields": [
+        "groups",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0652",
+      "lemma": "补偿",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0653",
+      "lemma": "携带",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0654",
+      "lemma": "带领",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0655",
+      "lemma": "陪同",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0656",
+      "lemma": "陪伴",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0657",
+      "lemma": "照顾",
+      "changed_fields": [
+        "groups",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0658",
+      "lemma": "照料",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0659",
+      "lemma": "照看",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "groups",
+        "notes",
+        "review",
+        "senses",
+        "status",
+        "tags"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0660",
+      "lemma": "看管",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0661",
+      "lemma": "保管",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0662",
+      "lemma": "托管",
+      "changed_fields": [
+        "groups",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0663",
+      "lemma": "委托",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0664",
+      "lemma": "交接",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0665",
+      "lemma": "交代",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0666",
+      "lemma": "分配",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0667",
+      "lemma": "分担",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0668",
+      "lemma": "分享",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0669",
+      "lemma": "分散",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0670",
+      "lemma": "集中",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0671",
+      "lemma": "聚集",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0672",
+      "lemma": "进入",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0673",
+      "lemma": "离开",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0674",
+      "lemma": "抵达",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0675",
+      "lemma": "到达",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0676",
+      "lemma": "返回",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0677",
+      "lemma": "回到",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "groups",
+        "notes",
+        "review",
+        "senses",
+        "status",
+        "tags"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0678",
+      "lemma": "前往",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0679",
+      "lemma": "出发",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0680",
+      "lemma": "路过",
+      "changed_fields": [
+        "groups",
+        "senses",
+        "tags"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0709",
+      "lemma": "拆开",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0721",
+      "lemma": "补上",
+      "changed_fields": [
+        "completion_review",
+        "notes",
+        "review",
+        "scope",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0737",
+      "lemma": "带来",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "scope",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0754",
+      "lemma": "成立",
+      "changed_fields": [
+        "senses"
+      ],
+      "previously_pending": false
+    },
+    {
+      "id": "W0943",
+      "lemma": "各方",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0945",
+      "lemma": "有人",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0973",
+      "lemma": "同龄",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0977",
+      "lemma": "少年",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0979",
+      "lemma": "成年人",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0990",
+      "lemma": "用户",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0998",
+      "lemma": "志愿者",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0999",
+      "lemma": "工作人员",
+      "changed_fields": [
+        "completion_review",
+        "content_license",
+        "notes",
+        "review",
+        "senses",
+        "status"
+      ],
+      "previously_pending": true
+    },
+    {
+      "id": "W0131",
+      "lemma": "希望",
+      "changed_fields": [
+        "senses"
+      ],
+      "previously_pending": false
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+[
+  {
+    "id": "01-ayan-dialogue",
+    "text": "哇，黄河真从天上冲下来啦！",
+    "start": 0.0,
+    "end": 3.456,
+    "highlight": "黄河"
+  },
+  {
+    "id": "02-zhixia-poem",
+    "text": "黄河之水天上来，奔流到海不复回。",
+    "start": 3.8,
+    "end": 8.648,
+    "highlight": "黄河"
+  }
+]

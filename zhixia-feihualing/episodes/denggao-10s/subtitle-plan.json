@@ -1,0 +1,26 @@
+[
+  {
+    "id": "01-ayan-hook",
+    "kind": "dialogue",
+    "text": "风起了！",
+    "attribution": null
+  },
+  {
+    "id": "02-zhixia-hook",
+    "kind": "dialogue",
+    "text": "看江上。",
+    "attribution": null
+  },
+  {
+    "id": "03-zhixia-poem-one",
+    "kind": "poem",
+    "text": "无边落木萧萧下",
+    "attribution": null
+  },
+  {
+    "id": "04-zhixia-poem-two",
+    "kind": "poem",
+    "text": "不尽长江滚滚来",
+    "attribution": null
+  }
+]

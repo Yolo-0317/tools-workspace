@@ -6,7 +6,7 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
 from scripts._bootstrap import ensure_repo_root_on_path
@@ -34,6 +34,14 @@ HOTSPOT_SCHEDULE_SLOT_KEYS: tuple[str, ...] = (
     "hotspot_morning",
     "hotspot_afternoon",
     "hotspot_evening",
+)
+
+LITERARY_SLOT_KEYS: tuple[str, ...] = (
+    "literary",
+    "literary_next",
+    "literary_queue",
+    "literary_queue_2",
+    "literary_queue_3",
 )
 
 # 用于识别「本脚本管理的草稿」，避免误删人工撰写的其他草稿
@@ -128,6 +136,14 @@ _KIND_TITLE_HINTS: dict[str, tuple[str, ...]] = {
         "追完",
         "安利",
     ),
+    "literary": (
+        "典籍",
+        "文学",
+        "史记",
+        "尚书",
+        "诗经",
+        "人物命运",
+    ),
 }
 
 
@@ -171,6 +187,9 @@ def managed_slot_keys() -> tuple[str, ...]:
     for k in DRAFT_KINDS:
         if k not in keys:
             keys.append(k)
+    for k in LITERARY_SLOT_KEYS:
+        if k not in keys:
+            keys.append(k)
     return tuple(keys)
 
 
@@ -179,6 +198,11 @@ def get_slot_media_id(kind: str) -> str | None:
     entry = slots.get(kind) or {}
     mid = str(entry.get("media_id") or "").strip()
     return mid or None
+
+
+def get_slot_title(kind: str) -> str:
+    slots = _load_slots().get("slots") or {}
+    return str((slots.get(kind) or {}).get("title") or "").strip()
 
 
 def set_slot_media_id(kind: str, media_id: str, *, title: str = "") -> None:
@@ -224,6 +248,35 @@ def upsert_draft_article(
         set_slot_media_id(slot, new_id, title=str(item.get("title") or ""))
     action = "recreated" if old_id else "created"
     return new_id, action, None
+
+
+def upsert_product_feature_draft(
+    article: dict[str, Any], *, thumb_media_id: str,
+    verify_saved: Callable[[str], None] | None = None,
+) -> tuple[str | None, str, dict[str, Any] | None]:
+    """先建立新稿再替换单品槽位，创建失败时保留旧稿。"""
+    from scripts.tools.wechat_mp_product import draft_article_payload
+
+    item = draft_article_payload(article)
+    item["thumb_media_id"] = thumb_media_id
+    attach_cover_crop_fields(item, thumb_media_id=thumb_media_id)
+    old_id = get_slot_media_id("product_feature")
+    new_id, err = draft_add(articles=[item])
+    if err or not new_id:
+        return None, "failed", err or {"errmsg": "草稿 API 未返回 media_id"}
+    if verify_saved is not None:
+        try:
+            verify_saved(new_id)
+        except Exception as exc:
+            draft_delete(media_id=new_id)
+            return None, "failed", {"errmsg": str(exc)}
+    if old_id:
+        delete_err = draft_delete(media_id=old_id)
+        if delete_err:
+            draft_delete(media_id=new_id)
+            return None, "failed", delete_err
+    set_slot_media_id("product_feature", new_id, title=str(item.get("title") or ""))
+    return new_id, "recreated" if old_id else "created", None
 
 
 def prune_extra_managed_drafts(

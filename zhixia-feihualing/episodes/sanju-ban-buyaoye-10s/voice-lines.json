@@ -1,0 +1,46 @@
+{
+  "episode": "sanju-ban-buyaoye-10s",
+  "format": "one-poem-story",
+  "theme": "今晚不熬夜·三句半",
+  "theme_slug": "buyaoye",
+  "audio_slug": "sanju-ban-buyaoye-10s",
+  "lines": [
+    {
+      "id": "01-zhixia-opening",
+      "role": "zhixia",
+      "text": "今晚立志不熬夜！",
+      "start_ms": 100,
+      "context_texts": [
+        "这是轻松诙谐的三句半对白。清透明亮的年轻女声，认真立誓，轻快坚定，自然说话，吐字清楚，不唱歌，不拖腔。只读指定台词。"
+      ]
+    },
+    {
+      "id": "02-ayan-agree",
+      "role": "ayan",
+      "text": "手机早早放一边！",
+      "gap_before_ms": 180,
+      "context_texts": [
+        "三句半的第二句。保持聪明假小子声线，郑重点头赞同，清亮利落，轻快而一本正经，自然对白，不卖萌，不唱歌。只读指定台词。"
+      ]
+    },
+    {
+      "id": "03-xiaohei-reveal",
+      "role": "xiaohei",
+      "text": "躺下又刷三小时！",
+      "gap_before_ms": 180,
+      "context_texts": [
+        "三句半的第三句。机灵爽朗的男声，一本正经地揭穿熟人，带一点得意的吐槽感。自然轻快说话，三小时稍带重音，不唱歌。只读指定台词。"
+      ],
+      "revision": 3
+    },
+    {
+      "id": "04-zhixia-punchline",
+      "role": "zhixia",
+      "text": "明天！",
+      "gap_before_ms": 450,
+      "context_texts": [
+        "三句半最后两个字的包袱。保持同一年轻女声，心虚又故作镇定，干脆、短促、有力地说出明天。不要拖长尾音，不唱歌，不添加其他内容。"
+      ]
+    }
+  ]
+}

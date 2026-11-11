@@ -1,0 +1,30 @@
+[
+  {
+    "id": "01-zhixia-line-one-a",
+    "text": "灵皇皇兮，",
+    "start": 1.0,
+    "end": 3.04,
+    "highlight": "九歌云中君十五秒四段自然慢诵"
+  },
+  {
+    "id": "02-zhixia-line-one-b",
+    "text": "既降。",
+    "start": 3.8,
+    "end": 5.048,
+    "highlight": "九歌云中君十五秒四段自然慢诵"
+  },
+  {
+    "id": "03-zhixia-line-two-a",
+    "text": "猋远举兮，",
+    "start": 7.7,
+    "end": 9.572,
+    "highlight": "九歌云中君十五秒四段自然慢诵"
+  },
+  {
+    "id": "04-zhixia-line-two-b",
+    "text": "云中。",
+    "start": 10.8,
+    "end": 12.024,
+    "highlight": "九歌云中君十五秒四段自然慢诵"
+  }
+]

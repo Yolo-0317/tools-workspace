@@ -39,6 +39,7 @@ def test_load_codex_hotspot_draft_reads_valid_json(tmp_path: Path) -> None:
             "body": "第一段正文。\n\n第二段正文。",
             "topic": "具体事件",
             "research_urls": ["https://example.com/report"],
+            "original_thesis": "规则真正要解决的，是把本可提前阻止的成本留在开业之前。",
             "slot_key": "hotspot_afternoon",
         },
     )
@@ -49,6 +50,7 @@ def test_load_codex_hotspot_draft_reads_valid_json(tmp_path: Path) -> None:
     assert draft.topic == "具体事件"
     assert draft.research_urls == ("https://example.com/report",)
     assert draft.slot_key == "hotspot_afternoon"
+    assert draft.original_thesis == "规则真正要解决的，是把本可提前阻止的成本留在开业之前。"
     assert draft.as_discussion_topic() == {
         "title_zh": "具体事件",
         "trend_title": "具体事件",
@@ -56,6 +58,22 @@ def test_load_codex_hotspot_draft_reads_valid_json(tmp_path: Path) -> None:
         "from_trend": True,
         "research_urls": ["https://example.com/report"],
     }
+
+
+def test_validate_codex_hotspot_originality_rejects_missing_source_diversity() -> None:
+    from scripts.tools.wechat_mp_codex_hotspot import validate_codex_hotspot_originality
+
+    draft = CodexHotspotDraft(
+        title="一件具体事件为什么引发争议？",
+        digest="这篇文章梳理事件、规则与争议焦点。",
+        body=_valid_hotspot_body(),
+        topic="具体事件",
+        research_urls=("https://example.com/one", "https://example.com/two"),
+        original_thesis="真正的问题是成本为何被推给最后一个知道风险的普通人。",
+    )
+
+    with pytest.raises(ValueError, match="sources_too_few"):
+        validate_codex_hotspot_originality(draft, history_posts=[])
 
 
 @pytest.mark.parametrize("field", ["title", "digest", "body", "topic"])
@@ -101,6 +119,7 @@ def test_build_hotspot_article_uses_codex_body_without_generator(monkeypatch) ->
         digest="这篇文章梳理事件、规则与争议焦点。",
         body=_valid_hotspot_body(),
         topic="具体事件",
+        original_thesis="真正的问题是规则执行为何总让普通人承担最后的成本。",
     )
 
     def fail_if_generated(**_kwargs):
@@ -115,7 +134,7 @@ def test_build_hotspot_article_uses_codex_body_without_generator(monkeypatch) ->
     assert "第1组公开信息记录于2026年8月10日" in article["body_text"]
 
 
-def test_build_hotspot_article_surfaces_codex_image_request(
+def test_build_hotspot_article_uses_verified_images_without_filling_to_target(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -137,8 +156,6 @@ def test_build_hotspot_article_surfaces_codex_image_request(
     from scripts.tools import wechat_mp_discussion_figures as figures_mod
     from scripts.tools import wechat_mp_hotspot_article as hotspot_mod
 
-    request_path = tmp_path / "codex-image-request.json"
-    request_path.write_text("{}", encoding="utf-8")
     draft = CodexHotspotDraft(
         title="具体事件为什么引发争议？",
         digest="这篇文章梳理事件、规则与争议焦点。",
@@ -146,27 +163,71 @@ def test_build_hotspot_article_surfaces_codex_image_request(
         topic="具体事件",
     )
     monkeypatch.setattr(hotspot_mod, "hotspot_social_layout_enabled", lambda: True)
+    monkeypatch.setattr(figures_mod, "INLINE_DISCUSSION_ROOT", tmp_path)
     monkeypatch.setattr(
-        figures_mod,
-        "inject_discussion_figures",
-        lambda body, _topic: body
-        + "\n\n[[fig:a|cap=x]]\n\n[[fig:b|cap=x]]\n\n[[fig:c|cap=x]]",
+        "scripts.tools.wechat_mp_seo.attach_publish_hints",
+        lambda article, *_args, **_kwargs: article,
     )
-    monkeypatch.setattr(figures_mod, "ensure_discussion_cover", lambda _topic: tmp_path / "cover.jpg")
+    calls: dict[str, object] = {}
+    cover_source = tmp_path / "topic" / "douyin-cover.jpg"
+    body_source = tmp_path / "topic" / "official-01.jpg"
+    body_source.parent.mkdir(parents=True)
+    from PIL import Image
 
-    def require_generation(_topic: dict[str, object], *, body_count: int = 3) -> None:
-        raise images_mod.CodexImageGenerationRequired(
-            request_path=request_path,
-            missing_count=2,
+    Image.effect_noise((800, 600), 80).convert("RGB").save(body_source)
+
+    def prepare(_topic, *, body_count, image_policy):
+        from scripts.tools.wechat_mp_hotspot_image_policy import (
+            VerifiedFigure,
+            VerifiedHotspotImages,
         )
 
-    monkeypatch.setattr(images_mod, "prepare_hotspot_topic_images", require_generation)
+        calls["image_policy"] = image_policy
+        return VerifiedHotspotImages(
+            cover_source=cover_source,
+            body_figures=(
+                VerifiedFigure(
+                    path=body_source,
+                    rel="discussion/topic/official-01.jpg",
+                    caption="图源：官方媒体",
+                    page_url="https://example.gov.cn/report",
+                    source_name="官方媒体",
+                    source_type="official_report",
+                ),
+            ),
+            source_meta={},
+        )
 
-    with pytest.raises(images_mod.CodexImageGenerationRequired) as caught:
-        content_mod.build_hotspot_article(codex_draft=draft)
+    def inject(body, _topic, *, figures):
+        calls["figures"] = figures
+        return body + "\n\n[[fig:discussion/topic/official-01.jpg|cap=图源：官方媒体]]"
 
-    assert caught.value.request_path == request_path
-    assert caught.value.missing_count == 2
+    def cover(_topic, *, source_path, allow_fetch):
+        calls["cover_source"] = source_path
+        calls["allow_fetch"] = allow_fetch
+        return tmp_path / "cover.jpg"
+
+    monkeypatch.setattr(images_mod, "prepare_hotspot_topic_images", prepare)
+    monkeypatch.setattr(figures_mod, "inject_discussion_figures", inject)
+    monkeypatch.setattr(figures_mod, "ensure_discussion_cover", cover)
+
+    article = content_mod.build_hotspot_article(
+        codex_draft=draft,
+        upload_figures=False,
+    )
+
+    assert article["body_text"].count("[[fig:") == 1
+    assert calls == {
+        "image_policy": "verified_only",
+        "figures": [
+            {
+                "rel": "discussion/topic/official-01.jpg",
+                "cap": "图源：官方媒体",
+            }
+        ],
+        "cover_source": cover_source,
+        "allow_fetch": False,
+    }
 
 
 def test_validate_codex_hotspot_body_rejects_short_body() -> None:
@@ -174,6 +235,52 @@ def test_validate_codex_hotspot_body_rejects_short_body() -> None:
 
     with pytest.raises(ValueError, match="字数"):
         validate_codex_hotspot_body("2026年发生了一件事。", topic="具体事件")
+
+
+def _hotspot_body_with_non_whitespace_chars(target: int) -> str:
+    paragraphs = [
+        "2026年当事人公开说明了事情经过。",
+        "第二段交代已经核实的时间和地点。",
+        "第三段解释双方各自主张的理由。",
+        "第四段分析规则怎样影响普通人。",
+        "第五段留下仍需调查确认的问题。",
+    ]
+    non_whitespace = sum(len(paragraph) for paragraph in paragraphs)
+    assert non_whitespace <= target
+    padding, extra = divmod(target - non_whitespace, len(paragraphs))
+    padded = [
+        paragraph + "甲" * (padding + (1 if index < extra else 0))
+        for index, paragraph in enumerate(paragraphs)
+    ]
+    body = "\n\n".join(padded)
+    assert len("".join(body.split())) == target
+    return body
+
+
+def test_validate_codex_hotspot_body_uses_850_character_floor(monkeypatch) -> None:
+    from scripts.tools.wechat_mp_hotspot_article import validate_codex_hotspot_body
+
+    monkeypatch.delenv("WECHAT_MP_CODEX_HOTSPOT_MIN_BODY", raising=False)
+    with pytest.raises(ValueError, match="字数"):
+        validate_codex_hotspot_body(
+            _hotspot_body_with_non_whitespace_chars(849), topic="具体事件"
+        )
+
+    accepted = validate_codex_hotspot_body(
+        _hotspot_body_with_non_whitespace_chars(850), topic="具体事件"
+    )
+
+    assert len("".join(accepted.split())) >= 850
+
+
+def test_hotspot_gate_allows_rigid_label_words_inside_natural_sentence() -> None:
+    from scripts.tools.wechat_mp_hotspot_article import _hotspot_body_reject_reasons
+
+    body = "2026年项目完成撤场。\n\n还要查清两年之间究竟发生了什么。\n\n责任需要证据认定。\n\n现场已经清理。\n\n后续仍应完善验收。"
+
+    reasons = _hotspot_body_reject_reasons(body, bucket="event", min_chars=1)
+
+    assert "含刚性字段标签" not in reasons
 
 
 @pytest.mark.parametrize("kinds", [["news"], ["hotspot", "news"]])
@@ -185,6 +292,13 @@ def test_validate_codex_draft_kinds_requires_single_hotspot(
 
     with pytest.raises(ValueError, match="单篇 hotspot"):
         draft_cli._validate_codex_draft_kinds(kinds, tmp_path / "draft.json")
+
+
+def test_direct_hotspot_codex_draft_requires_browser_workflow(tmp_path: Path) -> None:
+    from scripts.tools import wechat_mp_draft as draft_cli
+
+    with pytest.raises(ValueError, match="wechat_mp_browser_write"):
+        draft_cli._validate_codex_draft_kinds(["hotspot"], tmp_path / "draft.json")
 
 
 def test_resolve_codex_slot_key_prefers_environment(monkeypatch) -> None:
@@ -275,7 +389,7 @@ def test_main_invalid_codex_kind_reports_plain_error(
     assert "❌" not in error
 
 
-def test_main_invalid_codex_body_reports_plain_error(
+def test_main_direct_hotspot_json_reports_browser_workflow_error(
     monkeypatch,
     capsys,
     tmp_path: Path,
@@ -305,11 +419,11 @@ def test_main_invalid_codex_body_reports_plain_error(
 
     assert draft_cli.main() == 1
     error = capsys.readouterr().err
-    assert "错误 [hotspot]: Codex 热点正文未通过质量门禁" in error
+    assert "错误: 用户主动热点必须使用 scripts.tools.wechat_mp_browser_write" in error
     assert "❌" not in error
 
 
-def test_main_missing_mp_credentials_reports_plain_error(
+def test_main_direct_hotspot_json_is_rejected_before_mp_credentials(
     monkeypatch,
     capsys,
     tmp_path: Path,
@@ -339,5 +453,5 @@ def test_main_missing_mp_credentials_reports_plain_error(
 
     assert draft_cli.main() == 1
     error = capsys.readouterr().err
-    assert "错误: 未配置 WECHAT_MP_APPID / WECHAT_MP_SECRET" in error
+    assert "错误: 用户主动热点必须使用 scripts.tools.wechat_mp_browser_write" in error
     assert "❌" not in error

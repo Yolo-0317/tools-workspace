@@ -1,0 +1,113 @@
+周易/泰 - 维基文库，自由的图书馆 (https://zh.wikisource.org/wiki/%E5%91%A8%E6%98%93/%E6%B3%B0)
+citeturn38view0 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({"ref_id":"https://zh.wikisource.org/wiki/周易/泰","lineno":120}); Total lines: 170
+L0: cite0†跳转到内容 L1: 
+L2: [Input] 主菜单
+L3: 
+L4: 主菜单
+L5: 
+L6: [Button: 移至侧栏] [Button: 隐藏]
+L7: 
+L8: 导航
+L9: 
+L10:   * cite1†首页 L11:   * cite2†随机作品 L12:   * cite3†随机作者 L13:   * cite4†随机原本 L14:   * cite5†所有页面 L15: 
+L16: 编者
+L17: 
+L18:   * cite6†社群首页 L19:   * cite7†写字间 L20:   * cite8†最近更改 L21:   * cite9†特殊页面 L22: 
+L23: 帮助
+L24: 
+L25:   * cite10†帮助 L26:   * cite11†关于维基文库 L27:   * cite12†联系我们 L28:   * cite13†方针与指引 L29: 
+L30: 显示选项
+L31: 
+L32: cite14†搜索 L33: 
+L34: [Input: 搜索Wikisource内容]
+L35: 
+L36: [Input]
+L37: 
+L38: [Button: 搜索]
+L39: 
+L40: [Input] 外观
+L41: 
+L42:   * cite15†资助†donate.wikimedia.org L43:   * cite16†创建账号 L44:   * cite17†登录 L45: 
+L46: [Input] 个人工具
+L47: 
+L48:   * cite15†资助†donate.wikimedia.org L49:   * cite16†创建账号 L50:   * cite17†登录 L51: # 周易/泰
+L52: 
+L53: [Input] 添加语言
+L54: 
+L55: cite18†添加链接†www.wikidata.org L56: 
+L57:   * cite19†作品 L58:   * cite20†讨论 L59: 
+L60: [Input] 不转换
+L61: 
+L62:   * cite21†不转换 L63:   * cite22†简体 L64:   * cite23†繁體 L65: 
+L66:   * cite19†阅读 L67:   * cite24†编辑 L68:   * cite25†查看历史 L69: 
+L70: [Input] 工具
+L71: 
+L72: 工具
+L73: 
+L74: [Button: 移至侧栏] [Button: 隐藏]
+L75: 
+L76: 操作
+L77: 
+L78:   * cite19†阅读 L79:   * cite24†编辑 L80:   * cite25†查看历史 L81: 
+L82: 常规
+L83: 
+L84:   * cite26†链入页面 L85:   * cite27†相关更改 L86:   * cite28†上传文件†commons.wikimedia.org L87:   * cite29†固定链接 L88:   * cite30†页面信息 L89:   * cite31†引用此页 L90:   * cite32†获取短链接 L91: 
+L92: 打印/导出
+L93:   * 可打印版
+L94:   * cite33†下载为EPUB†ws-export.wmcloud.org L95:   * cite34†下载为MOBI†ws-export.wmcloud.org L96:   * cite35†下载为PDF†ws-export.wmcloud.org L97:   * cite36†其他格式†ws-export.wmcloud.org L98: 
+L99: 在其他项目中
+L100: 
+L101:   * cite37†维基百科†zh.wikipedia.org L102:   * cite38†维基数据项目†www.wikidata.org L103: 
+L104: 外观
+L105: 
+L106: [Button: 移至侧栏] [Button: 隐藏]
+L107: 
+L108: cite33†下载†ws-export.wmcloud.org L109: 
+L110: < cite39†周易 L111: 
+L112: cite40†履 ◄  | 周易
+L113: 泰  | ► cite41†否 L114: 
+L115:     cite42†Image: 维基百科†thumb.wikimedia.org 参阅cite43†维基百科†zh.wikipedia.org 中的：cite44†和平†zh.wikipedia.org L116: 
+L117: cite39†周易 第十一卦
+L118: 
+L119: 泰
+L120: 
+L121: 乾下坤上
+L122:   * 易經：
+L123:     * 泰：小往大來，吉亨。
+L124:     1. 初九：拔茅茹以其彙，征吉。
+L125:     2. 九二：包荒。用馮河，不遐遺；朋亡。得尚于中行。
+L126:     3. 九三：无平不陂，无往不復，艱貞无咎。勿恤其孚，于食有福。
+L127:     4. 六四：翩翩，不富以其鄰；不戒以孚。
+L128:     5. 六五：帝乙歸妹，以祉，元吉。
+L129:     6. 上六：城復于隍，勿用師，自邑告命，貞吝。
+L130: 
+L131:   * 彖曰：
+L132:     * 泰，小往大來，吉亨。則是天地交而萬物通也，上下交而其志同也。內陽而外陰，內健而外順，內君子而外小人，君子道長，小人道消也。
+L133: 
+L134:   * 象曰：
+L135:     * 天地交，泰；后以財成天地之道，輔相天地之宜，以左右民。
+L136:     1. 拔茅征吉，志在外也。
+L137:     2. 包荒，得尚于中行，以光大也。
+L138:     3. 无往不復，天地際也。
+L139:     4. 翩翩不富，皆失實也。不戒以孚，中心願也。
+L140:     5. 以祉，元吉。中以行願也。
+L141:     6. 城復于隍，其命亂也。
+L142: 
+L143: cite45†Image L144: 检索自“cite29†https://zh.wikisource.org/w/index.php?title=周易/泰&oldid=2106138 ”
+L145: 
+L146:   * 此页面最后编辑于2022年2月16日 (星期三) 00:35。
+L147:   * 本站的全部文字在cite46†知识共享 署名-相同方式共享 4.0协议†creativecommons.org 之条款下提供，附加条款亦可能应用。（请参阅cite47†使用条款†foundation.wikimedia.org ）
+L148: 在部份国家和地区，包括中国大陆、澳门和台湾，作者精神权（含署名权）永久有效（cite48†详情 ）。
+L149: Wikisource®和维基文库标志是cite49†维基媒体基金会†wikimediafoundation.org 的注册商标；维基™是维基媒体基金会的商标。
+L150: 维基媒体基金会是在美国佛罗里达州登记的501(c)(3)cite50†免税†donate.wikimedia.org 、非营利、慈善机构。
+L151:   * cite51†隐私政策†foundation.wikimedia.org L152:   * cite11†关于维基文库 L153:   * cite52†免责声明 L154:   * cite53†法律与安全事项联系方式†foundation.wikimedia.org L155:   * cite54†行为准则†foundation.wikimedia.org L156:   * cite55†开发者†developer.wikimedia.org L157:   * cite56†统计†stats.wikimedia.org L158:   * cite57†Cookie声明†foundation.wikimedia.org L159:   * 搜索
+L160: 
+L161: [Input: 搜索Wikisource内容]
+L162: 
+L163: [Input]
+L164: 
+L165: [Button: 搜索]
+L166: 
+L167: 周易/泰
+L168: 
+L169: 添加语言 cite58†添加话题 

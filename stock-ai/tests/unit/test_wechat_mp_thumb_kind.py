@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import sys
+import struct
 from pathlib import Path
+from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -13,6 +15,7 @@ ensure_repo_root_on_path()
 
 from scripts.tools.wechat_mp_client import (
     _DEFAULT_KIND_THUMB_NAMES,
+    get_material_image_meta,
     pick_thumb_for_draft_kind,
     pick_thumb_from_material_library,
 )
@@ -32,6 +35,33 @@ def test_finance_thumb_excludes_avatar_material() -> None:
     assert _is_finance_thumb_material(
         {"name": "封面-显示器走势-双封面.jpg", "name_raw": "封面-显示器走势-双封面.jpg"}
     )
+
+
+def test_cover_metadata_finds_selected_material_after_first_200(monkeypatch) -> None:
+    """A selected cover on later material pages must keep its real crop dimensions."""
+    from scripts.tools import wechat_mp_client as client
+
+    items = [
+        {"media_id": f"other-{index}", "name": "other.jpg", "url": ""}
+        for index in range(205)
+    ]
+    items.append(
+        {"media_id": "selected-cover", "name": "market-cover.png", "url": "https://example.invalid/cover.png"}
+    )
+    monkeypatch.setattr(
+        client,
+        "batchget_material_images",
+        lambda *, offset, count: (items[offset : offset + count], None),
+    )
+    png = b"\x89PNG\r\n\x1a\n" + b"\x00" * 8 + struct.pack(">II", 1280, 382)
+    response = SimpleNamespace(content=png, raise_for_status=lambda: None)
+    monkeypatch.setattr(client, "_mp_session", lambda: SimpleNamespace(get=lambda url, timeout: response))
+
+    meta, error = get_material_image_meta("selected-cover")
+
+    assert error is None
+    assert meta is not None
+    assert (meta["width"], meta["height"]) == (1280, 382)
 
 
 def test_cover_kind_for_content_evening_fixed_slots() -> None:

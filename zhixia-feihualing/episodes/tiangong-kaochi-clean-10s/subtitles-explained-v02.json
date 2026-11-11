@@ -1,0 +1,34 @@
+[
+  {
+    "id": "01-practice",
+    "text": "栀夏正在认真练功",
+    "start": 0.000,
+    "end": 2.400,
+    "kind": "commentary",
+    "placement": "top"
+  },
+  {
+    "id": "02-sneak",
+    "text": "阿砚趁姐姐闭眼\n偷偷烤起了鸡翅",
+    "start": 2.400,
+    "end": 5.800,
+    "kind": "commentary",
+    "placement": "top"
+  },
+  {
+    "id": "03-stop",
+    "text": "栀夏察觉不对\n立刻收火",
+    "start": 5.800,
+    "end": 7.750,
+    "kind": "commentary",
+    "placement": "top"
+  },
+  {
+    "id": "04-dialogue",
+    "text": "别停啊，还没熟呢！",
+    "start": 7.750,
+    "end": 9.625,
+    "kind": "dialogue",
+    "placement": "bottom"
+  }
+]

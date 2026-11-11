@@ -1,0 +1,6 @@
+[
+  {"id":"01-owner","speaker":"主人","text":"小黑，现在用 AI 养你了！","start":0.30,"end":2.53},
+  {"id":"02-xiaohei","speaker":"小黑","text":"饭能生成吗？","start":3.31,"end":4.24},
+  {"id":"03-owner","speaker":"主人","text":"不能。","start":5.02,"end":5.55},
+  {"id":"04-xiaohei","speaker":"小黑","text":"那你这是养我，还是画饼？","start":6.70,"end":8.66}
+]

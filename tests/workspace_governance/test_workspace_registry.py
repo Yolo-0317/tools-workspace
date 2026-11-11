@@ -16,7 +16,7 @@ import workspace_registry
 
 
 class WorkspaceRegistryCliTest(unittest.TestCase):
-    def test_list_returns_the_17_top_level_projects(self) -> None:
+    def test_list_returns_the_19_top_level_projects(self) -> None:
         result = subprocess.run(
             [sys.executable, str(SCRIPT), "--list", "--format", "json"],
             cwd=ROOT,
@@ -47,6 +47,8 @@ class WorkspaceRegistryCliTest(unittest.TestCase):
                 "wechat-cursor-acp",
                 "xiaozhi-atoms3r",
                 "xiaozhi-mac-server",
+                "zhouyi",
+                "zhixia-feihualing",
             },
         )
 

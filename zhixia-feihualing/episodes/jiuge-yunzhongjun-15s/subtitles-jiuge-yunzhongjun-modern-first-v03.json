@@ -1,0 +1,30 @@
+[
+  {
+    "id": "01-modern-cloud",
+    "text": "有些人，如云而来，也如云而去。",
+    "start": 0.0,
+    "end": 3.456,
+    "highlight": "九歌云中君现代映射在前朗诵"
+  },
+  {
+    "id": "02-modern-farewell",
+    "text": "留不住，便目送他远去。",
+    "start": 3.6,
+    "end": 6.648,
+    "highlight": "九歌云中君现代映射在前朗诵"
+  },
+  {
+    "id": "03-classic-arrival",
+    "text": "灵皇皇兮既降，",
+    "start": 7.0,
+    "end": 9.448,
+    "highlight": "九歌云中君现代映射在前朗诵"
+  },
+  {
+    "id": "04-classic-departure",
+    "text": "猋远举兮云中。",
+    "start": 10.0,
+    "end": 12.256,
+    "highlight": "九歌云中君现代映射在前朗诵"
+  }
+]

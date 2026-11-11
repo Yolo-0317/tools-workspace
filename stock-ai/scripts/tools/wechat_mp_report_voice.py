@@ -41,7 +41,12 @@ REPORT_VOICE_RULES: tuple[tuple[str, str], ...] = (
     (r"有人举", "分论点举例腔"),
     (r"服化道", "制片行业术语"),
     (r"一眼五年前|一眼\d+年前", "压缩怪句"),
-    (r"那种压了", "分析报告举例腔"),
+    (r"列篇目|篇目表", "剧评/meta"),
+    (r"戏里先出来", "剧评/meta"),
+    (r"正片还没", "剧评/meta"),
+    (r"镜头先落到|镜头停在", "剧评/meta"),
+    (r"它先把.{0,8}摆出来", "AI元叙述"),
+    (r"演绎到极致|沉浸在", "煽情通稿"),
 )
 
 
@@ -56,7 +61,6 @@ def scan_report_voice(text: str) -> list[tuple[str, str, str]]:
             m = re.search(pattern, stripped)
             if m:
                 hits.append((label, pattern, stripped[:80]))
-                break
     return hits
 
 

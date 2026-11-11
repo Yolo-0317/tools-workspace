@@ -12,13 +12,14 @@ from .five_day_return_profiles import evaluation_position
 from .models import BuyPointBar
 from .planning import atr14
 from .public_challenger_signals import (
+    CONTRARIAN_TRACK,
     EXECUTION_TRACK,
     RESIDUAL_TRACK,
     ChallengerSignal,
 )
 
 
-PUBLIC_CHALLENGER_EVALUATOR_VERSION = "public-challenger-evaluator-v1"
+PUBLIC_CHALLENGER_EVALUATOR_VERSION = "public-challenger-evaluator-v2"
 
 
 @dataclass(frozen=True)
@@ -210,7 +211,7 @@ def simulate_direct_five_day(
     bars: Sequence[BuyPointBar],
     costs: ExecutionCosts,
 ) -> ChallengerTrade:
-    if signal.track_id != RESIDUAL_TRACK:
+    if signal.track_id not in {CONTRARIAN_TRACK, RESIDUAL_TRACK}:
         raise ValueError("DIRECT_SOURCE_TRACK_INVALID")
     future = _ordered_future_bars(signal, bars)
     if not future:

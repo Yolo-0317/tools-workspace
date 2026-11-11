@@ -250,8 +250,18 @@ def _cover_source_filename(out_dir: Path) -> str:
 def _save_cover_source(out_dir: Path, source: Path) -> None:
     import json
 
-    (out_dir / _COVER_SOURCE_META).write_text(
-        json.dumps({"source_filename": source.name}, ensure_ascii=False, indent=2),
+    path = out_dir / _COVER_SOURCE_META
+    payload: dict[str, object] = {}
+    if path.is_file():
+        try:
+            existing = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(existing, dict) and existing.get("reuse_in_body") is True:
+                payload["reuse_in_body"] = True
+        except (OSError, json.JSONDecodeError):
+            pass
+    payload["source_filename"] = source.name
+    path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
 
@@ -308,6 +318,7 @@ def _page_restricts_reuse(html: str) -> bool:
 
 
 _SOURCE_DOMAIN_NAMES = (
+    ("163.com", "网易订阅"),
     ("xinmin.cn", "新民晚报"),
     ("thepaper.cn", "澎湃新闻"),
     ("jfdaily.com", "上观新闻"),
@@ -489,6 +500,12 @@ def _strict_figure_page_relevant(
     for token in re.findall(r"[\u4e00-\u9fff]{4,12}", trend)[:4]:
         if token not in anchors:
             anchors.append(token)
+    for token in keywords:
+        if 3 <= len(token) <= 6 and token not in {"争议", "回应", "报道", "新闻"}:
+            if token not in anchors:
+                anchors.append(token)
+        if len(anchors) >= 8:
+            break
     if not anchors:
         return True
     hit_n = sum(1 for a in anchors if a and a in title)
@@ -518,6 +535,16 @@ def _filter_stills_with_meta(
         info = meta.get(p.name) or {}
         title = str(info.get("page_title") or "").strip()
         url = str(info.get("page_url") or "").strip()
+        related_context = (
+            str(info.get("usage_scope") or "").strip() == "related_context"
+            and str(info.get("verified") or "").strip().lower() == "true"
+            and url.startswith(("http://", "https://"))
+            and bool(str(info.get("source_name") or "").strip())
+            and "资料图" in str(info.get("caption") or "")
+        )
+        if related_context:
+            out.append(p)
+            continue
         if not title:
             continue
         if _offtopic_page_title(title, topic, keywords):
@@ -685,14 +712,60 @@ def _is_event_image_url(url: str, *, from_news_page: bool = False) -> bool:
     return False
 
 
+def _article_image_scan_html(html: str, page_url: str) -> str:
+    """Return the page region allowed to contribute article images."""
+    low = (page_url or "").lower()
+    if "163.com/" in low:
+        body_start = re.search(
+            r'<div[^>]+class=["\'][^"\']*\bpost_body\b[^"\']*["\'][^>]*>',
+            html,
+            flags=re.I,
+        )
+        if body_start:
+            tail = html[body_start.start() :]
+            stops = [
+                pos
+                for marker in (
+                    r'<div[^>]+class=["\'][^"\']*\bpost_recommend\b',
+                    r'<div[^>]+class=["\'][^"\']*\bpost_statement\b',
+                )
+                if (match := re.search(marker, tail, flags=re.I))
+                and (pos := match.start()) > 0
+            ]
+            return tail[: min(stops)] if stops else tail
+        return html
+    if "sina.com.cn/" in low or "sina.cn/" in low:
+        body_start = re.search(
+            r'<div[^>]+id=["\']article["\'][^>]*>',
+            html,
+            flags=re.I,
+        )
+        if not body_start:
+            return ""
+        tail = html[body_start.start() :]
+        stops = [
+            pos
+            for marker in (
+                r'<!--\s*正文\s*end\s*-->',
+                r'<div[^>]+id=["\']timeline_pc_tmpl["\']',
+                r'<div[^>]+class=["\'][^"\']*\bfengniao-container\b',
+            )
+            if (match := re.search(marker, tail, flags=re.I))
+            and (pos := match.start()) > 0
+        ]
+        return tail[: min(stops)] if stops else ""
+    return html
+
+
 def _content_images_from_html(html: str, page_url: str) -> list[str]:
     from_news = _is_news_article_page(page_url)
+    scan_html = _article_image_scan_html(html, page_url)
     found: list[str] = []
-    for raw in _CONTENT_IMG_RE.findall(html):
+    for raw in _CONTENT_IMG_RE.findall(scan_html):
         if _is_event_image_url(raw, from_news_page=from_news):
             found.append(raw)
     for pattern in (_IMG_SRC_RE, _LAZY_IMG_RE):
-        for m in pattern.finditer(html):
+        for m in pattern.finditer(scan_html):
             src = unescape(m.group(1).strip())
             if not src or src.startswith("data:"):
                 continue
@@ -706,7 +779,7 @@ def _content_images_from_html(html: str, page_url: str) -> list[str]:
                 found.append(src)
     # og:image 兜底
     for pat in (_OG_IMAGE_RE, _OG_IMAGE_RE2):
-        m = pat.search(html)
+        m = pat.search(scan_html)
         if m:
             url = unescape(m.group(1).strip())
             if _is_event_image_url(url, from_news_page=True):
@@ -725,6 +798,21 @@ def _fetch_html(url: str, *, timeout: float = 14.0) -> str:
     )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         raw = resp.read(180_000)
+        content_type = str(resp.headers.get("Content-Type") or "")
+    charset_match = re.search(r"charset\s*=\s*[\"']?([\w.-]+)", content_type, flags=re.I)
+    candidates = [charset_match.group(1) if charset_match else ""]
+    head = raw[:4096].decode("ascii", errors="ignore")
+    meta_match = re.search(r"charset\s*=\s*[\"']?([\w.-]+)", head, flags=re.I)
+    if meta_match:
+        candidates.append(meta_match.group(1))
+    candidates.extend(["utf-8", "gb18030"])
+    for charset in candidates:
+        if not charset:
+            continue
+        try:
+            return raw.decode(charset, errors="strict")
+        except (LookupError, UnicodeDecodeError):
+            continue
     return raw.decode("utf-8", errors="replace")
 
 
@@ -758,7 +846,7 @@ def _download_image(url: str, dest: Path, *, referer: str = "") -> bool:
             headers={"User-Agent": _UA, "Referer": ref},
         )
         with urllib.request.urlopen(req, timeout=18.0) as resp:
-            data = resp.read(900_000)
+            data = resp.read(8_000_000)
             ctype = str(resp.headers.get("Content-Type") or "")
         if len(data) < 8000:
             return False
@@ -767,6 +855,30 @@ def _download_image(url: str, dest: Path, *, referer: str = "") -> bool:
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(data)
         return dest.is_file() and dest.stat().st_size >= 1200
+    except Exception:
+        return False
+
+
+def _normalize_downloaded_figure(path: Path) -> bool:
+    """将超大公开报道图压至文章素材上限，避免直接丢弃有效正文图。"""
+    if not path.is_file():
+        return False
+    if path.stat().st_size <= _MAX_FIGURE_BYTES:
+        return True
+    try:
+        from PIL import Image
+
+        with Image.open(path) as source:
+            image = source.convert("RGB")
+            image.thumbnail((1800, 1800), Image.Resampling.LANCZOS)
+            for max_side in (1800, 1500, 1200, 1000):
+                candidate = image.copy()
+                candidate.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+                for quality in (88, 80, 72, 64, 56):
+                    candidate.save(path, format="JPEG", quality=quality, optimize=True)
+                    if path.stat().st_size <= _MAX_FIGURE_BYTES:
+                        return True
+        return False
     except Exception:
         return False
 
@@ -871,6 +983,9 @@ def _collect_page_figure_trials(
         if not _download_image(img_url, trial, referer=page_url):
             trial.unlink(missing_ok=True)
             continue
+        if not _normalize_downloaded_figure(trial):
+            trial.unlink(missing_ok=True)
+            continue
         sz = trial.stat().st_size
         min_bytes = _min_figure_bytes()
         if sz < min_bytes or sz > _MAX_FIGURE_BYTES or not _figure_dimensions_ok(trial):
@@ -971,7 +1086,12 @@ def _pick_discussion_cover_source(
     return scored[0][2]
 
 
-def ensure_discussion_cover(topic: dict[str, Any]) -> Path:
+def ensure_discussion_cover(
+    topic: dict[str, Any],
+    *,
+    source_path: Path | None = None,
+    allow_fetch: bool = True,
+) -> Path:
     """话题讨论首图：同题报道配图裁 2.35:1，不用牛马 sector 主图。"""
     from scripts.tools.wechat_mp_tv_cover import COVER_H, COVER_W
 
@@ -983,11 +1103,17 @@ def ensure_discussion_cover(topic: dict[str, Any]) -> Path:
         "true",
         "yes",
     }
-    if cover.is_file() and cover.stat().st_size > 8000 and not force:
+    if (
+        source_path is None
+        and cover.is_file()
+        and cover.stat().st_size > 8000
+        and not force
+    ):
         return cover
 
-    ensure_discussion_figures(topic, max_images=3)
-    src_path = _pick_discussion_cover_source(out_dir, topic)
+    if source_path is None and allow_fetch:
+        ensure_discussion_figures(topic, max_images=3)
+    src_path = Path(source_path) if source_path is not None else _pick_discussion_cover_source(out_dir, topic)
     if src_path is None or not src_path.is_file():
         if cover.is_file() and cover.stat().st_size > 8000:
             return cover
@@ -1054,10 +1180,11 @@ def _is_video_news_frame(w: int, h: int) -> bool:
     if (w, h) in _VIDEO_FRAME_SIZES:
         return True
     ratio = w / max(h, 1)
-    # 3:2 / 16:9 / 超宽新闻视频截帧（含 1080x720、1380x704）
-    if w >= 900 and h >= 480 and ratio >= 1.45:
-        return True
+    # 小尺寸宽屏封面通常来自门户视频推荐位；大尺寸非标准比例也可能是
+    # 正文实拍，不能仅凭“宽”就当成视频截帧。
     if w >= 620 and h <= 420 and ratio > 1.55:
+        return True
+    if w >= 1200 and ratio >= 1.9:
         return True
     return False
 
@@ -1266,14 +1393,18 @@ def _consolidate_stills(
         if extra not in keep:
             extra.unlink(missing_ok=True)
             meta.pop(extra.name, None)
-    new_meta: dict[str, dict[str, str]] = {}
+    staged: list[tuple[Path, dict[str, str]]] = []
     for i, src in enumerate(keep, 1):
+        temp = out_dir / f".consolidate-{i:02d}.jpg"
+        temp.unlink(missing_ok=True)
+        old = meta.get(src.name) or {}
+        src.rename(temp)
+        staged.append((temp, old))
+    new_meta: dict[str, dict[str, str]] = {}
+    for i, (temp, old) in enumerate(staged, 1):
         dest = out_dir / f"still-{i:02d}.jpg"
-        if src != dest:
-            if dest.is_file():
-                dest.unlink()
-            src.rename(dest)
-        old = meta.get(src.name) or meta.get(dest.name) or {}
+        dest.unlink(missing_ok=True)
+        temp.rename(dest)
         new_meta[dest.name] = old
     if new_meta:
         _save_figure_sources(out_dir, new_meta)
@@ -1927,7 +2058,8 @@ def _unique_existing_figure_dicts(
 
 
 def _manual_figure_dicts(out_dir: Path, *, slug: str, limit: int) -> list[dict[str, str]]:
-    """Agent 生成的事件插画只用于补足公开报道图缺口。"""
+    """人工放入的补充图；有来源元数据时保留公开报道署名。"""
+    meta = _load_figure_sources(out_dir)
     paths = [
         path
         for path in sorted(out_dir.glob("manual-*.*"))
@@ -1939,7 +2071,9 @@ def _manual_figure_dicts(out_dir: Path, *, slug: str, limit: int) -> list[dict[s
     return [
         {
             "rel": f"discussion/{slug}/{path.name}",
-            "cap": "原创新闻插画",
+            "cap": _figure_caption(meta[path.name])
+            if path.name in meta
+            else "原创新闻插画",
         }
         for path in paths
     ]
@@ -1983,6 +2117,11 @@ def ensure_discussion_body_figures(
                 still_start=len(figures) + 1,
                 seen_fp=seen_fp,
             )
+        )
+        figures = _dedupe_figure_dicts(
+            figures,
+            slug=slug,
+            exclude_paths=exclude,
         )
     figures = _unique_existing_figure_dicts(figures, slug=slug)
     if len(figures) < max_images:
@@ -2038,16 +2177,24 @@ def refresh_discussion_figures(body: str, topic: dict[str, Any]) -> str:
     return inject_discussion_figures(core, topic)
 
 
-def inject_discussion_figures(body: str, topic: dict[str, Any]) -> str:
+def inject_discussion_figures(
+    body: str,
+    topic: dict[str, Any],
+    *,
+    preserve_headings: bool = False,
+    figures: list[dict[str, str]] | None = None,
+) -> str:
     """在正文均匀段落位插入公开配图（会先去掉已有 [[fig:]] 再重插）。"""
     text = strip_discussion_figures((body or "").strip())
     if not text:
         return body
-    figures = ensure_discussion_body_figures(
-        topic, max_images=discussion_body_figure_target()
-    )
+    supplied_figures = figures is not None
+    if figures is None:
+        figures = ensure_discussion_body_figures(
+            topic, max_images=discussion_body_figure_target()
+        )
     if not figures:
-        return body
+        return text if supplied_figures else body
 
     paragraphs = _split_body_paragraphs(text)
     text_idxs = _text_paragraph_indices(paragraphs)
@@ -2077,6 +2224,14 @@ def inject_discussion_figures(body: str, topic: dict[str, Any]) -> str:
             out.append(extra)
 
     merged = "\n\n".join(out).strip()
-    from scripts.tools.wechat_mp_discussion_polish import finalize_discussion_body
+    from scripts.tools.wechat_mp_discussion_polish import (
+        finalize_discussion_body,
+        reflow_discussion_layout,
+    )
 
-    return finalize_discussion_body(merged) + "\n"
+    polished = (
+        reflow_discussion_layout(merged)
+        if preserve_headings
+        else finalize_discussion_body(merged)
+    )
+    return polished + "\n"

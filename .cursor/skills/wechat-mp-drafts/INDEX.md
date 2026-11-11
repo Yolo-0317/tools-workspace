@@ -31,10 +31,24 @@
 
 ### 润色 / 改稿 / eval 质检 / **热点深评**
 
+人工热点深评优先读取 [通用写稿](../wechat-mp-article/SKILL.md) + [热点专题](../wechat-mp-writing/hotspot-deep-review.md)，需要事实审校时再加载 editorial-evidence-gate；下列旧专题文档按具体需求选读，不默认全量加载。
+
 1. **[wechat-mp-writing/SKILL.md](../wechat-mp-writing/SKILL.md)** — 改稿与推稿门禁  
-2. **[hotspot-deep-review.md](../wechat-mp-writing/hotspot-deep-review.md)** — 热点深评：参考仿写、去元叙述、事实标题、排版  
-3. **[social-commentary-voice.md](../wechat-mp-writing/social-commentary-voice.md)** — **社会民生热点**：短段、物件立人、通报对照、感情色彩  
-4. [eval-gates.md](../wechat-mp-writing/eval-gates.md) · [revision-workflow.md](../wechat-mp-writing/revision-workflow.md) · [anti-ai-voice.md](../wechat-mp-writing/anti-ai-voice.md) · [depth-and-opinion.md](../wechat-mp-writing/depth-and-opinion.md)
+2. **[wechat-mp-title-writing/SKILL.md](../wechat-mp-title-writing/SKILL.md)** — 起标题、改标题、核对标题与首段是否同题；各稿型通用
+3. **[hotspot-deep-review.md](../wechat-mp-writing/hotspot-deep-review.md)** — 热点深评：参考仿写、去元叙述、事实标题、排版
+4. **[social-commentary-voice.md](../wechat-mp-writing/social-commentary-voice.md)** — **社会民生热点**：短段、物件立人、通报对照、感情色彩
+5. [eval-gates.md](../wechat-mp-writing/eval-gates.md) · [revision-workflow.md](../wechat-mp-writing/revision-workflow.md) · [anti-ai-voice.md](../wechat-mp-writing/anti-ai-voice.md) · [depth-and-opinion.md](../wechat-mp-writing/depth-and-opinion.md)
+
+2026-10-12用户更新：用户主动热点深评默认用 [通用公众号写稿](../wechat-mp-article/SKILL.md) 起稿、逐句语法检查、上下文连读和四角色审稿，再核 [热点专题](../wechat-mp-writing/hotspot-deep-review.md) 的选题、证据、评论与配图要求。仅在用户指定 DeepSeek 时走 [手工交接](../wechat-mp-writing/deepseek-writer-sop.md)，Agent 不操作 DeepSeek。配图必须先查抖音搜索结果卡片，只取封面且不打开视频；正文允许 0—3 张真实图，零图因缺封面而停止，禁止任何自动生成图片。定时热点仍使用 Codex。
+
+普通人的经济生活选题和研究先读 [wechat-mp-everyday-economy/SKILL.md](../wechat-mp-everyday-economy/SKILL.md)；它只负责候选、证据和适用人群明确的算账。确认写稿后按上面的通用写稿与热点草稿门禁执行，不设自动发布入口。
+
+### 文学与典籍（literary · 手动独立槽位）
+
+1. 读取 [deepseek-writer-sop.md](../wechat-mp-writing/deepseek-writer-sop.md)。
+2. Agent 研究并展示完整提示词，用户第一次确认后自行向 DeepSeek 取稿并贴回；Agent 不直接调用 DeepSeek。
+3. Agent 核验原文、节目、篇数、字数、时代和人物关系，完成高亮及公开来源配图。
+4. 用户第二次确认后写入 `literary`，不得复用或覆盖 `tv_review`。
 
 ### 热点商业（手动独立流程）
 
@@ -66,6 +80,20 @@
 3. `stock-ai/assets/wechat_mp/templates/teach_you_a_lesson.body_core.md`
 4. 改定稿 → `repush`；微调仍由 Codex 完成，禁止切换其他模型
 
+### 返佣单品推荐稿（product_feature · 手动独立槽位）
+
+1. [wechat-mp-native-ad-writing](../wechat-mp-native-ad-writing/SKILL.md) — 生活场景、轻包袱和自然口语的单品推荐写法。
+2. [product-feature.md](../wechat-mp-writing/product-feature.md) — 在零食与日用小百货中采样畅销候选，记录销量口径，试三种文案角度后写稿。
+3. `stock-ai/.venv/bin/python -m scripts.tools.wechat_mp_draft --kind product_feature --dry-run` — 只读 Select 查询，打印候选请求。
+4. 当前 Codex 写结构化终稿；带 `--codex-draft` 先预检。写入前还须准备品类相符的封面并在 JSON 填 `cover_asset_path`；写入时由 `product_feature` 流程把独立「广告」标识和唯一返佣商品卡直接加入草稿 HTML，写后回读核对。`all` 与定时批次不含此稿型。
+
+### 健康生活与营养题材（独立研究写法）
+
+中老年读者的健康知识稿，先读 [中老年健康稿 Skill](../wechat-mp-senior-health/SKILL.md)：近期默认从丁香医生找读者问题，独立核实原始证据；真实配图、图下小字来源、蓝色高亮和用户要求时的手动 API 草稿流程也在其中。它不进入定时批次。
+
+1. [wechat-mp-health-content](../wechat-mp-health-content/SKILL.md) — 按年轻、中年、老年读者分别研究健康话题与商品候选；健康知识稿和保健食品广告素材分开处理。
+2. 一般健康题材仍只提供研究与写作 Skill；不复用 `product_feature` 的小商品选品、返佣卡和草稿槽位，也没有自动推稿入口。中老年知识稿在用户明确要求时按上面的专用 Skill 手动推草稿。
+
 ### 单剧强情节推广稿（short_drama_feature · 手动独立槽位）
 
 1. 生成请求：`uv run python -m scripts.tools.wechat_mp_draft --kind short_drama_feature --dry-run`，写出 `output/short_drama_feature_request.json`。
@@ -91,7 +119,7 @@
 3. [traffic-optimization.md](traffic-optimization.md) — `--traffic`、`wechat_mp_eval`  
 3. [sousou-analytics-sop.md](sousou-analytics-sop.md) — 看板与改稿闭环  
 4. **[content-analytics-sop.md](content-analytics-sop.md)** — **内容分析页**：日期范围、`.highcharts-container`、渠道 API  
-5. [stock-opencli](../stock-opencli/SKILL.md) — OpenCLI 抓取命令  
+5. [公众号内容分析](../wechat-mp-drafts/content-analytics-sop.md) — OpenCLI 抓取命令
 6. `stock-ai/docs/wechat_mp_seo_topics.md` — 热点实体 SEO / `#话题` 词表  
 
 ### 改代码 / 合规 / 不回退
@@ -135,8 +163,11 @@
 ## 环境与 LLM（2026-06-04）
 
 ```bash
+
+2026-10-12配图更新：人工热点深评停止抖音检索，按[热点视频截帧规则](../wechat-mp-writing/hotspot-deep-review.md#配图原报道视频截帧)与[通用截图流程](../wechat-mp-article/references/real-video-stills.md)查原报道视频并下载核对；一条视频的不同合格镜头即可供全部配图。下文旧抖音卡片及douyin-search字段仅作尚未适配的旧工程说明，不作为当前取图任务，不能伪造记录。
+
 # stock-ai/.env
-WECHAT_MP_CODEX_TIMEOUT_SECONDS=420 # 公众号写稿只用 Codex，失败不回退
+WECHAT_MP_CODEX_TIMEOUT_SECONDS=420 # 定时公众号写稿只用 Codex，失败不回退
 WECHAT_MP_CODEX_MAX_RETRIES=1
 SOP_LLM_BACKEND=deepseek          # 仅非公众号的东财 SOP
 DEEPSEEK_API_KEY=sk-...

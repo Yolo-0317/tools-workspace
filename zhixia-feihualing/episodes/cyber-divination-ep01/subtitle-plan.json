@@ -1,0 +1,51 @@
+[
+  {
+    "id": "01-ayan-question",
+    "kind": "dialogue",
+    "text": "想吃",
+    "attribution": null
+  },
+  {
+    "id": "03-zhixia-hexagram",
+    "kind": "hexagram",
+    "text": "山雷颐",
+    "secondary": "颐，贞吉。观颐，自求口实。",
+    "attribution": "《周易·颐》"
+  },
+  {
+    "id": "04-zhixia-reading",
+    "kind": "dialogue",
+    "text": "颐，贞吉。观颐，自求口实。",
+    "attribution": null
+  },
+  {
+    "id": "05-ayan-hope",
+    "kind": "dialogue",
+    "text": "卦说能吃？",
+    "attribution": null
+  },
+  {
+    "id": "06-zhixia-reveal",
+    "kind": "dialogue",
+    "text": "你都吃了多少啦？",
+    "attribution": null
+  },
+  {
+    "id": "07-ayan-excuse",
+    "kind": "dialogue",
+    "text": "前八块……是试吃。",
+    "attribution": null
+  },
+  {
+    "id": "08-disclaimer",
+    "kind": "disclaimer",
+    "text": "传统文化趣味演绎，请勿作为现实决策依据",
+    "attribution": null
+  },
+  {
+    "id": "09-series-title",
+    "kind": "title",
+    "text": "栀夏赛博起卦",
+    "attribution": null
+  }
+]

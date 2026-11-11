@@ -1,0 +1,15 @@
+{
+  "episode": "qiusi",
+  "format": "one-poem-story",
+  "theme": "秋思",
+  "theme_slug": "qiusi",
+  "audio_slug": "qiusi",
+  "lines": [
+    {
+      "id": "01-poem-voiceover",
+      "role": "ayan",
+      "text": "复恐匆匆说不尽，行人临发又开封。",
+      "start_ms": 11200
+    }
+  ]
+}

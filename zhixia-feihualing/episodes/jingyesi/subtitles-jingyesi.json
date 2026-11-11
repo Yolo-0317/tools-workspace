@@ -1,0 +1,30 @@
+[
+  {
+    "id": "01-zhixia-chant",
+    "text": "床前明月光。",
+    "start": 0.3,
+    "end": 2.34,
+    "highlight": "静夜思"
+  },
+  {
+    "id": "02-zhixia-chant",
+    "text": "疑是地上霜。",
+    "start": 3.5,
+    "end": 5.948,
+    "highlight": "静夜思"
+  },
+  {
+    "id": "03-zhixia-chant",
+    "text": "举头望明月。",
+    "start": 6.7,
+    "end": 8.74,
+    "highlight": "静夜思"
+  },
+  {
+    "id": "04-zhixia-chant",
+    "text": "低头思故乡。",
+    "start": 9.9,
+    "end": 11.532,
+    "highlight": "静夜思"
+  }
+]

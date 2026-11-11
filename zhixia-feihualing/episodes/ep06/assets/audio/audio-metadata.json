@@ -1,0 +1,31 @@
+{
+  "episode": "ep06",
+  "theme": "秋",
+  "audio_slug": "ep06-autumn",
+  "lines": [
+    {
+      "id": "02-poem-01",
+      "role": "zhixia",
+      "text": "树树皆秋色，山山唯落晖。",
+      "speaker": "ICL_uranus_zh_female_tianmeijiaoqiao_tob",
+      "resource_id": "seed-tts-2.0",
+      "revision": 1,
+      "filename": "02-zhixia-poem-01.mp3",
+      "status": "ready",
+      "duration_ms": 3864,
+      "request_id": "202608231555544447490A56D1AE3EBC77"
+    },
+    {
+      "id": "03-poem-02",
+      "role": "ayan",
+      "text": "秋风生渭水，落叶满长安。",
+      "speaker": "ICL_uranus_zh_female_jiaxiaozi_tob",
+      "resource_id": "seed-tts-2.0",
+      "revision": 1,
+      "filename": "03-ayan-poem-02.mp3",
+      "status": "ready",
+      "duration_ms": 3048,
+      "request_id": "20260823155555DD30FC6FF495C34D4D9A"
+    }
+  ]
+}

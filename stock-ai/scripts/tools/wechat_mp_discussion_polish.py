@@ -35,9 +35,51 @@ def apply_discussion_format_env() -> None:
     os.environ.setdefault("WECHAT_MP_DISCUSSION_IMITATE_REWRITE", "1")
 
 
+_OPEN_QUOTES = frozenset("「『“（(")
+_CLOSE_QUOTES = frozenset("」』”）)")
+_ASCII_QUOTES = frozenset("\"'")
+
+
 def _split_sentences(text: str) -> list[str]:
-    parts = [s.strip() for s in re.split(r"(?<=[。！？])", text) if s.strip()]
-    return parts or [text.strip()]
+    """按句号拆段，但不在引号内拆，避免「说完。」另起一行只剩后引号。"""
+    from scripts.tools.wechat_mp_rich_html import (
+        hold_inline_hl_markers,
+        restore_inline_hl_markers,
+    )
+
+    raw = (text or "").strip()
+    if not raw:
+        return []
+    raw, held = hold_inline_hl_markers(raw)
+    parts: list[str] = []
+    buf: list[str] = []
+    depth = 0
+    ascii_open = False
+    for ch in raw:
+        buf.append(ch)
+        if ch in _OPEN_QUOTES:
+            depth += 1
+        elif ch in _CLOSE_QUOTES:
+            depth = max(0, depth - 1)
+        elif ch in _ASCII_QUOTES:
+            ascii_open = not ascii_open
+            depth += 1 if ascii_open else -1
+            depth = max(0, depth)
+        if ch in "。！？" and depth == 0:
+            piece = "".join(buf).strip()
+            if piece:
+                parts.append(piece)
+            buf = []
+    tail = "".join(buf).strip()
+    if tail:
+        parts.append(tail)
+    merged: list[str] = []
+    for piece in parts or [raw]:
+        if merged and piece[:1] in _CLOSE_QUOTES | _ASCII_QUOTES:
+            merged[-1] = merged[-1] + piece
+        else:
+            merged.append(piece)
+    return [restore_inline_hl_markers(p, held) for p in merged]
 
 
 def reflow_discussion_layout(text: str) -> str:
@@ -75,7 +117,10 @@ def reflow_discussion_layout(text: str) -> str:
             continue
 
         sentences = _split_sentences(para)
-        if len(sentences) <= 1:
+        # 开篇钩子常是两句一段；拆开后首句会被做成居中标题，钩子像丢了
+        if not out and len(sentences) <= 2:
+            out.append(para)
+        elif len(sentences) <= 1:
             out.append(para)
         else:
             out.extend(sentences)

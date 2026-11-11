@@ -1,0 +1,62 @@
+{
+  "episode": "yesu-shansi",
+  "format": "one-poem-story",
+  "theme": "夜宿山寺",
+  "theme_slug": "yesu-shansi-oner-lingling-full",
+  "audio_slug": "yesu-shansi-oner-lingling-full",
+  "lines": [
+    {
+      "id": "01-ayan-lead",
+      "role": "ayan",
+      "text": "栀夏，跟紧我！",
+      "context_texts": [
+        "飞升途中风声很大，阿砚在栀夏前方领飞，回头提醒熟悉的同伴。短促自然，带一点关心和逞强，语速稍快。不要命令播报腔，不要朗读。"
+      ]
+    },
+    {
+      "id": "02-zhixia-reply",
+      "role": "zhixia-lingling-test",
+      "text": "哈？明明是你跟紧我呀！",
+      "gap_before_ms": 80,
+      "context_texts": [
+        "上文：阿砚在飞升中喊‘栀夏，跟紧我！’栀夏正迎风追上他，微微喘气，带着笑意和一点不服气，自然回嘴。语速轻快，句尾上扬，像十八岁少女在和熟悉的同伴说话。不要朗读，不要播音腔。"
+      ]
+    },
+    {
+      "id": "03-zhixia-stars",
+      "role": "zhixia-lingling-test",
+      "text": "阿砚，你看——是星星！",
+      "gap_before_ms": 100,
+      "context_texts": [
+        "栀夏刚回嘴就突然看见近在眼前的星光，惊喜地招呼阿砚一起看。先喊同伴，再带着难以置信确认所见；自然、明亮、略微喘息。不要解说腔，不要夸张尖叫。"
+      ]
+    },
+    {
+      "id": "04-ayan-reach",
+      "role": "ayan",
+      "text": "那就伸手试试。",
+      "gap_before_ms": 80,
+      "context_texts": [
+        "上文：栀夏惊喜地喊‘阿砚，你看——是星星！’阿砚也看见了，兴奋却故作笃定地鼓励她，像熟悉同伴间的即时回应。短句自然落下，不要旁白感。"
+      ]
+    },
+    {
+      "id": "05-zhixia-poem-one",
+      "role": "zhixia-lingling-test",
+      "text": "危楼高百尺。",
+      "gap_before_ms": 140,
+      "context_texts": [
+        "栀夏伸手接近星光，刚才的惊喜尚未散去，眼前高塔和星空让她自然想起诗句。声音轻下来，带真实赞叹与呼吸感，像情不自禁低声吟出，不是课堂朗读，不是播音。"
+      ]
+    },
+    {
+      "id": "06-zhixia-poem-two",
+      "role": "zhixia-lingling-test",
+      "text": "手可摘星辰。",
+      "gap_before_ms": 100,
+      "context_texts": [
+        "承接上一句‘危楼高百尺。’的同一口气和同一份惊喜，栀夏指尖即将触到星光，轻声吟出第二句。尾句温柔而有发现感，自然收住，不要正式朗诵腔，不要播音。"
+      ]
+    }
+  ]
+}

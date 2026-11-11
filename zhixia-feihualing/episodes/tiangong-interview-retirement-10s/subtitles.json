@@ -1,0 +1,37 @@
+[
+  {
+    "id": "01-question",
+    "text": "姐姐，当仙女最烦什么？",
+    "start": 0.125,
+    "end": 2.542,
+    "kind": "dialogue"
+  },
+  {
+    "id": "02-answer",
+    "text": "长生不老。",
+    "start": 2.625,
+    "end": 3.750,
+    "kind": "dialogue"
+  },
+  {
+    "id": "03-followup",
+    "text": "这不好吗？",
+    "start": 4.042,
+    "end": 5.000,
+    "kind": "dialogue"
+  },
+  {
+    "id": "04-reaction",
+    "text": "好什么，",
+    "start": 5.125,
+    "end": 6.542,
+    "kind": "dialogue"
+  },
+  {
+    "id": "05-punchline",
+    "text": "凡人六十岁领退休金，\n我得熬到世界末日。",
+    "start": 6.542,
+    "end": 9.875,
+    "kind": "dialogue"
+  }
+]

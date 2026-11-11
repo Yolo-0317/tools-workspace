@@ -1,0 +1,30 @@
+[
+  {
+    "id": "01-zhixia-line-one",
+    "text": "毕竟西湖六月中。",
+    "start": 0.279,
+    "end": 2.394,
+    "highlight": "晓出净慈寺送林子方十五秒全诗朗诵"
+  },
+  {
+    "id": "02-zhixia-line-two",
+    "text": "风光不与四时同。",
+    "start": 3.857,
+    "end": 6.142,
+    "highlight": "晓出净慈寺送林子方十五秒全诗朗诵"
+  },
+  {
+    "id": "03-zhixia-line-three",
+    "text": "接天莲叶无穷碧。",
+    "start": 7.511,
+    "end": 9.784,
+    "highlight": "晓出净慈寺送林子方十五秒全诗朗诵"
+  },
+  {
+    "id": "04-zhixia-line-four",
+    "text": "映日荷花别样红。",
+    "start": 12.064,
+    "end": 14.347,
+    "highlight": "晓出净慈寺送林子方十五秒全诗朗诵"
+  }
+]

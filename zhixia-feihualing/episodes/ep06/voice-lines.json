@@ -1,0 +1,27 @@
+{
+  "episode": "ep06",
+  "format": "one-character-two-poems",
+  "theme": "秋",
+  "theme_slug": "autumn",
+  "audio_slug": "ep06-autumn",
+  "lines": [
+    {
+      "id": "01-poem-00",
+      "role": "ayan",
+      "text": "空山新雨后，天气晚来秋。",
+      "start_ms": 300
+    },
+    {
+      "id": "02-poem-01",
+      "role": "zhixia",
+      "text": "树树皆秋色，山山唯落晖。",
+      "start_ms": 5000
+    },
+    {
+      "id": "03-poem-02",
+      "role": "ayan",
+      "text": "秋风生渭水，落叶满长安。",
+      "start_ms": 11800
+    }
+  ]
+}

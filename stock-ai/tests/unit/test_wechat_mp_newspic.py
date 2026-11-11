@@ -90,10 +90,28 @@ def test_validate_newspic_input_accepts_virtual_lifestyle_quick_post(
 
     assert validate_newspic_input(
         title="下班前先做这一步",
-        content="甲" * 220,
+        content="甲" * 400,
         image_paths=images,
         draft_profile="virtual_lifestyle",
     ) == images
+
+
+def test_validate_newspic_input_rejects_virtual_lifestyle_title_over_twenty_chars(
+    tmp_path: Path,
+) -> None:
+    images = []
+    for index in range(3):
+        image = tmp_path / f"image-{index}.jpg"
+        image.write_bytes(b"x")
+        images.append(image)
+
+    with pytest.raises(ValueError, match="8-20"):
+        validate_newspic_input(
+            title="这是一个超过二十个字符限制而必须被拒绝掉的栀夏贴图标题",
+            content="甲" * 220,
+            image_paths=images,
+            draft_profile="virtual_lifestyle",
+        )
 
 
 def test_validate_newspic_input_rejects_short_virtual_lifestyle_copy(
@@ -105,7 +123,7 @@ def test_validate_newspic_input_rejects_short_virtual_lifestyle_copy(
         image.write_bytes(b"x")
         images.append(image)
 
-    with pytest.raises(ValueError, match="150-500"):
+    with pytest.raises(ValueError, match="400-700"):
         validate_newspic_input(
             title="下班前先做这一步",
             content="甲" * 149,
@@ -126,6 +144,24 @@ def test_validate_newspic_input_accepts_popular_film_four_image_post(
     assert validate_newspic_input(
         title="《一部电影》最安静的不是结尾",
         content="甲" * 220,
+        image_paths=images,
+        draft_profile="virtual_lifestyle",
+        content_lane="popular_film",
+    ) == images
+
+
+def test_validate_newspic_input_accepts_popular_film_four_image_feature(
+    tmp_path: Path,
+) -> None:
+    images = []
+    for index in range(4):
+        image = tmp_path / f"film-{index}.jpg"
+        image.write_bytes(b"x")
+        images.append(image)
+
+    assert validate_newspic_input(
+        title="《一部电影》她为什么敢说想升职",
+        content="甲" * 400,
         image_paths=images,
         draft_profile="virtual_lifestyle",
         content_lane="popular_film",
@@ -216,6 +252,49 @@ def test_validate_newspic_image_sources_requires_virtual_role_disclosure(
             content="甲" * 220,
             draft_profile="virtual_lifestyle",
         )
+
+
+def test_virtual_platform_publish_mode_allows_copy_without_body_disclosure(
+    tmp_path: Path,
+) -> None:
+    character = tmp_path / "character.jpg"
+    topic = tmp_path / "topic.jpg"
+    character.write_bytes(b"x")
+    topic.write_bytes(b"x")
+    sources = tmp_path / "sources.json"
+    sources.write_text(
+        json.dumps(
+            {
+                character.name: {
+                    "source_type": "original",
+                    "fallback_reason": "栀夏角色场景",
+                    "visual_role": "character",
+                    "position_role": "author",
+                    "capture_mode": "timer",
+                    "allow_zhixia_watermark": True,
+                },
+                topic.name: {
+                    "source_type": "original",
+                    "fallback_reason": "原创主题视觉",
+                    "visual_role": "topic",
+                    "position_role": "hook",
+                    "allow_zhixia_watermark": True,
+                },
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    validate_newspic_image_sources(
+        image_paths=[character, topic],
+        sources_path=sources,
+        content="甲" * 220,
+        draft_profile="virtual_lifestyle",
+        content_type="A+C",
+        content_lane="ai_human",
+        ai_disclosure_mode="platform_publish",
+    )
 
 
 def test_validate_virtual_lifestyle_sources_requires_character_image(
@@ -844,7 +923,7 @@ def test_virtual_lifestyle_main_requires_topic_card(
     assert "--topic-card" in capsys.readouterr().err
 
 
-def test_virtual_lifestyle_dry_run_accepts_valid_a_topic_card(
+def test_virtual_lifestyle_dry_run_rejects_nonfilm_hotspot_topic_card(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -923,7 +1002,9 @@ def test_virtual_lifestyle_dry_run_accepts_valid_a_topic_card(
             "--title",
             "这是一个合规栀夏标题",
             "--content",
-            "栀夏是 AI 虚拟角色；图片为 AI 生成示意图。" + "甲" * 180,
+            "清晨我打开手机，把两个版本放在桌上比较，最后只保留更具体的一版。"
+            + "甲" * 350
+            + "栀夏是 AI 虚拟角色；图片为 AI 生成示意图。",
             "--images",
             str(character),
             str(topic),
@@ -933,13 +1014,11 @@ def test_virtual_lifestyle_dry_run_accepts_valid_a_topic_card(
         ],
     )
 
-    assert draft_cli.main() == 0
-    output = capsys.readouterr().out
-    assert "通道 nonfilm_hotspot" in output
-    assert "评分 85" in output
+    assert draft_cli.main() == 1
+    assert "route_disabled" in capsys.readouterr().err
 
 
-def test_virtual_lifestyle_dry_run_accepts_popular_film_without_character(
+def test_virtual_lifestyle_dry_run_rejects_popular_film_without_character(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -1001,6 +1080,27 @@ def test_virtual_lifestyle_dry_run_accepts_popular_film_without_character(
                 "film_titles": ["一部电影"],
                 "spoiler_level": "S0",
                 "release_status": "released",
+                "film_writing_mode": "scene_focus",
+                "plot_anchors": [
+                    {
+                        "scene": "雨夜车站",
+                        "character": "主人公",
+                        "action": "把唯一的雨伞递给陌生人",
+                        "counterpart_or_pressure": "末班车即将离站",
+                        "consequence": "陌生人停下脚步回头道谢",
+                        "source_url": "https://example.com/film/scene-one",
+                        "stage": "opening",
+                    },
+                    {
+                        "scene": "清晨站台",
+                        "character": "主人公",
+                        "action": "独自把湿外套晾在长椅上",
+                        "counterpart_or_pressure": "站台重新恢复喧闹",
+                        "consequence": "他决定留下等待下一班车",
+                        "source_url": "https://example.com/film/scene-two",
+                        "stage": "turning_point",
+                    },
+                ],
                 "image_rights_status": [
                     {
                         "film_title": "一部电影",
@@ -1017,7 +1117,16 @@ def test_virtual_lifestyle_dry_run_accepts_popular_film_without_character(
         "栀夏是 AI 虚拟角色；本文为基于影片公开资料形成的原创内容，"
         "不对应真人观影经历。"
     )
-    content = "甲" * (220 - len(disclosure) - 2) + "\n\n" + disclosure
+    anchor_copy = (
+        "主人公把唯一的雨伞递给陌生人，陌生人停下脚步回头道谢。\n\n"
+        "清晨，他独自把湿外套晾在长椅上，决定留下等待下一班车。"
+    )
+    content = (
+        anchor_copy
+        + "甲" * (220 - len(anchor_copy) - len(disclosure) - 2)
+        + "\n\n"
+        + disclosure
+    )
     monkeypatch.setattr(draft_cli, "load_virtual_history", lambda: {"posts": []})
     monkeypatch.setattr(
         "sys.argv",
@@ -1039,8 +1148,8 @@ def test_virtual_lifestyle_dry_run_accepts_popular_film_without_character(
         ],
     )
 
-    assert draft_cli.main() == 0
-    assert "通道 popular_film" in capsys.readouterr().out
+    assert draft_cli.main() == 1
+    assert "route_disabled" in capsys.readouterr().err
 
 
 def test_virtual_lifestyle_rejects_content_lane_already_full_in_current_mix(
@@ -1158,8 +1267,8 @@ def test_virtual_lifestyle_verified_draft_records_pending_entry(
                 "topic": "一个热点",
                 "observed_at": datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(),
                 "discovery_platform": "百度热搜",
-                "content_type": "A",
-                "content_lane": "nonfilm_hotspot",
+                "content_type": "A+C",
+                "content_lane": "ai_human",
                 "fact_sources": [{"url": "https://example.com/a", "title": "报道"}],
                 "contrast": "一个具体反差",
                 "zhixia_observation": "一句只有栀夏会说的具体观察",
@@ -1189,6 +1298,11 @@ def test_virtual_lifestyle_verified_draft_records_pending_entry(
     )
     monkeypatch.setattr(
         draft_cli,
+        "verify_required_wechat_egress",
+        lambda: {"ok": True},
+    )
+    monkeypatch.setattr(
+        draft_cli,
         "record_pending_draft",
         lambda **kwargs: record_pending_draft(**kwargs, pending_path=pending_path),
     )
@@ -1202,8 +1316,10 @@ def test_virtual_lifestyle_verified_draft_records_pending_entry(
             str(card),
             "--title",
             "这是一个合规栀夏标题",
-            "--content",
-            "栀夏是 AI 虚拟角色；图片为 AI 生成示意图。" + "甲" * 180,
+                "--content",
+                "清晨我打开手机，把两个版本放在桌上比较，最后只保留更具体的一版。"
+                + "甲" * 350
+                + "栀夏是 AI 虚拟角色；图片为 AI 生成示意图。",
             "--images",
             str(character),
             str(topic),
@@ -1215,6 +1331,40 @@ def test_virtual_lifestyle_verified_draft_records_pending_entry(
     assert draft_cli.main() == 0
     pending = json.loads(pending_path.read_text(encoding="utf-8"))
     assert pending["media_id"] == "verified-media-id"
-    assert pending["content_type"] == "A"
-    assert pending["content_lane"] == "nonfilm_hotspot"
+    assert pending["content_type"] == "A+C"
+    assert pending["content_lane"] == "ai_human"
     assert pending["topic_card_sha256"]
+
+
+def test_newspic_preflight_runs_for_real_mutation(monkeypatch) -> None:
+    """Catches a real draft write bypassing the required-egress gate."""
+    from scripts.tools import wechat_mp_newspic_draft as draft_cli
+
+    calls: list[str] = []
+    monkeypatch.setattr(
+        draft_cli,
+        "verify_required_wechat_egress",
+        lambda: calls.append("preflight"),
+        raising=False,
+    )
+
+    draft_cli._preflight_before_mutation(dry_run=False)
+
+    assert calls == ["preflight"]
+
+
+def test_newspic_preflight_skips_dry_run(monkeypatch) -> None:
+    """Catches a read-only dry run unexpectedly calling the live token API."""
+    from scripts.tools import wechat_mp_newspic_draft as draft_cli
+
+    calls: list[str] = []
+    monkeypatch.setattr(
+        draft_cli,
+        "verify_required_wechat_egress",
+        lambda: calls.append("preflight"),
+        raising=False,
+    )
+
+    draft_cli._preflight_before_mutation(dry_run=True)
+
+    assert calls == []

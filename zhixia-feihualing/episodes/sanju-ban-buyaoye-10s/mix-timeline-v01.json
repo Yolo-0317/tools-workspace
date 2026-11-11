@@ -1,0 +1,62 @@
+{
+  "duration": 10.08,
+  "video_copy": true,
+  "bed_gain": 0.35,
+  "gains": [
+    {
+      "id": "01-zhixia-opening",
+      "mean_db": -22.0,
+      "peak_db": -7.2,
+      "gain_db": 3.0
+    },
+    {
+      "id": "02-ayan-agree",
+      "mean_db": -21.5,
+      "peak_db": -4.3,
+      "gain_db": 2.3
+    },
+    {
+      "id": "03-xiaohei-reveal",
+      "mean_db": -23.2,
+      "peak_db": -5.9,
+      "gain_db": 3.9
+    },
+    {
+      "id": "04-zhixia-punchline",
+      "mean_db": -23.3,
+      "peak_db": -6.8,
+      "gain_db": 4.3
+    }
+  ],
+  "timeline": [
+    {
+      "id": "01-zhixia-opening",
+      "text": "今晚立志不熬夜！",
+      "start": 0.1,
+      "end": 2.14,
+      "highlight": "今晚不熬夜·三句半"
+    },
+    {
+      "id": "02-ayan-agree",
+      "text": "手机早早放一边！",
+      "start": 2.32,
+      "end": 4.168,
+      "highlight": "今晚不熬夜·三句半"
+    },
+    {
+      "id": "03-xiaohei-reveal",
+      "text": "躺下又刷三小时！",
+      "start": 4.348,
+      "end": 5.98,
+      "highlight": "今晚不熬夜·三句半"
+    },
+    {
+      "id": "04-zhixia-punchline",
+      "text": "明天！",
+      "start": 6.43,
+      "end": 7.678,
+      "highlight": "今晚不熬夜·三句半"
+    }
+  ],
+  "output": "exports/sanju-ban-buyaoye-voiced-v01.mp4"
+}

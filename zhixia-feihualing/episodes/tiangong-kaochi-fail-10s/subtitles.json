@@ -1,0 +1,6 @@
+[
+  {"id":"01-intent","text":"我让 AI 做\n“掌心火烤鸡翅”","start":0.125,"end":2.250,"kind":"commentary"},
+  {"id":"02-brazier","text":"它怕火力不够\n先配了个炉子","start":2.250,"end":4.500,"kind":"commentary"},
+  {"id":"03-extra-fire","text":"然后才想起来\n还有掌心火","start":4.500,"end":7.500,"kind":"commentary"},
+  {"id":"04-dialogue","text":"别停啊，还没熟呢！","start":7.958,"end":9.667,"kind":"dialogue"}
+]

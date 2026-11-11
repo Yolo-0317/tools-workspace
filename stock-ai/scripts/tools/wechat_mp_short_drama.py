@@ -57,6 +57,7 @@ LONGFORM_KINDS = frozenset(
         "news",
         "workspace",
         "temp",
+        "product_feature",
     }
 )
 PLAIN_CPS_RE = re.compile(
@@ -736,6 +737,12 @@ def assert_longform_promotion_safe(
         return
     content = str(article.get("content") or "")
     footer = ((article.get("product_info") or {}).get("footer_product_info"))
+    if normalized == "product_feature":
+        if len(PLAIN_CPS_RE.findall(content)) != 1 or footer:
+            raise RuntimeError("返佣单品稿必须恰好一张普通返佣商品卡")
+        if SHORT_PLAY_RE.search(content):
+            raise RuntimeError("返佣单品稿不得包含短剧组件")
+        return
     if PLAIN_CPS_RE.search(content) or footer:
         raise RuntimeError("长文仍含普通返佣商品")
     count = len(SHORT_PLAY_RE.findall(content))

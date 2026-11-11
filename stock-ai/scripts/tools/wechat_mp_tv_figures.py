@@ -24,6 +24,176 @@ INLINE_TV_ROOT = ROOT / "assets" / "wechat_mp" / "inline-tv"
 TV_ATTRIBUTION = "（配图：豆瓣条目剧照，剧评引用；评分数据为公开页面整理。）"
 
 CURATED_TV_STILLS: dict[str, dict[str, Any]] = {
+    "the-devil-wears-prada": {
+        "source": "douban",
+        "douban_subject_id": "1482072",
+        "figure_source_caption": "图源：豆瓣条目收录的二十世纪福克斯官方剧照（剧评引用）",
+        "files": {
+            "still-01.jpg": "614762431",
+            "still-02.jpg": "614761546",
+            "still-03.jpg": "614765715",
+            "still-04.jpg": "614762711",
+            "still-05.jpg": "614760441",
+            "still-06.jpg": "614761448",
+        },
+        "slots": [
+            (
+                "still-01.jpg",
+                "after_anchor",
+                "安迪第一次走进《天桥》办公室",
+                "安迪第一次走进《天桥》的专业系统，还不知道这里如何决定潮流",
+                "图源：豆瓣条目收录的二十世纪福克斯官方剧照",
+            ),
+            (
+                "still-02.jpg",
+                "after_anchor",
+                "安迪穿着那件蓝色毛衣站在会议室里",
+                "一件蓝色毛衣背后，是米兰达熟悉而安迪尚未看见的产业链",
+                "图源：豆瓣条目收录的二十世纪福克斯官方剧照",
+            ),
+            (
+                "still-03.jpg",
+                "after_anchor",
+                "奈杰尔终于替她打开衣帽间",
+                "安迪学会按这份工作的规则整理自己，也开始获得系统内的便利",
+                "图源：豆瓣条目收录的二十世纪福克斯官方剧照",
+            ),
+            (
+                "still-04.jpg",
+                "after_anchor",
+                "电话开始跟着安迪",
+                "工作电话进入约会、生日和私人安排，边界不是突然消失的",
+                "图源：豆瓣条目收录的二十世纪福克斯官方剧照",
+            ),
+            (
+                "still-05.jpg",
+                "after_anchor",
+                "米兰达把去巴黎的机会交给安迪",
+                "巴黎机会落到安迪手里，也把艾米丽准备许久的期待变成代价",
+                "图源：豆瓣条目收录的二十世纪福克斯官方剧照",
+            ),
+            (
+                "still-06.jpg",
+                "after_anchor",
+                "奈杰尔以为自己终于能离开《天桥》",
+                "奈杰尔离新职位只差一次宣布，却成了米兰达保住位置的筹码",
+                "图源：豆瓣条目收录的二十世纪福克斯官方剧照",
+            ),
+        ],
+    },
+    "niu-lai": {
+        "source": "local",
+        "figure_source_caption": "图源：新京报公开报道（剧评引用）",
+        "slots": [
+            (
+                "still-01.jpg",
+                "after_anchor",
+                "豹拉出现以后，故事从“怎么认识危险”转向“怎么认识陌生人”",
+                "豹拉作为外来者走进牛来的生活，友谊先于族群成见发生",
+                "图源：新京报公开报道",
+            ),
+            (
+                "still-02.jpg",
+                "after_anchor",
+                "豹拉试图预警狼群，反被怀疑与狼同路",
+                "豹拉来报信，外来者身份却让它先成为被怀疑的人",
+                "图源：新京报公开报道",
+            ),
+            (
+                "still-03.jpg",
+                "after_anchor",
+                "豹拉引开狼群，身体不适的牛妈妈留下保护牛来并牺牲",
+                "危险真正逼近时，保护不再是一句口号，而是谁没有退开",
+                "图源：新京报公开报道",
+            ),
+        ],
+    },
+    "the-odyssey-2026": {
+        "source": "local",
+        "tmdb_id": 1368337,
+        "douban_subject_id": "36808876",
+        "figure_source_caption": "图源：TMDB、环球影业公开剧照（剧评引用）",
+        "slots": [
+            (
+                "still-01.jpg",
+                "after_anchor",
+                "木马被推进特洛伊城",
+                "木马被送入特洛伊，胜利从一份伪装成礼物的死亡开始",
+                "图源：环球影业官方物料，经 AP 公开报道",
+            ),
+            (
+                "still-02.jpg",
+                "after_anchor",
+                "独眼巨人的洞穴",
+                "归途上的船员不断替奥德修斯的判断承担代价",
+                "图源：TMDB 宣传剧照",
+            ),
+            (
+                "still-03.jpg",
+                "after_anchor",
+                "在回家和继续停留之间",
+                "奥德修斯在停留中恢复记忆，也不得不面对自己为何迟迟不肯回家",
+                "图源：环球影业官方物料",
+            ),
+            (
+                "still-04.jpg",
+                "after_anchor",
+                "伊萨卡的长桌已经被求婚者占满",
+                "佩涅洛佩和忒勒马科斯在缺席者留下的宫殿里守了二十年",
+                "图源：环球影业官方物料，经 AP 公开报道",
+            ),
+            (
+                "still-05.jpg",
+                "after_anchor",
+                "她认出那件雅典娜信物之后",
+                "电影用雅典娜信物替代原著的婚床测试，也让两人共同驶向新的归途",
+                "图源：TMDB 宣传剧照",
+            ),
+        ],
+    },
+    "nanjing-photo-studio": {
+        "source": "douban",
+        "douban_subject_id": "36809864",
+        "files": {
+            "still-01.jpg": "2922868408",
+            "still-02.jpg": "2926645297",
+            "still-03.jpg": "2923764266",
+            "still-04.jpg": "2922868402",
+            "still-05.jpg": "2923764269",
+        },
+        "slots": [
+            (
+                "still-01.jpg",
+                "after_anchor",
+                "暗房里第一次看清",
+                "显影盘中的罪证照片，让暗房里的人再也无法假装没有看见",
+            ),
+            (
+                "still-02.jpg",
+                "after_anchor",
+                "摆拍的亲善照",
+                "日军摄影师在照相馆查看胶片，决定哪些画面可以被留下",
+            ),
+            (
+                "still-03.jpg",
+                "after_anchor",
+                "万一日本人输了",
+                "林毓秀说出“万一日本人真的输了呢”，把判断交给未来",
+            ),
+            (
+                "still-04.jpg",
+                "after_anchor",
+                "把底片缝进衣服",
+                "林毓秀承担把底片带出照相馆的风险，保存证据成为行动",
+            ),
+            (
+                "still-05.jpg",
+                "after_anchor",
+                "证据必须活下去",
+                "照相馆里的合影留下普通人的面孔，也把证据交给后来者",
+            ),
+        ],
+    },
     "euphoria": {
         "source": "douban",
         "douban_subject_id": "34874603",
@@ -635,7 +805,16 @@ def ensure_tv_stills(topic: dict[str, Any]) -> None:
         ensure_x_cards(spec, out_dir)
         ensure_tv_cover(slug)
     else:
-        ensure_douban_stills(topic)
+        resolved_topic = dict(topic)
+        files = spec.get("files")
+        if isinstance(files, dict) and files:
+            resolved_topic["douban_photos"] = {
+                str(name): str(photo_id) for name, photo_id in files.items()
+            }
+        subject_id = str(spec.get("douban_subject_id") or "").strip()
+        if subject_id:
+            resolved_topic["douban_subject_id"] = subject_id
+        ensure_douban_stills(resolved_topic)
 
 
 def inject_tv_review_figures(body: str, topic: dict[str, Any]) -> str:

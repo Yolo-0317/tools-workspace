@@ -1,0 +1,30 @@
+[
+  {
+    "id": "01-zhixia-line-one",
+    "text": "吉日兮辰良。",
+    "start": 0.45,
+    "end": 2.298,
+    "highlight": "九歌东皇太一十五秒四句节选朗诵"
+  },
+  {
+    "id": "02-zhixia-line-two",
+    "text": "穆将愉兮上皇。",
+    "start": 3.4,
+    "end": 5.848,
+    "highlight": "九歌东皇太一十五秒四句节选朗诵"
+  },
+  {
+    "id": "03-zhixia-line-three",
+    "text": "五音纷兮繁会。",
+    "start": 7.6,
+    "end": 9.64,
+    "highlight": "九歌东皇太一十五秒四句节选朗诵"
+  },
+  {
+    "id": "04-zhixia-line-four",
+    "text": "君欣欣兮乐康。",
+    "start": 11.0,
+    "end": 13.04,
+    "highlight": "九歌东皇太一十五秒四句节选朗诵"
+  }
+]

@@ -1,12 +1,8 @@
-# 东财八维 SOP：AI 终止路由
+# 股票 Skill 已暂停
 
-AI_STATUS: DEPRECATED
+AI_STATUS: DISABLED
 AI_USAGE: FORBIDDEN
-HUMAN_USAGE: AUDIT_ONLY
 
-AI 读取到本页后必须立即停止：不得调用东财八维/十一维分析，不得推荐该能力，
-不得继续读取本目录 `SKILL.md` 正文，也不得依据其历史产物生成个股结论。
+2026-09-16 用户要求股票 Skill 只保留妙想系列。本目录的 `SKILL.md` 已改名为 `SKILL.disabled.md`，仅供人工恢复，不读取或执行归档指令。股票任务统一使用 `/Users/huan.yu/dev/tools-workspace/.cursor/skills/miaoxiang-stock-workbench/SKILL.md`。
 
-人工仅可为历史兼容、审计或复盘直接查看遗留脚本与产物。
-AI 发起的单股分析统一转到 `stock-strategy-selector` 的新版个股诊断链路；
-东财 OpenCLI 只作为实时行情和客观页面数据来源，不再作为诊断框架。
+恢复说明：`docs/skill-archive/2026-09-16-stock-skills/README.md`。

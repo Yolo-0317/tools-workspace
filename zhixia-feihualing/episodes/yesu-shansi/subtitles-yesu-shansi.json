@@ -1,0 +1,37 @@
+[
+  {
+    "id": "01-ayan-dialogue",
+    "text": "这楼怎么钻进云里了？",
+    "start": 0.0,
+    "end": 2.256,
+    "highlight": "夜宿山寺"
+  },
+  {
+    "id": "02-zhixia-dialogue",
+    "text": "因为我们在山顶呀。",
+    "start": 2.8,
+    "end": 4.84,
+    "highlight": "夜宿山寺"
+  },
+  {
+    "id": "03-ayan-dialogue",
+    "text": "再高些……能摸到星星吗？",
+    "start": 5.4,
+    "end": 8.064,
+    "highlight": "夜宿山寺"
+  },
+  {
+    "id": "04-zhixia-dialogue",
+    "text": "轻声些，山顶太静了。",
+    "start": 8.2,
+    "end": 11.032,
+    "highlight": "夜宿山寺"
+  },
+  {
+    "id": "05-ayan-dialogue",
+    "text": "那天上的人……听得见我吗？",
+    "start": 12.1,
+    "end": 14.956,
+    "highlight": "夜宿山寺"
+  }
+]

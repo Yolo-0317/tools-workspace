@@ -1,0 +1,31 @@
+[
+  {
+    "id": "01-poem-line-one",
+    "kind": "poem",
+    "text": "素手把芙蓉",
+    "attribution": "唐·李白《古风·其十九》",
+    "start": 0.250,
+    "end": 3.050
+  },
+  {
+    "id": "02-poem-line-two",
+    "kind": "poem",
+    "text": "虚步蹑太清",
+    "start": 3.500,
+    "end": 6.350
+  },
+  {
+    "id": "03-poem-line-three",
+    "kind": "poem",
+    "text": "霓裳曳广带",
+    "start": 6.850,
+    "end": 9.750
+  },
+  {
+    "id": "04-poem-line-four",
+    "kind": "poem",
+    "text": "飘拂升天行",
+    "start": 10.200,
+    "end": 14.550
+  }
+]

@@ -1,0 +1,49 @@
+{
+  "episode": "xuexiu-baizhu-15s",
+  "format": "one-poem-story",
+  "theme": "雪袖白纻十五秒四句诗朗诵",
+  "theme_slug": "xuexiu-baizhu-15s",
+  "audio_slug": "xuexiu-baizhu-15s-paced-v01",
+  "lines": [
+    {
+      "id": "01-zhixia-line-one",
+      "role": "zhixia",
+      "text": "吴刀剪彩缝舞衣。",
+      "revision": 1,
+      "gap_before_ms": 0,
+      "context_texts": [
+        "这是十五秒《雪袖白纻》的第一句画外朗诵。保持栀夏清透、明亮、自然并带书卷气的固定声线，随低位起身自然开句；‘吴刀剪彩’清楚利落，‘缝舞衣’舒展并完整收住。自然说诗，不念作者和篇名，不添加其他内容。"
+      ]
+    },
+    {
+      "id": "02-zhixia-line-two",
+      "role": "zhixia",
+      "text": "明妆丽服夺春晖。",
+      "revision": 1,
+      "gap_before_ms": 300,
+      "context_texts": [
+        "紧接上一句，画面进入转面、侧弓与第二次展开。保持同一位栀夏清透明亮的固定声线，语气略微提亮；‘明妆丽服’清楚从容，‘夺春晖’温润舒展并自然落下。自然说诗，不念作者和篇名，不添加其他内容。"
+      ]
+    },
+    {
+      "id": "03-zhixia-line-three",
+      "role": "zhixia",
+      "text": "扬眉转袖若雪飞。",
+      "revision": 1,
+      "gap_before_ms": 300,
+      "context_texts": [
+        "这是《雪袖白纻》第三句，画面中的袖带横扫并落步换重。保持同一位栀夏清透、明亮、自然的固定声线，增加轻盈流动感；‘扬眉转袖’节奏清楚，‘若雪飞’轻疾但不拖成吟唱。自然说诗，不念作者和篇名，不添加其他内容。"
+      ]
+    },
+    {
+      "id": "04-zhixia-line-four",
+      "role": "zhixia",
+      "text": "倾城独立世所稀。",
+      "revision": 1,
+      "gap_before_ms": 300,
+      "context_texts": [
+        "这是十五秒《雪袖白纻》的最后一句，画面进入后段独立、转身与正面收束。保持前文同一位栀夏清透明亮的固定声线，语气从容开阔；‘倾城独立’清楚有定力，‘世所稀’完整收住全诗，并在画面结束前自然结束。自然说诗，不念作者和篇名，不添加其他内容。"
+      ]
+    }
+  ]
+}

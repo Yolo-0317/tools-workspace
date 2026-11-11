@@ -1,0 +1,145 @@
+{
+  "checked_at": "2026-10-27",
+  "batch": "002",
+  "method": "按来源分别检查本轮web工具返回正文是否包含短摘录；缺窗口的13条补开位置后再次匹配。",
+  "checked": 189,
+  "matched": 189,
+  "full_text_saved": false,
+  "checks": [
+    {
+      "source_id": "CS008",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS009",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS010",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS011",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS012",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS013",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS014",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS015",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS016",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS017",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS018",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS019",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS020",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS021",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS022",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS023",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS024",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS025",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS026",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS027",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS028",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS029",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS030",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS031",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS032",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS033",
+      "checked": 7,
+      "matched": 7
+    },
+    {
+      "source_id": "CS034",
+      "checked": 7,
+      "matched": 7
+    }
+  ]
+}

@@ -6,7 +6,9 @@
 
 **Architecture:** Keep commercial ranking and component identity in `wechat_mp_short_drama.py`; add a focused research module that produces a source-bound fact ledger and a focused article module that produces and audits the recommendation copy. Route the new kind through the existing content/draft/slot pipeline, but bypass automatic post-hoc drama selection by attaching the already researched drama explicitly.
 
-**Tech Stack:** Python 3, dataclasses, existing DeepSeek/Cursor LLM client, existing public-news research helpers, WeChat draft API, pytest.
+**Tech Stack:** Python 3, dataclasses, current Codex browser/research workflow, structured JSON handoff, WeChat draft API, pytest. Python must not call Cursor or DeepSeek for this draft kind.
+
+**Implementation correction (2026-08-17):** The writing boundary was clarified during implementation. Python produces a safe revenue-ranked candidate request and later validates/renders a `CodexShortDramaDraft`; the current Codex performs browsing, source comparison, fact-ledger construction, and prose writing directly.
 
 ## Global Constraints
 

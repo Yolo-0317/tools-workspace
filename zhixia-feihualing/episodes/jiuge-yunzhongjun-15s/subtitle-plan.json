@@ -1,0 +1,19 @@
+[
+  {
+    "id": "01-poem-line-one",
+    "kind": "poem",
+    "text": "灵皇皇兮既降",
+    "attribution": "屈原《九歌·云中君》节选",
+    "start": 1.000,
+    "end": 6.200,
+    "side": "right"
+  },
+  {
+    "id": "02-poem-line-two",
+    "kind": "poem",
+    "text": "猋远举兮云中",
+    "start": 7.700,
+    "end": 13.500,
+    "side": "left"
+  }
+]

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "01-zhixia-introduction",
+    "kind": "dialogue",
+    "text": "水晶帘动微风起，栀夏。",
+    "attribution": null
+  },
+  {
+    "id": "02-ayan-introduction",
+    "kind": "dialogue",
+    "text": "黑云翻墨未遮山，阿砚。",
+    "attribution": null
+  },
+  {
+    "id": "03-title",
+    "kind": "dialogue",
+    "text": "栀夏与阿砚，诗里见。",
+    "attribution": null
+  }
+]

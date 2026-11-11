@@ -46,6 +46,13 @@ from scripts.tools.wechat_mp_codex_client import (
     record_interactive_codex_draft,
 )
 from scripts.tools.wechat_mp_draft_slots import upsert_draft_article
+from scripts.tools.wechat_mp_product_feature import (
+    build_product_feature_article,
+    load_product_feature_draft,
+    prepare_product_feature_request,
+    refresh_selected_product,
+    verify_product_feature_article,
+)
 from scripts.tools.wechat_mp_short_drama import (
     assert_longform_promotion_safe,
     promotion_summary,
@@ -61,7 +68,11 @@ def _resolve_cover_kind(content_kind: str) -> str:
     """内容 kind → 封面资源 kind（evening 批次 news 用牛马 sector 封面）。"""
     if content_kind == "silver":
         return "hot_business"
+    if content_kind == "product_feature":
+        return "hot_business"
     if content_kind == "short_drama_feature":
+        return "tv_review"
+    if content_kind == "literary":
         return "tv_review"
     from scripts.tools.wechat_mp_draft_batch import (
         cover_kind_for_content,
@@ -176,15 +187,19 @@ def _assert_article_provenance(
 
 
 def _validate_codex_draft_kinds(kinds: list[str], path: Path | None) -> None:
+    if path is not None and kinds == ["hotspot"]:
+        raise ValueError(
+            "用户主动热点必须使用 scripts.tools.wechat_mp_browser_write 的 DeepSeek 双确认流程"
+        )
     if path is not None and kinds not in (
-        ["hotspot"],
         ["hot_business"],
         ["silver"],
         ["short_drama_feature"],
+        ["product_feature"],
     ):
         raise ValueError(
             "--codex-draft 仅允许与单篇 hotspot 一起使用，"
-            "或与单篇 hot_business、silver、short_drama_feature 一起使用"
+            "或与单篇 hot_business、silver、short_drama_feature、product_feature 一起使用"
         )
 
 
@@ -218,6 +233,8 @@ def _resolve_draft_slot_key(
         return "silver"
     if kind == "short_drama_feature":
         return "short_drama_feature"
+    if kind == "literary":
+        return "literary"
     if kind == "hotspot" and isinstance(draft, CodexHotspotDraft):
         return _resolve_codex_slot_key(draft)
     return None
@@ -286,6 +303,78 @@ def _record_silver_topic_from_article(article: dict[str, object]) -> None:
     if topic is None:
         raise RuntimeError(f"银发选题记录失败，选题库中不存在: {topic_id}")
     record_silver_topic_usage(topic)
+
+
+def _run_product_feature(*, draft: object | None, dry_run: bool) -> int:
+    """单品稿只通过手动命令准备、预检和写独立草稿槽位。"""
+    if draft is None:
+        try:
+            print(json.dumps(prepare_product_feature_request(), ensure_ascii=False, indent=2))
+            return 0
+        except Exception as exc:
+            print(f"错误 [product_feature]: {exc}", file=sys.stderr)
+            return 1
+    try:
+        current = refresh_selected_product(draft)
+        article = build_product_feature_article(
+            draft, current_product=current, upload_figures=False,
+        )
+        assert_longform_promotion_safe(article, kind="product_feature")
+        verify_product_feature_article(article, draft.product_id)
+    except Exception as exc:
+        print(f"错误 [product_feature]: {exc}", file=sys.stderr)
+        return 1
+    print(f"商品: {draft.product_name} ({draft.source_name})")
+    print(f"当前报价: ¥{current['price_yuan']:.2f} · 预计单笔佣金: ¥{current['commission_yuan']:.2f}")
+    print(f"标题: {article['title']}")
+    print(f"摘要: {article['digest']}")
+    print(str(article.get("body_text") or ""))
+    if dry_run:
+        return 0
+    if not mp_configured():
+        print("错误: 未配置 WECHAT_MP_APPID / WECHAT_MP_SECRET", file=sys.stderr)
+        return 1
+    if not draft.cover_asset_path:
+        print("错误 [product_feature]: 写草稿前须指定品类相符的 cover_asset_path", file=sys.stderr)
+        return 1
+    from scripts.tools.wechat_mp_client import add_permanent_image
+    cover, err = add_permanent_image(draft.cover_asset_path)
+    if err or not cover:
+        print(f"错误 [product_feature]: 无可用封面 {err or ''}", file=sys.stderr)
+        return 1
+    from scripts.tools.wechat_mp_client import fetch_draft_news_item
+    from scripts.tools.wechat_mp_draft_slots import (
+        get_slot_media_id,
+        get_slot_title,
+        upsert_product_feature_draft,
+    )
+
+    old_id = get_slot_media_id("product_feature")
+    old_title = get_slot_title("product_feature")
+    if old_id:
+        print(f"即将替换 product_feature 槽位旧草稿: {old_title or '标题未记录'} ({old_id})")
+
+    def verify_saved(media_id: str) -> None:
+        news, read_err = fetch_draft_news_item(media_id=media_id)
+        if read_err or not news:
+            raise RuntimeError(f"草稿回读失败: {read_err}")
+        verify_product_feature_article(
+            {
+                "content": news.get("content") or "",
+                "product_feature_warehouse_id": article["product_feature_warehouse_id"],
+                "product_feature_sku_id": article["product_feature_sku_id"],
+            },
+            draft.product_id,
+        )
+
+    media_id, _action, write_err = upsert_product_feature_draft(
+        article, thumb_media_id=cover, verify_saved=verify_saved,
+    )
+    if write_err or not media_id:
+        print(f"错误 [product_feature]: 草稿写入失败 {write_err}", file=sys.stderr)
+        return 1
+    print(f"草稿已写入 product_feature 槽位: media_id={media_id}; 旧草稿={old_id or '无'}")
+    return 0
 
 
 def main() -> int:
@@ -369,6 +458,8 @@ def main() -> int:
             codex_draft = load_codex_silver_draft(args.codex_draft)
         elif kinds == ["short_drama_feature"]:
             codex_draft = load_codex_short_drama_draft(args.codex_draft)
+        elif kinds == ["product_feature"]:
+            codex_draft = load_product_feature_draft(args.codex_draft)
         else:
             codex_draft = load_codex_hotspot_draft(args.codex_draft)
     except ValueError as exc:
@@ -379,6 +470,12 @@ def main() -> int:
         return 1
 
     codex_slot_key = _resolve_draft_slot_key(kinds[0], codex_draft) if len(kinds) == 1 else None
+
+    if kinds == ["product_feature"]:
+        if args.publish:
+            print("错误 [product_feature]: 不得自动发表，只能写入草稿箱", file=sys.stderr)
+            return 1
+        return _run_product_feature(draft=codex_draft, dry_run=args.dry_run)
 
     if args.list_materials:
         from scripts.tools.wechat_mp_list_materials import main as list_main

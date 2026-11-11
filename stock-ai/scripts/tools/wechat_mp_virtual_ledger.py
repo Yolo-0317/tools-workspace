@@ -65,6 +65,9 @@ def record_pending_draft(
         if isinstance(topic_card.get("film_titles", []), list)
         else [],
         "spoiler_level": str(topic_card.get("spoiler_level") or "").strip(),
+        "ai_disclosure_mode": str(
+            topic_card.get("ai_disclosure_mode") or "body"
+        ).strip(),
         "topic_card_sha256": topic_card_sha256.strip(),
         "drafted_at": timestamp.isoformat(timespec="seconds"),
         "mix_override_reason": mix_override_reason.strip(),

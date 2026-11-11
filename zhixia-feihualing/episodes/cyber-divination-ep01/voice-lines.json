@@ -1,0 +1,47 @@
+{
+  "episode": "cyber-divination-ep01",
+  "format": "one-poem-story",
+  "theme": "山雷颐",
+  "theme_slug": "cyber-divination-ep01",
+  "audio_slug": "cyber-divination-ep01",
+  "lines": [
+    {
+      "id": "01-ayan-question",
+      "role": "ayan",
+      "text": "想吃",
+      "revision": 2,
+      "start_ms": 0
+    },
+    {
+      "id": "03-zhixia-hexagram",
+      "role": "zhixia",
+      "text": "山雷颐。",
+      "start_ms": 3700
+    },
+    {
+      "id": "04-zhixia-reading",
+      "role": "zhixia",
+      "text": "颐，贞吉。观颐，自求口实。",
+      "start_ms": 4900
+    },
+    {
+      "id": "05-ayan-hope",
+      "role": "ayan",
+      "text": "卦说能吃？",
+      "start_ms": 8500
+    },
+    {
+      "id": "06-zhixia-reveal",
+      "role": "zhixia",
+      "text": "你都吃了多少啦？",
+      "revision": 2,
+      "start_ms": 10100
+    },
+    {
+      "id": "07-ayan-excuse",
+      "role": "ayan",
+      "text": "前八块……是试吃。",
+      "start_ms": 12100
+    }
+  ]
+}

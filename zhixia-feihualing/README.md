@@ -1,0 +1,74 @@
+# 栀夏飞花令
+
+《栀夏飞花令》是面向抖音新账号的原创国风诗词幻想动画IP。少女栀夏与墨灵阿砚通过飞花令唤醒诗句中的汉字，并进入由诗意展开的东方幻境。
+
+## 当前结论
+
+- 账号名称：栀夏飞花令
+- 账号类型：原创国风动画IP，不定位为AI工具教学号
+- 主角：18岁的栀夏、原创墨灵阿砚
+- 核心玩法：阿砚出题，栀夏接诗，汉字苏醒，诗境展开
+- 画面比例：9:16竖屏
+- 默认视觉方向：电影级写实古装自然摄影、低饱和东方美学与克制的诗意自然景观；实验风格须在单集设计中单独确认
+- 当前制作节点：EP01“一字三诗·花”完整流程已跑通；推荐成片为 `exports/ep01-flower-subtitled-v02-fullscreen.mp4`
+- 配音自动化：已支持按剧集清单预览、付费确认、五句分段生成、断点续做、版本保护和字幕时间轴生成
+
+## 当前优先级
+
+所有新写、修订和交付的 Seedance 提示词（包括聊天中直接贴出的正文），必须先执行[官方提示词交付门禁](docs/seedance-official-prompt-gate.md)。该门禁区分拦截与风险提醒，不代表自动检测或生成效果保证；栏目选择以用户最新确认为准。
+
+1. 以EP01流程为模板，确定后续4个主题字及每集三句诗。
+2. 复用固定角色、音色、字幕模板和FFmpeg流程。
+3. 每集只重新生成15秒全屏诗境和对应TTS。
+4. 准备首发5条内容后再开账号发布。
+
+## 配音自动化快速入口
+
+先在 `episodes/<episode>/voice-lines.json` 填好五句台词，再运行默认预览：
+
+```bash
+python3 scripts/generate_episode_audio.py --episode ep04
+```
+
+预览不会读取 API Key、不会访问网络，也不会创建音频。确认计划无误后，才使用 `--generate`；程序还会要求手工输入 `GENERATE ep04`，随后才会产生豆包 TTS 调用。单句恢复使用 `--line 03-poem-02`。完整清单格式、版本规则和输出说明见[“一字三诗”短视频生产SOP](docs/one-character-three-poems-sop.md)。
+
+EP01、EP02、EP03 的既有音频、字幕和成片不纳入自动补生成，保持原样。
+
+## 正式封面
+
+- 《雪袖白纻》：`exports/xuexiu-baizhu-dance-cover-v01.png`，1080×1920。
+- 画面取自无字幕高清朗诵版 0.800 秒首个高潮动作。
+- 左侧竖排“栀夏”“雪袖白纻”，并附“唐·李白《白纻辞三首·其三》”题署。
+- 使用本地 FFmpeg 抽帧与 Swift/AppKit 排版制作，未调用图像模型重绘，保留原片 AI 生成标识。
+
+## 文档导航
+
+- [“一字三诗”单集总览](episodes/README.md)
+- [账号规划](docs/account-plan.md)
+- [文化诗舞合集后续方向](docs/cultural-poetry-dance-roadmap.md)
+- [九歌祭舞研究与十一篇舞蹈设计](docs/jiuge-dance-research-and-design.md)
+- [世界观母版](docs/world-bible.md)
+- [角色母版](docs/character-bible.md)
+- [视觉母版](docs/visual-bible.md)
+- [天宫日常道具与审片规则](docs/heavenly-comedy/production-rules.md)
+- [电影级写实视觉规范](docs/realistic-visual-style.md)
+- [栀夏专属古典舞动作库](docs/zhixia-classical-dance-library.md)
+- [栀夏诗境自动编舞组合器](docs/zhixia-poetry-dance-composer.md)
+- [舞蹈设计去重台账](operations/dance-design-history.csv)
+- [Seedance 15秒诗舞剧提示词规范](docs/seedance-15s-poetry-dance-drama-standard.md)
+- [Seedance 公开提示词案例库](docs/seedance-case-library/README.md)
+- [生产流程](docs/production-workflow.md)
+- [“一字三诗”短视频生产SOP](docs/one-character-three-poems-sop.md)
+- [EP01剧情](episodes/ep01/script.md)
+- [EP01分镜状态](episodes/ep01/storyboard.md)
+- [资产说明](assets/README.md)
+- [首月发布日历](operations/publishing-calendar.md)
+- [原始对话提炼](docs/source-notes/chatgpt-conversation-summary-2026-08-22.md)
+
+## 单一事实源规则
+
+- 角色身份以 `docs/character-bible.md` 为准。
+- 画风与场景以 `docs/visual-bible.md` 为准。
+- 单集剧情与完成状态以对应 `episodes/<episode>/` 为准。
+- 生成图片、视频和音频必须登记到 `assets/inventory.csv`。
+- 对话中的旧提示词不能直接覆盖母版；确认后的变更先写入文档，再用于生成。

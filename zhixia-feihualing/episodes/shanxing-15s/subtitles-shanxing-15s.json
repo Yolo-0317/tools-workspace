@@ -1,0 +1,30 @@
+[
+  {
+    "id": "01-zhixia-line-one",
+    "text": "远上寒山石径斜。",
+    "start": 0.0,
+    "end": 3.048,
+    "highlight": "山行十五秒朗诵测试"
+  },
+  {
+    "id": "02-zhixia-line-two",
+    "text": "白云生处有人家。",
+    "start": 3.548,
+    "end": 5.996,
+    "highlight": "山行十五秒朗诵测试"
+  },
+  {
+    "id": "03-zhixia-line-three",
+    "text": "停车坐爱枫林晚。",
+    "start": 6.596,
+    "end": 9.02,
+    "highlight": "山行十五秒朗诵测试"
+  },
+  {
+    "id": "04-zhixia-line-four",
+    "text": "霜叶红于二月花。",
+    "start": 9.52,
+    "end": 11.944,
+    "highlight": "山行十五秒朗诵测试"
+  }
+]

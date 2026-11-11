@@ -243,29 +243,62 @@ def opening_lede_paragraph_style() -> str:
 
 _CTA_LINE_RE = re.compile(r"^\[\[cta:([^\]]+)\]\]\s*$")
 _HL_LINE_RE = re.compile(r"^\[\[hl:(.+)\]\]\s*$")
+_HL_INLINE_RE = re.compile(r"\[\[hl:(.+?)\]\]")
+_HL_HOLD_TOKEN = "⟦HL{i}⟧"
 
 
 def parse_hl_line(line: str) -> str | None:
-    """解析 [[hl:关键句]] 高亮行。"""
+    """解析独占一行的 [[hl:关键句]]。"""
     m = _HL_LINE_RE.match((line or "").strip())
     if not m:
         return None
     return m.group(1).strip() or None
 
 
+def hold_inline_hl_markers(text: str) -> tuple[str, list[str]]:
+    """拆句前把 [[hl:…]] 换成占位，避免句号把标记切断。"""
+    held: list[str] = []
+
+    def _repl(m: re.Match[str]) -> str:
+        held.append(m.group(0))
+        return _HL_HOLD_TOKEN.format(i=len(held) - 1)
+
+    return _HL_INLINE_RE.sub(_repl, text or ""), held
+
+
+def restore_inline_hl_markers(text: str, held: list[str]) -> str:
+    out = text or ""
+    for i, raw in enumerate(held):
+        out = out.replace(_HL_HOLD_TOKEN.format(i=i), raw)
+    return out
+
+
 def discussion_highlight_html(text: str) -> str:
-    """讨论稿关键句：居中浅底高亮。"""
-    t = _escape_html((text or "").strip())
+    """关键句：原位颜色加粗，不另起色块。"""
+    t = (text or "").strip()
     if not t:
         return ""
     return (
-        '<section style="margin:14px 0 16px;padding:10px 12px;text-align:center;'
-        f"background-color:#eef6fc;border:1px solid #c5dce8;border-radius:8px;"
-        'box-shadow:0 1px 4px rgba(26,82,118,0.06);">'
-        '<p style="margin:0;padding:0;line-height:1.55;font-size:17px;'
-        f'font-weight:700;color:{_COLOR_ACCENT};letter-spacing:0.02em;">'
-        f"{t}</p></section>"
+        f'<span style="color:{_COLOR_ACCENT};font-weight:700;">'
+        f"{_escape_html(t)}</span>"
     )
+
+
+def apply_inline_hl_markers(line: str, format_plain) -> str:
+    """把句中 [[hl:…]] 收成颜色加粗；无标记则走原排版。"""
+    raw = line or ""
+    if "[[hl:" not in raw:
+        return format_plain(raw)
+    parts: list[str] = []
+    pos = 0
+    for m in _HL_INLINE_RE.finditer(raw):
+        if m.start() > pos:
+            parts.append(format_plain(raw[pos : m.start()]))
+        parts.append(discussion_highlight_html(m.group(1)))
+        pos = m.end()
+    if pos < len(raw):
+        parts.append(format_plain(raw[pos:]))
+    return "".join(parts)
 
 
 def parse_cta_line(line: str) -> list[str] | None:
@@ -484,6 +517,10 @@ def _format_news_item_head(line: str) -> str | None:
 
 def format_line_rich_html(line: str) -> str:
     """单行纯文本 → 已转义且带受控 inline 样式的 HTML 片段。"""
+    return apply_inline_hl_markers(line, _format_line_rich_html_core)
+
+
+def _format_line_rich_html_core(line: str) -> str:
     stripped = line.strip()
     if _SECTION_RE.match(stripped):
         return (

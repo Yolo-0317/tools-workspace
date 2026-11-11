@@ -1154,16 +1154,17 @@ def test_refresh_cli_prints_filtered_pool_summary(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    current = datetime.now(TZ)
     rows = [
         drama(
             "1",
             "职场风云",
-            offline_timestamp=int((NOW + timedelta(days=30)).timestamp()),
+            offline_timestamp=int((current + timedelta(days=30)).timestamp()),
         ),
         drama(
             "2",
             "城市故事",
-            offline_timestamp=int((NOW + timedelta(days=30)).timestamp()),
+            offline_timestamp=int((current + timedelta(days=30)).timestamp()),
         ),
     ]
     monkeypatch.setattr(short_drama, "refresh_drama_pool", lambda **_: rows)

@@ -1,0 +1,43 @@
+{
+  "still-01.jpg": {
+    "page_url": "https://www.douyin.com/video/7678519795821661481",
+    "image_url": "https://p3-pc-sign.douyinpic.com/image-cut-tos-priv/c958ed4d087c8d9e070f9264f229937e~tplv-dy-resize-origshort-autoq-75:330.jpeg?biz_tag=pcweb_cover&card_type=153&column_n=0&from=327834062&lk3s=138a59ce&s=PackSourceEnum_SEARCH&sc=cover&se=false&x-expires=2103246000&x-signature=L4t3jGOiMLyyrsjmokui2YPljHQ%3D",
+    "source_name": "浙江日报",
+    "published_at": "2026-08-27（抖音搜索页显示1天前）",
+    "source_type": "douyin_cover",
+    "verified": "true",
+    "page_title": "潮声·青年说丨对话‘兔子警官’：我身后有无数个‘我’",
+    "caption": "图源：抖音认证账号“浙江日报”搜索结果封面"
+  },
+  "still-02.jpg": {
+    "page_url": "https://www.douyin.com/video/7678621571656830208",
+    "image_url": "https://p3-pc-sign.douyinpic.com/tos-cn-i-dy/04c654a2a4ec411d85f679d938271f83~tplv-dy-cropcenter:323:430.jpeg?biz_tag=pcweb_cover&from=327834062&lk3s=138a59ce&s=PackSourceEnum_SEARCH&sc=cover&se=true&sh=323_430&x-expires=2103246000&x-signature=6K84F5NV8EA4zmYz%2BmcEG95lC9M%3D",
+    "source_name": "美丽浙江",
+    "published_at": "2026-08-27（抖音搜索页显示19小时前）",
+    "source_type": "douyin_cover",
+    "verified": "false",
+    "page_title": "杭州兔子警官回应辅警身份争议",
+    "caption": "图源：抖音认证账号“美丽浙江”搜索结果封面",
+    "rejected_reason": "画面内含无法由现有权威信源充分回证的引语，为避免将搜索卡片文案当作事实引用，不纳入正文配图"
+  },
+  "still-03.jpg": {
+    "page_url": "https://zjnews.zjol.com.cn/zjnews/202601/t20260111_31448182.shtml",
+    "image_url": "",
+    "source_name": "浙江在线",
+    "published_at": "2026-01-11",
+    "source_type": "official_media_webpage_screenshot",
+    "verified": "true",
+    "page_title": "守护万家灯火，他们给出最美的作答",
+    "caption": "图源：浙江在线，报道明确李语蔚为杭州交警景区大队灵隐中队辅警"
+  },
+  "still-04.jpg": {
+    "page_url": "https://lawtext.github.io/regulations/%E6%B5%99%E6%B1%9F/ff80808175265dd401769384298e1705/",
+    "image_url": "",
+    "source_name": "杭州市人大常委会法规（国家法律法规数据库镜像）",
+    "published_at": "2020-12-09",
+    "source_type": "legal_webpage_screenshot",
+    "verified": "true",
+    "page_title": "杭州市公安机关警务辅助人员管理规定",
+    "caption": "图源：《杭州市公安机关警务辅助人员管理规定》，辅警属非人民警察身份，不得单独执法"
+  }
+}

@@ -1,0 +1,31 @@
+[
+  {
+    "id": "01-poem-line-one",
+    "kind": "poem",
+    "text": "黄河远上白云间",
+    "attribution": "唐·王之涣",
+    "start": 0.279,
+    "end": 2.534
+  },
+  {
+    "id": "02-poem-line-two",
+    "kind": "poem",
+    "text": "一片孤城万仞山",
+    "start": 3.650,
+    "end": 5.856
+  },
+  {
+    "id": "03-poem-line-three",
+    "kind": "poem",
+    "text": "羌笛何须怨杨柳",
+    "start": 6.850,
+    "end": 9.315
+  },
+  {
+    "id": "04-poem-line-four",
+    "kind": "poem",
+    "text": "春风不度玉门关",
+    "start": 11.750,
+    "end": 14.219
+  }
+]

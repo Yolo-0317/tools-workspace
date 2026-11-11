@@ -1,0 +1,17 @@
+{
+  "date": "2026-09-20",
+  "reason": "用户要求用新六技能替代旧十技能",
+  "archive_root": "/Users/huan.yu/.codex/skill-archives/2026-09-20-miaoxiang-ten",
+  "removed_skills": [
+    "mx-finance-data",
+    "mx-finance-search",
+    "mx-stocks-screener",
+    "mx-macro-data",
+    "stock-market-hotspot-discovery",
+    "industry-sector-analysis",
+    "stock-capital-analysis",
+    "stock-news-analysis",
+    "stock-earnings-review",
+    "stock-institutional-opinion"
+  ]
+}

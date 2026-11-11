@@ -149,3 +149,32 @@ def test_interactive_codex_draft_records_provenance() -> None:
         assert [(event.provider, event.mode, event.kind) for event in events] == [
             ("codex", "interactive_draft", "silver")
         ]
+
+
+def test_browser_deepseek_draft_has_separate_provenance() -> None:
+    with client.generation_scope("literary"):
+        client.record_browser_deepseek_draft("literary")
+        events = client.generation_events()
+        assert [(event.provider, event.mode, event.kind) for event in events] == [
+            ("deepseek_browser", "opencli_bound_tab", "literary")
+        ]
+        with pytest.raises(RuntimeError, match="只允许 Codex"):
+            client.assert_codex_only_generation(allow_empty=False)
+
+
+def test_user_pasted_deepseek_draft_has_truthful_provenance() -> None:
+    with client.generation_scope("hotspot"):
+        client.record_user_pasted_deepseek_draft("hotspot")
+        events = client.generation_events()
+        assert [(event.provider, event.mode, event.kind) for event in events] == [
+            ("deepseek_user_paste", "user_pasted_response", "hotspot")
+        ]
+
+
+def test_thread_confirmed_body_has_truthful_provenance() -> None:
+    with client.generation_scope("hotspot"):
+        client.record_thread_confirmed_body("hotspot")
+        events = client.generation_events()
+        assert [(event.provider, event.mode, event.kind) for event in events] == [
+            ("thread_confirmed_body", "thread_confirmed_response", "hotspot")
+        ]

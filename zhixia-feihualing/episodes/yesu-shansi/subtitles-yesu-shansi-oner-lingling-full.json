@@ -1,0 +1,44 @@
+[
+  {
+    "id": "01-ayan-lead",
+    "text": "栀夏，跟紧我！",
+    "start": 0.0,
+    "end": 2.04,
+    "highlight": "夜宿山寺"
+  },
+  {
+    "id": "02-zhixia-reply",
+    "text": "哈？明明是你跟紧我呀！",
+    "start": 2.12,
+    "end": 4.784,
+    "highlight": "夜宿山寺"
+  },
+  {
+    "id": "03-zhixia-stars",
+    "text": "阿砚，你看——是星星！",
+    "start": 4.884,
+    "end": 7.548,
+    "highlight": "夜宿山寺"
+  },
+  {
+    "id": "04-ayan-reach",
+    "text": "那就伸手试试。",
+    "start": 7.628,
+    "end": 9.26,
+    "highlight": "夜宿山寺"
+  },
+  {
+    "id": "05-zhixia-poem-one",
+    "text": "危楼高百尺。",
+    "start": 9.4,
+    "end": 11.824,
+    "highlight": "夜宿山寺"
+  },
+  {
+    "id": "06-zhixia-poem-two",
+    "text": "手可摘星辰。",
+    "start": 11.924,
+    "end": 14.204,
+    "highlight": "夜宿山寺"
+  }
+]

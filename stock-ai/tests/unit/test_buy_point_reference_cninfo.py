@@ -168,6 +168,7 @@ def test_cninfo_announcement_page_preserves_declared_totals_and_timezone() -> No
 @pytest.mark.parametrize(
     ("response", "error_code"),
     [
+        (FakeResponse(403, {}), "PROVIDER_RATE_LIMITED"),
         (FakeResponse(429, {}), "PROVIDER_RATE_LIMITED"),
         (FakeResponse(503, {}), "PROVIDER_UNAVAILABLE"),
         (FakeResponse(200, {"announcements": []}), "PROVIDER_SCHEMA_CHANGED"),

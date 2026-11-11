@@ -1,0 +1,18 @@
+{
+  "episode": "yesu-shansi",
+  "format": "one-poem-story",
+  "theme": "夜宿山寺",
+  "theme_slug": "yesu-shansi-oner-lingling-context-test",
+  "audio_slug": "yesu-shansi-oner-lingling-context-test",
+  "lines": [
+    {
+      "id": "01-zhixia-reply",
+      "role": "zhixia-lingling-test",
+      "text": "哈？明明是你跟紧我呀！",
+      "revision": 2,
+      "context_texts": [
+        "上文：阿砚在飞升中喊‘栀夏，跟紧我。’栀夏正迎风追上他，微微喘气，带着笑意和一点不服气，自然回嘴。语速轻快，句尾稍微上扬，像十八岁少女在和熟悉的同伴说话。不要朗读，不要播音腔，不要鸡汤讲述感。"
+      ]
+    }
+  ]
+}

@@ -650,10 +650,8 @@ def _text_prose_to_html(
         from scripts.tools.wechat_mp_rich_html import (
             blockquote_title_html,
             cta_box_html,
-            discussion_highlight_html,
             is_blockquote_title_line,
             parse_cta_line,
-            parse_hl_line,
         )
 
         if len(lines) == 1:
@@ -661,11 +659,6 @@ def _text_prose_to_html(
             if cta_parts:
                 parts.append(cta_box_html(cta_parts))
                 prev_was_figure = True
-                continue
-            hl_text = parse_hl_line(lines[0])
-            if hl_text:
-                parts.append(discussion_highlight_html(hl_text))
-                prev_was_figure = False
                 continue
             fig = parse_figure_line(lines[0])
             if fig:
@@ -892,7 +885,7 @@ def compute_cover_crop_fields(*, width: int, height: int) -> dict[str, str]:
 def get_material_image_meta(media_id: str) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
     """从素材列表 + 图片 url 解析尺寸（图片类 get_material 可能直接返回二进制，不走该接口）。"""
     offset = 0
-    while offset < 200:
+    while offset < 500:
         items, list_err = batchget_material_images(offset=offset, count=20)
         if list_err:
             return None, list_err

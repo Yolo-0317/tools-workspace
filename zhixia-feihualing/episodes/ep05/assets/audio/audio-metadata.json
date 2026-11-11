@@ -1,0 +1,67 @@
+{
+  "episode": "ep05",
+  "theme": "暑",
+  "audio_slug": "ep05-heat",
+  "lines": [
+    {
+      "id": "01-opening",
+      "role": "ayan",
+      "text": "飞花令，暑。",
+      "speaker": "ICL_uranus_zh_female_jiaxiaozi_tob",
+      "resource_id": "seed-tts-2.0",
+      "revision": 1,
+      "filename": "01-ayan-opening.mp3",
+      "status": "ready",
+      "duration_ms": 2040,
+      "request_id": "2026082312562546F968775913C0013AC6"
+    },
+    {
+      "id": "02-poem-01",
+      "role": "zhixia",
+      "text": "南州溽暑醉如酒，隐几熟眠开北牖。",
+      "speaker": "ICL_uranus_zh_female_tianmeijiaoqiao_tob",
+      "resource_id": "seed-tts-2.0",
+      "revision": 1,
+      "filename": "02-zhixia-poem-01.mp3",
+      "status": "ready",
+      "duration_ms": 4032,
+      "request_id": "202608231256253E051D211ED5495A58C1"
+    },
+    {
+      "id": "03-poem-02",
+      "role": "ayan",
+      "text": "离离暑云散，袅袅凉风起。",
+      "speaker": "ICL_uranus_zh_female_jiaxiaozi_tob",
+      "resource_id": "seed-tts-2.0",
+      "revision": 1,
+      "filename": "03-ayan-poem-02.mp3",
+      "status": "ready",
+      "duration_ms": 3048,
+      "request_id": "20260823125626E5060E12757BB4658D4C"
+    },
+    {
+      "id": "04-poem-03",
+      "role": "zhixia",
+      "text": "残暑蝉催尽，新秋雁戴来。",
+      "speaker": "ICL_uranus_zh_female_tianmeijiaoqiao_tob",
+      "resource_id": "seed-tts-2.0",
+      "revision": 1,
+      "filename": "04-zhixia-poem-03.mp3",
+      "status": "ready",
+      "duration_ms": 3864,
+      "request_id": "202608231256275B42814A96C14EBC633E"
+    },
+    {
+      "id": "05-outro",
+      "role": "ayan",
+      "text": "暑云将散，诗意未歇。第四句，你来接。",
+      "speaker": "ICL_uranus_zh_female_jiaxiaozi_tob",
+      "resource_id": "seed-tts-2.0",
+      "revision": 1,
+      "filename": "05-ayan-outro.mp3",
+      "status": "ready",
+      "duration_ms": 4440,
+      "request_id": "2026082312562981F41506AA5331BCB667"
+    }
+  ]
+}

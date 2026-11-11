@@ -1,0 +1,32 @@
+{
+  "episode": "ep05",
+  "theme": "暑",
+  "theme_slug": "heat-v2",
+  "audio_slug": "ep05-heat-v2",
+  "lines": [
+    {
+      "id": "02-poem-01",
+      "role": "zhixia",
+      "text": "小暑不足畏，深居如退藏。",
+      "start_ms": 0
+    },
+    {
+      "id": "03-poem-02",
+      "role": "ayan",
+      "text": "清风破大暑，明月转高秋。",
+      "start_ms": 5000
+    },
+    {
+      "id": "04-poem-03",
+      "role": "zhixia",
+      "text": "残暑蝉催尽，新秋雁带来。",
+      "start_ms": 10000
+    },
+    {
+      "id": "05-outro",
+      "role": "ayan",
+      "text": "暑云将散，诗意未歇。第四句，你来接。",
+      "start_ms": 15150
+    }
+  ]
+}

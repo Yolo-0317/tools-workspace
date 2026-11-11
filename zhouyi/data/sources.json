@@ -1,0 +1,315 @@
+{
+  "extracted_on": "2026-09-12",
+  "verification": "网页抽取与结构检查，未逐字对照影印本",
+  "license": "古代经传为公版；维基文库整理文本依页面 CC BY-SA 4.0 条款",
+  "sources": [
+    {
+      "file": "source-1.txt",
+      "sha256": "edfac4dc7c607a4ede015df37beaa70656586ea1e4b8ffb802e59eb57c777b49"
+    },
+    {
+      "file": "source-2.txt",
+      "sha256": "09eecbafeb084ac80e3cfcca47ddda6e87cb8b7bc9001556cabb4e9dd07eb18b"
+    },
+    {
+      "file": "source-3.txt",
+      "sha256": "b56bd1a141d6171e85c5d88175e0c6e7aa59786e4dfda6b7001b8a72f809f34c"
+    },
+    {
+      "file": "source-4.txt",
+      "sha256": "1c6cc756b077b1a87202e90a7659979d73abd86e8551bcf939b4d7a6ad4f218c"
+    },
+    {
+      "file": "source-5.txt",
+      "sha256": "732437ef49d5af633f10fc87d0255e6766c00f334c1e4ca8ac6843553597965a"
+    },
+    {
+      "file": "source-6.txt",
+      "sha256": "fcd549409d7ae673482bb8d6ff58a9911ca2f3388a5c03f481c308b0feac3bce"
+    },
+    {
+      "file": "source-7.txt",
+      "sha256": "7567408cd8212260d8e57f142378f828e170da458da3cb3615f86f7c9f6b366e"
+    },
+    {
+      "file": "source-8.txt",
+      "sha256": "04a0854141cbf5840126b59cc9f8fa6639ac46b9ff6b461a6692d54429f83819"
+    },
+    {
+      "file": "source-9.txt",
+      "sha256": "5070c2c8cf6893a9a17bcbf54c27707cd26d8d4c6a42fbf3a33150b9fdba34fb"
+    },
+    {
+      "file": "source-10.txt",
+      "sha256": "b24daa17cbe4e842573216af7ef9fd997f832d78ddcc0467da48fe959c0ada4b"
+    },
+    {
+      "file": "source-11.txt",
+      "sha256": "aff09c73e41ac23896139b53b6a93bc01bb2d71a23551d022cacbf76174271ee"
+    },
+    {
+      "file": "source-12.txt",
+      "sha256": "9100450ea10136f01c78cd5fdd1a315524bc82f777bf92dc418c9090dfbe32b0"
+    },
+    {
+      "file": "source-13.txt",
+      "sha256": "258837637195708dee3f46da89706cca302fbf8d01fdd859e4635aad391ac32b"
+    },
+    {
+      "file": "source-14.txt",
+      "sha256": "3ed19fd91cffee89c8b9edcb445a9edb9d6f4fa49712785cd319739c8b21ba68"
+    },
+    {
+      "file": "source-15.txt",
+      "sha256": "38705bc78e241b650d1826ea598efef3e3a14cfd4f6858c51637c1490e56b438"
+    },
+    {
+      "file": "source-16.txt",
+      "sha256": "a012032b09a353e63254352a1dd6496c2a3d8a2a367c3190bdedf8367b7d2418"
+    },
+    {
+      "file": "source-17.txt",
+      "sha256": "d1cc6d159b673b9d4685b50331416cc30dd739ebad0aa602db837eb351c9d097"
+    },
+    {
+      "file": "source-18.txt",
+      "sha256": "f195faa568402f991ff4322905022f80b54ea35601ac2323197353c47e09e536"
+    },
+    {
+      "file": "source-19.txt",
+      "sha256": "c57d7ae06debae9ffc1bfe62a9fa0fcdb2932e9f6206b274b44774217f2527e2"
+    },
+    {
+      "file": "source-20.txt",
+      "sha256": "3a59142818260ad665e4e8bcb6320905a37d5d8ef52524e0d7cffcab51ea651c"
+    },
+    {
+      "file": "source-21.txt",
+      "sha256": "9feb900b6729433395f50ff1f223675f395873dc031c6b29920fc2f66724df1f"
+    },
+    {
+      "file": "source-22.txt",
+      "sha256": "5e9aac5e6112b58f6faebdb9fdd18b59051bfc14b10b3a6c036072d4b4b0ed25"
+    },
+    {
+      "file": "source-23.txt",
+      "sha256": "14db9384e7a5f03be91591ce6df2778449c9c822e22e7beffcec518f62c1ff4b"
+    },
+    {
+      "file": "source-24.txt",
+      "sha256": "bdcda4ef03b82fa09b878d4bdafde1be58ffe2aa1d628e66736b6948c8aa3399"
+    },
+    {
+      "file": "source-25.txt",
+      "sha256": "f4539cad86530914c9be671f323fe2c5cb6964e2f1044aa8d36b7ffeb7d9cb0e"
+    },
+    {
+      "file": "source-26.txt",
+      "sha256": "117a64f4604382dd786d84827ff1d340c4e882bb709fbe144c5594d48468986b"
+    },
+    {
+      "file": "source-27.txt",
+      "sha256": "4a8a7f54808e502b04820532cfb14a0156049bdcddcebfc92d2baa0d2c772256"
+    },
+    {
+      "file": "source-28.txt",
+      "sha256": "d04f6b092469224c5b933da2cfb8d559fe182ac22932837c0a40abdd53d11b26"
+    },
+    {
+      "file": "source-29.txt",
+      "sha256": "5d0ec5ee095c80ea6835a912040eaf8078b04bf41ad3d18f52af4607f23324d2"
+    },
+    {
+      "file": "source-30.txt",
+      "sha256": "38234dcd7cddd1fb6bbad915d20db601fad72548cb68182df95f45ee10d70209"
+    },
+    {
+      "file": "source-31.txt",
+      "sha256": "9f62243c0e3973a43a36659d7796570b87bbff4b74ab752f5ff0f644fc068a9f"
+    },
+    {
+      "file": "source-32-heng.txt",
+      "sha256": "52e37547820a2ed51272f3f70a92a1877586ed567897dddc72ff1c2ab656b571"
+    },
+    {
+      "file": "source-33.txt",
+      "sha256": "76e827ca569f6a663534eae1407d572d6631e058225001dbca641de5c284314e"
+    },
+    {
+      "file": "source-34.txt",
+      "sha256": "9d7c29dd4f5093f1a46c5cbadcf7db6e36176759a2c47c6129e37e820081d377"
+    },
+    {
+      "file": "source-35.txt",
+      "sha256": "77f92800e4e33d3993e0d6102a819196f044b0992f6e6185cbdb73d024cb61f5"
+    },
+    {
+      "file": "source-36.txt",
+      "sha256": "be68089c2cc2f6fb6d6ed4a719e2d500fc2ab9433bb5e2303a1e9f1020ddd9b4"
+    },
+    {
+      "file": "source-37.txt",
+      "sha256": "0d87d6c3a76e2efe4b8d75d80f2e6705ac1ede9aae02b67871275d2b03e84399"
+    },
+    {
+      "file": "source-38.txt",
+      "sha256": "10377bf9b710822c83fb68c1fa559302c3f82acc743c69d707215475e9731b8d"
+    },
+    {
+      "file": "source-39.txt",
+      "sha256": "f6da4bb2773be03335859801289805b6d023615921cbed7a9725f406a24d3c5b"
+    },
+    {
+      "file": "source-40.txt",
+      "sha256": "85bdad8ed38a0243263afee4e7661b58f4315fc19514a5cad78ff015cd1042fa"
+    },
+    {
+      "file": "source-41.txt",
+      "sha256": "605779741db6ba4d041f1e0b18b21df595cc8517d5851336d650bb0e859860e4"
+    },
+    {
+      "file": "source-42.txt",
+      "sha256": "34517beccd82532ab3452bae38e10c4a4666aafa41616593160c10b788a08c1e"
+    },
+    {
+      "file": "source-43.txt",
+      "sha256": "311c802fa2f37557b8349eaec123ef435e54b0c27807dd2be16f9f58cfa9c64f"
+    },
+    {
+      "file": "source-44.txt",
+      "sha256": "43f464ed586ce247678b5461465e752b2acb425df8374556fc50059ac882c177"
+    },
+    {
+      "file": "source-45.txt",
+      "sha256": "2140e8e210beac89d3f1951edef67f16f8090375bf89fb05dcd7faf4bc8df06d"
+    },
+    {
+      "file": "source-46.txt",
+      "sha256": "b4dfd349ac2589ac06e85a3ed026a7f4a1be1dc7647c6645614e8d7bb2012210"
+    },
+    {
+      "file": "source-47.txt",
+      "sha256": "da9acd1497afd88d4e2413d27af209e98851c8023e1e40c254e0d466d706349b"
+    },
+    {
+      "file": "source-48.txt",
+      "sha256": "932644d8b91f5076365a90c29b448ca5df0b900e8fcbc23a01b04fc138174c46"
+    },
+    {
+      "file": "source-49.txt",
+      "sha256": "ca4943d8d2bde42460192a047b3ac78093951df9d347c756f1c8bc391b29c1a3"
+    },
+    {
+      "file": "source-50.txt",
+      "sha256": "9fd251f623bf8231b61ea979da84c733f44f0f781d6adeaba965a00d17bf9f5c"
+    },
+    {
+      "file": "source-51.txt",
+      "sha256": "873e36db7333a287a2f8d0c972c7a1034ed4e33fbf86428344b8caca5efdafa8"
+    },
+    {
+      "file": "source-52.txt",
+      "sha256": "44183006fb3733f62bd55b7110c7f26d9816b8e323cfb01f873943cc97328e56"
+    },
+    {
+      "file": "source-53.txt",
+      "sha256": "96d221892b9b98dd87e41a225e48c65e6e26270dfb610830290b3c56650852e7"
+    },
+    {
+      "file": "source-54.txt",
+      "sha256": "b8b8a790ca4aef0b9b5f7d420e10fe509d0f34725043135ee0cce0253710f540"
+    },
+    {
+      "file": "source-55.txt",
+      "sha256": "4d2b2c44771a5dbcad36392e81d99234a623898ef618a284cbf300ff6a1734d8"
+    },
+    {
+      "file": "source-56.txt",
+      "sha256": "ea613193333750dbf8e4e225952c5fead2ea9a5d31ef994270dfcf5b360c824c"
+    },
+    {
+      "file": "source-57.txt",
+      "sha256": "968d105fe6c5f61ce89670ea6fcf88ba5778fe2d1d9c3f9303b8c916a467af05"
+    },
+    {
+      "file": "source-58.txt",
+      "sha256": "9892be1bcd97e981391bf899afb811a5d0d5417e45e6a3f36fb0db74ea98b353"
+    },
+    {
+      "file": "source-59.txt",
+      "sha256": "1030bf206cb3266f9cf8899a994405a37dfe95efbc846d280eb4c82a4e31d164"
+    },
+    {
+      "file": "source-60.txt",
+      "sha256": "8e5788dc68043b89726902ebb2352fa08d3114c28548f6247b16ee2b5bf99829"
+    },
+    {
+      "file": "source-61.txt",
+      "sha256": "82c7a7ca3e7084364014962612c879d409fb9fc84fbdeb43a7f549c370d49e58"
+    },
+    {
+      "file": "source-62.txt",
+      "sha256": "5a8362012210c2e9d995c8ea33d7cb46f1c33bf638680d5a92ff163271697832"
+    },
+    {
+      "file": "source-63.txt",
+      "sha256": "d184b2c292643f7a0e33a73ec1f2ed47880481869b73f1899dad5a5262cda4be"
+    },
+    {
+      "file": "source-64.txt",
+      "sha256": "755a439028d583ed99c4f9185a8ac0794d05d454c58d26156e3f5eea4738eb9a"
+    },
+    {
+      "file": "benyi-136.txt",
+      "sha256": "bf4d80a5d2a18d3660015d0776d2d46e47a17a172099954085c2db5244f493d1"
+    },
+    {
+      "file": "benyi-138.txt",
+      "sha256": "b2b2e320ec288d94d3e0441e2c33c0a59842224b6685d176e046c94f0402b7c1"
+    },
+    {
+      "file": "benyi-140.txt",
+      "sha256": "3629800188c16385fb7d64469b5f4ef3d03ce969ebf125643a5ada7ba3e78ce2"
+    },
+    {
+      "file": "benyi-155.txt",
+      "sha256": "f8767d8826eb5e006718362f20c864e7f8778811f2a801ed5f2264555eba4da4"
+    },
+    {
+      "file": "benyi-170.txt",
+      "sha256": "db75676afebff64793084a7a31ebf04d0adadd9246460e4f7a02eb4fd7c1cf99"
+    },
+    {
+      "file": "benyi-185.txt",
+      "sha256": "3d59331c2ac0ffe3c2558a96aa55cc42c690f0fcb371b4482a03b18dc053ef0b"
+    },
+    {
+      "file": "benyi-200.txt",
+      "sha256": "eae51777b78b529dc4125aa7fd16cdee0c0fc0e8646cde141308c48814dfd12b"
+    },
+    {
+      "file": "benyi-215.txt",
+      "sha256": "2d0e0165a6eefe8548876d63e35b908abca5c8d3ec8146dea1b0873e302b7b98"
+    },
+    {
+      "file": "benyi-230.txt",
+      "sha256": "e5727204cc493f51aff4ab5e959aa6782947171671999077a1c658300f6a6b95"
+    },
+    {
+      "file": "benyi-245.txt",
+      "sha256": "29b4b9417d8b0473561dccb90844f78b7d3c0c0970d54ce1016cf4cb8df959f1"
+    },
+    {
+      "file": "benyi-260.txt",
+      "sha256": "c76ac1e79fa9bf78efc0a974205d7b1b56ab9ef95c48b4cea064610adbabbf0b"
+    },
+    {
+      "file": "benyi-275.txt",
+      "sha256": "b1a3a5d764ef86241cb3ba9f77e8ab489e9aa38f04c4e7b23309eb5af15b1dd2"
+    },
+    {
+      "file": "zhengyi-277.txt",
+      "sha256": "5177076e6223ef1382b3d60e412368d932cee03429f5a065074e7f33ce8dc322"
+    }
+  ]
+}

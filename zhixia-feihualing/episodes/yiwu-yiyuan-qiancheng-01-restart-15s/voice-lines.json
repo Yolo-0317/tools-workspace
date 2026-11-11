@@ -1,0 +1,53 @@
+{
+  "episode": "yiwu-yiyuan-qiancheng-01-restart-15s",
+  "format": "one-poem-story",
+  "theme": "一舞一愿前程季重新出发全程朗诵",
+  "theme_slug": "yiwu-yiyuan-qiancheng-01-restart-15s",
+  "audio_slug": "yiwu-yiyuan-qiancheng-01-restart-15s-voice-v03",
+  "lines": [
+    {
+      "id": "01-recipient",
+      "role": "zhixia",
+      "text": "送给重新出发的你。",
+      "revision": 3,
+      "speech_rate": 0,
+      "gap_before_ms": 0,
+      "context_texts": [
+        "保持栀夏年轻清透的同一声线和近距离表达。带着关心和认真，像终于找到合适的时机，把这句话轻轻递给一个具体的人。第一字自然开口，句号完整落下；不热场、不喊栏目名、不用广告祝福腔，只读给定文本。"
+      ]
+    },
+    {
+      "id": "02-situation",
+      "role": "zhixia",
+      "text": "这一程或许不轻松，前方也会有风浪。",
+      "revision": 3,
+      "speech_rate": 0,
+      "gap_before_ms": 650,
+      "context_texts": [
+        "延续上一句的人物、距离和情绪，带着理解与轻微心疼，但不渲染苦难。前半句读出对不容易的体谅，逗号处自然呼吸；后半句面对风浪仍保持平静，句号完整收住，不急着进入下一句，不悲情、不说教，只读给定文本。"
+      ]
+    },
+    {
+      "id": "03-blessing",
+      "role": "zhixia",
+      "text": "愿你所盼有期，走过的每一步都算数。",
+      "revision": 3,
+      "speech_rate": 0,
+      "gap_before_ms": 750,
+      "context_texts": [
+        "继续承接前句，温柔中加入坚定。‘所盼有期’读出真诚的希望，逗号后自然推进；‘走过的每一步都算数’读出认可与力量，作为一个完整意思表达，不逐字重压、不甜腻、不喊口号，只读给定文本。"
+      ]
+    },
+    {
+      "id": "04-poem",
+      "role": "zhixia",
+      "text": "长风破浪会有时，直挂云帆济沧海。",
+      "revision": 3,
+      "speech_rate": 0,
+      "gap_before_ms": 850,
+      "context_texts": [
+        "从现代祝愿自然抬升为清朗说诗，情绪比前三句更开阔、更有向前的力量，但音量和语速保持从容。‘长风破浪会有时’读出相信与展开，逗号清楚；‘直挂云帆济沧海’坚定完整收束。不吟唱、不拖腔、不用朗诵比赛腔，只读给定原文。"
+      ]
+    }
+  ]
+}

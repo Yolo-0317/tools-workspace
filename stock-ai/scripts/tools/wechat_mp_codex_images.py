@@ -1,4 +1,4 @@
-"""公众号同题报道取图与 Codex 原创补图交接协议。"""
+"""公众号同题报道取图与原创补图交接协议。"""
 
 from __future__ import annotations
 
@@ -8,6 +8,10 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from scripts.tools import wechat_mp_discussion_figures as figures_mod
+from scripts.tools.wechat_mp_hotspot_image_policy import (
+    VerifiedHotspotImages,
+    validate_verified_hotspot_images,
+)
 
 REQUEST_FILENAME = "codex-image-request.json"
 READY_FILENAME = "codex-images-ready.json"
@@ -26,14 +30,14 @@ class PreparedTopicImages:
 
 
 class CodexImageGenerationRequired(RuntimeError):
-    """报道图不足，需要 Codex 按请求文件补齐原创图。"""
+    """报道图不足，需要按请求文件补齐原创图（保留旧名称兼容调用方）。"""
 
     def __init__(self, *, request_path: Path, missing_count: int) -> None:
         self.request_path = Path(request_path)
         self.missing_count = int(missing_count)
         super().__init__(
-            f"仍缺 {self.missing_count} 张图片；请按 {self.request_path} 调用 ImageGen，"
-            "保存到各 output_path 后重试"
+            f"仍缺 {self.missing_count} 张图片；请按 {self.request_path} 使用已登录的 "
+            "ChatGPT 网页生成，保存到各 output_path 后重试；失败时停止并提示用户"
         )
 
 
@@ -138,15 +142,26 @@ def _write_request(
 ) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / REQUEST_FILENAME
+    normalized_slots: list[dict[str, str]] = []
+    has_cover = any(str(slot.get("slot") or "") == "cover" for slot in slots)
+    for slot in slots:
+        normalized = dict(slot)
+        slot_id = str(normalized.pop("slot", "") or "").strip()
+        normalized["slot_id"] = slot_id
+        if has_cover and slot_id.startswith("body-"):
+            normalized["reference_slot_id"] = "cover"
+        normalized_slots.append(normalized)
     payload = {
-        "schema_version": 1,
+        "schema_version": 2,
+        "generator": "chatgpt_web",
+        "failure_policy": "stop_and_prompt",
         "article_type": article_type,
         "topic": topic,
         "target_count": target_count,
         "report_image_count": report_image_count,
         "missing_count": len(slots),
         "safety_rules": list(SAFETY_RULES),
-        "slots": slots,
+        "slots": normalized_slots,
     }
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return path
@@ -248,7 +263,7 @@ def prepare_newspic_topic_images(
     for path in manual_paths:
         sources[path.name] = {
             "source_type": "original",
-            "fallback_reason": "同题公开报道图不足，由 Codex ImageGen 原创补位",
+            "fallback_reason": "同题公开报道图不足，由 ChatGPT 网页原创补位",
         }
     if len(image_paths) < target_count:
         _clear_ready(out_dir)
@@ -298,8 +313,10 @@ def prepare_hotspot_topic_images(
     topic: dict[str, Any],
     *,
     body_count: int = 3,
-) -> None:
-    """为长图文准备一张封面和正文图；只把缺口交给 Codex。"""
+    image_policy: str = "verified_only",
+    require_visual_check: bool = False,
+) -> VerifiedHotspotImages | None:
+    """准备长图文图片；主动热点默认只接受已核验真实图片。"""
     if body_count < 0:
         raise ValueError("长图文正文图片数不能为负数")
     normalized_topic = str(
@@ -308,6 +325,15 @@ def prepare_hotspot_topic_images(
     if not normalized_topic:
         raise ValueError("长图文自动取图须提供非空 topic")
     out_dir = _out_dir(topic)
+    if image_policy == "verified_only":
+        return validate_verified_hotspot_images(
+            out_dir,
+            expected_topic=normalized_topic,
+            max_body=min(body_count, 3),
+            require_visual_check=require_visual_check,
+        )
+    if image_policy != "legacy":
+        raise ValueError(f"未知热点配图策略: {image_policy}")
     resumed = _completed_request(out_dir, article_type="hotspot")
     if resumed:
         _mark_ready(out_dir, article_type="hotspot", topic=normalized_topic)
@@ -384,3 +410,4 @@ def prepare_hotspot_topic_images(
             missing_count=len(slots),
         )
     _mark_ready(out_dir, article_type="hotspot", topic=normalized_topic)
+    return None

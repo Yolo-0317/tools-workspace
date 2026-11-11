@@ -1,0 +1,37 @@
+{
+  "episode": "character-intro",
+  "format": "one-poem-story",
+  "theme": "栀夏与阿砚双角色出场秀",
+  "theme_slug": "character-intro",
+  "audio_slug": "character-intro",
+  "lines": [
+    {
+      "id": "01-zhixia-poem",
+      "role": "zhixia",
+      "text": "水晶帘动微风起。",
+      "revision": 1,
+      "start_ms": 500
+    },
+    {
+      "id": "02-zhixia-intro",
+      "role": "zhixia",
+      "text": "我是栀夏。",
+      "revision": 1,
+      "start_ms": 3250
+    },
+    {
+      "id": "03-ayan-poem",
+      "role": "ayan",
+      "text": "黑云翻墨未遮山。",
+      "revision": 1,
+      "start_ms": 4850
+    },
+    {
+      "id": "04-ayan-intro",
+      "role": "ayan",
+      "text": "我是阿砚。",
+      "revision": 1,
+      "start_ms": 7400
+    }
+  ]
+}

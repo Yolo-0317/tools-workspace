@@ -1,229 +1,164 @@
-# 热点深评（hotspot）写稿真源
+# 热点深评（hotspot）专题
 
-> **2026-08-05 定稿**：社会/文娱/职场/公共事件 **热点深评**；纯段落长文 + 同题报道取材 + 口语评论口吻。  
-> 代码：`wechat_mp_hot_trends.py` · `wechat_mp_discussion_research.py` · `wechat_mp_hotspot_article.py` · `wechat_mp_discussion_figures.py` · `wechat_mp_hotspot_polish.py`
-
-用户说 **热点深评、hotspot 太水、像 AI、标题很怪、凑字数、配图不够、参考报道仿写** → **先读本文件**，再动 prompt / 模板。
-
----
+用于社会、文娱、职场、公共事件及本页限定的教育热点。先读[中文写作基座](../../../docs/writing/中文写作基座.md)，再执行[公众号通用 Skill](../wechat-mp-article/SKILL.md)；本页只维护专题差异。账号观察角度按仓库入口加载，不复制其角色卡。
 
 ## 稿型定位
 
-| 项 | 要求 |
-|----|------|
-| 定时 | **09 / 11 / 15 / 18** 各 1 篇（`hotspot_early` / `morning` / `afternoon` / `evening`） |
-| 选题 | 微博 + 百度热搜（`WECHAT_MP_HOTSPOT_SOURCE=trends`） |
-| 形态 | **纯段落**，禁止 `> ` / `##` / 「一、二、三」小标题 |
-| 长度 | prompt ≥2000 字；**门禁 ≥1920**（默认容差 80），6～9 段 |
-| 口吻 | **[social-commentary-voice.md](social-commentary-voice.md)**：读者转述者，摆事实、摆说法 |
-| 配图 | **固定 4 张**：事件封面 1 张 + 正文 3 张；优先同题公开报道图，不足才生成原创事件图 |
+| 项目 | 当前要求 |
+| --- | --- |
+| 内容 | 以同题公开事实为依据的非虚构随笔；主笔任务与审稿按基座，不将“展开处境、阐明意义”预设为全文结构 |
+| 篇幅 | 用户未另定时以900—1100字为篇幅参考；约数服从材料，不能用解释补足字数。明确硬性字数按要求执行；旧工程门槛另行核对，缺口如实记录 |
+| 正文格式、语气、审稿、标题和默认配图 | 直接调用通用 Skill 对应入口，本页不另设模板 |
+| 新闻写法 | [news-report-craft.md](news-report-craft.md)：选择新闻点、导语和背景位置 |
+| 评论材料 | [news-commentary-structure.md](news-commentary-structure.md)：评论池与入稿取舍 |
+| 关键主张及费用政策 | [editorial-evidence-gate.md](editorial-evidence-gate.md)：来源核验与交付字段 |
+| 用户指定 DeepSeek | [deepseek-writer-sop.md](deepseek-writer-sop.md)，不默认走该交接 |
 
-**默认主轴是社会热点**，不是 A 股收盘复盘。仅当热搜条目本身带盘面/个股关键词时，代码才走财经 `fetch_hotspot_research` 分支。
+仅选题时提供候选，不启动全文、配图或推送。本文不修改生产代码、评分程序和定时状态。
 
----
+### 用户近期选题偏好：四城教育政策与升学规则
 
-## 流水线（Agent 勿跳步）
+人工教育候选限北京、上海、广州、深圳及各自辖区，不扩为广东全省；在展示候选前过滤。全国政策须有四城之一的实施通知、执行案例、收费标准、办理安排或家庭账单变化作主体；仅说可能影响当地家庭不够。无法确认发生地的材料不入选。
 
-```text
-双榜热搜选题（自动避当日已用标题）
-  → fetch_discussion_research（360/搜狗/百度新闻 + 报道页正文补摘要）
-  → Codex 社会热点深评 JSON（推荐手动入口）或旧自动 Composer 成稿
-  → 可选：对照参考二次仿写（WECHAT_MP_HOTSPOT_IMITATE_REWRITE，默认关）
-  → scan_report_voice 门禁 → 不足则重写（最多 2 轮）
-  → 清洗元叙述 + 拆短段（reflow_hotspot_layout）
-  → 同题公开报道配图（先抓 4 张原始图）
-  → 不足的图位生成原创事件新闻插画（仅补缺，不替代已找到的同题图）
-  → 封面 1 张 + 正文 3 张门禁（discussion_figures）
-  → 事实标题 + 质量门禁 → upsert 分槽草稿
+地域通过后，依次优先家庭费用及退费、入学择校与升学、托管接送、校园服务及其他有明确家庭影响的教育新闻。优先主管部门正式文件和当地实施报道；普通校园纠纷、师生私德、鸡汤或仅由专家个人意见支撑的题目，不因热度入选，除非确有制度问题。
+
+每个候选记城市、发布主体、发布和事件日期、原始材料、适用人群、家庭成本、实际关注证据、讨论角度和事实风险。按热度、家庭相关性、政策确定性及评论空间筛选，不用焦虑标题代替依据；旧通知不当新规。
+
+#### 教育费用政策优先
+
+用户提供过退费稿表现较好的运营观察，但尚无同口径后台验证，不据此承诺流量。选题优先找实缴、减免、退费等具体规则及变化，不重复没有增量的旧题；时间与接送题仍保留。
+
+费用、范围、园校性质、时间口径、测算假设和例外，统一由[费用核验](editorial-evidence-gate.md#教育费用稿重点核对)维护。本条只影响人工排序，不改自动评分。
+
+#### 北上广深择校专题
+
+涉及义务教育或高中选校、学区、幼升小、小升初、积分入学、公民同招、学校比较时，加读[school-choice-policy.md](school-choice-policy.md)。高考志愿仍按考试与志愿专题；普通教育新闻不额外加载择校规则。
+
+### 用户选题偏好：专家建议与普通人现实的落差
+
+候选可留意与就业、退休、生育、消费、住房、养老、教育有关的专家建议，不限定配额。先核原始时间、身份、完整原话与语境；区分个人建议、机构研究和已发布政策。找不到可靠原话不推荐，旧话不冒充新建议。
+
+角度落在可行前提、配套和普通人的时间、金钱、尊严、选择成本上。可肯定或批评具体建议，不为吐槽预设专家全错，也不用人身标签。候选说明主张、关注证据、影响人群、现实落差及成稿条件。
+
+## 用户主动成稿入口
+
+按通用 Skill 完成取证、结构、分段回读和审稿。本题另外读取[证据门禁](editorial-evidence-gate.md)，按需要查新闻或评论方法，不把全部参考当必读。
+
+编辑稿先记录 `title`、`digest`、`body`、`topic`、`article_mode`、`research_urls`；随笔用 `narrative_focus` 记录叙述线索，论证稿确有主张时记录 `original_thesis`。这属于编辑交接，不宣称旧工程已支持这些差异。旧推稿入口仍可能要求三个来源域及不少于20字的判断字段，按证据门禁记录兼容状态，不为满足字段创造论点或添无关材料。内容审定与工程可推送分别记录。
+
+新用户主动工作流同时准备 `editorial_handoff.json`，关键主张与编辑判断字段见证据门禁；不以内部标签代替公开正文。指定DeepSeek才用其交接，不操作其浏览器、账户或会话。写稿与后续推送范围由用户授权决定，不从旧说明推导额外确认阶段。
+
+## 联网取材（社会热点核心）
+
+先收集同题公开报道、原始文件、回应及实际评论，再按基座整合。自动兼容链路使用 `fetch_discussion_research`；人工研究直接记录实际来源与阅读范围，不为满足函数名重复取材。风格参考不是证据，转载不算独立印证，具体见证据门禁。
+
+## 配图（当前默认与真实视频分支）
+
+默认来源选择只见[通用 Skill](../wechat-mp-article/SKILL.md#5-标题配图与手机排版)：艺术封面与正文真实场景图。用户要求原报道画面或内容确需资料图时，按[真实视频截帧](../wechat-mp-article/references/real-video-stills.md)执行。停止抖音搜索，不生成虚假的 `douyin-search.json`；评论与生成图不作新闻事实证据。
+
+工程记录继续保存 `figure_sources.json`，真实视频分支保留原报道、视频、年代、截取位置和实际看图结果。新配图协议若与旧工程“必须真实封面”等校验冲突，如实报告未满足，不伪造来源或绕过门禁。
+
+## 改稿检查清单
+
+表达和审稿操作只执行通用 Skill，不在专题重列语法、承接和轮次。专题追加检查仅为：
+
+- 标题、导语、关键数字以及正文实际提出的判断，可回到原始材料；当事方声明未被写成中立调查结论。
+- 地区、学段、园校性质、费用类别、年份和统计口径一致；测算有明确假设。
+- 存在论证时核论据和实际异议；所有稿型都不为制造冲突删掉已有配套或不利事实。
+- 公开稿与 `editorial_handoff.json` 对应；文字通过不等于工程通过。
+
+### 新闻组织与叙事检查
+
+只在需要选择或调整新闻结构时查[新闻方法](news-report-craft.md)。
+
+### 中文语法与上下文承接（必查）
+
+统一调用[基座](../../../docs/writing/中文写作基座.md#句法分析与表达检查)和[公众号审稿](../wechat-mp-article/references/review.md)，不另设专题动作表。
+
+### 转述价值检查（人工编辑项）
+
+热点稿的信息与判断应有明确对象和依据，具体评论组织见[评论取材](news-commentary-structure.md)。传播表现留待同口径观察，不将钩子数量或金句配额当人工门禁。
+
+### 事实与编辑判断检查（人工项）
+
+只执行[证据门禁](editorial-evidence-gate.md)，不重复建立另一份事实表。
+
+## 标题路牌与结尾
+
+标题策划和兑现见[公众号钩子适配](../wechat-mp-article/references/content-hooks.md)。标题按本篇实际内容与用户要求选取；已证实的风险、费用或冲突可以入题，不强制所有热点稿制造风险、疑问或读者痛点。标题中的具体承诺仍须兑现，不用夸大后果或公文摘要替代内容。用户已定标题按其要求保留。
+
+文末按[公共交付规则](../wechat-mp-article/references/delivery.md#文末自然结束)自然结束，不再加问号钩子或评论邀请。
+
+## 排版（移动端）
+
+人工排版只执行[delivery.md](../wechat-mp-article/references/delivery.md)，按实际意思形成手机可读的自然段，不另设每段句数、行数或判断配额。下文旧重排程序的130字行为只作兼容记录，不反过来规定主笔段落。
+
+## 公开文案门禁（现有工程行为）
+
+`wechat_mp_hotspot_quality_gate.py` 在stage与push执行检查，push检查发生在上传图片和微信接口之前。现有两层行为：
+
+1. 阻断项：过程指令泄漏、固定营销词、无权威来源的绝对政策范围、标题数字未兑现、完全重复段落、残留Markdown标题或清单。
+2. 评分项：核心判断、三个来源域、首段实体、前1/3普通人影响、反方或边界、具体结尾问句（评论钩子）、移动端段落，共7项至少5项。
+
+上述评分项仅描述旧工程行为，不是主笔或人工审稿要求，不传入起稿委托。按当前规则不加评论钩子，也不为评分项预设中心判断、反方或段落任务。分数不能代替人工事实或文体验收，不改代码绕过失败；未满足记录原因。
+
+```bash
+cd stock-ai
+.venv/bin/python -m scripts.tools.wechat_mp_eval --user-hotspot-article <成稿JSON>
 ```
 
-**耗时预期**（单篇）：
+该命令只读预检，不推送。用户明确要求推草稿后，按 `wechat-mp-drafts` 的当前暂存与回读入口处理，不能改用下列自动批次命令绕过用户主动稿交接。
 
-| 阶段 | 约耗时 | 说明 |
-|------|--------|------|
-| 取材 | 20～60s | 多门户检索 + 逐页抓摘要 |
-| LLM 成稿 | 50～90s | Composer 1 次；+重写最多 2 轮（默认无二次仿写） |
-| 配图 | 20～90s | 多源报道页抓 og:image / 正文图；缺口再生成原创事件图 |
-| 推草稿 | 5～15s | 微信 API |
+## 旧自动链路与兼容信息
 
-推稿务必：`export WECHAT_MP_HOTSPOT_TREND_ENRICH=0`（避免东财 enrich 污染社会稿且变慢）。
+本节描述历史代码，不是当前人工工作流，也不代表定时正在运行。旧热点定时已暂停；本次文档整理不改变实际调度。旧槽位为 `hotspot_early`、`hotspot_morning`、`hotspot_afternoon`、`hotspot_evening`，原批次时间为09/11/15/18。
 
-### 推稿命令
+历史链路：双榜选题 → `fetch_discussion_research` → 旧LLM生成/仿写 → `reflow_hotspot_layout` → 配图门禁 → 草稿。未传 `--codex-draft` 的兼容LLM为Composer，不经DeepSeek API；旧重排仍可能按≤130字拆合段，旧图片校验可能要求真实封面。它们不覆盖本页人工要求。
+
+### 推稿命令（旧自动批次）
 
 ```bash
 cd stock-ai
 export WECHAT_MP_HOTSPOT_TREND_ENRICH=0
-export WECHAT_MP_HOTSPOT_TOPIC="赛格商场坠亡"   # 可选：手动定题
 uv run python -m scripts.tools.wechat_mp_draft_batch --batch hotspot_afternoon --no-notify
-```
-
-四槽：`hotspot_early` · `hotspot_morning` · `hotspot_afternoon` · `hotspot_evening`
-
-单篇质检：
-
-```bash
 uv run python -m scripts.tools.wechat_mp_push_quality_gate --kind hotspot
 uv run python -m scripts.tools.wechat_mp_eval --kind hotspot --traffic
 ```
 
----
-
-## 联网取材（社会热点核心）
-
-成稿前 **必须** 有同题公开报道（`fetch_discussion_research`），写入 prompt：
-
-1. **【联网事实】** — 可核对的时间、人物、机构、数字、通报表述  
-2. **【参考文章·仿写】** — 2～3 篇同题稿摘要 + 开头示范（学第一句怎么直接写人+事）
-
-仿写节奏（学澎湃/新浪/网易同题稿，不照搬）：
-
-- **首段**：谁 + 在哪 + 发生了什么（与标题同题，50 字内落地）  
-- **中段**：可核对细节、通报 vs 民间说法、多方观点  
-- **末段**：一句后续观察或可讨论问句；**禁止**股市盘面、指数、个股  
-
-二次仿写（`WECHAT_MP_HOTSPOT_IMITATE_REWRITE=1`，默认关）：删导读腔、补遗漏可核对事实。质量不稳时可手动开。
-
----
-
-## Codex 成稿入口（推荐）
-
-当前手动长图文由 Codex 完成联网取材、标题、摘要和正文，然后通过结构化 JSON 交给发布脚本：
-
-```bash
-cd stock-ai
-uv run python -m scripts.tools.wechat_mp_draft \
-  --kind hotspot \
-  --codex-draft output/hotspot_codex.json \
-  --dry-run
-```
-
-JSON 必填 `title`、`digest`、`body`、`topic`；可选 `research_urls`、`slot_key`。去掉 `--dry-run` 后才写入公众号草稿箱。该入口不调用 Composer，不自动扩写或模板兜底；正文未过字数、段落、套话、配图或合规门禁时直接拒绝，由 Codex 修改源 JSON 后重试。
-
-## 旧自动写稿 LLM（兼容路径）
-
-未传 `--codex-draft` 的旧自动生成路径仍使用 Composer（`call_wechat_mp_llm` → `agent --model composer-2.5`），不经 DeepSeek API。该路径仅作兼容；当前热点定时已暂停。
-
-| 变量 | 默认 | 含义 |
-|------|------|------|
-| `WECHAT_MP_LLM_MODEL` | `composer-2.5` | 模型 slug |
-| `WECHAT_MP_CURSOR_MAX_RETRIES` | `1` | agent 调用失败重试 |
-| `WECHAT_MP_CURSOR_TIMEOUT_SECONDS` | `420` | 单次 agent 超时 |
-| `WECHAT_MP_HOTSPOT_MIN_BODY_SLACK` | `80` | 社会热点字数容差（门禁 2000−80=1920） |
-
----
-
-## 配图（固定四图）
-
-| 项 | 说明 |
-|----|------|
-| 开关 | `WECHAT_MP_HOTSPOT_SOCIAL_FIGURES=1`（trends 默认开） |
-| 正文图 | `inject_discussion_figures`：3 张，均匀插在正文中后段；不得与封面使用同一张图 |
-| 封面 | `ensure_discussion_cover`：1 张，优先同题报道图裁 2.35:1，**不用** sector 牛马主图 |
-| 找图顺序 | 先抓同题公开报道页 og:image / 正文图；报道图能凑齐时不生成 |
-| 生成兜底 | 报道图不足 4 张时，**只补缺口**生成原创新闻插画。画面必须含事件主体、地点/处置线索，禁止凭空添加人物身份、伤亡数字、机构标识或现场细节 |
-| 图注 | 报道图标「图源：公开报道（引用）」；生成图标「原创新闻插画」，两者不得混标 |
-| 门禁 | `WECHAT_MP_HOTSPOT_REQUIRE_FIGURES=1`：正文少于 3 张或封面缺失即拒推；调试可 `=0` |
-| 扩源 | 360/搜狗/百度新闻检索 + 多门户 CDN；见 `wechat_mp_discussion_figures.py` |
-
-配图失败常见原因：选题太新、门户反爬、报道页无大图。现在入口会先自动扩源抓图；仍不足时写出同一话题目录下的 `codex-image-request.json` 并拒推。Codex 必须逐项读取 `slots`，每个缺口单独调用一次内置 ImageGen，然后从 `$CODEX_HOME/generated_images/` 复制到请求给出的绝对 `output_path`，再重跑原命令。生成封面为 `cover.jpg`，正文补图为 `manual-01.jpg`、`manual-02.jpg`、`manual-03.jpg`；脚本把 `manual-*` 识别为「原创新闻插画」，只补缺口，不替换已找到的报道图。不要因找不到图退回默认品牌封面。
-
----
-
-## 禁止元叙述（AI 味重灾区）
-
-**不要** 在正文里出现「我在引用资料」的导读句。以下 **一律禁止**（`strip_hotspot_meta_commentary` / eval 会扣）：
-
-| 禁句示例 |
-|----------|
-| 刷到这条热搜 / 第一反应是 / 往下翻才知道 |
-| 公开报道里有一条值得先记住 |
-| 热搜在聊「…」 / 双榜讨论偏… |
-| 值得注意的是 / 不难发现 / 需要指出的是 |
-| 叙事溢价 / 情绪溢价 / 硬验证 / 露馅 |
-
-**正确开头示例**（社会热点）：
-
-```text
-8 月 3 日，青岛大学一名宿管大爷在值班室热射病去世。
-学校通报里写「已启动调查」，没写空调有没有、值班室多大。
-```
-
----
-
-## 标题路牌
-
-- 格式：`{可搜实体 + 反常结果}？`（疑问句优先）  
-- **前 15 字**含案由/地名/片名/数字，表意完整  
-- **硬禁**：震惊体、`和A股啥关系`、平台名连读（`百度把…送上热搜`）、编审过程（`候选五条`）  
-- **好例子**：`儿子病逝留 87 个游戏号，遗产该归谁？`  
-- **坏例子**：`返…` `暂…` 半句话截断
-
-详见 [sousou-content-rules.md](sousou-content-rules.md) · [traffic-copy-craft.md](traffic-copy-craft.md)
-
----
-
-## 排版（移动端）
-
-- 每段 **2～4 句、≤130 字**（`reflow_hotspot_layout`）  
-- 段间空一行；禁止编号清单（`delist_hotspot_body`）  
-- 社会稿 **禁止** 指数涨跌复读（财经分支才做 `dedupe_hotspot_index_mentions`）
-
----
+仅维护或获授权执行旧自动任务时使用；用户主动稿不走这组命令。
 
 ## 环境变量
 
-| 变量 | 默认 | 含义 |
-|------|------|------|
-| `WECHAT_MP_HOTSPOT_SOURCE` | `trends` | 微博+百度热搜选题 |
-| `WECHAT_MP_DISCUSSION_RESEARCH` | `1` | 社会同题报道取材 |
-| `WECHAT_MP_HOTSPOT_TREND_ENRICH` | `0` | **保持 0**；1=东财 enrich（慢，污染社会稿） |
-| `WECHAT_MP_HOTSPOT_IMITATE_REWRITE` | `0` | 对照参考二次仿写 |
-| `WECHAT_MP_HOTSPOT_SOCIAL_FIGURES` | `1` | 社会布局配图 |
-| `WECHAT_MP_HOTSPOT_REQUIRE_FIGURES` | `1` | 无正文事件图拒推 |
-| `WECHAT_MP_DISCUSSION_BODY_FIGURES` | `3` | 正文图数量；正式稿固定 3，调试可临时下调 |
-| `WECHAT_MP_DISCUSSION_FIGURES_FORCE` | `0` | 1=忽略缓存重抓配图 |
-| `WECHAT_MP_HOTSPOT_TOPIC` | — | 手动定题关键词 |
-| `WECHAT_MP_LLM_MODEL` | `composer-2.5` | Composer 模型 slug |
-| `WECHAT_MP_QUALITY_GATE_STRICT` | `1` | 推稿调试可 `=0` |
-
----
-
-## 改稿检查清单
-
-- [ ] 首段 **50 字内**落地标题事件（人+事）  
-- [ ] 至少 **4 个可核对事实**（来自报道，非编造）  
-- [ ] 无导读腔 / 热榜播报 / 财经盘面套话  
-- [ ] 标题路牌完整、与开篇同题  
-- [ ] 封面 1 张 + 正文 3 张，正文图均与事件相关且不重复  
-- [ ] 报道图不足时仅补缺生成图，并标注「原创新闻插画」  
-
----
+| 变量 | 历史默认 | 兼容含义 |
+| --- | --- | --- |
+| `WECHAT_MP_HOTSPOT_SOURCE` | `trends` | 微博+百度选题 |
+| `WECHAT_MP_DISCUSSION_RESEARCH` | `1` | 同题报道取材 |
+| `WECHAT_MP_HOTSPOT_TREND_ENRICH` | `0` | 社会稿保持0，避免混入旧东财盘面数据 |
+| `WECHAT_MP_HOTSPOT_IMITATE_REWRITE` | `0` | 旧二次仿写开关 |
+| `WECHAT_MP_HOTSPOT_SOCIAL_FIGURES` | `1` | 旧社会稿配图 |
+| `WECHAT_MP_HOTSPOT_REQUIRE_FIGURES` | `1` | 旧真实图校验，不覆盖新默认来源 |
+| `WECHAT_MP_DISCUSSION_BODY_FIGURES` | `3` | 旧正文图片上限 |
+| `WECHAT_MP_DISCUSSION_FIGURES_FORCE` | `0` | 强制重抓旧素材 |
+| `WECHAT_MP_HOTSPOT_TOPIC` | 未设 | 手动定题 |
+| `WECHAT_MP_LLM_MODEL` | `composer-2.5` | 旧兼容LLM |
+| `WECHAT_MP_CURSOR_MAX_RETRIES` | `1` | 旧LLM重试 |
+| `WECHAT_MP_CURSOR_TIMEOUT_SECONDS` | `420` | 旧LLM超时 |
+| `WECHAT_MP_HOTSPOT_MIN_BODY_SLACK` | `80` | 旧2000字门禁容差，不用于人工稿 |
+| `WECHAT_MP_QUALITY_GATE_STRICT` | `1` | 现有门禁开关，不为人工稿绕过而改 |
 
 ## 故障排查
 
-| 现象 | 原因 | 处理 |
-|------|------|------|
-| 构建失败「未达 2000 字」 | 取材薄 / LLM 短稿 | `TREND_ENRICH=0` 重跑；换素材更足的题；查 `web_research_blob` 长度 |
-| 构建失败「配图不足 3 张」 | 报道页无足量合格图 | `DISCUSSION_FIGURES_FORCE=1`；换检索词；仍不足则生成缺口图并重推 |
-| 单篇 3～5 min | 多轮 LLM + 配图抓取 | 默认已关仿写、2 轮上限；`DISCUSSION_FIGURES_FORCE=0` |
-| 总分 <75 且正文几百字 | 旧短模板 fallback | 社会稿应已禁止；查 `generate_hotspot_body` 日志 |
-| 文末「复盘的朋友」 | 财经增长句误注入 | `hotspot` 已在 `_NO_RECOMMEND_HOOK_KINDS` |
-
----
+| 现象 | 处理 |
+| --- | --- |
+| 旧链路未达2000字 | 区分自动/人工入口，不将该旧阈值套到人工稿 |
+| 新配图与真实封面校验冲突 | 保留真实记录，如实标记工程未满足，不伪造来源 |
+| 文末误入财经复盘口吻 | 查 `_NO_RECOMMEND_HOOK_KINDS` 与实际稿型，不改写正文迎合误注入 |
+| 低分或短稿 | 区分人工文章问题与旧fallback，不用分数替代文章判断 |
 
 ## 附录：财经热搜分支（少见）
 
-热搜标题含 A 股/板块/个股关键词时，代码走 `fetch_hotspot_research`（东财）+ 盘面数字口吻。  
-**定时四槽默认不会触发**；手动财经深评才需要。勿把财经仿写规则套到社会稿。
-
----
+历史 `fetch_hotspot_research` 盘面分支只供代码溯源，不是股票研究数据授权。涉及股票时先走当前妙想六Skill路由，不调用旧来源补数。
 
 ## 交叉引用
 
-- 社会口吻：[social-commentary-voice.md](social-commentary-voice.md)  
-- 引流节奏：[traffic-copy-craft.md](traffic-copy-craft.md)  
-- 搜一搜路牌：[sousou-content-rules.md](sousou-content-rules.md)  
-- 去 AI 味：[anti-ai-voice.md](anti-ai-voice.md)  
-- eval 门禁：[eval-gates.md](eval-gates.md)  
-- 定时批次：`stock-ai/docs/WECHAT_MP_SCHEDULING.md`  
-- 代码映射：`wechat-mp-drafts/rules-implemented.md` §18
+自动代码映射见 `wechat-mp-drafts/rules-implemented.md`；旧评分见[eval-gates.md](eval-gates.md)。写作方法的历史来源记录仍保留在[新闻技巧](news-report-craft.md#来源与采用范围)、[评论方法](news-commentary-structure.md#来源与适配)；未在本次整理中重新访问外部材料。

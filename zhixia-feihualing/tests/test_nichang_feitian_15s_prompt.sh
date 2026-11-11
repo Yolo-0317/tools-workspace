@@ -1,0 +1,55 @@
+#!/bin/zsh
+set -euo pipefail
+
+project_dir="${0:A:h:h}"
+readme="$project_dir/episodes/nichang-feitian-15s/README.md"
+prompt="$project_dir/episodes/nichang-feitian-15s/prompts/seedance-v01.md"
+history_file="$project_dir/operations/dance-design-history.csv"
+
+for required in "$readme" "$prompt" "$history_file"; do
+  [[ -s "$required" ]] || { print -u2 -r -- "FAIL: missing required Nichang Feitian component $required"; exit 1; }
+done
+
+for required_text in \
+  '参考上传图片中的栀夏' \
+  '人物造型全程保持一致' \
+  '三次高能舞姿同等强烈' \
+  '0.000—1.800秒' \
+  '4.800—7.000秒' \
+  '10.000—13.200秒' \
+  '纵向提展' \
+  '横向S形腾移' \
+  '斜前低位延伸再向上提展' \
+  '莲瓣垂直扬起' \
+  '莲瓣向左右展开' \
+  '莲瓣由远向近掠过' \
+  '第三段镜头保持近距离' \
+  '结尾人物仍占画面一半以上' \
+  '左右上臂后外侧' \
+  '无人声敦煌乐舞配乐'; do
+  rg -qF "$required_text" "$prompt" || { print -u2 -r -- "FAIL: prompt lacks $required_text"; exit 1; }
+done
+
+rg -qF '<!-- SEEDANCE_PROMPT_START -->' "$prompt" || { print -u2 "FAIL: prompt start marker missing"; exit 1; }
+rg -qF '<!-- SEEDANCE_PROMPT_END -->' "$prompt" || { print -u2 "FAIL: prompt end marker missing"; exit 1; }
+rg -qF '素手把芙蓉' "$readme" || { print -u2 "FAIL: README lacks opening poem line"; exit 1; }
+rg -qF '飘拂升天行' "$readme" || { print -u2 "FAIL: README lacks final poem line"; exit 1; }
+
+awk -F, 'NF != 25 { print NR ":" NF; bad=1 } END { exit bad }' "$history_file"
+[[ "$(rg -c '^nichang-feitian-15s,' "$history_file")" == "1" ]] || { print -u2 "FAIL: Nichang Feitian history row is missing or duplicated"; exit 1; }
+[[ "$(awk -F, '$1=="nichang-feitian-15s" {print $19}' "$history_file")" == "designed" ]] || { print -u2 "FAIL: Nichang Feitian history status must be designed"; exit 1; }
+
+prompt_body="$(sed -n '/SEEDANCE_PROMPT_START/,/SEEDANCE_PROMPT_END/p' "$prompt")"
+for forbidden in '基础级' '高潮动作家族' '视觉指纹' 'v03' '文件名' '复原唐代舞谱' '图片2'; do
+  [[ "$prompt_body" != *"$forbidden"* ]] || { print -u2 -r -- "FAIL: prompt body contains forbidden token $forbidden"; exit 1; }
+done
+
+for risky_expression in '18岁' '现实人物' '艺人' '俯冲' '撞击' '反关节' '穿体'; do
+  [[ "$prompt_body" != *"$risky_expression"* ]] || { print -u2 -r -- "FAIL: safe prompt body contains risky expression $risky_expression"; exit 1; }
+done
+
+for negative_expression in '原创虚构' '只有一个' '没有其他人物' '不得' '禁止' '不生成' '不要' '不拿' '不抓'; do
+  [[ "$prompt_body" != *"$negative_expression"* ]] || { print -u2 -r -- "FAIL: positive prompt body contains negative expression $negative_expression"; exit 1; }
+done
+
+print -r -- "PASS: Nichang Feitian 15s prompt and history are complete"

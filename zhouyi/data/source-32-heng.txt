@@ -1,0 +1,112 @@
+周易/恒 - 维基文库，自由的图书馆 (https://zh.wikisource.org/wiki/%E5%91%A8%E6%98%93/%E6%81%92)
+citeturn84view0 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({"ref_id":"https://zh.wikisource.org/wiki/周易/恒","lineno":120}); Total lines: 168
+L0: cite0†跳转到内容 L1: 
+L2: [Input] 主菜单
+L3: 
+L4: 主菜单
+L5: 
+L6: [Button: 移至侧栏] [Button: 隐藏]
+L7: 
+L8: 导航
+L9: 
+L10:   * cite1†首页 L11:   * cite2†随机作品 L12:   * cite3†随机作者 L13:   * cite4†随机原本 L14:   * cite5†所有页面 L15: 
+L16: 编者
+L17: 
+L18:   * cite6†社群首页 L19:   * cite7†写字间 L20:   * cite8†最近更改 L21:   * cite9†特殊页面 L22: 
+L23: 帮助
+L24: 
+L25:   * cite10†帮助 L26:   * cite11†关于维基文库 L27:   * cite12†联系我们 L28:   * cite13†方针与指引 L29: 
+L30: 显示选项
+L31: 
+L32: cite14†搜索 L33: 
+L34: [Input: 搜索Wikisource内容]
+L35: 
+L36: [Input]
+L37: 
+L38: [Button: 搜索]
+L39: 
+L40: [Input] 外观
+L41: 
+L42:   * cite15†资助†donate.wikimedia.org L43:   * cite16†创建账号 L44:   * cite17†登录 L45: 
+L46: [Input] 个人工具
+L47: 
+L48:   * cite15†资助†donate.wikimedia.org L49:   * cite16†创建账号 L50:   * cite17†登录 L51: # 周易/恒
+L52: 
+L53: [Input] 添加语言
+L54: 
+L55: cite18†添加链接†www.wikidata.org L56: 
+L57:   * cite19†作品 L58:   * cite20†讨论 L59: 
+L60: [Input] 不转换
+L61: 
+L62:   * cite21†不转换 L63:   * cite22†简体 L64:   * cite23†繁體 L65: 
+L66:   * cite19†阅读 L67:   * cite24†编辑 L68:   * cite25†查看历史 L69: 
+L70: [Input] 工具
+L71: 
+L72: 工具
+L73: 
+L74: [Button: 移至侧栏] [Button: 隐藏]
+L75: 
+L76: 操作
+L77: 
+L78:   * cite19†阅读 L79:   * cite24†编辑 L80:   * cite25†查看历史 L81: 
+L82: 常规
+L83: 
+L84:   * cite26†链入页面 L85:   * cite27†相关更改 L86:   * cite28†上传文件†commons.wikimedia.org L87:   * cite29†固定链接 L88:   * cite30†页面信息 L89:   * cite31†引用此页 L90:   * cite32†获取短链接 L91: 
+L92: 打印/导出
+L93:   * 可打印版
+L94:   * cite33†下载为EPUB†ws-export.wmcloud.org L95:   * cite34†下载为MOBI†ws-export.wmcloud.org L96:   * cite35†下载为PDF†ws-export.wmcloud.org L97:   * cite36†其他格式†ws-export.wmcloud.org L98: 
+L99: 在其他项目中
+L100: 
+L101:   * cite37†维基百科†zh.wikipedia.org L102:   * cite38†维基数据项目†www.wikidata.org L103: 
+L104: 外观
+L105: 
+L106: [Button: 移至侧栏] [Button: 隐藏]
+L107: 
+L108: cite33†下载†ws-export.wmcloud.org L109: 
+L110: < cite39†周易 L111: 
+L112: cite40†咸 ◄  | 周易
+L113: 恒  | ► cite41†遯 L114: 
+L115: 周易　第三十二卦
+L116: 
+L117: 恆
+L118: 
+L119: 巽下震上
+L120: 
+L121:   * 易經：
+L122:     * 恆：亨，无咎。利貞，利有攸往。
+L123:     1. 初六：浚恆，貞凶，无攸利。
+L124:     2. 九二：悔亡。
+L125:     3. 九三：不恆其德，或承之羞，貞吝。
+L126:     4. 九四：田无禽。
+L127:     5. 六五：恆其德，貞，婦人吉，夫子凶。
+L128:     6. 上六：振恆，凶。
+L129:   * 彖曰：
+L130:     * 恆，久也。剛上而柔下，雷風相與，巽而動，剛柔皆應，恆。恆亨无咎，利貞；久于其道也，天地之道，恆久而不已也。利有攸往，終則有始也。日月得天，而能久照，四時變化，而能久成，聖人久于其道，而天下化成；觀其所恆，而天地萬物之情可見矣！
+L131: 
+L132:   * 象曰：
+L133:     * 雷風，恆；君子以立不易方。
+L134:     1. 浚恆之凶，始求深也。
+L135:     2. 九二悔亡，能久中也。
+L136:     3. 不恆其德，无所容也。
+L137:     4. 久非其位，安得禽也。
+L138:     5. 婦人貞吉，從一而終也。夫子制義，從婦凶也。
+L139:     6. 振恆在上，大无功也。
+L140: 
+L141: cite42†Image L142: 
+L143: 检索自“cite29†https://zh.wikisource.org/w/index.php?title=周易/恒&oldid=2530043 ”
+L144:   * 此页面最后编辑于2025年2月18日 (星期二) 17:55。
+L145:   * 本站的全部文字在cite43†知识共享 署名-相同方式共享 4.0协议†creativecommons.org 之条款下提供，附加条款亦可能应用。（请参阅cite44†使用条款†foundation.wikimedia.org ）
+L146: 在部份国家和地区，包括中国大陆、澳门和台湾，作者精神权（含署名权）永久有效（cite45†详情 ）。
+L147: Wikisource®和维基文库标志是cite46†维基媒体基金会†wikimediafoundation.org 的注册商标；维基™是维基媒体基金会的商标。
+L148: 维基媒体基金会是在美国佛罗里达州登记的501(c)(3)cite47†免税†donate.wikimedia.org 、非营利、慈善机构。
+L149:   * cite48†隐私政策†foundation.wikimedia.org L150:   * cite11†关于维基文库 L151:   * cite49†免责声明 L152:   * cite50†法律与安全事项联系方式†foundation.wikimedia.org L153:   * cite51†行为准则†foundation.wikimedia.org L154:   * cite52†开发者†developer.wikimedia.org L155:   * cite53†统计†stats.wikimedia.org L156:   * cite54†Cookie声明†foundation.wikimedia.org L157:   * 搜索
+L158: 
+L159: [Input: 搜索Wikisource内容]
+L160: 
+L161: [Input]
+L162: 
+L163: [Button: 搜索]
+L164: 
+L165: 周易/恒
+L166: 
+L167: 添加语言 cite55†添加话题 

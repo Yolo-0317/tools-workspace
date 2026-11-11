@@ -1,0 +1,32 @@
+[
+  {
+    "id": "01-ayan-dialogue",
+    "kind": "dialogue",
+    "text": "栀夏，这座山在往下掉！",
+    "attribution": null
+  },
+  {
+    "id": "02-zhixia-dialogue",
+    "kind": "dialogue",
+    "text": "不是山，你听。",
+    "attribution": null
+  },
+  {
+    "id": "03-ayan-dialogue",
+    "kind": "dialogue",
+    "text": "这么大的水声，从哪儿来的？",
+    "attribution": null
+  },
+  {
+    "id": "04-zhixia-dialogue",
+    "kind": "dialogue",
+    "text": "抬头，答案在云上。",
+    "attribution": null
+  },
+  {
+    "id": "05-ayan-poem",
+    "kind": "poem",
+    "text": "飞流直下三千尺，疑是银河落九天。",
+    "attribution": "唐·李白《望庐山瀑布》"
+  }
+]

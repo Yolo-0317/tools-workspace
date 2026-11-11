@@ -1,0 +1,18 @@
+[
+  {"chain_code":"agriculture_planting","chain_name":"农业种植","parent_code":"agriculture","aliases":["种子","粮食种植","种植业"],"keywords":["种业","种植","粮食"],"excludes":["养殖"],"priority":100,"coexistence_codes":["animal_husbandry"]},
+  {"chain_code":"animal_husbandry","chain_name":"畜牧养殖","parent_code":"agriculture","aliases":["养殖业","畜牧业"],"keywords":["养殖","生猪","禽类"],"excludes":["水产"],"priority":95,"coexistence_codes":["agriculture_planting"]},
+  {"chain_code":"semiconductors","chain_name":"半导体","parent_code":"electronics","aliases":["半导体","芯片"],"keywords":["半导体","芯片","集成电路"],"excludes":["光伏"],"priority":100,"coexistence_codes":["pcb_materials","ai_hardware"]},
+  {"chain_code":"pcb_materials","chain_name":"PCB与电子材料","parent_code":"electronics","aliases":["印制电路板","PCB"],"keywords":["PCB","覆铜板","电子材料","印制电路"],"excludes":[],"priority":95,"coexistence_codes":["semiconductors","ai_hardware"]},
+  {"chain_code":"ai_hardware","chain_name":"AI硬件","parent_code":"technology","aliases":["AI硬件","算力硬件"],"keywords":["算力","服务器","光模块","液冷"],"excludes":["软件","应用"],"priority":90,"coexistence_codes":["semiconductors","pcb_materials"]},
+  {"chain_code":"industrial_metals","chain_name":"铜铝工业金属","parent_code":"nonferrous","aliases":["工业金属","铜","铝"],"keywords":["铜业","铝业","工业金属"],"excludes":["贵金属","稀土"],"priority":90,"coexistence_codes":["precious_metals","rare_metals"]},
+  {"chain_code":"precious_metals","chain_name":"贵金属","parent_code":"nonferrous","aliases":["贵金属","黄金"],"keywords":["黄金","白银","贵金属"],"excludes":[],"priority":100,"coexistence_codes":["industrial_metals"]},
+  {"chain_code":"rare_metals","chain_name":"稀有金属","parent_code":"nonferrous","aliases":["稀有金属","小金属"],"keywords":["稀土","钨","钼","钴","小金属"],"excludes":["锂电"],"priority":95,"coexistence_codes":["industrial_metals"]},
+  {"chain_code":"lithium_materials","chain_name":"锂电材料","parent_code":"new_energy","aliases":["锂电池","锂电材料"],"keywords":["锂电","电解液","正极","负极"],"excludes":["储能"],"priority":95,"coexistence_codes":["energy_storage"]},
+  {"chain_code":"photovoltaic","chain_name":"光伏","parent_code":"new_energy","aliases":["光伏设备","光伏"],"keywords":["光伏","硅料","硅片"],"excludes":["半导体"],"priority":90,"coexistence_codes":["energy_storage"]},
+  {"chain_code":"power_utilities","chain_name":"电力公用事业","parent_code":"utilities","aliases":["电力行业","公用事业"],"keywords":["电力","水电","火电","核电"],"excludes":["电力设备","储能"],"priority":80,"coexistence_codes":["energy_storage"]},
+  {"chain_code":"energy_storage","chain_name":"储能","parent_code":"new_energy","aliases":["储能","抽水蓄能"],"keywords":["储能","抽水蓄能"],"excludes":[],"priority":100,"coexistence_codes":["power_utilities","lithium_materials"]},
+  {"chain_code":"oil_gas","chain_name":"石油天然气","parent_code":"energy","aliases":["石油行业","天然气"],"keywords":["石油","油气","天然气"],"excludes":["化工"],"priority":90,"coexistence_codes":["chemicals"]},
+  {"chain_code":"chemicals","chain_name":"基础化工","parent_code":"materials","aliases":["化学制品","化工行业"],"keywords":["化工","化学","农药","化肥"],"excludes":["石油"],"priority":70,"coexistence_codes":["oil_gas"]},
+  {"chain_code":"consumer_retail","chain_name":"消费零售","parent_code":"consumer","aliases":["商业百货","零售"],"keywords":["零售","百货","商贸","免税"],"excludes":[],"priority":80,"coexistence_codes":[]},
+  {"chain_code":"robotics","chain_name":"机器人","parent_code":"advanced_manufacturing","aliases":["机器人","人形机器人"],"keywords":["机器人","减速器","伺服"],"excludes":[],"priority":100,"coexistence_codes":["ai_hardware"]}
+]

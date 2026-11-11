@@ -1,0 +1,49 @@
+{
+  "episode": "nichang-feitian-15s",
+  "format": "one-poem-story",
+  "theme": "霓裳飞天十五秒四句诗朗诵",
+  "theme_slug": "nichang-feitian-15s",
+  "audio_slug": "nichang-feitian-15s-paced-v01",
+  "lines": [
+    {
+      "id": "01-zhixia-line-one",
+      "role": "zhixia",
+      "text": "素手把芙蓉。",
+      "revision": 1,
+      "gap_before_ms": 0,
+      "context_texts": [
+        "这是十五秒《霓裳飞天》的第一句画外朗诵。保持栀夏清透、轻盈、明亮并带自然书卷气的固定声线，随莲池开场自然起句；‘素手’轻柔清楚，‘把芙蓉’舒展并完整收住。语气自然，不念作者和篇名，不添加其他内容。"
+      ]
+    },
+    {
+      "id": "02-zhixia-line-two",
+      "role": "zhixia",
+      "text": "虚步蹑太清。",
+      "revision": 1,
+      "gap_before_ms": 450,
+      "context_texts": [
+        "紧接上一句，画面进入横向移动与第二次展开。保持与上一句完全相同的栀夏固定声线，语气轻巧并具有向上行进感；‘虚步’轻灵，‘蹑太清’清楚落下，尾音自然。保持自然说诗，不添加其他内容。"
+      ]
+    },
+    {
+      "id": "03-zhixia-line-three",
+      "role": "zhixia",
+      "text": "霓裳曳广带。",
+      "revision": 1,
+      "gap_before_ms": 500,
+      "context_texts": [
+        "这是《霓裳飞天》第三句，画面中的舞者旋身并展开长飘带。保持同一位栀夏清透、轻盈、明亮的固定声线；‘霓裳’清楚，‘曳广带’带出横向舒展和流动感，节奏从容。保持自然说诗，不添加其他内容。"
+      ]
+    },
+    {
+      "id": "04-zhixia-line-four",
+      "role": "zhixia",
+      "text": "飘拂升天行。",
+      "revision": 1,
+      "gap_before_ms": 450,
+      "context_texts": [
+        "这是十五秒《霓裳飞天》的最后一句，画面推近并完成最后飞天长线。保持前文同一位栀夏的清透固定声线，增加开阔与上升感；‘飘拂’轻盈连贯，‘升天行’清楚完整地收住全诗，尾韵自然结束在画面结束前。保持自然说诗，不添加其他内容。"
+      ]
+    }
+  ]
+}

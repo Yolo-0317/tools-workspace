@@ -1,0 +1,49 @@
+{
+  "episode": "jiuge-donghuang-taiyi-15s",
+  "format": "one-poem-story",
+  "theme": "九歌东皇太一十五秒四句节选朗诵",
+  "theme_slug": "jiuge-donghuang-taiyi-15s",
+  "audio_slug": "jiuge-donghuang-taiyi-15s-v01",
+  "lines": [
+    {
+      "id": "01-zhixia-line-one",
+      "role": "zhixia",
+      "text": "吉日兮辰良。",
+      "revision": 1,
+      "start_ms": 450,
+      "context_texts": [
+        "这是《九歌·东皇太一》祭舞的第一句画外朗诵。保持栀夏同一固定女声，克制、低甜度、清楚并有夜间祭坛的空间感；沉静启句，‘吉日’清楚，‘辰良’从容收住。自然说诗，不念题目、作者或其他内容，不使用播音腔、吟唱、耳语或神谕式夸张。"
+      ]
+    },
+    {
+      "id": "02-zhixia-line-two",
+      "role": "zhixia",
+      "text": "穆将愉兮上皇。",
+      "revision": 1,
+      "start_ms": 3400,
+      "context_texts": [
+        "承接‘吉日兮辰良’，保持同一位栀夏、同一距离和同一克制女声。语气略微抬起迎神气势但不高喊；‘穆将愉兮’庄重连贯，‘上皇’清楚落下。自然说诗，不念题目、作者或其他内容，不使用播音腔、吟唱或神谕式夸张。"
+      ]
+    },
+    {
+      "id": "03-zhixia-line-three",
+      "role": "zhixia",
+      "text": "五音纷兮繁会。",
+      "revision": 1,
+      "start_ms": 7600,
+      "context_texts": [
+        "这是《九歌·东皇太一》篇末节选的第一句，前面保留一秒鼓乐换气。保持同一位栀夏克制、低甜度、有空间感的固定女声；节奏比前两句稍密但不急促，让‘五音’与‘繁会’有鼓乐汇聚感。自然说诗，不添加解释，不吟唱。"
+      ]
+    },
+    {
+      "id": "04-zhixia-line-four",
+      "role": "zhixia",
+      "text": "君欣欣兮乐康。",
+      "revision": 1,
+      "start_ms": 11000,
+      "context_texts": [
+        "承接‘五音纷兮繁会’，保持同一位栀夏、同一空间距离和克制女声。语气舒展安定，不甜笑、不高喊；‘君欣欣兮’自然推进，‘乐康’完整、温和地收住，并在视频结束前结束。自然说诗，不添加其他内容，不吟唱。"
+      ]
+    }
+  ]
+}

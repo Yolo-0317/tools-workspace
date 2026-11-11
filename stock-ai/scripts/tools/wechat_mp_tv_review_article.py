@@ -135,7 +135,7 @@ def _fallback_body(topic: dict[str, Any]) -> str:
 你看过 {label} 吗？留言说说你站「立刻开刷」还是「先囤着」。"""
 
 
-def _discussion_voice_prompt_block() -> str:
+def _discussion_voice_prompt_block_legacy() -> str:
     return """## 角色（最先遵守）
 你是**读者转述者**：像在群里转述热搜和评论区的吵法。你不是行业分析师、政策解读记者、产业观察员。
 禁止：风向是在松、政策松绑、与其说/不如说、一拨问另一拨、对X来说、预期/去化/叙事等行业报告腔。
@@ -165,6 +165,27 @@ def _discussion_voice_prompt_block() -> str:
 - **引流节奏**（推荐流陌生读者）：开篇 80 字内落地标题事件；一句一段为主；每 300–500 字用对照句、原话或轻问句做钩子；至少 2 处可转述细节（具体数字、原话、画面）方便读者转群；结尾名字+事实或一句站队问句；正文不写关注诱导
 - **数字**：年份、刑期、金额、数据量用阿拉伯数字（2018年、6年、89TB），禁止「二〇一八年」「六年」等汉字数
 - 社会争议：只写公开可核对信息；篇幅 **1800–2400 字**"""
+
+
+def _is_dianji_topic(topic: dict[str, Any] | None) -> bool:
+    if not topic:
+        return False
+    slug = str(topic.get("cover_slug") or topic.get("topic_key") or "").strip().lower()
+    trend = str(topic.get("trend_title") or topic.get("title_zh") or "").strip()
+    if slug.startswith("dianji-"):
+        return True
+    if "典籍里的中国" in trend:
+        return True
+    return False
+
+
+def _discussion_voice_prompt_block(topic: dict[str, Any] | None = None) -> str:
+    try:
+        from scripts.tools.wechat_mp_voice_corpus import load_discussion_voice_prompt
+
+        return load_discussion_voice_prompt(dianji=_is_dianji_topic(topic))
+    except Exception:
+        return _discussion_voice_prompt_block_legacy()
 
 
 def _rewrite_discussion_against_references(body: str, *, reference_block: str) -> str:
@@ -211,7 +232,8 @@ def _rewrite_discussion_against_references(body: str, *, reference_block: str) -
 
 
 def generate_tv_discussion_body(topic: dict[str, Any], *, now: datetime | None = None) -> str:
-    """热搜话题讨论稿：朋友讨论口吻，纯段落，非五节剧评。"""
+    """热搜话题讨论稿：影视稿保持 Composer/Codex 路径。"""
+
     trend = str(topic.get("trend_title") or topic.get("title_zh") or "").strip()
     subject = str(topic.get("title_zh") or "").strip()
     hook = str(topic.get("hook") or trend)[:200]
@@ -260,11 +282,18 @@ def generate_tv_discussion_body(topic: dict[str, Any], *, now: datetime | None =
 - 社会争议：只写公开报道、呈现多方观点，不人身攻击、不编造
 - 末段：官司/舆论后续观察，非投资建议
 
-{_discussion_voice_prompt_block()}
+{_discussion_voice_prompt_block(topic)}
 
 只输出正文，不要标题、摘要、免责声明。"""
 
-    min_chars = 1700
+    if _is_dianji_topic(topic):
+        prompt = prompt.replace(
+            "- **1800–2400 汉字**，8–11 段",
+            "- **800–1200 汉字**，4～6 段（典籍专栏短札）",
+        )
+        min_chars = 720
+    else:
+        min_chars = 1700
     try:
         raw = call_wechat_mp_llm(
             [
@@ -492,10 +521,7 @@ def build_tv_review_article(*, now: datetime | None = None) -> dict[str, str]:
         from scripts.tools.wechat_mp_discussion_figures import ensure_discussion_cover
 
         ensure_discussion_cover(topic)
-        body = f"{body_with_figs}\n\n"
-        from scripts.tools.wechat_mp_content import disclaimer_for_kind
-
-        body += disclaimer_for_kind("tv_review")
+        body = body_with_figs.rstrip()
     else:
         body = inject_tv_review_figures(body_core, topic)
 

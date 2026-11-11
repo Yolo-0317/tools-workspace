@@ -1,0 +1,29 @@
+{
+  "episode": "yesu-shansi",
+  "format": "one-poem-story",
+  "theme": "夜宿山寺",
+  "theme_slug": "yesu-shansi-oner-xinling-test",
+  "audio_slug": "yesu-shansi-oner-xinling-test",
+  "lines": [
+    {
+      "id": "01-zhixia-reply",
+      "role": "zhixia-xinling-test",
+      "text": "明明是你跟紧我。"
+    },
+    {
+      "id": "02-zhixia-stars",
+      "role": "zhixia-xinling-test",
+      "text": "阿砚，那是星星吗？"
+    },
+    {
+      "id": "03-zhixia-poem-one",
+      "role": "zhixia-xinling-test",
+      "text": "危楼高百尺。"
+    },
+    {
+      "id": "04-zhixia-poem-two",
+      "role": "zhixia-xinling-test",
+      "text": "手可摘星辰。"
+    }
+  ]
+}

@@ -72,6 +72,7 @@ class QualityGateResult:
     eval_report: EvalReport
     traffic_report: TrafficChecklistReport | None = None
     traffic_failures: list[str] = field(default_factory=list)
+    traffic_advisories: list[str] = field(default_factory=list)
     ok: bool = False
     block_reason: str = ""
 
@@ -110,6 +111,7 @@ def assess_article_for_push(
 
     traffic: TrafficChecklistReport | None = None
     traffic_failures: list[str] = []
+    traffic_advisories: list[str] = []
     if with_traffic:
         traffic = run_traffic_checklist(
             title=title,
@@ -121,7 +123,10 @@ def assess_article_for_push(
             recommended_tags=list(article.get("recommended_hashtags") or []),
         )
         traffic_failures = [
-            f"{i.id}:{i.label}" for i in traffic.items if not i.manual and not i.passed
+            f"{i.id}:{i.label}" for i in traffic.items if not i.manual and not i.advisory and not i.passed
+        ]
+        traffic_advisories = [
+            f"{i.id}:{i.label}" for i in traffic.items if i.advisory and not i.passed
         ]
 
     ok = True
@@ -145,6 +150,7 @@ def assess_article_for_push(
         eval_report=rep,
         traffic_report=traffic,
         traffic_failures=traffic_failures,
+        traffic_advisories=traffic_advisories,
         ok=ok,
         block_reason="；".join(reasons),
     )
@@ -160,6 +166,11 @@ def format_quality_gate_report(result: QualityGateResult, *, verbose: bool = Tru
             lines.append(
                 "【traffic 提示】未过自动项（未阻断推稿）："
                 + "、".join(result.traffic_failures[:8])
+            )
+        if result.traffic_advisories:
+            lines.append(
+                "【traffic 建议】当前发现可优化点（不阻断）："
+                + "、".join(result.traffic_advisories[:8])
             )
     status = "通过" if result.ok else f"未通过 — {result.block_reason}"
     lines.insert(0, f"【质量门禁·{result.kind}】{status}")

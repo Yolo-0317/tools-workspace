@@ -1,0 +1,35 @@
+{
+  "episode": "ep05",
+  "theme": "暑",
+  "theme_slug": "heat",
+  "audio_slug": "ep05-heat",
+  "lines": [
+    {
+      "id": "01-opening",
+      "role": "ayan",
+      "text": "飞花令，暑。",
+      "start_ms": 0
+    },
+    {
+      "id": "02-poem-01",
+      "role": "zhixia",
+      "text": "南州溽暑醉如酒，隐几熟眠开北牖。"
+    },
+    {
+      "id": "03-poem-02",
+      "role": "ayan",
+      "text": "离离暑云散，袅袅凉风起。"
+    },
+    {
+      "id": "04-poem-03",
+      "role": "zhixia",
+      "text": "残暑蝉催尽，新秋雁戴来。"
+    },
+    {
+      "id": "05-outro",
+      "role": "ayan",
+      "text": "暑云将散，诗意未歇。第四句，你来接。",
+      "gap_before_ms": 150
+    }
+  ]
+}

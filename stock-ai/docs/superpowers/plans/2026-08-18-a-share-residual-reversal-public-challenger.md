@@ -615,7 +615,7 @@ git commit -m "feat(stock-ai)：冻结公开挑战者评估与胜负结论"
 - Consumes: `PublicChallengerResearchReview`、`PublicChallengerValidationReview`、`PublicChallengerFreezeReview`、`PublicChallengerTestReview` 的聚合内容。
 - Produces: `write_challenger_research(review: PublicChallengerResearchReview, output_dir: Path) -> Path`, `load_challenger_research(path: Path) -> PublicChallengerResearchArtifact`, `write_challenger_validation(review: PublicChallengerValidationReview, output_dir: Path) -> Path`, `write_challenger_freeze(review: PublicChallengerFreezeReview, output_dir: Path) -> Path`, `load_challenger_freeze(path: Path) -> PublicChallengerFreezeArtifact`, `write_challenger_test_once(review: PublicChallengerTestReview, output_dir: Path) -> Path`。
 
-- [ ] **Step 1: 写规范序列化、无代码明细、幂等和冲突测试**
+- [x] **Step 1: 写规范序列化、无代码明细、幂等和冲突测试**
 
 ```python
 def test_research_payload_is_aggregate_only_and_byte_stable(tmp_path):
@@ -634,13 +634,13 @@ def test_same_identity_with_different_content_is_rejected(tmp_path):
         write_challenger_research(research_review(), tmp_path)
 ```
 
-- [ ] **Step 2: 运行测试确认报告模块不存在**
+- [x] **Step 2: 运行测试确认报告模块不存在**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_public_challenger_report.py -k 'aggregate or identity'`
 
 Expected: FAIL with module import error.
 
-- [ ] **Step 3: 实现四类 schema、内容身份和不可覆盖写入**
+- [x] **Step 3: 实现四类 schema、内容身份和不可覆盖写入**
 
 ```python
 RESEARCH_SCHEMA = "public-short-term-challenger-research-v1"
@@ -682,7 +682,7 @@ def _write_exclusive_or_verify(path: Path, serialized: str) -> None:
 
 research 产物保存三轨聚合、时间切分、数据完整性、规则版本、来源偏离说明和 `test_outcomes_read=false`。validation 只保存执行层验证聚合；freeze 保存全部冻结常数、验证资格和父身份；test 文件名由 freeze 身份唯一决定并独占创建。
 
-- [ ] **Step 4: 写严格加载、父血缘、篡改和测试污染测试**
+- [x] **Step 4: 写严格加载、父血缘、篡改和测试污染测试**
 
 ```python
 def test_loader_recomputes_identity_and_rejects_tampering(tmp_path):
@@ -698,11 +698,11 @@ def test_test_writer_rejects_parent_or_input_fingerprint_mismatch(tmp_path):
         write_challenger_test_once(test_review(parent_freeze_identity="wrong"), tmp_path)
 ```
 
-- [ ] **Step 5: 实现严格字段集合和父链校验**
+- [x] **Step 5: 实现严格字段集合和父链校验**
 
 加载器必须验证 schema、文件名、内容哈希、父 identity、输入 fingerprint、切分、三轨版本、成本/评估器版本、`NO-TRADE` 和污染标志。未知字段、缺失字段、股票代码明细键或 `promotion_eligible=true` 均拒绝。
 
-- [ ] **Step 6: 运行报告测试并提交**
+- [x] **Step 6: 运行报告测试并提交**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_public_challenger_report.py`
 
@@ -723,7 +723,7 @@ git commit -m "feat(stock-ai)：保存公开挑战者不可变研究产物"
 - Consumes: `_load_daily_bars`, `_trade_dates`, `SQLReferenceRepository`, `load_required_benchmark_closes`, `classify_market` 和前三层纯函数。
 - Produces: `PublicChallengerRuntimeInputs`, `load_mysql_public_challenger_inputs(signal_dates: Sequence[date], history_start: date, outcome_cutoff: date, *, benchmark_loader: Callable) -> PublicChallengerRuntimeInputs`, `build_public_challenger_research(inputs: PublicChallengerRuntimeInputs) -> PublicChallengerResearchReview`, `build_public_challenger_test(freeze: PublicChallengerFreezeReview, research: PublicChallengerResearchReview, inputs: PublicChallengerRuntimeInputs, v3: V3ComparableArtifact | None) -> PublicChallengerTestReview`。
 
-- [ ] **Step 1: 写有界数据加载、引擎释放和无凭据指纹测试**
+- [x] **Step 1: 写有界数据加载、引擎释放和无凭据指纹测试**
 
 ```python
 def test_mysql_loader_uses_literal_bounds_and_disposes_engine():
@@ -744,13 +744,13 @@ def test_loader_rejects_missing_index_or_point_in_time_sector_coverage():
         build_public_challenger_research(incomplete_runtime_inputs())
 ```
 
-- [ ] **Step 2: 运行测试确认运行时模块不存在**
+- [x] **Step 2: 运行测试确认运行时模块不存在**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_public_challenger_runtime.py -k 'loader or coverage'`
 
 Expected: FAIL with module import error.
 
-- [ ] **Step 3: 实现独立运行时输入和有界 MySQL 适配器**
+- [x] **Step 3: 实现独立运行时输入和有界 MySQL 适配器**
 
 ```python
 @dataclass(frozen=True)
@@ -769,7 +769,7 @@ class PublicChallengerRuntimeInputs:
 
 加载器读取 `MYSQL_URL` 但指纹只包含规范化数据值、日期、来源版本和规则版本。使用 `try/finally` 释放 engine。基准只允许 `sh.000001`、`sz.399001`、`sh.000688`，按 `matched_index_id` 映射；缺失端点失败关闭。持仓加载器默认只读并可在单元测试注入空集合。
 
-- [ ] **Step 4: 写 630 日切分、边界不泄漏和三轨漏斗测试**
+- [x] **Step 4: 写 630 日切分、边界不泄漏和三轨漏斗测试**
 
 ```python
 def test_research_builds_train_and_validation_without_reading_test_outcomes():
@@ -785,11 +785,11 @@ def test_train_holding_period_cannot_cross_validation_boundary():
     assert review.funnel_counts["OUTCOME_CROSSES_SEGMENT"] == 1
 ```
 
-- [ ] **Step 5: 实现 research 和 test 构建器**
+- [x] **Step 5: 实现 research 和 test 构建器**
 
 research 构建器逐日执行共同股票池、三轨信号、容量和成交，训练/验证结果按段聚合；测试日期只保存身份，不加载其结果。test 构建器必须接收严格 freeze artifact，重新加载同一测试日期输入，验证父 fingerprint 前缀，执行一次三轨评估，并在可选 V3 同段产物缺失时输出 `INCONCLUSIVE`。
 
-- [ ] **Step 6: 运行运行时测试并提交**
+- [x] **Step 6: 运行运行时测试并提交**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_public_challenger_runtime.py`
 
@@ -810,7 +810,7 @@ git commit -m "feat(stock-ai)：构建公开挑战者点时研究运行时"
 - Consumes: Task 5 严格 artifact API、Task 6 runtime builder、现有 BaoStock/东财备用基准加载器。
 - Produces: `build_parser() -> argparse.ArgumentParser`, `dispatch_stage(args: argparse.Namespace, research_input_loader: RuntimeInputLoader, test_input_loader: RuntimeInputLoader) -> tuple[Path, ...]`, `main(argv: Sequence[str] | None = None) -> int`，命令 `research`、`freeze`、`test`。
 
-- [ ] **Step 1: 写命令面、research 失败关闭和固定错误输出测试**
+- [x] **Step 1: 写命令面、research 失败关闭和固定错误输出测试**
 
 ```python
 def test_parser_exposes_only_three_manual_stages():
@@ -839,13 +839,13 @@ def test_main_sanitizes_failure(capsys):
     assert capsys.readouterr().err == "公开短线策略挑战者执行失败\n"
 ```
 
-- [ ] **Step 2: 运行测试确认 CLI 不存在**
+- [x] **Step 2: 运行测试确认 CLI 不存在**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_analyze_public_short_term_challenger_cli.py -k 'parser or research or sanitizes'`
 
 Expected: FAIL because script file does not exist.
 
-- [ ] **Step 3: 实现 parser 和 research/freeze 分派**
+- [x] **Step 3: 实现 parser 和 research/freeze 分派**
 
 ```python
 def build_parser() -> argparse.ArgumentParser:
@@ -868,7 +868,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 freeze 必须先严格加载 research，验证点时完整和 `test_outcomes_read=false`；随后从 research 中已冻结的训练/验证聚合构造并写 validation artifact，再以 validation 为父写唯一 freeze。没有验证资格时仍写带完整失败原因的 validation 和空 freeze，不补位，也不加载测试日期。
 
-- [ ] **Step 4: 写 test 先验加载、重复执行和 V3 缺失测试**
+- [x] **Step 4: 写 test 先验加载、重复执行和 V3 缺失测试**
 
 ```python
 def test_test_stage_loads_freeze_before_market_data(tmp_path):
@@ -898,11 +898,11 @@ def test_missing_v3_comparable_artifact_forces_inconclusive(tmp_path):
     assert json.loads(path.read_text())["verdict"] == "INCONCLUSIVE"
 ```
 
-- [ ] **Step 5: 实现 test 一次性身份和可选 V3 严格适配**
+- [x] **Step 5: 实现 test 一次性身份和可选 V3 严格适配**
 
 V3 参数只接受未来批准的 `five-day-ranking-v3-comparable-test-v1` 聚合 schema、相同父观察集、相同切分和相同输入 fingerprint。当前不存在合法 V3 同段测试产物时不得读取 validation 或其他区间替代。测试 writer 使用 freeze identity 命名；已存在内容相同只校验，内容冲突报错。
 
-- [ ] **Step 6: 运行 CLI 测试并提交**
+- [x] **Step 6: 运行 CLI 测试并提交**
 
 Run: `cd stock-ai && PYTHONPATH=. .venv/bin/pytest -q -p no:cacheprovider tests/unit/test_analyze_public_short_term_challenger_cli.py`
 

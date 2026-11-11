@@ -201,6 +201,36 @@ def test_reflow_hotspot_strips_markdown_bold() -> None:
     assert "**" not in out
 
 
+def test_reflow_hotspot_layout_keeps_highlight_control_line_standalone() -> None:
+    from scripts.tools.wechat_mp_hotspot_polish import reflow_hotspot_layout
+
+    body = (
+        "前一段交代已经发生的事实。"
+        "\n\n[[hl:法院判新郎新娘承担40%的赔偿责任。]]"
+        "\n\n后一段解释为什么组织者也要承担责任。"
+    )
+
+    out = reflow_hotspot_layout(body)
+
+    assert "\n\n[[hl:法院判新郎新娘承担40%的赔偿责任。]]\n\n" in out
+
+
+def test_sanitize_news_reader_meta_keeps_rich_control_line_standalone() -> None:
+    from scripts.tools.wechat_mp_news_article import _sanitize_news_reader_meta
+
+    raw = (
+        "前文需要清洗。\n\n"
+        "[[hl:法院判新郎新娘承担40%的赔偿责任。]]\n\n"
+        "后文继续展开。"
+    )
+
+    out = _sanitize_news_reader_meta(raw)
+
+    assert "\n\n[[hl:法院判新郎新娘承担40%的赔偿责任。]]\n\n" in out
+    assert out.startswith("前文需要清洗")
+    assert out.endswith("后文继续展开")
+
+
 def test_hotspot_title_suffix_pool_oral():
     from scripts.tools.wechat_mp_hotspot_article import (
         _HOTSPOT_STOCK_SUFFIXES,
@@ -231,6 +261,27 @@ def test_build_hotspot_title_single_topic():
     title = build_hotspot_title(topics)
     assert len(title) <= 32
     assert "中国卫星" in title or "火箭" in title or "热点" in title
+
+
+def test_build_hotspot_title_uses_concrete_hook_when_viral_mode_is_on(monkeypatch) -> None:
+    import scripts.tools.wechat_mp_hotspot_article as hotspot
+
+    monkeypatch.setenv("WECHAT_MP_TITLE_VIRAL_MODE", "1")
+    monkeypatch.setattr(
+        hotspot,
+        "llm_build_hotspot_title",
+        lambda **_: "董明珠任校长，格力技校能改命吗？",
+    )
+    topics = [
+        HotspotTopic(
+            item={"title": "董明珠任格力技校校长"},
+            bucket="other",
+            score=1.0,
+            section_title="董明珠任格力技校校长",
+        )
+    ]
+
+    assert hotspot.build_hotspot_title(topics) == "董明珠当校长，技校生毕业真能进格力吗？"
 
 
 def test_topic_section_title_v_reversal():

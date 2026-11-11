@@ -1,0 +1,53 @@
+{
+  "episode": "liantai-tianyue-15s",
+  "format": "one-poem-story",
+  "theme": "莲台天乐十五秒四句舒缓朗诵",
+  "theme_slug": "liantai-tianyue-15s",
+  "audio_slug": "liantai-tianyue-15s-paced-v01",
+  "lines": [
+    {
+      "id": "01-zhixia-line-one",
+      "role": "zhixia",
+      "text": "霜清东林钟。",
+      "revision": 1,
+      "speech_rate": -35,
+      "gap_before_ms": 0,
+      "context_texts": [
+        "这是十五秒《莲台天乐》的第一句画外朗诵。保持栀夏固定清透女声，年轻、舒缓、克制并有石窟空间感；‘霜清’自然展开，‘东林钟’沉静收住。自然说诗，不念作者、题目、篇名或其他内容，不使用播音腔、吟唱、耳语或夸张拖字。"
+      ]
+    },
+    {
+      "id": "02-zhixia-line-two",
+      "role": "zhixia",
+      "text": "水白虎溪月。",
+      "revision": 1,
+      "speech_rate": -35,
+      "gap_before_ms": 300,
+      "context_texts": [
+        "紧接上一句，保持同一位栀夏、同一距离感和舒缓语速；‘水白’清透，‘虎溪月’略提明度并保留短余韵。自然说诗，不念作者、题目、篇名或其他内容，不使用播音腔、吟唱或拖字。"
+      ]
+    },
+    {
+      "id": "03-zhixia-line-three",
+      "role": "zhixia",
+      "text": "天香生虚空。",
+      "revision": 1,
+      "speech_rate": -35,
+      "gap_before_ms": 300,
+      "context_texts": [
+        "这是《莲台天乐》第三句，保持同一位栀夏固定声线，语气轻缓空灵但仍是自然说诗；‘天香’舒展，‘虚空’不做玄幻化拖腔。不念作者、题目、篇名或其他内容。"
+      ]
+    },
+    {
+      "id": "04-zhixia-line-four",
+      "role": "zhixia",
+      "text": "天乐鸣不歇。",
+      "revision": 1,
+      "speech_rate": -35,
+      "gap_before_ms": 300,
+      "context_texts": [
+        "这是十五秒《莲台天乐》的最后一句。保持同一位栀夏固定声线，从容开阔；‘天乐’不做神谕式强调，‘鸣不歇’在画面结束前完整收住并留自然余韵。不念作者、题目、篇名或其他内容。"
+      ]
+    }
+  ]
+}

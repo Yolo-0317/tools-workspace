@@ -1,0 +1,33 @@
+{
+  "episode": "chishang",
+  "format": "one-poem-story",
+  "theme": "池上",
+  "theme_slug": "chishang",
+  "audio_slug": "chishang",
+  "lines": [
+    {
+      "id": "01-ayan-dialogue",
+      "role": "ayan",
+      "text": "栀夏，浮萍把你出卖了。",
+      "start_ms": 0
+    },
+    {
+      "id": "02-zhixia-dialogue",
+      "role": "zhixia",
+      "text": "我只摘了一朵莲。",
+      "start_ms": 2500
+    },
+    {
+      "id": "03-ayan-dialogue",
+      "role": "ayan",
+      "text": "可你留了一路痕迹。",
+      "start_ms": 4300
+    },
+    {
+      "id": "04-ayan-poem-voiceover",
+      "role": "ayan",
+      "text": "不解藏踪迹，浮萍一道开。",
+      "start_ms": 9500
+    }
+  ]
+}

@@ -198,6 +198,12 @@ def hotspot_min_body_gate(*, social: bool = False) -> int:
     return max(1500, HOTSPOT_MIN_BODY_CHARS - slack)
 
 
+def codex_hotspot_min_body_gate() -> int:
+    """用户主动热点默认至少 850 字，单次命令仍可显式提高。"""
+    requested = _env_int("WECHAT_MP_CODEX_HOTSPOT_MIN_BODY", 850)
+    return max(850, min(HOTSPOT_MIN_BODY_CHARS, requested))
+
+
 def hotspot_topic_count() -> int:
     return max(1, min(3, _env_int("WECHAT_MP_HOTSPOT_TOPICS", 1)))
 
@@ -769,7 +775,7 @@ def _is_finance_trend_item(item: dict[str, Any]) -> bool:
     return any(m in title for m in markers)
 
 
-def _attach_hotspot_research(item: dict[str, Any]) -> dict[str, Any]:
+def attach_hotspot_research(item: dict[str, Any]) -> dict[str, Any]:
     title = str(item.get("title") or "").strip()
     out = dict(item)
     if hotspot_source() == "trends" and not _is_finance_trend_item(item):
@@ -831,6 +837,10 @@ def _attach_hotspot_research(item: dict[str, Any]) -> dict[str, Any]:
     out["web_research_blob"] = "\n\n".join(x for x in (facts, refs) if x).strip()
     out["web_reference_block"] = refs
     return out
+
+
+# 兼容既有模块内调用；新流程使用公开名称复用同一研究链路。
+_attach_hotspot_research = attach_hotspot_research
 
 
 def _hotspot_imitate_rewrite_enabled() -> bool:
@@ -1126,7 +1136,7 @@ def _hotspot_body_reject_reasons(
         reasons.append("含markdown标题")
     if any(title in text for title in HOTSPOT_BANNED_SECTION_TITLES):
         reasons.append("含禁节名")
-    if any(label.rstrip("：:") in text for label in HOTSPOT_RIGID_FIELD_LABELS):
+    if any(label in text for label in HOTSPOT_RIGID_FIELD_LABELS):
         reasons.append("含刚性字段标签")
     hit_phrase = next((p for p in HOTSPOT_BOILERPLATE_PHRASES if p in text), "")
     if hit_phrase:
@@ -1142,10 +1152,15 @@ def validate_codex_hotspot_body(body: str, *, topic: str) -> str:
     """清洗 Codex 成稿并复用热点正文硬门禁；失败时不做生成兜底。"""
 
     polished = _polish_hotspot_llm_body(body)
+    floor = codex_hotspot_min_body_gate()
     reasons = _hotspot_body_reject_reasons(
         polished,
         bucket=_theme_bucket(topic),
+        min_chars=0,
     )
+    body_chars = len(re.sub(r"\s+", "", polished))
+    if body_chars < floor:
+        reasons.insert(0, f"字数{body_chars}<{floor}")
     if reasons:
         raise ValueError(f"Codex 热点正文未通过质量门禁：{'、'.join(reasons)}")
     return polished
@@ -1170,7 +1185,7 @@ def _hotspot_body_usable(
         return False
     if any(title in text for title in HOTSPOT_BANNED_SECTION_TITLES):
         return False
-    if any(label.rstrip("：:") in text for label in HOTSPOT_RIGID_FIELD_LABELS):
+    if any(label in text for label in HOTSPOT_RIGID_FIELD_LABELS):
         return False
     if any(phrase in text for phrase in HOTSPOT_BOILERPLATE_PHRASES):
         return False
@@ -1704,10 +1719,16 @@ def build_hotspot_title(topics: list[HotspotTopic], *, body: str = "") -> str:
     llm_title = llm_build_hotspot_title(topic=topic, hits=hits, body=body)
     if llm_title:
         from scripts.tools.wechat_mp_content import _clip_wechat_title
+        from scripts.tools.wechat_mp_clickworthy import rewrite_clickworthy_title
         from scripts.tools.wechat_mp_public import sanitize_public_title
         from scripts.tools.wechat_mp_seo import enrich_title_for_search
 
-        clean = sanitize_public_title(llm_title, kind="hotspot")
+        clean = rewrite_clickworthy_title(
+            llm_title,
+            topic_label=trend,
+            enabled=_env_bool("WECHAT_MP_TITLE_VIRAL_MODE", False),
+        )
+        clean = sanitize_public_title(clean, kind="hotspot")
         return enrich_title_for_search(
             clean,
             "hotspot",
@@ -1721,10 +1742,16 @@ def build_hotspot_title(topics: list[HotspotTopic], *, body: str = "") -> str:
     else:
         raw = build_hotspot_title_from_facts(hits, trend=trend)
     from scripts.tools.wechat_mp_content import _clip_wechat_title
+    from scripts.tools.wechat_mp_clickworthy import rewrite_clickworthy_title
     from scripts.tools.wechat_mp_public import sanitize_public_title
     from scripts.tools.wechat_mp_seo import enrich_title_for_search
 
-    clean = sanitize_public_title(raw, kind="hotspot")
+    clean = rewrite_clickworthy_title(
+        raw,
+        topic_label=trend,
+        enabled=_env_bool("WECHAT_MP_TITLE_VIRAL_MODE", False),
+    )
+    clean = sanitize_public_title(clean, kind="hotspot")
     clean = clean.replace("\u201c", "").replace("\u201d", "").replace('"', "")
     return enrich_title_for_search(
         clean,

@@ -115,7 +115,7 @@ uv run python -m scripts.tools.fetch_wechat_mp_sousou_opencli \
   -o output/wechat_mp_sousou_latest.json
 ```
 
-内容分析抓取见 [content-analytics-sop.md](content-analytics-sop.md) · [stock-opencli](../stock-opencli/SKILL.md)。
+内容分析抓取见 [content-analytics-sop.md](content-analytics-sop.md) · [公众号内容分析](../wechat-mp-drafts/content-analytics-sop.md)。
 
 ---
 

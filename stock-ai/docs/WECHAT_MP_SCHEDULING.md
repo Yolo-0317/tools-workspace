@@ -79,3 +79,6 @@ bash scripts/install-stock-ai-scheduler.sh  # host-jobs + Docker scheduler
 个人号每天仅 **1 次通知**；多篇须**同批群发**。API 无法代勾原创与 `#`；审阅草稿箱后人工发布。
 
 *修订：2026-08-05（新增 09:00 hotspot_early；11/15/18 不变）*
+## 手动 DeepSeek 浏览器稿
+
+`literary` 不进入任何定时批次。用户主动的热点深评也只有在对话中明确启动时才走固定 DeepSeek Chrome 会话；现有热点 scheduler 继续使用 Codex CLI。浏览器未登录、会话不匹配或回复失败时，不产生草稿，也不触发模型回退。

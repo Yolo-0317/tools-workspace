@@ -1,0 +1,31 @@
+[
+  {
+    "id": "01-poem-line-one",
+    "kind": "poem",
+    "text": "平铺一合锦筵开",
+    "attribution": "唐·白居易《柘枝妓》",
+    "start": 0.250,
+    "end": 3.050
+  },
+  {
+    "id": "02-poem-line-two",
+    "kind": "poem",
+    "text": "连击三声画鼓催",
+    "start": 3.650,
+    "end": 6.450
+  },
+  {
+    "id": "03-poem-line-three",
+    "kind": "poem",
+    "text": "红蜡烛移桃叶起",
+    "start": 7.050,
+    "end": 9.950
+  },
+  {
+    "id": "04-poem-line-four",
+    "kind": "poem",
+    "text": "紫罗衫动柘枝来",
+    "start": 10.600,
+    "end": 14.300
+  }
+]

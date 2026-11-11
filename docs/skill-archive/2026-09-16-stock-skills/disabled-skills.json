@@ -1,0 +1,18 @@
+[
+  {
+    "original": ".cursor/skills/stock-opencli/SKILL.md",
+    "disabled": ".cursor/skills/stock-opencli/SKILL.disabled.md"
+  },
+  {
+    "original": "stock-ai/investment-agent/docs/skills/stock-strategy-selector/SKILL.md",
+    "disabled": "stock-ai/investment-agent/docs/skills/stock-strategy-selector/SKILL.disabled.md"
+  },
+  {
+    "original": "stock-ai/investment-agent/docs/skills/eastmoney-browser-sop/SKILL.md",
+    "disabled": "stock-ai/investment-agent/docs/skills/eastmoney-browser-sop/SKILL.disabled.md"
+  },
+  {
+    "original": "a-share-short-term-trading/share/qclaw/a-share-stock-diagnosis/SKILL.md",
+    "disabled": "a-share-short-term-trading/share/qclaw/a-share-stock-diagnosis/SKILL.disabled.md"
+  }
+]

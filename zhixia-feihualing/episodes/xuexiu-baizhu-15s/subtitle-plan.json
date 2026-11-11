@@ -1,0 +1,31 @@
+[
+  {
+    "id": "01-poem-line-one",
+    "kind": "poem",
+    "text": "吴刀剪彩缝舞衣",
+    "attribution": "唐·李白《白纻辞三首·其三》",
+    "start": 0.250,
+    "end": 3.200
+  },
+  {
+    "id": "02-poem-line-two",
+    "kind": "poem",
+    "text": "明妆丽服夺春晖",
+    "start": 3.500,
+    "end": 6.450
+  },
+  {
+    "id": "03-poem-line-three",
+    "kind": "poem",
+    "text": "扬眉转袖若雪飞",
+    "start": 6.750,
+    "end": 9.850
+  },
+  {
+    "id": "04-poem-line-four",
+    "kind": "poem",
+    "text": "倾城独立世所稀",
+    "start": 10.150,
+    "end": 14.650
+  }
+]

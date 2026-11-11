@@ -1,0 +1,24 @@
+[
+  {
+    "id": "01-restart",
+    "kind": "modern",
+    "text": "重新出发，或许并不轻松",
+    "start": 0.0,
+    "end": 1.794
+  },
+  {
+    "id": "02-blessing",
+    "kind": "modern",
+    "text": "愿你所盼有期，每一步都算数",
+    "start": 2.394,
+    "end": 4.817
+  },
+  {
+    "id": "03-poem",
+    "kind": "poem",
+    "text": "长风破浪会有时，直挂云帆济沧海",
+    "attribution": "唐·李白《行路难·其一》",
+    "start": 5.617,
+    "end": 9.021
+  }
+]

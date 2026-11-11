@@ -1,0 +1,643 @@
+[
+  {
+    "id": "R-W0082",
+    "mode": "word",
+    "text": "为了",
+    "expected_candidate_words": [
+      "为了"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0092",
+    "mode": "word",
+    "text": "并非",
+    "expected_candidate_words": [
+      "并非"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0097",
+    "mode": "word",
+    "text": "并不",
+    "expected_candidate_words": [
+      "并不"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0154",
+    "mode": "word",
+    "text": "给",
+    "expected_candidate_words": [
+      "给"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0159",
+    "mode": "word",
+    "text": "随着",
+    "expected_candidate_words": [
+      "随着"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0170",
+    "mode": "word",
+    "text": "看到",
+    "expected_candidate_words": [
+      "看到"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0173",
+    "mode": "word",
+    "text": "听到",
+    "expected_candidate_words": [
+      "听到"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0180",
+    "mode": "word",
+    "text": "提出",
+    "expected_candidate_words": [
+      "提出"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0254",
+    "mode": "word",
+    "text": "身份",
+    "expected_candidate_words": [
+      "身份"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0316",
+    "mode": "word",
+    "text": "此前",
+    "expected_candidate_words": [
+      "此前"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0323",
+    "mode": "word",
+    "text": "夜里",
+    "expected_candidate_words": [
+      "夜里"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0330",
+    "mode": "word",
+    "text": "每年",
+    "expected_candidate_words": [
+      "每年"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0337",
+    "mode": "word",
+    "text": "推迟",
+    "expected_candidate_words": [
+      "推迟"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0349",
+    "mode": "word",
+    "text": "时而",
+    "expected_candidate_words": [
+      "时而"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0350",
+    "mode": "word",
+    "text": "接着",
+    "expected_candidate_words": [
+      "接着"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0365",
+    "mode": "word",
+    "text": "早已",
+    "expected_candidate_words": [
+      "早已"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0378",
+    "mode": "word",
+    "text": "反倒",
+    "expected_candidate_words": [
+      "反倒"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0379",
+    "mode": "word",
+    "text": "倒是",
+    "expected_candidate_words": [
+      "倒是"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0384",
+    "mode": "word",
+    "text": "从而",
+    "expected_candidate_words": [
+      "从而"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0385",
+    "mode": "word",
+    "text": "以至",
+    "expected_candidate_words": [
+      "以至"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0387",
+    "mode": "word",
+    "text": "即便",
+    "expected_candidate_words": [
+      "即便"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0388",
+    "mode": "word",
+    "text": "哪怕",
+    "expected_candidate_words": [
+      "哪怕"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0395",
+    "mode": "word",
+    "text": "乃至",
+    "expected_candidate_words": [
+      "乃至"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0403",
+    "mode": "word",
+    "text": "差点",
+    "expected_candidate_words": [
+      "差点"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0427",
+    "mode": "word",
+    "text": "担负",
+    "expected_candidate_words": [
+      "担负"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0479",
+    "mode": "word",
+    "text": "得到",
+    "expected_candidate_words": [
+      "得到"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0514",
+    "mode": "word",
+    "text": "找到",
+    "expected_candidate_words": [
+      "找到"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0530",
+    "mode": "word",
+    "text": "报道",
+    "expected_candidate_words": [
+      "报道"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0534",
+    "mode": "word",
+    "text": "发送",
+    "expected_candidate_words": [
+      "发送"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0535",
+    "mode": "word",
+    "text": "接听",
+    "expected_candidate_words": [
+      "接听"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0540",
+    "mode": "word",
+    "text": "答复",
+    "expected_candidate_words": [
+      "答复"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0542",
+    "mode": "word",
+    "text": "咨询",
+    "expected_candidate_words": [
+      "咨询"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0556",
+    "mode": "word",
+    "text": "想象",
+    "expected_candidate_words": [
+      "想象"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0631",
+    "mode": "word",
+    "text": "标注",
+    "expected_candidate_words": [
+      "标注"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0636",
+    "mode": "word",
+    "text": "交给",
+    "expected_candidate_words": [
+      "交给"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0638",
+    "mode": "word",
+    "text": "取回",
+    "expected_candidate_words": [
+      "取回"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0641",
+    "mode": "word",
+    "text": "借阅",
+    "expected_candidate_words": [
+      "借阅"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0659",
+    "mode": "word",
+    "text": "照看",
+    "expected_candidate_words": [
+      "照看"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0677",
+    "mode": "word",
+    "text": "回到",
+    "expected_candidate_words": [
+      "回到"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0709",
+    "mode": "word",
+    "text": "拆开",
+    "expected_candidate_words": [
+      "拆开"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0721",
+    "mode": "word",
+    "text": "补上",
+    "expected_candidate_words": [
+      "补上"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0737",
+    "mode": "word",
+    "text": "带来",
+    "expected_candidate_words": [
+      "带来"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0943",
+    "mode": "word",
+    "text": "各方",
+    "expected_candidate_words": [
+      "各方"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0945",
+    "mode": "word",
+    "text": "有人",
+    "expected_candidate_words": [
+      "有人"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0973",
+    "mode": "word",
+    "text": "同龄",
+    "expected_candidate_words": [
+      "同龄"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0977",
+    "mode": "word",
+    "text": "少年",
+    "expected_candidate_words": [
+      "少年"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0979",
+    "mode": "word",
+    "text": "成年人",
+    "expected_candidate_words": [
+      "成年人"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0990",
+    "mode": "word",
+    "text": "用户",
+    "expected_candidate_words": [
+      "用户"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0998",
+    "mode": "word",
+    "text": "志愿者",
+    "expected_candidate_words": [
+      "志愿者"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "R-W0999",
+    "mode": "word",
+    "text": "工作人员",
+    "expected_candidate_words": [
+      "工作人员"
+    ],
+    "semantic_review": "只召回已补证的所列基础用法，不宣称全部义项或自动判义。"
+  },
+  {
+    "id": "RS01",
+    "mode": "sentence",
+    "text": "她听到铃声。",
+    "expected_candidate_words": [
+      "她",
+      "听到"
+    ],
+    "semantic_review": "听到是当前完整词形，不退回听。",
+    "review_method": "本轮主笔逐句回读召回词形及含义边界；程序未自动判义。"
+  },
+  {
+    "id": "RS02",
+    "mode": "sentence",
+    "text": "她看到告示。",
+    "expected_candidate_words": [
+      "她",
+      "看到"
+    ],
+    "semantic_review": "接触告示不证明看完或理解。",
+    "review_method": "本轮主笔逐句回读召回词形及含义边界；程序未自动判义。"
+  },
+  {
+    "id": "RS03",
+    "mode": "sentence",
+    "text": "她并不认可。",
+    "expected_candidate_words": [
+      "她",
+      "并不",
+      "认可"
+    ],
+    "semantic_review": "否定认可，不推成实际反对行动。",
+    "review_method": "本轮主笔逐句回读召回词形及含义边界；程序未自动判义。"
+  },
+  {
+    "id": "RS04",
+    "mode": "sentence",
+    "text": "她为了赶车早起。",
+    "expected_candidate_words": [
+      "她",
+      "为了",
+      "早"
+    ],
+    "semantic_review": "为的是目的，不证明实际赶上。",
+    "review_method": "本轮主笔逐句回读召回词形及含义边界；程序未自动判义。"
+  },
+  {
+    "id": "RS05",
+    "mode": "sentence",
+    "text": "有人否认这件事。",
+    "expected_candidate_words": [
+      "有人",
+      "否认",
+      "这"
+    ],
+    "semantic_review": "有人不说明具体人数，否认不等于证伪。",
+    "review_method": "本轮主笔逐句回读召回词形及含义边界；程序未自动判义。"
+  },
+  {
+    "id": "RS06",
+    "mode": "sentence",
+    "text": "他差点错过末班车。",
+    "expected_candidate_words": [
+      "他",
+      "差点",
+      "过"
+    ],
+    "semantic_review": "差点错过在当前句意为未错过；错过中的过是短字误命中，不是经历助词。",
+    "review_method": "本轮主笔逐句回读召回词形及含义边界；程序未自动判义。",
+    "known_false_hits": [
+      "过"
+    ]
+  },
+  {
+    "id": "RS07",
+    "mode": "sentence",
+    "text": "他差点没赶上车。",
+    "expected_candidate_words": [
+      "他",
+      "差点",
+      "没"
+    ],
+    "semantic_review": "检索不自动裁决差点没的结果肯否；必须核语境。",
+    "review_method": "本轮主笔逐句回读召回词形及含义边界；程序未自动判义。"
+  },
+  {
+    "id": "RS08",
+    "mode": "sentence",
+    "text": "他何尝不想早点回家。",
+    "expected_candidate_words": [
+      "他",
+      "何尝",
+      "不",
+      "想",
+      "早"
+    ],
+    "semantic_review": "何尝不想加强想，不能按否定词个数机械判义；早点中的早仅为候选。",
+    "review_method": "本轮主笔逐句回读召回词形及含义边界；程序未自动判义。"
+  },
+  {
+    "id": "RS09",
+    "mode": "sentence",
+    "text": "她接着往下读。",
+    "expected_candidate_words": [
+      "她",
+      "接着",
+      "读"
+    ],
+    "semantic_review": "接着不要求此前中断。",
+    "review_method": "本轮主笔逐句回读召回词形及含义边界；程序未自动判义。"
+  },
+  {
+    "id": "RS10",
+    "mode": "sentence",
+    "text": "他取回了遗忘的书。",
+    "expected_candidate_words": [
+      "他",
+      "取回",
+      "了",
+      "的"
+    ],
+    "semantic_review": "取回不要求先前把物品交给别人。",
+    "review_method": "本轮主笔逐句回读召回词形及含义边界；程序未自动判义。"
+  },
+  {
+    "id": "RS11",
+    "mode": "sentence",
+    "text": "志愿者在门口引导。",
+    "expected_candidate_words": [
+      "志愿者",
+      "在"
+    ],
+    "semantic_review": "公益服务称谓不证明法定登记或雇佣关系。",
+    "review_method": "本轮主笔逐句回读召回词形及含义边界；程序未自动判义。"
+  },
+  {
+    "id": "RS12",
+    "mode": "sentence",
+    "text": "工作人员核对了人数。",
+    "expected_candidate_words": [
+      "工作人员",
+      "核对",
+      "了",
+      "人数"
+    ],
+    "semantic_review": "具体工作不等于特定职务；核对不保证毫无差错。",
+    "review_method": "本轮主笔逐句回读召回词形及含义边界；程序未自动判义。"
+  },
+  {
+    "id": "RS13",
+    "mode": "sentence",
+    "text": "重复登记。",
+    "expected_candidate_words": [
+      "重",
+      "登记"
+    ],
+    "semantic_review": "重在当前仅建重量义，是已知误命中，不能套用本句。",
+    "review_method": "本轮主笔逐句回读召回词形及含义边界；程序未自动判义。",
+    "known_false_hits": [
+      "重"
+    ]
+  },
+  {
+    "id": "RS14",
+    "mode": "sentence",
+    "text": "她给家长发了通知。",
+    "expected_candidate_words": [
+      "她",
+      "给",
+      "家长",
+      "了",
+      "通知"
+    ],
+    "semantic_review": "给引出接受者，发出不等于已读。",
+    "review_method": "本轮主笔逐句回读召回词形及含义边界；程序未自动判义。"
+  },
+  {
+    "id": "RS15",
+    "mode": "sentence",
+    "text": "他补上了遗漏的日期。",
+    "expected_candidate_words": [
+      "他",
+      "补上",
+      "了",
+      "遗漏",
+      "的",
+      "日期"
+    ],
+    "semantic_review": "补上为常用组合，补齐当前日期不等于全部信息完整。",
+    "review_method": "本轮主笔逐句回读召回词形及含义边界；程序未自动判义。"
+  }
+]

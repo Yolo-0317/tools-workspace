@@ -1,0 +1,18 @@
+[
+  {
+    "id": "01-author-ai-note",
+    "text": "本来让 AI 说“减肥”，结果两个字直接粘一块儿了",
+    "start": 0.125,
+    "end": 2.200,
+    "kind": "commentary",
+    "fontSize": 30
+  },
+  {
+    "id": "02-audience-reaction",
+    "text": "不是，天宫连祥云都限重？这合理吗？",
+    "start": 6.200,
+    "end": 9.850,
+    "kind": "commentary",
+    "fontSize": 30
+  }
+]

@@ -1,0 +1,35 @@
+[
+  {
+    "id": "01-modern-farewell",
+    "kind": "modern",
+    "text": "有些告别不必说出口",
+    "side": "right",
+    "start": 0.2,
+    "end": 2.4
+  },
+  {
+    "id": "02-modern-departure",
+    "kind": "modern",
+    "text": "把最后一步跳完就该继续上路",
+    "side": "left",
+    "start": 3.9,
+    "end": 6.65
+  },
+  {
+    "id": "03-classic-ending",
+    "kind": "poem",
+    "text": "丝桐忽奏一曲终",
+    "attribution": "唐·李端《胡腾儿》",
+    "side": "right",
+    "start": 8.4,
+    "end": 10.4
+  },
+  {
+    "id": "04-classic-horn",
+    "kind": "poem",
+    "text": "呜呜画角城头发",
+    "side": "left",
+    "start": 12.8,
+    "end": 14.85
+  }
+]

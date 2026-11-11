@@ -1,0 +1,53 @@
+{
+  "episode": "jiuge-yunzhongjun-15s",
+  "format": "one-poem-story",
+  "theme": "九歌云中君十五秒四段自然慢诵",
+  "theme_slug": "jiuge-yunzhongjun-15s",
+  "audio_slug": "jiuge-yunzhongjun-15s-natural-v02",
+  "lines": [
+    {
+      "id": "01-zhixia-line-one-a",
+      "role": "zhixia",
+      "text": "灵皇皇兮，",
+      "revision": 1,
+      "speech_rate": 0,
+      "start_ms": 1000,
+      "context_texts": [
+        "这是《九歌·云中君》第一句的前半段。保持栀夏同一固定女声，年轻、清透、克制、低甜度，有高天云海的空间感。使用自然正常人声和自然说诗节奏，不刻意放慢音素，不拖字、不吟唱；‘兮’保留继续向下半句承接的语气。只读这四个字，不念作者、题目、篇名或其他内容。"
+      ]
+    },
+    {
+      "id": "02-zhixia-line-one-b",
+      "role": "zhixia",
+      "text": "既降。",
+      "revision": 1,
+      "speech_rate": 0,
+      "start_ms": 3800,
+      "context_texts": [
+        "承接‘灵皇皇兮’，保持同一位栀夏、同一距离和同一高天空间感。使用自然正常人声，安静清楚地收住第一句；不刻意放慢音素，不拖字、不吟唱。只读‘既降’，不念其他内容。"
+      ]
+    },
+    {
+      "id": "03-zhixia-line-two-a",
+      "role": "zhixia",
+      "text": "猋远举兮，",
+      "revision": 1,
+      "speech_rate": 0,
+      "start_ms": 7700,
+      "context_texts": [
+        "这是《九歌·云中君》第二句的前半段。保持同一位栀夏、同一距离和同一高天空间感。‘猋’必须读作 biāo；使用自然正常人声，清楚连贯，不刻意放慢音素，不拖字、不吟唱；‘兮’保留向‘云中’承接的语气。只读这四个字，不念其他内容。"
+      ]
+    },
+    {
+      "id": "04-zhixia-line-two-b",
+      "role": "zhixia",
+      "text": "云中。",
+      "revision": 1,
+      "speech_rate": 0,
+      "start_ms": 10800,
+      "context_texts": [
+        "承接‘猋远举兮’，保持同一位栀夏、同一距离和同一高天空间感。使用自然正常人声，安静、清楚、从容地收住整句；不刻意放慢音素，不拖字、不吟唱。只读‘云中’，不念其他内容。"
+      ]
+    }
+  ]
+}

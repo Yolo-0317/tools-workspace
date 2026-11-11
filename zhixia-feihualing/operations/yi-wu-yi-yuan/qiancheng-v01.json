@@ -1,0 +1,54 @@
+{
+  "series": "yi-wu-yi-yuan",
+  "season": "qiancheng-v01",
+  "recitation": {
+    "target_hanzi_min": 50,
+    "target_hanzi_max": 53,
+    "voice_start_max_ms": 200,
+    "voice_end_min_ms": 14000,
+    "voice_end_target_max_ms": 14800,
+    "duration_ms": 15000,
+    "max_gap_ms": 900,
+    "target_gaps_ms": [650, 750, 850],
+    "speech_rate": 0
+  },
+  "banned_phrases": [
+    "转给某人",
+    "接住好运",
+    "刷到就是有福气",
+    "转发必上岸"
+  ],
+  "episodes": [
+    {
+      "episode": "yiwu-yiyuan-qiancheng-01-restart-15s",
+      "production_status": "voice-trial",
+      "recipient": "送给重新出发的你",
+      "situation": "这一程或许不轻松，前方也会有风浪",
+      "blessing": "愿你所盼有期，走过的每一步都算数",
+      "poem": "长风破浪会有时，直挂云帆济沧海",
+      "attribution": "唐·李白《行路难·其一》",
+      "share_scene": "换工作、毕业、重新开始，也可自我收藏",
+      "dance_event": "迎风破浪后远方航路打开"
+    },
+    {
+      "episode": "yiwu-yiyuan-qiancheng-02-journey-15s",
+      "production_status": "theme-outline",
+      "recipient": "送给奔赴远方的你",
+      "blessing": "愿你一路有景，前路有友",
+      "poem": "莫愁前路无知己，天下谁人不识君",
+      "attribution": "唐·高适《别董大二首·其一》",
+      "share_scene": "送朋友、同学、同事及远行者",
+      "dance_event": "回望送别后转身走向展开的远路"
+    },
+    {
+      "episode": "yiwu-yiyuan-qiancheng-03-persist-15s",
+      "production_status": "theme-outline",
+      "recipient": "送给仍在坚持的你",
+      "blessing": "愿你越过此山，得见新路",
+      "poem": "山重水复疑无路，柳暗花明又一村",
+      "attribution": "宋·陆游《游山西村》",
+      "share_scene": "鼓励正在经历困难的人，也可自我收藏",
+      "dance_event": "受阻越山后柳色与村路同时显现"
+    }
+  ]
+}

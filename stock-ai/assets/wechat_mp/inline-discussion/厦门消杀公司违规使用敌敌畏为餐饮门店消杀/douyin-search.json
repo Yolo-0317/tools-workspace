@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "topic": "厦门消杀公司违规使用敌敌畏为餐饮门店消杀",
+  "query": "厦门 敌敌畏 餐厅 消杀",
+  "completed_at": "2026-08-28T14:18:30+08:00",
+  "fallback_reason": "",
+  "candidates": [
+    {
+      "account": "央视频",
+      "display_time": "2026-08-27（搜索页显示1天前）",
+      "video_url": "https://www.douyin.com/video/7678328780686921012",
+      "cover_url": "https://p3-pc-sign.douyinpic.com/image-cut-tos-priv/2e5c9ec95d2542128492f9db04e2b424~tplv-dy-resize-origshort-autoq-75:330.jpeg?biz_tag=pcweb_cover&from=327834062&lk3s=138a59ce&s=PackSourceEnum_SEARCH&sc=cover&se=false&x-expires=2103256800&x-signature=7xc7Z7pnG%2BggvILNLjdDM093F9k%3D",
+      "selected": true
+    },
+    {
+      "account": "央视网",
+      "display_time": "2026-08-24（搜索页显示4天前）",
+      "video_url": "https://www.douyin.com/video/7677478221570379048",
+      "cover_url": "https://p3-pc-sign.douyinpic.com/image-cut-tos-priv/46e28ccb329ddabfbf9dc66e7b85b75d~tplv-dy-resize-origshort-autoq-75:330.jpeg?biz_tag=pcweb_cover&from=327834062&lk3s=138a59ce&s=PackSourceEnum_SEARCH&sc=cover&se=false&x-expires=2103256800&x-signature=FnuEAB9Z5rUl2yTVOZRFJ%2FVgM1o%3D",
+      "selected": false
+    }
+  ]
+}

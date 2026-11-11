@@ -1,0 +1,31 @@
+[
+  {
+    "id": "01-poem-line-one",
+    "kind": "poem",
+    "text": "琵琶起舞换新声",
+    "attribution": "唐·王昌龄《从军行七首·其二》",
+    "start": 0.250,
+    "end": 3.100
+  },
+  {
+    "id": "02-poem-line-two",
+    "kind": "poem",
+    "text": "总是关山旧别情",
+    "start": 3.550,
+    "end": 6.400
+  },
+  {
+    "id": "03-poem-line-three",
+    "kind": "poem",
+    "text": "撩乱边愁听不尽",
+    "start": 6.900,
+    "end": 9.800
+  },
+  {
+    "id": "04-poem-line-four",
+    "kind": "poem",
+    "text": "高高秋月照长城",
+    "start": 10.350,
+    "end": 14.400
+  }
+]

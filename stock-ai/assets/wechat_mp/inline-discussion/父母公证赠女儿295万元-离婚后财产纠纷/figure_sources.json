@@ -1,0 +1,42 @@
+{
+  "still-01.jpg": {
+    "page_url": "https://www.shcn.gov.cn/col6438/20260401/1307803.html",
+    "image_url": "",
+    "source_name": "上海市长宁区司法局",
+    "published_at": "2026-04-01",
+    "source_type": "official_webpage_screenshot",
+    "verified": "true",
+    "page_title": "婚内受赠财产与夫妻个人财产的法律规定",
+    "caption": "图源：上海市长宁区司法局官网，《民法典》第1062条、第1063条"
+  },
+  "still-02.jpg": {
+    "page_url": "https://www.douyin.com/video/7678713787309935881",
+    "image_url": "https://p3-pc-sign.douyinpic.com/tos-cn-i-dy/71ad12c6d4084e4d8241602cd70879ca~tplv-dy-cropcenter:323:430.jpeg?biz_tag=pcweb_cover&from=327834062&lk3s=138a59ce&s=PackSourceEnum_SEARCH&sc=cover&se=true&sh=323_430&x-expires=2103242400&x-signature=RY7HBumBWL%2BbqUzS46IqaQ5J9U0%3D",
+    "source_name": "帮女郎在行动",
+    "published_at": "2026-08-27（抖音搜索页显示12小时前）",
+    "source_type": "douyin_cover",
+    "verified": "true",
+    "page_title": "父母公证赠与295万元明确只给女儿，离婚后女婿要分，法院判了",
+    "caption": "图源：抖音认证账号“帮女郎在行动”搜索结果封面"
+  },
+  "still-03.jpg": {
+    "page_url": "https://www.douyin.com/video/7677829100513414400",
+    "image_url": "https://p3-pc-sign.douyinpic.com/tos-cn-i-dy/84186a91b4c24a75b996c9314c1d94f6~tplv-dy-cropcenter:323:430.jpeg?biz_tag=pcweb_cover&from=327834062&lk3s=138a59ce&s=PackSourceEnum_SEARCH&sc=cover&se=true&sh=323_430&x-expires=2103242400&x-signature=x5wF21f0egXCJOHPJgwaNCkcGqM%3D",
+    "source_name": "央视社会与法",
+    "published_at": "2026-08-27（抖音搜索页显示14小时前）",
+    "source_type": "douyin_cover",
+    "verified": "true",
+    "page_title": "离婚时为何账户中295万全归女方",
+    "caption": "图源：抖音认证账号“央视社会与法”搜索结果封面"
+  },
+  "manual-01.jpg": {
+    "page_url": "https://www.court.gov.cn/zixun/xiangqing/452751.html",
+    "image_url": "",
+    "source_name": "最高人民法院",
+    "published_at": "2025-01-15",
+    "source_type": "official_webpage_screenshot",
+    "verified": "true",
+    "page_title": "最高法相关部门负责人就民法典婚姻家庭编司法解释（二）答记者问",
+    "caption": "图源：最高人民法院官网，父母出资及明确单方赠与规则说明"
+  }
+}

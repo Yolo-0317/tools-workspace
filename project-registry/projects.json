@@ -11,7 +11,7 @@
       "depends_on": ["stock-ai", "stock-mysql"],
       "serves": [],
       "memory_topics": ["stock-ai"],
-      "skills": ["stock-opencli"],
+      "skills": ["miaoxiang-stock-workbench"],
       "verify": [],
       "runtime": {"kind": "cli", "ports": []},
       "aliases": ["A 股短线", "短线交易", "盘中门禁"]
@@ -176,7 +176,7 @@
       "depends_on": ["stock-mysql", "wechat-cursor-acp"],
       "serves": ["home-hub"],
       "memory_topics": ["stock-ai", "wechat-mp"],
-      "skills": ["stock-opencli", "wechat-mp-drafts", "wechat-mp-writing"],
+      "skills": ["miaoxiang-stock-workbench", "wechat-mp-drafts", "wechat-mp-writing", "wechat-mp-title-writing", "wechat-mp-native-ad-writing", "wechat-mp-senior-health"],
       "verify": [],
       "runtime": {"kind": "mixed", "ports": [9876]},
       "aliases": ["A 股", "选股", "持仓监控", "公众号"]
@@ -255,6 +255,36 @@
       "verify": ["bash scripts/check-quark-mcp.sh"],
       "runtime": {"kind": "service", "ports": [8765, 8766]},
       "aliases": ["小智网关", "Mac 模拟设备", "夸克播放"]
+    },
+    {
+      "id": "zhouyi",
+      "path": "zhouyi",
+      "domain": "personal",
+      "summary": "三钱起卦、典籍取辞、DeepSeek 简体白话解读与复盘",
+      "lifecycle": "active",
+      "entry_docs": ["zhouyi/README.md"],
+      "depends_on": ["stock-mysql"],
+      "serves": [],
+      "memory_topics": [],
+      "skills": [],
+      "verify": ["cd backend && ../.venv/bin/python -m pytest -q"],
+      "runtime": {"kind": "service", "ports": [8796]},
+      "aliases": ["观易", "周易", "易经", "起卦"]
+    },
+    {
+      "id": "zhixia-feihualing",
+      "path": "zhixia-feihualing",
+      "domain": "media",
+      "summary": "原创国风诗词幻想动画IP、抖音账号运营与视频生产档案",
+      "lifecycle": "incubating",
+      "entry_docs": ["zhixia-feihualing/README.md"],
+      "depends_on": [],
+      "serves": [],
+      "memory_topics": [],
+      "skills": [],
+      "verify": [],
+      "runtime": {"kind": "offline", "ports": []},
+      "aliases": ["栀夏飞花令", "飞花令", "抖音国风动画"]
     }
   ]
 }

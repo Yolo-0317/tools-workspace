@@ -1,5 +1,9 @@
 # stock-ai 项目结构
 
+> 股票 Skill 路由更新（2026-09-16）：仅启用妙想系列，统一入口为 `.cursor/skills/miaoxiang-stock-workbench/SKILL.md`（工作区根目录）。下述本地代码与历史流程保留供维护，不作为当前股票 Skill 默认调用链；已有服务和调度未变更。
+
+> 2026-09-20：当前股票研究仅通过六个妙想 Skill 取数，Tushare/stock_daily例外已撤销。下列同步和旧策略命令仅用于独立代码维护，不作为股票 Skill 数据源。
+
 ## 目录一览
 
 ```

@@ -1,0 +1,7 @@
+[
+  {"id":"01-like-a-dog","speaker":"小黑","text":"你们骂人像狗。","start":0.22,"end":1.78},
+  {"id":"02-lying-down","speaker":"小黑","text":"我累了就趴下，","start":1.90,"end":3.23},
+  {"id":"03-reply-received","speaker":"小黑","text":"你们累了还得回‘收到’。","start":3.40,"end":5.34},
+  {"id":"04-not-as-good","speaker":"小黑","text":"还不如我呢。","start":5.46,"end":6.36},
+  {"id":"05-mealtime","speaker":"小黑","text":"干饭。","start":6.58,"end":7.24}
+]

@@ -420,6 +420,11 @@ def main() -> int:
         ],
     )
     parser.add_argument("--file", type=str, help="纯文本/Markdown 正文文件")
+    parser.add_argument(
+        "--user-hotspot-article",
+        type=Path,
+        help="用户主动热点稿 JSON 的只读预检；不使用自动稿评分，也不代替人工审稿",
+    )
     parser.add_argument("--title", type=str, default="")
     parser.add_argument("--digest", type=str, default="")
     parser.add_argument("--min-score", type=int, default=0, help="低于此分返回 exit 1")
@@ -434,6 +439,74 @@ def main() -> int:
         help="market 时段（配合 --kind market）",
     )
     args = parser.parse_args()
+
+    if args.user_hotspot_article:
+        if args.kind or args.file:
+            parser.error("--user-hotspot-article 不能与 --kind 或 --file 同时使用")
+        from scripts.tools.wechat_mp_codex_hotspot import load_codex_hotspot_draft
+        from scripts.tools.wechat_mp_hotspot_quality_gate import (
+            evaluate_hotspot_editorial_quality,
+            scan_hotspot_public_copy,
+        )
+        from scripts.tools.wechat_mp_originality import evaluate_hotspot_longform
+        from scripts.tools.wechat_mp_virtual_ledger import load_virtual_history
+
+        draft = load_codex_hotspot_draft(args.user_hotspot_article)
+        originality = evaluate_hotspot_longform(
+            title=draft.title,
+            body=draft.body,
+            research_urls=draft.research_urls,
+            thesis=draft.original_thesis,
+            history_posts=load_virtual_history().get("posts", []),
+        )
+        findings = scan_hotspot_public_copy(
+            title=draft.title,
+            digest=draft.digest,
+            body=draft.body,
+            research_urls=draft.research_urls,
+        )
+        editorial = evaluate_hotspot_editorial_quality(
+            title=draft.title,
+            body=draft.body,
+            topic=draft.topic,
+            original_thesis=draft.original_thesis,
+            research_urls=draft.research_urls,
+        )
+        compliance = check_compliance(draft.body, title=draft.title)
+        failures = [
+            *originality.failures,
+            *(finding.code for finding in findings),
+            *(f"compliance:{item}" for item in compliance),
+        ]
+        if not editorial.passed:
+            failures.extend(
+                f"editorial:{check.name}"
+                for check in editorial.checks if not check.passed
+            )
+        passed = not failures
+        if args.json:
+            print(json.dumps(
+                {
+                    "profile": "user_hotspot",
+                    "passed": passed,
+                    "body_chars": originality.text_length,
+                    "editorial_score": f"{editorial.score}/{editorial.total}",
+                    "failures": failures,
+                    "manual_review_required": True,
+                },
+                ensure_ascii=False,
+                indent=2,
+            ))
+        else:
+            status = "通过" if passed else "未通过"
+            print(
+                f"用户主动热点预检：{status}；正文 {originality.text_length} 字；"
+                f"编辑结构 {editorial.score}/{editorial.total}"
+            )
+            if failures:
+                print("未通过项：" + "、".join(failures))
+            print("仍须人工审稿：核对事实、主线、逐段推进和口吻；此结果不授权推草稿")
+        return 0 if passed else 1
 
     reports: list[tuple[EvalReport, dict[str, Any]]] = []
 

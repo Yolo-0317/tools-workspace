@@ -1,0 +1,21 @@
+{
+  "episode": "jiangxue",
+  "format": "one-poem-story",
+  "theme": "江雪",
+  "theme_slug": "jiangxue",
+  "audio_slug": "jiangxue",
+  "lines": [
+    {
+      "id": "01-ayan-dialogue",
+      "role": "ayan",
+      "text": "他怎么不收竿？",
+      "start_ms": 7400
+    },
+    {
+      "id": "02-ayan-poem-voiceover",
+      "role": "ayan",
+      "text": "孤舟蓑笠翁，独钓寒江雪。",
+      "start_ms": 9800
+    }
+  ]
+}

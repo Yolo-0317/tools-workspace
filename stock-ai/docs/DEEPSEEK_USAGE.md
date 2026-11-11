@@ -2,29 +2,32 @@
 
 > **2026-05 更新**：调用已统一到 `scripts/tools/deepseek_client.py`；能力总览见 **[CAPABILITIES.md](CAPABILITIES.md)**。
 
-## 后端切换（推荐：写稿 Cursor + SOP DeepSeek）
+## 后端边界（定时公众号 Codex + 手动网页 DeepSeek + SOP API DeepSeek）
 
 在 `stock-ai/.env` 设置：
 
 ```bash
-# 公众号写稿、战报、单篇 LLM 等（需 agent login）
-LLM_BACKEND=cursor
-CURSOR_AGENT_MODEL=composer-2.5
+# 公众号 AI 写稿只使用已登录的 Codex CLI
+WECHAT_MP_CODEX_TIMEOUT_SECONDS=420
+WECHAT_MP_CODEX_MAX_RETRIES=1
+# WECHAT_MP_CODEX_COMMAND=/Applications/ChatGPT.app/Contents/Resources/codex
+# WECHAT_MP_CODEX_MODEL=
 
-# 东财 SOP Top5 并发终审（与 LLM_BACKEND 解耦，始终走 API）
+# 东财 SOP Top5 并发终审（与公众号写稿解耦，始终走 API）
 SOP_LLM_BACKEND=deepseek
 DEEPSEEK_API_KEY=sk-...
 ```
 
 | 场景 | 环境变量 | 后端 |
 |------|----------|------|
-| `wechat_mp_*_article`、选股 AI 审查等 | `LLM_BACKEND` | 默认 `cursor` → `composer-2.5` |
-| `wechat_mp_news` 10 条 AI 点评 | `WECHAT_MP_NEWS_AI_BACKEND`（默认 `deepseek`） | DeepSeek API，与写稿 LLM 解耦 |
+| 定时公众号稿、自动批次 | `WECHAT_MP_CODEX_*` | Codex CLI；失败时停止，不回退 |
+| 用户主动的热点深评、文学/典籍稿 | `OPENCLI_BIN`（可选） | OpenCLI 绑定 Chrome 固定 DeepSeek 会话；两次确认；失败不回退 |
+| 选股 AI 审查等通用分析 | `LLM_BACKEND` | 保持各工具现有配置 |
 | `sop_review_top5_concurrent` / `sop_review_single` | `SOP_LLM_BACKEND`（默认 `deepseek`） | DeepSeek API，可 `DEEPSEEK_WORKERS` 并发 |
 
-`call_deepseek(..., backend=…)` 可显式覆盖；SOP 脚本固定 `backend=sop_llm_backend()`。
+公众号自动模块统一调用 `call_wechat_mp_llm()`，该入口固定转交 Codex，拒绝 `deepseek`、`cursor` 或 `composer` 后端参数。用户主动的热点深评和文学/典籍稿由 `scripts.tools.wechat_mp_browser_write` 管理固定网页会话与双确认，不经过该 LLM 入口。`call_deepseek(..., backend=…)` 仍服务通用分析；SOP 脚本固定 `backend=sop_llm_backend()`。
 
-Cursor 模式：`agent --print --mode ask --trust`，工作区默认 `investment-agent`。无需 `DEEPSEEK_API_KEY`，但单次较慢，**勿**把 SOP 并发改为 `cursor`。
+公众号 Codex 使用独立轻量工作区 `agent-workspaces/wechat-writer`，并以只读、临时会话执行。Codex CLI 不可用或未登录时不会写入微信草稿。东财 SOP 仍需要 `DEEPSEEK_API_KEY`，勿把其并发终审并入公众号写稿后端。
 
 ## API 封装与模型（LLM_BACKEND=deepseek 时）
 
@@ -295,4 +298,8 @@ A: 修改 `scripts/tools/deepseek_client.py` 中的模型与 endpoint，或设�
 ---
 
 **免责声明**：本工具提供的交易信号仅供参考，不构成投资建议。市场有风险，投资需谨慎。
+## 公众号固定浏览器会话
 
+用户主动要求的热点深评和文学/典籍稿可使用 `scripts.tools.wechat_mp_browser_write`。该入口通过 OpenCLI 绑定当前 Chrome 中固定的 DeepSeek 会话，执行“提示词确认—浏览器写稿—Agent编辑—推送确认—草稿写入”状态机。定时公众号稿仍使用 Codex，不依赖 Chrome 登录。
+
+DeepSeek 浏览器流程不读取 Cookie、不自动登录、不调用 DeepSeek API，也不在失败时回退其他模型。文学与典籍稿统一写入独立 `literary` 槽位。

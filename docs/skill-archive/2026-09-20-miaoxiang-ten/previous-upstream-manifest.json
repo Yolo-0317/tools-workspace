@@ -1,0 +1,79 @@
+{
+  "source": "https://ai.eastmoney.com/skills",
+  "downloaded": "2026-09-15",
+  "archive_sha256": "273be80e3f9e7701652c3dd3048b99341c75ffe59368768c7f0e7d567bc08d20",
+  "local_changes": [
+    "removed prefilled API keys",
+    "added local dotenv instructions",
+    "normalized frontmatter"
+  ],
+  "skills": [
+    {
+      "skill": "stock-market-hotspot-discovery",
+      "version": "1.1.1",
+      "upstream_file_sha256": {
+        "references/auth_protocol.md": "76c94d31f935d336bae5c558db370e32d4a06785a31ebd01182061706dc69fa7",
+        "requirements.txt": "b74b60affa8b2087f451e1d0483451f567d54e3d5f0c861cb68e7422e8f51c1f",
+        "scripts/auth.py": "b10b0db8671e11b14096e5ad35e9a647db62bd874e2d5fa5620d72741afacc5b",
+        "scripts/get_data.py": "e4d17b3141bda963c4e1f7619afb7c6f5e6e0ee5972b2df996433c23d37cfb9c",
+        "SKILL.md": "00bad4a18482fbf3b9e646c49f35d0c56647545af15296942f21dea5ae56bc33"
+      }
+    },
+    {
+      "skill": "industry-sector-analysis",
+      "version": "1.1.1",
+      "upstream_file_sha256": {
+        "references/auth_protocol.md": "76c94d31f935d336bae5c558db370e32d4a06785a31ebd01182061706dc69fa7",
+        "requirements.txt": "b74b60affa8b2087f451e1d0483451f567d54e3d5f0c861cb68e7422e8f51c1f",
+        "scripts/auth.py": "4bd27770473332c33d9b073b49335dcc080ccaf229d121f9659ca59aa8ce1077",
+        "scripts/get_data.py": "ac6ab3aee595af603d5259ccd3d9a4862921fa4e24440033a65812f91875511f",
+        "SKILL.md": "47a3bac973554ccd8f1269bf56de773763742c9fa6ab148ba48f223886af22e7"
+      }
+    },
+    {
+      "skill": "stock-capital-analysis",
+      "version": "1.1.1",
+      "upstream_file_sha256": {
+        "references/auth_protocol.md": "76c94d31f935d336bae5c558db370e32d4a06785a31ebd01182061706dc69fa7",
+        "requirements.txt": "b74b60affa8b2087f451e1d0483451f567d54e3d5f0c861cb68e7422e8f51c1f",
+        "scripts/auth.py": "44e058ee87e6f74b9974e095ee6c5cae8b93ea9324956cc91be087f93e831a96",
+        "scripts/get_data.py": "439a88937a6a3093c8f7ef98e09f19335b58ed7a9e30d57b8e413459f7fe20bb",
+        "SKILL.md": "709daa653b87ff3d9e82bee0fb478bd374dcdc50a57df30f5397c8ac21f24569"
+      }
+    },
+    {
+      "skill": "stock-news-analysis",
+      "version": "1.1.1",
+      "upstream_file_sha256": {
+        "references/auth_protocol.md": "76c94d31f935d336bae5c558db370e32d4a06785a31ebd01182061706dc69fa7",
+        "requirements.txt": "b74b60affa8b2087f451e1d0483451f567d54e3d5f0c861cb68e7422e8f51c1f",
+        "scripts/auth.py": "b61ecf8b66733a486967bd633057fd644cd1972c3e2ddedf9b12ee4b5b6e5149",
+        "scripts/get_data.py": "ebda9b34234d7c58e40ae698a8a71cedec8ac53aa553be1e458ada92086efcf1",
+        "SKILL.md": "3cd884cab73c52580d59b43e70d61ed2f66476ac10b4e6c2d08b0c56c1bbb5bd"
+      }
+    },
+    {
+      "skill": "stock-earnings-review",
+      "version": "not-specified",
+      "upstream_file_sha256": {
+        "BUSINESS_LOGIC.md": "bb265768d5597bf1ff32e9ee16dfa5619988f68c1aea3933ab2f342f77ec16c7",
+        "scripts/call_review_api.py": "2fc0788917dc66fe69b0018b1953795dc6ffce70bfae09cbb25fa1f0c10792f7",
+        "scripts/common.py": "7c9316724ae9bb2d476f159d8081d9873231782e353c2e5de3f7237c7a64a705",
+        "scripts/normalize_report_period.py": "c99afd71215dd7d6b8d392d3a7e326deb94d1d56f2258fcb3b4a1c6799e4f61c",
+        "scripts/validate_entity.py": "5c81e01c4f7278ec916c1481de5f8ccea67dcc4a6d063c220d666a9d7937cc12",
+        "SKILL.md": "41e20be1c082d6cd91cc65e8f6ee939b704666c56e82539324922b72cd190b10"
+      }
+    },
+    {
+      "skill": "stock-institutional-opinion",
+      "version": "1.1.1",
+      "upstream_file_sha256": {
+        "references/auth_protocol.md": "76c94d31f935d336bae5c558db370e32d4a06785a31ebd01182061706dc69fa7",
+        "requirements.txt": "b74b60affa8b2087f451e1d0483451f567d54e3d5f0c861cb68e7422e8f51c1f",
+        "scripts/auth.py": "191f19babd8983034b97a4a41711d86cc749d15353d578567910a302db87d991",
+        "scripts/get_data.py": "0fae7d8c8dbd3296cb10f13c6227147169b0b4724034d6e6f709773aebb30077",
+        "SKILL.md": "3344a6a2127e1d2bfe9e5466dd1f232652464231c57b470bc34acc88187d371f"
+      }
+    }
+  ]
+}

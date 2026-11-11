@@ -106,20 +106,30 @@ def test_validate_topic_card_allows_system_log_without_fact_source() -> None:
 def test_validate_opinion_copy_requires_mixed_image_disclosure() -> None:
     content = (
         "栀夏是 AI 虚拟角色；图片为 AI 生成示意图，不对应真人经历。"
-        + "甲" * 170
+        + "甲" * 390
     )
 
     with pytest.raises(ValueError, match="报道图来源见文中"):
         validate_opinion_copy(content, has_report_images=True)
 
 
-def test_validate_opinion_copy_accepts_original_post_between_180_and_320_chars() -> None:
+def test_validate_opinion_copy_accepts_original_post_between_400_and_900_chars() -> None:
     content = (
         "栀夏是 AI 虚拟角色；图片为 AI 生成示意图，不对应真人经历。"
-        + "甲" * 170
+        + "甲" * 390
     )
 
     assert validate_opinion_copy(content, has_report_images=False) == content
+
+
+def test_validate_opinion_copy_allows_platform_publish_disclosure() -> None:
+    content = "甲" * 400
+
+    assert validate_opinion_copy(
+        content,
+        has_report_images=False,
+        ai_disclosure_mode="platform_publish",
+    ) == content
 
 
 def test_next_content_type_summarizes_four_three_two_one_round() -> None:

@@ -138,7 +138,8 @@ _ENGAGEMENT_POOL: dict[str, tuple[str, ...]] = {
 }
 
 _FOLLOW_HOOK_DEFAULT = (
-    "我们会继续整理社会与文娱热点；星标本号，下一篇不易漏看。"
+    "我们会继续把教育新闻里的规则、费用和选择讲清楚，也分享一点国学。"
+    "星标本号，下篇见。"
 )
 
 # 微信审核违规：关注后回复关键词领资料类诱导
@@ -158,12 +159,17 @@ _FOLLOW_HOOK_BY_KIND: dict[str, str] = {
     "silver": "我们会继续整理退休生活里的关系、健康和钱财问题；星标本号，下一篇不易漏看。",
     "tv_review": _FOLLOW_HOOK_DEFAULT,
     "tv": _FOLLOW_HOOK_DEFAULT,
+    "literary": _FOLLOW_HOOK_DEFAULT,
 }
 
 _FOLLOW_HOOK_MARKERS: tuple[str, ...] = (
     "星标本号",
+    "教育新闻里的规则、费用和选择",
+    "也分享一点国学",
+    "下篇见",
     "下一篇不易漏看",
     "我们会继续整理社会与文娱热点",
+    "最近专注文化节目",
     "回复「写作」",
     "大模型辅助写作",
     "有讨论度的公共热点",
@@ -222,10 +228,12 @@ _NO_RECOMMEND_HOOK_KINDS = frozenset({
     "hot_business",
     "silver",
     "short_drama_feature",
+    "product_feature",
     "tv_review",
     "tv",
     "film",
     "movie",
+    "literary",
 })
 
 
@@ -249,11 +257,12 @@ def default_recommend_hook_line() -> str:
     )
 
 
-def default_follow_hook_line(kind: str) -> str:
+def default_follow_hook_line(kind: str, engagement_kind: str | None = None) -> str:
     custom = os.getenv("WECHAT_MP_FOLLOW_HOOK_TEXT", "").strip()
     if custom:
         return custom
-    return _FOLLOW_HOOK_BY_KIND.get((kind or "").strip().lower(), "")
+    k = (kind or "").strip().lower()
+    return _FOLLOW_HOOK_BY_KIND.get(k, "")
 
 
 def monetization_prompt_block(kind: str) -> str:
@@ -354,14 +363,21 @@ def append_engagement_hook(
     return f"{body.rstrip()}\n\n{hook}"
 
 
-def append_follow_hook(body: str, *, kind: str) -> str:
+def append_follow_hook(
+    body: str,
+    *,
+    kind: str,
+    engagement_kind: str | None = None,
+) -> str:
     """文末引导关注（搜一搜陌生读者 → 关注 + 星标）。"""
     k = (kind or "").strip().lower()
     if not follow_hook_enabled() or k not in _FOLLOW_HOOK_BY_KIND:
         return body
     if any(m in body for m in _FOLLOW_HOOK_MARKERS):
         return body
-    line = default_follow_hook_line(k)
+    if "星标一下这个号" in body or "可以星标一下" in body:
+        return body
+    line = default_follow_hook_line(k, engagement_kind=engagement_kind)
     if not line:
         return body
     return f"{body.rstrip()}\n\n{line}"
@@ -439,7 +455,7 @@ def polish_for_traffic(
         return body
     k = (kind or "").strip().lower()
     body = append_engagement_hook(body, kind=kind, engagement_kind=engagement_kind)
-    body = append_follow_hook(body, kind=kind)
+    body = append_follow_hook(body, kind=kind, engagement_kind=engagement_kind)
     if k in _NO_RECOMMEND_HOOK_KINDS:
         body = strip_recommend_hook(body)
         return strip_writing_reply_inducement(body)

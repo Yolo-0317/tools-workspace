@@ -1,0 +1,13 @@
+{
+  "duration": "10.080000",
+  "width": 496,
+  "height": 864,
+  "video_packet_hash_matches_original": true,
+  "aigc_metadata_preserved": true,
+  "audio_codec": "aac",
+  "audio_sample_rate": "48000",
+  "mean_volume_db": -23.5,
+  "max_volume_db": -4.7,
+  "four_tts_lines_ready": true,
+  "lip_sync": "未重做口型；后期配音仅按表演节奏安排，不保证逐字口型一致"
+}

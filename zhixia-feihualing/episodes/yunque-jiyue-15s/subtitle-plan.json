@@ -1,0 +1,35 @@
+[
+  {
+    "id": "01-modern-beauty",
+    "kind": "modern",
+    "text": "有些美好并没有真的离开",
+    "side": "right",
+    "start": 0.2,
+    "end": 2.45
+  },
+  {
+    "id": "02-modern-color",
+    "kind": "modern",
+    "text": "被人记起时它就会重新有颜色",
+    "side": "left",
+    "start": 3.8,
+    "end": 6.78
+  },
+  {
+    "id": "03-classic-dance",
+    "kind": "poem",
+    "text": "只愁歌舞散",
+    "attribution": "唐·李白《宫中行乐词》",
+    "side": "right",
+    "start": 8.5,
+    "end": 9.78
+  },
+  {
+    "id": "04-classic-cloud",
+    "kind": "poem",
+    "text": "化作彩云飞",
+    "side": "left",
+    "start": 13.608,
+    "end": 14.85
+  }
+]

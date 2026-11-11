@@ -1,0 +1,53 @@
+{
+  "episode": "feimei-lvyao-15s",
+  "format": "one-poem-story",
+  "theme": "飞袂绿腰十五秒四句自然朗诵",
+  "theme_slug": "feimei-lvyao-15s",
+  "audio_slug": "feimei-lvyao-15s-paced-v01",
+  "lines": [
+    {
+      "id": "01-zhixia-line-one",
+      "role": "zhixia",
+      "text": "南国有佳人。",
+      "revision": 1,
+      "speech_rate": 0,
+      "gap_before_ms": 0,
+      "context_texts": [
+        "这是十五秒《飞袂绿腰》的第一句画外朗诵。保持栀夏固定清透女声，年轻、自然、温柔而克制；南国有佳人清雅引入并自然收句。使用正常说诗语速，不念作者、题目、篇名或其他内容，不使用播音腔、吟唱、耳语、拖字或额外感叹。"
+      ]
+    },
+    {
+      "id": "02-zhixia-line-two",
+      "role": "zhixia",
+      "text": "轻盈绿腰舞。",
+      "revision": 1,
+      "speech_rate": 0,
+      "gap_before_ms": 0,
+      "context_texts": [
+        "保持同一位栀夏、同一距离感和自然语速；轻盈略提明度，绿腰舞清楚落下，不解释舞名。自然说诗，不念作者、题目、篇名或其他内容，不吟唱、不拖腔。"
+      ]
+    },
+    {
+      "id": "03-zhixia-line-three",
+      "role": "zhixia",
+      "text": "华筵九秋暮。",
+      "revision": 1,
+      "speech_rate": 0,
+      "gap_before_ms": 0,
+      "context_texts": [
+        "保持同一位栀夏固定声线和正常语速；华筵清楚，九秋暮略收情绪但不压低到耳语。自然说诗，不念作者、题目、篇名或其他内容，不使用播音腔、吟唱或拖字。"
+      ]
+    },
+    {
+      "id": "04-zhixia-line-four",
+      "role": "zhixia",
+      "text": "飞袂拂云雨。",
+      "revision": 1,
+      "speech_rate": 0,
+      "gap_before_ms": 0,
+      "context_texts": [
+        "这是十五秒《飞袂绿腰》的最后一句。保持同一位栀夏固定声线与自然语速；飞袂略舒展，拂云雨自然收住并留下呼吸余韵，不拖长末字。不念作者、题目、篇名或其他内容，不吟唱、不使用仙侠配音腔。"
+      ]
+    }
+  ]
+}

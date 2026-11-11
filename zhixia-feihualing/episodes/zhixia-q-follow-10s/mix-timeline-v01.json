@@ -1,0 +1,43 @@
+{
+  "duration": 10.08,
+  "source_audio": "replaced",
+  "video_copy": true,
+  "gains": [
+    {
+      "id": "01-no-views",
+      "gain_db": 3.5
+    },
+    {
+      "id": "02-worked-hard",
+      "gain_db": 4.699999999999999
+    },
+    {
+      "id": "03-follow-please",
+      "gain_db": 3.8999999999999986
+    }
+  ],
+  "cues": [
+    {
+      "id": "01-no-views",
+      "text": "怎么又没人看呀……",
+      "start": 0.2,
+      "end": 2.24,
+      "highlight": "怎么还没人看呀"
+    },
+    {
+      "id": "02-worked-hard",
+      "text": "我都认真拍了……",
+      "start": 3.2,
+      "end": 5.456,
+      "highlight": "怎么还没人看呀"
+    },
+    {
+      "id": "03-follow-please",
+      "text": "关注我一下，好不好？",
+      "start": 6.0,
+      "end": 8.256,
+      "highlight": "怎么还没人看呀"
+    }
+  ],
+  "lip_sync": "按三段表演安排；不重做原口型"
+}

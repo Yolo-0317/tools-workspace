@@ -1,0 +1,6 @@
+[
+  {"id":"01-request","text":"姐姐，借点三昧真火。","start":0.75,"end":2.833},
+  {"id":"02-question","text":"炼什么？","start":4.625,"end":5.333},
+  {"id":"03-reveal","text":"烘衣服。","start":5.625,"end":6.625},
+  {"id":"04-reason","text":"明天要穿。","start":6.625,"end":7.625}
+]

@@ -1888,6 +1888,62 @@ def load_stock_daily_bars(
     return bars
 
 
+def load_stock_daily_panel(
+    codes: list[str] | tuple[str, ...],
+    *,
+    limit: int = 60,
+    engine: Engine | None = None,
+) -> dict[str, list[dict[str, Any]]]:
+    """一次查询加载多只股票的最近日线，并按代码、交易日升序返回。"""
+    normalized = sorted({_code6(value) for value in codes if re.fullmatch(r"\d{6}", _code6(value))})
+    panel: dict[str, list[dict[str, Any]]] = {code: [] for code in normalized}
+    engine = engine or get_engine()
+    if engine is None or not normalized:
+        return panel
+
+    row_limit = max(5, min(int(limit), 250))
+    placeholders = ", ".join(f":code_{index}" for index in range(len(normalized)))
+    sql = f"""
+        WITH ranked AS (
+            SELECT ts_code, trade_date, open, high, low, close, pct_chg, vol, amount,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY SUBSTRING(ts_code, -6)
+                       ORDER BY trade_date DESC
+                   ) AS row_num
+            FROM stock_daily
+            WHERE SUBSTRING(ts_code, -6) IN ({placeholders})
+        )
+        SELECT ts_code, trade_date, open, high, low, close, pct_chg, vol, amount
+        FROM ranked
+        WHERE row_num <= :row_limit
+        ORDER BY SUBSTRING(ts_code, -6), trade_date ASC
+    """
+    params: dict[str, Any] = {f"code_{index}": code for index, code in enumerate(normalized)}
+    params["row_limit"] = row_limit
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(text(sql), params).fetchall()
+    except Exception:
+        return panel
+
+    for row in rows:
+        code = _code6(str(row.ts_code))
+        trade_date = row.trade_date
+        panel[code].append(
+            {
+                "trade_date": trade_date.isoformat() if isinstance(trade_date, date) else str(trade_date)[:10],
+                "open": float(row.open) if row.open is not None else None,
+                "high": float(row.high) if row.high is not None else None,
+                "low": float(row.low) if row.low is not None else None,
+                "close": float(row.close) if row.close is not None else None,
+                "pct_chg": float(row.pct_chg) if row.pct_chg is not None else None,
+                "vol": int(row.vol) if row.vol is not None else None,
+                "amount": float(row.amount) if row.amount is not None else None,
+            }
+        )
+    return panel
+
+
 def latest_stock_daily_trade_date(*, engine: Engine | None = None) -> date | None:
     """stock_daily 全市场最新交易日。"""
     engine = engine or get_engine()

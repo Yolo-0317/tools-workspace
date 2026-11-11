@@ -319,12 +319,18 @@ def sanitize_platform_property_risk(text: str) -> str:
     return "\n".join(lines_out).strip()
 
 
-def information_notice_for_kind(kind: str | None) -> str:
+def information_notice_for_kind(
+    kind: str | None,
+    engagement_kind: str | None = None,
+) -> str:
     k = (kind or "").strip().lower()
+    eng = (engagement_kind or "").strip().lower()
+    if eng == "discussion" and k in {"tv_review", "tv", "film", "movie"}:
+        return ""
     if k == "silver":
         return SILVER_INFORMATION_NOTICE
     if k in COMMENTARY_MP_KINDS:
-        return COMMENTARY_INFORMATION_NOTICE
+        return ""
     if k in _FINANCE_MP_KINDS:
         return INFORMATION_NOTICE
     return ""

@@ -567,25 +567,24 @@ def compare_with_v3(
     *,
     challenger: Sequence[ChallengerObservation],
     v3_days: Sequence[V3ComparableDay] | None,
+    trading_dates: Sequence[date],
+    segment: str,
     input_fingerprint: str,
 ) -> ChallengerAssessment:
     if not input_fingerprint:
         raise ValueError("INPUT_FINGERPRINT_EMPTY")
-    trading_dates = (
-        tuple(row.signal_date for row in v3_days)
-        if v3_days is not None
-        else tuple(sorted({row.signal.signal_date for row in challenger}))
-    )
-    if len(trading_dates) < 63:
-        synthetic_start = trading_dates[0] if trading_dates else date(1970, 1, 1)
-        trading_dates = tuple(
-            synthetic_start.fromordinal(synthetic_start.toordinal() + index)
-            for index in range(63)
-        )
+    if segment not in {"VALIDATION", "TEST"}:
+        raise ValueError("SEGMENT_INVALID")
+    calendar = _calendar(trading_dates)
+    if (
+        v3_days is not None
+        and tuple(row.signal_date for row in v3_days) != calendar
+    ):
+        raise ValueError("V3_CALENDAR_MISMATCH")
     execution_metrics = evaluate_execution_segment(
         challenger,
-        trading_dates=trading_dates,
-        segment="TEST",
+        trading_dates=calendar,
+        segment=segment,
     )
     portfolio_metrics = evaluate_portfolio_metrics(challenger)
     if v3_days is None:

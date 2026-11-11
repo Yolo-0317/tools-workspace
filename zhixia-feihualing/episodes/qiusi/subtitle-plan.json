@@ -1,0 +1,12 @@
+[
+  {
+    "id": "01-poem-voiceover",
+    "kind": "poem",
+    "role": "ayan",
+    "text": "复恐匆匆说不尽，行人临发又开封。",
+    "attribution": "唐·张籍《秋思》",
+    "start": 11.2,
+    "end": 15.064,
+    "layout": "vertical-poem-with-attribution"
+  }
+]

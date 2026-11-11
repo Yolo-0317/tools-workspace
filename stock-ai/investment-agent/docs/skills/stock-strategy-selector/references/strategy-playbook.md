@@ -114,6 +114,18 @@ Typical output:
 
 ### 4) AI review after screening
 
+### 4a) Manual strong-sector rotation detector
+
+For “强势板块轮动、板块启动、行业方向机会、为什么选股没选出板块龙头”, run:
+
+```bash
+cd /Users/huan.yu/dev/tools-workspace/stock-ai
+.venv/bin/python -m scripts.analysis.detect_sector_rotation \
+  --edition auto --top-sectors 6 --stocks-per-sector 10 --no-db
+```
+
+The detector is independent from Top5. It merges detailed industries into checked-in industry chains, shows at most three strongest, two strengthening, and one pullback direction, and keeps at most ten observation stocks per direction. Up to three names receive conditional plans: one leader, one catch-up, and one pullback. Missing sector ranking fails the run; incomplete constituent or price data remains observation-only. It does not schedule, push, create monitoring rules, or place orders. Remove `--no-db` only after MySQL migration `018_sector_rotation.sql` is applied.
+
 If the user wants commentary such as “帮我看看前 5 只哪个更值得关注”, use AI review after results exist in MySQL or CSV:
 
 ```bash
