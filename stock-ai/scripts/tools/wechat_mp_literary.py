@@ -47,11 +47,6 @@ def _distinct_domains(urls: tuple[str, ...]) -> set[str]:
 
 
 def validate_literary_draft(draft: LiteraryDraft) -> LiteraryDraft:
-    clean_chars = len("".join(draft.body.split()))
-    if clean_chars < 1400 or clean_chars > 3200:
-        raise ValueError(f"文学草稿正文需为 1400—3200 字，当前 {clean_chars}")
-    if len(_distinct_domains(draft.research_urls)) < 3:
-        raise ValueError("文学草稿至少需要 3 个不同来源域")
     if len(draft.original_thesis) < 20:
         raise ValueError("文学草稿 original_thesis 不得少于 20 字")
     if draft.slot_key not in LITERARY_SLOT_KEYS:

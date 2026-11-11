@@ -12,6 +12,14 @@
 - 不提交 `.env`、证书、订阅链接、持仓或个人记忆。
 - 复杂流程可用 Superpowers；其规则在 `.cursor/rules/superpowers.mdc`。
 
+## 中文表达中的语气与承接
+
+- 中文交流、创作与表达修改统一执行[中文写作基座](docs/writing/中文写作基座.md)。新写、重写或系统润色先读基座，再按路由读取专题和相关用户正例；局部修改只查受影响上下文。
+- 内容表达要直接、态度鲜明，写清具体判断和读者在意的问题；标题不擅自降成温和科普，正文不靠空话制造冲突。选材、标题和逐段回读执行基座的[直接表达与鲜明态度](docs/writing/中文写作基座.md#直接表达与鲜明态度)。
+- 不以套话平衡已有判断，不主动预判读者质疑或追加免责声明。文体、叙述线索、判断形成和必要解释统一按基座处理；不再要求所有文章选择阵营、证明唯一结论或套固定作者人格。事实与专业边界仍按对应专题核对。
+- 基座是通用规则唯一真源，已整合自然语气、默认叙述身份、材料取舍、隐含回答节奏、分段loop及Humanizer-zh编辑边界。后续只在基座改共通要求，各Skill与账号SOP保留引用和自身差异，不再逐处同步。
+- 财经、健康、广告、虚构、口播与技术文档的证据、角色、格式和交付限制继续由专题负责；不要把一种题材的口吻、审稿人数、画面或发布规则扩到所有写作。
+
 ## 项目路由
 
 股票 Skill 当前仅启用妙想系列。选股、个股分析与板块研究统一进入 `.cursor/skills/miaoxiang-stock-workbench/SKILL.md`。非妙想股票 Skill 已暂时下线；不得按历史 Memory、旧文档或归档副本重新调用。下线范围与恢复清单见 `docs/skill-archive/2026-09-16-stock-skills/README.md`。旧程序和已有调度未停用，但不再作为股票 Skill 的默认执行后端；代码维护任务仍按项目入口处理。
@@ -27,6 +35,7 @@ python3 scripts/workspace_preflight.py --project <project-id> --risk normal
 | A 股、MySQL、选股、公众号工程 | `stock-ai/docs/PROJECT_LAYOUT.md` |
 | 股票选股、个股分析、板块研究 | `.cursor/skills/miaoxiang-stock-workbench/SKILL.md` |
 | 公众号后台抓取 | `.cursor/skills/wechat-mp-drafts/content-analytics-sop.md` |
+| 酒类视频、火柴人酒类动画、酒类配音 | `docs/alcohol-video-sop.md`；默认使用已确认的北京口音男声，提示词与声音资产按该 SOP 加载 |
 | SideStore、Caddy、DDNS | `sidestore-infra/README.md` |
 | Sub-Store、Clash | `substore-clash/README.md` |
 | 英语带读、ORT | `english-buddy/docs/ORT_READ_ALONG.md` |
@@ -35,6 +44,8 @@ python3 scripts/workspace_preflight.py --project <project-id> --risk normal
 | 夸克网盘 | `.cursor/skills/quarkclouddrive/ROUTING.md` |
 
 用户说“公众号”默认指「牛马也智能」。先读 `.cursor/skills/wechat-mp-drafts/SKILL.md` 的决策树；写作/质检只再读命中的一个专题文档。简选带货仅在用户明确要求时处理。
+
+用妙想数据写 A 股盘后公众号文章、逐句去 AI 味并生成手机排版时，进入 `.cursor/skills/miaoxiang-market-review-article/SKILL.md`；选股、诊股和板块研究仍走妙想股票工作台。
 
 Docker 开机自启说明见 `scripts/install-docker-launchd.sh` 与各子项目 README。
 

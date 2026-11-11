@@ -66,7 +66,7 @@ uv run python -m scripts.tools.wechat_mp_tv_morning_discussion --pick
 ### 必须做
 
 1. **同题报道仿写**：`fetch_discussion_research` → 【参考文章·仿写】→ `WECHAT_MP_DISCUSSION_IMITATE_REWRITE=1`
-2. **口吻金样**：`data/wechat_mp_tv_review_golden/spider_man_brand_new_day.body_core.md` + `tv-review-voice.md` §朋友分享  
+2. **文风**：普通非虚构稿统一读取[基座随笔写作](../../../docs/writing/中文写作基座.md#公众号随笔写作)，旧金样仅按具体任务参考
 3. **社会民生稿**（案由、劳动者、公共事件）：另读 `wechat-mp-writing/social-commentary-voice.md` — 短段、物件立人、通报 vs 民间记忆对照、引用块、克制感情  
 4. **首段直接写人+事**，禁止导读句（见 §六 禁词表）  
 5. **事件配图**：正文 2/4/6 段后注入；**封面用 sector 牛马主图**
@@ -222,14 +222,14 @@ WECHAT_MP_DISCUSSION_FIGURES_FORCE=1 \
 
 ### B. 正文
 
-- [ ] **角色**：全文像「读者转述评论」，不像政策/产业分析（`brand.md` · `social-commentary-voice.md` §零）
+- [ ] **文体**：按基座随笔写作核实际文字，账号与旧语料不另设角色
 - [ ] **通改**：用户只点名一句问题时，仍须 **通篇 grep**，禁止只改一处
 - [ ] 运行：`uv run python -m scripts.tools.wechat_mp_report_voice --file data/wechat_mp_tv_body_cache/{cover_slug}.json` → 0 命中
 - [ ] 无 `**` Markdown 加粗（grep `\\*\\*`）
 - [ ] 首段：人+事，无导读（§六）
 - [ ] grep 禁词无命中（§六 + `social-commentary-voice.md` 分析报告腔表）  
 - [ ] 社会民生题：短段、物件立人、无震惊体连发  
-- [ ] 对照金样 `spider_man_brand_new_day.body_core.md`：读出声像朋友转述
+- [ ] 按基座回读叙述、思索和承接，旧金样不作为文风验收
 
 ### C. 配图
 

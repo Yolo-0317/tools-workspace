@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-08",
+  "confirmed": [
+    "原片10.08秒，496×864，视频与AAC音频两条流。",
+    "原音轨非静音，mean=-25.2dB、max=-3.4dB，不能判定完全未生成音频。",
+    "用户反馈缺少预期角色对白；本次未做原音轨ASR或人工试听，因此不将音频内容类型写成已核实结论。",
+    "抽帧可见三位保持同框，但中后段栀夏抱住两位并一起笑，未严格实现逐角色小动作设计。"
+  ],
+  "cause_limit": "只有成片，缺原始请求payload、真实引用与生成设置，不能确认音色引用未绑定、对白执行失败等具体根因。",
+  "hypotheses": [
+    "音色引用进入请求但未正确绑定到角色，待核对原请求。",
+    "多角色对白与小动作没有被完整执行，属于生成效果问题，不能由提示词保证。"
+  ],
+  "official_reference": "https://docs.volcengine.com/docs/ark/create-video-generation-task-api?lang=zh",
+  "tts_voices": {
+    "zhixia": "甜美活泼2.0；现有正式TTS映射，非Seedance知性温婉的精确替代",
+    "ayan": "假小子2.0",
+    "xiaohei": "用户授权本次换为小天2.0；原机灵小伙对应1.0资源，当前账户未授权"
+  },
+  "remedy": "四句独立TTS，原速不变调，按字幕真源时间轴混合；原音轨gain=0.35；视频码流复制，保留AIGC元数据；不重做口型。",
+  "output": "exports/sanju-ban-buyaoye-voiced-v01.mp4"
+}

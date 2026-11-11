@@ -1,0 +1,4 @@
+interface:
+  display_name: "动画拆解视频制作"
+  short_description: "制作有悬念、画面丰富的动画拆解视频，支持儿童教育专题与配音合成"
+  default_prompt: "使用 $animated-explainer-video 制作一期儿童教育话题的动画拆解视频，沿用当前系列角色与视觉风格。"

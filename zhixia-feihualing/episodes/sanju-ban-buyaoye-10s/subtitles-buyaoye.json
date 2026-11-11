@@ -1,0 +1,30 @@
+[
+  {
+    "id": "01-zhixia-opening",
+    "text": "今晚立志不熬夜！",
+    "start": 0.1,
+    "end": 2.14,
+    "highlight": "今晚不熬夜·三句半"
+  },
+  {
+    "id": "02-ayan-agree",
+    "text": "手机早早放一边！",
+    "start": 2.32,
+    "end": 4.168,
+    "highlight": "今晚不熬夜·三句半"
+  },
+  {
+    "id": "03-xiaohei-reveal",
+    "text": "躺下又刷三小时！",
+    "start": 4.348,
+    "end": 5.98,
+    "highlight": "今晚不熬夜·三句半"
+  },
+  {
+    "id": "04-zhixia-punchline",
+    "text": "明天！",
+    "start": 6.43,
+    "end": 7.678,
+    "highlight": "今晚不熬夜·三句半"
+  }
+]

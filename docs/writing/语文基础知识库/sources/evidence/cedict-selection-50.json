@@ -1,0 +1,410 @@
+{
+  "sha256": "e6e14c761ebc1e66ae2ad7b08fc4c577d6927472bb059d70db6111f0c06abee9",
+  "header": [
+    "# CC-CEDICT",
+    "# Community maintained free Chinese-English dictionary.",
+    "# ",
+    "# Published by MDBG",
+    "# ",
+    "# License:",
+    "# Creative Commons Attribution-ShareAlike 4.0 International License",
+    "# https://creativecommons.org/licenses/by-sa/4.0/",
+    "# ",
+    "# Referenced works:",
+    "# CEDICT - Copyright (C) 1997, 1998 Paul Andrew Denisowski",
+    "# ",
+    "# CC-CEDICT can be downloaded from:",
+    "# https://www.mdbg.net/chinese/dictionary?page=cc-cedict",
+    "# ",
+    "# Additions and corrections can be sent through:",
+    "# https://cc-cedict.org/editor/editor.php",
+    "# ",
+    "# For more information about CC-CEDICT see:",
+    "# https://cc-cedict.org/wiki/",
+    "# ",
+    "#! version=1",
+    "#! subversion=0",
+    "#! format=ts",
+    "#! charset=UTF-8",
+    "#! entries=125314",
+    "#! publisher=MDBG",
+    "#! license=https://creativecommons.org/licenses/by-sa/4.0/",
+    "#! date=2026-10-23T23:15:44Z",
+    "#! time=1792797344"
+  ],
+  "entries": [
+    {
+      "line": 3214,
+      "traditional": "並不",
+      "simplified": "并不",
+      "pinyin": "bing4 bu4",
+      "gloss": "not at all; by no means"
+    },
+    {
+      "line": 3245,
+      "traditional": "並非",
+      "simplified": "并非",
+      "pinyin": "bing4 fei1",
+      "gloss": "really isn't"
+    },
+    {
+      "line": 4096,
+      "traditional": "乃至",
+      "simplified": "乃至",
+      "pinyin": "nai3 zhi4",
+      "gloss": "and even; to go so far as to"
+    },
+    {
+      "line": 5473,
+      "traditional": "交給",
+      "simplified": "交给",
+      "pinyin": "jiao1 gei3",
+      "gloss": "to give; to deliver; to hand over"
+    },
+    {
+      "line": 6530,
+      "traditional": "以至",
+      "simplified": "以至",
+      "pinyin": "yi3 zhi4",
+      "gloss": "down to/up to/to such an extent as to .../also written 以至於|以至于[yi3 zhi4 yu2]"
+    },
+    {
+      "line": 8687,
+      "traditional": "倒是",
+      "simplified": "倒是",
+      "pinyin": "dao4 shi5",
+      "gloss": "contrary to what one might expect/actually/contrariwise/why don't you"
+    },
+    {
+      "line": 8869,
+      "traditional": "借閱",
+      "simplified": "借阅",
+      "pinyin": "jie4 yue4",
+      "gloss": "to borrow books to read"
+    },
+    {
+      "line": 17742,
+      "traditional": "即便",
+      "simplified": "即便",
+      "pinyin": "ji2 bian4",
+      "gloss": "even if/even though/right away/immediately"
+    },
+    {
+      "line": 18295,
+      "traditional": "反倒",
+      "simplified": "反倒",
+      "pinyin": "fan3 dao4",
+      "gloss": "(coll.) but on the contrary; but instead"
+    },
+    {
+      "line": 18564,
+      "traditional": "取回",
+      "simplified": "取回",
+      "pinyin": "qu3 hui2",
+      "gloss": "to retrieve"
+    },
+    {
+      "line": 19694,
+      "traditional": "各方",
+      "simplified": "各方",
+      "pinyin": "ge4 fang1",
+      "gloss": "all parties (in a dispute etc)/all sides/all directions"
+    },
+    {
+      "line": 20223,
+      "traditional": "同齡",
+      "simplified": "同龄",
+      "pinyin": "tong2 ling2",
+      "gloss": "of the same age"
+    },
+    {
+      "line": 21400,
+      "traditional": "咨詢",
+      "simplified": "咨询",
+      "pinyin": "zi1 xun2",
+      "gloss": "variant of 諮詢|咨询[zi1 xun2]"
+    },
+    {
+      "line": 21835,
+      "traditional": "哪怕",
+      "simplified": "哪怕",
+      "pinyin": "na3 pa4",
+      "gloss": "even/even if/even though/no matter how"
+    },
+    {
+      "line": 23912,
+      "traditional": "回到",
+      "simplified": "回到",
+      "pinyin": "hui2 dao4",
+      "gloss": "to return to"
+    },
+    {
+      "line": 26212,
+      "traditional": "報道",
+      "simplified": "报道",
+      "pinyin": "bao4 dao4",
+      "gloss": "to report (news)/report/CL:篇[pian1],份[fen4]"
+    },
+    {
+      "line": 27612,
+      "traditional": "夜裡",
+      "simplified": "夜里",
+      "pinyin": "ye4 li5",
+      "gloss": "during the night/at night/nighttime"
+    },
+    {
+      "line": 34930,
+      "traditional": "少年",
+      "simplified": "少年",
+      "pinyin": "shao4 nian2",
+      "gloss": "early youth/youngster/(literary) youth; young man"
+    },
+    {
+      "line": 36408,
+      "traditional": "工作人員",
+      "simplified": "工作人员",
+      "pinyin": "gong1 zuo4 ren2 yuan2",
+      "gloss": "staff member"
+    },
+    {
+      "line": 36766,
+      "traditional": "差點",
+      "simplified": "差点",
+      "pinyin": "cha4 dian3",
+      "gloss": "almost/nearly"
+    },
+    {
+      "line": 37462,
+      "traditional": "帶來",
+      "simplified": "带来",
+      "pinyin": "dai4 lai2",
+      "gloss": "to bring/(fig.) to bring about; to produce"
+    },
+    {
+      "line": 40285,
+      "traditional": "得到",
+      "simplified": "得到",
+      "pinyin": "de2 dao4",
+      "gloss": "to get; to obtain; to receive"
+    },
+    {
+      "line": 40412,
+      "traditional": "從而",
+      "simplified": "从而",
+      "pinyin": "cong2 er2",
+      "gloss": "thus; thereby"
+    },
+    {
+      "line": 41194,
+      "traditional": "志願者",
+      "simplified": "志愿者",
+      "pinyin": "zhi4 yuan4 zhe3",
+      "gloss": "volunteer"
+    },
+    {
+      "line": 42585,
+      "traditional": "想象",
+      "simplified": "想象",
+      "pinyin": "xiang3 xiang4",
+      "gloss": "to imagine; to envision/imagination"
+    },
+    {
+      "line": 43836,
+      "traditional": "成年人",
+      "simplified": "成年人",
+      "pinyin": "cheng2 nian2 ren2",
+      "gloss": "adult person"
+    },
+    {
+      "line": 45277,
+      "traditional": "找到",
+      "simplified": "找到",
+      "pinyin": "zhao3 dao4",
+      "gloss": "to find"
+    },
+    {
+      "line": 46030,
+      "traditional": "拆開",
+      "simplified": "拆开",
+      "pinyin": "chai1 kai1",
+      "gloss": "to dismantle/to disassemble/to open up (sth sealed)/to unpick"
+    },
+    {
+      "line": 47991,
+      "traditional": "接聽",
+      "simplified": "接听",
+      "pinyin": "jie1 ting1",
+      "gloss": "to answer the phone"
+    },
+    {
+      "line": 47993,
+      "traditional": "接著",
+      "simplified": "接着",
+      "pinyin": "jie1 zhe5",
+      "gloss": "to catch and hold on/to continue/to go on to do sth/to follow/to carry on/then/after that/subsequently/to proceed/to ensue/in turn/in one's turn"
+    },
+    {
+      "line": 48139,
+      "traditional": "推遲",
+      "simplified": "推迟",
+      "pinyin": "tui1 chi2",
+      "gloss": "to postpone/to put off/to defer"
+    },
+    {
+      "line": 48253,
+      "traditional": "提出",
+      "simplified": "提出",
+      "pinyin": "ti2 chu1",
+      "gloss": "to raise (an issue)/to propose/to put forward/to suggest/to post (on a website)/to withdraw (cash)"
+    },
+    {
+      "line": 49643,
+      "traditional": "擔負",
+      "simplified": "担负",
+      "pinyin": "dan1 fu4",
+      "gloss": "to shoulder/to bear/to undertake"
+    },
+    {
+      "line": 52799,
+      "traditional": "早已",
+      "simplified": "早已",
+      "pinyin": "zao3 yi3",
+      "gloss": "for a long time; long since/(dialect) in the past"
+    },
+    {
+      "line": 53541,
+      "traditional": "時而",
+      "simplified": "时而",
+      "pinyin": "shi2 er2",
+      "gloss": "occasionally; from time to time"
+    },
+    {
+      "line": 54943,
+      "traditional": "有人",
+      "simplified": "有人",
+      "pinyin": "you3 ren2",
+      "gloss": "someone/people/anyone/there is someone there/occupied (as in restroom)"
+    },
+    {
+      "line": 59214,
+      "traditional": "標注",
+      "simplified": "标注",
+      "pinyin": "biao1 zhu4",
+      "gloss": "to mark out/to tag/to put a sign on sth explaining or calling attention to/to annotate (e.g. a character with its pinyin)"
+    },
+    {
+      "line": 60652,
+      "traditional": "此前",
+      "simplified": "此前",
+      "pinyin": "ci3 qian2",
+      "gloss": "before this/before then/previously"
+    },
+    {
+      "line": 61502,
+      "traditional": "每年",
+      "simplified": "每年",
+      "pinyin": "mei3 nian2",
+      "gloss": "every year/each year/yearly"
+    },
+    {
+      "line": 69480,
+      "traditional": "為了",
+      "simplified": "为了",
+      "pinyin": "wei4 le5",
+      "gloss": "for; for the purpose of; in order to"
+    },
+    {
+      "line": 70546,
+      "traditional": "照看",
+      "simplified": "照看",
+      "pinyin": "zhao4 kan4",
+      "gloss": "to look after/to attend to/to have in care"
+    },
+    {
+      "line": 74768,
+      "traditional": "用戶",
+      "simplified": "用户",
+      "pinyin": "yong4 hu4",
+      "gloss": "user/consumer/subscriber/customer"
+    },
+    {
+      "line": 76507,
+      "traditional": "發送",
+      "simplified": "发送",
+      "pinyin": "fa1 song4",
+      "gloss": "to transmit/to dispatch/to issue (an official document or credential)"
+    },
+    {
+      "line": 78306,
+      "traditional": "看到",
+      "simplified": "看到",
+      "pinyin": "kan4 dao4",
+      "gloss": "to see"
+    },
+    {
+      "line": 83276,
+      "traditional": "答復",
+      "simplified": "答复",
+      "pinyin": "da2 fu4",
+      "gloss": "variant of 答覆|答复[da2 fu4]"
+    },
+    {
+      "line": 83286,
+      "traditional": "答覆",
+      "simplified": "答复",
+      "pinyin": "da2 fu4",
+      "gloss": "to answer/to reply/Reply to: (in email header)"
+    },
+    {
+      "line": 85861,
+      "traditional": "給",
+      "simplified": "给",
+      "pinyin": "gei3",
+      "gloss": "to/for/for the benefit of/to give/to allow/to do sth (for sb)/(grammatical equivalent of 被)/(grammatical equivalent of 把)/(sentence intensifier)"
+    },
+    {
+      "line": 85862,
+      "traditional": "給",
+      "simplified": "给",
+      "pinyin": "ji3",
+      "gloss": "(bound form) to supply; to provide/(literary) sufficient; abundant"
+    },
+    {
+      "line": 89787,
+      "traditional": "聽到",
+      "simplified": "听到",
+      "pinyin": "ting1 dao4",
+      "gloss": "to hear"
+    },
+    {
+      "line": 101921,
+      "traditional": "諮詢",
+      "simplified": "咨询",
+      "pinyin": "zi1 xun2",
+      "gloss": "to inquire; to consult; to seek advice from"
+    },
+    {
+      "line": 101922,
+      "traditional": "諮詢",
+      "simplified": "谘询",
+      "pinyin": "zi1 xun2",
+      "gloss": "consultation/to consult/to inquire"
+    },
+    {
+      "line": 105737,
+      "traditional": "身份",
+      "simplified": "身份",
+      "pinyin": "shen1 fen4",
+      "gloss": "identity; aspect of one's identity (e.g. mayor, father, permanent resident); role; capacity (as in \"in his capacity as ...\" 以[yi3] + ... + 的身份[de5 shen1 fen4]); status (social, legal etc); position; rank"
+    },
+    {
+      "line": 115706,
+      "traditional": "隨著",
+      "simplified": "随着",
+      "pinyin": "sui2 zhe5",
+      "gloss": "along with/in the wake of/following"
+    }
+  ],
+  "attribution": "CC-CEDICT, community maintained, published by MDBG; https://cc-cedict.org/wiki/ ; CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/",
+  "scope": "仅以下词条的基础词义对照；多音、多义另按当前卡片声明范围。咨询、答复解析跳转后的实义词头。未读整部辞典。"
+}

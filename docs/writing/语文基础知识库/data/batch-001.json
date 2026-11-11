@@ -1,0 +1,1387 @@
+{
+  "schema_version": 1,
+  "batch": "001",
+  "created_at": "2026-10-24",
+  "scope": "结构验证样本；未冻结全量常用词清单",
+  "entries": [
+    {
+      "id": "W0001",
+      "lemma": "还",
+      "aliases": [
+        "還"
+      ],
+      "pronunciation": "hái",
+      "status": "已核",
+      "scope": "本批仅核所列常用义项与示例，不代表该词全部义项",
+      "tags": [
+        "持续",
+        "补充",
+        "比较",
+        "时间"
+      ],
+      "groups": [
+        "持续组"
+      ],
+      "notes": "只讨论hái，不含归还的huán；相近词不可统一替换。",
+      "senses": [
+        {
+          "pos": "副词",
+          "meaning": "先前状态持续",
+          "status": "已核",
+          "source_ids": [
+            "D19234"
+          ],
+          "usages": [
+            {
+              "context": "有先前状态，或语境已明确该状态持续",
+              "example": "晚饭后，他还在看书。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不凭还字补造阅读多久或拖延的判断。",
+              "comparison": "仍然在看书也能成立；按本段口吻选择，不以短为优。"
+            }
+          ],
+          "id": "W0001.1"
+        },
+        {
+          "pos": "副词",
+          "meaning": "截至当前尚未完成",
+          "status": "已核",
+          "source_ids": [
+            "D19234"
+          ],
+          "usages": [
+            {
+              "context": "说到当前，某事未完成",
+              "example": "他还没看完这本书。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能从未完成推断不努力；还没是自然搭配。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0001.2"
+        },
+        {
+          "pos": "副词",
+          "meaning": "在已有内容之外补充",
+          "status": "已核",
+          "source_ids": [
+            "D19234"
+          ],
+          "usages": [
+            {
+              "context": "前文已有一项，后面补另一项",
+              "example": "除了课本，他还带了一本字典。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能换成单纯表示持续的仍然。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0001.3"
+        },
+        {
+          "pos": "副词",
+          "meaning": "比较程度进一步增加",
+          "status": "已核",
+          "source_ids": [
+            "D19234"
+          ],
+          "usages": [
+            {
+              "context": "比较对象和维度明确",
+              "example": "这条路比那条还远。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不把程度比较读成状态持续。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0001.4"
+        },
+        {
+          "pos": "副词",
+          "meaning": "在特定语境中带意外或赞叹",
+          "status": "已核",
+          "source_ids": [
+            "D19234"
+          ],
+          "usages": [
+            {
+              "context": "说话者确实表达相应态度",
+              "example": "这个办法还真管用。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "转述不能凭空加进意外评价或效果保证。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0001.5"
+        }
+      ],
+      "review": {
+        "method": "主笔对照已读词典释义，另查自编例句及替换预设；非独立专家评审",
+        "date": "2026-10-24"
+      }
+    },
+    {
+      "id": "W0002",
+      "lemma": "还是",
+      "aliases": [
+        "還是"
+      ],
+      "pronunciation": "hái shì（来源音读；本批不规定大陆音读）",
+      "status": "已核",
+      "scope": "本批仅核所列常用义项与示例，不代表该词全部义项",
+      "tags": [
+        "持续",
+        "选择",
+        "建议"
+      ],
+      "groups": [
+        "持续组"
+      ],
+      "notes": "用户局部认可“还是写不出这样流畅的句子”，仅为对应语境口吻偏好，不是词典规则，也不证明学生能力。",
+      "senses": [
+        {
+          "pos": "副词",
+          "meaning": "尝试或变化背景下，状态依旧",
+          "status": "已核",
+          "source_ids": [
+            "D19237"
+          ],
+          "usages": [
+            {
+              "context": "前文或情境能提供先前状态",
+              "example": "又读了一遍，他还是没看懂。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能为这个词补造再次阅读的经历。",
+              "comparison": "还没看懂也可能成立；还是更显出这次尝试后结果未变。"
+            }
+          ],
+          "id": "W0002.1"
+        },
+        {
+          "pos": "连词",
+          "meaning": "连接供选择的选项",
+          "status": "已核",
+          "source_ids": [
+            "D19237"
+          ],
+          "usages": [
+            {
+              "context": "存在需要比较或选择的事项",
+              "example": "周末坐车去还是走过去，要看天气。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能换成仍然；词的出现不等于全文采用问答写法。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0002.2"
+        },
+        {
+          "pos": "副词",
+          "meaning": "倾向于某种做法",
+          "status": "已核",
+          "source_ids": [
+            "D19237"
+          ],
+          "usages": [
+            {
+              "context": "在比较后表达建议或选择倾向",
+              "example": "路上可能堵车，还是早点出发吧。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能用它把明确义务软化成可选建议。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0002.3"
+        }
+      ],
+      "review": {
+        "method": "主笔对照已读词典释义，另查自编例句及替换预设；非独立专家评审",
+        "date": "2026-10-24"
+      }
+    },
+    {
+      "id": "W0003",
+      "lemma": "仍然",
+      "aliases": [],
+      "pronunciation": "réng rán",
+      "status": "已核",
+      "scope": "本批仅核所列常用义项与示例，不代表该词全部义项",
+      "tags": [
+        "持续"
+      ],
+      "groups": [
+        "持续组"
+      ],
+      "notes": "有时偏平稳陈述，不等于只能用于正式文体；语体为编辑判断，不是词典定论。",
+      "senses": [
+        {
+          "pos": "副词",
+          "meaning": "先前状态没有改变",
+          "status": "已核",
+          "source_ids": [
+            "D36310"
+          ],
+          "usages": [
+            {
+              "context": "存在先前状态或应有变化的情境",
+              "example": "调整作息后，他晚上仍然很晚才睡。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能补造调整已改善的效果；仍然可能不等于仍然发生。",
+              "comparison": "持续用法可与还是比较，但不可替换选择或建议用法。"
+            }
+          ],
+          "id": "W0003.1"
+        }
+      ],
+      "review": {
+        "method": "主笔对照已读词典释义，另查自编例句及替换预设；非独立专家评审",
+        "date": "2026-10-24"
+      }
+    },
+    {
+      "id": "W0004",
+      "lemma": "但是",
+      "aliases": [],
+      "pronunciation": "dàn shì",
+      "status": "已核",
+      "scope": "本批仅核所列常用义项与示例，不代表该词全部义项",
+      "tags": [
+        "转折"
+      ],
+      "groups": [
+        "转折组"
+      ],
+      "notes": "转折可以是意愿与现实牵制，不要求两个分句字面完全相反。",
+      "senses": [
+        {
+          "pos": "连词",
+          "meaning": "连接存在转折的两面内容",
+          "status": "已核",
+          "source_ids": [
+            "D7966"
+          ],
+          "usages": [
+            {
+              "context": "前后有相反预期、限制或牵制",
+              "example": "她想收起设备，但是孩子查资料时还需要用。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "若只是两人分别做事，不能为了连接而编出转折。",
+              "comparison": "可比较不过、可是，不能只靠换词消除正式感。"
+            }
+          ],
+          "id": "W0004.1"
+        }
+      ],
+      "review": {
+        "method": "主笔对照已读词典释义，另查自编例句及替换预设；非独立专家评审",
+        "date": "2026-10-24"
+      }
+    },
+    {
+      "id": "W0005",
+      "lemma": "不过",
+      "aliases": [
+        "不過"
+      ],
+      "pronunciation": "bú guò（连读常见变调）",
+      "status": "已核",
+      "scope": "本批仅核所列常用义项与示例，不代表该词全部义项",
+      "tags": [
+        "转折",
+        "范围",
+        "程度"
+      ],
+      "groups": [
+        "转折组"
+      ],
+      "notes": "读音标示为连读说明，不用来替代大陆普通话审音规范。",
+      "senses": [
+        {
+          "pos": "连词",
+          "meaning": "接着补充转折或限制",
+          "status": "已核",
+          "source_ids": [
+            "D2027"
+          ],
+          "usages": [
+            {
+              "context": "后句限制前句在当前语境中的含义",
+              "example": "地方不远，不过周末人多。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不为写转折补造客流事实。",
+              "comparison": "有时较像补一句限制，不建立比但是一律弱的等级。"
+            }
+          ],
+          "id": "W0005.1"
+        },
+        {
+          "pos": "副词",
+          "meaning": "限定数量，带仅有之意",
+          "status": "已核",
+          "source_ids": [
+            "D2027"
+          ],
+          "usages": [
+            {
+              "context": "数量及说话者的比较立场有依据",
+              "example": "从家走过去不过十分钟。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "时间须有依据；仅十分钟也带短的判断。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0005.2"
+        },
+        {
+          "pos": "动词后结构",
+          "meaning": "表示无法超过对方等关系",
+          "status": "已核",
+          "source_ids": [
+            "D2027"
+          ],
+          "usages": [
+            {
+              "context": "与前面的动词合读整组结构",
+              "example": "这场比赛，他跑不过对方。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能把不过按转折词替换；此处按结构收录，不强判独立词边界。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0005.3"
+        },
+        {
+          "pos": "固定结构成分",
+          "meaning": "再……不过强调程度很高",
+          "status": "已核",
+          "source_ids": [
+            "D2027"
+          ],
+          "usages": [
+            {
+              "context": "有足够依据支持高程度评价",
+              "example": "这个尺寸再合适不过了。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能借自然语气加强未经支持的产品或健康效果。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0005.4"
+        }
+      ],
+      "review": {
+        "method": "主笔对照已读词典释义，另查自编例句及替换预设；非独立专家评审",
+        "date": "2026-10-24"
+      }
+    },
+    {
+      "id": "W0006",
+      "lemma": "又",
+      "aliases": [],
+      "pronunciation": "yòu",
+      "status": "已核",
+      "scope": "本批仅核所列常用义项与示例，不代表该词全部义项",
+      "tags": [
+        "重复",
+        "并列",
+        "程度"
+      ],
+      "groups": [
+        "重复组"
+      ],
+      "notes": "不是“只能用于过去”；叙述将来重复或说话者预期时也须看整句，本批不穷尽。",
+      "senses": [
+        {
+          "pos": "副词",
+          "meaning": "动作或情形再出现",
+          "status": "已核",
+          "source_ids": [
+            "D41523"
+          ],
+          "usages": [
+            {
+              "context": "有前一次或重复的情境",
+              "example": "昨天来过的那位读者，今天又来了。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能无依据写成多次发生。",
+              "comparison": "再常出现在下一次动作安排中；不是单靠过去将来机械区分。"
+            }
+          ],
+          "id": "W0006.1"
+        },
+        {
+          "pos": "副词",
+          "meaning": "性质或动作并列兼有",
+          "status": "已核",
+          "source_ids": [
+            "D41523"
+          ],
+          "usages": [
+            {
+              "context": "两个性质都适用于同一对象",
+              "example": "这个袋子又轻又结实。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "两种性质分别需要依据；不是数量相加。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0006.2"
+        },
+        {
+          "pos": "副词",
+          "meaning": "在原有程度上进一步变化",
+          "status": "已核",
+          "source_ids": [
+            "D41523"
+          ],
+          "usages": [
+            {
+              "context": "先有程度，再出现新变化",
+              "example": "雨又大了一些。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不得把当前程度改成持续加重。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0006.3"
+        }
+      ],
+      "review": {
+        "method": "主笔对照已读词典释义，另查自编例句及替换预设；非独立专家评审",
+        "date": "2026-10-24"
+      }
+    },
+    {
+      "id": "W0007",
+      "lemma": "再",
+      "aliases": [],
+      "pronunciation": "zài",
+      "status": "已核",
+      "scope": "本批仅核所列常用义项与示例，不代表该词全部义项",
+      "tags": [
+        "重复",
+        "顺序",
+        "程度"
+      ],
+      "groups": [
+        "重复组"
+      ],
+      "notes": "仅建常见重复、顺序、加深用法，未收入文言数词等用法。",
+      "senses": [
+        {
+          "pos": "副词",
+          "meaning": "下一次或继续做某事",
+          "status": "已核",
+          "source_ids": [
+            "D37053"
+          ],
+          "usages": [
+            {
+              "context": "安排或设想后续动作",
+              "example": "这段没读懂，明天再读一遍。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不把计划中的动作写成已发生。",
+              "comparison": "今天又读了一遍是叙述重复，明天再读是安排；不当全局替换规则。"
+            }
+          ],
+          "id": "W0007.1"
+        },
+        {
+          "pos": "副词",
+          "meaning": "先一事，后另一事",
+          "status": "已核",
+          "source_ids": [
+            "D37053"
+          ],
+          "usages": [
+            {
+              "context": "两件事确有前后安排",
+              "example": "先把初稿写完，再修改用词。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能凭一个再字增加原材料没有的前置条件。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0007.2"
+        },
+        {
+          "pos": "副词",
+          "meaning": "程度或数量进一步增加",
+          "status": "已核",
+          "source_ids": [
+            "D37053"
+          ],
+          "usages": [
+            {
+              "context": "基于已有程度继续增加",
+              "example": "杯里再加一点水。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不等于已经额外加过。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0007.3"
+        }
+      ],
+      "review": {
+        "method": "主笔对照已读词典释义，另查自编例句及替换预设；非独立专家评审",
+        "date": "2026-10-24"
+      }
+    },
+    {
+      "id": "W0008",
+      "lemma": "也",
+      "aliases": [],
+      "pronunciation": "yě",
+      "status": "已核",
+      "scope": "本批仅核所列常用义项与示例，不代表该词全部义项",
+      "tags": [
+        "补充",
+        "并列",
+        "承接"
+      ],
+      "groups": [
+        "补充组"
+      ],
+      "notes": "仅讨论现代副词，不将词典列出的文言语气助词搬入现代正文。",
+      "senses": [
+        {
+          "pos": "副词",
+          "meaning": "表示不同对象有相同情况",
+          "status": "已核",
+          "source_ids": [
+            "D40885"
+          ],
+          "usages": [
+            {
+              "context": "上文或共享情境有可比较的情况",
+              "example": "姐姐喜欢画画，弟弟也喜欢。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能从也认同推出赞同对象或整套办法。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0008.1"
+        },
+        {
+          "pos": "副词",
+          "meaning": "列举同类中的不同情况",
+          "status": "已核",
+          "source_ids": [
+            "D40885"
+          ],
+          "usages": [
+            {
+              "context": "围绕同一范围补出另一项",
+              "example": "来参观的家庭中，有坐车来的，也有走来的。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能把两种情形拼成同一家庭的经历。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0008.2"
+        }
+      ],
+      "review": {
+        "method": "主笔对照已读词典释义，另查自编例句及替换预设；非独立专家评审",
+        "date": "2026-10-24"
+      }
+    },
+    {
+      "id": "W0009",
+      "lemma": "才",
+      "aliases": [],
+      "pronunciation": "cái",
+      "status": "已核",
+      "scope": "本批仅核所列常用义项与示例，不代表该词全部义项",
+      "tags": [
+        "时间",
+        "范围",
+        "强调"
+      ],
+      "groups": [
+        "时点组"
+      ],
+      "notes": "本批不建才能、人才等名词用法；才表示条件的用法另待补。",
+      "senses": [
+        {
+          "pos": "副词",
+          "meaning": "到某时或条件出现后方开始",
+          "status": "已核",
+          "source_ids": [
+            "D37929"
+          ],
+          "usages": [
+            {
+              "context": "上下文给出开始时点，常带等待的意味",
+              "example": "等了半天，他才回消息。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能把八点回复直接改成八点才回复，给客观时点加迟的预期。",
+              "comparison": "就可能突出较早或紧接；时点相同，评价可能不同。"
+            }
+          ],
+          "id": "W0009.1"
+        },
+        {
+          "pos": "副词",
+          "meaning": "限制数量，突出少",
+          "status": "已核",
+          "source_ids": [
+            "D37929"
+          ],
+          "usages": [
+            {
+              "context": "有数量及比较立场",
+              "example": "袋子里才两本书。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能把客观两本强写成不足；如需中性表达可只报数量。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0009.2"
+        }
+      ],
+      "review": {
+        "method": "主笔对照已读词典释义，另查自编例句及替换预设；非独立专家评审",
+        "date": "2026-10-24"
+      }
+    },
+    {
+      "id": "W0010",
+      "lemma": "就",
+      "aliases": [],
+      "pronunciation": "jiù",
+      "status": "已核",
+      "scope": "本批仅核所列常用义项与示例，不代表该词全部义项",
+      "tags": [
+        "时间",
+        "范围",
+        "判断"
+      ],
+      "groups": [
+        "时点组"
+      ],
+      "notes": "仅建紧接、数量限制及确认；只要……就等条件结构须另建关系卡。",
+      "senses": [
+        {
+          "pos": "副词",
+          "meaning": "后一动作紧接发生",
+          "status": "已核",
+          "source_ids": [
+            "D22719"
+          ],
+          "usages": [
+            {
+              "context": "有前一动作及紧接关系",
+              "example": "读完这一页，他就合上了书。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能把一般先后加强为立刻；原材料需支持。",
+              "comparison": "才可引出较晚开始；不能仅为节奏互换。"
+            }
+          ],
+          "id": "W0010.1"
+        },
+        {
+          "pos": "副词",
+          "meaning": "限定为某对象",
+          "status": "已核",
+          "source_ids": [
+            "D22719"
+          ],
+          "usages": [
+            {
+              "context": "范围已明确，需要强调只剩或只有某项",
+              "example": "大家都走了，就他还在。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能把有人留下写成只有一人留下。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0010.2"
+        },
+        {
+          "pos": "副词",
+          "meaning": "确认某个对象或判断",
+          "status": "已核",
+          "source_ids": [
+            "D22719"
+          ],
+          "usages": [
+            {
+              "context": "说话者有确定依据",
+              "example": "门口那位就是负责人。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能用就是把推测加强成确定。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0010.3"
+        }
+      ],
+      "review": {
+        "method": "主笔对照已读词典释义，另查自编例句及替换预设；非独立专家评审",
+        "date": "2026-10-24"
+      }
+    },
+    {
+      "id": "W0011",
+      "lemma": "不",
+      "aliases": [],
+      "pronunciation": "bù",
+      "status": "已核",
+      "scope": "本批仅核所列常用义项与示例，不代表该词全部义项",
+      "tags": [
+        "否定",
+        "选择"
+      ],
+      "groups": [
+        "否定组"
+      ],
+      "notes": "只建常见否定及不是……就是结构；不与没的区别不能硬套过去/将来。",
+      "senses": [
+        {
+          "pos": "副词",
+          "meaning": "否定行为、性质或判断",
+          "status": "已核",
+          "source_ids": [
+            "D1911"
+          ],
+          "usages": [
+            {
+              "context": "应核清是否否定意愿、习惯、能力或事实",
+              "example": "他不喝咖啡，平时喜欢喝茶。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不喝与没喝可能分别指习惯/意愿和某次未发生，需看语境。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0011.1"
+        },
+        {
+          "pos": "结构成分",
+          "meaning": "不是……就是列出受限选项",
+          "status": "已核",
+          "source_ids": [
+            "D1911"
+          ],
+          "usages": [
+            {
+              "context": "已知范围确实由这些选项构成",
+              "example": "周末他不是去图书馆，就是去球场。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "容易形成穷尽判断；不把几个例子改成全部可能。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0011.2"
+        }
+      ],
+      "review": {
+        "method": "主笔对照已读词典释义，另查自编例句及替换预设；非独立专家评审",
+        "date": "2026-10-24"
+      }
+    },
+    {
+      "id": "W0012",
+      "lemma": "没",
+      "aliases": [
+        "沒"
+      ],
+      "pronunciation": "méi",
+      "status": "已核",
+      "scope": "本批仅核所列常用义项与示例，不代表该词全部义项",
+      "tags": [
+        "否定",
+        "存在",
+        "完成"
+      ],
+      "groups": [
+        "否定组"
+      ],
+      "notes": "不讨论mò的淹没义；没不是所有过去句的统一否定词。",
+      "senses": [
+        {
+          "pos": "副词",
+          "meaning": "否定某次发生或完成",
+          "status": "已核",
+          "source_ids": [
+            "D3846"
+          ],
+          "usages": [
+            {
+              "context": "所述事件截至相应时点未发生或未完成",
+              "example": "他昨天没喝咖啡。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能据此推断他不喜欢咖啡或一直不喝。",
+              "comparison": "不喝可表达习惯或意愿；时间并非唯一依据。"
+            }
+          ],
+          "id": "W0012.1"
+        },
+        {
+          "pos": "动词性否定形式",
+          "meaning": "否定具有或存在",
+          "status": "已核",
+          "source_ids": [
+            "D3846"
+          ],
+          "usages": [
+            {
+              "context": "对象是否存在/拥有才是要说的事",
+              "example": "桌上没纸了。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能只因看到没就断定过去行为；没纸也不同于不拿纸。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0012.2"
+        }
+      ],
+      "review": {
+        "method": "主笔对照已读词典释义，另查自编例句及替换预设；非独立专家评审",
+        "date": "2026-10-24"
+      }
+    },
+    {
+      "id": "W0013",
+      "lemma": "可以",
+      "aliases": [],
+      "pronunciation": "kě yǐ",
+      "status": "已核",
+      "scope": "本批仅核所列常用义项与示例，不代表该词全部义项",
+      "tags": [
+        "情态",
+        "能力",
+        "评价"
+      ],
+      "groups": [
+        "情态组"
+      ],
+      "notes": "词典概述为能够；权限/许可与能力的细分须结合实际语境，不能仅凭本词推断某项政策允许。本批未作完整许可语法专题。",
+      "senses": [
+        {
+          "pos": "情态动词",
+          "meaning": "具备实现某动作的条件或能力",
+          "status": "已核",
+          "source_ids": [
+            "D18015"
+          ],
+          "usages": [
+            {
+              "context": "谁能做什么，需要明确条件",
+              "example": "这辆车可以坐五个人。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "能坐不等于应当乘坐；不得把可以改成已经做到。",
+              "comparison": "应该常表达应当或推测，与可以的实现条件不相同。"
+            }
+          ],
+          "id": "W0013.1"
+        },
+        {
+          "pos": "形容词性用法",
+          "meaning": "评价达到尚可程度",
+          "status": "已核",
+          "source_ids": [
+            "D18015"
+          ],
+          "usages": [
+            {
+              "context": "明确是主观评价",
+              "example": "这次做的味道还可以。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能把尚可扩大为很好或保证别人也满意。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0013.2"
+        }
+      ],
+      "review": {
+        "method": "主笔对照已读词典释义，另查自编例句及替换预设；非独立专家评审",
+        "date": "2026-10-24"
+      }
+    },
+    {
+      "id": "W0014",
+      "lemma": "应该",
+      "aliases": [
+        "應該"
+      ],
+      "pronunciation": "yīng gāi（来源音读）",
+      "status": "已核",
+      "scope": "本批仅核所列常用义项与示例，不代表该词全部义项",
+      "tags": [
+        "情态",
+        "义务",
+        "推测"
+      ],
+      "groups": [
+        "情态组"
+      ],
+      "notes": "大陆普通话常见轻声读法及其审音未在本批核定；读音信息不用于生成发音规范。",
+      "senses": [
+        {
+          "pos": "情态动词",
+          "meaning": "说理上或职责上应当如此",
+          "status": "已核",
+          "source_ids": [
+            "D42410"
+          ],
+          "usages": [
+            {
+              "context": "有义务、道理或建议归属",
+              "example": "借来的书应该按时归还。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不把应当降为可选，也不把建议抬成法定义务。",
+              "comparison": "不等于可以做，语义力度不同。"
+            }
+          ],
+          "id": "W0014.1"
+        },
+        {
+          "pos": "情态动词",
+          "meaning": "带有不确定性的推测",
+          "status": "已核",
+          "source_ids": [
+            "D42410"
+          ],
+          "usages": [
+            {
+              "context": "说话者根据有限信息推断",
+              "example": "灯还亮着，他应该还没睡。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能改成他还没睡，删除推测归属。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0014.2"
+        }
+      ],
+      "review": {
+        "method": "主笔对照已读词典释义，另查自编例句及替换预设；非独立专家评审",
+        "date": "2026-10-24"
+      }
+    },
+    {
+      "id": "W0015",
+      "lemma": "了",
+      "aliases": [],
+      "pronunciation": "le",
+      "status": "已核",
+      "scope": "本批仅核所列常用义项与示例，不代表该词全部义项",
+      "tags": [
+        "助词",
+        "完成",
+        "语气"
+      ],
+      "groups": [
+        "语气组"
+      ],
+      "notes": "仅讨论le；不含liǎo的了解或办得了。完成体与状态变化的全面区分尚待语法资料补齐。",
+      "senses": [
+        {
+          "pos": "助词",
+          "meaning": "表示动作结束等情形",
+          "status": "已核",
+          "source_ids": [
+            "D13268"
+          ],
+          "usages": [
+            {
+              "context": "所说的动作确已结束",
+              "example": "这一章读完了。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能为口语感把计划或进行中改成已完成。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0015.1"
+        },
+        {
+          "pos": "语气助词",
+          "meaning": "在劝止等话语中调整语气",
+          "status": "已核",
+          "source_ids": [
+            "D13268"
+          ],
+          "usages": [
+            {
+              "context": "说话者确实劝对方停止当前行为",
+              "example": "别催了，我正在收拾。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能把所有了当过去时；这句劝止不表示收拾已经结束。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0015.2"
+        }
+      ],
+      "review": {
+        "method": "主笔对照已读词典释义，另查自编例句及替换预设；非独立专家评审",
+        "date": "2026-10-24"
+      }
+    },
+    {
+      "id": "W0016",
+      "lemma": "呢",
+      "aliases": [],
+      "pronunciation": "ne",
+      "status": "已核",
+      "scope": "本批仅核所列常用义项与示例，不代表该词全部义项",
+      "tags": [
+        "语气",
+        "疑问",
+        "强调"
+      ],
+      "groups": [
+        "语气组"
+      ],
+      "notes": "只讨论语气词ne，不含呢绒的ní。",
+      "senses": [
+        {
+          "pos": "语气助词",
+          "meaning": "用于真实疑问的语气",
+          "status": "已核",
+          "source_ids": [
+            "D12181"
+          ],
+          "usages": [
+            {
+              "context": "确实要向对方询问",
+              "example": "你选的那本书呢？",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能为亲近感虚构问题，把叙述稿改成自问自答。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0016.1"
+        },
+        {
+          "pos": "语气助词",
+          "meaning": "突出当前情形或加强语气",
+          "status": "已核",
+          "source_ids": [
+            "D12181"
+          ],
+          "usages": [
+            {
+              "context": "情境里确有正在关注的事情",
+              "example": "他还在屋里看书呢。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不按配额加呢；不能从语气推断作者亲眼所见。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0016.2"
+        }
+      ],
+      "review": {
+        "method": "主笔对照已读词典释义，另查自编例句及替换预设；非独立专家评审",
+        "date": "2026-10-24"
+      }
+    },
+    {
+      "id": "W0017",
+      "lemma": "吧",
+      "aliases": [],
+      "pronunciation": "ba",
+      "status": "已核",
+      "scope": "本批仅核所列常用义项与示例，不代表该词全部义项",
+      "tags": [
+        "语气",
+        "建议",
+        "推测"
+      ],
+      "groups": [
+        "语气组"
+      ],
+      "notes": "词典的bā酒店义在另一入口ID32，本条不讨论。",
+      "senses": [
+        {
+          "pos": "语气助词",
+          "meaning": "商量、请求或劝说",
+          "status": "已核",
+          "source_ids": [
+            "D103"
+          ],
+          "usages": [
+            {
+              "context": "说话双方有商量或请求关系",
+              "example": "我们明天再聊吧。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能把明确截止要求写成商量。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0017.1"
+        },
+        {
+          "pos": "语气助词",
+          "meaning": "表示推测或不确定",
+          "status": "已核",
+          "source_ids": [
+            "D103"
+          ],
+          "usages": [
+            {
+              "context": "说话者并未确定事情",
+              "example": "他大概已经到家了吧。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能拿吧随意软化需准确告知的事实。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0017.2"
+        },
+        {
+          "pos": "语气助词",
+          "meaning": "表达接受某种安排",
+          "status": "已核",
+          "source_ids": [
+            "D103"
+          ],
+          "usages": [
+            {
+              "context": "前文确有待回应的安排",
+              "example": "好吧，就照这个时间来。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不把无明确同意的材料改写成当事人接受。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0017.3"
+        }
+      ],
+      "review": {
+        "method": "主笔对照已读词典释义，另查自编例句及替换预设；非独立专家评审",
+        "date": "2026-10-24"
+      }
+    },
+    {
+      "id": "W0018",
+      "lemma": "了解",
+      "aliases": [
+        "瞭解"
+      ],
+      "pronunciation": "liǎo jiě",
+      "status": "已核",
+      "scope": "本批仅核所列常用义项与示例，不代表该词全部义项",
+      "tags": [
+        "认知",
+        "调查",
+        "动宾搭配"
+      ],
+      "groups": [
+        "认知组"
+      ],
+      "notes": "本批区分知晓和调查；了解一个人并非不能说，可能表示懂其性格而非仅仅相识。",
+      "senses": [
+        {
+          "pos": "动词",
+          "meaning": "明白某事的情况或意思",
+          "status": "已核",
+          "source_ids": [
+            "D14414"
+          ],
+          "usages": [
+            {
+              "context": "对象是要理解的内容或特征",
+              "example": "她了解这项活动的安排。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "听说活动与了解详情不同，不把接触资料写成充分掌握。",
+              "comparison": "认识一个人可指相识；了解一个人可指知道性格经历，非一律互换。"
+            }
+          ],
+          "id": "W0018.1"
+        },
+        {
+          "pos": "动词",
+          "meaning": "通过询问等查明情况",
+          "status": "已核",
+          "source_ids": [
+            "D14414"
+          ],
+          "usages": [
+            {
+              "context": "是获取信息的过程",
+              "example": "他去了解停课的原因。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "去了解不等于已查清原因；不能丢失动作阶段。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0018.2"
+        }
+      ],
+      "review": {
+        "method": "主笔对照已读词典释义，另查自编例句及替换预设；非独立专家评审",
+        "date": "2026-10-24"
+      }
+    },
+    {
+      "id": "W0019",
+      "lemma": "认识",
+      "aliases": [
+        "認識"
+      ],
+      "pronunciation": "rèn shì（来源音读；本批不规定大陆音读）",
+      "status": "已核",
+      "scope": "本批仅核所列常用义项与示例，不代表该词全部义项",
+      "tags": [
+        "认知",
+        "动宾搭配"
+      ],
+      "groups": [
+        "认知组"
+      ],
+      "notes": "与大陆常见音读的差异待按相应审音资料核；不把原词典音读改写成大陆规范依据。",
+      "senses": [
+        {
+          "pos": "动词",
+          "meaning": "与人相识",
+          "status": "已核",
+          "source_ids": [
+            "D36255"
+          ],
+          "usages": [
+            {
+              "context": "说的是人与人的相识关系",
+              "example": "她和这位老师认识多年。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "认识多年不能推成了解对方全部经历。",
+              "comparison": "了解此人可能是懂性格，不能直接替代相识事实。"
+            }
+          ],
+          "id": "W0019.1"
+        },
+        {
+          "pos": "动词",
+          "meaning": "辨认得出某种对象",
+          "status": "已核",
+          "source_ids": [
+            "D36255"
+          ],
+          "usages": [
+            {
+              "context": "说的是辨识而非深入理解",
+              "example": "孩子已经认识这个字。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "认得字形不等于理解文章意思；不把认知层次提高。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0019.2"
+        }
+      ],
+      "review": {
+        "method": "主笔对照已读词典释义，另查自编例句及替换预设；非独立专家评审",
+        "date": "2026-10-24"
+      }
+    },
+    {
+      "id": "W0020",
+      "lemma": "孩子",
+      "aliases": [],
+      "pronunciation": "hái zi",
+      "status": "已核",
+      "scope": "本批仅核所列常用义项与示例，不代表该词全部义项",
+      "tags": [
+        "人物",
+        "名词",
+        "范围"
+      ],
+      "groups": [],
+      "notes": "家庭关系义可以指成年子女；具体政策年龄不能由这个词单独确定。",
+      "senses": [
+        {
+          "pos": "名词",
+          "meaning": "指儿童或未成年人",
+          "status": "已核",
+          "source_ids": [
+            "D19228"
+          ],
+          "usages": [
+            {
+              "context": "日常语境在说年龄阶段",
+              "example": "院子里有几个孩子在玩。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能由孩子一词推断具体月龄或资格范围。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0020.1"
+        },
+        {
+          "pos": "名词",
+          "meaning": "指某人的子女",
+          "status": "已核",
+          "source_ids": [
+            "D19228"
+          ],
+          "usages": [
+            {
+              "context": "强调亲子关系，未必指未成年",
+              "example": "孩子已经工作，父母还住在老家。",
+              "example_type": "自编",
+              "evidence_type": "编辑归纳",
+              "risk": "不能据此把成年子女改写成小学生或婴儿。",
+              "comparison": ""
+            }
+          ],
+          "id": "W0020.2"
+        }
+      ],
+      "review": {
+        "method": "主笔对照已读词典释义，另查自编例句及替换预设；非独立专家评审",
+        "date": "2026-10-24"
+      }
+    }
+  ]
+}

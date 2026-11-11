@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-25",
+  "counts": {
+    "entries": 1000,
+    "reviewed_entries": 950,
+    "senses": 1028,
+    "reviewed_senses": 978,
+    "usages": 1028,
+    "states": {
+      "已核": 950,
+      "待核": 50
+    }
+  },
+  "batches": 27,
+  "exact_manifest_match": true,
+  "views_match_data": true,
+  "idempotent_build": true,
+  "archive_hash_matches": true,
+  "archive_integrity": true,
+  "license_pdf_present": true,
+  "per_word_comparison_entries": 300
+}

@@ -885,7 +885,7 @@ def compute_cover_crop_fields(*, width: int, height: int) -> dict[str, str]:
 def get_material_image_meta(media_id: str) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
     """从素材列表 + 图片 url 解析尺寸（图片类 get_material 可能直接返回二进制，不走该接口）。"""
     offset = 0
-    while offset < 200:
+    while offset < 500:
         items, list_err = batchget_material_images(offset=offset, count=20)
         if list_err:
             return None, list_err

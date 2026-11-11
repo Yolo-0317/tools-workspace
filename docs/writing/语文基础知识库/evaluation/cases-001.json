@@ -1,0 +1,292 @@
+[
+  {
+    "case": "还没",
+    "text": "他还没看完这本书。",
+    "expected_candidate_words": [
+      "还",
+      "没"
+    ],
+    "actual_candidate_words": [
+      "还",
+      "没"
+    ],
+    "retrieval_passed": true,
+    "editorial_review": "原句可保留；不能一律加成还是，也不能推断拖延。",
+    "review_method": "主笔阅读当前用法说明后作语境比较；非自动语义判定或独立用户测试"
+  },
+  {
+    "case": "还是持续",
+    "text": "又读了一遍，他还是没看懂。",
+    "expected_candidate_words": [
+      "又",
+      "了",
+      "还是",
+      "没"
+    ],
+    "actual_candidate_words": [
+      "又",
+      "了",
+      "还是",
+      "没"
+    ],
+    "retrieval_passed": true,
+    "editorial_review": "持续用法有尝试背景；不是选择或建议用法。",
+    "review_method": "主笔阅读当前用法说明后作语境比较；非自动语义判定或独立用户测试"
+  },
+  {
+    "case": "还是选择",
+    "text": "坐车还是走路，取决于天气。",
+    "expected_candidate_words": [
+      "还是"
+    ],
+    "actual_candidate_words": [
+      "还是"
+    ],
+    "retrieval_passed": true,
+    "editorial_review": "不可换仍然；程序保留多个候选，不自动判义。",
+    "review_method": "主笔阅读当前用法说明后作语境比较；非自动语义判定或独立用户测试"
+  },
+  {
+    "case": "还是建议",
+    "text": "路远，还是早点出发吧。",
+    "expected_candidate_words": [
+      "还是",
+      "吧"
+    ],
+    "actual_candidate_words": [
+      "还是",
+      "吧"
+    ],
+    "retrieval_passed": true,
+    "editorial_review": "建议语气，不是已发生的持续事实。",
+    "review_method": "主笔阅读当前用法说明后作语境比较；非自动语义判定或独立用户测试"
+  },
+  {
+    "case": "仍然可能",
+    "text": "这个问题仍然可能发生。",
+    "expected_candidate_words": [
+      "仍然"
+    ],
+    "actual_candidate_words": [
+      "仍然"
+    ],
+    "retrieval_passed": true,
+    "editorial_review": "不能删除可能，把可能性改成确定发生。",
+    "review_method": "主笔阅读当前用法说明后作语境比较；非自动语义判定或独立用户测试"
+  },
+  {
+    "case": "但是并列",
+    "text": "孩子在写作文，但是家长在看书。",
+    "expected_candidate_words": [
+      "孩子",
+      "但是"
+    ],
+    "actual_candidate_words": [
+      "孩子",
+      "但是"
+    ],
+    "retrieval_passed": true,
+    "editorial_review": "无其他情境时转折依据不足；有相反约定可成立，不作孤立句式绝对判错。",
+    "review_method": "主笔阅读当前用法说明后作语境比较；非自动语义判定或独立用户测试"
+  },
+  {
+    "case": "不过数量",
+    "text": "路程不过十分钟。",
+    "expected_candidate_words": [
+      "不过"
+    ],
+    "actual_candidate_words": [
+      "不过"
+    ],
+    "retrieval_passed": true,
+    "editorial_review": "不是转折，不能换但是。",
+    "review_method": "主笔阅读当前用法说明后作语境比较；非自动语义判定或独立用户测试"
+  },
+  {
+    "case": "又叙述",
+    "text": "他今天又来了。",
+    "expected_candidate_words": [
+      "又",
+      "了"
+    ],
+    "actual_candidate_words": [
+      "又",
+      "了"
+    ],
+    "retrieval_passed": true,
+    "editorial_review": "确认前次背景；不套只能用于过去的规则。",
+    "review_method": "主笔阅读当前用法说明后作语境比较；非自动语义判定或独立用户测试"
+  },
+  {
+    "case": "再安排",
+    "text": "明天再来一趟。",
+    "expected_candidate_words": [
+      "再"
+    ],
+    "actual_candidate_words": [
+      "再"
+    ],
+    "retrieval_passed": true,
+    "editorial_review": "安排后续，不改成已经又来了。",
+    "review_method": "主笔阅读当前用法说明后作语境比较；非自动语义判定或独立用户测试"
+  },
+  {
+    "case": "也承接",
+    "text": "姐姐喜欢画画，弟弟也喜欢。",
+    "expected_candidate_words": [
+      "也"
+    ],
+    "actual_candidate_words": [
+      "也"
+    ],
+    "retrieval_passed": true,
+    "editorial_review": "共同性质有承接对象；不能任意补出赞同关系。",
+    "review_method": "主笔阅读当前用法说明后作语境比较；非自动语义判定或独立用户测试"
+  },
+  {
+    "case": "才判断",
+    "text": "他八点才到。",
+    "expected_candidate_words": [
+      "才"
+    ],
+    "actual_candidate_words": [
+      "才"
+    ],
+    "retrieval_passed": true,
+    "editorial_review": "含相对较晚等预期，不能由客观时点擅自加入。",
+    "review_method": "主笔阅读当前用法说明后作语境比较；非自动语义判定或独立用户测试"
+  },
+  {
+    "case": "就判断",
+    "text": "他八点就到。",
+    "expected_candidate_words": [
+      "就"
+    ],
+    "actual_candidate_words": [
+      "就"
+    ],
+    "retrieval_passed": true,
+    "editorial_review": "本批就仅部分义项；较早时点的完整比较尚待补，不能因搜到词就声称已覆盖。",
+    "review_method": "主笔阅读当前用法说明后作语境比较；非自动语义判定或独立用户测试"
+  },
+  {
+    "case": "不与没",
+    "text": "他昨天没喝咖啡，不等于他不喝咖啡。",
+    "expected_candidate_words": [
+      "没",
+      "不"
+    ],
+    "actual_candidate_words": [
+      "没",
+      "不"
+    ],
+    "retrieval_passed": true,
+    "editorial_review": "某次未发生不能改成习惯或意愿。",
+    "review_method": "主笔阅读当前用法说明后作语境比较；非自动语义判定或独立用户测试"
+  },
+  {
+    "case": "可以",
+    "text": "这辆车可以坐五个人。",
+    "expected_candidate_words": [
+      "可以"
+    ],
+    "actual_candidate_words": [
+      "可以"
+    ],
+    "retrieval_passed": true,
+    "editorial_review": "能力和条件不等于义务；不能随意改应该。",
+    "review_method": "主笔阅读当前用法说明后作语境比较；非自动语义判定或独立用户测试"
+  },
+  {
+    "case": "应该推测",
+    "text": "灯还亮着，他应该没睡。",
+    "expected_candidate_words": [
+      "还",
+      "应该",
+      "没"
+    ],
+    "actual_candidate_words": [
+      "还",
+      "应该",
+      "没"
+    ],
+    "retrieval_passed": true,
+    "editorial_review": "保留推测，不删成确定判断。",
+    "review_method": "主笔阅读当前用法说明后作语境比较；非自动语义判定或独立用户测试"
+  },
+  {
+    "case": "了劝止",
+    "text": "别催了，我正在收拾。",
+    "expected_candidate_words": [
+      "了"
+    ],
+    "actual_candidate_words": [
+      "了"
+    ],
+    "retrieval_passed": true,
+    "editorial_review": "了不一律表示过去；收拾并未被说成结束。",
+    "review_method": "主笔阅读当前用法说明后作语境比较；非自动语义判定或独立用户测试"
+  },
+  {
+    "case": "呢强调",
+    "text": "他还在屋里看书呢。",
+    "expected_candidate_words": [
+      "还",
+      "呢"
+    ],
+    "actual_candidate_words": [
+      "还",
+      "呢"
+    ],
+    "retrieval_passed": true,
+    "editorial_review": "原句可保留，不要求每句添呢，也不见呢就判问答稿。",
+    "review_method": "主笔阅读当前用法说明后作语境比较；非自动语义判定或独立用户测试"
+  },
+  {
+    "case": "吧推测",
+    "text": "他大概到家了吧。",
+    "expected_candidate_words": [
+      "了",
+      "吧"
+    ],
+    "actual_candidate_words": [
+      "了",
+      "吧"
+    ],
+    "retrieval_passed": true,
+    "editorial_review": "保留不确定性，不转成已核实到家事实。",
+    "review_method": "主笔阅读当前用法说明后作语境比较；非自动语义判定或独立用户测试"
+  },
+  {
+    "case": "了解认识",
+    "text": "认识这个人，不一定了解他的经历。",
+    "expected_candidate_words": [
+      "认识",
+      "不",
+      "了解"
+    ],
+    "actual_candidate_words": [
+      "认识",
+      "不",
+      "了解"
+    ],
+    "retrieval_passed": true,
+    "editorial_review": "相识与知道经历不等价。",
+    "review_method": "主笔阅读当前用法说明后作语境比较；非自动语义判定或独立用户测试"
+  },
+  {
+    "case": "孩子范围",
+    "text": "孩子已经工作了。",
+    "expected_candidate_words": [
+      "孩子",
+      "了"
+    ],
+    "actual_candidate_words": [
+      "孩子",
+      "了"
+    ],
+    "retrieval_passed": true,
+    "editorial_review": "关系义可指成年子女，不由一词推断未成年。",
+    "review_method": "主笔阅读当前用法说明后作语境比较；非自动语义判定或独立用户测试"
+  }
+]

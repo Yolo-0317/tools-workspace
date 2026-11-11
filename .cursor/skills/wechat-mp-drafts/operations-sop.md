@@ -11,7 +11,7 @@
 |------|------|
 | **主轴是热点评论** | 社会 / 文娱 / 职场 / 公共事件；A 股收盘三篇已停用，仅 **手动** 偶发财经稿 |
 | 成稿质量先于定时 | 热点深评定时推草稿；质量门禁不过则飞书告警，禁止静默兜底 |
-| **成稿 LLM** | 定时稿只用 Codex CLI；用户主动的热点深评与文学/典籍稿由 Agent 给完整提示词、用户自行向 DeepSeek 取稿并贴回；任一路线失败都禁止回退 |
+| **成稿 LLM** | 人工热点深评默认当前 Agent 按通用 Skill 写稿与审稿；用户指定 DeepSeek 时手工交接，文学/典籍沿用既有交接；不改变定时任务 |
 | 机器推草稿、人发正文 | API 可 `upsert` 草稿；**原创分类、部分 #** 仍后台人工 |
 | **看稿方式** | **只进 mp 草稿箱**预览；Agent **勿**写 `output/wechat_mp_*_preview.html`（用户明确要求） |
 | 质量 > 篇数 | 每天 **3 篇**热点深评（11/15/18）；个人号发表仍须同批群发，勿错开发通知 |
@@ -41,7 +41,11 @@
 | `temp` | 临时单篇，显式 `--kind temp` |
 | `literary` | 典籍节目与文学类；用户自行向 DeepSeek 取稿并贴回，独立槽位，必须两次确认 |
 
-### DeepSeek 手工交接双确认
+### 热点草稿交接记录
+
+2026-10-12人工热点写稿默认入口以 [通用 Skill](../wechat-mp-article/SKILL.md) 和 [热点专题](../wechat-mp-writing/hotspot-deep-review.md) 为准。当前 Agent 起稿也须保存完整正文、实际审稿和用户推送授权；使用既有工作流支持的 confirmed-body 登记，不能伪造 DeepSeek 来源、提示词确认或手工贴回记录。下列字段与 stage/push 预检仍按工程真实能力执行；本次文档修订不修改代码或绕过门禁。
+
+### 指定 DeepSeek 时的手工交接双确认
 
 新建用户主动热点工作流在暂存前准备 `editorial_handoff.json`。其中 `workflow_id` 对应本次工作流；`article_sha256` 是终稿 JSON 文件的 SHA-256；`confirmed_body_sha256` 是已登记完整正文的摘要；`confirmation_mode` 与工作流来源一致。`editorial_review` 记录文章级人工审稿：`target_reader`、`reader_question`、`central_thesis`、正文中真实出现的 `thesis_anchor`、说明段落如何推进主线的 `paragraph_progression`，审稿通过才写 `decision: "pass"`；主线散乱时退回改稿，不创建“通过”记录。`claims` 只列标题、导语、关键数字和结论依赖事实，每条含 `text`、`kind`（`source_fact` / `reported_snapshot` / `party_statement` / `author_inference`）、`source_url`、`published_at`、`observed_at`、`scope_or_period`、`body_anchor`；页面快照的正文锚点必须写出“报道时”“当时”等时间限定。`images` 为全部入选正文图，每张含 `filename`、文件 `sha256`、`evidence_role`；封面也必须是正文入选图之一。入选图的 `figure_sources.json` 还要有实际画面描述、人工核对时间与用途。机器只核字段与正文的对应关系，来源真实性、主线是否成立、视觉内容和叙述分寸仍需人工检查。
 

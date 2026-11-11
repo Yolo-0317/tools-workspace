@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-25",
+  "phase": "剩余50词补核与全库复查",
+  "counts": {
+    "entries": 1000,
+    "reviewed_entries": 1000,
+    "senses": 1028,
+    "reviewed_senses": 1028,
+    "usages": 1028,
+    "states": {
+      "已核": 1000
+    }
+  },
+  "batches": 27,
+  "previously_pending": 50,
+  "promoted": 50,
+  "new_exact_dictionary_headwords": 49,
+  "explicit_related_gloss_combinations": 1,
+  "changed_entries": 109,
+  "reclassified_entries": 54,
+  "per_word_comparison_entries": 300,
+  "exact_and_alias_queries_pass": true,
+  "aliases_unique": true,
+  "exact_manifest_match": true,
+  "all_examples_contain_lemma": true,
+  "reviewed_sources_have_read_scope": true,
+  "reviewed_senses_reference_no_pending_sources": true,
+  "all_27_views_match_data": true,
+  "idempotent_build": true,
+  "source_archive_integrity_and_hashes": true,
+  "cc_cedict_source_date": "2026-10-23T23:15:44Z",
+  "cc_cedict_sha256": "e6e14c761ebc1e66ae2ad7b08fc4c577d6927472bb059d70db6111f0c06abee9",
+  "current_completion_query_cases": 65,
+  "unit_tests_passed": 24,
+  "test_scope": "结构、来源字段、状态、词形召回及生成一致性；语言语义由主笔回读，测试不能代替。",
+  "known_sentence_false_hits": [
+    "错过中的过可能误召回经历助词",
+    "重复中的重可能误召回重量义"
+  ],
+  "historical_results_preserved": [
+    "verification-1000.json",
+    "cases-200.json",
+    "cases-1000.json",
+    "baseline-status-1000.json"
+  ]
+}

@@ -1,0 +1,292 @@
+[
+  {
+    "id": "E01",
+    "text": "已经提交。",
+    "expected_candidate_words": [
+      "已经"
+    ],
+    "semantic_review": "完成或状态已有依据，不能换成打算提交。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E02",
+    "text": "曾经参加。",
+    "expected_candidate_words": [
+      "曾经",
+      "参加"
+    ],
+    "semantic_review": "过去经历不能推成现在仍参加。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E03",
+    "text": "正在准备。",
+    "expected_candidate_words": [
+      "正在",
+      "准备"
+    ],
+    "semantic_review": "筹备进行中，不等于已备齐。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E04",
+    "text": "不再参加。",
+    "expected_candidate_words": [
+      "不再",
+      "参加"
+    ],
+    "semantic_review": "停止继续，不等于从未参加。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E05",
+    "text": "尚未完成。",
+    "expected_candidate_words": [
+      "尚未",
+      "完成"
+    ],
+    "semantic_review": "未完成不等于取消。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E06",
+    "text": "没有问题。",
+    "expected_candidate_words": [
+      "没有",
+      "问题"
+    ],
+    "semantic_review": "仍需辨认问题指困难、疑点还是题目。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E07",
+    "text": "未必会。",
+    "expected_candidate_words": [
+      "未必",
+      "会"
+    ],
+    "semantic_review": "不一定会，不等于一定不会。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E08",
+    "text": "不必参加。",
+    "expected_candidate_words": [
+      "不必",
+      "参加"
+    ],
+    "semantic_review": "无此必要，不等于禁止。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E09",
+    "text": "不能参加。",
+    "expected_candidate_words": [
+      "不能",
+      "参加"
+    ],
+    "semantic_review": "需按上下文辨能力和条件，不先加制度禁止。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E10",
+    "text": "不会游泳。",
+    "expected_candidate_words": [
+      "不会"
+    ],
+    "semantic_review": "技能否定不能改为从未下水。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E11",
+    "text": "只有他一人。",
+    "expected_candidate_words": [
+      "只有"
+    ],
+    "semantic_review": "仅有义，不在此推演必要条件。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E12",
+    "text": "只要预约成功，就可以参加。",
+    "expected_candidate_words": [
+      "只要",
+      "就",
+      "可以",
+      "参加"
+    ],
+    "semantic_review": "示例的充分条件不转成真实活动的无条件规则。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E13",
+    "text": "虽然准备充分，但是仍然有些紧张。",
+    "expected_candidate_words": [
+      "虽然",
+      "准备",
+      "但是",
+      "仍然"
+    ],
+    "semantic_review": "真实让步关系需来自上下文，连接词不造依据。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E14",
+    "text": "老师给家长发了通知。",
+    "expected_candidate_words": [
+      "老师",
+      "家长",
+      "了"
+    ],
+    "semantic_review": "给尚待核，不应以近似用法强行启用。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E15",
+    "text": "她听到铃声。",
+    "expected_candidate_words": [],
+    "semantic_review": "已登记的听到待核，不回退成听。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E16",
+    "text": "她看到告示。",
+    "expected_candidate_words": [],
+    "semantic_review": "已登记的看到待核，不回退成看。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E17",
+    "text": "她并不认可。",
+    "expected_candidate_words": [],
+    "semantic_review": "已登记的并不待核，不回退成并、不。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E18",
+    "text": "她并非每天到场。",
+    "expected_candidate_words": [
+      "每"
+    ],
+    "semantic_review": "并非整体待核；每只是已知词形候选，不能据此判整句。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E19",
+    "text": "她为了赶车早起。",
+    "expected_candidate_words": [],
+    "semantic_review": "目的组合待核，不能因含了便调用完成体解释。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E20",
+    "text": "随着天色变暗。",
+    "expected_candidate_words": [],
+    "semantic_review": "组合待核，不能回退着作持续解释。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E21",
+    "text": "她提出意见。",
+    "expected_candidate_words": [],
+    "semantic_review": "提出待核，保持空结果，不编词义。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E22",
+    "text": "这项议案通过。",
+    "expected_candidate_words": [
+      "这",
+      "通过"
+    ],
+    "semantic_review": "通过目前仅核表决成立义，不提供电话渠道义。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E23",
+    "text": "他认为很重要。",
+    "expected_candidate_words": [
+      "认为",
+      "很",
+      "重要"
+    ],
+    "semantic_review": "保留观点归属和程度，不转为普遍事实。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E24",
+    "text": "大约二十人，至少十人。",
+    "expected_candidate_words": [
+      "大约",
+      "至少"
+    ],
+    "semantic_review": "近似值和下限不能改为精确人数。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E25",
+    "text": "家长希望老师允许学生参加。",
+    "expected_candidate_words": [
+      "家长",
+      "希望",
+      "老师",
+      "允许",
+      "学生",
+      "参加"
+    ],
+    "semantic_review": "希望、许可与参加是不同阶段。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E26",
+    "text": "她可以参加吗？",
+    "expected_candidate_words": [
+      "可以",
+      "参加",
+      "吗"
+    ],
+    "semantic_review": "保留真实询问；语言库不一律禁用问句。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E27",
+    "text": "门开着。",
+    "expected_candidate_words": [
+      "着"
+    ],
+    "semantic_review": "持续状态不等于刚打开。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E28",
+    "text": "她去过。",
+    "expected_candidate_words": [
+      "过"
+    ],
+    "semantic_review": "经历不等于现在仍在。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E29",
+    "text": "清楚，但是未必准确。",
+    "expected_candidate_words": [
+      "清楚",
+      "但是",
+      "未必",
+      "准确"
+    ],
+    "semantic_review": "易理解不等于事实正确。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  },
+  {
+    "id": "E30",
+    "text": "这句话自然吗？",
+    "expected_candidate_words": [
+      "这",
+      "自然",
+      "吗"
+    ],
+    "semantic_review": "语体评价不当成事实证据。",
+    "review_method": "主笔回读；只核召回和语义边界，不声称程序自动判义"
+  }
+]

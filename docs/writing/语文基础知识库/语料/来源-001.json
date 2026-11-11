@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "collected_at": "2026-10-27",
+  "sources": [
+    {
+      "id": "CS001",
+      "article_reference_id": "A002",
+      "title": "消失的课间十分钟，归还有多难？",
+      "publisher": "中国新闻周刊",
+      "author": "周游",
+      "published_date": "2023-11-08",
+      "url": "https://www.inewsweek.cn/society/2023-11-08/20382.shtml",
+      "reading_scope": "正文学生、家长经历及教师看管段，网页正文L61—79",
+      "provenance": "原站报道",
+      "checked_at": "2026-10-27",
+      "status": "excerpt_checked",
+      "user_approved": false,
+      "full_text_saved": false
+    },
+    {
+      "id": "CS002",
+      "article_reference_id": "A006",
+      "title": "【特写】“夜校经济”40年后再轮回",
+      "publisher": "界面新闻",
+      "author": "查沁君",
+      "published_date": null,
+      "url": "https://m.jiemian.com/article/10423140.html",
+      "reading_scope": "正文晓梦及陈飏学琴、报名和绘画经历，L98—119",
+      "provenance": "原站报道",
+      "checked_at": "2026-10-27",
+      "status": "excerpt_checked",
+      "user_approved": false,
+      "full_text_saved": false
+    },
+    {
+      "id": "CS003",
+      "article_reference_id": "A007",
+      "title": "喝咖啡成县城社交打卡需求：巨头与小资“不期而遇”下沉市场",
+      "publisher": "新京报",
+      "author": "覃澈",
+      "published_date": "2023-05-15",
+      "url": "https://m.bjnews.com.cn/detail/168389181514983.html",
+      "reading_scope": "正文回乡、开店和竞争段，L44—72",
+      "provenance": "原站报道",
+      "checked_at": "2026-10-27",
+      "status": "excerpt_checked",
+      "user_approved": false,
+      "full_text_saved": false
+    },
+    {
+      "id": "CS004",
+      "article_reference_id": "A012",
+      "title": "接单、做饭、清厨房！盐城宝妈开启上门做饭新职业",
+      "publisher": "盐城晚报",
+      "author": "戴汇",
+      "published_date": "2026-04-20",
+      "url": "https://paper.ycnews.cn/wb/wap/content/202604/20/content_336171.html",
+      "reading_scope": "正文工作安排、接孩子及口味段，L35—44",
+      "provenance": "原站报道",
+      "checked_at": "2026-10-27",
+      "status": "excerpt_checked",
+      "user_approved": false,
+      "full_text_saved": false
+    },
+    {
+      "id": "CS005",
+      "article_reference_id": null,
+      "title": "调查：84.0%受访家长会因陪孩子写作业头疼",
+      "publisher": "中国青年报，新华网转载",
+      "author": null,
+      "published_date": "2017-11-21",
+      "url": "https://www.xinhuanet.com/politics/2017-11/21/c_1121987175.htm",
+      "reading_scope": "正文三位家长自述，L33—38",
+      "provenance": "转载报道",
+      "checked_at": "2026-10-27",
+      "status": "excerpt_checked",
+      "user_approved": false,
+      "full_text_saved": false
+    },
+    {
+      "id": "CS006",
+      "article_reference_id": null,
+      "title": "陪孩子写作业气到心梗住院？老师教你正确\"陪写姿势\"",
+      "publisher": "中国江苏网",
+      "author": null,
+      "published_date": "2017-10-23",
+      "url": "https://jsnews.jschina.com.cn/sq/a/201710/t20171023_1134634.shtml",
+      "reading_scope": "仅选L43—45的受访家长短语；不采用健康归因与后半育儿建议",
+      "provenance": "原站报道，仅局部入选",
+      "checked_at": "2026-10-27",
+      "status": "excerpt_checked",
+      "user_approved": false,
+      "full_text_saved": false
+    },
+    {
+      "id": "CS007",
+      "article_reference_id": "A004",
+      "title": "假装上班公司7个月后：员工从迷茫青年变“轻创业者” 接下来或成创业孵化器",
+      "publisher": "都市快报，杭州政协网转载",
+      "author": "程超",
+      "published_date": "2026-03-19",
+      "url": "https://www.hzzx.gov.cn/cshz/content/2026-03/19/content_9193419.htm",
+      "reading_scope": "正文回访现状、人员流动与经营者表态，L39、48、56",
+      "provenance": "转载报道",
+      "checked_at": "2026-10-27",
+      "status": "excerpt_checked",
+      "user_approved": false,
+      "full_text_saved": false
+    }
+  ],
+  "excluded": [
+    {
+      "url": "https://health.people.com.cn/n1/2019/0606/c14739-31122707.html",
+      "reason": "直接打开502；搜索摘要不作连续正文摘录依据，未入选"
+    }
+  ]
+}

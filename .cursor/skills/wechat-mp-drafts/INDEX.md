@@ -31,15 +31,17 @@
 
 ### 润色 / 改稿 / eval 质检 / **热点深评**
 
+人工热点深评优先读取 [通用写稿](../wechat-mp-article/SKILL.md) + [热点专题](../wechat-mp-writing/hotspot-deep-review.md)，需要事实审校时再加载 editorial-evidence-gate；下列旧专题文档按具体需求选读，不默认全量加载。
+
 1. **[wechat-mp-writing/SKILL.md](../wechat-mp-writing/SKILL.md)** — 改稿与推稿门禁  
 2. **[wechat-mp-title-writing/SKILL.md](../wechat-mp-title-writing/SKILL.md)** — 起标题、改标题、核对标题与首段是否同题；各稿型通用
 3. **[hotspot-deep-review.md](../wechat-mp-writing/hotspot-deep-review.md)** — 热点深评：参考仿写、去元叙述、事实标题、排版
 4. **[social-commentary-voice.md](../wechat-mp-writing/social-commentary-voice.md)** — **社会民生热点**：短段、物件立人、通报对照、感情色彩
 5. [eval-gates.md](../wechat-mp-writing/eval-gates.md) · [revision-workflow.md](../wechat-mp-writing/revision-workflow.md) · [anti-ai-voice.md](../wechat-mp-writing/anti-ai-voice.md) · [depth-and-opinion.md](../wechat-mp-writing/depth-and-opinion.md)
 
-用户主动要求新写热点深评时，必须走 [deepseek-writer-sop.md](../wechat-mp-writing/deepseek-writer-sop.md) 的手工交接双确认流程：Agent 只提供完整提示词，用户自行向 DeepSeek 取标题和初稿并贴回，Agent 再核实编辑。Agent 不直接调用或控制 DeepSeek。配图必须先查抖音搜索结果卡片，只取封面且不打开视频；正文允许 0—3 张真实图，零图因缺封面而停止，禁止任何自动生成图片。定时热点仍使用 Codex。
+2026-10-12用户更新：用户主动热点深评默认用 [通用公众号写稿](../wechat-mp-article/SKILL.md) 起稿、逐句语法检查、上下文连读和四角色审稿，再核 [热点专题](../wechat-mp-writing/hotspot-deep-review.md) 的选题、证据、评论与配图要求。仅在用户指定 DeepSeek 时走 [手工交接](../wechat-mp-writing/deepseek-writer-sop.md)，Agent 不操作 DeepSeek。配图必须先查抖音搜索结果卡片，只取封面且不打开视频；正文允许 0—3 张真实图，零图因缺封面而停止，禁止任何自动生成图片。定时热点仍使用 Codex。
 
-普通人的经济生活选题和研究先读 [wechat-mp-everyday-economy/SKILL.md](../wechat-mp-everyday-economy/SKILL.md)；它只负责候选、证据和适用人群明确的算账。确认写稿后仍按上面的手工交接与草稿门禁执行，不设自动发布入口。
+普通人的经济生活选题和研究先读 [wechat-mp-everyday-economy/SKILL.md](../wechat-mp-everyday-economy/SKILL.md)；它只负责候选、证据和适用人群明确的算账。确认写稿后按上面的通用写稿与热点草稿门禁执行，不设自动发布入口。
 
 ### 文学与典籍（literary · 手动独立槽位）
 
@@ -161,6 +163,9 @@
 ## 环境与 LLM（2026-06-04）
 
 ```bash
+
+2026-10-12配图更新：人工热点深评停止抖音检索，按[热点视频截帧规则](../wechat-mp-writing/hotspot-deep-review.md#配图原报道视频截帧)与[通用截图流程](../wechat-mp-article/references/real-video-stills.md)查原报道视频并下载核对；一条视频的不同合格镜头即可供全部配图。下文旧抖音卡片及douyin-search字段仅作尚未适配的旧工程说明，不作为当前取图任务，不能伪造记录。
+
 # stock-ai/.env
 WECHAT_MP_CODEX_TIMEOUT_SECONDS=420 # 定时公众号写稿只用 Codex，失败不回退
 WECHAT_MP_CODEX_MAX_RETRIES=1

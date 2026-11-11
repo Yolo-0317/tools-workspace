@@ -1,0 +1,541 @@
+{
+  "date": "2026-10-25",
+  "entries": [
+    {
+      "id": "W0082",
+      "lemma": "为了",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0082",
+        "ZD26-W0082"
+      ],
+      "meaning": "引出行为所追求的目标",
+      "example": "为了赶上早班车，她提前出门。"
+    },
+    {
+      "id": "W0092",
+      "lemma": "并非",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0092",
+        "ZD26-W0092"
+      ],
+      "meaning": "否定某种判断，常带强调",
+      "example": "这里并非每天都开放。"
+    },
+    {
+      "id": "W0097",
+      "lemma": "并不",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0097"
+      ],
+      "meaning": "在具体语境中加强否定判断",
+      "example": "价格高，并不表示效果一定更好。"
+    },
+    {
+      "id": "W0154",
+      "lemma": "给",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0154",
+        "ZD26-W0154"
+      ],
+      "meaning": "在相应结构中引出接受者等关系",
+      "example": "她给家长发了提醒。"
+    },
+    {
+      "id": "W0159",
+      "lemma": "随着",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0159",
+        "ZD26-W0159"
+      ],
+      "meaning": "把一事的发展作为另一事变化的背景",
+      "example": "随着天色变暗，路灯陆续亮起。"
+    },
+    {
+      "id": "W0170",
+      "lemma": "看到",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0170"
+      ],
+      "meaning": "视觉上接触或注意到某对象",
+      "example": "她在门口看到了一张告示。"
+    },
+    {
+      "id": "W0173",
+      "lemma": "听到",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0173"
+      ],
+      "meaning": "听觉上接收到声音或话语",
+      "example": "她在门口听到了铃声。"
+    },
+    {
+      "id": "W0180",
+      "lemma": "提出",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0180",
+        "ZD26-W0180"
+      ],
+      "meaning": "把意见、问题或要求表达出来，供对方考虑",
+      "example": "家长提出了调整时间的建议。"
+    },
+    {
+      "id": "W0254",
+      "lemma": "身份",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0254",
+        "ZD26-W0254"
+      ],
+      "meaning": "个人在关系或组织中的地位",
+      "example": "她说明了自己的身份。"
+    },
+    {
+      "id": "W0316",
+      "lemma": "此前",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0316"
+      ],
+      "meaning": "在所指时点之前",
+      "example": "此前她没有收到通知。"
+    },
+    {
+      "id": "W0323",
+      "lemma": "夜里",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0323",
+        "ZD26-W0323"
+      ],
+      "meaning": "夜间",
+      "example": "夜里下了一场雨。"
+    },
+    {
+      "id": "W0330",
+      "lemma": "每年",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0330",
+        "ZD26-W0330"
+      ],
+      "meaning": "范围内的每一年",
+      "example": "每年这里都办书展。"
+    },
+    {
+      "id": "W0337",
+      "lemma": "推迟",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0337",
+        "ZD26-W0337"
+      ],
+      "meaning": "把时间往后移",
+      "example": "会议推迟到下午。"
+    },
+    {
+      "id": "W0349",
+      "lemma": "时而",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0349",
+        "ZD26-W0349"
+      ],
+      "meaning": "有时候；成对使用时可表示不同情况交替出现",
+      "example": "灯光时而亮时而暗。"
+    },
+    {
+      "id": "W0350",
+      "lemma": "接着",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0350"
+      ],
+      "meaning": "承接前面的事继续下去，或随后做另一件事",
+      "example": "她接着往下读。"
+    },
+    {
+      "id": "W0365",
+      "lemma": "早已",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0365",
+        "ZD26-W0365"
+      ],
+      "meaning": "很早就已经如此",
+      "example": "这本书她早已读过。"
+    },
+    {
+      "id": "W0378",
+      "lemma": "反倒",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0378",
+        "ZD26-W0378"
+      ],
+      "meaning": "与原先预期相反",
+      "example": "他没有休息，反倒更忙了。"
+    },
+    {
+      "id": "W0379",
+      "lemma": "倒是",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0379",
+        "ZD26-W0379"
+      ],
+      "meaning": "略带转折或缓和语气地肯定某一方面",
+      "example": "款式我不太喜欢，这个颜色倒是很合适。"
+    },
+    {
+      "id": "W0384",
+      "lemma": "从而",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0384",
+        "ZD26-W0384"
+      ],
+      "meaning": "由前项引出进一步结果",
+      "example": "他调整了操作顺序，从而节省了时间。"
+    },
+    {
+      "id": "W0385",
+      "lemma": "以至",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0385",
+        "ZD26-W0385"
+      ],
+      "meaning": "事情发展到后项程度",
+      "example": "忙得忘了时间，以至错过末班车。"
+    },
+    {
+      "id": "W0387",
+      "lemma": "即便",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0387",
+        "ZD26-W0387"
+      ],
+      "meaning": "即使在某种条件下",
+      "example": "即便下雨，他也会到场。"
+    },
+    {
+      "id": "W0388",
+      "lemma": "哪怕",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0388",
+        "ZD26-W0388"
+      ],
+      "meaning": "即使在所设的某种条件下，也不改变后项",
+      "example": "哪怕只有一人，也照常开课。"
+    },
+    {
+      "id": "W0395",
+      "lemma": "乃至",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0395",
+        "ZD26-W0395"
+      ],
+      "meaning": "递进到更远的范围",
+      "example": "这影响到社区，乃至整个城市。"
+    },
+    {
+      "id": "W0403",
+      "lemma": "差点",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0403",
+        "ZD26-W0403"
+      ],
+      "meaning": "几乎发生某种结果；本条例句表示接近而未发生",
+      "example": "他差点错过末班车。"
+    },
+    {
+      "id": "W0427",
+      "lemma": "担负",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0427",
+        "ZD26-W0427"
+      ],
+      "meaning": "担起某种任务或责任",
+      "example": "他担负着照护责任。"
+    },
+    {
+      "id": "W0479",
+      "lemma": "得到",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0479",
+        "ZD26-W0479"
+      ],
+      "meaning": "取得或受到某种事物",
+      "example": "他得到了答复。"
+    },
+    {
+      "id": "W0514",
+      "lemma": "找到",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0514",
+        "ZD26-W0514"
+      ],
+      "meaning": "寻得所要的对象",
+      "example": "他找到了原稿。"
+    },
+    {
+      "id": "W0530",
+      "lemma": "报道",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0530"
+      ],
+      "meaning": "通过媒体传播消息",
+      "example": "报纸报道了这件事。"
+    },
+    {
+      "id": "W0534",
+      "lemma": "发送",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0534",
+        "ZD26-W0534"
+      ],
+      "meaning": "发出信息或物件",
+      "example": "他发送了一封邮件。"
+    },
+    {
+      "id": "W0535",
+      "lemma": "接听",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0535"
+      ],
+      "meaning": "接起电话并听对方说话",
+      "example": "她接听了电话。"
+    },
+    {
+      "id": "W0540",
+      "lemma": "答复",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0540",
+        "ZD26-W0540"
+      ],
+      "meaning": "对询问或请求给予回应",
+      "example": "学校还没有答复。"
+    },
+    {
+      "id": "W0542",
+      "lemma": "咨询",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0542",
+        "ZD26-W0542"
+      ],
+      "meaning": "向有关人员请教情况",
+      "example": "他去窗口咨询收费。"
+    },
+    {
+      "id": "W0556",
+      "lemma": "想象",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0556",
+        "ZD26-W0556"
+      ],
+      "meaning": "在头脑中构想事物或情景",
+      "example": "她想象着山顶的风景。"
+    },
+    {
+      "id": "W0631",
+      "lemma": "标注",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0631"
+      ],
+      "meaning": "加上说明性的标记",
+      "example": "他在图上标注了路线。"
+    },
+    {
+      "id": "W0636",
+      "lemma": "交给",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0636",
+        "ZD26-W0636"
+      ],
+      "meaning": "把东西转到对方手中",
+      "example": "她把原稿交给了老师。"
+    },
+    {
+      "id": "W0638",
+      "lemma": "取回",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0638"
+      ],
+      "meaning": "把原在别处或他人处的东西拿回来",
+      "example": "她取回了借出的书。"
+    },
+    {
+      "id": "W0641",
+      "lemma": "借阅",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0641",
+        "ZD26-W0641"
+      ],
+      "meaning": "借来阅读",
+      "example": "他借阅了两本书。"
+    },
+    {
+      "id": "W0659",
+      "lemma": "照看",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0659",
+        "ZD26-W0659"
+      ],
+      "meaning": "看护并加以注意",
+      "example": "邻居帮忙照看孩子。"
+    },
+    {
+      "id": "W0677",
+      "lemma": "回到",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0677"
+      ],
+      "meaning": "重新来到先前所在处",
+      "example": "他回到了家。"
+    },
+    {
+      "id": "W0709",
+      "lemma": "拆开",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0709",
+        "ZD26-W0709"
+      ],
+      "meaning": "将组合或包裹的东西分开",
+      "example": "她拆开了包裹。"
+    },
+    {
+      "id": "W0721",
+      "lemma": "补上",
+      "status": "已核",
+      "source_ids": [
+        "ZD26-W0721"
+      ],
+      "meaning": "把缺少的内容填入",
+      "example": "他补上了遗漏的日期。"
+    },
+    {
+      "id": "W0737",
+      "lemma": "带来",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0737"
+      ],
+      "meaning": "使某种事物随之出现",
+      "example": "新线路带来了便利。"
+    },
+    {
+      "id": "W0943",
+      "lemma": "各方",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0943"
+      ],
+      "meaning": "与某件事有关的各个参与方",
+      "example": "各方都派人参加。"
+    },
+    {
+      "id": "W0945",
+      "lemma": "有人",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0945",
+        "ZD26-W0945"
+      ],
+      "meaning": "有某个人或某些人",
+      "example": "有人在门外等候。"
+    },
+    {
+      "id": "W0973",
+      "lemma": "同龄",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0973",
+        "ZD26-W0973"
+      ],
+      "meaning": "年龄相同",
+      "example": "孩子喜欢和同龄朋友玩。"
+    },
+    {
+      "id": "W0977",
+      "lemma": "少年",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0977",
+        "ZD26-W0977"
+      ],
+      "meaning": "较年轻的年龄阶段，也指处于这一阶段的人",
+      "example": "他在少年时学会了游泳。"
+    },
+    {
+      "id": "W0979",
+      "lemma": "成年人",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0979",
+        "ZD26-W0979"
+      ],
+      "meaning": "已达到成人阶段的人",
+      "example": "活动需要成年人陪同。"
+    },
+    {
+      "id": "W0990",
+      "lemma": "用户",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0990",
+        "ZD26-W0990"
+      ],
+      "meaning": "使用产品或服务的人",
+      "example": "用户提交了反馈。"
+    },
+    {
+      "id": "W0998",
+      "lemma": "志愿者",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0998",
+        "GOV26-VOLUNTEER"
+      ],
+      "meaning": "自愿、无偿提供公益服务的人",
+      "example": "志愿者在门口引导。"
+    },
+    {
+      "id": "W0999",
+      "lemma": "工作人员",
+      "status": "已核",
+      "source_ids": [
+        "CC26-W0999"
+      ],
+      "meaning": "在某机构、组织或活动中承担工作的人",
+      "example": "工作人员核对了人数。"
+    }
+  ]
+}

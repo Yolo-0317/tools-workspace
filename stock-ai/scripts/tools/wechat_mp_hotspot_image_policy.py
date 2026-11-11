@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import math
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -209,6 +211,73 @@ def _load_cover_preferences(out_dir: Path) -> tuple[str, bool]:
     return requested, reuse_in_body
 
 
+def _validate_video_stills(root: Path, *, expected_topic: str, figures: list[VerifiedFigure]) -> None:
+    record = _read_json_object(root / "video-research.json", missing_message="缺少真实视频取证记录")
+    if record.get("schema_version") != 1 or record.get("topic") != expected_topic.strip():
+        raise ValueError("视频取证版本或主题不一致")
+    for key in ("completed_at", "viewed_range"):
+        _required_text(record, key, owner="视频取证")
+    video = record.get("video")
+    if not isinstance(video, dict):
+        raise ValueError("视频取证缺少原视频")
+    for key in ("page_url", "source_name", "published_at", "local_path", "sha256"):
+        _required_text(video, key, owner="视频取证")
+    path = Path(video["local_path"])
+    if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != video["sha256"]:
+        raise ValueError("视频文件不存在或摘要不一致")
+    duration = video.get("duration_seconds")
+    if isinstance(duration, bool) or not isinstance(duration, (int, float)) or not math.isfinite(duration) or duration <= 0:
+        raise ValueError("视频时长无效")
+    manifest = _read_json_object(root / FIGURE_SOURCES_FILENAME, missing_message="缺少视频截图来源")
+    for figure in figures:
+        raw = manifest[figure.path.name]
+        if (figure.source_type != "news_video_still" or figure.page_url != video["page_url"]
+                or figure.source_name != video["source_name"] or raw.get("published_at") != video["published_at"]
+                or Path(str(raw.get("source_video") or "")).resolve() != path.resolve()):
+            raise ValueError("视频截图与原报道来源不一致")
+        seconds = raw.get("timecode_seconds")
+        if isinstance(seconds, bool) or not isinstance(seconds, (int, float)) or not math.isfinite(seconds) or not 0 <= seconds <= duration:
+            raise ValueError("视频截图时间超出原视频")
+        if hashlib.sha256(figure.path.read_bytes()).hexdigest() != raw.get("sha256"):
+            raise ValueError("视频截图摘要不一致")
+        for key in ("visual_description", "visual_checked_at", "evidence_role"):
+            _required_text(raw, key, owner="视频截图")
+
+
+def _validate_report_images(root: Path, *, expected_topic: str, figures: list[VerifiedFigure]) -> None:
+    record = _read_json_object(root / "report-image-research.json", missing_message="缺少原报道配图取证记录")
+    if record.get("schema_version") != 1 or record.get("topic") != expected_topic.strip():
+        raise ValueError("原报道配图取证版本或主题不一致")
+    for key in ("completed_at", "reviewed_scope"):
+        _required_text(record, key, owner="原报道配图取证")
+    sources = record.get("sources")
+    if not isinstance(sources, list) or not sources:
+        raise ValueError("原报道配图缺少来源页面")
+    pages = {}
+    for source in sources:
+        if not isinstance(source, dict):
+            raise ValueError("原报道页面记录必须是对象")
+        for key in ("page_url", "source_name", "published_at", "local_page", "sha256"):
+            _required_text(source, key, owner="原报道页面")
+        path = Path(source["local_page"])
+        if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != source["sha256"]:
+            raise ValueError("原报道页面不存在或摘要不一致")
+        pages[source["page_url"]] = (source, path.read_text(encoding="utf-8"))
+    manifest = _read_json_object(root / FIGURE_SOURCES_FILENAME, missing_message="缺少原报道图片来源")
+    for figure in figures:
+        source, html = pages.get(figure.page_url, ({}, ""))
+        raw = manifest[figure.path.name]
+        image_url = str(raw.get("image_url") or "")
+        if (figure.source_type != "news_report_image" or figure.source_name != source.get("source_name")
+                or raw.get("published_at") != source.get("published_at")
+                or not image_url.startswith(("https://", "http://")) or image_url not in html):
+            raise ValueError("原报道图片与来源页面不一致")
+        if hashlib.sha256(figure.path.read_bytes()).hexdigest() != raw.get("sha256"):
+            raise ValueError("原报道图片摘要不一致")
+        for key in ("visual_description", "visual_checked_at", "evidence_role"):
+            _required_text(raw, key, owner="原报道图片")
+
+
 def validate_verified_hotspot_images(
     out_dir: Path,
     *,
@@ -219,11 +288,16 @@ def validate_verified_hotspot_images(
     if not 0 <= max_body <= 3:
         raise ValueError("热点正文真实图片数量必须为 0—3")
     root = Path(out_dir)
-    search = load_douyin_search(root, expected_topic=expected_topic)
     figures, source_meta = _load_verified_figures(root)
-    selected_urls = {
-        candidate.video_url for candidate in search.candidates if candidate.selected
-    }
+    if (root / "video-research.json").is_file():
+        _validate_video_stills(root, expected_topic=expected_topic, figures=figures)
+        selected_urls: set[str] = set()
+    elif (root / "report-image-research.json").is_file():
+        _validate_report_images(root, expected_topic=expected_topic, figures=figures)
+        selected_urls = set()
+    else:
+        search = load_douyin_search(root, expected_topic=expected_topic)
+        selected_urls = {candidate.video_url for candidate in search.candidates if candidate.selected}
     figure_douyin_urls = {
         figure.page_url
         for figure in figures

@@ -1,5 +1,7 @@
 # 公众号 ChatGPT 网页配图流程设计
 
+> 历史方案：2026-11-10 用户已撤销默认 ChatGPT 网页和失败禁止切换的规定。当前默认内置 ImageGen，以 `.cursor/skills/wechat-mp-drafts/chatgpt-web-image-sop.md` 为准。
+
 ## 目标
 
 将公众号原创配图默认流程调整为：

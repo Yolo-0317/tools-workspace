@@ -44,7 +44,7 @@ def test_literary_draft_validates_manual_independent_kind() -> None:
     assert "literary" not in content.DAILY_DRAFT_KINDS
 
 
-def test_literary_draft_rejects_source_domain_reuse() -> None:
+def test_literary_draft_accepts_short_body_and_reused_source_domain() -> None:
     payload = _payload()
     payload["research_urls"] = [
         "https://example.com/a",
@@ -52,8 +52,9 @@ def test_literary_draft_rejects_source_domain_reuse() -> None:
         "https://example.com/c",
     ]
 
-    with pytest.raises(ValueError, match="3 个不同来源域"):
-        load_literary_draft_data(payload)
+    payload["body"] = "秦重攒钱去见美娘。"
+    draft = load_literary_draft_data(payload)
+    assert draft.body == payload["body"]
 
 
 def test_build_literary_article_renders_highlight_without_raw_marker() -> None:

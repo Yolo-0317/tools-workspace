@@ -1,0 +1,15 @@
+{
+  "duration": "10.083008",
+  "size": [
+    496,
+    864
+  ],
+  "full_decode": "passed",
+  "three_tts_lines": "ready",
+  "source_video_preserved_in_voiced_copy": true,
+  "subtitled_audio_matches_voiced_copy": true,
+  "aigc_metadata_preserved": true,
+  "mean_volume_db": -23.9,
+  "max_volume_db": -5.4,
+  "visual_review": "三句字幕和结尾抽帧已查；主观试听未执行；原口型未重做"
+}

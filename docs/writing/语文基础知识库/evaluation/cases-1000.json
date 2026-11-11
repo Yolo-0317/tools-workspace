@@ -1,0 +1,529 @@
+[
+  {
+    "id": "K01",
+    "text": "她提交了申请。",
+    "expected_candidate_words": [
+      "她",
+      "提交",
+      "了",
+      "申请"
+    ],
+    "semantic_review": "提交不等于获得批准。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K02",
+    "text": "申请正在审核。",
+    "expected_candidate_words": [
+      "申请",
+      "正在",
+      "审核"
+    ],
+    "semantic_review": "进行中的审核不代表通过。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K03",
+    "text": "双方达成了协议。",
+    "expected_candidate_words": [
+      "双方",
+      "达成",
+      "了"
+    ],
+    "semantic_review": "协议这个词尚未建卡，召回不是完整分词。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K04",
+    "text": "她正在办理注册。",
+    "expected_candidate_words": [
+      "她",
+      "正在",
+      "办理",
+      "注册"
+    ],
+    "semantic_review": "办理注册不等于获准全部服务。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K05",
+    "text": "他接受了邀请。",
+    "expected_candidate_words": [
+      "他",
+      "接受",
+      "了"
+    ],
+    "semantic_review": "接受不等于实际到场。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K06",
+    "text": "设备接收了信息。",
+    "expected_candidate_words": [
+      "接收",
+      "了",
+      "信息"
+    ],
+    "semantic_review": "接收和接受不可互换。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K07",
+    "text": "双方还在协商。",
+    "expected_candidate_words": [
+      "双方",
+      "还",
+      "在",
+      "协商"
+    ],
+    "semantic_review": "协商不等于一致。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K08",
+    "text": "老师通知了家长。",
+    "expected_candidate_words": [
+      "老师",
+      "通知",
+      "了",
+      "家长"
+    ],
+    "semantic_review": "通知不等于家长已读懂。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K09",
+    "text": "她相信这份记录。",
+    "expected_candidate_words": [
+      "她",
+      "相信",
+      "这",
+      "记录"
+    ],
+    "semantic_review": "相信和核实是不同证据状态。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K10",
+    "text": "有人否认这件事。",
+    "expected_candidate_words": [
+      "否认",
+      "这"
+    ],
+    "semantic_review": "有人待核，否认仍有实际归属要求。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K11",
+    "text": "他们正在核实消息。",
+    "expected_candidate_words": [
+      "他们",
+      "正在",
+      "核实",
+      "消息"
+    ],
+    "semantic_review": "正在查证不能写成证实。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K12",
+    "text": "这次测试已经完成。",
+    "expected_candidate_words": [
+      "这",
+      "测试",
+      "已经",
+      "完成"
+    ],
+    "semantic_review": "测试完成不保证所有条件均通过。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K13",
+    "text": "免费参观。",
+    "expected_candidate_words": [
+      "免费",
+      "参观"
+    ],
+    "semantic_review": "免费项目范围不可扩大。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K14",
+    "text": "上午出发，下午返回。",
+    "expected_candidate_words": [
+      "上午",
+      "出发",
+      "下午",
+      "返回"
+    ],
+    "semantic_review": "保持时间先后，不补出中间活动。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K15",
+    "text": "昨天报名，今天取消。",
+    "expected_candidate_words": [
+      "昨天",
+      "报名",
+      "今天",
+      "取消"
+    ],
+    "semantic_review": "相对日期仍需真实叙述参照。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K16",
+    "text": "家长陆续到达。",
+    "expected_candidate_words": [
+      "家长",
+      "陆续",
+      "到达"
+    ],
+    "semantic_review": "到场不等于同时抵达。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K17",
+    "text": "全部材料已经公布。",
+    "expected_candidate_words": [
+      "全部",
+      "材料",
+      "已经",
+      "公布"
+    ],
+    "semantic_review": "全部仍有所指范围。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K18",
+    "text": "部分内容需要修改。",
+    "expected_candidate_words": [
+      "部分",
+      "内容",
+      "需要",
+      "修改"
+    ],
+    "semantic_review": "部分不可扩大为整篇。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K19",
+    "text": "结果尚未证实。",
+    "expected_candidate_words": [
+      "结果",
+      "尚未",
+      "证实"
+    ],
+    "semantic_review": "不确定不等于相反结果成立。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K20",
+    "text": "预计明天出发。",
+    "expected_candidate_words": [
+      "预计",
+      "明天",
+      "出发"
+    ],
+    "semantic_review": "预计不是未来事实保证。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K21",
+    "text": "任务已经安排。",
+    "expected_candidate_words": [
+      "任务",
+      "已经",
+      "安排"
+    ],
+    "semantic_review": "已安排不等于已执行。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K22",
+    "text": "她听说活动取消。",
+    "expected_candidate_words": [
+      "她",
+      "听说",
+      "活动",
+      "取消"
+    ],
+    "semantic_review": "间接信息不改成独立核实。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K23",
+    "text": "他说自己愿意配合。",
+    "expected_candidate_words": [
+      "他",
+      "说",
+      "自己",
+      "愿意",
+      "配合"
+    ],
+    "semantic_review": "愿意配合不等于已经完成。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K24",
+    "text": "我们希望增加名额。",
+    "expected_candidate_words": [
+      "我们",
+      "希望",
+      "增加",
+      "名额"
+    ],
+    "semantic_review": "愿望不当作政策决定。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K25",
+    "text": "价格降低，费用减少。",
+    "expected_candidate_words": [
+      "价格",
+      "降低",
+      "费用",
+      "减少"
+    ],
+    "semantic_review": "两个维度各需依据，不能互证。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K26",
+    "text": "学习过，不等于掌握。",
+    "expected_candidate_words": [
+      "学习",
+      "过",
+      "不",
+      "掌握"
+    ],
+    "semantic_review": "本批掌握先核把握控制义，技能义仍需按语境另核。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K27",
+    "text": "明确不等于详细。",
+    "expected_candidate_words": [
+      "明确",
+      "不",
+      "详细"
+    ],
+    "semantic_review": "清楚确定与细节数量不是同一维度。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K28",
+    "text": "真实不等于全面。",
+    "expected_candidate_words": [
+      "真实",
+      "不",
+      "全面"
+    ],
+    "semantic_review": "部分事实真实不保证内容覆盖完整。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K29",
+    "text": "主观感受不能证实事实。",
+    "expected_candidate_words": [
+      "主观",
+      "感受",
+      "不能",
+      "证实",
+      "事实"
+    ],
+    "semantic_review": "不把主观一律认作虚假，也不拿感受代替证据。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K30",
+    "text": "他保证及时回复。",
+    "expected_candidate_words": [
+      "他",
+      "保证",
+      "及时",
+      "回复"
+    ],
+    "semantic_review": "承诺者归属保留，不等于回复已发生。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K31",
+    "text": "她热情地接待大家。",
+    "expected_candidate_words": [
+      "她",
+      "热情",
+      "地",
+      "大家"
+    ],
+    "semantic_review": "评价应有表现依据，未知词不由程序补造。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K32",
+    "text": "他们主动参与。",
+    "expected_candidate_words": [
+      "他们",
+      "主动",
+      "参与"
+    ],
+    "semantic_review": "主体实际参与和态度需分别有依据。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K33",
+    "text": "信息真实，表达简洁。",
+    "expected_candidate_words": [
+      "信息",
+      "真实",
+      "表达",
+      "简洁"
+    ],
+    "semantic_review": "事实和文体分开判断。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K34",
+    "text": "假如延期，就另行通知。",
+    "expected_candidate_words": [
+      "假如",
+      "延期",
+      "就",
+      "通知"
+    ],
+    "semantic_review": "条件未成立时不能写成已经延期。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K35",
+    "text": "虽然紧张，但是仍然参加。",
+    "expected_candidate_words": [
+      "虽然",
+      "紧张",
+      "但是",
+      "仍然",
+      "参加"
+    ],
+    "semantic_review": "让步关系需有具体事实，不为段落加转折。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K36",
+    "text": "难道他没有参加吗？",
+    "expected_candidate_words": [
+      "难道",
+      "他",
+      "没有",
+      "参加",
+      "吗"
+    ],
+    "semantic_review": "真实反问可保留，不作为文章逐段设问的模板。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K37",
+    "text": "我负责记录。",
+    "expected_candidate_words": [
+      "我",
+      "负责",
+      "记录"
+    ],
+    "semantic_review": "第一人称要有真实说话者身份。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K38",
+    "text": "你先坐。",
+    "expected_candidate_words": [
+      "你",
+      "坐"
+    ],
+    "semantic_review": "指向明确的听话者，不虚构读者经历。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K39",
+    "text": "它们集中在一起。",
+    "expected_candidate_words": [
+      "它们",
+      "集中",
+      "在"
+    ],
+    "semantic_review": "动植物或物件代词要有先行对象。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K40",
+    "text": "她们已经离开。",
+    "expected_candidate_words": [
+      "她们",
+      "已经",
+      "离开"
+    ],
+    "semantic_review": "保留复数人物归属。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K41",
+    "text": "昨天还没决定，今天已经同意。",
+    "expected_candidate_words": [
+      "昨天",
+      "还",
+      "没",
+      "决定",
+      "今天",
+      "已经",
+      "同意"
+    ],
+    "semantic_review": "只核材料支持的态度变化，不补出心理过程。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K42",
+    "text": "普遍不等于人人。",
+    "expected_candidate_words": [
+      "普遍",
+      "不",
+      "人人"
+    ],
+    "semantic_review": "广泛存在与全称判断不同。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K43",
+    "text": "必要和必需。",
+    "expected_candidate_words": [
+      "必要",
+      "必需"
+    ],
+    "semantic_review": "用法按搭配辨认，不靠同音替换。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  },
+  {
+    "id": "K44",
+    "text": "收到通知不必重复登记。",
+    "expected_candidate_words": [
+      "通知",
+      "不必",
+      "重",
+      "登记"
+    ],
+    "semantic_review": "重来自未建词重复中的短字匹配，与本批重量义不符。这里保留反例，不能把词形召回当作句义判定；精确查词优先。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写",
+    "known_false_hits": [
+      "重"
+    ]
+  },
+  {
+    "id": "K45",
+    "text": "她拒绝了申请。",
+    "expected_candidate_words": [
+      "她",
+      "拒绝",
+      "了",
+      "申请"
+    ],
+    "semantic_review": "拒绝行为不等于申请主体没有资格。",
+    "review_method": "主笔语境回读；程序仅核词形召回，不自动判断句义或改写"
+  }
+]

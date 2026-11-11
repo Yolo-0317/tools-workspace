@@ -377,3 +377,87 @@ def test_new_hotspot_visual_check_keeps_cover_in_body(tmp_path: Path) -> None:
 
     assert len(result.body_figures) == 2
     assert result.cover_source in [figure.path for figure in result.body_figures]
+
+
+def _write_video_still_state(out_dir: Path) -> None:
+    import hashlib
+    out_dir.mkdir(parents=True, exist_ok=True)
+    video = out_dir / 'report.mp4'
+    video.write_bytes(b'locally-verified-test-video')
+    image = _write_verified_image(out_dir, 'still-01.jpg', source_type='news_video_still')
+    manifest = out_dir / 'figure_sources.json'
+    data = json.loads(manifest.read_text())
+    data[image.name].update(source_video=str(video), timecode_seconds=2,
+                            sha256=hashlib.sha256(image.read_bytes()).hexdigest(),
+                            visual_description='报道中的门店', visual_checked_at='2026-10-12', evidence_role='scene')
+    manifest.write_text(json.dumps(data))
+    (out_dir / 'video-research.json').write_text(json.dumps({
+        'schema_version': 1, 'topic': '测试热点', 'completed_at': '2026-10-12',
+        'viewed_range': '抽帧和所用图片已人工核对',
+        'video': {'page_url': data[image.name]['page_url'], 'source_name': data[image.name]['source_name'],
+                  'published_at': '2026-08-27', 'local_path': str(video),
+                  'sha256': hashlib.sha256(video.read_bytes()).hexdigest(), 'duration_seconds': 10}}))
+
+
+def test_verified_video_still_does_not_require_douyin(tmp_path: Path) -> None:
+    _write_video_still_state(tmp_path)
+    result = _load_api()(tmp_path, expected_topic='测试热点', require_visual_check=True)
+    assert result.cover_source.name == 'still-01.jpg'
+    assert len(result.body_figures) == 1
+
+
+@pytest.mark.parametrize('corruption', ['video_hash', 'image_hash', 'timecode', 'topic'])
+def test_video_still_provenance_corruption_is_rejected(tmp_path: Path, corruption: str) -> None:
+    _write_video_still_state(tmp_path)
+    if corruption == 'video_hash':
+        (tmp_path / 'report.mp4').write_bytes(b'changed')
+    elif corruption == 'topic':
+        p=tmp_path / 'video-research.json'; data=json.loads(p.read_text()); data['topic']='other'; p.write_text(json.dumps(data))
+    else:
+        p=tmp_path / 'figure_sources.json'; data=json.loads(p.read_text())
+        data['still-01.jpg']['sha256' if corruption == 'image_hash' else 'timecode_seconds'] = 'bad' if corruption == 'image_hash' else 12
+        p.write_text(json.dumps(data))
+    with pytest.raises(ValueError, match='视频|截图'):
+        _load_api()(tmp_path, expected_topic='测试热点', require_visual_check=True)
+
+
+def _write_report_image_state(out_dir: Path) -> None:
+    import hashlib
+    image = _write_verified_image(out_dir, 'manual-01.jpg', source_type='news_report_image')
+    manifest = out_dir / 'figure_sources.json'
+    data = json.loads(manifest.read_text())
+    data[image.name].update(sha256=hashlib.sha256(image.read_bytes()).hexdigest(),
+                            visual_description='校服款式设计示意图', visual_checked_at='2026-10-15', evidence_role='document')
+    manifest.write_text(json.dumps(data))
+    page = out_dir / 'source.html'
+    page.write_text('<img src="https://example.com/image.jpg">')
+    (out_dir / 'report-image-research.json').write_text(json.dumps({
+        'schema_version': 1, 'topic': '测试热点', 'completed_at': '2026-10-15',
+        'reviewed_scope': '已读原报道并实际查看所用设计图',
+        'sources': [{'page_url': data[image.name]['page_url'], 'source_name': '浙江在线',
+                     'published_at': '2026-08-27', 'local_page': str(page),
+                     'sha256': hashlib.sha256(page.read_bytes()).hexdigest()}]}))
+
+
+def test_verified_original_report_images_do_not_require_douyin(tmp_path: Path) -> None:
+    _write_report_image_state(tmp_path)
+    result = _load_api()(tmp_path, expected_topic='测试热点', require_visual_check=True)
+    assert result.cover_source.name == 'manual-01.jpg'
+    assert len(result.body_figures) == 1
+
+
+@pytest.mark.parametrize('corruption', ['page_hash', 'image_hash', 'image_url', 'topic'])
+def test_report_image_provenance_corruption_is_rejected(tmp_path: Path, corruption: str) -> None:
+    _write_report_image_state(tmp_path)
+    if corruption == 'page_hash':
+        (tmp_path / 'source.html').write_text('changed')
+    elif corruption == 'topic':
+        path = tmp_path / 'report-image-research.json'
+        data = json.loads(path.read_text()); data['topic'] = 'other'; path.write_text(json.dumps(data))
+    else:
+        path = tmp_path / 'figure_sources.json'
+        data = json.loads(path.read_text())
+        data['manual-01.jpg']['sha256' if corruption == 'image_hash' else 'image_url'] = 'bad'
+        path.write_text(json.dumps(data))
+    with pytest.raises(ValueError, match='原报道'):
+        _load_api()(tmp_path, expected_topic='测试热点', require_visual_check=True)

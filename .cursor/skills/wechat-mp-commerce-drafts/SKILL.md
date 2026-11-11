@@ -16,6 +16,10 @@ paths:
   - stock-ai/data/wechat_mp_commerce_slots.json
 ---
 
+## 共通写作规则
+
+先读[中文写作基座](../../../docs/writing/中文写作基座.md)，统一执行叙述身份、材料整合、自然表达、分段回读和语义保护。本Skill只补充题材与交付要求；用户明确例外、证据来源及操作权限继续按本专题执行。共通更新只维护基座，不在此复制一份。
+
 # 微信公众号带货草稿（stock-ai）— 简选小电 · 已搁置
 
 > 用户说 **「公众号」** 默认指 **牛马也智能** → [wechat-mp-drafts](../wechat-mp-drafts/SKILL.md)。本 skill 仅 **简选小电** / 带货，用户未明确要求时不要执行。
